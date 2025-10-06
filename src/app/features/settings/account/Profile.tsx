@@ -148,7 +148,7 @@ export function Profile() {
           // once the profile request completes
           await refreshExtendedProfile();
 
-          // synthesise a profile update for ourselves to update our name and avatr in the rest
+          // synthesize a profile update for ourselves to update our name and avatar in the rest
           // of the UI. code copied from matrix-js-sdk
           const user = mx.getUser(userId);
           if (user) {
