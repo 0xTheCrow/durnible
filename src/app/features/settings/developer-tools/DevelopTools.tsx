@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import { Box, Text, IconButton, Icon, Icons, Scroll, Switch, Button } from 'folds';
 import { AccountDataEvents } from 'matrix-js-sdk';
+import { Feature, ServerSupport } from 'matrix-js-sdk/lib/feature';
 import { Page, PageContent, PageHeader } from '../../../components/page';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SequenceCardStyle } from '../styles.css';
@@ -34,13 +35,16 @@ export function DeveloperTools({ requestClose }: DeveloperToolsProps) {
   const [accountDataTypes, setAccountDataKeys] = useState(() =>
     Array.from(mx.store.accountData.keys())
   );
-
+  const accountDataDeletionSupported =
+    (mx.canSupport.get(Feature.AccountDataDeletion) ?? ServerSupport.Unsupported) !==
+    ServerSupport.Unsupported;
   useAccountDataCallback(
     mx,
     useCallback(() => {
       setAccountDataKeys(Array.from(mx.store.accountData.keys()));
     }, [mx])
   );
+
   const [extendedProfile, refreshExtendedProfile] = useExtendedProfile(userId);
 
   const [developerTools, setDeveloperTools] = useSetting(settingsAtom, 'developerTools');
@@ -51,6 +55,13 @@ export function DeveloperTools({ requestClose }: DeveloperToolsProps) {
   const submitAccountData: AccountDataSubmitCallback = useCallback(
     async (type, content) => {
       await mx.setAccountData(type as keyof AccountDataEvents, content);
+    },
+    [mx]
+  );
+
+  const deleteAccountData: AccountDataDeleteCallback = useCallback(
+    async (type) => {
+      await mx.deleteAccountData(type as keyof AccountDataEvents);
     },
     [mx]
   );
@@ -78,8 +89,13 @@ export function DeveloperTools({ requestClose }: DeveloperToolsProps) {
       return (
         <AccountDataEditor
           type={page.type ?? undefined}
-          content={page.type ? mx.getAccountData(page.type as keyof AccountDataEvents)?.getContent() : undefined}
+          content={
+            page.type
+              ? mx.getAccountData(page.type as keyof AccountDataEvents)?.getContent()
+              : undefined
+          }
           submitChange={submitAccountData}
+          submitDelete={accountDataDeletionSupported ? deleteAccountData : undefined}
           requestClose={handleClose}
         />
       );
