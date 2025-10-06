@@ -17,6 +17,7 @@ import { copyToClipboard } from '../../../utils/dom';
 import { AccountDataList } from './AccountDataList';
 import { useExtendedProfile } from '../../../hooks/useExtendedProfile';
 import { useAccountDataCallback } from '../../../hooks/useAccountDataCallback';
+import { CollapsibleCard } from '../../../components/CollapsibleCard';
 
 type DeveloperToolsPage =
   | { name: 'index' }
@@ -165,23 +166,29 @@ export function DeveloperTools({ requestClose }: DeveloperToolsProps) {
                   {developerTools && (
                     <Box direction="Column" gap="100">
                       <Text size="L400">Account Data</Text>
-                      <AccountDataList
-                        title="Account"
-                        description="Private data stored in your account."
+                      <CollapsibleCard
                         expand={globalExpand}
                         setExpand={setGlobalExpand}
-                        types={accountDataTypes}
-                        onSelect={(type) => setPage({ name: 'account-data', type })}
-                      />
-                      {extendedProfile && (
+                        title="Account"
+                        description="Private data stored in your account."
+                      >
                         <AccountDataList
-                          title="Profile"
-                          description="Public data attached to your Matrix profile."
+                          types={accountDataTypes}
+                          onSelect={(type) => setPage({ name: 'account-data', type })}
+                        />
+                      </CollapsibleCard>
+                      {extendedProfile && (
+                        <CollapsibleCard
                           expand={profileExpand}
                           setExpand={setProfileExpand}
-                          types={Object.keys(extendedProfile)}
-                          onSelect={(type) => setPage({ name: 'profile-field', type })}
-                        />
+                          title="Profile"
+                          description="Public data attached to your Matrix profile."
+                        >
+                          <AccountDataList
+                            types={Object.keys(extendedProfile)}
+                            onSelect={(type) => setPage({ name: 'profile-field', type })}
+                          />
+                        </CollapsibleCard>
                       )}
                     </Box>
                   )}

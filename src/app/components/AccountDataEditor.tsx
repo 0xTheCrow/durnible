@@ -195,8 +195,8 @@ function AccountDataEdit({
 type AccountDataViewProps = {
   type: string;
   defaultContent: string;
-  onEdit: () => void;
   requestClose: () => void;
+  onEdit?: () => void;
   submitDelete?: AccountDataDeleteCallback;
 };
 function AccountDataView({ type, defaultContent, onEdit, requestClose, submitDelete }: AccountDataViewProps) {
@@ -231,9 +231,11 @@ function AccountDataView({ type, defaultContent, onEdit, requestClose, submitDel
             required
           />
         </Box>
-        <Button variant="Secondary" size="400" radii="300" onClick={onEdit}>
-          <Text size="B400">Edit</Text>
-        </Button>
+        {onEdit && (
+          <Button variant="Secondary" size="400" radii="300" onClick={onEdit}>
+            <Text size="B400">Edit</Text>
+          </Button>
+        )}
         {submitDelete && (
           <Button
             variant="Critical"
@@ -269,7 +271,7 @@ function AccountDataView({ type, defaultContent, onEdit, requestClose, submitDel
 export type AccountDataEditorProps = {
   type?: string;
   content?: unknown;
-  submitChange: AccountDataSubmitCallback;
+  submitChange?: AccountDataSubmitCallback;
   submitDelete?: AccountDataDeleteCallback;
   requestClose: () => void;
 };
@@ -328,7 +330,7 @@ export function AccountDataEditor({
         </Box>
       </PageHeader>
       <Box grow="Yes" direction="Column">
-        {edit ? (
+        {(edit && submitChange) ? (
           <AccountDataEdit
             type={data.type}
             defaultContent={contentJSONStr}
@@ -340,8 +342,8 @@ export function AccountDataEditor({
           <AccountDataView
             type={data.type}
             defaultContent={contentJSONStr}
-            onEdit={() => setEdit(true)}
             requestClose={requestClose}
+            onEdit={submitChange ? () => setEdit(true) : undefined}
             submitDelete={submitDelete}
           />
         )}
