@@ -94,7 +94,7 @@ export function ProfileFieldContext<C>({
       Object.entries(fields).find(
         ([key, value]) =>
           // deep comparison is necessary here because field values can be any JSON type
-          deepCompare(fieldDefaults[key as keyof ExtendedProfile], value)
+          !deepCompare(fieldDefaults[key as keyof ExtendedProfile], value)
       ) !== undefined,
     [fields, fieldDefaults]
   );
