@@ -115,7 +115,7 @@ export function UserRoomProfile({ userId }: UserRoomProfileProps) {
             {timezone && <TimezoneChip timezone={timezone} />}
             {creator ? <CreatorChip /> : <PowerChip userId={userId} />}
             {userId !== myUserId && <MutualRoomsChip userId={userId} />}
-            {userId !== myUserId && <OptionsChip userId={userId} />}
+            {userId !== myUserId && <OptionsChip userId={userId} extendedProfile={extendedProfile ?? null} />}
           </Box>
         </Box>
         {ignored && <IgnoredUserAlert />}

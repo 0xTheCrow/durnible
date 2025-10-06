@@ -22,6 +22,10 @@ import {
   TooltipProvider,
   Tooltip,
   Badge,
+  Overlay,
+  OverlayBackdrop,
+  OverlayCenter,
+  Modal,
 } from 'folds';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { getMxIdServer } from '../../utils/matrix';
@@ -45,6 +49,10 @@ import { useIgnoredUsers } from '../../hooks/useIgnoredUsers';
 import { CutoutCard } from '../cutout-card';
 import { SettingTile } from '../setting-tile';
 import { useInterval } from '../../hooks/useInterval';
+import { TextViewer } from '../text-viewer';
+import { ExtendedProfile } from '../../hooks/useExtendedProfile';
+import { settingsAtom } from '../../state/settings';
+import { useSetting } from '../../state/hooks/settings';
 
 export function ServerChip({ server }: { server: string }) {
   const mx = useMatrixClient();
@@ -440,15 +448,24 @@ export function IgnoredUserAlert() {
   );
 }
 
-export function OptionsChip({ userId }: { userId: string }) {
+export function OptionsChip({
+  userId,
+  extendedProfile,
+}: {
+  userId: string;
+  extendedProfile: ExtendedProfile | null;
+}) {
   const mx = useMatrixClient();
-  const [cords, setCords] = useState<RectCords>();
+  const [developerToolsEnabled] = useSetting(settingsAtom, 'developerTools');
 
-  const open: MouseEventHandler<HTMLButtonElement> = (evt) => {
-    setCords(evt.currentTarget.getBoundingClientRect());
+  const [profileFieldsOpen, setProfileFieldsOpen] = useState(false);
+  const [menuCoords, setMenuCoords] = useState<RectCords>();
+
+  const openMenu: MouseEventHandler<HTMLButtonElement> = (evt) => {
+    setMenuCoords(evt.currentTarget.getBoundingClientRect());
   };
 
-  const close = () => setCords(undefined);
+  const closeMenu = () => setMenuCoords(undefined);
 
   const ignoredUsers = useIgnoredUsers();
   const ignored = ignoredUsers.includes(userId);
@@ -463,57 +480,96 @@ export function OptionsChip({ userId }: { userId: string }) {
   const ignoring = ignoreState.status === AsyncStatus.Loading;
 
   return (
-    <PopOut
-      anchor={cords}
-      position="Bottom"
-      align="Start"
-      offset={4}
-      content={
-        <FocusTrap
-          focusTrapOptions={{
-            initialFocus: false,
-            onDeactivate: close,
-            clickOutsideDeactivates: true,
-            escapeDeactivates: stopPropagation,
-            isKeyForward: (evt: KeyboardEvent) => isKeyHotkey('arrowdown', evt),
-            isKeyBackward: (evt: KeyboardEvent) => isKeyHotkey('arrowup', evt),
-          }}
-        >
-          <Menu>
-            <div style={{ padding: config.space.S100 }}>
-              <MenuItem
-                variant="Critical"
-                fill="None"
-                size="300"
-                radii="300"
-                onClick={() => {
-                  toggleIgnore();
-                  close();
-                }}
-                before={
-                  ignoring ? (
-                    <Spinner variant="Critical" size="50" />
-                  ) : (
-                    <Icon size="50" src={Icons.Prohibited} />
-                  )
-                }
-                disabled={ignoring}
-              >
-                <Text size="B300">{ignored ? 'Unblock User' : 'Block User'}</Text>
-              </MenuItem>
-            </div>
-          </Menu>
-        </FocusTrap>
-      }
-    >
-      <Chip variant="SurfaceVariant" radii="Pill" onClick={open} aria-pressed={!!cords}>
-        {ignoring ? (
-          <Spinner variant="Secondary" size="50" />
-        ) : (
-          <Icon size="50" src={Icons.HorizontalDots} />
-        )}
-      </Chip>
-    </PopOut>
+    <>
+      {extendedProfile && (
+        <Overlay open={profileFieldsOpen} backdrop={<OverlayBackdrop />}>
+          <OverlayCenter>
+            <FocusTrap
+              focusTrapOptions={{
+                clickOutsideDeactivates: true,
+                onDeactivate: () => setProfileFieldsOpen(false),
+                escapeDeactivates: stopPropagation,
+              }}
+            >
+              <Modal variant="Surface" size="500">
+                <TextViewer
+                  name="Profile Fields"
+                  langName="json"
+                  text={JSON.stringify(extendedProfile, null, 2)}
+                  requestClose={() => setProfileFieldsOpen(false)}
+                />
+              </Modal>
+            </FocusTrap>
+          </OverlayCenter>
+        </Overlay>
+      )}
+      <PopOut
+        anchor={menuCoords}
+        position="Bottom"
+        align="Start"
+        offset={4}
+        content={
+          <FocusTrap
+            focusTrapOptions={{
+              initialFocus: false,
+              onDeactivate: closeMenu,
+              clickOutsideDeactivates: true,
+              escapeDeactivates: stopPropagation,
+              isKeyForward: (evt: KeyboardEvent) => isKeyHotkey('arrowdown', evt),
+              isKeyBackward: (evt: KeyboardEvent) => isKeyHotkey('arrowup', evt),
+            }}
+          >
+            <Menu>
+              <div style={{ padding: config.space.S100 }}>
+                <MenuItem
+                  variant="Critical"
+                  fill="None"
+                  size="300"
+                  radii="300"
+                  onClick={() => {
+                    toggleIgnore();
+                    closeMenu();
+                  }}
+                  before={
+                    ignoring ? (
+                      <Spinner variant="Critical" size="50" />
+                    ) : (
+                      <Icon size="50" src={Icons.Prohibited} />
+                    )
+                  }
+                  disabled={ignoring}
+                >
+                  <Text size="B300">{ignored ? 'Unblock User' : 'Block User'}</Text>
+                </MenuItem>
+                {extendedProfile && developerToolsEnabled && (
+                  <MenuItem
+                    variant="Surface"
+                    fill="None"
+                    size="300"
+                    radii="300"
+                    onClick={() => {
+                      setProfileFieldsOpen(true);
+                      closeMenu();
+                    }}
+                    before={<Icon size="50" src={Icons.BlockCode} />}
+                  >
+                    <Text size="B300">View Profile Fields</Text>
+                  </MenuItem>
+                )}
+              </div>
+            </Menu>
+          </FocusTrap>
+        }
+      >
+        <Chip variant="SurfaceVariant" radii="Pill" onClick={openMenu} aria-pressed={!!menuCoords}>
+          {ignoring ? (
+            <Spinner variant="Secondary" size="50" />
+          ) : (
+            <Icon size="50" src={Icons.HorizontalDots} />
+          )}
+        </Chip>
+      </PopOut>
+    </>
   );
 }
 
@@ -555,8 +611,8 @@ export function TimezoneChip({ timezone }: { timezone: string }) {
       offset={5}
       align="Center"
       tooltip={
-        <Tooltip variant='SurfaceVariant' style={{ maxWidth: toRem(280) }}>
-          <Box direction="Column" alignItems='Start' gap="100">
+        <Tooltip variant="SurfaceVariant" style={{ maxWidth: toRem(280) }}>
+          <Box direction="Column" alignItems="Start" gap="100">
             <Box gap="100">
               <Text size="L400">Timezone:</Text>
               <Badge size="400" variant="Primary">
@@ -573,7 +629,7 @@ export function TimezoneChip({ timezone }: { timezone: string }) {
           ref={triggerRef}
           variant="SurfaceVariant"
           radii="Pill"
-          style={{ cursor: "initial" }}
+          style={{ cursor: 'initial' }}
           before={<Icon size="50" src={Icons.RecentClock} />}
         >
           <Text size="B300" truncate>
