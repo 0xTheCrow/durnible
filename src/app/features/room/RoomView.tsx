@@ -96,7 +96,7 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
 
   return (
     <Page ref={roomViewRef}>
-      <RoomViewHeader />
+      <RoomViewHeader onCallClick={() => setShowCall(true)} callJoined={callJoined} />
       <Box grow="Yes" direction="Row">
         {showCall && (
           <CallView
