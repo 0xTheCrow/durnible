@@ -40,7 +40,7 @@ const copyFiles = {
     },
     {
       src: 'node_modules/@element-hq/element-call-embedded/dist/*',
-      dest: './widgets/element-call/',
+      dest: 'widgets/element-call/',
     },
   ],
 };

@@ -105,7 +105,7 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
             onHangup={() => setCallJoined(false)}
           />
         )}
-        <Box grow="Yes" direction="Column" style={{ minWidth: 400 }}>
+        <Box grow="Yes" direction="Column" style={{ width: 350 }}>
           <Box grow="Yes" direction="Column">
             <RoomTimeline
               key={roomId}
