@@ -8,6 +8,7 @@ import {
   IPowerLevelsContent,
   IPushRule,
   IPushRules,
+  IThreadBundledRelationship,
   JoinRule,
   MatrixClient,
   MatrixEvent,
@@ -16,6 +17,7 @@ import {
   RelationType,
   Room,
   RoomMember,
+  THREAD_RELATION_TYPE,
 } from 'matrix-js-sdk';
 import { CryptoBackend } from 'matrix-js-sdk/lib/common-crypto/CryptoBackend';
 import { AccountDataEvent } from '../../types/matrix/accountData';
@@ -550,4 +552,14 @@ export const guessPerfectParent = (
   });
 
   return perfectParent;
+};
+
+export const getEventThreadDetail = (
+  mEvent: MatrixEvent
+): IThreadBundledRelationship | undefined => {
+  const details = mEvent.getServerAggregatedRelation<IThreadBundledRelationship>(
+    THREAD_RELATION_TYPE.name
+  );
+
+  return details;
 };
