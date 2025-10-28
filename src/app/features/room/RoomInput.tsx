@@ -326,6 +326,8 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
         plainText = rainbow(plainText);
         customHtml = rainbow(customHtml);
         msgType = MsgType.Emote;
+      } else if (commandName === Command.Html) {
+        customHtml = plainText;
       } else if (commandName === Command.Shrug) {
         plainText = `${SHRUG} ${plainText}`;
         customHtml = `${SHRUG} ${customHtml}`;

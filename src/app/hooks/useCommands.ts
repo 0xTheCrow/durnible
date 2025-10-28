@@ -142,6 +142,7 @@ export enum Command {
   Notice = 'notice',
   Rainbow = 'rainbow',
   RainbowMe = 'rainbowme',
+  Html = 'html',
   Shrug = 'shrug',
   StartDm = 'startdm',
   Join = 'join',
@@ -194,6 +195,11 @@ export const useCommands = (mx: MatrixClient, room: Room): CommandRecord => {
       [Command.RainbowMe]: {
         name: Command.RainbowMe,
         description: 'Send rainbow action message',
+        exe: async () => undefined,
+      },
+      [Command.Html]: {
+        name: Command.Html,
+        description: 'Send raw HTML message',
         exe: async () => undefined,
       },
       [Command.Shrug]: {
