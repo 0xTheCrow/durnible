@@ -140,6 +140,8 @@ export type CommandExe = (payload: string) => Promise<void>;
 export enum Command {
   Me = 'me',
   Notice = 'notice',
+  Rainbow = 'rainbow',
+  RainbowMe = 'rainbowme',
   Shrug = 'shrug',
   StartDm = 'startdm',
   Join = 'join',
@@ -182,6 +184,16 @@ export const useCommands = (mx: MatrixClient, room: Room): CommandRecord => {
       [Command.Notice]: {
         name: Command.Notice,
         description: 'Send notice message',
+        exe: async () => undefined,
+      },
+      [Command.Rainbow]: {
+        name: Command.Rainbow,
+        description: 'Send rainbow message',
+        exe: async () => undefined,
+      },
+      [Command.RainbowMe]: {
+        name: Command.RainbowMe,
+        description: 'Send rainbow action message',
         exe: async () => undefined,
       },
       [Command.Shrug]: {
