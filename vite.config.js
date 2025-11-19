@@ -38,6 +38,10 @@ const copyFiles = {
       src: 'public/locales',
       dest: 'public/',
     },
+    {
+      src: 'node_modules/@element-hq/element-call-embedded/dist/*',
+      dest: 'assets/element-call',
+    },
   ],
 };
 

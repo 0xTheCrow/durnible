@@ -69,6 +69,8 @@ import { useRoomNavigate } from '../../hooks/useRoomNavigate';
 import { useRoomCreators } from '../../hooks/useRoomCreators';
 import { useRoomPermissions } from '../../hooks/useRoomPermissions';
 import { InviteUserPrompt } from '../../components/invite-user-prompt';
+import { useElementCall } from '../../hooks/useElementCall';
+import { IApp } from '../../../types/widget';
 
 type RoomMenuProps = {
   room: Room;
@@ -254,7 +256,7 @@ const RoomMenu = forwardRef<HTMLDivElement, RoomMenuProps>(({ room, requestClose
   );
 });
 
-export function RoomViewHeader() {
+export function RoomViewHeader({ showWidget }: { showWidget: (widget: IApp) => void }) {
   const navigate = useNavigate();
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
@@ -276,6 +278,9 @@ export function RoomViewHeader() {
     : undefined;
 
   const [peopleDrawer, setPeopleDrawer] = useSetting(settingsAtom, 'isPeopleDrawer');
+
+  // Element Call integration
+  const elementCall = useElementCall(room, showWidget);
 
   const handleSearchClick = () => {
     const searchParams: _SearchPathSearchParams = {
@@ -387,6 +392,26 @@ export function RoomViewHeader() {
               )}
             </TooltipProvider>
           )}
+          <TooltipProvider
+            position="Bottom"
+            offset={4}
+            tooltip={
+              <Tooltip>
+                <Text>{elementCall.disabledReason ?? 'Video Call'}</Text>
+              </Tooltip>
+            }
+          >
+            {(triggerRef) => (
+              <IconButton
+                ref={triggerRef}
+                onClick={elementCall.startCall}
+                disabled={!elementCall.canCall || elementCall.isInitiating}
+                aria-label={elementCall.disabledReason ?? 'Video Call'}
+              >
+                <Icon size="400" src={Icons.Play} />
+              </IconButton>
+            )}
+          </TooltipProvider>
           <TooltipProvider
             position="Bottom"
             offset={4}

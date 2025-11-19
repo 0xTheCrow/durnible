@@ -17,6 +17,8 @@ import { RoomViewFollowing, RoomViewFollowingPlaceholder } from './RoomViewFollo
 import { Page } from '../../components/page';
 import { RoomViewHeader } from './RoomViewHeader';
 import { useKeyDown } from '../../hooks/useKeyDown';
+import { useWidget } from '../../hooks/useWidget';
+import { WidgetContainer } from '../../components/widget/WidgetContainer';
 import { editableActiveElement } from '../../utils/dom';
 import { settingsAtom } from '../../state/settings';
 import { useSetting } from '../../state/hooks/settings';
@@ -65,6 +67,9 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
   const { roomId } = room;
   const editor = useEditor();
 
+  // Widget support for Element Call
+  const { activeWidget, isWidgetVisible, showWidget, hideWidget, handleWidgetLoad } = useWidget();
+
   const mx = useMatrixClient();
 
   const tombstoneEvent = useStateEvent(room, StateEvent.RoomTombstone);
@@ -93,7 +98,7 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
 
   return (
     <Page ref={roomViewRef}>
-      <RoomViewHeader />
+      <RoomViewHeader showWidget={showWidget} />
       <Box grow="Yes" direction="Column">
         <RoomTimeline
           key={roomId}
@@ -137,6 +142,13 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
         </div>
         {hideActivity ? <RoomViewFollowingPlaceholder /> : <RoomViewFollowing room={room} />}
       </Box>
+      {isWidgetVisible && activeWidget && (
+        <WidgetContainer
+          widget={activeWidget}
+          onClose={hideWidget}
+          onLoad={handleWidgetLoad}
+        />
+      )}
     </Page>
   );
 }
