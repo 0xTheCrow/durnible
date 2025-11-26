@@ -357,7 +357,7 @@ export const RoomCard = as<'div', RoomCardProps>(
           </Button>
         )}
         {typeof joinedRoomId !== 'string' &&
-          joinState.status !== AsyncStatus.Error &&
+          knockState.status !== AsyncStatus.Error &&
           (action === 'knock' || action === 'knock_waiting') && (
             <Button
               onClick={knock}
@@ -408,7 +408,7 @@ export const RoomCard = as<'div', RoomCardProps>(
               message={knockState.error.message || 'Failed to send request to join. Unknown Error.'}
             />
           )}
-        {typeof joinedRoomId !== 'string' && action == 'invite_only' && (
+        {typeof joinedRoomId !== 'string' && action === 'invite_only' && (
           <Button disabled={true} variant="Secondary" size="300">
             <Text size="B300">Invite-only</Text>
           </Button>
