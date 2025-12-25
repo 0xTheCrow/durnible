@@ -1645,21 +1645,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@intee/core@npm:^0.2.0":
-  version: 0.2.0
-  resolution: "@intee/core@npm:0.2.0"
-  checksum: 10c0/da03615cef487e545db7cb08d4adc39463b32dc8de56293ebf0c319c11e503eaa6a261cff25a26dbf2354633d2d5647c5bb717399d2d32bece71c6ee04610086
+"@intee/core@npm:^0.2.1":
+  version: 0.2.1
+  resolution: "@intee/core@npm:0.2.1"
+  checksum: 10c0/8b6d9e2beeb18fccdb979f0f094b3203e9add1ff0f491082e7e6b0b15863d13bae35342fba188febaac0ba4fac24dccbbf6fb07900e4fd54ae7582a4941c10ea
   languageName: node
   linkType: hard
 
-"@intee/react@npm:^0.2.0":
-  version: 0.2.0
-  resolution: "@intee/react@npm:0.2.0"
+"@intee/react@npm:^0.2.1":
+  version: 0.2.1
+  resolution: "@intee/react@npm:0.2.1"
   peerDependencies:
-    "@intee/core": 0.2.0
+    "@intee/core": 0.2.1
     "@tanstack/react-query": 5
     react: ">=18.0.0"
-  checksum: 10c0/1a1d328b97f2b30b6bfc1bfdc6be3618ef27335951b6ea118ebbbe6a02edf07c4d5de7d1514125fc1116de91c62548c518569e656a3bee2432cdec12329a1cfd
+  checksum: 10c0/ca406720025a991e1d6f702eaafcc90b8eb7614fb431780275a4c6d568cfe315f7f2fd5b3892aab4e269c46c7fdcb217305b681df1ad5897fb42fc9a787f9bd1
   languageName: node
   linkType: hard
 
@@ -4864,8 +4864,8 @@ __metadata:
     "@atlaskit/pragmatic-drag-and-drop-hitbox": "npm:1.0.3"
     "@esbuild-plugins/node-globals-polyfill": "npm:0.2.3"
     "@fontsource/inter": "npm:4.5.14"
-    "@intee/core": "npm:^0.2.0"
-    "@intee/react": "npm:^0.2.0"
+    "@intee/core": "npm:^0.2.1"
+    "@intee/react": "npm:^0.2.1"
     "@rollup/plugin-inject": "npm:5.0.3"
     "@rollup/plugin-wasm": "npm:6.1.1"
     "@tanstack/react-query": "npm:5.24.1"
