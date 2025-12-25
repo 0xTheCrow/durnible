@@ -14,19 +14,19 @@ const i18n = new Internationalization(
     loader: () => en,
   },
   {
-    tag: 'zh-CN',
-    predicate: mean(startsWith('zh'), startsWith('zh-CN')),
-    loader: pick('default', () => import('./translations/zh-CN')),
-  },
-  {
     tag: 'zh-TW',
     predicate: mean(startsWith('zh-TW'), startsWith('zh-Hant')),
     loader: pick('default', () => import('./translations/zh-TW')),
   },
   {
     tag: 'zh-HK',
-    predicate: startsWith('zh-HK'),
+    predicate: mean(startsWith('zh-HK'), startsWith('zh-MO')),
     loader: pick('default', () => import('./translations/zh-HK')),
+  },
+  {
+    tag: 'zh-CN',
+    predicate: mean(startsWith('zh-CN'), startsWith('zh-Hans'), startsWith('zh')),
+    loader: pick('default', () => import('./translations/zh-CN')),
   },
   {
     tag: 'hi',
