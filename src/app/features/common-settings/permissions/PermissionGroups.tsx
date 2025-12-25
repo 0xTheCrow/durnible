@@ -19,6 +19,7 @@ import { StateEvent } from '../../../../types/matrix/room';
 import { PowerSwitcher } from '../../../components/power';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { useAlive } from '../../../hooks/useAlive';
+import { useTranslation } from '../../../internationalization';
 
 const USER_DEFAULT_LOCATION: PermissionLocation = {
   user: true,
@@ -34,6 +35,7 @@ export function PermissionGroups({
   permissionGroups,
   canEdit,
 }: PermissionGroupsProps) {
+  const [t] = useTranslation();
   const mx = useMatrixClient();
   const room = useRoom();
   const alive = useAlive();
@@ -42,7 +44,7 @@ export function PermissionGroups({
   const maxPower = useMemo(() => Math.max(...getPowers(powerLevelTags)), [powerLevelTags]);
 
   const [permissionUpdate, setPermissionUpdate] = useState<Map<PermissionLocation, number>>(
-    new Map()
+    new Map(),
   );
 
   useEffect(() => {
@@ -54,7 +56,7 @@ export function PermissionGroups({
   const handleChangePermission = (
     location: PermissionLocation,
     newPower: number,
-    currentPower: number
+    currentPower: number,
   ) => {
     setPermissionUpdate((p) => {
       const up: typeof p = new Map();
@@ -77,16 +79,16 @@ export function PermissionGroups({
           group.items.forEach((item) => {
             const power = getPermissionPower(powerLevels, item.location);
             applyPermissionPower(draftPowerLevels, item.location, power);
-          })
+          }),
         );
         permissionUpdate.forEach((power, location) =>
-          applyPermissionPower(draftPowerLevels, location, power)
+          applyPermissionPower(draftPowerLevels, location, power),
         );
 
         return draftPowerLevels;
       });
       await mx.sendStateEvent(room.roomId, StateEvent.RoomPowerLevels as any, editedPowerLevels);
-    }, [mx, room, powerLevels, permissionUpdate, permissionGroups])
+    }, [mx, room, powerLevels, permissionUpdate, permissionGroups]),
   );
 
   const resetChanges = useCallback(() => {
@@ -109,12 +111,12 @@ export function PermissionGroups({
     const powerUpdate = permissionUpdate.get(USER_DEFAULT_LOCATION);
     const value = powerUpdate ?? power;
 
-    const tag = getPowerLevelTag(powerLevelTags, value);
+    const tag = getPowerLevelTag(powerLevelTags, value, t);
     const powerChanges = value !== power;
 
     return (
       <Box direction="Column" gap="100">
-        <Text size="L400">Users</Text>
+        <Text size="L400">{t.Features.CommonSettings.Permissions.users}</Text>
         <SequenceCard
           variant="SurfaceVariant"
           className={SequenceCardStyle}
@@ -122,8 +124,8 @@ export function PermissionGroups({
           gap="400"
         >
           <SettingTile
-            title="Default Power"
-            description="Default power level for all users."
+            title={t.Features.CommonSettings.Permissions.defaultPower}
+            description={t.Features.CommonSettings.Permissions.defaultPowerDescription}
             after={
               <PowerSwitcher
                 powerLevelTags={powerLevelTags}
@@ -174,7 +176,7 @@ export function PermissionGroups({
             const powerUpdate = permissionUpdate.get(item.location);
             const value = powerUpdate ?? power;
 
-            const tag = getPowerLevelTag(powerLevelTags, value);
+            const tag = getPowerLevelTag(powerLevelTags, value, t);
             const powerChanges = value !== power;
 
             return (
@@ -220,7 +222,11 @@ export function PermissionGroups({
                           <Text size="B300" truncate>
                             {tag.name}
                           </Text>
-                          {value < maxPower && <Text size="T200">& Above</Text>}
+                          {value < maxPower && (
+                            <Text size="T200">
+                              {t.Features.CommonSettings.Permissions.andAbove}
+                            </Text>
+                          )}
                         </Chip>
                       )}
                     </PowerSwitcher>
@@ -249,11 +255,11 @@ export function PermissionGroups({
             <Box grow="Yes" direction="Column">
               {applyState.status === AsyncStatus.Error ? (
                 <Text size="T200">
-                  <b>Failed to apply changes! Please try again.</b>
+                  <b>{t.Features.CommonSettings.Permissions.failedToApply}</b>
                 </Text>
               ) : (
                 <Text size="T200">
-                  <b>Changes saved! Apply when ready.</b>
+                  <b>{t.Features.CommonSettings.Permissions.changesSaved}</b>
                 </Text>
               )}
             </Box>
@@ -266,7 +272,7 @@ export function PermissionGroups({
                 disabled={applyingChanges}
                 onClick={resetChanges}
               >
-                <Text size="B300">Reset</Text>
+                <Text size="B300">{t.Features.CommonSettings.Permissions.reset}</Text>
               </Button>
               <Button
                 size="300"
@@ -276,7 +282,7 @@ export function PermissionGroups({
                 before={applyingChanges && <Spinner variant="Success" fill="Solid" size="100" />}
                 onClick={handleApplyChanges}
               >
-                <Text size="B300">Apply Changes</Text>
+                <Text size="B300">{t.Features.CommonSettings.Permissions.applyChanges}</Text>
               </Button>
             </Box>
           </Box>

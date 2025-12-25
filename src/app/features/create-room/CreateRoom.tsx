@@ -212,8 +212,8 @@ export function CreateRoomForm({ defaultKind, space, onCreate }: CreateRoomFormP
               gap="500"
             >
               <SettingTile
-                title="End-to-End Encryption"
-                description="Once this feature is enabled, it can't be disabled after the room is created."
+                title={t.CreateRoom.endToEndEncryption}
+                description={t.CreateRoom.endToEndEncryptionDescription}
                 after={
                   <Switch
                     variant="Primary"
@@ -232,8 +232,8 @@ export function CreateRoomForm({ defaultKind, space, onCreate }: CreateRoomFormP
                 gap="500"
               >
                 <SettingTile
-                  title="Knock to Join"
-                  description="Anyone can send request to join this room."
+                  title={t.CreateRoom.knockToJoin}
+                  description={t.CreateRoom.knockToJoinRoomDescription}
                   after={
                     <Switch
                       variant="Primary"
@@ -255,8 +255,8 @@ export function CreateRoomForm({ defaultKind, space, onCreate }: CreateRoomFormP
           gap="500"
         >
           <SettingTile
-            title="Allow Federation"
-            description="Users from other servers can join."
+            title={t.CreateRoom.allowFederation}
+            description={t.CreateRoom.allowFederationDescription}
             after={
               <Switch
                 variant="Primary"

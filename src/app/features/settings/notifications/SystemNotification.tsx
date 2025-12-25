@@ -60,16 +60,16 @@ function EmailNotification() {
         <>
           {result && !result.email && (
             <Text as="span" style={{ color: color.Critical.Main }} size="T200">
-              Your account does not have any email attached.
+              {t.SystemNotification.noEmailAttached}
             </Text>
           )}
-          {result && result.email && <>Send notification to your email. {`("${result.email}")`}</>}
+          {result && result.email && <>{t.SystemNotification.sendNotificationToEmailWithAddress(result.email)}</>}
           {result === null && (
             <Text as="span" style={{ color: color.Critical.Main }} size="T200">
-              Unexpected Error!
+              {t.SystemNotification.unexpectedError}
             </Text>
           )}
-          {result === undefined && 'Send notification to your email.'}
+          {result === undefined && t.SystemNotification.sendNotificationToEmail}
         </>
       }
       after={
@@ -118,7 +118,7 @@ export function SystemNotification() {
                   : 'Notifications are not supported by the system.'}
               </Text>
             ) : (
-              <span>Show desktop notifications when message arrive.</span>
+              <span>{t.SystemNotification.desktopNotificationsDescription}</span>
             )
           }
           after={
@@ -144,7 +144,7 @@ export function SystemNotification() {
       >
         <SettingTile
           title={t.SystemNotification.notificationSound}
-          description="Play sound when new message arrive."
+          description={t.SystemNotification.notificationSoundDescription}
           after={<Switch value={isNotificationSounds} onChange={setIsNotificationSounds} />}
         />
       </SequenceCard>

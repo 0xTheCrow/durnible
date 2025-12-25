@@ -17,6 +17,7 @@ import {
   useNotificationModeActions,
 } from '../../../hooks/useNotificationMode';
 import { NotificationModeSwitcher } from './NotificationModeSwitcher';
+import { useTranslation } from '../../../internationalization';
 
 const NOTIFY_MODE_OPS: NotificationModeOptions = {
   highlight: true,
@@ -112,6 +113,7 @@ function MentionModeSwitcher({ ruleId, pushRules, defaultPushRuleData }: PushRul
 }
 
 export function SpecialMessagesNotifications() {
+  const [t] = useTranslation();
   const mx = useMatrixClient();
   const userId = mx.getUserId()!;
   const { displayName } = useUserProfile(userId);
@@ -124,9 +126,9 @@ export function SpecialMessagesNotifications() {
   return (
     <Box direction="Column" gap="100">
       <Box alignItems="Center" justifyContent="SpaceBetween" gap="200">
-        <Text size="L400">Special Messages</Text>
+        <Text size="L400">{t.NotificationsPage.specialMessages}</Text>
         <Box gap="100">
-          <Text size="T200">Badge: </Text>
+          <Text size="T200">{t.NotificationsPage.badge}</Text>
           <Badge radii="300" variant="Success" fill="Solid">
             <Text size="L400">1</Text>
           </Badge>
@@ -139,7 +141,7 @@ export function SpecialMessagesNotifications() {
         gap="400"
       >
         <SettingTile
-          title={`Mention User ID ("${userId}")`}
+          title={t.NotificationsPage.mentionUserId(userId)}
           after={
             <MentionModeSwitcher
               pushRules={pushRules}
@@ -156,7 +158,7 @@ export function SpecialMessagesNotifications() {
         gap="400"
       >
         <SettingTile
-          title={`Contains Displayname ${displayName ? `("${displayName}")` : ''}`}
+          title={t.NotificationsPage.containsDisplayname(displayName)}
           after={
             <MentionModeSwitcher
               pushRules={pushRules}
@@ -173,7 +175,7 @@ export function SpecialMessagesNotifications() {
         gap="400"
       >
         <SettingTile
-          title={`Contains Username ("${getMxIdLocalPart(userId)}")`}
+          title={t.NotificationsPage.containsUsername(getMxIdLocalPart(userId) ?? userId)}
           after={
             <MentionModeSwitcher
               pushRules={pushRules}
@@ -190,7 +192,7 @@ export function SpecialMessagesNotifications() {
         gap="400"
       >
         <SettingTile
-          title="Mention @room"
+          title={t.NotificationsPage.mentionRoom}
           after={
             <MentionModeSwitcher
               pushRules={pushRules}
@@ -207,7 +209,7 @@ export function SpecialMessagesNotifications() {
         gap="400"
       >
         <SettingTile
-          title="Contains @room"
+          title={t.NotificationsPage.containsAtRoom}
           after={
             <MentionModeSwitcher
               pushRules={pushRules}

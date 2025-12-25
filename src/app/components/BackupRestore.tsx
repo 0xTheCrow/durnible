@@ -36,6 +36,8 @@ type BackupStatusProps = {
   enabled: boolean;
 };
 function BackupStatus({ enabled }: BackupStatusProps) {
+  const [t] = useTranslation();
+
   return (
     <Box as="span" gap="100" alignItems="Center">
       <Badge variant={enabled ? 'Success' : 'Critical'} fill="Solid" size="200" radii="Pill" />
@@ -44,7 +46,7 @@ function BackupStatus({ enabled }: BackupStatusProps) {
         size="L400"
         style={{ color: enabled ? color.Success.Main : color.Critical.Main }}
       >
-        {enabled ? 'Connected' : 'Disconnected'}
+        {enabled ? t.BackupRestore.connected : t.BackupRestore.disconnected}
       </Text>
     </Box>
   );
@@ -53,21 +55,25 @@ type BackupSyncingProps = {
   count: number;
 };
 function BackupSyncing({ count }: BackupSyncingProps) {
+  const [t] = useTranslation();
+
   return (
     <Box as="span" gap="100" alignItems="Center">
       <Spinner size="50" variant="Primary" fill="Soft" />
       <Text as="span" size="L400" style={{ color: color.Primary.Main }}>
-        Syncing ({count})
+        {t.BackupRestore.syncing(count)}
       </Text>
     </Box>
   );
 }
 
 function BackupProgressFetching() {
+  const [t] = useTranslation();
+
   return (
     <Box grow="Yes" gap="200" alignItems="Center">
       <Badge variant="Secondary" fill="Solid" radii="300">
-        <Text size="L400">Restoring: 0%</Text>
+        <Text size="L400">{t.BackupRestore.restoringFetching}</Text>
       </Badge>
       <Box grow="Yes" direction="Column">
         <ProgressBar variant="Secondary" size="300" min={0} max={1} value={0} />
@@ -82,10 +88,13 @@ type BackupProgressProps = {
   downloaded: number;
 };
 function BackupProgress({ total, downloaded }: BackupProgressProps) {
+  const [t] = useTranslation();
+  const percentage = Math.round(percent(0, total, downloaded));
+
   return (
     <Box grow="Yes" gap="200" alignItems="Center">
       <Badge variant="Secondary" fill="Solid" radii="300">
-        <Text size="L400">Restoring: {`${Math.round(percent(0, total, downloaded))}%`}</Text>
+        <Text size="L400">{t.BackupRestore.restoring(percentage)}</Text>
       </Badge>
       <Box grow="Yes" direction="Column">
         <ProgressBar variant="Secondary" size="300" min={0} max={total} value={downloaded} />
@@ -104,6 +113,7 @@ type BackupTrustInfoProps = {
   backupInfo: KeyBackupInfo;
 };
 function BackupTrustInfo({ crypto, backupInfo }: BackupTrustInfoProps) {
+  const [t] = useTranslation();
   const trust = useKeyBackupTrust(crypto, backupInfo);
 
   if (!trust) return null;
@@ -112,20 +122,20 @@ function BackupTrustInfo({ crypto, backupInfo }: BackupTrustInfoProps) {
     <Box direction="Column">
       {trust.matchesDecryptionKey ? (
         <Text size="T200" style={{ color: color.Success.Main }}>
-          <b>Backup has trusted decryption key.</b>
+          <b>{t.BackupRestore.hasTrustedDecryptionKey}</b>
         </Text>
       ) : (
         <Text size="T200" style={{ color: color.Critical.Main }}>
-          <b>Backup does not have trusted decryption key!</b>
+          <b>{t.BackupRestore.noTrustedDecryptionKey}</b>
         </Text>
       )}
       {trust.trusted ? (
         <Text size="T200" style={{ color: color.Success.Main }}>
-          <b>Backup has trusted by signature.</b>
+          <b>{t.BackupRestore.hasTrustedSignature}</b>
         </Text>
       ) : (
         <Text size="T200" style={{ color: color.Critical.Main }}>
-          <b>Backup does not have trusted signature!</b>
+          <b>{t.BackupRestore.noTrustedSignature}</b>
         </Text>
       )}
     </Box>
@@ -253,7 +263,7 @@ export function BackupRestoreTile({ crypto }: BackupRestoreTileProps) {
       )}
       {!backupEnabled && backupInfo === null && (
         <Text size="T200" style={{ color: color.Critical.Main }}>
-          <b>No backup present on server!</b>
+          <b>{t.BackupRestore.noBackupPresent}</b>
         </Text>
       )}
       {!syncFailure && !backupEnabled && backupInfo && (

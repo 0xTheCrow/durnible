@@ -35,13 +35,16 @@ import { stopPropagation } from '../../utils/keyboard';
 import { SyncStatus } from './SyncStatus';
 import { AuthMetadataProvider } from '../../hooks/useAuthMetadata';
 import { getFallbackSession } from '../../state/sessions';
+import { useTranslation } from '../../internationalization';
 
 function ClientRootLoading() {
+  const [t] = useTranslation();
+
   return (
     <SplashScreen>
       <Box direction="Column" grow="Yes" alignItems="Center" justifyContent="Center" gap="400">
         <Spinner variant="Secondary" size="600" />
-        <Text>Heating up</Text>
+        <Text>{t.ConfigConfig.loading}</Text>
       </Box>
     </SplashScreen>
   );
@@ -142,6 +145,7 @@ type ClientRootProps = {
   children: ReactNode;
 };
 export function ClientRoot({ children }: ClientRootProps) {
+  const [t] = useTranslation();
   const [loading, setLoading] = useState(true);
   const { baseUrl } = getFallbackSession() ?? {};
 
@@ -192,14 +196,14 @@ export function ClientRoot({ children }: ClientRootProps) {
             <Dialog>
               <Box direction="Column" gap="400" style={{ padding: config.space.S400 }}>
                 {loadState.status === AsyncStatus.Error && (
-                  <Text>{`Failed to load. ${loadState.error.message}`}</Text>
+                  <Text>{`${t.ClientRoot.failedToLoad} ${loadState.error.message}`}</Text>
                 )}
                 {startState.status === AsyncStatus.Error && (
-                  <Text>{`Failed to start. ${startState.error.message}`}</Text>
+                  <Text>{`${t.ClientRoot.failedToStart} ${startState.error.message}`}</Text>
                 )}
                 <Button variant="Critical" onClick={mx ? () => startMatrix(mx) : loadMatrix}>
                   <Text as="span" size="B400">
-                    Retry
+                    {t.ClientRoot.retry}
                   </Text>
                 </Button>
               </Box>

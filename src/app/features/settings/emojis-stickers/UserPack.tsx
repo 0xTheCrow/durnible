@@ -8,11 +8,13 @@ import { ImagePack, ImageUsage } from '../../../plugins/custom-emoji';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { mxcUrlToHttp } from '../../../utils/matrix';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
+import { useTranslation } from '../../../internationalization';
 
 type UserPackProps = {
   onViewPack: (imagePack: ImagePack) => void;
 };
 export function UserPack({ onViewPack }: UserPackProps) {
+  const [t] = useTranslation();
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
 
@@ -31,7 +33,7 @@ export function UserPack({ onViewPack }: UserPackProps) {
 
   return (
     <Box direction="Column" gap="100">
-      <Text size="L400">Default Pack</Text>
+      <Text size="L400">{t.Features.CommonSettings.EmojisStickers.defaultPack}</Text>
       <SequenceCard
         className={SequenceCardStyle}
         variant="SurfaceVariant"

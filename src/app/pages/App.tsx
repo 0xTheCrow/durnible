@@ -14,7 +14,7 @@ import { ScreenSizeProvider, useScreenSize } from '../hooks/useScreenSize';
 import { useCompositionEndTracking } from '../hooks/useComposingCheck';
 
 import { Provider as InternationalizationProvider, context } from '../internationalization';
-import { getSettings, settingsAtom } from '../state/settings';
+import { settingsAtom } from '../state/settings';
 
 const queryClient = new QueryClient();
 
@@ -71,11 +71,8 @@ function AppContent() {
 }
 
 function App() {
-  const initialSettings = getSettings();
-  const initialLanguageTags = initialSettings.languageTag ? [initialSettings.languageTag] : undefined;
-
   return (
-    <InternationalizationProvider tags={initialLanguageTags}>
+    <InternationalizationProvider>
       <AppContent />
     </InternationalizationProvider>
   );

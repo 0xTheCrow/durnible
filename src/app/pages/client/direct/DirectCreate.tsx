@@ -63,7 +63,7 @@ export function DirectCreate() {
                   <PageHero
                     icon={<Icon size="600" src={Icons.Mention} />}
                     title={t.Sidebar.Direct.createChat}
-                    subTitle="Start a private, encrypted chat by entering a user ID."
+                    subTitle={t.Sidebar.Direct.createChatDescription}
                   />
                   <CreateChat defaultUserId={userId} />
                 </Box>

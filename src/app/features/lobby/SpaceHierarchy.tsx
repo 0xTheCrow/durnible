@@ -18,6 +18,7 @@ import { RoomType, StateEvent } from '../../../types/matrix/room';
 import { SequenceCard } from '../../components/sequence-card';
 import { getRoomCreatorsForRoomId } from '../../hooks/useRoomCreators';
 import { getRoomPermissionsAPI } from '../../hooks/useRoomPermissions';
+import { useTranslation } from '../../internationalization';
 
 type SpaceHierarchyProps = {
   summary: IHierarchyRoom | undefined;
@@ -65,6 +66,7 @@ export const SpaceHierarchy = forwardRef<HTMLDivElement, SpaceHierarchyProps>(
     },
     ref
   ) => {
+    const [t] = useTranslation();
     const mx = useMatrixClient();
 
     const { fetching, error, rooms } = useFetchSpaceHierarchyLevel(spaceItem.roomId, true);
@@ -217,10 +219,10 @@ export const SpaceHierarchy = forwardRef<HTMLDivElement, SpaceHierarchyProps>(
                 gap="100"
               >
                 <Text size="H5" align="Center">
-                  No Rooms
+                  {t.Pages.Space.noRoomsTitle}
                 </Text>
                 <Text align="Center" size="T300" priority="300">
-                  This space does not contains rooms yet.
+                  {t.Pages.Space.noRoomsDescription}
                 </Text>
               </Box>
             </SequenceCard>

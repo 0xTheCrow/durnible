@@ -11,8 +11,10 @@ import { UnreadBadge } from '../../../components/unread-badge';
 import { allInvitesAtom } from '../../../state/room-list/inviteList';
 import { useNavToActivePathMapper } from '../../../hooks/useNavToActivePathMapper';
 import { PageNav, PageNavContent, PageNavHeader } from '../../../components/page';
+import { useTranslation } from '../../../internationalization';
 
 function InvitesNavItem() {
+  const [t] = useTranslation();
   const invitesSelected = useInboxInvitesSelected();
   const allInvites = useAtomValue(allInvitesAtom);
   const inviteCount = allInvites.length;
@@ -32,7 +34,7 @@ function InvitesNavItem() {
             </Avatar>
             <Box as="span" grow="Yes">
               <Text as="span" size="Inherit" truncate>
-                Invites
+                {t.Pages.Invites.title}
               </Text>
             </Box>
             {inviteCount > 0 && <UnreadBadge highlight count={inviteCount} />}
@@ -44,6 +46,7 @@ function InvitesNavItem() {
 }
 
 export function Inbox() {
+  const [t] = useTranslation();
   useNavToActivePathMapper('inbox');
   const notificationsSelected = useInboxNotificationsSelected();
 
@@ -53,7 +56,7 @@ export function Inbox() {
         <Box grow="Yes" gap="300">
           <Box grow="Yes">
             <Text size="H4" truncate>
-              Inbox
+              {t.Sidebar.Inbox.title}
             </Text>
           </Box>
         </Box>
@@ -71,7 +74,7 @@ export function Inbox() {
                     </Avatar>
                     <Box as="span" grow="Yes">
                       <Text as="span" size="Inherit" truncate>
-                        Notifications
+                        {t.Pages.Notifications.title}
                       </Text>
                     </Box>
                   </Box>

@@ -308,7 +308,11 @@ function PageZoomInput() {
 
 function SelectLanguage() {
   const [t] = useTranslation();
-  const [, setLanguages, currentTag] = useContext(context)!;
+  const contextValue = React.useContext(context);
+  if (!contextValue) {
+    throw new Error('Internationalization context is not available');
+  }
+  const [, setLanguages, currentTag] = contextValue;
   const [menuCords, setMenuCords] = useState<RectCords>();
   const [languageTag, setLanguageTag] = useSetting(settingsAtom, 'languageTag');
 

@@ -8,6 +8,7 @@ import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { isUserId } from '../../../utils/matrix';
 import { useIgnoredUsers } from '../../../hooks/useIgnoredUsers';
 import { useAlive } from '../../../hooks/useAlive';
+import { useTranslation } from '../../../internationalization';
 
 function IgnoreUserInput({ userList }: { userList: string[] }) {
   const mx = useMatrixClient();
@@ -129,12 +130,13 @@ function IgnoredUserChip({ userId, userList }: { userId: string; userList: strin
 }
 
 export function IgnoredUserList() {
+  const [t] = useTranslation();
   const ignoredUsers = useIgnoredUsers();
 
   return (
     <Box direction="Column" gap="100">
       <Box alignItems="Center" justifyContent="SpaceBetween" gap="200">
-        <Text size="L400">Blocked Users</Text>
+        <Text size="L400">{t.Settings.Account.IgnoredUsers.title}</Text>
       </Box>
       <SequenceCard
         className={SequenceCardStyle}
@@ -143,14 +145,14 @@ export function IgnoredUserList() {
         gap="400"
       >
         <SettingTile
-          title="Select User"
-          description="Prevent receiving messages or invites from user by adding their userId."
+          title={t.Settings.Account.IgnoredUsers.selectUser}
+          description={t.Settings.Account.IgnoredUsers.description}
         >
           <Box direction="Column" gap="300">
             <IgnoreUserInput userList={ignoredUsers} />
             {ignoredUsers.length > 0 && (
               <Box direction="Inherit" gap="100">
-                <Text size="L400">Users</Text>
+                <Text size="L400">{t.Settings.Account.IgnoredUsers.users}</Text>
                 <Box wrap="Wrap" gap="200">
                   {ignoredUsers.map((userId) => (
                     <IgnoredUserChip key={userId} userId={userId} userList={ignoredUsers} />

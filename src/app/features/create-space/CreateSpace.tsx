@@ -39,6 +39,7 @@ import {
   useAdditionalCreators,
 } from '../../components/create-room';
 import { RoomType } from '../../../types/matrix/room';
+import { useTranslation } from '../../internationalization';
 
 const getCreateSpaceKindToIcon = (kind: CreateRoomKind) => {
   if (kind === CreateRoomKind.Private) return Icons.SpaceLock;
@@ -52,6 +53,7 @@ type CreateSpaceFormProps = {
   onCreate?: (roomId: string) => void;
 };
 export function CreateSpaceForm({ defaultKind, space, onCreate }: CreateSpaceFormProps) {
+  const [t] = useTranslation();
   const mx = useMatrixClient();
   const alive = useAlive();
 
@@ -138,7 +140,7 @@ export function CreateSpaceForm({ defaultKind, space, onCreate }: CreateSpaceFor
   return (
     <Box as="form" onSubmit={handleSubmit} grow="Yes" direction="Column" gap="500">
       <Box direction="Column" gap="100">
-        <Text size="L400">Access</Text>
+        <Text size="L400">{t.CreateRoom.access}</Text>
         <CreateRoomKindSelector
           value={kind}
           onSelect={setKind}
@@ -148,7 +150,7 @@ export function CreateSpaceForm({ defaultKind, space, onCreate }: CreateSpaceFor
         />
       </Box>
       <Box shrink="No" direction="Column" gap="100">
-        <Text size="L400">Name</Text>
+        <Text size="L400">{t.CreateRoom.name}</Text>
         <Input
           required
           before={<Icon size="100" src={getCreateSpaceKindToIcon(kind)} />}
@@ -162,7 +164,7 @@ export function CreateSpaceForm({ defaultKind, space, onCreate }: CreateSpaceFor
         />
       </Box>
       <Box shrink="No" direction="Column" gap="100">
-        <Text size="L400">Topic (Optional)</Text>
+        <Text size="L400">{t.CreateRoom.topic}</Text>
         <TextArea
           name="topicTextAria"
           size="500"
@@ -176,7 +178,7 @@ export function CreateSpaceForm({ defaultKind, space, onCreate }: CreateSpaceFor
 
       <Box shrink="No" direction="Column" gap="100">
         <Box gap="200" alignItems="End">
-          <Text size="L400">Options</Text>
+          <Text size="L400">{t.CreateRoom.options}</Text>
           <Box grow="Yes" justifyContent="End">
             <Chip
               radii="Pill"
@@ -184,7 +186,7 @@ export function CreateSpaceForm({ defaultKind, space, onCreate }: CreateSpaceFor
               onClick={() => setAdvance(!advance)}
               type="button"
             >
-              <Text size="T200">Advanced Options</Text>
+              <Text size="T200">{t.CreateRoom.advancedOptions}</Text>
             </Chip>
           </Box>
         </Box>
@@ -210,8 +212,8 @@ export function CreateSpaceForm({ defaultKind, space, onCreate }: CreateSpaceFor
             gap="500"
           >
             <SettingTile
-              title="Knock to Join"
-              description="Anyone can send request to join this space."
+              title={t.CreateRoom.knockToJoin}
+              description={t.CreateRoom.knockToJoinSpaceDescription}
               after={
                 <Switch variant="Primary" value={knock} onChange={setKnock} disabled={disabled} />
               }
@@ -226,8 +228,8 @@ export function CreateSpaceForm({ defaultKind, space, onCreate }: CreateSpaceFor
           gap="500"
         >
           <SettingTile
-            title="Allow Federation"
-            description="Users from other servers can join."
+            title={t.CreateRoom.allowFederation}
+            description={t.CreateRoom.allowFederationDescription}
             after={
               <Switch
                 variant="Primary"
@@ -271,7 +273,7 @@ export function CreateSpaceForm({ defaultKind, space, onCreate }: CreateSpaceFor
           disabled={disabled}
           before={loading && <Spinner variant="Primary" fill="Solid" size="200" />}
         >
-          <Text size="B500">Create</Text>
+          <Text size="B500">{t.CreateRoom.create}</Text>
         </Button>
       </Box>
     </Box>

@@ -17,19 +17,22 @@ import FocusTrap from 'focus-trap-react';
 import { NotificationMode, useNotificationActionsMode } from '../../../hooks/useNotificationMode';
 import { stopPropagation } from '../../../utils/keyboard';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
+import { useTranslation } from '../../../internationalization';
 
 export const useNotificationModes = (): NotificationMode[] =>
   useMemo(() => [NotificationMode.NotifyLoud, NotificationMode.Notify, NotificationMode.OFF], []);
 
-const useNotificationModeStr = (): Record<NotificationMode, string> =>
-  useMemo(
+const useNotificationModeStr = (): Record<NotificationMode, string> => {
+  const [t] = useTranslation();
+  return useMemo(
     () => ({
-      [NotificationMode.OFF]: 'Disable',
-      [NotificationMode.Notify]: 'Notify Silent',
-      [NotificationMode.NotifyLoud]: 'Notify Loud',
+      [NotificationMode.OFF]: t.NotificationsPage.disable,
+      [NotificationMode.Notify]: t.NotificationsPage.notifySilent,
+      [NotificationMode.NotifyLoud]: t.NotificationsPage.notifyLoud,
     }),
-    []
+    [t]
   );
+};
 
 type NotificationModeSwitcherProps = {
   pushRule: IPushRule;

@@ -134,8 +134,8 @@ export function RoomJoinRules({ permissions }: RoomJoinRulesProps) {
         title={room.isSpaceRoom() ? t.CreateRoom.spaceAccess : t.CreateRoom.roomAccess}
         description={
           room.isSpaceRoom()
-            ? 'Change how people can join the space.'
-            : 'Change how people can join the room.'
+            ? t.CreateRoom.spaceJoinRulesDescription
+            : t.CreateRoom.roomJoinRulesDescription
         }
         after={
           <JoinRulesSwitcher

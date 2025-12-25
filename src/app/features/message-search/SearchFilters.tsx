@@ -39,6 +39,7 @@ import {
 import { DebounceOptions, useDebounce } from '../../hooks/useDebounce';
 import { VirtualTile } from '../../components/virtualizer';
 import { stopPropagation } from '../../utils/keyboard';
+import { useTranslation } from '../../internationalization';
 
 type OrderButtonProps = {
   order?: string;
@@ -127,6 +128,7 @@ type SelectRoomButtonProps = {
   onChange: (rooms?: string[]) => void;
 };
 function SelectRoomButton({ roomList, selectedRooms, onChange }: SelectRoomButtonProps) {
+  const [t] = useTranslation();
   const mx = useMatrixClient();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [menuAnchor, setMenuAnchor] = useState<RectCords>();
@@ -238,11 +240,15 @@ function SelectRoomButton({ roomList, selectedRooms, onChange }: SelectRoomButto
                     paddingRight: 0,
                   }}
                 >
-                  {!searchResult && <Text size="L400">Rooms</Text>}
-                  {searchResult && <Text size="L400">{`Rooms for "${searchResult.query}"`}</Text>}
+                  {!searchResult && <Text size="L400">{t.Features.Room.MessageSearch.rooms}</Text>}
+                  {searchResult && (
+                    <Text size="L400">
+                      {t.Features.Room.MessageSearch.roomsForQuery(searchResult.query)}
+                    </Text>
+                  )}
                   {searchResult && searchResult.items.length === 0 && (
                     <Text style={{ padding: config.space.S400 }} size="T300" align="Center">
-                      No match found!
+                      {t.Features.Room.MessageSearch.noMatchFound}
                     </Text>
                   )}
                   <div

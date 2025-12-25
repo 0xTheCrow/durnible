@@ -14,6 +14,7 @@ import {
   useNotificationModeActions,
 } from '../../../hooks/useNotificationMode';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
+import { useTranslation } from '../../../internationalization';
 
 const getAllMessageDefaultRule = (
   ruleId: RuleId,
@@ -73,6 +74,7 @@ function AllMessagesModeSwitcher({
 }
 
 export function AllMessagesNotifications() {
+  const [t] = useTranslation();
   const pushRulesEvt = useAccountData(AccountDataEvent.PushRules);
   const pushRules = useMemo(
     () => pushRulesEvt?.getContent<IPushRules>() ?? { global: {} },
@@ -82,9 +84,9 @@ export function AllMessagesNotifications() {
   return (
     <Box direction="Column" gap="100">
       <Box alignItems="Center" justifyContent="SpaceBetween" gap="200">
-        <Text size="L400">All Messages</Text>
+        <Text size="L400">{t.NotificationsPage.allMessages}</Text>
         <Box gap="100">
-          <Text size="T200">Badge: </Text>
+          <Text size="T200">{t.NotificationsPage.badge}</Text>
           <Badge radii="300" variant="Secondary" fill="Solid">
             <Text size="L400">1</Text>
           </Badge>
@@ -97,7 +99,7 @@ export function AllMessagesNotifications() {
         gap="400"
       >
         <SettingTile
-          title="1-to-1 Chats"
+          title={t.NotificationsPage.oneToOneDm}
           after={<AllMessagesModeSwitcher pushRules={pushRules} ruleId={RuleId.DM} oneToOne />}
         />
       </SequenceCard>
@@ -108,7 +110,7 @@ export function AllMessagesNotifications() {
         gap="400"
       >
         <SettingTile
-          title="1-to-1 Chats (Encrypted)"
+          title={t.NotificationsPage.oneToOneDmEncrypted}
           after={
             <AllMessagesModeSwitcher
               pushRules={pushRules}
@@ -126,7 +128,7 @@ export function AllMessagesNotifications() {
         gap="400"
       >
         <SettingTile
-          title="Rooms"
+          title={t.NotificationsPage.rooms}
           after={<AllMessagesModeSwitcher pushRules={pushRules} ruleId={RuleId.Message} />}
         />
       </SequenceCard>
@@ -137,7 +139,7 @@ export function AllMessagesNotifications() {
         gap="400"
       >
         <SettingTile
-          title="Rooms (Encrypted)"
+          title={t.NotificationsPage.roomsEncrypted}
           after={
             <AllMessagesModeSwitcher
               pushRules={pushRules}
