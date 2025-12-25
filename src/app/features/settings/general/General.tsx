@@ -76,7 +76,7 @@ const ThemeSelector = as<'div', ThemeSelectorProps>(
         ))}
       </Box>
     </Menu>
-  )
+  ),
 );
 
 function SelectTheme({ disabled }: { disabled?: boolean }) {
@@ -316,10 +316,10 @@ function SelectLanguage() {
   const [menuCords, setMenuCords] = useState<RectCords>();
   const [languageTag, setLanguageTag] = useSetting(settingsAtom, 'languageTag');
 
-  const languages = [
-    { tag: 'en', name: t.Languages.en },
-    { tag: 'zh-CN', name: t.Languages['zh-CN'] },
-  ];
+  const languages = Object.entries(t.Languages).map(([tag, name]) => ({
+    tag,
+    name,
+  }));
 
   const handleMenu: MouseEventHandler<HTMLButtonElement> = (evt) => {
     setMenuCords(evt.currentTarget.getBoundingClientRect());
@@ -828,7 +828,7 @@ function Editor() {
         <SettingTile
           title={t.Settings.General.enterForNewline}
           description={t.Settings.General.enterForNewlineDescription(
-            isMacOS() ? KeySymbol.Command : 'Ctrl'
+            isMacOS() ? KeySymbol.Command : 'Ctrl',
           )}
           after={<Switch variant="Primary" value={enterForNewline} onChange={setEnterForNewline} />}
         />
@@ -994,15 +994,15 @@ function Messages() {
   const [t] = useTranslation();
   const [legacyUsernameColor, setLegacyUsernameColor] = useSetting(
     settingsAtom,
-    'legacyUsernameColor'
+    'legacyUsernameColor',
   );
   const [hideMembershipEvents, setHideMembershipEvents] = useSetting(
     settingsAtom,
-    'hideMembershipEvents'
+    'hideMembershipEvents',
   );
   const [hideNickAvatarEvents, setHideNickAvatarEvents] = useSetting(
     settingsAtom,
-    'hideNickAvatarEvents'
+    'hideNickAvatarEvents',
   );
   const [mediaAutoLoad, setMediaAutoLoad] = useSetting(settingsAtom, 'mediaAutoLoad');
   const [urlPreview, setUrlPreview] = useSetting(settingsAtom, 'urlPreview');

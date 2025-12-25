@@ -846,6 +846,17 @@ const zhCN: Translation = {
   Languages: {
     en: 'English',
     'zh-CN': '简体中文',
+    'zh-TW': '繁體中文（台灣）',
+    'zh-HK': '繁體中文（香港）',
+    hi: 'हिन्दी',
+    es: 'Español',
+    fr: 'Français',
+    ar: 'العربية',
+    bn: 'বাংলা',
+    pt: 'Português',
+    ru: 'Русский',
+    id: 'Bahasa Indonesia',
+    de: 'Deutsch',
   },
   CreateRoom: {
     access: '访问权限',
