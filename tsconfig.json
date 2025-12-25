@@ -7,7 +7,7 @@
     "allowJs": true,
     "strict": true,
     "esModuleInterop": true,
-    "moduleResolution": "Node",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "outDir": "dist",
     "skipLibCheck": true,

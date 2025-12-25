@@ -1,6 +1,7 @@
 experiment
 dist
 node_modules
+.yarn
 devAssets
 
 .DS_Store
