@@ -13,6 +13,7 @@ import { getLoginPath, getRegisterPath, withSearchParam } from '../../pathUtils'
 import { usePathWithOrigin } from '../../../hooks/usePathWithOrigin';
 import { LoginPathSearchParams } from '../../paths';
 import { useClientConfig } from '../../../hooks/useClientConfig';
+import { useTranslation } from '../../../internationalization';
 
 const getLoginTokenSearchParam = () => {
   // when using hasRouter query params in existing route
@@ -35,6 +36,7 @@ const useLoginSearchParams = (searchParams: URLSearchParams): LoginPathSearchPar
   );
 
 export function Login() {
+  const [t] = useTranslation();
   const server = useAuthServer();
   const { hashRouter } = useClientConfig();
   const { loginFlows } = useAuthFlows();
@@ -57,7 +59,7 @@ export function Login() {
   return (
     <Box direction="Column" gap="500">
       <Text size="H2" priority="400">
-        Login
+        {t.Login.title}
       </Text>
       {parsedFlows.token && loginSearchParams.loginToken && (
         <TokenLogin token={loginSearchParams.loginToken} />
@@ -86,13 +88,13 @@ export function Login() {
       {!parsedFlows.password && !parsedFlows.sso && (
         <>
           <Text style={{ color: color.Critical.Main }}>
-            {`This client does not support login on "${server}" homeserver. Password and SSO based login method not found.`}
+            {t.Login.unsupportedServer(server)}
           </Text>
           <span data-spacing-node />
         </>
       )}
       <Text align="Center">
-        Do not have an account? <Link to={getRegisterPath(server)}>Register</Link>
+        {t.Login.noAccount} <Link to={getRegisterPath(server)}>{t.Login.register}</Link>
       </Text>
     </Box>
   );

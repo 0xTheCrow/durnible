@@ -2,6 +2,7 @@ import React from 'react';
 import { Box, Text, Icon, Icons, config, IconSrc } from 'folds';
 import { SequenceCard } from '../sequence-card';
 import { SettingTile } from '../setting-tile';
+import { useTranslation } from '../../internationalization';
 
 export enum CreateRoomKind {
   Private = 'private',
@@ -22,6 +23,7 @@ export function CreateRoomKindSelector({
   disabled,
   getIcon,
 }: CreateRoomKindSelectorProps) {
+  const [t] = useTranslation();
   return (
     <Box shrink="No" direction="Column" gap="100">
       {canRestrict && (
@@ -40,9 +42,9 @@ export function CreateRoomKindSelector({
             before={<Icon size="400" src={getIcon(CreateRoomKind.Restricted)} />}
             after={value === CreateRoomKind.Restricted && <Icon src={Icons.Check} />}
           >
-            <Text size="H6">Restricted</Text>
+            <Text size="H6">{t.CreateRoomKindSelector.restrictedTitle}</Text>
             <Text size="T300" priority="300">
-              Only member of parent space can join.
+              {t.CreateRoomKindSelector.restrictedDescription}
             </Text>
           </SettingTile>
         </SequenceCard>
@@ -62,9 +64,9 @@ export function CreateRoomKindSelector({
           before={<Icon size="400" src={getIcon(CreateRoomKind.Private)} />}
           after={value === CreateRoomKind.Private && <Icon src={Icons.Check} />}
         >
-          <Text size="H6">Private</Text>
+          <Text size="H6">{t.CreateRoomKindSelector.privateTitle}</Text>
           <Text size="T300" priority="300">
-            Only people with invite can join.
+            {t.CreateRoomKindSelector.privateDescription}
           </Text>
         </SettingTile>
       </SequenceCard>
@@ -83,9 +85,9 @@ export function CreateRoomKindSelector({
           before={<Icon size="400" src={getIcon(CreateRoomKind.Public)} />}
           after={value === CreateRoomKind.Public && <Icon src={Icons.Check} />}
         >
-          <Text size="H6">Public</Text>
+          <Text size="H6">{t.CreateRoomKindSelector.publicTitle}</Text>
           <Text size="T300" priority="300">
-            Anyone with the address can join.
+            {t.CreateRoomKindSelector.publicDescription}
           </Text>
         </SettingTile>
       </SequenceCard>

@@ -24,6 +24,8 @@ import { useRoomEventReaders } from '../../hooks/useRoomEventReaders';
 import { EventReaders } from '../../components/event-readers';
 import { stopPropagation } from '../../utils/keyboard';
 
+import { useTranslation } from '../../internationalization';
+
 export function RoomViewFollowingPlaceholder() {
   return <div className={css.RoomViewFollowingPlaceholder} />;
 }
@@ -33,6 +35,7 @@ export type RoomViewFollowingProps = {
 };
 export const RoomViewFollowing = as<'div', RoomViewFollowingProps>(
   ({ className, room, ...props }, ref) => {
+    const [t] = useTranslation();
     const mx = useMatrixClient();
     const [open, setOpen] = useState(false);
     const latestEvent = useRoomLatestRenderedEvent(room);
@@ -81,57 +84,34 @@ export const RoomViewFollowing = as<'div', RoomViewFollowingProps>(
               <Text size="T300" truncate>
                 {names.length === 1 && (
                   <>
-                    <b>{names[0]}</b>
                     <Text as="span" size="Inherit" priority="300">
-                      {' is following the conversation.'}
+                      {t.Features.Room.Following.isFollowing(names[0])}
                     </Text>
                   </>
                 )}
                 {names.length === 2 && (
                   <>
-                    <b>{names[0]}</b>
                     <Text as="span" size="Inherit" priority="300">
-                      {' and '}
-                    </Text>
-                    <b>{names[1]}</b>
-                    <Text as="span" size="Inherit" priority="300">
-                      {' are following the conversation.'}
+                      {t.Features.Room.Following.areFollowingTwo(names[0], names[1])}
                     </Text>
                   </>
                 )}
                 {names.length === 3 && (
                   <>
-                    <b>{names[0]}</b>
                     <Text as="span" size="Inherit" priority="300">
-                      {', '}
-                    </Text>
-                    <b>{names[1]}</b>
-                    <Text as="span" size="Inherit" priority="300">
-                      {' and '}
-                    </Text>
-                    <b>{names[2]}</b>
-                    <Text as="span" size="Inherit" priority="300">
-                      {' are following the conversation.'}
+                      {t.Features.Room.Following.areFollowingThree(names[0], names[1], names[2])}
                     </Text>
                   </>
                 )}
                 {names.length > 3 && (
                   <>
-                    <b>{names[0]}</b>
                     <Text as="span" size="Inherit" priority="300">
-                      {', '}
-                    </Text>
-                    <b>{names[1]}</b>
-                    <Text as="span" size="Inherit" priority="300">
-                      {', '}
-                    </Text>
-                    <b>{names[2]}</b>
-                    <Text as="span" size="Inherit" priority="300">
-                      {' and '}
-                    </Text>
-                    <b>{names.length - 3} others</b>
-                    <Text as="span" size="Inherit" priority="300">
-                      {' are following the conversation.'}
+                      {t.Features.Room.Following.areFollowingMany(
+                        names[0],
+                        names[1],
+                        names[2],
+                        names.length - 3
+                      )}
                     </Text>
                   </>
                 )}

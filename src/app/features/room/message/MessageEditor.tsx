@@ -78,7 +78,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
     const getPrevBodyAndFormattedBody = useCallback((): [
       string | undefined,
       string | undefined,
-      IMentions | undefined
+      IMentions | undefined,
     ] => {
       const evtId = mEvent.getId()!;
       const evtTimeline = room.getTimelineForEvent(evtId);
@@ -105,7 +105,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
             allowTextFormatting: true,
             allowBlockMarkdown: isMarkdown,
             allowInlineMarkdown: isMarkdown,
-          })
+          }),
         );
 
         const [prevBody, prevCustomHtml, prevMentions] = getPrevBodyAndFormattedBody();
@@ -154,7 +154,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
         };
 
         return mx.sendMessage(roomId, content);
-      }, [mx, editor, roomId, mEvent, isMarkdown, getPrevBodyAndFormattedBody])
+      }, [mx, editor, roomId, mEvent, isMarkdown, getPrevBodyAndFormattedBody]),
     );
 
     const handleSave = useCallback(() => {
@@ -177,7 +177,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
           onCancel();
         }
       },
-      [onCancel, handleSave, enterForNewline, isComposing]
+      [onCancel, handleSave, enterForNewline, isComposing],
     );
 
     const handleKeyUp: KeyboardEventHandler = useCallback(
@@ -193,7 +193,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
           : undefined;
         setAutocompleteQuery(query);
       },
-      [editor]
+      [editor],
     );
 
     const handleCloseAutocomplete = useCallback(() => {
@@ -326,7 +326,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
                           onClick={
                             ((evt) =>
                               setAnchor(
-                                evt.currentTarget.getBoundingClientRect()
+                                evt.currentTarget.getBoundingClientRect(),
                               )) as MouseEventHandler<HTMLButtonElement>
                           }
                           variant="SurfaceVariant"
@@ -351,5 +351,5 @@ export const MessageEditor = as<'div', MessageEditorProps>(
         />
       </div>
     );
-  }
+  },
 );

@@ -43,6 +43,8 @@ import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { BreakWord } from '../../styles/Text.css';
 import { useAlive } from '../../hooks/useAlive';
 
+import { useTranslation } from '../../internationalization';
+
 const SEARCH_OPTIONS: UseAsyncSearchOptions = {
   limit: 1000,
   matchOptions: {
@@ -56,6 +58,7 @@ type InviteUserProps = {
   requestClose: () => void;
 };
 export function InviteUserPrompt({ room, requestClose }: InviteUserProps) {
+  const [t] = useTranslation();
   const mx = useMatrixClient();
   const alive = useAlive();
 
@@ -169,7 +172,7 @@ export function InviteUserPrompt({ room, requestClose }: InviteUserProps) {
               >
                 <Box grow="Yes">
                   <Text size="H4" truncate>
-                    Invite
+                    {t.Components.InviteUserPrompt.title}
                   </Text>
                 </Box>
                 <Box shrink="No">
@@ -187,7 +190,7 @@ export function InviteUserPrompt({ room, requestClose }: InviteUserProps) {
                 gap="400"
               >
                 <Box direction="Column" gap="100">
-                  <Text size="L400">User ID</Text>
+                  <Text size="L400">{t.Components.InviteUserPrompt.userId}</Text>
                   <div>
                     <Input
                       size="500"
@@ -260,7 +263,7 @@ export function InviteUserPrompt({ room, requestClose }: InviteUserProps) {
                   </div>
                 </Box>
                 <Box direction="Column" gap="100">
-                  <Text size="L400">Reason (Optional)</Text>
+                  <Text size="L400">{t.Components.InviteUserPrompt.reason}</Text>
                   <TextArea
                     size="500"
                     name="reasonInput"
@@ -279,7 +282,7 @@ export function InviteUserPrompt({ room, requestClose }: InviteUserProps) {
                   disabled={!validUserId || inviting}
                   before={inviting && <Spinner size="200" variant="Primary" fill="Solid" />}
                 >
-                  <Text size="B400">Invite</Text>
+                  <Text size="B400">{t.Components.InviteUserPrompt.invite}</Text>
                 </Button>
               </Box>
             </Box>

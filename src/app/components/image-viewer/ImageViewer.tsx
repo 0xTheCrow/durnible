@@ -7,6 +7,7 @@ import * as css from './ImageViewer.css';
 import { useZoom } from '../../hooks/useZoom';
 import { usePan } from '../../hooks/usePan';
 import { downloadMedia } from '../../utils/matrix';
+import { useTranslation } from '../../internationalization';
 
 export type ImageViewerProps = {
   alt: string;
@@ -16,6 +17,7 @@ export type ImageViewerProps = {
 
 export const ImageViewer = as<'div', ImageViewerProps>(
   ({ className, alt, src, requestClose, ...props }, ref) => {
+    const [t] = useTranslation();
     const { zoom, zoomIn, zoomOut, setZoom } = useZoom(0.2);
     const { pan, cursor, onMouseDown } = usePan(zoom !== 1);
 
@@ -47,7 +49,7 @@ export const ImageViewer = as<'div', ImageViewerProps>(
               size="300"
               radii="Pill"
               onClick={zoomOut}
-              aria-label="Zoom Out"
+              aria-label={t.ImageViewer.zoomOut}
             >
               <Icon size="50" src={Icons.Minus} />
             </IconButton>
@@ -60,7 +62,7 @@ export const ImageViewer = as<'div', ImageViewerProps>(
               size="300"
               radii="Pill"
               onClick={zoomIn}
-              aria-label="Zoom In"
+              aria-label={t.ImageViewer.zoomIn}
             >
               <Icon size="50" src={Icons.Plus} />
             </IconButton>
@@ -70,7 +72,7 @@ export const ImageViewer = as<'div', ImageViewerProps>(
               radii="300"
               before={<Icon size="50" src={Icons.Download} />}
             >
-              <Text size="B300">Download</Text>
+              <Text size="B300">{t.ImageViewer.download}</Text>
             </Chip>
           </Box>
         </Header>

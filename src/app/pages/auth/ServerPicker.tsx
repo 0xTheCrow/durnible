@@ -23,6 +23,7 @@ import FocusTrap from 'focus-trap-react';
 
 import { useDebounce } from '../../hooks/useDebounce';
 import { stopPropagation } from '../../utils/keyboard';
+import { useTranslation } from '../../internationalization';
 
 export function ServerPicker({
   server,
@@ -35,6 +36,7 @@ export function ServerPicker({
   allowCustomServer?: boolean;
   onServerChange: (server: string) => void;
 }) {
+  const [t] = useTranslation();
   const [serverMenuAnchor, setServerMenuAnchor] = useState<RectCords>();
   const serverInputRef = useRef<HTMLInputElement>(null);
 
@@ -109,7 +111,7 @@ export function ServerPicker({
               >
                 <Menu>
                   <Header size="300" style={{ padding: `0 ${config.space.S200}` }}>
-                    <Text size="L400">Homeserver List</Text>
+                    <Text size="L400">{t.ServerPicker.homeserverList}</Text>
                   </Header>
                   <div style={{ padding: config.space.S100, paddingTop: 0 }}>
                     {serverList?.map((serverName) => (

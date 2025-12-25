@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { User, UserEvent, UserEventHandlerMap } from 'matrix-js-sdk';
 import { useMatrixClient } from './useMatrixClient';
+import { useTranslation } from '../internationalization';
 
 export enum Presence {
   Online = 'online',
@@ -47,12 +48,14 @@ export const useUserPresence = (userId: string): UserPresence | undefined => {
   return presence;
 };
 
-export const usePresenceLabel = (): Record<Presence, string> =>
-  useMemo(
+export const usePresenceLabel = (): Record<Presence, string> => {
+  const [t] = useTranslation();
+  return useMemo(
     () => ({
-      [Presence.Online]: 'Active',
-      [Presence.Unavailable]: 'Busy',
-      [Presence.Offline]: 'Away',
+      [Presence.Online]: t.Presence.online,
+      [Presence.Unavailable]: t.Presence.unavailable,
+      [Presence.Offline]: t.Presence.offline,
     }),
-    []
+    [t.Presence.online, t.Presence.unavailable, t.Presence.offline]
   );
+};

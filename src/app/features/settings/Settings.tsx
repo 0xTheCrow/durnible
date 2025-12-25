@@ -33,6 +33,7 @@ import { About } from './about';
 import { UseStateProvider } from '../../components/UseStateProvider';
 import { stopPropagation } from '../../utils/keyboard';
 import { LogoutDialog } from '../../components/LogoutDialog';
+import { useTranslation } from '../../internationalization';
 
 export enum SettingsPages {
   GeneralPage,
@@ -50,47 +51,50 @@ type SettingsMenuItem = {
   icon: IconSrc;
 };
 
-const useSettingsMenuItems = (): SettingsMenuItem[] =>
-  useMemo(
+const useSettingsMenuItems = (): SettingsMenuItem[] => {
+  const [t] = useTranslation();
+
+  return useMemo(
     () => [
       {
         page: SettingsPages.GeneralPage,
-        name: 'General',
+        name: t.Settings.menu.general,
         icon: Icons.Setting,
       },
       {
         page: SettingsPages.AccountPage,
-        name: 'Account',
+        name: t.Settings.menu.account,
         icon: Icons.User,
       },
       {
         page: SettingsPages.NotificationPage,
-        name: 'Notifications',
+        name: t.Settings.menu.notifications,
         icon: Icons.Bell,
       },
       {
         page: SettingsPages.DevicesPage,
-        name: 'Devices',
+        name: t.Settings.menu.devices,
         icon: Icons.Monitor,
       },
       {
         page: SettingsPages.EmojisStickersPage,
-        name: 'Emojis & Stickers',
+        name: t.Settings.menu.emojisStickers,
         icon: Icons.Smile,
       },
       {
         page: SettingsPages.DeveloperToolsPage,
-        name: 'Developer Tools',
+        name: t.Settings.menu.developerTools,
         icon: Icons.Terminal,
       },
       {
         page: SettingsPages.AboutPage,
-        name: 'About',
+        name: t.Settings.menu.about,
         icon: Icons.Info,
       },
     ],
-    []
+    [t]
   );
+};
 
 type SettingsProps = {
   initialPage?: SettingsPages;

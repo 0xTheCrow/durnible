@@ -1164,7 +1164,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/runtime@npm:^7.0.0, @babel/runtime@npm:^7.10.2, @babel/runtime@npm:^7.11.2, @babel/runtime@npm:^7.12.5, @babel/runtime@npm:^7.18.9, @babel/runtime@npm:^7.23.2, @babel/runtime@npm:^7.24.8":
+"@babel/runtime@npm:^7.0.0, @babel/runtime@npm:^7.10.2, @babel/runtime@npm:^7.11.2, @babel/runtime@npm:^7.12.5, @babel/runtime@npm:^7.18.9":
   version: 7.28.4
   resolution: "@babel/runtime@npm:7.28.4"
   checksum: 10c0/792ce7af9750fb9b93879cc9d1db175701c4689da890e6ced242ea0207c9da411ccf16dc04e689cc01158b28d7898c40d75598f4559109f761c12ce01e959bf7
@@ -4911,9 +4911,6 @@ __metadata:
     folds: "npm:2.4.0"
     html-dom-parser: "npm:4.0.0"
     html-react-parser: "npm:4.2.0"
-    i18next: "npm:23.12.2"
-    i18next-browser-languagedetector: "npm:8.0.0"
-    i18next-http-backend: "npm:2.5.2"
     immer: "npm:9.0.16"
     is-hotkey: "npm:0.2.0"
     jotai: "npm:2.6.0"
@@ -4922,7 +4919,7 @@ __metadata:
     matrix-js-sdk: "npm:38.2.0"
     millify: "npm:6.1.0"
     pdfjs-dist: "npm:4.2.67"
-    prettier: "npm:2.8.1"
+    prettier: "npm:3.7.4"
     prismjs: "npm:1.30.0"
     react: "npm:18.2.0"
     react-aria: "npm:3.29.1"
@@ -4931,7 +4928,6 @@ __metadata:
     react-dom: "npm:18.2.0"
     react-error-boundary: "npm:4.0.13"
     react-google-recaptcha: "npm:2.1.0"
-    react-i18next: "npm:15.0.0"
     react-range: "npm:1.8.14"
     react-router-dom: "npm:6.20.0"
     sanitize-html: "npm:2.12.1"
@@ -5074,15 +5070,6 @@ __metadata:
   version: 3.47.0
   resolution: "core-js-pure@npm:3.47.0"
   checksum: 10c0/7eb5f897e532b33e6ea85ec2c60073fc2fe943e4543ec9903340450fc0f3b46b5b118d57d332e9f2c3d681a8b7b219a4cc64ccf548d933f6b79f754b682696dd
-  languageName: node
-  linkType: hard
-
-"cross-fetch@npm:4.0.0":
-  version: 4.0.0
-  resolution: "cross-fetch@npm:4.0.0"
-  dependencies:
-    node-fetch: "npm:^2.6.12"
-  checksum: 10c0/386727dc4c6b044746086aced959ff21101abb85c43df5e1d151547ccb6f338f86dec3f28b9dbddfa8ff5b9ec8662ed2263ad4607a93b2dc354fb7fe3bbb898a
   languageName: node
   linkType: hard
 
@@ -6651,15 +6638,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"html-parse-stringify@npm:^3.0.1":
-  version: 3.0.1
-  resolution: "html-parse-stringify@npm:3.0.1"
-  dependencies:
-    void-elements: "npm:3.1.0"
-  checksum: 10c0/159292753d48b84d216d61121054ae5a33466b3db5b446e2ffc093ac077a411a99ce6cbe0d18e55b87cf25fa3c5a86c4d8b130b9719ec9b66623259000c72c15
-  languageName: node
-  linkType: hard
-
 "html-react-parser@npm:4.2.0":
   version: 4.2.0
   resolution: "html-react-parser@npm:4.2.0"
@@ -6732,33 +6710,6 @@ __metadata:
     agent-base: "npm:^7.1.2"
     debug: "npm:4"
   checksum: 10c0/f729219bc735edb621fa30e6e84e60ee5d00802b8247aac0d7b79b0bd6d4b3294737a337b93b86a0bd9e68099d031858a39260c976dc14cdbba238ba1f8779ac
-  languageName: node
-  linkType: hard
-
-"i18next-browser-languagedetector@npm:8.0.0":
-  version: 8.0.0
-  resolution: "i18next-browser-languagedetector@npm:8.0.0"
-  dependencies:
-    "@babel/runtime": "npm:^7.23.2"
-  checksum: 10c0/08a7c747ec18a0743b54390a0b42836d814b15fb49c92b90c259298e6a6e7e001ff9df99d0fd308283a34fceea53b4d9053aa1695a37f696bc04160017bbb524
-  languageName: node
-  linkType: hard
-
-"i18next-http-backend@npm:2.5.2":
-  version: 2.5.2
-  resolution: "i18next-http-backend@npm:2.5.2"
-  dependencies:
-    cross-fetch: "npm:4.0.0"
-  checksum: 10c0/57cfbeeea40a751134e1521fac89b14b780c9ad87b74a4f7d7168a88a8b603efed9f5df455dddbb408f7e268eae5aa0a6888e47b9f10cb9482d812d4d6997ffa
-  languageName: node
-  linkType: hard
-
-"i18next@npm:23.12.2":
-  version: 23.12.2
-  resolution: "i18next@npm:23.12.2"
-  dependencies:
-    "@babel/runtime": "npm:^7.23.2"
-  checksum: 10c0/aa7654afefc3f5383513563226401994558675a57eb562f0c4580d573d8410d24954f25112d45f9b6b1ca3f88c7beea1ac802ed50ad4081a06a17d08857e3c5d
   languageName: node
   linkType: hard
 
@@ -7849,7 +7800,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"node-fetch@npm:^2.6.12, node-fetch@npm:^2.6.7":
+"node-fetch@npm:^2.6.7":
   version: 2.7.0
   resolution: "node-fetch@npm:2.7.0"
   dependencies:
@@ -8288,12 +8239,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prettier@npm:2.8.1":
-  version: 2.8.1
-  resolution: "prettier@npm:2.8.1"
+"prettier@npm:3.7.4":
+  version: 3.7.4
+  resolution: "prettier@npm:3.7.4"
   bin:
-    prettier: bin-prettier.js
-  checksum: 10c0/66a2967780f7ebb724e0470c61b97ac19d2e91258f26288e4920138621a845958d86df23ec37c9342ddf475872396f2c458e9fbabb095631b03e436f315002b2
+    prettier: bin/prettier.cjs
+  checksum: 10c0/9675d2cd08eacb1faf1d1a2dbfe24bfab6a912b059fc9defdb380a408893d88213e794a40a2700bd29b140eb3172e0b07c852853f6e22f16f3374659a1a13389
   languageName: node
   linkType: hard
 
@@ -8487,24 +8438,6 @@ __metadata:
   peerDependencies:
     react: ">=16.4.1"
   checksum: 10c0/c2f38cedd50ee90711e510cbc5c57e2810a9c5aa3c8508415fae635f9f66ad0ef571da30770b87bb6ab21dd9b5ccd69622624691ec2f26cdfc5f480d0e11d24b
-  languageName: node
-  linkType: hard
-
-"react-i18next@npm:15.0.0":
-  version: 15.0.0
-  resolution: "react-i18next@npm:15.0.0"
-  dependencies:
-    "@babel/runtime": "npm:^7.24.8"
-    html-parse-stringify: "npm:^3.0.1"
-  peerDependencies:
-    i18next: ">= 23.2.3"
-    react: ">= 16.8.0"
-  peerDependenciesMeta:
-    react-dom:
-      optional: true
-    react-native:
-      optional: true
-  checksum: 10c0/d62a817818f8b16c87b68b3c2563a628d983e6ecbe37d9baa29f276dd8fdfee180abc101efa551a13f1c4839dd2c5bc9b2b24996d231686d9e5e79d9327900a7
   languageName: node
   linkType: hard
 
@@ -10045,13 +9978,6 @@ __metadata:
   bin:
     vite: bin/vite.js
   checksum: 10c0/468336a1409f728b464160cbf02672e72271fb688d0e605e776b74a89d27e1029509eef3a3a6c755928d8011e474dbf234824d054d07960be5f23cd176bc72de
-  languageName: node
-  linkType: hard
-
-"void-elements@npm:3.1.0":
-  version: 3.1.0
-  resolution: "void-elements@npm:3.1.0"
-  checksum: 10c0/0b8686f9f9aa44012e9bd5eabf287ae0cde409b9a2854c5a2335cb83920c957668ac5876e3f0d158dd424744ac411a7270e64128556b451ed3bec875ef18534d
   languageName: node
   linkType: hard
 

@@ -9,8 +9,10 @@ import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
 import { Settings } from '../../../features/settings';
 import { useUserProfile } from '../../../hooks/useUserProfile';
 import { Modal500 } from '../../../components/Modal500';
+import { useTranslation } from '../../../internationalization';
 
 export function SettingsTab() {
+  const [t] = useTranslation();
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
   const userId = mx.getUserId()!;
@@ -28,7 +30,7 @@ export function SettingsTab() {
 
   return (
     <SidebarItem active={settings}>
-      <SidebarItemTooltip tooltip="User Settings">
+      <SidebarItemTooltip tooltip={t.Sidebar.Settings.tooltip}>
         {(triggerRef) => (
           <SidebarAvatar as="button" ref={triggerRef} onClick={openSettings}>
             <UserAvatar

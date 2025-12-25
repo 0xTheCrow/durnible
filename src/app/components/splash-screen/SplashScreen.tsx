@@ -3,11 +3,14 @@ import React, { ReactNode } from 'react';
 import classNames from 'classnames';
 import * as patternsCSS from '../../styles/Patterns.css';
 import * as css from './SplashScreen.css';
+import { useTranslation } from '../../internationalization';
 
 type SplashScreenProps = {
   children: ReactNode;
 };
 export function SplashScreen({ children }: SplashScreenProps) {
+  const [t] = useTranslation();
+
   return (
     <Box
       className={classNames(css.SplashScreen, patternsCSS.BackgroundDotPattern)}
@@ -21,7 +24,7 @@ export function SplashScreen({ children }: SplashScreenProps) {
         justifyContent="Center"
       >
         <Text size="H2" align="Center">
-          Cinny
+          {t.SplashScreen.title}
         </Text>
       </Box>
     </Box>

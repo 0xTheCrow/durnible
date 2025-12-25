@@ -25,11 +25,13 @@ import { markAsRead } from '../../../utils/notifications';
 import { stopPropagation } from '../../../utils/keyboard';
 import { settingsAtom } from '../../../state/settings';
 import { useSetting } from '../../../state/hooks/settings';
+import { useTranslation } from '../../../internationalization';
 
 type DirectMenuProps = {
   requestClose: () => void;
 };
 const DirectMenu = forwardRef<HTMLDivElement, DirectMenuProps>(({ requestClose }, ref) => {
+  const [t] = useTranslation();
   const orphanRooms = useDirectRooms();
   const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
   const unread = useRoomsUnread(orphanRooms, roomToUnreadAtom);
@@ -52,7 +54,7 @@ const DirectMenu = forwardRef<HTMLDivElement, DirectMenuProps>(({ requestClose }
           aria-disabled={!unread}
         >
           <Text style={{ flexGrow: 1 }} as="span" size="T300" truncate>
-            Mark as Read
+            {t.Sidebar.Direct.markAsRead}
           </Text>
         </MenuItem>
       </Box>
@@ -61,6 +63,7 @@ const DirectMenu = forwardRef<HTMLDivElement, DirectMenuProps>(({ requestClose }
 });
 
 export function DirectTab() {
+  const [t] = useTranslation();
   const navigate = useNavigate();
   const mx = useMatrixClient();
   const screenSize = useScreenSizeContext();
@@ -93,7 +96,7 @@ export function DirectTab() {
   };
   return (
     <SidebarItem active={directSelected}>
-      <SidebarItemTooltip tooltip="Direct Messages">
+      <SidebarItemTooltip tooltip={t.Sidebar.Direct.tooltip}>
         {(triggerRef) => (
           <SidebarAvatar
             as="button"
