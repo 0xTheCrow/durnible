@@ -17,10 +17,12 @@ import {
 } from '../../../components/page';
 import { BackRouteHandler } from '../../../components/BackRouteHandler';
 import { CreateChat } from '../../../features/create-chat';
+import { useTranslation } from '../../../internationalization';
 
 export function DirectCreate() {
   const mx = useMatrixClient();
   const screenSize = useScreenSizeContext();
+  const [t] = useTranslation();
 
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -60,7 +62,7 @@ export function DirectCreate() {
                 <Box direction="Column" gap="700">
                   <PageHero
                     icon={<Icon size="600" src={Icons.Mention} />}
-                    title="Create Chat"
+                    title={t.Sidebar.Direct.createChat}
                     subTitle="Start a private, encrypted chat by entering a user ID."
                   />
                   <CreateChat defaultUserId={userId} />

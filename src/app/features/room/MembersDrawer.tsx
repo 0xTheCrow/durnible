@@ -59,19 +59,25 @@ import { useSpaceOptionally } from '../../hooks/useSpace';
 import { ContainerColor } from '../../styles/ContainerColor.css';
 import { useFlattenPowerTagMembers, useGetMemberPowerTag } from '../../hooks/useMemberPowerTag';
 import { useRoomCreators } from '../../hooks/useRoomCreators';
+import { useTranslation } from '../../internationalization';
 
 type MemberDrawerHeaderProps = {
   room: Room;
 };
 function MemberDrawerHeader({ room }: MemberDrawerHeaderProps) {
+  const [t] = useTranslation();
   const setPeopleDrawer = useSetSetting(settingsAtom, 'isPeopleDrawer');
 
   return (
     <Header className={css.MembersDrawerHeader} variant="Background" size="600">
       <Box grow="Yes" alignItems="Center" gap="200">
         <Box grow="Yes" alignItems="Center" gap="200">
-          <Text title={`${room.getJoinedMemberCount()} Members`} size="H5" truncate>
-            {`${millify(room.getJoinedMemberCount())} Members`}
+          <Text
+            title={t.Features.CommonSettings.Members.title(room.getJoinedMemberCount())}
+            size="H5"
+            truncate
+          >
+            {t.Features.CommonSettings.Members.title(millify(room.getJoinedMemberCount()))}
           </Text>
         </Box>
         <Box shrink="No" alignItems="Center">
@@ -178,6 +184,7 @@ type MembersDrawerProps = {
 };
 export function MembersDrawer({ room, members }: MembersDrawerProps) {
   const mx = useMatrixClient();
+  const [t] = useTranslation();
   const useAuthentication = useMediaAuthentication();
   const scrollRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -205,13 +212,13 @@ export function MembersDrawer({ room, members }: MembersDrawerProps) {
 
   const filteredMembers = useMemo(
     () => members.filter(membershipFilter.filterFn).sort(memberSort.sortFn).sort(memberPowerSort),
-    [members, membershipFilter, memberSort, memberPowerSort]
+    [members, membershipFilter, memberSort, memberPowerSort],
   );
 
   const [result, search, resetSearch] = useAsyncSearch(
     filteredMembers,
     getRoomMemberStr,
-    SEARCH_OPTIONS
+    SEARCH_OPTIONS,
   );
   if (!result && searchInputRef.current?.value) search(searchInputRef.current.value);
 
@@ -232,9 +239,9 @@ export function MembersDrawer({ room, members }: MembersDrawerProps) {
         if (evt.target.value) search(evt.target.value);
         else resetSearch();
       },
-      [search, resetSearch]
+      [search, resetSearch],
     ),
-    { wait: 200 }
+    { wait: 200 },
   );
 
   const handleMemberClick: MouseEventHandler<HTMLButtonElement> = (evt) => {
@@ -275,7 +282,7 @@ export function MembersDrawer({ room, members }: MembersDrawerProps) {
                         onClick={
                           ((evt) =>
                             setAnchor(
-                              evt.currentTarget.getBoundingClientRect()
+                              evt.currentTarget.getBoundingClientRect(),
                             )) as MouseEventHandler<HTMLButtonElement>
                         }
                         variant="Background"
@@ -307,7 +314,7 @@ export function MembersDrawer({ room, members }: MembersDrawerProps) {
                         onClick={
                           ((evt) =>
                             setAnchor(
-                              evt.currentTarget.getBoundingClientRect()
+                              evt.currentTarget.getBoundingClientRect(),
                             )) as MouseEventHandler<HTMLButtonElement>
                         }
                         variant="Background"
@@ -372,7 +379,7 @@ export function MembersDrawer({ room, members }: MembersDrawerProps) {
 
             {!fetchingMembers && !result && processMembers.length === 0 && (
               <Text style={{ padding: config.space.S300 }} align="Center">
-                {`No "${membershipFilter.name}" Members`}
+                {t.Features.CommonSettings.Members.noMembers(membershipFilter.name)}
               </Text>
             )}
 
@@ -420,7 +427,7 @@ export function MembersDrawer({ room, members }: MembersDrawerProps) {
                         onClick={handleMemberClick}
                         pressed={openProfileUserId === tagOrMember.userId}
                         typing={typingMembers.some(
-                          (receipt) => receipt.userId === tagOrMember.userId
+                          (receipt) => receipt.userId === tagOrMember.userId,
                         )}
                       />
                     </div>

@@ -38,6 +38,7 @@ import { getDirectRoomAvatarUrl, getRoomAvatarUrl } from '../../utils/room';
 import { ItemDraggableTarget, useDraggableItem } from './DnD';
 import { mxcUrlToHttp } from '../../utils/matrix';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
+import { useTranslation } from '../../internationalization';
 
 type RoomJoinButtonProps = {
   roomId: string;
@@ -47,7 +48,7 @@ function RoomJoinButton({ roomId, via }: RoomJoinButtonProps) {
   const mx = useMatrixClient();
 
   const [joinState, join] = useAsyncCallback<Room, MatrixError, []>(
-    useCallback(() => mx.joinRoom(roomId, { viaServers: via }), [mx, roomId, via])
+    useCallback(() => mx.joinRoom(roomId, { viaServers: via }), [mx, roomId, via]),
   );
 
   const canJoin = joinState.status === AsyncStatus.Idle || joinState.status === AsyncStatus.Error;
@@ -193,6 +194,7 @@ function RoomProfile({
   joinRule,
   options,
 }: RoomProfileProps) {
+  const [t] = useTranslation();
   return (
     <Box grow="Yes" gap="300">
       <Avatar>
@@ -213,7 +215,7 @@ function RoomProfile({
           {suggested && (
             <Box shrink="No" alignItems="Center">
               <Badge variant="Success" fill="Soft" radii="Pill" outlined>
-                <Text size="L400">Suggested</Text>
+                <Text size="L400">{t.Pages.Explore.Server.suggested}</Text>
               </Badge>
             </Box>
           )}
@@ -221,7 +223,9 @@ function RoomProfile({
         <Box gap="200" alignItems="Center">
           {memberCount && (
             <Box shrink="No" gap="200">
-              <Text size="T200" priority="300">{`${millify(memberCount)} Members`}</Text>
+              <Text size="T200" priority="300">
+                {t.Features.CommonSettings.Members.title(millify(memberCount))}
+              </Text>
             </Box>
           )}
           {memberCount && topic && (
@@ -309,7 +313,7 @@ export const RoomItemCard = as<'div', RoomItemCardProps>(
       getRoom,
       ...props
     },
-    ref
+    ref,
   ) => {
     const mx = useMatrixClient();
     const useAuthentication = useMediaAuthentication();
@@ -400,8 +404,8 @@ export const RoomItemCard = as<'div', RoomItemCardProps>(
                   topic={summary.topic}
                   avatarUrl={
                     summary?.avatar_url
-                      ? mxcUrlToHttp(mx, summary.avatar_url, useAuthentication, 96, 96, 'crop') ??
-                        undefined
+                      ? (mxcUrlToHttp(mx, summary.avatar_url, useAuthentication, 96, 96, 'crop') ??
+                        undefined)
                       : undefined
                   }
                   memberCount={summary.num_joined_members}
@@ -417,5 +421,5 @@ export const RoomItemCard = as<'div', RoomItemCardProps>(
         {after}
       </SequenceCard>
     );
-  }
+  },
 );

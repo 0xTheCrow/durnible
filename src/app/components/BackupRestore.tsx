@@ -22,6 +22,7 @@ import FocusTrap from 'focus-trap-react';
 import { BackupProgressStatus, backupRestoreProgressAtom } from '../state/backupRestore';
 import { InfoCard } from './info-card';
 import { AsyncStatus, useAsyncCallback } from '../hooks/useAsyncCallback';
+import { useTranslation } from '../internationalization';
 import {
   useKeyBackupInfo,
   useKeyBackupStatus,
@@ -135,6 +136,7 @@ type BackupRestoreTileProps = {
   crypto: CryptoApi;
 };
 export function BackupRestoreTile({ crypto }: BackupRestoreTileProps) {
+  const [t] = useTranslation();
   const [restoreProgress, setRestoreProgress] = useAtom(backupRestoreProgressAtom);
   const restoring =
     restoreProgress.status === BackupProgressStatus.Fetching ||
@@ -168,7 +170,7 @@ export function BackupRestoreTile({ crypto }: BackupRestoreTileProps) {
   return (
     <InfoCard
       variant="Surface"
-      title="Encryption Backup"
+      title={t.BackupRestore.encryptionBackup}
       after={
         <Box alignItems="Center" gap="200">
           {remainingSession === 0 ? (
@@ -212,7 +214,7 @@ export function BackupRestoreTile({ crypto }: BackupRestoreTileProps) {
                     <Box direction="Column" gap="200">
                       <InfoCard
                         variant="SurfaceVariant"
-                        title="Backup Details"
+                        title={t.BackupRestore.backupDetails}
                         description={
                           <>
                             <span>Version: {backupInfo?.version ?? 'NIL'}</span>
@@ -234,7 +236,7 @@ export function BackupRestoreTile({ crypto }: BackupRestoreTileProps) {
                       }
                       before={<Icon size="100" src={Icons.Download} />}
                     >
-                      <Text size="B300">Restore Backup</Text>
+                      <Text size="B300">{t.BackupRestore.restoreBackup}</Text>
                     </Button>
                   </Box>
                 </Menu>

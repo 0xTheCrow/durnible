@@ -26,6 +26,7 @@ import {
 } from '../../../state/hooks/roomList';
 import { allRoomsAtom } from '../../../state/room-list/roomList';
 import { roomToParentsAtom } from '../../../state/room/roomToParents';
+import { useTranslation } from '../../../internationalization';
 import {
   knockRestrictedSupported,
   knockSupported,
@@ -44,6 +45,7 @@ type RoomJoinRulesProps = {
 export function RoomJoinRules({ permissions }: RoomJoinRulesProps) {
   const mx = useMatrixClient();
   const room = useRoom();
+  const [t] = useTranslation();
   const allowKnockRestricted = knockRestrictedSupported(room.getVersion());
   const allowRestricted = restrictedSupported(room.getVersion());
   const allowKnock = knockSupported(room.getVersion());
@@ -129,7 +131,7 @@ export function RoomJoinRules({ permissions }: RoomJoinRulesProps) {
       gap="400"
     >
       <SettingTile
-        title={room.isSpaceRoom() ? 'Space Access' : 'Room Access'}
+        title={room.isSpaceRoom() ? t.CreateRoom.spaceAccess : t.CreateRoom.roomAccess}
         description={
           room.isSpaceRoom()
             ? 'Change how people can join the space.'

@@ -1,4 +1,9 @@
 const en = {
+  Common: {
+    search: 'Search',
+    noResults: 'No Results',
+    results: (count: string | number) => `${count} Results`,
+  },
   Pages: {
     Home: {
       title: 'Home',
@@ -16,6 +21,10 @@ const en = {
       },
     },
     Explore: {
+      title: 'Explore Community',
+      featured: 'Featured',
+      servers: 'Servers',
+      addServer: 'Add Server',
       Server: {
         search: 'Search',
         searchPlaceholder: 'Search for keyword',
@@ -27,6 +36,7 @@ const en = {
         rooms: 'Rooms',
         matrix: 'Matrix',
         presets: 'Presets',
+        suggested: 'Suggested',
         customLimit: 'Custom Limit',
         changeLimit: 'Change Limit',
         pageLimit: (limit: number) => `Page Limit: ${limit}`,
@@ -319,8 +329,29 @@ const en = {
       },
     },
     CommonSettings: {
+      Members: {
+        title: (count: string | number) => `${count} Members`,
+        noMembers: (filter: string) => `No "${filter}" Members`,
+      },
       EmojisStickers: {
         title: 'Emojis & Stickers',
+        roomPacks: 'Room Packs',
+        save: 'Save',
+        close: 'Close',
+        unselectAll: 'Unselect All',
+        selectAll: 'Select All',
+        noPacksTitle: 'No Packs',
+        noPacksDescription:
+          'Pack from rooms will appear here. You do not have any room with packs yet.',
+        view: 'View',
+        favoritePacks: 'Favorite Packs',
+        selectPack: 'Select Pack',
+        selectPackDescription: 'Pick emojis and stickers pack from rooms to use in all rooms.',
+        select: 'Select',
+        failedToApply: 'Failed to apply changes! Please try again.',
+        changesSaved: 'Changes saved! Apply when ready.',
+        reset: 'Reset',
+        applyChanges: 'Apply Changes',
       },
     },
   },
@@ -332,6 +363,7 @@ const en = {
     Direct: {
       tooltip: 'Direct Messages',
       markAsRead: 'Mark as Read',
+      createChat: 'Create Chat',
     },
     Inbox: {
       tooltip: 'Inbox',
@@ -370,6 +402,7 @@ const en = {
       general: 'General',
       account: 'Account',
       notifications: 'Notifications',
+      members: 'Members',
       devices: 'Devices',
       emojisStickers: 'Emojis & Stickers',
       developerTools: 'Developer Tools',
@@ -377,6 +410,7 @@ const en = {
     },
     General: {
       title: 'General',
+      options: 'Options',
       appearance: 'Appearance',
       systemTheme: 'System Theme',
       systemThemeDescription: 'Choose between light and dark theme based on system preference.',
@@ -457,6 +491,40 @@ const en = {
         'To verify device identity and grant access to encrypted messages.',
       current: 'Current',
     },
+    DeveloperTools: {
+      title: 'Developer Tools',
+      options: 'Options',
+      enable: 'Enable Developer Tools',
+      accessToken: 'Access Token',
+      copyAccessToken: 'Copy access token to clipboard.',
+      copy: 'Copy',
+    },
+    About: {
+      title: 'About',
+      clearCacheTitle: 'Clear Cache & Reload',
+      clearCacheDescription: 'Clear all your locally stored data and reload from server.',
+      clearCache: 'Clear Cache',
+      credits: 'Credits',
+    },
+    RoomHistoryVisibility: {
+      title: 'Message History Visibility',
+      description:
+        'Changes to history visibility will only apply to future messages. The visibility of existing history will have no effect.',
+      afterInvite: 'After Invite',
+      afterJoin: 'After Join',
+      allMessages: 'All Messages',
+      allMessagesGuests: 'All Messages (Guests)',
+    },
+  },
+  SystemNotification: {
+    system: 'System',
+    emailNotification: 'Email Notification',
+    desktopNotifications: 'Desktop Notifications',
+    notificationSound: 'Notification Sound',
+  },
+  SettingsPages: {
+    permissions: 'Permissions',
+    emojisStickers: 'Emojis & Stickers',
   },
   Languages: {
     en: 'English',
@@ -469,6 +537,8 @@ const en = {
     options: 'Options',
     advancedOptions: 'Advanced Options',
     create: 'Create',
+    roomAccess: 'Room Access',
+    spaceAccess: 'Space Access',
   },
   ServerPicker: {
     homeserverList: 'Homeserver List',
@@ -509,6 +579,37 @@ const en = {
   },
   OrDivider: {
     text: 'OR',
+  },
+  DeviceVerification: {
+    title: 'Device Verification',
+    waitAcceptMessage: 'Please accept the request from other device.',
+    waitingForAccept: 'Waiting for request to be accepted...',
+    acceptInstructions: 'Click accept to start the verification process.',
+    acceptButton: 'Accept',
+    requestAccepted: 'Verification request has been accepted.',
+    waitingForResponse: 'Waiting for the response from other device...',
+    startingVerification: 'Starting verification using emoji comparison...',
+    confirmEmojiMessage: 'Confirm the emoji below are displayed on both devices, in the same order:',
+    theyMatch: 'They Match',
+    doNotMatch: 'Do not Match',
+    deviceVerified: 'Your device is verified.',
+    okay: 'Okay',
+    verificationCanceled: 'Verification has been canceled.',
+    close: 'Close',
+    unexpectedError: 'Unexpected Error! Verification is started but verifier is missing.',
+  },
+  ManualVerification: {
+    recoveryPassphrase: 'Recovery Passphrase',
+    recoveryKey: 'Recovery Key',
+    verifyManually: 'Verify Manually',
+    selectVerificationMethod: 'Select a verification method.',
+    provideRecoveryKey: 'Provide recovery key.',
+    deviceVerified: 'Device verified!',
+  },
+  BackupRestore: {
+    encryptionBackup: 'Encryption Backup',
+    backupDetails: 'Backup Details',
+    restoreBackup: 'Restore Backup',
   },
   AuthLayout: {
     homeserver: 'Homeserver',

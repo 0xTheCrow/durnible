@@ -9,11 +9,13 @@ import { usePermissionGroups } from './usePermissionItems';
 import { PermissionGroups, Powers, PowersEditor } from '../../common-settings/permissions';
 import { useRoomCreators } from '../../../hooks/useRoomCreators';
 import { useRoomPermissions } from '../../../hooks/useRoomPermissions';
+import { useTranslation } from '../../../internationalization';
 
 type PermissionsProps = {
   requestClose: () => void;
 };
 export function Permissions({ requestClose }: PermissionsProps) {
+  const [t] = useTranslation();
   const mx = useMatrixClient();
   const room = useRoom();
   const powerLevels = usePowerLevels(room);
@@ -41,7 +43,7 @@ export function Permissions({ requestClose }: PermissionsProps) {
         <Box grow="Yes" gap="200">
           <Box grow="Yes" alignItems="Center" gap="200">
             <Text size="H3" truncate>
-              Permissions
+              {t.SettingsPages.permissions}
             </Text>
           </Box>
           <Box shrink="No">

@@ -46,6 +46,7 @@ import { markAsRead } from '../../../utils/notifications';
 import { stopPropagation } from '../../../utils/keyboard';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
+import { useTranslation } from '../../../internationalization';
 import {
   getRoomNotificationMode,
   useRoomsNotificationPreferencesContext,
@@ -176,6 +177,7 @@ export function Direct() {
   const notificationPreferences = useRoomsNotificationPreferencesContext();
   const roomToUnread = useAtomValue(roomToUnreadAtom);
   const navigate = useNavigate();
+  const [t] = useTranslation();
 
   const createDirectSelected = useDirectCreateSelected();
 
@@ -220,7 +222,7 @@ export function Direct() {
                       </Avatar>
                       <Box as="span" grow="Yes">
                         <Text as="span" size="Inherit" truncate>
-                          Create Chat
+                          {t.Sidebar.Direct.createChat}
                         </Text>
                       </Box>
                     </Box>

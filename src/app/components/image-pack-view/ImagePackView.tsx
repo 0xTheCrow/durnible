@@ -5,12 +5,14 @@ import { Page, PageHeader, PageContent } from '../page';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { RoomImagePack } from './RoomImagePack';
 import { UserImagePack } from './UserImagePack';
+import { useTranslation } from '../../internationalization';
 
 type ImagePackViewProps = {
   address: PackAddress | undefined;
   requestClose: () => void;
 };
 export function ImagePackView({ address, requestClose }: ImagePackViewProps) {
+  const [t] = useTranslation();
   const mx = useMatrixClient();
   const room = address && mx.getRoom(address.roomId);
 
@@ -25,7 +27,7 @@ export function ImagePackView({ address, requestClose }: ImagePackViewProps) {
               onClick={requestClose}
               before={<Icon size="100" src={Icons.ArrowLeft} />}
             >
-              <Text size="T300">Emojis & Stickers</Text>
+              <Text size="T300">{t.SettingsPages.emojisStickers}</Text>
             </Chip>
           </Box>
           <Box shrink="No">

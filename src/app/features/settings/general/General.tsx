@@ -3,6 +3,7 @@ import React, {
   FormEventHandler,
   KeyboardEventHandler,
   MouseEventHandler,
+  useContext,
   useEffect,
   useState,
 } from 'react';
@@ -51,7 +52,6 @@ import { useMessageSpacingItems } from '../../../hooks/useMessageSpacing';
 import { useDateFormatItems } from '../../../hooks/useDateFormat';
 import { SequenceCardStyle } from '../styles.css';
 import { context, useTranslation } from '../../../internationalization';
-import { useContext } from 'react';
 
 type ThemeSelectorProps = {
   themeNames: Record<string, string>;

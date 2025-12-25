@@ -40,6 +40,7 @@ import {
 } from '../../../plugins/custom-emoji';
 import { LineClamp2 } from '../../../styles/Text.css';
 import { allRoomsAtom } from '../../../state/room-list/roomList';
+import { useTranslation } from '../../../internationalization';
 import { AccountDataEvent } from '../../../../types/matrix/accountData';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { stopPropagation } from '../../../utils/keyboard';
@@ -54,6 +55,7 @@ function GlobalPackSelector({
   onSelect: (addresses: PackAddress[]) => void;
 }) {
   const mx = useMatrixClient();
+  const [t] = useTranslation();
   const roomToPacks = useMemo(() => {
     const rToP = new Map<string, ImagePack[]>();
     packs
@@ -95,7 +97,7 @@ function GlobalPackSelector({
   const removeSelected = (adds: PackAddress[]) => {
     setSelected((addresses) => {
       const newAddresses = addresses.filter(
-        (addr) => !adds.find((address) => packAddressEqual(addr, address))
+        (addr) => !adds.find((address) => packAddressEqual(addr, address)),
       );
       return newAddresses;
     });
@@ -107,7 +109,7 @@ function GlobalPackSelector({
       <Header size="400" variant="Surface" style={{ padding: `0 ${config.space.S300}` }}>
         <Box grow="Yes">
           <Text size="L400" truncate>
-            Room Packs
+            {t.Features.CommonSettings.EmojisStickers.roomPacks}
           </Text>
         </Box>
         <Box shrink="No">
@@ -117,7 +119,11 @@ function GlobalPackSelector({
             outlined={hasSelected}
             onClick={() => onSelect(selected)}
           >
-            <Text size="B300">{hasSelected ? 'Save' : 'Close'}</Text>
+            <Text size="B300">
+              {hasSelected
+                ? t.Features.CommonSettings.EmojisStickers.save
+                : t.Features.CommonSettings.EmojisStickers.close}
+            </Text>
           </Chip>
         </Box>
       </Header>
@@ -141,7 +147,7 @@ function GlobalPackSelector({
                 .map((pack) => pack.address)
                 .filter((addr) => addr !== undefined);
               const allSelected = roomPackAddresses.every((addr) =>
-                selected.find((address) => packAddressEqual(addr, address))
+                selected.find((address) => packAddressEqual(addr, address)),
               );
 
               return (
@@ -162,7 +168,11 @@ function GlobalPackSelector({
                           addSelected(roomPackAddresses);
                         }}
                       >
-                        <Text size="B300">{allSelected ? 'Unselect All' : 'Select All'}</Text>
+                        <Text size="B300">
+                          {allSelected
+                            ? t.Features.CommonSettings.EmojisStickers.unselectAll
+                            : t.Features.CommonSettings.EmojisStickers.selectAll}
+                        </Text>
                       </Chip>
                     </Box>
                   </Box>
@@ -232,10 +242,10 @@ function GlobalPackSelector({
                   }}
                 >
                   <Text size="H5" align="Center">
-                    No Packs
+                    {t.Features.CommonSettings.EmojisStickers.noPacksTitle}
                   </Text>
                   <Text size="T200" align="Center">
-                    Pack from rooms will appear here. You do not have any room with packs yet.
+                    {t.Features.CommonSettings.EmojisStickers.noPacksDescription}
                   </Text>
                 </Box>
               </SequenceCard>
@@ -252,6 +262,7 @@ type GlobalPacksProps = {
 };
 export function GlobalPacks({ onViewPack }: GlobalPacksProps) {
   const mx = useMatrixClient();
+  const [t] = useTranslation();
   const useAuthentication = useMediaAuthentication();
   const globalPacks = useGlobalImagePacks();
   const [menuCords, setMenuCords] = useState<RectCords>();
@@ -269,9 +280,9 @@ export function GlobalPacks({ onViewPack }: GlobalPacksProps) {
   const nonGlobalPacks = useMemo(
     () =>
       roomsImagePack.filter(
-        (pack) => !globalPacks.find((p) => packAddressEqual(pack.address, p.address))
+        (pack) => !globalPacks.find((p) => packAddressEqual(pack.address, p.address)),
       ),
-    [roomsImagePack, globalPacks]
+    [roomsImagePack, globalPacks],
   );
 
   const [selectedPacks, setSelectedPacks] = useState<PackAddress[]>([]);
@@ -280,9 +291,9 @@ export function GlobalPacks({ onViewPack }: GlobalPacksProps) {
   const unselectedGlobalPacks = useMemo(
     () =>
       nonGlobalPacks.filter(
-        (pack) => !selectedPacks.find((addr) => packAddressEqual(pack.address, addr))
+        (pack) => !selectedPacks.find((addr) => packAddressEqual(pack.address, addr)),
       ),
-    [selectedPacks, nonGlobalPacks]
+    [selectedPacks, nonGlobalPacks],
   );
 
   const handleRemove = (address: PackAddress) => {
@@ -321,7 +332,7 @@ export function GlobalPacks({ onViewPack }: GlobalPacksProps) {
       });
 
       await mx.setAccountData(AccountDataEvent.PoniesEmoteRooms, updatedContent);
-    }, [mx, selectedPacks, removedPacks])
+    }, [mx, selectedPacks, removedPacks]),
   );
 
   const resetChanges = useCallback(() => {
@@ -408,7 +419,7 @@ export function GlobalPacks({ onViewPack }: GlobalPacksProps) {
                 outlined
                 onClick={() => onViewPack(pack)}
               >
-                <Text size="B300">View</Text>
+                <Text size="B300">{t.Features.CommonSettings.EmojisStickers.view}</Text>
               </Button>
             )
           }
@@ -420,7 +431,7 @@ export function GlobalPacks({ onViewPack }: GlobalPacksProps) {
   return (
     <>
       <Box direction="Column" gap="100">
-        <Text size="L400">Favorite Packs</Text>
+        <Text size="L400">{t.Features.CommonSettings.EmojisStickers.favoritePacks}</Text>
         <SequenceCard
           className={SequenceCardStyle}
           variant="SurfaceVariant"
@@ -428,8 +439,8 @@ export function GlobalPacks({ onViewPack }: GlobalPacksProps) {
           gap="400"
         >
           <SettingTile
-            title="Select Pack"
-            description="Pick emojis and stickers pack from rooms to use in all rooms."
+            title={t.Features.CommonSettings.EmojisStickers.selectPack}
+            description={t.Features.CommonSettings.EmojisStickers.selectPackDescription}
             after={
               <>
                 <Button
@@ -440,7 +451,7 @@ export function GlobalPacks({ onViewPack }: GlobalPacksProps) {
                   radii="300"
                   outlined
                 >
-                  <Text size="B300">Select</Text>
+                  <Text size="B300">{t.Features.CommonSettings.EmojisStickers.select}</Text>
                 </Button>
                 <PopOut
                   anchor={menuCords}
@@ -502,11 +513,11 @@ export function GlobalPacks({ onViewPack }: GlobalPacksProps) {
             <Box grow="Yes" direction="Column">
               {applyState.status === AsyncStatus.Error ? (
                 <Text size="T200">
-                  <b>Failed to apply changes! Please try again.</b>
+                  <b>{t.Features.CommonSettings.EmojisStickers.failedToApply}</b>
                 </Text>
               ) : (
                 <Text size="T200">
-                  <b>Changes saved! Apply when ready.</b>
+                  <b>{t.Features.CommonSettings.EmojisStickers.changesSaved}</b>
                 </Text>
               )}
             </Box>
@@ -519,7 +530,7 @@ export function GlobalPacks({ onViewPack }: GlobalPacksProps) {
                 disabled={applyingChanges}
                 onClick={resetChanges}
               >
-                <Text size="B300">Reset</Text>
+                <Text size="B300">{t.Features.CommonSettings.EmojisStickers.reset}</Text>
               </Button>
               <Button
                 size="300"
@@ -529,7 +540,7 @@ export function GlobalPacks({ onViewPack }: GlobalPacksProps) {
                 before={applyingChanges && <Spinner variant="Success" fill="Solid" size="100" />}
                 onClick={applyChanges}
               >
-                <Text size="B300">Apply Changes</Text>
+                <Text size="B300">{t.Features.CommonSettings.EmojisStickers.applyChanges}</Text>
               </Button>
             </Box>
           </Box>
