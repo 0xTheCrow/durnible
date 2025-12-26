@@ -217,7 +217,7 @@ function SelectRoomButton({ roomList, selectedRooms, onChange }: SelectRoomButto
                 gap="100"
                 style={{ padding: config.space.S200, paddingBottom: 0 }}
               >
-                <Text size="L400">Search</Text>
+                <Text size="L400">{t.Common.search}</Text>
                 <Input
                   onChange={handleSearchChange}
                   size="300"
@@ -327,7 +327,7 @@ function SelectRoomButton({ roomList, selectedRooms, onChange }: SelectRoomButto
         radii="Pill"
         before={<Icon size="100" src={Icons.PlusCircle} />}
       >
-        <Text size="T200">Select Rooms</Text>
+        <Text size="T200">{t.Features.Room.MessageSearch.selectRooms}</Text>
       </Chip>
     </PopOut>
   );
@@ -356,10 +356,11 @@ export function SearchFilters({
   onOrderChange,
 }: SearchFiltersProps) {
   const mx = useMatrixClient();
+  const [t] = useTranslation();
 
   return (
     <Box direction="Column" gap="100">
-      <Text size="L400">Filter</Text>
+      <Text size="L400">{t.Features.Room.MessageSearch.filter}</Text>
       <Box gap="200" wrap="Wrap">
         <Chip
           variant={!global ? 'Success' : 'Surface'}
@@ -378,7 +379,7 @@ export function SearchFilters({
             outlined
             onClick={() => onGlobalChange(true)}
           >
-            <Text size="T200">Global</Text>
+            <Text size="T200">{t.Features.Room.MessageSearch.global}</Text>
           </Chip>
         )}
         <Line

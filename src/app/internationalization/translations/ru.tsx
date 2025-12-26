@@ -282,6 +282,12 @@ const ru: Translation = {
     unsupportedRegistration: 'Это приложение не поддерживает регистрацию на этом сервере.',
     haveAccount: 'Уже есть аккаунт?',
     login: 'Войти',
+    username: 'Имя пользователя',
+    password: 'Пароль',
+    confirmPassword: 'Подтвердите пароль',
+    email: 'Email',
+    emailOptional: 'Email (Необязательно)',
+    register: 'Регистрация',
   },
   ResetPassword: {
     title: 'Сброс пароля',
@@ -335,6 +341,8 @@ const ru: Translation = {
       sticker: 'Стикер',
       emoji: 'Эмодзи',
     },
+    search: 'Поиск',
+    searchOrTextReaction: 'Поиск или текстовая реакция',
   },
   ImageEditor: {
     title: 'Редактор изображений',
@@ -417,6 +425,10 @@ const ru: Translation = {
         rooms: 'Комнаты',
         roomsForQuery: (query: string) => `Комнаты по запросу "${query}"`,
         noMatchFound: 'Совпадений не найдено!',
+        filter: 'Фильтр',
+        global: 'Глобальный',
+        selectRooms: 'Выбрать комнаты',
+        searchPlaceholder: 'Поиск по ключевому слову',
       },
     },
     CommonSettings: {

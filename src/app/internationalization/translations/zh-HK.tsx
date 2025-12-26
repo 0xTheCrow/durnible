@@ -274,6 +274,12 @@ const zhHK: Translation = {
     unsupportedRegistration: '此應用程式不支援在此主伺服器上註冊。',
     haveAccount: '已有帳戶？',
     login: '登入',
+    username: '用戶名',
+    password: '密碼',
+    confirmPassword: '確認密碼',
+    email: '電子郵件',
+    emailOptional: '電子郵件（可選）',
+    register: '註冊',
   },
   ResetPassword: {
     title: '重設密碼',
@@ -327,6 +333,8 @@ const zhHK: Translation = {
       sticker: '貼紙',
       emoji: '表情',
     },
+    search: '搜尋',
+    searchOrTextReaction: '搜尋或文字反應',
   },
   ImageEditor: {
     title: '圖像編輯器',
@@ -408,6 +416,10 @@ const zhHK: Translation = {
         rooms: '房間',
         roomsForQuery: (query: string) => `"${query}" 的房間`,
         noMatchFound: '未找到匹配！',
+        filter: '篩選',
+        global: '全域',
+        selectRooms: '選擇房間',
+        searchPlaceholder: '搜尋關鍵字',
       },
     },
     CommonSettings: {

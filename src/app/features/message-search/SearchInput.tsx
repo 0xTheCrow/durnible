@@ -1,5 +1,6 @@
 import React, { FormEventHandler, RefObject } from 'react';
 import { Box, Text, Input, Icon, Icons, Spinner, Chip, config } from 'folds';
+import { useTranslation } from '../../internationalization';
 
 type SearchProps = {
   active?: boolean;
@@ -9,6 +10,8 @@ type SearchProps = {
   onReset: () => void;
 };
 export function SearchInput({ active, loading, searchInputRef, onSearch, onReset }: SearchProps) {
+  const [t] = useTranslation();
+
   const handleSearchSubmit: FormEventHandler<HTMLFormElement> = (evt) => {
     evt.preventDefault();
     const { searchInput } = evt.target as HTMLFormElement & {
@@ -24,7 +27,7 @@ export function SearchInput({ active, loading, searchInputRef, onSearch, onReset
   return (
     <Box as="form" direction="Column" gap="100" onSubmit={handleSearchSubmit}>
       <span data-spacing-node />
-      <Text size="L400">Search</Text>
+      <Text size="L400">{t.Common.search}</Text>
       <Input
         ref={searchInputRef}
         style={{ paddingRight: config.space.S300 }}
@@ -32,7 +35,7 @@ export function SearchInput({ active, loading, searchInputRef, onSearch, onReset
         autoFocus
         size="500"
         variant="Background"
-        placeholder="Search for keyword"
+        placeholder={t.Features.Room.MessageSearch.searchPlaceholder}
         autoComplete="off"
         before={
           active && loading ? (

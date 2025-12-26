@@ -285,6 +285,12 @@ const fr: Translation = {
     unsupportedRegistration: "Cette application ne supporte pas l'inscription sur ce serveur.",
     haveAccount: 'Vous avez déjà un compte ?',
     login: 'Connexion',
+    username: "Nom d'utilisateur",
+    password: 'Mot de passe',
+    confirmPassword: 'Confirmer le mot de passe',
+    email: 'Email',
+    emailOptional: 'Email (Optionnel)',
+    register: "S'inscrire",
   },
   ResetPassword: {
     title: 'Réinitialiser le mot de passe',
@@ -341,6 +347,8 @@ const fr: Translation = {
       sticker: 'Sticker',
       emoji: 'Emoji',
     },
+    search: 'Rechercher',
+    searchOrTextReaction: 'Rechercher ou réaction texte',
   },
   ImageEditor: {
     title: "Éditeur d'image",
@@ -424,6 +432,10 @@ const fr: Translation = {
         rooms: 'Salons',
         roomsForQuery: (query: string) => `Salons pour "${query}"`,
         noMatchFound: 'Aucune correspondance trouvée !',
+        filter: 'Filtrer',
+        global: 'Global',
+        selectRooms: 'Sélectionner les salons',
+        searchPlaceholder: 'Rechercher par mot-clé',
       },
     },
     CommonSettings: {

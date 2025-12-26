@@ -11,12 +11,14 @@ import { roomToParentsAtom } from '../../../state/room/roomToParents';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
 import { BackRouteHandler } from '../../../components/BackRouteHandler';
+import { useTranslation } from '../../../internationalization';
 
 export function SpaceSearch() {
   const mx = useMatrixClient();
   const scrollRef = useRef<HTMLDivElement>(null);
   const space = useSpace();
   const screenSize = useScreenSizeContext();
+  const [t] = useTranslation();
 
   const mDirects = useAtomValue(mDirectAtom);
   const roomToParents = useAtomValue(roomToParentsAtom);
@@ -44,7 +46,7 @@ export function SpaceSearch() {
           <Box justifyContent="Center" alignItems="Center" gap="200">
             {screenSize !== ScreenSize.Mobile && <Icon size="400" src={Icons.Search} />}
             <Text size="H3" truncate>
-              Message Search
+              {t.Pages.Space.messageSearch}
             </Text>
           </Box>
           <Box grow="Yes" basis="No" />

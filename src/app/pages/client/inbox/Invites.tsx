@@ -703,6 +703,7 @@ export function Invites() {
   const { navigateRoom, navigateSpace } = useRoomNavigate();
   const allRooms = useAtomValue(allRoomsAtom);
   const allInviteIds = useAtomValue(allInvitesAtom);
+  const [t] = useTranslation();
 
   const [filter, setFilter] = useState(InviteFilter.Known);
 
@@ -782,7 +783,7 @@ export function Invites() {
               <Box ref={containerRef} direction="Column" gap="600">
                 <Box direction="Column" gap="100">
                   <span data-spacing-node />
-                  <Text size="L400">Filter</Text>
+                  <Text size="L400">{t.Pages.Notifications.filter}</Text>
                   <InviteFilters
                     filter={filter}
                     onFilter={setFilter}

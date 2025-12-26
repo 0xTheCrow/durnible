@@ -280,6 +280,12 @@ const bn: Translation = {
     unsupportedRegistration: 'এই অ্যাপটি এই সার্ভারে রেজিস্ট্রেশন সমর্থন করে না।',
     haveAccount: 'ইতিমধ্যেই অ্যাকাউন্ট আছে?',
     login: 'লগইন',
+    username: 'ইউজারনেম',
+    password: 'পাসওয়ার্ড',
+    confirmPassword: 'পাসওয়ার্ড নিশ্চিত করুন',
+    email: 'ইমেইল',
+    emailOptional: 'ইমেইল (ঐচ্ছিক)',
+    register: 'রেজিস্টার',
   },
   ResetPassword: {
     title: 'পাসওয়ার্ড রিসেট',
@@ -335,6 +341,8 @@ const bn: Translation = {
       sticker: 'স্টিকার',
       emoji: 'ইমোজি',
     },
+    search: 'অনুসন্ধান',
+    searchOrTextReaction: 'অনুসন্ধান বা টেক্সট রিঅ্যাকশন',
   },
   ImageEditor: {
     title: 'ছবি সম্পাদক',
@@ -417,6 +425,10 @@ const bn: Translation = {
         rooms: 'রুমসমূহ',
         roomsForQuery: (query: string) => `"${query}" এর জন্য রুমসমূহ`,
         noMatchFound: 'কোন মিল পাওয়া যায়নি!',
+        filter: 'ফিল্টার',
+        global: 'গ্লোবাল',
+        selectRooms: 'রুম নির্বাচন করুন',
+        searchPlaceholder: 'কীওয়ার্ড খুঁজুন',
       },
     },
     CommonSettings: {

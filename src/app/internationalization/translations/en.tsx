@@ -279,6 +279,12 @@ const en = {
     unsupportedRegistration: 'This application does not support registration on this homeserver.',
     haveAccount: 'Already have an account?',
     login: 'Login',
+    username: 'Username',
+    password: 'Password',
+    confirmPassword: 'Confirm Password',
+    email: 'Email',
+    emailOptional: 'Email (Optional)',
+    register: 'Register',
   },
   ResetPassword: {
     title: 'Reset Password',
@@ -334,6 +340,8 @@ const en = {
       sticker: 'Sticker',
       emoji: 'Emoji',
     },
+    search: 'Search',
+    searchOrTextReaction: 'Search or Text Reaction',
   },
   ImageEditor: {
     title: 'Image Editor',
@@ -416,6 +424,10 @@ const en = {
         rooms: 'Rooms',
         roomsForQuery: (query: string) => `Rooms for "${query}"`,
         noMatchFound: 'No match found!',
+        filter: 'Filter',
+        global: 'Global',
+        selectRooms: 'Select Rooms',
+        searchPlaceholder: 'Search for keyword',
       },
     },
     CommonSettings: {

@@ -284,6 +284,12 @@ const es: Translation = {
     unsupportedRegistration: 'Esta aplicación no soporta el registro en este servidor.',
     haveAccount: '¿Ya tienes cuenta?',
     login: 'Iniciar sesión',
+    username: 'Nombre de usuario',
+    password: 'Contraseña',
+    confirmPassword: 'Confirmar contraseña',
+    email: 'Correo electrónico',
+    emailOptional: 'Correo electrónico (Opcional)',
+    register: 'Registrarse',
   },
   ResetPassword: {
     title: 'Restablecer contraseña',
@@ -340,6 +346,8 @@ const es: Translation = {
       sticker: 'Stickers',
       emoji: 'Emoji',
     },
+    search: 'Buscar',
+    searchOrTextReaction: 'Buscar o reacción de texto',
   },
   ImageEditor: {
     title: 'Editor de imágenes',
@@ -423,6 +431,10 @@ const es: Translation = {
         rooms: 'Salas',
         roomsForQuery: (query: string) => `Salas para "${query}"`,
         noMatchFound: '¡No se han encontrado coincidencias!',
+        filter: 'Filtro',
+        global: 'Global',
+        selectRooms: 'Seleccionar salas',
+        searchPlaceholder: 'Buscar por palabra clave',
       },
     },
     CommonSettings: {

@@ -278,6 +278,12 @@ const ar: Translation = {
     unsupportedRegistration: 'هذا التطبيق لا يدعم التسجيل في هذا الخادم.',
     haveAccount: 'لديك حساب بالفعل؟',
     login: 'تسجيل الدخول',
+    username: 'اسم المستخدم',
+    password: 'كلمة المرور',
+    confirmPassword: 'تأكيد كلمة المرور',
+    email: 'البريد الإلكتروني',
+    emailOptional: 'البريد الإلكتروني (اختياري)',
+    register: 'تسجيل',
   },
   ResetPassword: {
     title: 'إعادة تعيين كلمة المرور',
@@ -333,6 +339,8 @@ const ar: Translation = {
       sticker: 'ملصق',
       emoji: 'إيموجي',
     },
+    search: 'بحث',
+    searchOrTextReaction: 'بحث أو رد فعل نصي',
   },
   ImageEditor: {
     title: 'محرر الصور',
@@ -415,6 +423,10 @@ const ar: Translation = {
         rooms: 'غرف',
         roomsForQuery: (query: string) => `غرف لـ "${query}"`,
         noMatchFound: 'لم يتم العثور على تطابق!',
+        filter: 'تصفية',
+        global: 'عالمي',
+        selectRooms: 'تحديد الغرف',
+        searchPlaceholder: 'البحث عن كلمة مفتاحية',
       },
     },
     CommonSettings: {

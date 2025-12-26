@@ -277,6 +277,12 @@ const id: Translation = {
     unsupportedRegistration: 'Aplikasi ini tidak mendukung pendaftaran di server ini.',
     haveAccount: 'Sudah punya akun?',
     login: 'Masuk',
+    username: 'Nama Pengguna',
+    password: 'Kata Sandi',
+    confirmPassword: 'Konfirmasi Kata Sandi',
+    email: 'Email',
+    emailOptional: 'Email (Opsional)',
+    register: 'Daftar',
   },
   ResetPassword: {
     title: 'Atur Ulang Kata Sandi',
@@ -330,6 +336,8 @@ const id: Translation = {
       sticker: 'Stiker',
       emoji: 'Emoji',
     },
+    search: 'Cari',
+    searchOrTextReaction: 'Cari atau reaksi teks',
   },
   ImageEditor: {
     title: 'Editor Gambar',
@@ -411,6 +419,10 @@ const id: Translation = {
         rooms: 'Ruang',
         roomsForQuery: (query: string) => `Ruang untuk "${query}"`,
         noMatchFound: 'Kecocokan tidak ditemukan!',
+        filter: 'Filter',
+        global: 'Global',
+        selectRooms: 'Pilih ruang',
+        searchPlaceholder: 'Cari dengan kata kunci',
       },
     },
     CommonSettings: {

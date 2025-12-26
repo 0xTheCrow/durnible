@@ -274,6 +274,12 @@ const zhCN: Translation = {
     unsupportedRegistration: '此应用程序不支持在此主服务器上注册。',
     haveAccount: '已有账户？',
     login: '登录',
+    username: '用户名',
+    password: '密码',
+    confirmPassword: '确认密码',
+    email: '电子邮件',
+    emailOptional: '电子邮件（可选）',
+    register: '注册',
   },
   ResetPassword: {
     title: '重置密码',
@@ -327,6 +333,8 @@ const zhCN: Translation = {
       sticker: '贴纸',
       emoji: '表情',
     },
+    search: '搜索',
+    searchOrTextReaction: '搜索或文本反应',
   },
   ImageEditor: {
     title: '图像编辑器',
@@ -408,6 +416,10 @@ const zhCN: Translation = {
         rooms: '房间',
         roomsForQuery: (query: string) => `"${query}" 的房间`,
         noMatchFound: '未找到匹配！',
+        filter: '筛选',
+        global: '全局',
+        selectRooms: '选择房间',
+        searchPlaceholder: '搜索关键字',
       },
     },
     CommonSettings: {

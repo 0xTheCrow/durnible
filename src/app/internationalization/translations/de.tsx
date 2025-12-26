@@ -283,6 +283,12 @@ const de: Translation = {
       'Registrierung auf diesem Homeserver wird von dieser App nicht unterstützt.',
     haveAccount: 'Schon ein Konto?',
     login: 'Anmelden',
+    username: 'Benutzername',
+    password: 'Passwort',
+    confirmPassword: 'Passwort bestätigen',
+    email: 'E-Mail',
+    emailOptional: 'E-Mail (Optional)',
+    register: 'Registrieren',
   },
   ResetPassword: {
     title: 'Passwort zurücksetzen',
@@ -340,6 +346,8 @@ const de: Translation = {
       sticker: 'Sticker',
       emoji: 'Emoji',
     },
+    search: 'Suchen',
+    searchOrTextReaction: 'Suchen oder Textreaktion',
   },
   ImageEditor: {
     title: 'Bildbearbeitung',
@@ -422,6 +430,10 @@ const de: Translation = {
         rooms: 'Räume',
         roomsForQuery: (query: string) => `Räume für "${query}"`,
         noMatchFound: 'Keine Übereinstimmung gefunden!',
+        filter: 'Filter',
+        global: 'Global',
+        selectRooms: 'Räume auswählen',
+        searchPlaceholder: 'Nach Stichwort suchen',
       },
     },
     CommonSettings: {

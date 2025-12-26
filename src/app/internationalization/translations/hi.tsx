@@ -281,6 +281,12 @@ const hi: Translation = {
     unsupportedRegistration: 'यह एप्लिकेशन इस होमसर्वर पर पंजीकरण का समर्थन नहीं करता है।',
     haveAccount: 'खाता है?',
     login: 'लॉगिन',
+    username: 'उपयोगकर्ता नाम',
+    password: 'पासवर्ड',
+    confirmPassword: 'पासवर्ड की पुष्टि करें',
+    email: 'ईमेल',
+    emailOptional: 'ईमेल (वैकल्पिक)',
+    register: 'रजिस्टर करें',
   },
   ResetPassword: {
     title: 'पासवर्ड रीसेट करें',
@@ -336,6 +342,8 @@ const hi: Translation = {
       sticker: 'स्टिकर',
       emoji: 'इमोजी',
     },
+    search: 'खोजें',
+    searchOrTextReaction: 'खोजें या टेक्स्ट रिएक्शन',
   },
   ImageEditor: {
     title: 'छवि संपादक',
@@ -418,6 +426,10 @@ const hi: Translation = {
         rooms: 'कमरे',
         roomsForQuery: (query: string) => `"${query}" के लिए कमरे`,
         noMatchFound: 'कोई मेल नहीं मिला!',
+        filter: 'फिल्टर',
+        global: 'वैश्विक',
+        selectRooms: 'कमरे चुनें',
+        searchPlaceholder: 'कीवर्ड खोजें',
       },
     },
     CommonSettings: {
