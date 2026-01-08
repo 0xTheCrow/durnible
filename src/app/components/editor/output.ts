@@ -212,15 +212,12 @@ export const getMentions = (mx: MatrixClient, roomId: string, editor: Editor): M
     if (node.type === BlockType.CodeBlock) return;
 
     if (node.type === BlockType.Mention) {
-      const mentionId = node.id;      
-      if (mentionId === getCanonicalAliasOrRoomId(mx, roomId)) {
-        if (!node.name.startsWith('#')) {
-          mentionData.room = true;
-        } 
-      } 
+      if (node.name === '@room') {
+        mentionData.room = true;
+      }
       
-      if (isUserId(mentionId) && mentionId !== mx.getUserId()) {
-        mentionData.users.add(mentionId);
+      if (isUserId(node.id) && node.id !== mx.getUserId()) {
+        mentionData.users.add(node.id);
       }
 
       return;
