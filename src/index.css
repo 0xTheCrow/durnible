@@ -20,6 +20,80 @@
 
   --font-emoji: 'Twemoji_DISABLED';
   --font-secondary: 'InterVariable', var(--font-emoji), sans-serif;
+
+  /* =========================================================================
+   * REVY COMMS DESIGN SYSTEM
+   * Premium, AI-native team communication
+   * ========================================================================= */
+
+  /* Background colors */
+  --revy-bg-primary: #0A0A0B;
+  --revy-bg-secondary: #141415;
+  --revy-bg-tertiary: #1C1C1E;
+  --revy-bg-hover: #232326;
+  --revy-bg-active: #2A2A2E;
+
+  /* Text colors */
+  --revy-text-primary: #FAFAFA;
+  --revy-text-secondary: #A1A1A6;
+  --revy-text-tertiary: #6E6E73;
+  --revy-text-inverse: #0A0A0B;
+
+  /* Accent colors */
+  --revy-accent-primary: #6366F1;
+  --revy-accent-primary-hover: #818CF8;
+  --revy-accent-success: #22C55E;
+  --revy-accent-warning: #F59E0B;
+  --revy-accent-danger: #EF4444;
+  --revy-accent-ai: #EC4899;
+
+  /* Border colors */
+  --revy-border-subtle: rgba(255,255,255,0.06);
+  --revy-border-visible: rgba(255,255,255,0.12);
+  --revy-border-focus: rgba(99,102,241,0.5);
+
+  /* Shadows */
+  --revy-shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
+  --revy-shadow-md: 0 4px 12px rgba(0,0,0,0.5);
+  --revy-shadow-lg: 0 12px 40px rgba(0,0,0,0.6);
+  --revy-shadow-glow: 0 0 20px rgba(99,102,241,0.3);
+
+  /* Spacing */
+  --revy-space-1: 4px;
+  --revy-space-2: 8px;
+  --revy-space-3: 12px;
+  --revy-space-4: 16px;
+  --revy-space-5: 20px;
+  --revy-space-6: 24px;
+  --revy-space-8: 32px;
+  --revy-space-10: 40px;
+  --revy-space-12: 48px;
+  --revy-space-16: 64px;
+
+  /* Border radius */
+  --revy-radius-sm: 4px;
+  --revy-radius-md: 8px;
+  --revy-radius-lg: 12px;
+  --revy-radius-xl: 16px;
+  --revy-radius-full: 9999px;
+
+  /* Typography */
+  --revy-font-sans: 'Inter', -apple-system, system-ui, sans-serif;
+  --revy-font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Animation */
+  --revy-duration-instant: 50ms;
+  --revy-duration-fast: 100ms;
+  --revy-duration-normal: 200ms;
+  --revy-duration-slow: 300ms;
+  --revy-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --revy-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --revy-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Layout */
+  --revy-nav-rail-width: 56px;
+  --revy-channel-list-width: 240px;
+  --revy-context-panel-width: 320px;
 }
 
 .dark-theme,
@@ -36,6 +110,67 @@
   --mx-uc-8: hsl(94, 100%, 80%);
 
   --font-secondary: 'InterVariable', var(--font-emoji), sans-serif;
+}
+
+/* =========================================================================
+ * REVY THEME
+ * Premium dark theme for Revy Comms
+ * ========================================================================= */
+.revy-theme {
+  --tc-link: #6366F1;
+
+  /* Override mxid colors with Revy palette */
+  --mx-uc-1: #6366F1;
+  --mx-uc-2: #EC4899;
+  --mx-uc-3: #22C55E;
+  --mx-uc-4: #F59E0B;
+  --mx-uc-5: #14B8A6;
+  --mx-uc-6: #8B5CF6;
+  --mx-uc-7: #3B82F6;
+  --mx-uc-8: #EF4444;
+
+  /* Light mode variant */
+  --revy-bg-primary: #FFFFFF;
+  --revy-bg-secondary: #F9FAFB;
+  --revy-bg-tertiary: #F3F4F6;
+  --revy-bg-hover: #E5E7EB;
+  --revy-bg-active: #D1D5DB;
+
+  --revy-text-primary: #111827;
+  --revy-text-secondary: #6B7280;
+  --revy-text-tertiary: #9CA3AF;
+  --revy-text-inverse: #FFFFFF;
+
+  --revy-border-subtle: rgba(0,0,0,0.06);
+  --revy-border-visible: rgba(0,0,0,0.12);
+
+  --revy-shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --revy-shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+  --revy-shadow-lg: 0 12px 40px rgba(0,0,0,0.15);
+  --revy-shadow-glow: 0 0 20px rgba(99,102,241,0.2);
+}
+
+.revy-theme.dark-theme,
+.revy-dark-theme {
+  /* Dark mode (default Revy) - resets to dark values */
+  --revy-bg-primary: #0A0A0B;
+  --revy-bg-secondary: #141415;
+  --revy-bg-tertiary: #1C1C1E;
+  --revy-bg-hover: #232326;
+  --revy-bg-active: #2A2A2E;
+
+  --revy-text-primary: #FAFAFA;
+  --revy-text-secondary: #A1A1A6;
+  --revy-text-tertiary: #6E6E73;
+  --revy-text-inverse: #0A0A0B;
+
+  --revy-border-subtle: rgba(255,255,255,0.06);
+  --revy-border-visible: rgba(255,255,255,0.12);
+
+  --revy-shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
+  --revy-shadow-md: 0 4px 12px rgba(0,0,0,0.5);
+  --revy-shadow-lg: 0 12px 40px rgba(0,0,0,0.6);
+  --revy-shadow-glow: 0 0 20px rgba(99,102,241,0.3);
 }
 
 html {
