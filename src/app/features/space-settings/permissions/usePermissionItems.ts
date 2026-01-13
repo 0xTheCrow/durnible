@@ -1,136 +1,138 @@
 import { useMemo } from 'react';
 import { StateEvent } from '../../../../types/matrix/room';
 import { PermissionGroup } from '../../common-settings/permissions';
+import { useTranslation } from '../../../internationalization';
 
 export const usePermissionGroups = (): PermissionGroup[] => {
+  const [t] = useTranslation();
   const groups: PermissionGroup[] = useMemo(() => {
     const messagesGroup: PermissionGroup = {
-      name: 'Manage',
+      name: t.Features.CommonSettings.Permissions.manage,
       items: [
         {
           location: {
             state: true,
             key: StateEvent.SpaceChild,
           },
-          name: 'Manage space rooms',
+          name: t.Features.CommonSettings.Permissions.manageSpaceRooms,
         },
         {
           location: {},
-          name: 'Message Events',
+          name: t.Features.CommonSettings.Permissions.messageEvents,
         },
       ],
     };
 
     const moderationGroup: PermissionGroup = {
-      name: 'Moderation',
+      name: t.Features.CommonSettings.Permissions.moderation,
       items: [
         {
           location: {
             action: true,
             key: 'invite',
           },
-          name: 'Invite',
+          name: t.Features.CommonSettings.Permissions.invite,
         },
         {
           location: {
             action: true,
             key: 'kick',
           },
-          name: 'Kick',
+          name: t.Features.CommonSettings.Permissions.kick,
         },
         {
           location: {
             action: true,
             key: 'ban',
           },
-          name: 'Ban',
+          name: t.Features.CommonSettings.Permissions.ban,
         },
       ],
     };
 
     const roomOverviewGroup: PermissionGroup = {
-      name: 'Space Overview',
+      name: t.Features.CommonSettings.Permissions.spaceOverview,
       items: [
         {
           location: {
             state: true,
             key: StateEvent.RoomAvatar,
           },
-          name: 'Space Avatar',
+          name: t.Features.CommonSettings.Permissions.spaceAvatar,
         },
         {
           location: {
             state: true,
             key: StateEvent.RoomName,
           },
-          name: 'Space Name',
+          name: t.Features.CommonSettings.Permissions.spaceName,
         },
         {
           location: {
             state: true,
             key: StateEvent.RoomTopic,
           },
-          name: 'Space Topic',
+          name: t.Features.CommonSettings.Permissions.spaceTopic,
         },
       ],
     };
 
     const roomSettingsGroup: PermissionGroup = {
-      name: 'Settings',
+      name: t.Features.CommonSettings.Permissions.settings,
       items: [
         {
           location: {
             state: true,
             key: StateEvent.RoomJoinRules,
           },
-          name: 'Change Space Access',
+          name: t.Features.CommonSettings.Permissions.changeSpaceAccess,
         },
         {
           location: {
             state: true,
             key: StateEvent.RoomCanonicalAlias,
           },
-          name: 'Publish Address',
+          name: t.Features.CommonSettings.Permissions.publishAddress,
         },
         {
           location: {
             state: true,
             key: StateEvent.RoomPowerLevels,
           },
-          name: 'Change All Permission',
+          name: t.Features.CommonSettings.Permissions.changeAllPermission,
         },
         {
           location: {
             state: true,
             key: StateEvent.PowerLevelTags,
           },
-          name: 'Edit Power Levels',
+          name: t.Features.CommonSettings.Permissions.editPowerLevels,
         },
         {
           location: {
             state: true,
             key: StateEvent.RoomTombstone,
           },
-          name: 'Upgrade Space',
+          name: t.Features.CommonSettings.Permissions.upgradeSpace,
         },
         {
           location: {
             state: true,
           },
-          name: 'Other Settings',
+          name: t.Features.CommonSettings.Permissions.otherSettings,
         },
       ],
     };
 
     const otherSettingsGroup: PermissionGroup = {
-      name: 'Other',
+      name: t.Features.CommonSettings.Permissions.other,
       items: [
         {
           location: {
             state: true,
             key: StateEvent.RoomServerAcl,
           },
-          name: 'Change Server ACLs',
+          name: t.Features.CommonSettings.Permissions.changeServerAcls,
         },
       ],
     };
@@ -142,7 +144,7 @@ export const usePermissionGroups = (): PermissionGroup[] => {
       roomSettingsGroup,
       otherSettingsGroup,
     ];
-  }, []);
+  }, [t]);
 
   return groups;
 };

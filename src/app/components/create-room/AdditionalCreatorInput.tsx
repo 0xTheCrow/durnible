@@ -31,6 +31,7 @@ import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { stopPropagation } from '../../utils/keyboard';
 import { useAsyncSearch, UseAsyncSearchOptions } from '../../hooks/useAsyncSearch';
 import { highlightText, makeHighlightRegex } from '../../plugins/react-custom-html-parser';
+import { useTranslation } from '../../internationalization';
 
 export const useAdditionalCreators = (defaultCreators?: string[]) => {
   const mx = useMatrixClient();
@@ -83,6 +84,7 @@ export function AdditionalCreatorInput({
   onRemove,
   disabled,
 }: AdditionalCreatorInputProps) {
+  const [t] = useTranslation();
   const mx = useMatrixClient();
   const [menuCords, setMenuCords] = useState<RectCords>();
   const directUsers = useDirectUsers();
@@ -150,8 +152,8 @@ export function AdditionalCreatorInput({
 
   return (
     <SettingTile
-      title="Founders"
-      description="Special privileged users can be assigned during creation. These users have elevated control and can only be modified during a upgrade."
+      title={t.AdditionalCreatorInput.title}
+      description={t.AdditionalCreatorInput.description}
     >
       <Box shrink="No" direction="Column" gap="100">
         <Box gap="200" wrap="Wrap">
@@ -201,7 +203,7 @@ export function AdditionalCreatorInput({
                           variant="Background"
                           radii="300"
                           outlined
-                          placeholder="@username:server"
+                          placeholder={t.AdditionalCreatorInput.placeholder}
                           onChange={handleCreatorChange}
                           onKeyDown={handleCreatorKeyDown}
                         />
@@ -213,7 +215,7 @@ export function AdditionalCreatorInput({
                         onClick={handleEnterClick}
                         disabled={!validUserId}
                       >
-                        <Text size="B400">Enter</Text>
+                        <Text size="B400">{t.AdditionalCreatorInput.enter}</Text>
                       </Button>
                     </Box>
                     <Line size="300" />
@@ -263,10 +265,10 @@ export function AdditionalCreatorInput({
                           gap="100"
                         >
                           <Text size="H6" align="Center">
-                            No Suggestions
+                            {t.AdditionalCreatorInput.noSuggestionsTitle}
                           </Text>
                           <Text size="T200" align="Center">
-                            Please provide the user ID and hit Enter.
+                            {t.AdditionalCreatorInput.noSuggestionsDescription}
                           </Text>
                         </Box>
                       )}

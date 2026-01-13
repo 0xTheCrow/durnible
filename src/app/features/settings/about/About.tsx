@@ -6,6 +6,7 @@ import { SequenceCardStyle } from '../styles.css';
 import { SettingTile } from '../../../components/setting-tile';
 import CinnySVG from '../../../../../public/res/svg/cinny.svg';
 import { clearCacheAndReload } from '../../../../client/initMatrix';
+import { useTranslation } from '../../../internationalization';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 
 type AboutProps = {
@@ -13,6 +14,7 @@ type AboutProps = {
 };
 export function About({ requestClose }: AboutProps) {
   const mx = useMatrixClient();
+  const [t] = useTranslation();
 
   return (
     <Page>
@@ -20,7 +22,7 @@ export function About({ requestClose }: AboutProps) {
         <Box grow="Yes" gap="200">
           <Box grow="Yes" alignItems="Center" gap="200">
             <Text size="H3" truncate>
-              About
+              {t.Settings.About.title}
             </Text>
           </Box>
           <Box shrink="No">
@@ -48,7 +50,7 @@ export function About({ requestClose }: AboutProps) {
                       <Text size="H3">Cinny</Text>
                       <Text size="T200">v4.10.2</Text>
                     </Box>
-                    <Text>Yet another matrix client.</Text>
+                    <Text>{t.WelcomePage.subtitle}</Text>
                   </Box>
 
                   <Box gap="200" wrap="Wrap">
@@ -63,7 +65,7 @@ export function About({ requestClose }: AboutProps) {
                       radii="300"
                       before={<Icon src={Icons.Code} size="100" filled />}
                     >
-                      <Text size="B300">Source Code</Text>
+                      <Text size="B300">{t.WelcomePage.sourceCode}</Text>
                     </Button>
                     <Button
                       as="a"
@@ -76,13 +78,13 @@ export function About({ requestClose }: AboutProps) {
                       radii="300"
                       before={<Icon src={Icons.Heart} size="100" filled />}
                     >
-                      <Text size="B300">Support</Text>
+                      <Text size="B300">{t.WelcomePage.support}</Text>
                     </Button>
                   </Box>
                 </Box>
               </Box>
               <Box direction="Column" gap="100">
-                <Text size="L400">Options</Text>
+                <Text size="L400">{t.Settings.General.options}</Text>
                 <SequenceCard
                   className={SequenceCardStyle}
                   variant="SurfaceVariant"
@@ -90,8 +92,8 @@ export function About({ requestClose }: AboutProps) {
                   gap="400"
                 >
                   <SettingTile
-                    title="Clear Cache & Reload"
-                    description="Clear all your locally stored data and reload from server."
+                    title={t.Settings.About.clearCacheTitle}
+                    description={t.Settings.About.clearCacheDescription}
                     after={
                       <Button
                         onClick={() => clearCacheAndReload(mx)}
@@ -101,14 +103,14 @@ export function About({ requestClose }: AboutProps) {
                         radii="300"
                         outlined
                       >
-                        <Text size="B300">Clear Cache</Text>
+                        <Text size="B300">{t.Settings.About.clearCache}</Text>
                       </Button>
                     }
                   />
                 </SequenceCard>
               </Box>
               <Box direction="Column" gap="100">
-                <Text size="L400">Credits</Text>
+                <Text size="L400">{t.Settings.About.credits}</Text>
                 <SequenceCard
                   className={SequenceCardStyle}
                   variant="SurfaceVariant"

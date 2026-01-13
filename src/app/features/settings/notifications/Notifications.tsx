@@ -8,18 +8,21 @@ import { KeywordMessagesNotifications } from './KeywordMessages';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SequenceCardStyle } from '../styles.css';
 import { SettingTile } from '../../../components/setting-tile';
+import { useTranslation } from '../../../internationalization';
 
 type NotificationsProps = {
   requestClose: () => void;
 };
 export function Notifications({ requestClose }: NotificationsProps) {
+  const [t] = useTranslation();
+
   return (
     <Page>
       <PageHeader outlined={false}>
         <Box grow="Yes" gap="200">
           <Box grow="Yes" alignItems="Center" gap="200">
             <Text size="H3" truncate>
-              Notifications
+              {t.NotificationsPage.title}
             </Text>
           </Box>
           <Box shrink="No">
@@ -38,7 +41,7 @@ export function Notifications({ requestClose }: NotificationsProps) {
               <SpecialMessagesNotifications />
               <KeywordMessagesNotifications />
               <Box direction="Column" gap="100">
-                <Text size="L400">Block Messages</Text>
+                <Text size="L400">{t.NotificationsPage.blockMessages}</Text>
                 <SequenceCard
                   className={SequenceCardStyle}
                   variant="SurfaceVariant"
@@ -46,7 +49,7 @@ export function Notifications({ requestClose }: NotificationsProps) {
                   gap="400"
                 >
                   <SettingTile
-                    description={'This option has been moved to "Account > Block Users" section.'}
+                    description={t.NotificationsPage.blockMessagesDescription}
                   />
                 </SequenceCard>
               </Box>

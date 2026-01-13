@@ -44,11 +44,14 @@ import { createUploadAtom, UploadSuccess } from '../../../state/upload';
 import { CompactUploadCardRenderer } from '../../../components/upload-card';
 import { useCapabilities } from '../../../hooks/useCapabilities';
 
+import { useTranslation } from '../../../internationalization';
+
 type ProfileProps = {
   profile: UserProfile;
   userId: string;
 };
 function ProfileAvatar({ profile, userId }: ProfileProps) {
+  const [t] = useTranslation();
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
   const capabilities = useCapabilities();
@@ -91,7 +94,7 @@ function ProfileAvatar({ profile, userId }: ProfileProps) {
     <SettingTile
       title={
         <Text as="span" size="L400">
-          Avatar
+          {t.Settings.Account.Profile.avatar}
         </Text>
       }
       after={
@@ -123,7 +126,7 @@ function ProfileAvatar({ profile, userId }: ProfileProps) {
             radii="300"
             disabled={disableSetAvatar}
           >
-            <Text size="B300">Upload</Text>
+            <Text size="B300">{t.Settings.Account.Profile.upload}</Text>
           </Button>
           {avatarUrl && (
             <Button
@@ -134,7 +137,7 @@ function ProfileAvatar({ profile, userId }: ProfileProps) {
               disabled={disableSetAvatar}
               onClick={() => setAlertRemove(true)}
             >
-              <Text size="B300">Remove</Text>
+              <Text size="B300">{t.Settings.Account.Profile.remove}</Text>
             </Button>
           )}
         </Box>
@@ -153,7 +156,7 @@ function ProfileAvatar({ profile, userId }: ProfileProps) {
             >
               <Modal className={ModalWide} variant="Surface" size="500">
                 <ImageEditor
-                  name={imageFile?.name ?? 'Unnamed'}
+                  name={imageFile?.name ?? t.Settings.Account.Profile.unnamed}
                   url={imageFileURL}
                   requestClose={handleRemoveUpload}
                 />
@@ -183,7 +186,7 @@ function ProfileAvatar({ profile, userId }: ProfileProps) {
                 size="500"
               >
                 <Box grow="Yes">
-                  <Text size="H4">Remove Avatar</Text>
+                  <Text size="H4">{t.Settings.Account.Profile.removeAvatarTitle}</Text>
                 </Box>
                 <IconButton size="300" onClick={() => setAlertRemove(false)} radii="300">
                   <Icon src={Icons.Cross} />
@@ -191,10 +194,10 @@ function ProfileAvatar({ profile, userId }: ProfileProps) {
               </Header>
               <Box style={{ padding: config.space.S400 }} direction="Column" gap="400">
                 <Box direction="Column" gap="200">
-                  <Text priority="400">Are you sure you want to remove profile avatar?</Text>
+                  <Text priority="400">{t.Settings.Account.Profile.removeAvatarConfirm}</Text>
                 </Box>
                 <Button variant="Critical" onClick={handleRemoveAvatar}>
-                  <Text size="B400">Remove</Text>
+                  <Text size="B400">{t.Settings.Account.Profile.remove}</Text>
                 </Button>
               </Box>
             </Dialog>
@@ -206,6 +209,7 @@ function ProfileAvatar({ profile, userId }: ProfileProps) {
 }
 
 function ProfileDisplayName({ profile, userId }: ProfileProps) {
+  const [t] = useTranslation();
   const mx = useMatrixClient();
   const capabilities = useCapabilities();
   const disableSetDisplayname = capabilities['m.set_displayname']?.enabled === false;
@@ -248,7 +252,7 @@ function ProfileDisplayName({ profile, userId }: ProfileProps) {
     <SettingTile
       title={
         <Text as="span" size="L400">
-          Display Name
+          {t.Settings.Account.Profile.displayName}
         </Text>
       }
     >
@@ -295,7 +299,7 @@ function ProfileDisplayName({ profile, userId }: ProfileProps) {
             type="submit"
           >
             {changingDisplayName && <Spinner variant="Success" fill="Solid" size="300" />}
-            <Text size="B400">Save</Text>
+            <Text size="B400">{t.Settings.Account.Profile.save}</Text>
           </Button>
         </Box>
       </Box>
@@ -304,13 +308,14 @@ function ProfileDisplayName({ profile, userId }: ProfileProps) {
 }
 
 export function Profile() {
+  const [t] = useTranslation();
   const mx = useMatrixClient();
   const userId = mx.getUserId()!;
   const profile = useUserProfile(userId);
 
   return (
     <Box direction="Column" gap="100">
-      <Text size="L400">Profile</Text>
+      <Text size="L400">{t.Settings.Account.Profile.title}</Text>
       <SequenceCard
         className={SequenceCardStyle}
         variant="SurfaceVariant"

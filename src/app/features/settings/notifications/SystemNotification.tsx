@@ -10,8 +10,10 @@ import { getNotificationState, usePermissionState } from '../../../hooks/usePerm
 import { useEmailNotifications } from '../../../hooks/useEmailNotifications';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
+import { useTranslation } from '../../../internationalization';
 
 function EmailNotification() {
+  const [t] = useTranslation();
   const mx = useMatrixClient();
   const [result, refreshResult] = useEmailNotifications();
 
@@ -39,8 +41,8 @@ function EmailNotification() {
           kind: null,
         } as unknown as IPusherRequest);
       },
-      [mx]
-    )
+      [mx],
+    ),
   );
 
   const handleChange = (value: boolean) => {
@@ -53,21 +55,21 @@ function EmailNotification() {
 
   return (
     <SettingTile
-      title="Email Notification"
+      title={t.SystemNotification.emailNotification}
       description={
         <>
           {result && !result.email && (
             <Text as="span" style={{ color: color.Critical.Main }} size="T200">
-              Your account does not have any email attached.
+              {t.SystemNotification.noEmailAttached}
             </Text>
           )}
-          {result && result.email && <>Send notification to your email. {`("${result.email}")`}</>}
+          {result && result.email && <>{t.SystemNotification.sendNotificationToEmailWithAddress(result.email)}</>}
           {result === null && (
             <Text as="span" style={{ color: color.Critical.Main }} size="T200">
-              Unexpected Error!
+              {t.SystemNotification.unexpectedError}
             </Text>
           )}
-          {result === undefined && 'Send notification to your email.'}
+          {result === undefined && t.SystemNotification.sendNotificationToEmail}
         </>
       }
       after={
@@ -89,8 +91,9 @@ export function SystemNotification() {
   const [showNotifications, setShowNotifications] = useSetting(settingsAtom, 'showNotifications');
   const [isNotificationSounds, setIsNotificationSounds] = useSetting(
     settingsAtom,
-    'isNotificationSounds'
+    'isNotificationSounds',
   );
+  const [t] = useTranslation();
 
   const requestNotificationPermission = () => {
     window.Notification.requestPermission();
@@ -98,7 +101,7 @@ export function SystemNotification() {
 
   return (
     <Box direction="Column" gap="100">
-      <Text size="L400">System</Text>
+      <Text size="L400">{t.SystemNotification.system}</Text>
       <SequenceCard
         className={SequenceCardStyle}
         variant="SurfaceVariant"
@@ -106,7 +109,7 @@ export function SystemNotification() {
         gap="400"
       >
         <SettingTile
-          title="Desktop Notifications"
+          title={t.SystemNotification.desktopNotifications}
           description={
             notifPermission === 'denied' ? (
               <Text as="span" style={{ color: color.Critical.Main }} size="T200">
@@ -115,7 +118,7 @@ export function SystemNotification() {
                   : 'Notifications are not supported by the system.'}
               </Text>
             ) : (
-              <span>Show desktop notifications when message arrive.</span>
+              <span>{t.SystemNotification.desktopNotificationsDescription}</span>
             )
           }
           after={
@@ -140,8 +143,8 @@ export function SystemNotification() {
         gap="400"
       >
         <SettingTile
-          title="Notification Sound"
-          description="Play sound when new message arrive."
+          title={t.SystemNotification.notificationSound}
+          description={t.SystemNotification.notificationSoundDescription}
           after={<Switch value={isNotificationSounds} onChange={setIsNotificationSounds} />}
         />
       </SequenceCard>

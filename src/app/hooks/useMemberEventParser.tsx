@@ -5,6 +5,8 @@ import { IMemberContent, Membership } from '../../types/matrix/room';
 import { getMxIdLocalPart } from '../utils/matrix';
 import { isMembershipChanged } from '../utils/room';
 
+import { useTranslation } from '../internationalization';
+
 export type ParsedResult = {
   icon: IconSrc;
   body: ReactNode;
@@ -13,6 +15,7 @@ export type ParsedResult = {
 export type MemberEventParser = (mEvent: MatrixEvent) => ParsedResult;
 
 export const useMemberEventParser = (): MemberEventParser => {
+  const [t] = useTranslation();
   const parseMemberEvent: MemberEventParser = (mEvent) => {
     const content = mEvent.getContent<IMemberContent>();
     const prevContent = mEvent.getPrevContent() as IMemberContent;
@@ -23,7 +26,7 @@ export const useMemberEventParser = (): MemberEventParser => {
     if (!senderId || !userId)
       return {
         icon: Icons.User,
-        body: 'Broken membership event',
+        body: t.Hooks.MemberEventParser.broken,
       };
 
     const senderName = getMxIdLocalPart(senderId);
@@ -40,9 +43,9 @@ export const useMemberEventParser = (): MemberEventParser => {
             body: (
               <>
                 <b>{senderName}</b>
-                {' accepted '}
+                {t.Hooks.MemberEventParser.accepted}
                 <b>{userName}</b>
-                {`'s join request `}
+                {t.Hooks.MemberEventParser.joinRequest}
                 {reason}
               </>
             ),
@@ -54,7 +57,7 @@ export const useMemberEventParser = (): MemberEventParser => {
           body: (
             <>
               <b>{senderName}</b>
-              {' invited '}
+              {t.Hooks.MemberEventParser.invited}
               <b>{userName}</b> {reason}
             </>
           ),
@@ -67,7 +70,7 @@ export const useMemberEventParser = (): MemberEventParser => {
           body: (
             <>
               <b>{userName}</b>
-              {' request to join room '}
+              {t.Hooks.MemberEventParser.requestToJoin}
               {reason}
             </>
           ),
@@ -80,7 +83,7 @@ export const useMemberEventParser = (): MemberEventParser => {
           body: (
             <>
               <b>{userName}</b>
-              {' joined the room'}
+              {t.Hooks.MemberEventParser.joined}
             </>
           ),
         };
@@ -94,15 +97,15 @@ export const useMemberEventParser = (): MemberEventParser => {
               senderId === userId ? (
                 <>
                   <b>{userName}</b>
-                  {' rejected the invitation '}
+                  {t.Hooks.MemberEventParser.rejectedInvitation}
                   {reason}
                 </>
               ) : (
                 <>
                   <b>{senderName}</b>
-                  {' rejected '}
+                  {t.Hooks.MemberEventParser.rejected}
                   <b>{userName}</b>
-                  {`'s join request `}
+                  {t.Hooks.MemberEventParser.joinRequest}
                   {reason}
                 </>
               ),
@@ -116,15 +119,15 @@ export const useMemberEventParser = (): MemberEventParser => {
               senderId === userId ? (
                 <>
                   <b>{userName}</b>
-                  {' revoked joined request '}
+                  {t.Hooks.MemberEventParser.revokedJoinedRequest}
                   {reason}
                 </>
               ) : (
                 <>
                   <b>{senderName}</b>
-                  {' revoked '}
+                  {t.Hooks.MemberEventParser.revoked}
                   <b>{userName}</b>
-                  {`'s invite `}
+                  {t.Hooks.MemberEventParser.invite}
                   {reason}
                 </>
               ),
@@ -137,7 +140,7 @@ export const useMemberEventParser = (): MemberEventParser => {
             body: (
               <>
                 <b>{senderName}</b>
-                {' unbanned '}
+                {t.Hooks.MemberEventParser.unbanned}
                 <b>{userName}</b> {reason}
               </>
             ),
@@ -150,13 +153,13 @@ export const useMemberEventParser = (): MemberEventParser => {
             senderId === userId ? (
               <>
                 <b>{userName}</b>
-                {' left the room '}
+                {t.Hooks.MemberEventParser.left}
                 {reason}
               </>
             ) : (
               <>
                 <b>{senderName}</b>
-                {' kicked '}
+                {t.Hooks.MemberEventParser.kicked}
                 <b>{userName}</b> {reason}
               </>
             ),
@@ -169,7 +172,7 @@ export const useMemberEventParser = (): MemberEventParser => {
           body: (
             <>
               <b>{senderName}</b>
-              {' banned '}
+              {t.Hooks.MemberEventParser.banned}
               <b>{userName}</b> {reason}
             </>
           ),
@@ -189,13 +192,13 @@ export const useMemberEventParser = (): MemberEventParser => {
           typeof content.displayname === 'string' ? (
             <>
               <b>{prevUserName}</b>
-              {' changed display name to '}
+              {t.Hooks.MemberEventParser.changedDisplayName}
               <b>{userName}</b>
             </>
           ) : (
             <>
               <b>{prevUserName}</b>
-              {' removed their display name '}
+              {t.Hooks.MemberEventParser.removedDisplayName}
             </>
           ),
       };
@@ -207,12 +210,12 @@ export const useMemberEventParser = (): MemberEventParser => {
           content.avatar_url && typeof content.avatar_url === 'string' ? (
             <>
               <b>{userName}</b>
-              {' changed their avatar'}
+              {t.Hooks.MemberEventParser.changedAvatar}
             </>
           ) : (
             <>
               <b>{userName}</b>
-              {' removed their avatar '}
+              {t.Hooks.MemberEventParser.removedAvatar}
             </>
           ),
       };
@@ -220,7 +223,7 @@ export const useMemberEventParser = (): MemberEventParser => {
 
     return {
       icon: Icons.User,
-      body: 'Membership event with no changes',
+      body: t.Hooks.MemberEventParser.noChanges,
     };
   };
 

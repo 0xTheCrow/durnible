@@ -29,6 +29,7 @@ import { LogoutDialog } from '../../../components/LogoutDialog';
 import { stopPropagation } from '../../../utils/keyboard';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
+import { useTranslation } from '../../../internationalization';
 
 export function DeviceTilePlaceholder() {
   return (
@@ -43,17 +44,18 @@ export function DeviceTilePlaceholder() {
 }
 
 function DeviceActiveTime({ ts }: { ts: number }) {
+  const [t] = useTranslation();
   const [hour24Clock] = useSetting(settingsAtom, 'hour24Clock');
   const [dateFormatString] = useSetting(settingsAtom, 'dateFormatString');
 
   return (
     <Text className={BreakWord} size="T200">
       <Text size="Inherit" as="span" priority="300">
-        {'Last activity: '}
+        {t.Settings.DevicesPage.lastActivity}
       </Text>
       <>
-        {today(ts) && 'Today'}
-        {yesterday(ts) && 'Yesterday'}
+        {today(ts) && t.Settings.DevicesPage.today}
+        {yesterday(ts) && t.Settings.DevicesPage.yesterday}
         {!today(ts) && !yesterday(ts) && timeDayMonYear(ts, dateFormatString)}{' '}
         {timeHourMinute(ts, hour24Clock)}
       </>
@@ -62,16 +64,17 @@ function DeviceActiveTime({ ts }: { ts: number }) {
 }
 
 function DeviceDetails({ device }: { device: IMyDevice }) {
+  const [t] = useTranslation();
   return (
     <>
       {typeof device.device_id === 'string' && (
         <Text className={BreakWord} size="T200" priority="300">
-          Device ID: <i>{device.device_id}</i>
+          {t.Settings.DevicesPage.deviceId} <i>{device.device_id}</i>
         </Text>
       )}
       {typeof device.last_seen_ip === 'string' && (
         <Text className={BreakWord} size="T200" priority="300">
-          IP Address: <i>{device.last_seen_ip}</i>
+          {t.Settings.DevicesPage.ipAddress} <i>{device.last_seen_ip}</i>
         </Text>
       )}
     </>
@@ -82,6 +85,7 @@ type DeviceKeyDetailsProps = {
   crypto: CryptoApi;
 };
 export function DeviceKeyDetails({ crypto }: DeviceKeyDetailsProps) {
+  const [t] = useTranslation();
   const [keysState, loadKeys] = useAsyncCallback(
     useCallback(() => {
       const keys = crypto.getOwnDeviceKeys();
@@ -97,8 +101,8 @@ export function DeviceKeyDetails({ crypto }: DeviceKeyDetailsProps) {
 
   return (
     <Text className={BreakWord} size="T200" priority="300">
-      Device Key:{' '}
-      <i>{keysState.status === AsyncStatus.Success ? keysState.data.ed25519 : 'loading...'}</i>
+      {t.Settings.DevicesPage.deviceKey}{' '}
+      <i>{keysState.status === AsyncStatus.Success ? keysState.data.ed25519 : t.Settings.DevicesPage.loading}</i>
     </Text>
   );
 }
@@ -110,6 +114,7 @@ type DeviceRenameProps = {
   refreshDeviceList: () => Promise<void>;
 };
 function DeviceRename({ device, onCancel, onRename, refreshDeviceList }: DeviceRenameProps) {
+  const [t] = useTranslation();
   const mx = useMatrixClient();
 
   const [renameState, rename] = useAsyncCallback<void, MatrixError, [string]>(
@@ -145,7 +150,7 @@ function DeviceRename({ device, onCancel, onRename, refreshDeviceList }: DeviceR
 
   return (
     <Box as="form" onSubmit={handleSubmit} direction="Column" gap="100">
-      <Text size="L400">Device Name</Text>
+      <Text size="L400">{t.Settings.DevicesPage.deviceName}</Text>
       <Box gap="200">
         <Box grow="Yes" direction="Column">
           <Input
@@ -169,7 +174,7 @@ function DeviceRename({ device, onCancel, onRename, refreshDeviceList }: DeviceR
             disabled={renaming}
             before={renaming && <Spinner size="100" variant="Success" fill="Solid" />}
           >
-            <Text size="B300">Save</Text>
+            <Text size="B300">{t.Settings.General.save}</Text>
           </Button>
           <Button
             type="button"
@@ -180,7 +185,7 @@ function DeviceRename({ device, onCancel, onRename, refreshDeviceList }: DeviceR
             onClick={onCancel}
             disabled={renaming}
           >
-            <Text size="B300">Cancel</Text>
+            <Text size="B300">{t.UIAFlow.cancel}</Text>
           </Button>
         </Box>
       </Box>
@@ -189,13 +194,14 @@ function DeviceRename({ device, onCancel, onRename, refreshDeviceList }: DeviceR
           {renameState.error.message}
         </Text>
       ) : (
-        <Text size="T200">Device names are visible to public.</Text>
+        <Text size="T200">{t.Settings.DevicesPage.deviceNamesVisible}</Text>
       )}
     </Box>
   );
 }
 
 export function DeviceLogoutBtn() {
+  const [t] = useTranslation();
   const [prompt, setPrompt] = useState(false);
 
   const handleClose = () => setPrompt(false);
@@ -203,7 +209,7 @@ export function DeviceLogoutBtn() {
   return (
     <>
       <Chip variant="Secondary" fill="Soft" radii="Pill" onClick={() => setPrompt(true)}>
-        <Text size="B300">Logout</Text>
+        <Text size="B300">{t.Settings.DevicesPage.logout}</Text>
       </Chip>
       {prompt && (
         <Overlay open backdrop={<OverlayBackdrop />}>
@@ -236,6 +242,7 @@ export function DeviceDeleteBtn({
   onDeleteToggle,
   disabled,
 }: DeviceDeleteBtnProps) {
+  const [t] = useTranslation();
   return deleted ? (
     <Chip
       variant="Critical"
@@ -244,7 +251,7 @@ export function DeviceDeleteBtn({
       onClick={() => onDeleteToggle(deviceId)}
       disabled={disabled}
     >
-      <Text size="B300">Undo</Text>
+      <Text size="B300">{t.Settings.DevicesPage.undo}</Text>
     </Chip>
   ) : (
     <Chip
@@ -275,6 +282,7 @@ export function DeviceTile({
   options,
   children,
 }: DeviceTileProps) {
+  const [t] = useTranslation();
   const activeTs = device.last_seen_ts;
   const [details, setDetails] = useState(false);
   const [edit, setEdit] = useState(false);
@@ -307,7 +315,7 @@ export function DeviceTile({
                   onClick={() => setEdit(true)}
                   disabled={disabled}
                 >
-                  <Text size="B300">Edit</Text>
+                  <Text size="B300">{t.Settings.DevicesPage.edit}</Text>
                 </Chip>
               )}
             </Box>

@@ -13,6 +13,7 @@ import {
   IconButton,
 } from 'folds';
 import FocusTrap from 'focus-trap-react';
+import { useTranslation } from '../internationalization';
 
 export type UIAFlowOverlayProps = {
   currentStep: number;
@@ -26,6 +27,7 @@ export function UIAFlowOverlay({
   children,
   onCancel,
 }: UIAFlowOverlayProps) {
+  const [t] = useTranslation();
   return (
     <Overlay open backdrop={<OverlayBackdrop />}>
       <FocusTrap focusTrapOptions={{ initialFocus: false, escapeDeactivates: false }}>
@@ -41,12 +43,12 @@ export function UIAFlowOverlay({
             gap="200"
           >
             <Chip as="div" radii="Pill" outlined>
-              <Text as="span" size="T300">{`Step ${currentStep}/${stepCount}`}</Text>
+              <Text as="span" size="T300">{t.UIAFlow.stepIndicator(currentStep, stepCount)}</Text>
             </Chip>
             <TooltipProvider
               tooltip={
                 <Tooltip variant="Critical">
-                  <Text>Exit</Text>
+                  <Text>{t.UIAFlow.exitTooltip}</Text>
                 </Tooltip>
               }
               position="Top"

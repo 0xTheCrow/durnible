@@ -12,6 +12,7 @@ import { SupportedUIAFlowsLoader } from '../../../components/SupportedUIAFlowsLo
 import { getLoginPath } from '../../pathUtils';
 import { usePathWithOrigin } from '../../../hooks/usePathWithOrigin';
 import { RegisterPathSearchParams } from '../../paths';
+import { useTranslation } from '../../../internationalization';
 
 const useRegisterSearchParams = (searchParams: URLSearchParams): RegisterPathSearchParams =>
   useMemo(
@@ -24,6 +25,7 @@ const useRegisterSearchParams = (searchParams: URLSearchParams): RegisterPathSea
   );
 
 export function Register() {
+  const [t] = useTranslation();
   const server = useAuthServer();
   const { loginFlows, registerFlows } = useAuthFlows();
   const [searchParams] = useSearchParams();
@@ -36,21 +38,21 @@ export function Register() {
   return (
     <Box direction="Column" gap="500">
       <Text size="H2" priority="400">
-        Register
+        {t.Register.title}
       </Text>
       {registerFlows.status === RegisterFlowStatus.RegistrationDisabled && !sso && (
         <Text style={{ color: color.Critical.Main }} size="T300">
-          Registration has been disabled on this homeserver.
+          {t.Register.registrationDisabled}
         </Text>
       )}
       {registerFlows.status === RegisterFlowStatus.RateLimited && !sso && (
         <Text style={{ color: color.Critical.Main }} size="T300">
-          You have been rate-limited! Please try after some time.
+          {t.Register.rateLimited}
         </Text>
       )}
       {registerFlows.status === RegisterFlowStatus.InvalidRequest && !sso && (
         <Text style={{ color: color.Critical.Main }} size="T300">
-          Invalid Request! Failed to get any registration options.
+          {t.Register.invalidRequest}
         </Text>
       )}
       {registerFlows.status === RegisterFlowStatus.FlowRequired && (
@@ -62,7 +64,7 @@ export function Register() {
             {(supportedFlows) =>
               supportedFlows.length === 0 ? (
                 <Text style={{ color: color.Critical.Main }} size="T300">
-                  This application does not support registration on this homeserver.
+                  {t.Register.unsupportedRegistration}
                 </Text>
               ) : (
                 <PasswordRegisterForm
@@ -91,7 +93,7 @@ export function Register() {
         </>
       )}
       <Text align="Center">
-        Already have an account? <Link to={getLoginPath(server)}>Login</Link>
+        {t.Register.haveAccount} <Link to={getLoginPath(server)}>{t.Register.login}</Link>
       </Text>
     </Box>
   );

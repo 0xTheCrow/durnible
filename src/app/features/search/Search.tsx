@@ -59,6 +59,7 @@ import { useKeyDown } from '../../hooks/useKeyDown';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
 import { KeySymbol } from '../../utils/key-symbol';
 import { isMacOS } from '../../utils/user-agent';
+import { useTranslation } from '../../internationalization';
 
 enum SearchRoomType {
   Rooms = '#',
@@ -135,6 +136,7 @@ type SearchProps = {
   requestClose: () => void;
 };
 export function Search({ requestClose }: SearchProps) {
+  const [t] = useTranslation();
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -286,12 +288,12 @@ export function Search({ requestClose }: SearchProps) {
                   gap="100"
                 >
                   <Text size="H6" align="Center">
-                    {result ? 'No Match Found' : `No Rooms'}`}
+                    {result ? t.Sidebar.Search.noMatchFound : t.Sidebar.Search.noRooms}
                   </Text>
                   <Text size="T200" align="Center">
                     {result
-                      ? `No match found for "${result.query}".`
-                      : `You do not have any Rooms to display yet.`}
+                      ? t.Sidebar.Search.noMatchFoundDescription(result.query)
+                      : t.Sidebar.Search.noRoomsDescription}
                   </Text>
                 </Box>
               )}
@@ -409,8 +411,7 @@ export function Search({ requestClose }: SearchProps) {
             <Line size="300" />
             <Box shrink="No" justifyContent="Center" style={{ padding: config.space.S200 }}>
               <Text size="T200" priority="300">
-                Type <b>#</b> for rooms, <b>@</b> for DMs and <b>*</b> for spaces. Hotkey:{' '}
-                <b>{isMacOS() ? KeySymbol.Command : 'Ctrl'} + k</b>
+                {t.Common.searchHint(isMacOS() ? KeySymbol.Command : 'Ctrl')}
               </Text>
             </Box>
           </Modal>

@@ -17,6 +17,7 @@ import { Members } from '../common-settings/members';
 import { DeveloperTools } from '../common-settings/developer-tools';
 import { General } from './general';
 import { Permissions } from './permissions';
+import { useTranslation } from '../../internationalization';
 
 type SpaceSettingsMenuItem = {
   page: SpaceSettingsPage;
@@ -24,38 +25,40 @@ type SpaceSettingsMenuItem = {
   icon: IconSrc;
 };
 
-const useSpaceSettingsMenuItems = (): SpaceSettingsMenuItem[] =>
-  useMemo(
+const useSpaceSettingsMenuItems = (): SpaceSettingsMenuItem[] => {
+  const [t] = useTranslation();
+
+  return useMemo(
     () => [
       {
         page: SpaceSettingsPage.GeneralPage,
-        name: 'General',
+        name: t.Settings.General.title,
         icon: Icons.Setting,
       },
       {
         page: SpaceSettingsPage.MembersPage,
-        name: 'Members',
+        name: t.Settings.menu.members,
         icon: Icons.User,
       },
       {
         page: SpaceSettingsPage.PermissionsPage,
-        name: 'Permissions',
+        name: t.SettingsPages.permissions,
         icon: Icons.Lock,
       },
       {
         page: SpaceSettingsPage.EmojisStickersPage,
-        name: 'Emojis & Stickers',
+        name: t.SettingsPages.emojisStickers,
         icon: Icons.Smile,
       },
       {
         page: SpaceSettingsPage.DeveloperToolsPage,
-        name: 'Developer Tools',
+        name: t.Settings.DeveloperTools.title,
         icon: Icons.Terminal,
       },
     ],
-    []
+    [t],
   );
-
+};
 type SpaceSettingsProps = {
   initialPage?: SpaceSettingsPage;
   requestClose: () => void;
@@ -71,7 +74,7 @@ export function SpaceSettings({ initialPage, requestClose }: SpaceSettingsProps)
   const joinRuleContent = useRoomJoinRule(room);
 
   const avatarUrl = roomAvatar
-    ? mxcUrlToHttp(mx, roomAvatar, useAuthentication, 96, 96, 'crop') ?? undefined
+    ? (mxcUrlToHttp(mx, roomAvatar, useAuthentication, 96, 96, 'crop') ?? undefined)
     : undefined;
 
   const screenSize = useScreenSizeContext();

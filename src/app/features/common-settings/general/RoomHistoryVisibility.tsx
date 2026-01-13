@@ -25,17 +25,20 @@ import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { useStateEvent } from '../../../hooks/useStateEvent';
 import { stopPropagation } from '../../../utils/keyboard';
 import { RoomPermissionsAPI } from '../../../hooks/useRoomPermissions';
+import { useTranslation } from '../../../internationalization';
 
-const useVisibilityStr = () =>
-  useMemo(
+const useVisibilityStr = () => {
+  const [t] = useTranslation();
+  return useMemo(
     () => ({
-      [HistoryVisibility.Invited]: 'After Invite',
-      [HistoryVisibility.Joined]: 'After Join',
-      [HistoryVisibility.Shared]: 'All Messages',
-      [HistoryVisibility.WorldReadable]: 'All Messages (Guests)',
+      [HistoryVisibility.Invited]: t.Settings.RoomHistoryVisibility.afterInvite,
+      [HistoryVisibility.Joined]: t.Settings.RoomHistoryVisibility.afterJoin,
+      [HistoryVisibility.Shared]: t.Settings.RoomHistoryVisibility.allMessages,
+      [HistoryVisibility.WorldReadable]: t.Settings.RoomHistoryVisibility.allMessagesGuests,
     }),
-    []
+    [t],
   );
+};
 
 const useVisibilityMenu = () =>
   useMemo(
@@ -54,6 +57,7 @@ type RoomHistoryVisibilityProps = {
 export function RoomHistoryVisibility({ permissions }: RoomHistoryVisibilityProps) {
   const mx = useMatrixClient();
   const room = useRoom();
+  const [t] = useTranslation();
 
   const canEdit = permissions.stateEvent(StateEvent.RoomHistoryVisibility, mx.getSafeUserId());
 
@@ -96,8 +100,8 @@ export function RoomHistoryVisibility({ permissions }: RoomHistoryVisibilityProp
       gap="400"
     >
       <SettingTile
-        title="Message History Visibility"
-        description="Changes to history visibility will only apply to future messages. The visibility of existing history will have no effect."
+        title={t.Settings.RoomHistoryVisibility.title}
+        description={t.Settings.RoomHistoryVisibility.description}
         after={
           <PopOut
             anchor={menuAnchor}

@@ -46,6 +46,7 @@ import { markAsRead } from '../../../utils/notifications';
 import { stopPropagation } from '../../../utils/keyboard';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
+import { useTranslation } from '../../../internationalization';
 import {
   getRoomNotificationMode,
   useRoomsNotificationPreferencesContext,
@@ -56,6 +57,7 @@ type DirectMenuProps = {
   requestClose: () => void;
 };
 const DirectMenu = forwardRef<HTMLDivElement, DirectMenuProps>(({ requestClose }, ref) => {
+  const [t] = useTranslation();
   const mx = useMatrixClient();
   const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
   const orphanRooms = useDirectRooms();
@@ -78,7 +80,7 @@ const DirectMenu = forwardRef<HTMLDivElement, DirectMenuProps>(({ requestClose }
           aria-disabled={!unread}
         >
           <Text style={{ flexGrow: 1 }} as="span" size="T300" truncate>
-            Mark as Read
+            {t.Sidebar.Direct.markAsRead}
           </Text>
         </MenuItem>
       </Box>
@@ -87,6 +89,7 @@ const DirectMenu = forwardRef<HTMLDivElement, DirectMenuProps>(({ requestClose }
 });
 
 function DirectHeader() {
+  const [t] = useTranslation();
   const [menuAnchor, setMenuAnchor] = useState<RectCords>();
 
   const handleOpenMenu: MouseEventHandler<HTMLButtonElement> = (evt) => {
@@ -103,7 +106,7 @@ function DirectHeader() {
         <Box alignItems="Center" grow="Yes" gap="300">
           <Box grow="Yes">
             <Text size="H4" truncate>
-              Direct Messages
+              {t.Sidebar.Direct.title}
             </Text>
           </Box>
           <Box>
@@ -139,6 +142,7 @@ function DirectHeader() {
 }
 
 function DirectEmpty() {
+  const [t] = useTranslation();
   const navigate = useNavigate();
 
   return (
@@ -147,18 +151,18 @@ function DirectEmpty() {
         icon={<Icon size="600" src={Icons.Mention} />}
         title={
           <Text size="H5" align="Center">
-            No Direct Messages
+            {t.Sidebar.Direct.noDirectMessages}
           </Text>
         }
         content={
           <Text size="T300" align="Center">
-            You do not have any direct messages yet.
+            {t.Sidebar.Direct.noDirectMessagesDescription}
           </Text>
         }
         options={
           <Button variant="Secondary" size="300" onClick={() => navigate(getDirectCreatePath())}>
             <Text size="B300" truncate>
-              Direct Message
+              {t.Sidebar.Direct.directMessage}
             </Text>
           </Button>
         }
@@ -176,6 +180,7 @@ export function Direct() {
   const notificationPreferences = useRoomsNotificationPreferencesContext();
   const roomToUnread = useAtomValue(roomToUnreadAtom);
   const navigate = useNavigate();
+  const [t] = useTranslation();
 
   const createDirectSelected = useDirectCreateSelected();
 
@@ -220,7 +225,7 @@ export function Direct() {
                       </Avatar>
                       <Box as="span" grow="Yes">
                         <Text as="span" size="Inherit" truncate>
-                          Create Chat
+                          {t.Sidebar.Direct.createChat}
                         </Text>
                       </Box>
                     </Box>
@@ -235,7 +240,7 @@ export function Direct() {
                   data-category-id={DEFAULT_CATEGORY_ID}
                   onClick={handleCategoryClick}
                 >
-                  Chats
+                  {t.Sidebar.Direct.chats}
                 </RoomNavCategoryButton>
               </NavCategoryHeader>
               <div

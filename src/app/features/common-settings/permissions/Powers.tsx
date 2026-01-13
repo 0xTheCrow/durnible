@@ -28,6 +28,7 @@ import { PermissionGroup } from './types';
 import { getPowerTagIconSrc } from '../../../hooks/useMemberPowerTag';
 import { useRoomCreatorsTag } from '../../../hooks/useRoomCreatorsTag';
 import { useRoomCreators } from '../../../hooks/useRoomCreators';
+import { useTranslation } from '../../../internationalization';
 
 type PeekPermissionsProps = {
   powerLevels: IPowerLevels;
@@ -108,6 +109,7 @@ type PowersProps = {
   onEdit?: () => void;
 };
 export function Powers({ powerLevels, permissionGroups, onEdit }: PowersProps) {
+  const [t] = useTranslation();
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
   const room = useRoom();
@@ -127,8 +129,8 @@ export function Powers({ powerLevels, permissionGroups, onEdit }: PowersProps) {
           gap="400"
         >
           <SettingTile
-            title="Founders"
-            description="Founding members has all permissions and can only be changed during upgrade."
+            title={t.SettingsPages.founders}
+            description={t.SettingsPages.foundersDescription}
           />
 
           <SettingTile>
@@ -155,8 +157,8 @@ export function Powers({ powerLevels, permissionGroups, onEdit }: PowersProps) {
         gap="400"
       >
         <SettingTile
-          title="Power Levels"
-          description="Manage and customize incremental power levels for users."
+          title={t.SettingsPages.powerLevels}
+          description={t.SettingsPages.powerLevelsDescription}
           after={
             onEdit && (
               <Box gap="200">

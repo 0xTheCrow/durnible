@@ -15,8 +15,11 @@ import { MatrixError } from 'matrix-js-sdk';
 import { useAutoDiscoveryInfo } from '../../../hooks/useAutoDiscoveryInfo';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { CustomLoginResponse, LoginError, login, useLoginComplete } from './loginUtil';
+import { useTranslation } from '../../../internationalization';
 
 function LoginTokenError({ message }: { message: string }) {
+  const [t] = useTranslation();
+
   return (
     <Box
       style={{
@@ -31,7 +34,7 @@ function LoginTokenError({ message }: { message: string }) {
     >
       <Icon size="300" filled src={Icons.Warning} />
       <Box direction="Column" gap="100">
-        <Text size="L400">Token Login</Text>
+        <Text size="L400">{t.TokenLogin.title}</Text>
         <Text size="T300">
           <b>{message}</b>
         </Text>
@@ -44,6 +47,7 @@ type TokenLoginProps = {
   token: string;
 };
 export function TokenLogin({ token }: TokenLoginProps) {
+  const [t] = useTranslation();
   const discovery = useAutoDiscoveryInfo();
   const baseUrl = discovery['m.homeserver'].base_url;
 
@@ -68,19 +72,19 @@ export function TokenLogin({ token }: TokenLoginProps) {
       {loginState.status === AsyncStatus.Error && (
         <>
           {loginState.error.errcode === LoginError.Forbidden && (
-            <LoginTokenError message="Invalid login token." />
+            <LoginTokenError message={t.TokenLogin.errors.forbidden} />
           )}
           {loginState.error.errcode === LoginError.UserDeactivated && (
-            <LoginTokenError message="This account has been deactivated." />
+            <LoginTokenError message={t.TokenLogin.errors.userDeactivated} />
           )}
           {loginState.error.errcode === LoginError.InvalidRequest && (
-            <LoginTokenError message="Failed to login. Part of your request data is invalid." />
+            <LoginTokenError message={t.TokenLogin.errors.invalidRequest} />
           )}
           {loginState.error.errcode === LoginError.RateLimited && (
-            <LoginTokenError message="Failed to login. Your login request has been rate-limited by server, Please try after some time." />
+            <LoginTokenError message={t.TokenLogin.errors.rateLimited} />
           )}
           {loginState.error.errcode === LoginError.Unknown && (
-            <LoginTokenError message="Failed to login. Unknown reason." />
+            <LoginTokenError message={t.TokenLogin.errors.unknown} />
           )}
         </>
       )}

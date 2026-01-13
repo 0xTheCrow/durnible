@@ -13,17 +13,19 @@ import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { useStateEvent } from '../../../hooks/useStateEvent';
 import { ExtendedJoinRules } from '../../../components/JoinRulesSwitcher';
 import { RoomPermissionsAPI } from '../../../hooks/useRoomPermissions';
+import { useTranslation } from '../../../internationalization';
 
 type RoomPublishProps = {
   permissions: RoomPermissionsAPI;
 };
 export function RoomPublish({ permissions }: RoomPublishProps) {
+  const [t] = useTranslation();
   const mx = useMatrixClient();
   const room = useRoom();
 
   const canEditCanonical = permissions.stateEvent(
     StateEvent.RoomCanonicalAlias,
-    mx.getSafeUserId()
+    mx.getSafeUserId(),
   );
   const joinRuleEvent = useStateEvent(room, StateEvent.RoomJoinRules);
   const content = joinRuleEvent?.getContent<RoomJoinRulesEventContent>();
@@ -46,12 +48,10 @@ export function RoomPublish({ permissions }: RoomPublishProps) {
       gap="400"
     >
       <SettingTile
-        title="Publish to Directory"
-        description={
-          room.isSpaceRoom()
-            ? 'List the space in the public directory to make it discoverable by others.'
-            : 'List the room in the public directory to make it discoverable by others.'
-        }
+        title={t.Features.CommonSettings.General.publishToDirectory}
+        description={t.Features.CommonSettings.General.publishToDirectoryDescription(
+          room.isSpaceRoom(),
+        )}
         after={
           <Box gap="200" alignItems="Center">
             {loading && <Spinner variant="Secondary" />}

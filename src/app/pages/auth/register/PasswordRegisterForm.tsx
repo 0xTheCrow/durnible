@@ -43,6 +43,7 @@ import { useRegisterEmail } from '../../../hooks/useRegisterEmail';
 import { ConfirmPasswordMatch } from '../../../components/ConfirmPasswordMatch';
 import { UIAFlowOverlay } from '../../../components/UIAFlowOverlay';
 import { RequestEmailTokenCallback, RequestEmailTokenResponse } from '../../../hooks/types';
+import { useTranslation } from '../../../internationalization';
 
 export const SUPPORTED_REGISTER_STAGES = [
   AuthType.RegistrationToken,
@@ -186,6 +187,7 @@ export function PasswordRegisterForm({
 }: PasswordRegisterFormProps) {
   const serverDiscovery = useAutoDiscoveryInfo();
   const baseUrl = serverDiscovery['m.homeserver'].base_url;
+  const [t] = useTranslation();
   const mx = useMemo(() => createClient({ baseUrl }), [baseUrl]);
   const params = useUIAParams(authData);
   const termUrl = getLoginTermUrl(params);
@@ -259,7 +261,7 @@ export function PasswordRegisterForm({
       <Box as="form" onSubmit={handleSubmit} direction="Inherit" gap="400">
         <Box direction="Column" gap="100">
           <Text as="label" size="L400" priority="300">
-            Username
+            {t.Register.username}
           </Text>
           <Input
             variant="Background"
@@ -284,7 +286,7 @@ export function PasswordRegisterForm({
             <>
               <Box direction="Column" gap="100">
                 <Text as="label" size="L400" priority="300">
-                  Password
+                  {t.Register.password}
                 </Text>
                 <PasswordInput
                   ref={passRef}
@@ -314,7 +316,7 @@ export function PasswordRegisterForm({
               </Box>
               <Box direction="Column" gap="100">
                 <Text as="label" size="L400" priority="300">
-                  Confirm Password
+                  {t.Register.confirmPassword}
                 </Text>
                 <PasswordInput
                   ref={confPassRef}
@@ -350,7 +352,7 @@ export function PasswordRegisterForm({
         {hasStageInFlows(uiaFlows, AuthType.Email) && (
           <Box direction="Column" gap="100">
             <Text as="label" size="L400" priority="300">
-              {requiredStageInFlows(uiaFlows, AuthType.Email) ? 'Email' : 'Email (Optional)'}
+              {requiredStageInFlows(uiaFlows, AuthType.Email) ? t.Register.email : t.Register.emailOptional}
             </Text>
             <Input
               variant="Background"
@@ -391,7 +393,7 @@ export function PasswordRegisterForm({
         <span data-spacing-node />
         <Button variant="Primary" size="500" type="submit">
           <Text as="span" size="B500">
-            Register
+            {t.Register.register}
           </Text>
         </Button>
       </Box>

@@ -6,6 +6,7 @@ import { PickerColumn } from './PickerColumn';
 import { hour12to24, hour24to12, hoursToMs, inSameDay, minutesToMs } from '../../utils/time';
 import { useSetting } from '../../state/hooks/settings';
 import { settingsAtom } from '../../state/settings';
+import { useTranslation } from '../../internationalization';
 
 type TimePickerProps = {
   min: number;
@@ -15,6 +16,7 @@ type TimePickerProps = {
 };
 export const TimePicker = forwardRef<HTMLDivElement, TimePickerProps>(
   ({ min, max, value, onChange }, ref) => {
+    const [t] = useTranslation();
     const [hour24Clock] = useSetting(settingsAtom, 'hour24Clock');
 
     const hour24 = dayjs(value).hour();
@@ -62,7 +64,7 @@ export const TimePicker = forwardRef<HTMLDivElement, TimePickerProps>(
     return (
       <Menu className={css.PickerMenu} ref={ref}>
         <Box direction="Row" gap="200" className={css.PickerContainer}>
-          <PickerColumn title="Hour">
+          <PickerColumn title={t.TimePicker.hour}>
             {hour24Clock
               ? Array.from(Array(24).keys()).map((hour) => (
                   <Chip
@@ -101,7 +103,7 @@ export const TimePicker = forwardRef<HTMLDivElement, TimePickerProps>(
                     </Chip>
                   ))}
           </PickerColumn>
-          <PickerColumn title="Minutes">
+          <PickerColumn title={t.TimePicker.minutes}>
             {Array.from(Array(60).keys()).map((minute) => (
               <Chip
                 key={minute}
@@ -121,7 +123,7 @@ export const TimePicker = forwardRef<HTMLDivElement, TimePickerProps>(
             ))}
           </PickerColumn>
           {!hour24Clock && (
-            <PickerColumn title="Period">
+            <PickerColumn title={t.TimePicker.period}>
               <Chip
                 size="500"
                 variant={!selectedPM ? 'Primary' : 'SurfaceVariant'}
@@ -131,7 +133,7 @@ export const TimePicker = forwardRef<HTMLDivElement, TimePickerProps>(
                 onClick={() => handlePeriod(false)}
                 disabled={minDay && minPM}
               >
-                <Text size="T300">AM</Text>
+                <Text size="T300">{t.TimePicker.am}</Text>
               </Chip>
               <Chip
                 size="500"
@@ -142,7 +144,7 @@ export const TimePicker = forwardRef<HTMLDivElement, TimePickerProps>(
                 onClick={() => handlePeriod(true)}
                 disabled={maxDay && !maxPM}
               >
-                <Text size="T300">PM</Text>
+                <Text size="T300">{t.TimePicker.pm}</Text>
               </Chip>
             </PickerColumn>
           )}

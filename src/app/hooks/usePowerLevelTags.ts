@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { IPowerLevels } from './usePowerLevels';
 import { useStateEvent } from './useStateEvent';
 import { MemberPowerTag, StateEvent } from '../../types/matrix/room';
+import { useTranslation } from '../internationalization';
 
 export type PowerLevelTags = Record<number, MemberPowerTag>;
 
@@ -45,50 +46,58 @@ export const getUsedPowers = (powerLevels: IPowerLevels): Set<number> => {
   return powers;
 };
 
-const DEFAULT_TAGS: PowerLevelTags = {
-  9001: {
-    name: 'Goku',
-    color: '#ff6a00',
-  },
-  150: {
-    name: 'Manager',
-    color: '#ff6a7f',
-  },
-  101: {
-    name: 'Founder',
-    color: '#0000ff',
-  },
-  100: {
-    name: 'Admin',
-    color: '#0088ff',
-  },
-  50: {
-    name: 'Moderator',
-    color: '#1fd81f',
-  },
-  0: {
-    name: 'Member',
-    color: '#91cfdf',
-  },
-  [-1]: {
-    name: 'Muted',
-    color: '#888888',
-  },
-};
-
-const generateFallbackTag = (powerLevelTags: PowerLevelTags, power: number): MemberPowerTag => {
+const generateFallbackTag = (
+  powerLevelTags: PowerLevelTags,
+  power: number,
+  t: any,
+): MemberPowerTag => {
   const highToLow = sortPowers(getPowers(powerLevelTags));
 
   const tagPower = highToLow.find((p) => p < power);
   const tag = typeof tagPower === 'number' ? powerLevelTags[tagPower] : undefined;
 
   return {
-    name: tag ? `${tag.name} ${power}` : `Team ${power}`,
+    name: tag ? t.PowerLevelTags.customTag(tag.name, power) : t.PowerLevelTags.customPower(power),
   };
 };
 
 export const usePowerLevelTags = (room: Room, powerLevels: IPowerLevels): PowerLevelTags => {
+  const [t] = useTranslation();
   const tagsEvent = useStateEvent(room, StateEvent.PowerLevelTags);
+
+  const defaultTags: PowerLevelTags = useMemo(
+    () => ({
+      9001: {
+        name: t.PowerLevelTags.goku,
+        color: '#ff6a00',
+      },
+      150: {
+        name: t.PowerLevelTags.manager,
+        color: '#ff6a7f',
+      },
+      101: {
+        name: t.PowerLevelTags.founder,
+        color: '#0000ff',
+      },
+      100: {
+        name: t.PowerLevelTags.admin,
+        color: '#0088ff',
+      },
+      50: {
+        name: t.PowerLevelTags.moderator,
+        color: '#1fd81f',
+      },
+      0: {
+        name: t.PowerLevelTags.member,
+        color: '#91cfdf',
+      },
+      [-1]: {
+        name: t.PowerLevelTags.muted,
+        color: '#888888',
+      },
+    }),
+    [t],
+  );
 
   const powerLevelTags: PowerLevelTags = useMemo(() => {
     const content = tagsEvent?.getContent<PowerLevelTags>();
@@ -97,20 +106,21 @@ export const usePowerLevelTags = (room: Room, powerLevels: IPowerLevels): PowerL
     const powers = getUsedPowers(powerLevels);
     Array.from(powers).forEach((power) => {
       if (powerToTags[power]?.name === undefined) {
-        powerToTags[power] = DEFAULT_TAGS[power] ?? generateFallbackTag(DEFAULT_TAGS, power);
+        powerToTags[power] = defaultTags[power] ?? generateFallbackTag(defaultTags, power, t);
       }
     });
 
     return powerToTags;
-  }, [powerLevels, tagsEvent]);
+  }, [powerLevels, tagsEvent, defaultTags, t]);
 
   return powerLevelTags;
 };
 
 export const getPowerLevelTag = (
   powerLevelTags: PowerLevelTags,
-  powerLevel: number
+  powerLevel: number,
+  t: any,
 ): MemberPowerTag => {
   const tag: MemberPowerTag | undefined = powerLevelTags[powerLevel];
-  return tag ?? generateFallbackTag(powerLevelTags, powerLevel);
+  return tag ?? generateFallbackTag(powerLevelTags, powerLevel, t);
 };

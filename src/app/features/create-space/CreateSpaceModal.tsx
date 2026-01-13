@@ -23,11 +23,13 @@ import {
 } from '../../state/hooks/createSpaceModal';
 import { CreateSpaceModalState } from '../../state/createSpaceModal';
 import { stopPropagation } from '../../utils/keyboard';
+import { useTranslation } from '../../internationalization';
 
 type CreateSpaceModalProps = {
   state: CreateSpaceModalState;
 };
 function CreateSpaceModal({ state }: CreateSpaceModalProps) {
+  const [t] = useTranslation();
   const { spaceId } = state;
   const closeDialog = useCloseCreateSpaceModal();
 
@@ -58,7 +60,7 @@ function CreateSpaceModal({ state }: CreateSpaceModalProps) {
                   }}
                 >
                   <Box grow="Yes">
-                    <Text size="H4">New Space</Text>
+                    <Text size="H4">{t.CreateSpace.newSpace}</Text>
                   </Box>
                   <Box shrink="No">
                     <IconButton size="300" radii="300" onClick={closeDialog}>

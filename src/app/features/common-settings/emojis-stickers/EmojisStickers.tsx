@@ -4,11 +4,13 @@ import { Page, PageContent, PageHeader } from '../../../components/page';
 import { ImagePack } from '../../../plugins/custom-emoji';
 import { ImagePackView } from '../../../components/image-pack-view';
 import { RoomPacks } from './RoomPacks';
+import { useTranslation } from '../../../internationalization';
 
 type EmojisStickersProps = {
   requestClose: () => void;
 };
 export function EmojisStickers({ requestClose }: EmojisStickersProps) {
+  const [t] = useTranslation();
   const [imagePack, setImagePack] = useState<ImagePack>();
 
   const handleImagePackViewClose = () => {
@@ -25,7 +27,7 @@ export function EmojisStickers({ requestClose }: EmojisStickersProps) {
         <Box grow="Yes" gap="200">
           <Box grow="Yes" alignItems="Center" gap="200">
             <Text size="H3" truncate>
-              Emojis & Stickers
+              {t.Features.CommonSettings.EmojisStickers.title}
             </Text>
           </Box>
           <Box shrink="No">

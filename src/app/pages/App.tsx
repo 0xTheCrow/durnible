@@ -1,5 +1,5 @@
-import React from 'react';
-import { Provider as JotaiProvider } from 'jotai';
+import React, { useContext, useEffect } from 'react';
+import { Provider as JotaiProvider, useAtomValue } from 'jotai';
 import { OverlayContainerProvider, PopOutContainerProvider, TooltipContainerProvider } from 'folds';
 import { RouterProvider } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -13,9 +13,26 @@ import { createRouter } from './Router';
 import { ScreenSizeProvider, useScreenSize } from '../hooks/useScreenSize';
 import { useCompositionEndTracking } from '../hooks/useComposingCheck';
 
+import { Provider as InternationalizationProvider, context } from '../internationalization';
+import { settingsAtom } from '../state/settings';
+
 const queryClient = new QueryClient();
 
-function App() {
+function LanguageSync() {
+  const settings = useAtomValue(settingsAtom);
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const [, setLanguages] = useContext(context)!;
+
+  useEffect(() => {
+    if (settings.languageTag) {
+      setLanguages([settings.languageTag]);
+    }
+  }, [settings.languageTag, setLanguages]);
+
+  return null;
+}
+
+function AppContent() {
   const screenSize = useScreenSize();
   useCompositionEndTracking();
 
@@ -37,6 +54,7 @@ function App() {
                   <ClientConfigProvider value={clientConfig}>
                     <QueryClientProvider client={queryClient}>
                       <JotaiProvider>
+                        <LanguageSync />
                         <RouterProvider router={createRouter(clientConfig, screenSize)} />
                       </JotaiProvider>
                       <ReactQueryDevtools initialIsOpen={false} />
@@ -49,6 +67,14 @@ function App() {
         </OverlayContainerProvider>
       </PopOutContainerProvider>
     </TooltipContainerProvider>
+  );
+}
+
+function App() {
+  return (
+    <InternationalizationProvider>
+      <AppContent />
+    </InternationalizationProvider>
   );
 }
 

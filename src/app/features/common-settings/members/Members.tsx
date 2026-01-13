@@ -56,6 +56,7 @@ import { useSpaceOptionally } from '../../../hooks/useSpace';
 import { useFlattenPowerTagMembers, useGetMemberPowerTag } from '../../../hooks/useMemberPowerTag';
 import { useRoomCreators } from '../../../hooks/useRoomCreators';
 import { getMouseEventCords } from '../../../utils/dom';
+import { useTranslation } from '../../../internationalization';
 
 const SEARCH_OPTIONS: UseAsyncSearchOptions = {
   limit: 1000,
@@ -76,6 +77,7 @@ type MembersProps = {
 };
 export function Members({ requestClose }: MembersProps) {
   const mx = useMatrixClient();
+  const [t] = useTranslation();
   const useAuthentication = useMediaAuthentication();
   const room = useRoom();
   const members = useRoomMembers(mx, room.roomId);
@@ -105,13 +107,13 @@ export function Members({ requestClose }: MembersProps) {
         .filter(membershipFilter.filterFn)
         .sort(memberSort.sortFn)
         .sort(memberPowerSort),
-    [members, membershipFilter, memberSort, memberPowerSort]
+    [members, membershipFilter, memberSort, memberPowerSort],
   );
 
   const [result, search, resetSearch] = useAsyncSearch(
     sortedMembers,
     getRoomMemberStr,
-    SEARCH_OPTIONS
+    SEARCH_OPTIONS,
   );
   if (!result && searchInputRef.current?.value) search(searchInputRef.current.value);
 
@@ -130,9 +132,9 @@ export function Members({ requestClose }: MembersProps) {
         if (evt.target.value) search(evt.target.value);
         else resetSearch();
       },
-      [search, resetSearch]
+      [search, resetSearch],
     ),
-    { wait: 200 }
+    { wait: 200 },
   );
 
   const handleSearchReset = () => {
@@ -157,7 +159,7 @@ export function Members({ requestClose }: MembersProps) {
         <Box grow="Yes" gap="200">
           <Box grow="Yes" alignItems="Center" gap="200">
             <Text size="H3" truncate>
-              {room.getJoinedMemberCount()} Members
+              {t.Features.CommonSettings.Members.title(room.getJoinedMemberCount())}
             </Text>
           </Box>
           <Box shrink="No">
@@ -182,7 +184,7 @@ export function Members({ requestClose }: MembersProps) {
                   before={<Icon size="200" src={Icons.Search} />}
                   variant="SurfaceVariant"
                   size="500"
-                  placeholder="Search"
+                  placeholder={t.Common.search}
                   outlined
                   after={
                     result && (
@@ -197,8 +199,8 @@ export function Members({ requestClose }: MembersProps) {
                       >
                         <Text size="B300">
                           {result.items.length === 0
-                            ? 'No Results'
-                            : `${result.items.length} Results`}
+                            ? t.Common.noResults
+                            : t.Common.results(result.items.length)}
                         </Text>
                       </Chip>
                     )
@@ -225,7 +227,7 @@ export function Members({ requestClose }: MembersProps) {
                         onClick={
                           ((evt) =>
                             setAnchor(
-                              evt.currentTarget.getBoundingClientRect()
+                              evt.currentTarget.getBoundingClientRect(),
                             )) as MouseEventHandler<HTMLButtonElement>
                         }
                         variant="SurfaceVariant"
@@ -257,7 +259,7 @@ export function Members({ requestClose }: MembersProps) {
                         onClick={
                           ((evt) =>
                             setAnchor(
-                              evt.currentTarget.getBoundingClientRect()
+                              evt.currentTarget.getBoundingClientRect(),
                             )) as MouseEventHandler<HTMLButtonElement>
                         }
                         variant="SurfaceVariant"
@@ -295,7 +297,7 @@ export function Members({ requestClose }: MembersProps) {
 
               {!fetchingMembers && !result && flattenTagMembers.length === 0 && (
                 <Text style={{ padding: config.space.S300 }} align="Center">
-                  {`No "${membershipFilter.name}" Members`}
+                  {t.Features.CommonSettings.Members.noMembers(membershipFilter.name)}
                 </Text>
               )}
 

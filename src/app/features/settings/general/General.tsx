@@ -3,6 +3,7 @@ import React, {
   FormEventHandler,
   KeyboardEventHandler,
   MouseEventHandler,
+  useContext,
   useEffect,
   useState,
 } from 'react';
@@ -50,6 +51,7 @@ import { useMessageLayoutItems } from '../../../hooks/useMessageLayout';
 import { useMessageSpacingItems } from '../../../hooks/useMessageSpacing';
 import { useDateFormatItems } from '../../../hooks/useDateFormat';
 import { SequenceCardStyle } from '../styles.css';
+import { context, useTranslation } from '../../../internationalization';
 
 type ThemeSelectorProps = {
   themeNames: Record<string, string>;
@@ -74,7 +76,7 @@ const ThemeSelector = as<'div', ThemeSelectorProps>(
         ))}
       </Box>
     </Menu>
-  )
+  ),
 );
 
 function SelectTheme({ disabled }: { disabled?: boolean }) {
@@ -139,6 +141,7 @@ function SelectTheme({ disabled }: { disabled?: boolean }) {
 }
 
 function SystemThemePreferences() {
+  const [t] = useTranslation();
   const themeKind = useSystemThemeKind();
   const themeNames = useThemeNames();
   const themes = useThemes();
@@ -174,7 +177,7 @@ function SystemThemePreferences() {
   return (
     <Box wrap="Wrap" gap="400">
       <SettingTile
-        title="Light Theme:"
+        title={t.Settings.General.lightTheme}
         after={
           <Chip
             variant={themeKind === ThemeKind.Light ? 'Primary' : 'Secondary'}
@@ -215,7 +218,7 @@ function SystemThemePreferences() {
         }
       />
       <SettingTile
-        title="Dark Theme:"
+        title={t.Settings.General.darkTheme}
         after={
           <Chip
             variant={themeKind === ThemeKind.Dark ? 'Primary' : 'Secondary'}
@@ -303,14 +306,95 @@ function PageZoomInput() {
   );
 }
 
+function SelectLanguage() {
+  const [t] = useTranslation();
+  const contextValue = React.useContext(context);
+  if (!contextValue) {
+    throw new Error('Internationalization context is not available');
+  }
+  const [, setLanguages, currentTag] = contextValue;
+  const [menuCords, setMenuCords] = useState<RectCords>();
+  const [languageTag, setLanguageTag] = useSetting(settingsAtom, 'languageTag');
+
+  const languages = Object.entries(t.Languages).map(([tag, name]) => ({
+    tag,
+    name,
+  }));
+
+  const handleMenu: MouseEventHandler<HTMLButtonElement> = (evt) => {
+    setMenuCords(evt.currentTarget.getBoundingClientRect());
+  };
+
+  const handleSelect = (tag: string) => {
+    setLanguages([tag]);
+    setLanguageTag(tag);
+    setMenuCords(undefined);
+  };
+
+  const selectedLanguage = languages.find((lang) => lang.tag === currentTag) ?? languages[0];
+
+  return (
+    <>
+      <Button
+        size="300"
+        variant="Secondary"
+        outlined
+        fill="Soft"
+        radii="300"
+        after={<Icon size="300" src={Icons.ChevronBottom} />}
+        onClick={handleMenu}
+      >
+        <Text size="T300">{selectedLanguage.name}</Text>
+      </Button>
+      <PopOut
+        anchor={menuCords}
+        offset={5}
+        position="Bottom"
+        align="End"
+        content={
+          <FocusTrap
+            focusTrapOptions={{
+              initialFocus: false,
+              onDeactivate: () => setMenuCords(undefined),
+              clickOutsideDeactivates: true,
+              isKeyForward: (evt: KeyboardEvent) =>
+                evt.key === 'ArrowDown' || evt.key === 'ArrowRight',
+              isKeyBackward: (evt: KeyboardEvent) =>
+                evt.key === 'ArrowUp' || evt.key === 'ArrowLeft',
+              escapeDeactivates: stopPropagation,
+            }}
+          >
+            <Menu>
+              <Box direction="Column" gap="100" style={{ padding: config.space.S100 }}>
+                {languages.map((lang) => (
+                  <MenuItem
+                    key={lang.tag}
+                    size="300"
+                    variant={lang.tag === currentTag ? 'Primary' : 'Surface'}
+                    radii="300"
+                    onClick={() => handleSelect(lang.tag)}
+                  >
+                    <Text size="T300">{lang.name}</Text>
+                  </MenuItem>
+                ))}
+              </Box>
+            </Menu>
+          </FocusTrap>
+        }
+      />
+    </>
+  );
+}
+
 function Appearance() {
+  const [t] = useTranslation();
   const [systemTheme, setSystemTheme] = useSetting(settingsAtom, 'useSystemTheme');
   const [monochromeMode, setMonochromeMode] = useSetting(settingsAtom, 'monochromeMode');
   const [twitterEmoji, setTwitterEmoji] = useSetting(settingsAtom, 'twitterEmoji');
 
   return (
     <Box direction="Column" gap="100">
-      <Text size="L400">Appearance</Text>
+      <Text size="L400">{t.Settings.General.appearance}</Text>
       <SequenceCard
         className={SequenceCardStyle}
         variant="SurfaceVariant"
@@ -318,8 +402,8 @@ function Appearance() {
         gap="400"
       >
         <SettingTile
-          title="System Theme"
-          description="Choose between light and dark theme based on system preference."
+          title={t.Settings.General.systemTheme}
+          description={t.Settings.General.systemThemeDescription}
           after={<Switch variant="Primary" value={systemTheme} onChange={setSystemTheme} />}
         />
         {systemTheme && <SystemThemePreferences />}
@@ -327,28 +411,36 @@ function Appearance() {
 
       <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
         <SettingTile
-          title="Theme"
-          description="Theme to use when system theme is not enabled."
+          title={t.Settings.General.theme}
+          description={t.Settings.General.themeDescription}
           after={<SelectTheme disabled={systemTheme} />}
         />
       </SequenceCard>
 
       <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
         <SettingTile
-          title="Monochrome Mode"
+          title={t.Settings.General.monochromeMode}
           after={<Switch variant="Primary" value={monochromeMode} onChange={setMonochromeMode} />}
         />
       </SequenceCard>
 
       <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
         <SettingTile
-          title="Twitter Emoji"
+          title={t.Settings.General.twitterEmoji}
           after={<Switch variant="Primary" value={twitterEmoji} onChange={setTwitterEmoji} />}
         />
       </SequenceCard>
 
       <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
-        <SettingTile title="Page Zoom" after={<PageZoomInput />} />
+        <SettingTile title={t.Settings.General.pageZoom} after={<PageZoomInput />} />
+      </SequenceCard>
+
+      <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
+        <SettingTile
+          title={t.Settings.General.language}
+          description={t.Settings.General.languageDescription}
+          after={<SelectLanguage />}
+        />
       </SequenceCard>
     </Box>
   );
@@ -359,6 +451,7 @@ type DateHintProps = {
   handleReset: () => void;
 };
 function DateHint({ hasChanges, handleReset }: DateHintProps) {
+  const [t] = useTranslation();
   const [anchor, setAnchor] = useState<RectCords>();
   const categoryPadding = { padding: config.space.S200, paddingTop: 0 };
 
@@ -381,26 +474,27 @@ function DateHint({ hasChanges, handleReset }: DateHintProps) {
         >
           <Menu style={{ maxHeight: '85vh', overflowY: 'auto' }}>
             <Header size="300" style={{ padding: `0 ${config.space.S200}` }}>
-              <Text size="L400">Formatting</Text>
+              <Text size="L400">{t.Settings.General.formatting}</Text>
             </Header>
 
             <Box direction="Column">
               <Box style={categoryPadding} direction="Column">
                 <Header size="300">
-                  <Text size="L400">Year</Text>
+                  <Text size="L400">{t.Settings.General.year}</Text>
                 </Header>
                 <Box direction="Column" tabIndex={0} gap="100">
                   <Text size="T300">
                     YY
                     <Text as="span" size="Inherit" priority="300">
                       {': '}
-                      Two-digit year
+                      {t.Settings.General.twoDigitYear}
                     </Text>{' '}
                   </Text>
                   <Text size="T300">
                     YYYY
                     <Text as="span" size="Inherit" priority="300">
-                      {': '}Four-digit year
+                      {': '}
+                      {t.Settings.General.fourDigitYear}
                     </Text>
                   </Text>
                 </Box>
@@ -408,31 +502,35 @@ function DateHint({ hasChanges, handleReset }: DateHintProps) {
 
               <Box style={categoryPadding} direction="Column">
                 <Header size="300">
-                  <Text size="L400">Month</Text>
+                  <Text size="L400">{t.Settings.General.month}</Text>
                 </Header>
                 <Box direction="Column" tabIndex={0} gap="100">
                   <Text size="T300">
                     M
                     <Text as="span" size="Inherit" priority="300">
-                      {': '}The month
+                      {': '}
+                      {t.Settings.General.theMonth}
                     </Text>
                   </Text>
                   <Text size="T300">
                     MM
                     <Text as="span" size="Inherit" priority="300">
-                      {': '}Two-digit month
+                      {': '}
+                      {t.Settings.General.twoDigitMonth}
                     </Text>{' '}
                   </Text>
                   <Text size="T300">
                     MMM
                     <Text as="span" size="Inherit" priority="300">
-                      {': '}Short month name
+                      {': '}
+                      {t.Settings.General.shortMonthName}
                     </Text>
                   </Text>
                   <Text size="T300">
                     MMMM
                     <Text as="span" size="Inherit" priority="300">
-                      {': '}Full month name
+                      {': '}
+                      {t.Settings.General.fullMonthName}
                     </Text>
                   </Text>
                 </Box>
@@ -440,50 +538,56 @@ function DateHint({ hasChanges, handleReset }: DateHintProps) {
 
               <Box style={categoryPadding} direction="Column">
                 <Header size="300">
-                  <Text size="L400">Day of the Month</Text>
+                  <Text size="L400">{t.Settings.General.dayOfMonth}</Text>
                 </Header>
                 <Box direction="Column" tabIndex={0} gap="100">
                   <Text size="T300">
                     D
                     <Text as="span" size="Inherit" priority="300">
-                      {': '}Day of the month
+                      {': '}
+                      {t.Settings.General.dayOfMonthDesc}
                     </Text>
                   </Text>
                   <Text size="T300">
                     DD
                     <Text as="span" size="Inherit" priority="300">
-                      {': '}Two-digit day of the month
+                      {': '}
+                      {t.Settings.General.twoDigitDayOfMonth}
                     </Text>
                   </Text>
                 </Box>
               </Box>
               <Box style={categoryPadding} direction="Column">
                 <Header size="300">
-                  <Text size="L400">Day of the Week</Text>
+                  <Text size="L400">{t.Settings.General.dayOfWeek}</Text>
                 </Header>
                 <Box direction="Column" tabIndex={0} gap="100">
                   <Text size="T300">
                     d
                     <Text as="span" size="Inherit" priority="300">
-                      {': '}Day of the week (Sunday = 0)
+                      {': '}
+                      {t.Settings.General.dayOfWeekDesc}
                     </Text>
                   </Text>
                   <Text size="T300">
                     dd
                     <Text as="span" size="Inherit" priority="300">
-                      {': '}Two-letter day name
+                      {': '}
+                      {t.Settings.General.twoLetterDayName}
                     </Text>
                   </Text>
                   <Text size="T300">
                     ddd
                     <Text as="span" size="Inherit" priority="300">
-                      {': '}Short day name
+                      {': '}
+                      {t.Settings.General.shortDayName}
                     </Text>
                   </Text>
                   <Text size="T300">
                     dddd
                     <Text as="span" size="Inherit" priority="300">
-                      {': '}Full day name
+                      {': '}
+                      {t.Settings.General.fullDayName}
                     </Text>
                   </Text>
                 </Box>
@@ -526,6 +630,7 @@ type CustomDateFormatProps = {
   onChange: (format: string) => void;
 };
 function CustomDateFormat({ value, onChange }: CustomDateFormatProps) {
+  const [t] = useTranslation();
   const [dateFormatCustom, setDateFormatCustom] = useState(value);
 
   useEffect(() => {
@@ -579,7 +684,7 @@ function CustomDateFormat({ value, onChange }: CustomDateFormatProps) {
           disabled={!hasChanges}
           type="submit"
         >
-          <Text size="B400">Save</Text>
+          <Text size="B400">{t.Settings.General.save}</Text>
         </Button>
       </Box>
     </SettingTile>
@@ -591,11 +696,12 @@ type PresetDateFormatProps = {
   onChange: (format: string) => void;
 };
 function PresetDateFormat({ value, onChange }: PresetDateFormatProps) {
+  const [t] = useTranslation();
   const [menuCords, setMenuCords] = useState<RectCords>();
   const dateFormatItems = useDateFormatItems();
 
   const getDisplayDate = (format: string): string =>
-    format !== '' ? dayjs().format(format) : 'Custom';
+    format !== '' ? dayjs().format(format) : t.Settings.General.custom;
 
   const handleMenu: MouseEventHandler<HTMLButtonElement> = (evt) => {
     setMenuCords(evt.currentTarget.getBoundingClientRect());
@@ -662,6 +768,7 @@ function PresetDateFormat({ value, onChange }: PresetDateFormatProps) {
 }
 
 function SelectDateFormat() {
+  const [t] = useTranslation();
   const [dateFormatString, setDateFormatString] = useSetting(settingsAtom, 'dateFormatString');
   const [selectedDateFormat, setSelectedDateFormat] = useState(dateFormatString);
   const customDateFormat = selectedDateFormat === '';
@@ -676,7 +783,7 @@ function SelectDateFormat() {
   return (
     <>
       <SettingTile
-        title="Date Format"
+        title={t.Settings.General.dateFormat}
         description={customDateFormat ? dayjs().format(dateFormatString) : ''}
         after={<PresetDateFormat value={selectedDateFormat} onChange={handlePresetChange} />}
       />
@@ -688,14 +795,15 @@ function SelectDateFormat() {
 }
 
 function DateAndTime() {
+  const [t] = useTranslation();
   const [hour24Clock, setHour24Clock] = useSetting(settingsAtom, 'hour24Clock');
 
   return (
     <Box direction="Column" gap="100">
-      <Text size="L400">Date & Time</Text>
+      <Text size="L400">{t.Settings.General.dateAndTime}</Text>
       <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
         <SettingTile
-          title="24-Hour Time Format"
+          title={t.Settings.General.hour24Clock}
           after={<Switch variant="Primary" value={hour24Clock} onChange={setHour24Clock} />}
         />
       </SequenceCard>
@@ -708,32 +816,33 @@ function DateAndTime() {
 }
 
 function Editor() {
+  const [t] = useTranslation();
   const [enterForNewline, setEnterForNewline] = useSetting(settingsAtom, 'enterForNewline');
   const [isMarkdown, setIsMarkdown] = useSetting(settingsAtom, 'isMarkdown');
   const [hideActivity, setHideActivity] = useSetting(settingsAtom, 'hideActivity');
 
   return (
     <Box direction="Column" gap="100">
-      <Text size="L400">Editor</Text>
+      <Text size="L400">{t.Settings.General.editor}</Text>
       <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
         <SettingTile
-          title="ENTER for Newline"
-          description={`Use ${
-            isMacOS() ? KeySymbol.Command : 'Ctrl'
-          } + ENTER to send message and ENTER for newline.`}
+          title={t.Settings.General.enterForNewline}
+          description={t.Settings.General.enterForNewlineDescription(
+            isMacOS() ? KeySymbol.Command : 'Ctrl',
+          )}
           after={<Switch variant="Primary" value={enterForNewline} onChange={setEnterForNewline} />}
         />
       </SequenceCard>
       <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
         <SettingTile
-          title="Markdown Formatting"
+          title={t.Settings.General.markdownFormatting}
           after={<Switch variant="Primary" value={isMarkdown} onChange={setIsMarkdown} />}
         />
       </SequenceCard>
       <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
         <SettingTile
-          title="Hide Typing & Read Receipts"
-          description="Turn off both typing status and read receipts to keep your activity private."
+          title={t.Settings.General.hideActivity}
+          description={t.Settings.General.hideActivityDescription}
           after={<Switch variant="Primary" value={hideActivity} onChange={setHideActivity} />}
         />
       </SequenceCard>
@@ -742,6 +851,7 @@ function Editor() {
 }
 
 function SelectMessageLayout() {
+  const [t] = useTranslation();
   const [menuCords, setMenuCords] = useState<RectCords>();
   const [messageLayout, setMessageLayout] = useSetting(settingsAtom, 'messageLayout');
   const messageLayoutItems = useMessageLayoutItems();
@@ -811,6 +921,7 @@ function SelectMessageLayout() {
 }
 
 function SelectMessageSpacing() {
+  const [t] = useTranslation();
   const [menuCords, setMenuCords] = useState<RectCords>();
   const [messageSpacing, setMessageSpacing] = useSetting(settingsAtom, 'messageSpacing');
   const messageSpacingItems = useMessageSpacingItems();
@@ -880,17 +991,18 @@ function SelectMessageSpacing() {
 }
 
 function Messages() {
+  const [t] = useTranslation();
   const [legacyUsernameColor, setLegacyUsernameColor] = useSetting(
     settingsAtom,
-    'legacyUsernameColor'
+    'legacyUsernameColor',
   );
   const [hideMembershipEvents, setHideMembershipEvents] = useSetting(
     settingsAtom,
-    'hideMembershipEvents'
+    'hideMembershipEvents',
   );
   const [hideNickAvatarEvents, setHideNickAvatarEvents] = useSetting(
     settingsAtom,
-    'hideNickAvatarEvents'
+    'hideNickAvatarEvents',
   );
   const [mediaAutoLoad, setMediaAutoLoad] = useSetting(settingsAtom, 'mediaAutoLoad');
   const [urlPreview, setUrlPreview] = useSetting(settingsAtom, 'urlPreview');
@@ -899,16 +1011,16 @@ function Messages() {
 
   return (
     <Box direction="Column" gap="100">
-      <Text size="L400">Messages</Text>
+      <Text size="L400">{t.Settings.General.messages}</Text>
       <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
-        <SettingTile title="Message Layout" after={<SelectMessageLayout />} />
+        <SettingTile title={t.Settings.General.messageLayout} after={<SelectMessageLayout />} />
       </SequenceCard>
       <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
-        <SettingTile title="Message Spacing" after={<SelectMessageSpacing />} />
+        <SettingTile title={t.Settings.General.messageSpacing} after={<SelectMessageSpacing />} />
       </SequenceCard>
       <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
         <SettingTile
-          title="Legacy Username Color"
+          title={t.Settings.General.legacyUsernameColor}
           after={
             <Switch
               variant="Primary"
@@ -920,7 +1032,7 @@ function Messages() {
       </SequenceCard>
       <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
         <SettingTile
-          title="Hide Membership Change"
+          title={t.Settings.General.hideMembershipChange}
           after={
             <Switch
               variant="Primary"
@@ -932,7 +1044,7 @@ function Messages() {
       </SequenceCard>
       <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
         <SettingTile
-          title="Hide Profile Change"
+          title={t.Settings.General.hideProfileChange}
           after={
             <Switch
               variant="Primary"
@@ -944,7 +1056,7 @@ function Messages() {
       </SequenceCard>
       <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
         <SettingTile
-          title="Disable Media Auto Load"
+          title={t.Settings.General.disableMediaAutoLoad}
           after={
             <Switch
               variant="Primary"
@@ -956,19 +1068,19 @@ function Messages() {
       </SequenceCard>
       <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
         <SettingTile
-          title="Url Preview"
+          title={t.Settings.General.urlPreview}
           after={<Switch variant="Primary" value={urlPreview} onChange={setUrlPreview} />}
         />
       </SequenceCard>
       <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
         <SettingTile
-          title="Url Preview in Encrypted Room"
+          title={t.Settings.General.urlPreviewEncrypted}
           after={<Switch variant="Primary" value={encUrlPreview} onChange={setEncUrlPreview} />}
         />
       </SequenceCard>
       <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
         <SettingTile
-          title="Show Hidden Events"
+          title={t.Settings.General.showHiddenEvents}
           after={
             <Switch variant="Primary" value={showHiddenEvents} onChange={setShowHiddenEvents} />
           }
@@ -982,13 +1094,14 @@ type GeneralProps = {
   requestClose: () => void;
 };
 export function General({ requestClose }: GeneralProps) {
+  const [t] = useTranslation();
   return (
     <Page>
       <PageHeader outlined={false}>
         <Box grow="Yes" gap="200">
           <Box grow="Yes" alignItems="Center" gap="200">
             <Text size="H3" truncate>
-              General
+              {t.Settings.General.title}
             </Text>
           </Box>
           <Box shrink="No">

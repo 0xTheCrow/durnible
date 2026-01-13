@@ -19,8 +19,10 @@ import { useInboxSelected } from '../../../hooks/router/useInbox';
 import { UnreadBadge } from '../../../components/unread-badge';
 import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
 import { useNavToActivePathAtom } from '../../../state/hooks/navToActivePath';
+import { useTranslation } from '../../../internationalization';
 
 export function InboxTab() {
+  const [t] = useTranslation();
   const screenSize = useScreenSizeContext();
   const navigate = useNavigate();
   const navToActivePath = useAtomValue(useNavToActivePathAtom());
@@ -45,7 +47,7 @@ export function InboxTab() {
 
   return (
     <SidebarItem active={inboxSelected}>
-      <SidebarItemTooltip tooltip="Inbox">
+      <SidebarItemTooltip tooltip={t.Sidebar.Inbox.tooltip}>
         {(triggerRef) => (
           <SidebarAvatar as="button" ref={triggerRef} outlined onClick={handleInboxClick}>
             <Icon src={Icons.Inbox} filled={inboxSelected} />

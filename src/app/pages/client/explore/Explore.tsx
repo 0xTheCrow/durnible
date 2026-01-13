@@ -27,6 +27,7 @@ import {
 } from '../../../components/nav';
 import { getExploreFeaturedPath, getExploreServerPath } from '../../pathUtils';
 import { useClientConfig } from '../../../hooks/useClientConfig';
+import { useTranslation } from '../../../internationalization';
 import {
   useExploreFeaturedSelected,
   useExploreServer,
@@ -41,11 +42,12 @@ import { stopPropagation } from '../../../utils/keyboard';
 export function AddServer() {
   const mx = useMatrixClient();
   const navigate = useNavigate();
+  const [t] = useTranslation();
   const [dialog, setDialog] = useState(false);
   const serverInputRef = useRef<HTMLInputElement>(null);
 
   const [exploreState] = useAsyncCallback(
-    useCallback((server: string) => mx.publicRooms({ server, limit: 1 }), [mx])
+    useCallback((server: string) => mx.publicRooms({ server, limit: 1 }), [mx]),
   );
 
   const getInputServer = (): string | undefined => {
@@ -94,7 +96,7 @@ export function AddServer() {
                 size="500"
               >
                 <Box grow="Yes">
-                  <Text size="H4">Add Server</Text>
+                  <Text size="H4">{t.Pages.Explore.addServer}</Text>
                 </Box>
                 <IconButton size="300" onClick={() => setDialog(false)} radii="300">
                   <Icon src={Icons.Cross} />
@@ -107,9 +109,9 @@ export function AddServer() {
                 direction="Column"
                 gap="400"
               >
-                <Text priority="400">Add server name to explore public communities.</Text>
+                <Text priority="400">{t.Pages.Explore.Server.searchPlaceholder}</Text>
                 <Box direction="Column" gap="100">
-                  <Text size="L400">Server Name</Text>
+                  <Text size="L400">{t.Pages.Explore.Server.matrix}</Text>
                   <Input ref={serverInputRef} name="serverInput" variant="Background" required />
                   {exploreState.status === AsyncStatus.Error && (
                     <Text style={{ color: color.Critical.Main }} size="T300">
@@ -118,21 +120,8 @@ export function AddServer() {
                   )}
                 </Box>
                 <Box direction="Column" gap="200">
-                  {/* <Button
-                    type="submit"
-                    variant="Secondary"
-                    before={
-                      exploreState.status === AsyncStatus.Loading ? (
-                        <Spinner fill="Solid" variant="Secondary" size="200" />
-                      ) : undefined
-                    }
-                    aria-disabled={exploreState.status === AsyncStatus.Loading}
-                  >
-                    <Text size="B400">Save</Text>
-                  </Button> */}
-
                   <Button type="submit" onClick={handleView} variant="Secondary" fill="Soft">
-                    <Text size="B400">View</Text>
+                    <Text size="B400">{t.Features.CommonSettings.EmojisStickers.view}</Text>
                   </Button>
                 </Box>
               </Box>
@@ -148,7 +137,7 @@ export function AddServer() {
         onClick={() => setDialog(true)}
       >
         <Text size="B300" truncate>
-          Add Server
+          {t.Pages.Explore.addServer}
         </Text>
       </Button>
     </>
@@ -157,6 +146,7 @@ export function AddServer() {
 
 export function Explore() {
   const mx = useMatrixClient();
+  const [t] = useTranslation();
   useNavToActivePathMapper('explore');
   const userId = mx.getUserId();
   const clientConfig = useClientConfig();
@@ -173,7 +163,7 @@ export function Explore() {
         <Box grow="Yes" gap="300">
           <Box grow="Yes">
             <Text size="H4" truncate>
-              Explore Community
+              {t.Pages.Explore.title}
             </Text>
           </Box>
         </Box>
@@ -191,7 +181,7 @@ export function Explore() {
                     </Avatar>
                     <Box as="span" grow="Yes">
                       <Text as="span" size="Inherit" truncate>
-                        Featured
+                        {t.Pages.Explore.featured}
                       </Text>
                     </Box>
                   </Box>
@@ -229,7 +219,7 @@ export function Explore() {
             <NavCategory>
               <NavCategoryHeader>
                 <Text size="O400" style={{ paddingLeft: config.space.S200 }}>
-                  Servers
+                  {t.Pages.Explore.servers}
                 </Text>
               </NavCategoryHeader>
               {servers.map((server) => (

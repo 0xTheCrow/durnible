@@ -1,13 +1,16 @@
 import { Box, Button, Dialog, Spinner, Text, color, config } from 'folds';
 import React from 'react';
 import { SplashScreen } from '../components/splash-screen';
+import { useTranslation } from '../internationalization';
 
 export function ConfigConfigLoading() {
+  const [t] = useTranslation();
+
   return (
     <SplashScreen>
       <Box grow="Yes" direction="Column" gap="400" alignItems="Center" justifyContent="Center">
         <Spinner variant="Secondary" size="600" />
-        <Text>Heating up</Text>
+        <Text>{t.ConfigConfig.loading}</Text>
       </Box>
     </SplashScreen>
   );
@@ -19,13 +22,15 @@ type ConfigConfigErrorProps = {
   ignore: () => void;
 };
 export function ConfigConfigError({ error, retry, ignore }: ConfigConfigErrorProps) {
+  const [t] = useTranslation();
+
   return (
     <SplashScreen>
       <Box grow="Yes" direction="Column" gap="400" alignItems="Center" justifyContent="Center">
         <Dialog>
           <Box style={{ padding: config.space.S400 }} direction="Column" gap="400">
             <Box direction="Column" gap="100">
-              <Text>Failed to load client configuration file.</Text>
+              <Text>{t.ConfigConfig.errorTitle}</Text>
               {typeof error === 'object' &&
                 error &&
                 'message' in error &&
@@ -37,12 +42,12 @@ export function ConfigConfigError({ error, retry, ignore }: ConfigConfigErrorPro
             </Box>
             <Button variant="Critical" onClick={retry}>
               <Text as="span" size="B400">
-                Retry
+                {t.ConfigConfig.retry}
               </Text>
             </Button>
             <Button variant="Critical" onClick={ignore} fill="Soft">
               <Text as="span" size="B400">
-                Continue
+                {t.ConfigConfig.continue}
               </Text>
             </Button>
           </Box>

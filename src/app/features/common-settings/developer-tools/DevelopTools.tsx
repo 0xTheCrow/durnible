@@ -30,11 +30,13 @@ import {
   AccountDataSubmitCallback,
 } from '../../../components/AccountDataEditor';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
+import { useTranslation } from '../../../internationalization';
 
 type DeveloperToolsProps = {
   requestClose: () => void;
 };
 export function DeveloperTools({ requestClose }: DeveloperToolsProps) {
+  const [t] = useTranslation();
   const [developerTools, setDeveloperTools] = useSetting(settingsAtom, 'developerTools');
   const mx = useMatrixClient();
   const room = useRoom();
@@ -111,7 +113,7 @@ export function DeveloperTools({ requestClose }: DeveloperToolsProps) {
                   gap="400"
                 >
                   <SettingTile
-                    title="Enable Developer Tools"
+                    title={t.Settings.DeveloperTools.enable}
                     after={
                       <Switch
                         variant="Primary"
@@ -129,8 +131,8 @@ export function DeveloperTools({ requestClose }: DeveloperToolsProps) {
                     gap="400"
                   >
                     <SettingTile
-                      title="Room ID"
-                      description={`Copy room ID to clipboard. ("${room.roomId}")`}
+                      title={t.Settings.DeveloperTools.roomId}
+                      description={t.Settings.DeveloperTools.copyRoomId(room.roomId ?? '')}
                       after={
                         <Button
                           onClick={() => copyToClipboard(room.roomId ?? '<NO_ROOM_ID_FOUND>')}
@@ -140,7 +142,7 @@ export function DeveloperTools({ requestClose }: DeveloperToolsProps) {
                           radii="300"
                           outlined
                         >
-                          <Text size="B300">Copy</Text>
+                          <Text size="B300">{t.Settings.DeveloperTools.copy}</Text>
                         </Button>
                       }
                     />
@@ -150,7 +152,7 @@ export function DeveloperTools({ requestClose }: DeveloperToolsProps) {
 
               {developerTools && (
                 <Box direction="Column" gap="100">
-                  <Text size="L400">Data</Text>
+                  <Text size="L400">{t.Settings.DeveloperTools.data}</Text>
 
                   <SequenceCard
                     className={SequenceCardStyle}
@@ -159,8 +161,8 @@ export function DeveloperTools({ requestClose }: DeveloperToolsProps) {
                     gap="400"
                   >
                     <SettingTile
-                      title="New Message Event"
-                      description="Create and send a new message event within the room."
+                      title={t.Settings.DeveloperTools.newMessageEvent}
+                      description={t.Settings.DeveloperTools.newMessageEventDescription}
                       after={
                         <Button
                           onClick={() => setComposeEvent({})}
@@ -170,7 +172,7 @@ export function DeveloperTools({ requestClose }: DeveloperToolsProps) {
                           radii="300"
                           outlined
                         >
-                          <Text size="B300">Compose</Text>
+                          <Text size="B300">{t.Settings.DeveloperTools.compose}</Text>
                         </Button>
                       }
                     />
@@ -182,8 +184,8 @@ export function DeveloperTools({ requestClose }: DeveloperToolsProps) {
                     gap="400"
                   >
                     <SettingTile
-                      title="Room State"
-                      description="State events of the room."
+                      title={t.Settings.DeveloperTools.roomState}
+                      description={t.Settings.DeveloperTools.roomStateDescription}
                       after={
                         <Button
                           onClick={() => setExpandState(!expandState)}
@@ -200,15 +202,17 @@ export function DeveloperTools({ requestClose }: DeveloperToolsProps) {
                             />
                           }
                         >
-                          <Text size="B300">{expandState ? 'Collapse' : 'Expand'}</Text>
+                          <Text size="B300">
+                            {expandState ? t.Settings.DeveloperTools.collapse : t.Settings.DeveloperTools.expand}
+                          </Text>
                         </Button>
                       }
                     />
                     {expandState && (
                       <Box direction="Column" gap="100">
                         <Box justifyContent="SpaceBetween">
-                          <Text size="L400">Events</Text>
-                          <Text size="L400">Total: {roomState.size}</Text>
+                          <Text size="L400">{t.Settings.DeveloperTools.events}</Text>
+                          <Text size="L400">{t.Settings.DeveloperTools.total(roomState.size)}</Text>
                         </Box>
                         <CutoutCard>
                           <MenuItem
@@ -221,7 +225,7 @@ export function DeveloperTools({ requestClose }: DeveloperToolsProps) {
                           >
                             <Box grow="Yes">
                               <Text size="T200" truncate>
-                                Add New
+                                {t.Settings.DeveloperTools.addNew}
                               </Text>
                             </Box>
                           </MenuItem>
@@ -275,7 +279,7 @@ export function DeveloperTools({ requestClose }: DeveloperToolsProps) {
                                       >
                                         <Box grow="Yes">
                                           <Text size="T200" truncate>
-                                            Add New
+                                            {t.Settings.DeveloperTools.addNew}
                                           </Text>
                                         </Box>
                                       </MenuItem>
@@ -319,8 +323,8 @@ export function DeveloperTools({ requestClose }: DeveloperToolsProps) {
                     gap="400"
                   >
                     <SettingTile
-                      title="Account Data"
-                      description="Private personalization data stored within room."
+                      title={t.Settings.DeveloperTools.accountData}
+                      description={t.Settings.DeveloperTools.accountDataDescription}
                       after={
                         <Button
                           onClick={() => setExpandAccountData(!expandAccountData)}
@@ -337,15 +341,17 @@ export function DeveloperTools({ requestClose }: DeveloperToolsProps) {
                             />
                           }
                         >
-                          <Text size="B300">{expandAccountData ? 'Collapse' : 'Expand'}</Text>
+                          <Text size="B300">
+                            {expandAccountData ? t.Settings.DeveloperTools.collapse : t.Settings.DeveloperTools.expand}
+                          </Text>
                         </Button>
                       }
                     />
                     {expandAccountData && (
                       <Box direction="Column" gap="100">
                         <Box justifyContent="SpaceBetween">
-                          <Text size="L400">Events</Text>
-                          <Text size="L400">Total: {accountData.size}</Text>
+                          <Text size="L400">{t.Settings.DeveloperTools.events}</Text>
+                          <Text size="L400">{t.Settings.DeveloperTools.total(accountData.size)}</Text>
                         </Box>
                         <CutoutCard>
                           <MenuItem
@@ -358,7 +364,7 @@ export function DeveloperTools({ requestClose }: DeveloperToolsProps) {
                           >
                             <Box grow="Yes">
                               <Text size="T200" truncate>
-                                Add New
+                                {t.Settings.DeveloperTools.addNew}
                               </Text>
                             </Box>
                           </MenuItem>

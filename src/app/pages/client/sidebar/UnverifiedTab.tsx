@@ -17,8 +17,10 @@ import {
 import { useCrossSigningActive } from '../../../hooks/useCrossSigning';
 import { Modal500 } from '../../../components/Modal500';
 import { Settings, SettingsPages } from '../../../features/settings';
+import { useTranslation } from '../../../internationalization';
 
 function UnverifiedIndicator() {
+  const [t] = useTranslation();
   const mx = useMatrixClient();
 
   const crypto = mx.getCrypto();
@@ -49,7 +51,13 @@ function UnverifiedIndicator() {
     <>
       {hasUnverified && (
         <SidebarItem active={settings} className={css.UnverifiedTab}>
-          <SidebarItemTooltip tooltip={unverified ? 'Unverified Device' : 'Unverified Devices'}>
+          <SidebarItemTooltip
+            tooltip={
+              unverified
+                ? t.Sidebar.Unverified.unverifiedDevice
+                : t.Sidebar.Unverified.unverifiedDevices
+            }
+          >
             {(triggerRef) => (
               <SidebarAvatar
                 className={unverified ? css.UnverifiedAvatar : css.UnverifiedOtherAvatar}
