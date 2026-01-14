@@ -49,6 +49,7 @@ export type IImageContent = {
   url?: string;
   info?: IImageInfo & IThumbnailContent;
   file?: IEncryptedFile;
+  info?: { h: number, w: number };
   [MATRIX_SPOILER_PROPERTY_NAME]?: boolean;
   [MATRIX_SPOILER_REASON_PROPERTY_NAME]?: string;
 };

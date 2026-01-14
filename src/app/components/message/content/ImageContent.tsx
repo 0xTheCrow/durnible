@@ -55,6 +55,9 @@ export type ImageContentProps = {
   autoPlay?: boolean;
   markedAsSpoiler?: boolean;
   spoilerReason?: string;
+  imgWidth?: number;
+  imgHeight?: number;
+  resizeMethod?: string;
   renderViewer: (props: RenderViewerProps) => ReactNode;
   renderImage: (props: RenderImageProps) => ReactNode;
 };
@@ -70,6 +73,9 @@ export const ImageContent = as<'div', ImageContentProps>(
       autoPlay,
       markedAsSpoiler,
       spoilerReason,
+      imgWidth,
+      imgHeight,
+      resizeMethod,
       renderViewer,
       renderImage,
       ...props
@@ -84,26 +90,36 @@ export const ImageContent = as<'div', ImageContentProps>(
     const [error, setError] = useState(false);
     const [viewer, setViewer] = useState(false);
     const [blurred, setBlurred] = useState(markedAsSpoiler ?? false);
+    const [useThumbnail, setUseThumbnail] = useState(imgWidth && imgHeight && resizeMethod);
 
     const [srcState, loadSrc] = useAsyncCallback(
       useCallback(async () => {
-        const mediaUrl = mxcUrlToHttp(mx, url, useAuthentication) ?? url;
+        const mediaUrl = (useThumbnail ? mxcUrlToHttp(mx, url, useAuthentication, imgWidth, imgHeight, resizeMethod) : mxcUrlToHttp(mx, url, useAuthentication)) ?? url;
         if (encInfo) {
-          const fileContent = await downloadEncryptedMedia(mediaUrl, (encBuf) =>
-            decryptFile(encBuf, mimeType ?? FALLBACK_MIMETYPE, encInfo)
-          );
+          const decrypt = (encBuf: ArrayBuffer) => decryptFile(encBuf, mimeType ?? FALLBACK_MIMETYPE, encInfo);
+          let fileContent;
+          try {
+            fileContent = await downloadEncryptedMedia(mediaUrl, decrypt);
+          } catch {
+            fileContent = await downloadEncryptedMedia(mxcUrlToHttp(mx, url, useAuthentication) ?? url, decrypt);
+          }
           return URL.createObjectURL(fileContent);
         }
         return mediaUrl;
-      }, [mx, url, useAuthentication, mimeType, encInfo])
+      }, [mx, url, useAuthentication, mimeType, encInfo, useThumbnail, imgWidth, imgHeight, resizeMethod])
     );
 
     const handleLoad = () => {
       setLoad(true);
     };
     const handleError = () => {
-      setLoad(false);
-      setError(true);
+      if (useThumbnail) {
+        setUseThumbnail(false);
+        loadSrc();
+      } else {
+        setLoad(false);
+        setError(true);
+      }
     };
 
     const handleRetry = () => {
@@ -134,7 +150,7 @@ export const ImageContent = as<'div', ImageContentProps>(
                   onContextMenu={(evt: any) => evt.stopPropagation()}
                 >
                   {renderViewer({
-                    src: srcState.data,
+                    src: useThumbnail ? (mxcUrlToHttp(mx, url, useAuthentication) ?? url) : srcState.data,
                     alt: body,
                     requestClose: () => setViewer(false),
                   })}

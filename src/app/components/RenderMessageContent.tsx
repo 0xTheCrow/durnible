@@ -184,13 +184,32 @@ export function RenderMessageContent({
   }
 
   if (msgType === MsgType.Image) {
+    const content: IImageContent = getContent();
+    const width = content?.info?.w;
+    const height = content?.info?.h;
+    let thumbnail: {
+      imgWidth: number,
+      imgHeight: number,
+      resizeMethod: string
+    } | undefined;
+    if (width && height) {
+      const scale = (width > height ? width : height) / 800;
+      if (width > 800 || height > 800 && scale > 1) {
+        thumbnail = {
+          imgWidth: width / scale,
+          imgHeight: height / scale,
+          resizeMethod: "scale",
+        }
+      }
+    }
     return (
       <>
         <MImage
-          content={getContent()}
+          content={content}
           renderImageContent={(props) => (
             <ImageContent
               {...props}
+              {...thumbnail}
               autoPlay={mediaAutoLoad}
               renderImage={(p) => <Image {...p} loading="lazy" />}
               renderViewer={(p) => <ImageViewer {...p} />}
