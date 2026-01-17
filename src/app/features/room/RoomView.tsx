@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Box, Text, config } from 'folds';
 import { EventType, Room } from 'matrix-js-sdk';
 import { ReactEditor } from 'slate-react';
@@ -59,6 +59,8 @@ const shouldFocusMessageField = (evt: KeyboardEvent): boolean => {
 export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
   const roomInputRef = useRef<HTMLDivElement>(null);
   const roomViewRef = useRef<HTMLDivElement>(null);
+  const timelineScrollRef = useRef<HTMLDivElement>(null);
+  const [timelineNavMode, setTimelineNavMode] = useState(false);
 
   const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
 
@@ -91,6 +93,19 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
     )
   );
 
+  const enterTimelineNav = useCallback(() => {
+    setTimelineNavMode(true);
+    // Ensure timeline receives the next keypress for navigation.
+    timelineScrollRef.current?.focus();
+    requestAnimationFrame(() => {
+      timelineScrollRef.current?.focus();
+    });
+  }, []);
+
+  useEffect(() => {
+    setTimelineNavMode(false);
+  }, [roomId, eventId]);
+
   return (
     <Page ref={roomViewRef}>
       <RoomViewHeader />
@@ -101,6 +116,9 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
           eventId={eventId}
           roomInputRef={roomInputRef}
           editor={editor}
+          timelineNavMode={timelineNavMode}
+          onExitTimelineNav={() => setTimelineNavMode(false)}
+          timelineScrollRef={timelineScrollRef}
         />
         <RoomViewTyping room={room} />
       </Box>
@@ -121,6 +139,9 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
                   roomId={roomId}
                   fileDropContainerRef={roomViewRef}
                   ref={roomInputRef}
+                  timelineNavMode={timelineNavMode}
+                  onEnterTimelineNav={enterTimelineNav}
+                  onExitTimelineNav={() => setTimelineNavMode(false)}
                 />
               )}
               {!canMessage && (

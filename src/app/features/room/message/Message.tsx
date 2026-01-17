@@ -659,6 +659,7 @@ export type MessageProps = {
   mEvent: MatrixEvent;
   collapse: boolean;
   highlight: boolean;
+  selected?: boolean;
   edit?: boolean;
   canDelete?: boolean;
   canSendReaction?: boolean;
@@ -693,6 +694,7 @@ export const Message = as<'div', MessageProps>(
       mEvent,
       collapse,
       highlight,
+      selected,
       edit,
       canDelete,
       canSendReaction,
@@ -816,13 +818,13 @@ export const Message = as<'div', MessageProps>(
     );
 
     const msgContentJSX = (
-      <Box direction="Column" alignSelf="Start" style={{ maxWidth: '100%' }}>
+      <Box direction="Column" alignSelf="Start" style={{ maxWidth: '100%', width: '100%' }}>
         {reply}
         {edit && onEditId ? (
           <MessageEditor
             style={{
               maxWidth: '100%',
-              width: '100vw',
+              width: '100%',
             }}
             roomId={room.roomId}
             room={room}
@@ -885,7 +887,7 @@ export const Message = as<'div', MessageProps>(
         space={messageSpacing}
         collapse={collapse}
         highlight={highlight}
-        selected={!!menuAnchor || !!emojiBoardAnchor}
+        selected={!!selected || !!menuAnchor || !!emojiBoardAnchor}
         {...props}
         {...hoverProps}
         {...focusWithinProps}
@@ -1156,6 +1158,7 @@ export type EventProps = {
   room: Room;
   mEvent: MatrixEvent;
   highlight: boolean;
+  selected?: boolean;
   canDelete?: boolean;
   messageSpacing: MessageSpacing;
   hideReadReceipts?: boolean;
@@ -1168,6 +1171,7 @@ export const Event = as<'div', EventProps>(
       room,
       mEvent,
       highlight,
+      selected,
       canDelete,
       messageSpacing,
       hideReadReceipts,
@@ -1213,7 +1217,7 @@ export const Event = as<'div', EventProps>(
         space={messageSpacing}
         autoCollapse
         highlight={highlight}
-        selected={!!menuAnchor}
+        selected={!!selected || !!menuAnchor}
         {...props}
         {...hoverProps}
         {...focusWithinProps}
