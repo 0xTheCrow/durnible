@@ -1,0 +1,9 @@
+services:
+  cinny:
+    image: ajbura/cinny:latest
+    container_name: cinny
+    restart: unless-stopped
+    ports:
+     - 1337:80
+    volumes:
+     - ./cinny/config.json:/app/config.json
