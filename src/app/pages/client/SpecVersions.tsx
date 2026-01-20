@@ -22,7 +22,7 @@ export function SpecVersions({ baseUrl, children }: { baseUrl: string; children:
             <Dialog>
               <Box direction="Column" gap="400" style={{ padding: config.space.S400 }}>
                 <Text>
-                  Failed to connect to homeserver. Either homeserver is down or your internet.
+                  Failed to connect to the homeserver. Either the homeserver is down, or your internet connection is.
                 </Text>
                 <Button variant="Critical" onClick={retry}>
                   <Text as="span" size="B400">
