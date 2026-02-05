@@ -1,4 +1,4 @@
-import React, { MouseEventHandler, useCallback, useState } from 'react';
+import React, { MouseEventHandler, useCallback, useMemo, useState } from 'react';
 import {
   Box,
   Modal,
@@ -12,7 +12,7 @@ import {
   toRem,
 } from 'folds';
 import classNames from 'classnames';
-import { Room } from 'matrix-js-sdk';
+import { EventType, MatrixEvent, RelationType, Room } from 'matrix-js-sdk';
 import { type Relations } from 'matrix-js-sdk/lib/models/relations';
 import FocusTrap from 'focus-trap-react';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
@@ -37,9 +37,52 @@ export const Reactions = as<'div', ReactionsProps>(
     const useAuthentication = useMediaAuthentication();
     const [viewer, setViewer] = useState<boolean | string>(false);
     const myUserId = mx.getUserId();
+
+    // Get earliest timestamp for each reaction key from timeline (including redacted events)
+    // This preserves ordering even when the original reactor unreacts
+    const firstReactionTimestamps = useMemo(() => {
+      const timeline = room.getLiveTimeline();
+      const timelineEvents = timeline.getEvents();
+
+      return timelineEvents.reduce((timestamps, event) => {
+        if (event.getType() !== EventType.Reaction) return timestamps;
+        const relation = event.getRelation();
+        if (
+          relation?.event_id !== mEventId ||
+          relation?.rel_type !== RelationType.Annotation ||
+          typeof relation?.key !== 'string'
+        ) return timestamps;
+
+        const { key } = relation;
+        const ts = event.getTs() ?? 0;
+        const existing = timestamps.get(key);
+        if (existing === undefined || ts < existing) {
+          timestamps.set(key, ts);
+        }
+        return timestamps;
+      }, new Map<string, number>());
+    }, [room, mEventId]);
+
     const reactions = useRelations(
       relations,
-      useCallback((rel) => [...(rel.getSortedAnnotationsByKey() ?? [])], [])
+      useCallback((rel) => {
+        const events = rel.getRelations();
+        const keyMap = events.reduce((map, ev) => {
+          const key = ev.getRelation()?.key;
+          if (typeof key !== 'string') return map;
+          const existing = map.get(key) ?? new Set<MatrixEvent>();
+          existing.add(ev);
+          map.set(key, existing);
+          return map;
+        }, new Map<string, Set<MatrixEvent>>());
+
+        // Sort by earliest reaction timestamp (from timeline, includes redacted)
+        return Array.from(keyMap.entries()).sort((a, b) => {
+          const aTs = firstReactionTimestamps.get(a[0]) ?? Infinity;
+          const bTs = firstReactionTimestamps.get(b[0]) ?? Infinity;
+          return aTs - bTs;
+        });
+      }, [firstReactionTimestamps])
     );
 
     const handleViewReaction: MouseEventHandler<HTMLButtonElement> = (evt) => {
