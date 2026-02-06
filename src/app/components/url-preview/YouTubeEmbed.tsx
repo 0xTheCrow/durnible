@@ -70,7 +70,7 @@ export const YouTubeEmbed = as<'div', { videoId: string; url: string; ts: number
             size="T200"
             priority="300"
           >
-            [Invidious]
+            {`[Invidious] - https://inv.nadeko.net/watch?v=${videoId}`}
           </Text>
         </div>
       </Box>
