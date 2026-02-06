@@ -25,7 +25,7 @@ export const Reaction = as<
     {...props}
     ref={ref}
   >
-    <Text className={css.ReactionText} as="span" size="T400">
+    <Text className={css.ReactionText} as="span" size="T500">
       {reaction.startsWith('mxc://') ? (
         <img
           className={css.ReactionImg}

@@ -106,6 +106,8 @@ export const CodeBlockInternal = style([
   {
     padding: `${config.space.S200} ${config.space.S200} 0`,
     minWidth: toRem(200),
+    whiteSpace: 'pre-wrap',
+    overflowWrap: 'break-word',
   },
 ]);
 
