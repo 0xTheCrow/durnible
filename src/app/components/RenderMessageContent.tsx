@@ -24,12 +24,13 @@ import {
   UnsupportedContent,
   VideoContent,
 } from './message';
-import { UrlPreviewCard, UrlPreviewHolder } from './url-preview';
+import { UrlPreviewCard, UrlPreviewHolder, YouTubeEmbed } from './url-preview';
 import { Image, MediaControl, Video } from './media';
 import { ImageViewer } from './image-viewer';
 import { PdfViewer } from './Pdf-viewer';
 import { TextViewer } from './text-viewer';
 import { testMatrixTo } from '../plugins/matrix-to';
+import { testYouTubeUrl, getYouTubeVideoId } from '../utils/youtube';
 import { IImageContent } from '../../types/matrix/common';
 
 type RenderMessageContentProps = {
@@ -61,12 +62,40 @@ export function RenderMessageContent({
   const renderUrlsPreview = (urls: string[]) => {
     const filteredUrls = urls.filter((url) => !testMatrixTo(url));
     if (filteredUrls.length === 0) return undefined;
+
+    const youtubeUrls: string[] = [];
+    const otherUrls: string[] = [];
+    filteredUrls.forEach((url) => {
+      if (testYouTubeUrl(url)) {
+        youtubeUrls.push(url);
+      } else {
+        otherUrls.push(url);
+      }
+    });
+
+    if (youtubeUrls.length === 0 && otherUrls.length === 0) return undefined;
+
     return (
-      <UrlPreviewHolder>
-        {filteredUrls.map((url) => (
-          <UrlPreviewCard key={url} url={url} ts={ts} />
-        ))}
-      </UrlPreviewHolder>
+      <>
+        {youtubeUrls.map((url) => {
+          const videoId = getYouTubeVideoId(url);
+          return videoId ? (
+            <YouTubeEmbed
+              key={url}
+              videoId={videoId}
+              url={url}
+              style={{ marginTop: config.space.S200 }}
+            />
+          ) : null;
+        })}
+        {otherUrls.length > 0 && (
+          <UrlPreviewHolder>
+            {otherUrls.map((url) => (
+              <UrlPreviewCard key={url} url={url} ts={ts} />
+            ))}
+          </UrlPreviewHolder>
+        )}
+      </>
     );
   };
   const renderCaption = () => {
