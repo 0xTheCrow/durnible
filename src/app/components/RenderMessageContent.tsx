@@ -84,6 +84,7 @@ export function RenderMessageContent({
               key={url}
               videoId={videoId}
               url={url}
+              ts={ts}
               style={{ marginTop: config.space.S200 }}
             />
           ) : null;
