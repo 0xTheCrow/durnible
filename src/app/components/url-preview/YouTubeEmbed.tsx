@@ -63,15 +63,14 @@ export const YouTubeEmbed = as<'div', { videoId: string; url: string; ts: number
           )}
           <Text
             style={linkStyles}
-            truncate
             as="a"
-            href={url}
+            href={`https://inv.nadeko.net/watch?v=${videoId}`}
             target="_blank"
             rel="noreferrer noopener"
             size="T200"
             priority="300"
           >
-            {tryDecodeURIComponent(url)}
+            [Invidious]
           </Text>
         </div>
       </Box>
