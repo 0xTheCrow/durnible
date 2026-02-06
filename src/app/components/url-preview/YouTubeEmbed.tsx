@@ -46,36 +46,14 @@ export const YouTubeEmbed = as<'div', { videoId: string; url: string; ts: number
         ref={ref}
       >
         <div className={css.YouTubeIframeContainer}>
-          {playing ? (
-            <iframe
-              className={css.YouTubeIframe}
-              src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1`}
-              title={typeof title === 'string' ? title : 'YouTube video'}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              referrerPolicy="no-referrer"
-            />
-          ) : (
-            // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
-            <div className={css.YouTubeThumbnail} onClick={() => setPlaying(true)}>
-              {thumbnailUrl && (
-                <img
-                  className={css.YouTubeThumbnail}
-                  src={thumbnailUrl}
-                  alt={typeof title === 'string' ? title : 'YouTube video'}
-                />
-              )}
-              <IconButton
-                className={css.YouTubePlayButton}
-                variant="Secondary"
-                radii="Pill"
-                size="400"
-                aria-label="Play video"
-              >
-                <Icon src={Icons.Play} size="400" filled />
-              </IconButton>
-            </div>
-          )}
+        <iframe
+          className={css.YouTubeIframe}
+          src={`https://www.youtube-nocookie.com/embed/${videoId}`}
+          title={typeof title === 'string' ? title : 'YouTube video'}
+          allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          referrerPolicy="origin"
+        />
         </div>
         <div className={css.YouTubeLink}>
           {typeof title === 'string' && (
