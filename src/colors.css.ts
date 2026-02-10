@@ -200,10 +200,10 @@ export const darkTheme = createTheme(color, darkThemeData);
 export const abyssTheme = createTheme(color, {
   ...darkThemeData,
   Background: {
-    Container: '#111114',
-    ContainerHover: '#1A1A1F',
-    ContainerActive: '#222229',
-    ContainerLine: '#2A2A33',
+    Container: '#0A0A0D',
+    ContainerHover: '#121215',
+    ContainerActive: '#1A1A1F',
+    ContainerLine: '#222229',
     OnContainer: '#E4E4E8',
   },
 
