@@ -200,14 +200,6 @@ export const darkTheme = createTheme(color, darkThemeData);
 export const abyssTheme = createTheme(color, {
   ...darkThemeData,
   Background: {
-    Container: '#09090B',
-    ContainerHover: '#121215',
-    ContainerActive: '#1A1A1F',
-    ContainerLine: '#222229',
-    OnContainer: '#E4E4E8',
-  },
-
-  Surface: {
     Container: '#111114',
     ContainerHover: '#1A1A1F',
     ContainerActive: '#222229',
@@ -215,11 +207,19 @@ export const abyssTheme = createTheme(color, {
     OnContainer: '#E4E4E8',
   },
 
+  Surface: {
+    Container: '#050507',
+    ContainerHover: '#0E0E11',
+    ContainerActive: '#16161A',
+    ContainerLine: '#1E1E24',
+    OnContainer: '#E4E4E8',
+  },
+
   SurfaceVariant: {
-    Container: '#1A1A1F',
-    ContainerHover: '#222229',
-    ContainerActive: '#2A2A33',
-    ContainerLine: '#33333D',
+    Container: '#16161A',
+    ContainerHover: '#1E1E24',
+    ContainerActive: '#26262E',
+    ContainerLine: '#2E2E38',
     OnContainer: '#E4E4E8',
   },
 
