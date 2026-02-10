@@ -6,12 +6,14 @@ import * as css from './MPoll.css';
 
 type PollAnswer = {
   id: string;
+  'org.matrix.msc1767.text'?: string;
   'org.matrix.msc3381.v2.text'?: string;
   'm.text'?: string;
 };
 
 type PollContent = {
   question?: {
+    'org.matrix.msc1767.text'?: string;
     'org.matrix.msc3381.v2.text'?: string;
     'm.text'?: string;
     body?: string;
@@ -22,8 +24,11 @@ type PollContent = {
   answers?: PollAnswer[];
 };
 
-const UNDISCLOSED_KIND = 'org.matrix.msc3381.v2.undisclosed';
-const UNDISCLOSED_KIND_STABLE = 'm.undisclosed';
+const UNDISCLOSED_KINDS = [
+  'org.matrix.msc3381.v1.undisclosed',
+  'org.matrix.msc3381.v2.undisclosed',
+  'm.undisclosed',
+];
 
 function getPollContent(mEvent: MatrixEvent): PollContent | undefined {
   const content = mEvent.getContent();
@@ -37,6 +42,7 @@ function getPollContent(mEvent: MatrixEvent): PollContent | undefined {
 
 function getAnswerText(answer: PollAnswer): string {
   return (
+    answer['org.matrix.msc1767.text'] ??
     answer['org.matrix.msc3381.v2.text'] ??
     answer['m.text'] ??
     (answer as any).body ??
@@ -48,6 +54,7 @@ function getQuestionText(pollContent: PollContent): string {
   const q = pollContent.question;
   if (!q) return 'Poll';
   return (
+    q['org.matrix.msc1767.text'] ??
     q['org.matrix.msc3381.v2.text'] ??
     q['m.text'] ??
     q.body ??
@@ -106,7 +113,7 @@ export function MPoll({ mEvent, timelineSet, mx }: MPollProps) {
   const answers = pollContent?.answers ?? [];
   const question = pollContent ? getQuestionText(pollContent) : 'Poll';
   const kind = pollContent?.kind ?? 'org.matrix.msc3381.v2.disclosed';
-  const isUndisclosed = kind === UNDISCLOSED_KIND || kind === UNDISCLOSED_KIND_STABLE;
+  const isUndisclosed = UNDISCLOSED_KINDS.includes(kind);
 
   const validAnswerIds = useMemo(() => new Set(answers.map((a) => a.id)), [answers]);
 
