@@ -197,6 +197,59 @@ const darkThemeData = {
 
 export const darkTheme = createTheme(color, darkThemeData);
 
+export const abyssTheme = createTheme(color, {
+  ...darkThemeData,
+  Background: {
+    Container: '#09090B',
+    ContainerHover: '#121215',
+    ContainerActive: '#1A1A1F',
+    ContainerLine: '#222229',
+    OnContainer: '#E4E4E8',
+  },
+
+  Surface: {
+    Container: '#111114',
+    ContainerHover: '#1A1A1F',
+    ContainerActive: '#222229',
+    ContainerLine: '#2A2A33',
+    OnContainer: '#E4E4E8',
+  },
+
+  SurfaceVariant: {
+    Container: '#1A1A1F',
+    ContainerHover: '#222229',
+    ContainerActive: '#2A2A33',
+    ContainerLine: '#33333D',
+    OnContainer: '#E4E4E8',
+  },
+
+  Primary: {
+    Main: '#7AA2F7',
+    MainHover: '#6B95F3',
+    MainActive: '#6190F2',
+    MainLine: '#578BF0',
+    OnMain: '#141926',
+    Container: '#252D45',
+    ContainerHover: '#2C3550',
+    ContainerActive: '#333D5B',
+    ContainerLine: '#3A4566',
+    OnContainer: '#C8DAFC',
+  },
+
+  Secondary: {
+    Main: '#E4E4E8',
+    MainHover: '#CDCDD2',
+    MainActive: '#C2C2C8',
+    MainLine: '#B7B7BE',
+    OnMain: '#09090B',
+    Container: '#222229',
+    ContainerHover: '#2A2A33',
+    ContainerActive: '#33333D',
+    ContainerLine: '#3D3D47',
+    OnContainer: '#E4E4E8',
+  },
+});
+
 export const butterTheme = createTheme(color, {
   ...darkThemeData,
   Background: {
