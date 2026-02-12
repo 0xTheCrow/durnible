@@ -53,6 +53,7 @@ import {
   getBeginCommand,
   trimCommand,
   getMentions,
+  replaceShortcodes,
 } from '../../components/editor';
 import { EmojiBoard, EmojiBoardTab } from '../../components/emoji-board';
 import { UseStateProvider } from '../../components/UseStateProvider';
@@ -108,6 +109,9 @@ import { ReplyLayout, ThreadIndicator } from '../../components/message';
 import { roomToParentsAtom } from '../../state/room/roomToParents';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
 import { useImagePackRooms } from '../../hooks/useImagePackRooms';
+import { useRelevantImagePacks } from '../../hooks/useImagePacks';
+import { ImageUsage } from '../../plugins/custom-emoji/types';
+import { buildShortcodeMap, emojis as unicodeEmojis } from '../../plugins/emoji';
 import { usePowerLevelsContext } from '../../hooks/usePowerLevels';
 import colorMXID from '../../../util/colorMXID';
 import { useIsDirectRoom } from '../../hooks/useRoom';
@@ -169,6 +173,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     const uploadBoardHandlers = useRef<UploadBoardImperativeHandlers>();
 
     const imagePackRooms: Room[] = useImagePackRooms(roomId, roomToParents);
+    const imagePacks = useRelevantImagePacks(ImageUsage.Emoticon, imagePackRooms);
 
     const [toolbar, setToolbar] = useSetting(settingsAtom, 'editorToolbar');
     const [autocompleteQuery, setAutocompleteQuery] =
@@ -299,10 +304,13 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     const submit = useCallback(() => {
       uploadBoardHandlers.current?.handleSend();
 
+      const shortcodeMap = buildShortcodeMap(imagePacks, unicodeEmojis);
+      const processedChildren = replaceShortcodes(editor.children, shortcodeMap);
+
       const commandName = getBeginCommand(editor);
-      let plainText = toPlainText(editor.children, isMarkdown).trim();
+      let plainText = toPlainText(processedChildren, isMarkdown).trim();
       let customHtml = trimCustomHtml(
-        toMatrixCustomHTML(editor.children, {
+        toMatrixCustomHTML(processedChildren, {
           allowTextFormatting: true,
           allowBlockMarkdown: isMarkdown,
           allowInlineMarkdown: isMarkdown,
@@ -377,7 +385,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       resetEditorHistory(editor);
       setReplyDraft(undefined);
       sendTypingStatus(false);
-    }, [mx, roomId, editor, replyDraft, sendTypingStatus, setReplyDraft, isMarkdown, commands]);
+    }, [mx, roomId, editor, replyDraft, sendTypingStatus, setReplyDraft, isMarkdown, commands, imagePacks]);
 
     const handleKeyDown: KeyboardEventHandler = useCallback(
       (evt) => {
