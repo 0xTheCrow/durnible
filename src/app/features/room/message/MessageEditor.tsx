@@ -44,9 +44,13 @@ import {
   trimCustomHtml,
   useEditor,
   getMentions,
+  replaceShortcodes,
 } from '../../../components/editor';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
+import { useRelevantImagePacks } from '../../../hooks/useImagePacks';
+import { ImageUsage } from '../../../plugins/custom-emoji/types';
+import { buildShortcodeMap, emojis as unicodeEmojis } from '../../../plugins/emoji';
 import { UseStateProvider } from '../../../components/UseStateProvider';
 import { EmojiBoard } from '../../../components/emoji-board';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
@@ -71,6 +75,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
     const [isMarkdown] = useSetting(settingsAtom, 'isMarkdown');
     const [toolbar, setToolbar] = useState(globalToolbar);
     const isComposing = useComposingCheck();
+    const imagePacks = useRelevantImagePacks(ImageUsage.Emoticon, imagePackRooms || []);
 
     const [autocompleteQuery, setAutocompleteQuery] =
       useState<AutocompleteQuery<AutocompletePrefix>>();
@@ -99,9 +104,12 @@ export const MessageEditor = as<'div', MessageEditorProps>(
 
     const [saveState, save] = useAsyncCallback(
       useCallback(async () => {
-        const plainText = toPlainText(editor.children, isMarkdown).trim();
+        const shortcodeMap = buildShortcodeMap(imagePacks, unicodeEmojis);
+        const processedChildren = replaceShortcodes(editor.children, shortcodeMap);
+
+        const plainText = toPlainText(processedChildren, isMarkdown).trim();
         const customHtml = trimCustomHtml(
-          toMatrixCustomHTML(editor.children, {
+          toMatrixCustomHTML(processedChildren, {
             allowTextFormatting: true,
             allowBlockMarkdown: isMarkdown,
             allowInlineMarkdown: isMarkdown,
@@ -154,7 +162,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
         };
 
         return mx.sendMessage(roomId, content);
-      }, [mx, editor, roomId, mEvent, isMarkdown, getPrevBodyAndFormattedBody])
+      }, [mx, editor, roomId, mEvent, isMarkdown, getPrevBodyAndFormattedBody, imagePacks])
     );
 
     const handleSave = useCallback(() => {

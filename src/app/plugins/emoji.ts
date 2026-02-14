@@ -2,6 +2,8 @@ import { CompactEmoji, fromUnicodeToHexcode } from 'emojibase';
 import emojisData from 'emojibase-data/en/compact.json';
 import joypixels from 'emojibase-data/en/shortcodes/joypixels.json';
 import emojibase from 'emojibase-data/en/shortcodes/emojibase.json';
+import { ImagePack } from './custom-emoji/ImagePack';
+import { ImageUsage } from './custom-emoji/types';
 
 export type IEmoji = CompactEmoji & {
   shortcode: string;
@@ -94,6 +96,38 @@ function getGroupIndex(emoji: IEmoji): number | undefined {
   if (emoji.group === 9) return 7;
   return undefined;
 }
+
+export type ShortcodeMapEntry = { key: string; shortcode: string };
+
+export const buildShortcodeMap = (
+  imagePacks: ImagePack[],
+  unicodeEmojis: IEmoji[]
+): Map<string, ShortcodeMapEntry> => {
+  const map = new Map<string, ShortcodeMapEntry>();
+
+  // Custom emoji packs first (higher priority)
+  for (const pack of imagePacks) {
+    const images = pack.getImages(ImageUsage.Emoticon);
+    for (const image of images) {
+      if (!map.has(image.shortcode)) {
+        map.set(image.shortcode, { key: image.url, shortcode: image.shortcode });
+      }
+    }
+  }
+
+  // Unicode emojis (lower priority — skip if shortcode already taken)
+  for (const emoji of unicodeEmojis) {
+    const allShortcodes = emoji.shortcodes ?? [];
+    const codes = [emoji.shortcode, ...allShortcodes];
+    for (const sc of codes) {
+      if (sc && !map.has(sc)) {
+        map.set(sc, { key: emoji.unicode, shortcode: sc });
+      }
+    }
+  }
+
+  return map;
+};
 
 emojisData.forEach((emoji) => {
   const myShortCodes = getShortcodesFor(emoji.hexcode);

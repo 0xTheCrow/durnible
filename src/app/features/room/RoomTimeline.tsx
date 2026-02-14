@@ -64,6 +64,7 @@ import {
   MSticker,
   ImageContent,
   EventContent,
+  MPoll,
 } from '../../components/message';
 import {
   factoryRenderLinkifyWithMention,
@@ -82,6 +83,8 @@ import {
   getReactionContent,
   isMembershipChanged,
   reactionOrEditEvent,
+  getPollResponses,
+  getPollEndEvents,
 } from '../../utils/room';
 import { useSetting } from '../../state/hooks/settings';
 import { MessageLayout, settingsAtom } from '../../state/settings';
@@ -445,6 +448,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
   const [encUrlPreview] = useSetting(settingsAtom, 'encUrlPreview');
   const showUrlPreview = room.hasEncryptionStateEvent() ? encUrlPreview : urlPreview;
   const [showHiddenEvents] = useSetting(settingsAtom, 'showHiddenEvents');
+  const [unfocusedAutoScroll] = useSetting(settingsAtom, 'unfocusedAutoScroll');
   const [showDeveloperTools] = useSetting(settingsAtom, 'developerTools');
 
   const [hour24Clock] = useSetting(settingsAtom, 'hour24Clock');
@@ -622,8 +626,19 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
             setUnreadInfo(getRoomUnreadInfo(room));
           }
 
+          if (!document.hasFocus() && !unfocusedAutoScroll) {
+            setTimeline((ct) => ({
+              ...ct,
+              range: {
+                start: ct.range.start + 1,
+                end: ct.range.end + 1,
+              },
+            }));
+            return;
+          }
+
           scrollToBottomRef.current.count += 1;
-          scrollToBottomRef.current.smooth = true;
+          scrollToBottomRef.current.smooth = document.hasFocus();
 
           setTimeline((ct) => ({
             ...ct,
@@ -639,7 +654,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
           setUnreadInfo(getRoomUnreadInfo(room));
         }
       },
-      [mx, room, unreadInfo, hideActivity]
+      [mx, room, unreadInfo, hideActivity, unfocusedAutoScroll]
     )
   );
 
@@ -1214,6 +1229,13 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
                     />
                   );
                 }
+                if (
+                  mEvent.getType() === MessageEvent.PollStart ||
+                  mEvent.getType() === 'm.poll.start'
+                )
+                  return (
+                    <MPoll mEvent={mEvent} timelineSet={timelineSet} mx={mx} />
+                  );
                 if (mEvent.getType() === MessageEvent.RoomMessageEncrypted)
                   return (
                     <Text>
@@ -1290,6 +1312,144 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
                   />
                 )}
               />
+            )}
+          </Message>
+        );
+      },
+      [MessageEvent.PollStart]: (mEventId, mEvent, item, timelineSet, collapse) => {
+        const reactionRelations = getEventReactions(timelineSet, mEventId);
+        const reactions = reactionRelations && reactionRelations.getSortedAnnotationsByKey();
+        const hasReactions = reactions && reactions.length > 0;
+        const { replyEventId, threadRootId } = mEvent;
+        const highlighted = focusItem?.index === item && focusItem.highlight;
+
+        return (
+          <Message
+            key={mEvent.getId()}
+            data-message-item={item}
+            data-message-id={mEventId}
+            room={room}
+            mEvent={mEvent}
+            messageSpacing={messageSpacing}
+            messageLayout={messageLayout}
+            collapse={collapse}
+            highlight={highlighted}
+            canDelete={canRedact || mEvent.getSender() === mx.getUserId()}
+            canSendReaction={canSendReaction}
+            canPinEvent={canPinEvent}
+            imagePackRooms={imagePackRooms}
+            relations={hasReactions ? reactionRelations : undefined}
+            onUserClick={handleUserClick}
+            onUsernameClick={handleUsernameClick}
+            onReplyClick={handleReplyClick}
+            onReactionToggle={handleReactionToggle}
+            reply={
+              replyEventId && (
+                <Reply
+                  room={room}
+                  timelineSet={timelineSet}
+                  replyEventId={replyEventId}
+                  threadRootId={threadRootId}
+                  onClick={handleOpenReply}
+                  getMemberPowerTag={getMemberPowerTag}
+                  accessibleTagColors={accessiblePowerTagColors}
+                  legacyUsernameColor={legacyUsernameColor || direct}
+                />
+              )
+            }
+            reactions={
+              reactionRelations && (
+                <Reactions
+                  style={{ marginTop: config.space.S200 }}
+                  room={room}
+                  relations={reactionRelations}
+                  mEventId={mEventId}
+                  canSendReaction={canSendReaction}
+                  onReactionToggle={handleReactionToggle}
+                />
+              )
+            }
+            hideReadReceipts={hideActivity}
+            showDeveloperTools={showDeveloperTools}
+            memberPowerTag={getMemberPowerTag(mEvent.getSender() ?? '')}
+            accessibleTagColors={accessiblePowerTagColors}
+            legacyUsernameColor={legacyUsernameColor || direct}
+            hour24Clock={hour24Clock}
+            dateFormatString={dateFormatString}
+          >
+            {mEvent.isRedacted() ? (
+              <RedactedContent reason={mEvent.getUnsigned().redacted_because?.content.reason} />
+            ) : (
+              <MPoll mEvent={mEvent} timelineSet={timelineSet} mx={mx} />
+            )}
+          </Message>
+        );
+      },
+      ['m.poll.start']: (mEventId: string, mEvent: MatrixEvent, item: number, timelineSet: EventTimelineSet, collapse: boolean) => {
+        const reactionRelations = getEventReactions(timelineSet, mEventId);
+        const reactions = reactionRelations && reactionRelations.getSortedAnnotationsByKey();
+        const hasReactions = reactions && reactions.length > 0;
+        const { replyEventId, threadRootId } = mEvent;
+        const highlighted = focusItem?.index === item && focusItem.highlight;
+
+        return (
+          <Message
+            key={mEvent.getId()}
+            data-message-item={item}
+            data-message-id={mEventId}
+            room={room}
+            mEvent={mEvent}
+            messageSpacing={messageSpacing}
+            messageLayout={messageLayout}
+            collapse={collapse}
+            highlight={highlighted}
+            canDelete={canRedact || mEvent.getSender() === mx.getUserId()}
+            canSendReaction={canSendReaction}
+            canPinEvent={canPinEvent}
+            imagePackRooms={imagePackRooms}
+            relations={hasReactions ? reactionRelations : undefined}
+            onUserClick={handleUserClick}
+            onUsernameClick={handleUsernameClick}
+            onReplyClick={handleReplyClick}
+            onReactionToggle={handleReactionToggle}
+            reply={
+              replyEventId && (
+                <Reply
+                  room={room}
+                  timelineSet={timelineSet}
+                  replyEventId={replyEventId}
+                  threadRootId={threadRootId}
+                  onClick={handleOpenReply}
+                  getMemberPowerTag={getMemberPowerTag}
+                  accessibleTagColors={accessiblePowerTagColors}
+                  legacyUsernameColor={legacyUsernameColor || direct}
+                />
+              )
+            }
+            reactions={
+              reactionRelations && (
+                <Reactions
+                  style={{ marginTop: config.space.S200 }}
+                  room={room}
+                  relations={reactionRelations}
+                  mEventId={mEventId}
+                  canSendReaction={canSendReaction}
+                  onReactionToggle={handleReactionToggle}
+                />
+              )
+            }
+            hideReadReceipts={hideActivity}
+            showDeveloperTools={showDeveloperTools}
+            memberPowerTag={getMemberPowerTag(mEvent.getSender() ?? '')}
+            accessibleTagColors={accessiblePowerTagColors}
+            legacyUsernameColor={legacyUsernameColor || direct}
+            hour24Clock={hour24Clock}
+            dateFormatString={dateFormatString}
+          >
+            {mEvent.isRedacted() ? (
+              <RedactedContent reason={mEvent.getUnsigned().redacted_because?.content.reason} />
+            ) : (
+              <MPoll mEvent={mEvent} timelineSet={timelineSet} mx={mx} />
             )}
           </Message>
         );

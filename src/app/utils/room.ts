@@ -436,9 +436,48 @@ export const getLatestEditableEvt = (
   return undefined;
 };
 
-export const reactionOrEditEvent = (mEvent: MatrixEvent) =>
-  mEvent.getRelation()?.rel_type === RelationType.Annotation ||
-  mEvent.getRelation()?.rel_type === RelationType.Replace;
+export const reactionOrEditEvent = (mEvent: MatrixEvent) => {
+  const relType = mEvent.getRelation()?.rel_type;
+  if (relType === RelationType.Annotation || relType === RelationType.Replace) return true;
+  if (relType === RelationType.Reference) {
+    const evtType = mEvent.getType();
+    if (
+      evtType === MessageEvent.PollResponse ||
+      evtType === 'org.matrix.msc3381.poll.response' ||
+      evtType === 'm.poll.response' ||
+      evtType === MessageEvent.PollEnd ||
+      evtType === 'org.matrix.msc3381.poll.end' ||
+      evtType === 'm.poll.end'
+    ) {
+      return true;
+    }
+  }
+  return false;
+};
+
+export const getPollResponses = (timelineSet: EventTimelineSet, eventId: string) =>
+  timelineSet.relations.getChildEventsForEvent(
+    eventId,
+    RelationType.Reference,
+    MessageEvent.PollResponse
+  ) ??
+  timelineSet.relations.getChildEventsForEvent(
+    eventId,
+    RelationType.Reference,
+    'm.poll.response' as any
+  );
+
+export const getPollEndEvents = (timelineSet: EventTimelineSet, eventId: string) =>
+  timelineSet.relations.getChildEventsForEvent(
+    eventId,
+    RelationType.Reference,
+    MessageEvent.PollEnd
+  ) ??
+  timelineSet.relations.getChildEventsForEvent(
+    eventId,
+    RelationType.Reference,
+    'm.poll.end' as any
+  );
 
 export const getMentionContent = (userIds: string[], room: boolean): IMentions => {
   const mMentions: IMentions = {};

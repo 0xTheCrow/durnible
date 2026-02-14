@@ -2,7 +2,8 @@ import { Descendant, Editor, Text } from 'slate';
 import { MatrixClient } from 'matrix-js-sdk';
 import { sanitizeText } from '../../utils/sanitize';
 import { BlockType } from './types';
-import { CustomElement } from './slate';
+import { CustomElement, EmoticonElement } from './slate';
+import { ShortcodeMapEntry } from '../../plugins/emoji';
 import {
   parseBlockMD,
   parseInlineMD,
@@ -196,6 +197,72 @@ export const trimCommand = (cmdName: string, str: string) => {
   if (!match) return str;
   return str.slice(match[0].length);
 };
+
+const SHORTCODE_REG_G = /:([a-zA-Z0-9_+-]+):/g;
+
+const replaceShortcodesInText = (
+  textNode: Text,
+  shortcodeMap: Map<string, ShortcodeMapEntry>
+): Descendant[] => {
+  const { text, ...marks } = textNode;
+  const result: Descendant[] = [];
+  let lastIndex = 0;
+
+  SHORTCODE_REG_G.lastIndex = 0;
+  let match = SHORTCODE_REG_G.exec(text);
+  while (match !== null) {
+    const shortcode = match[1];
+    const entry = shortcodeMap.get(shortcode);
+    if (entry) {
+      const before = text.slice(lastIndex, match.index);
+      if (before) {
+        result.push({ ...marks, text: before });
+      }
+      const emoticon: EmoticonElement = {
+        type: BlockType.Emoticon,
+        key: entry.key,
+        shortcode: entry.shortcode,
+        children: [{ text: '' }],
+      };
+      result.push(emoticon);
+      lastIndex = match.index + match[0].length;
+    }
+    match = SHORTCODE_REG_G.exec(text);
+  }
+
+  if (result.length === 0) return [textNode];
+
+  const remaining = text.slice(lastIndex);
+  if (remaining) {
+    result.push({ ...marks, text: remaining });
+  }
+  return result;
+};
+
+const replaceShortcodesInNode = (
+  node: Descendant,
+  shortcodeMap: Map<string, ShortcodeMapEntry>
+): Descendant[] => {
+  if (Text.isText(node)) {
+    return replaceShortcodesInText(node, shortcodeMap);
+  }
+  if (node.type === BlockType.CodeBlock || node.type === BlockType.CodeLine) {
+    return [node];
+  }
+  return [
+    {
+      ...node,
+      children: node.children.flatMap((child: Descendant) =>
+        replaceShortcodesInNode(child, shortcodeMap)
+      ),
+    } as Descendant,
+  ];
+};
+
+export const replaceShortcodes = (
+  nodes: Descendant[],
+  shortcodeMap: Map<string, ShortcodeMapEntry>
+): Descendant[] => nodes.flatMap((node) => replaceShortcodesInNode(node, shortcodeMap));
 
 export type MentionsData = {
   room: boolean;

@@ -896,6 +896,10 @@ function Messages() {
   const [urlPreview, setUrlPreview] = useSetting(settingsAtom, 'urlPreview');
   const [encUrlPreview, setEncUrlPreview] = useSetting(settingsAtom, 'encUrlPreview');
   const [showHiddenEvents, setShowHiddenEvents] = useSetting(settingsAtom, 'showHiddenEvents');
+  const [unfocusedAutoScroll, setUnfocusedAutoScroll] = useSetting(
+    settingsAtom,
+    'unfocusedAutoScroll'
+  );
 
   return (
     <Box direction="Column" gap="100">
@@ -971,6 +975,19 @@ function Messages() {
           title="Show Hidden Events"
           after={
             <Switch variant="Primary" value={showHiddenEvents} onChange={setShowHiddenEvents} />
+          }
+        />
+      </SequenceCard>
+      <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
+        <SettingTile
+          title="Auto-scroll When Unfocused"
+          description="Keep auto-scrolling to new messages even when the window is not focused."
+          after={
+            <Switch
+              variant="Primary"
+              value={unfocusedAutoScroll}
+              onChange={setUnfocusedAutoScroll}
+            />
           }
         />
       </SequenceCard>
