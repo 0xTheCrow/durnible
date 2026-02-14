@@ -448,6 +448,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
   const [encUrlPreview] = useSetting(settingsAtom, 'encUrlPreview');
   const showUrlPreview = room.hasEncryptionStateEvent() ? encUrlPreview : urlPreview;
   const [showHiddenEvents] = useSetting(settingsAtom, 'showHiddenEvents');
+  const [unfocusedAutoScroll] = useSetting(settingsAtom, 'unfocusedAutoScroll');
   const [showDeveloperTools] = useSetting(settingsAtom, 'developerTools');
 
   const [hour24Clock] = useSetting(settingsAtom, 'hour24Clock');
@@ -625,8 +626,19 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
             setUnreadInfo(getRoomUnreadInfo(room));
           }
 
+          if (!document.hasFocus() && !unfocusedAutoScroll) {
+            setTimeline((ct) => ({
+              ...ct,
+              range: {
+                start: ct.range.start + 1,
+                end: ct.range.end + 1,
+              },
+            }));
+            return;
+          }
+
           scrollToBottomRef.current.count += 1;
-          scrollToBottomRef.current.smooth = true;
+          scrollToBottomRef.current.smooth = document.hasFocus();
 
           setTimeline((ct) => ({
             ...ct,
@@ -642,7 +654,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
           setUnreadInfo(getRoomUnreadInfo(room));
         }
       },
-      [mx, room, unreadInfo, hideActivity]
+      [mx, room, unreadInfo, hideActivity, unfocusedAutoScroll]
     )
   );
 

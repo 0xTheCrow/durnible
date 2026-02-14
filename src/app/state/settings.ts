@@ -33,6 +33,7 @@ export interface Settings {
   encUrlPreview: boolean;
   showHiddenEvents: boolean;
   legacyUsernameColor: boolean;
+  unfocusedAutoScroll: boolean;
 
   showNotifications: boolean;
   isNotificationSounds: boolean;
@@ -67,6 +68,7 @@ const defaultSettings: Settings = {
   encUrlPreview: false,
   showHiddenEvents: false,
   legacyUsernameColor: false,
+  unfocusedAutoScroll: false,
 
   showNotifications: true,
   isNotificationSounds: true,
