@@ -57,7 +57,6 @@ import { MemberSortMenu } from '../../components/MemberSortMenu';
 import { useOpenUserRoomProfile, useUserRoomProfileState } from '../../state/hooks/userRoomProfile';
 import { useSpaceOptionally } from '../../hooks/useSpace';
 import { ContainerColor } from '../../styles/ContainerColor.css';
-import { useFlattenPowerTagMembers, useGetMemberPowerTag } from '../../hooks/useMemberPowerTag';
 import { useRoomCreators } from '../../hooks/useRoomCreators';
 
 type MemberDrawerHeaderProps = {
@@ -184,7 +183,6 @@ export function MembersDrawer({ room, members }: MembersDrawerProps) {
   const scrollTopAnchorRef = useRef<HTMLDivElement>(null);
   const powerLevels = usePowerLevelsContext();
   const creators = useRoomCreators(room);
-  const getPowerTag = useGetMemberPowerTag(room, creators, powerLevels);
   const getPowerLevel = useGetMemberPowerLevel(powerLevels);
 
   const fetchingMembers = members.length < room.getJoinedMemberCount();
@@ -217,10 +215,8 @@ export function MembersDrawer({ room, members }: MembersDrawerProps) {
 
   const processMembers = result ? result.items : filteredMembers;
 
-  const PLTagOrRoomMember = useFlattenPowerTagMembers(processMembers, getPowerTag);
-
   const virtualizer = useVirtualizer({
-    count: PLTagOrRoomMember.length,
+    count: processMembers.length,
     getScrollElement: () => scrollRef.current,
     estimateSize: () => 40,
     overscan: 10,
@@ -384,24 +380,7 @@ export function MembersDrawer({ room, members }: MembersDrawerProps) {
                 }}
               >
                 {virtualizer.getVirtualItems().map((vItem) => {
-                  const tagOrMember = PLTagOrRoomMember[vItem.index];
-                  if (!('userId' in tagOrMember)) {
-                    return (
-                      <Text
-                        style={{
-                          transform: `translateY(${vItem.start}px)`,
-                        }}
-                        data-index={vItem.index}
-                        ref={virtualizer.measureElement}
-                        key={`${room.roomId}-${vItem.index}`}
-                        className={classNames(css.MembersGroupLabel, css.DrawerVirtualItem)}
-                        size="L400"
-                      >
-                        {tagOrMember.name}
-                      </Text>
-                    );
-                  }
-
+                  const member = processMembers[vItem.index];
                   return (
                     <div
                       style={{
@@ -409,18 +388,18 @@ export function MembersDrawer({ room, members }: MembersDrawerProps) {
                       }}
                       className={css.DrawerVirtualItem}
                       data-index={vItem.index}
-                      key={`${room.roomId}-${tagOrMember.userId}`}
+                      key={`${room.roomId}-${member.userId}`}
                       ref={virtualizer.measureElement}
                     >
                       <MemberItem
                         mx={mx}
                         useAuthentication={useAuthentication}
                         room={room}
-                        member={tagOrMember}
+                        member={member}
                         onClick={handleMemberClick}
-                        pressed={openProfileUserId === tagOrMember.userId}
+                        pressed={openProfileUserId === member.userId}
                         typing={typingMembers.some(
-                          (receipt) => receipt.userId === tagOrMember.userId
+                          (receipt) => receipt.userId === member.userId
                         )}
                       />
                     </div>

@@ -469,7 +469,8 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
   const accessiblePowerTagColors = useAccessiblePowerTagColors(
     theme.kind,
     creatorsTag,
-    powerLevelTags
+    powerLevelTags,
+    true
   );
 
   const permissions = useRoomPermissions(creators, powerLevels);

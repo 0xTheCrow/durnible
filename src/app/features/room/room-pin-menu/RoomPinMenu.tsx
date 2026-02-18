@@ -265,7 +265,8 @@ export const RoomPinMenu = forwardRef<HTMLDivElement, RoomPinMenuProps>(
     const accessibleTagColors = useAccessiblePowerTagColors(
       theme.kind,
       creatorsTag,
-      powerLevelTags
+      powerLevelTags,
+      true
     );
 
     const pinnedEvents = useRoomPinnedEvents(room);
