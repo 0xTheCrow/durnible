@@ -1,4 +1,4 @@
-import React, { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import React, { ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   Badge,
   Box,
@@ -87,6 +87,7 @@ export const ImageContent = as<'div', ImageContentProps>(
     const shouldPauseGif = pauseGifs && isGif;
 
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const loadedImgRef = useRef<HTMLImageElement | null>(null);
     const [isHovered, setIsHovered] = useState(false);
 
     const [load, setLoad] = useState(false);
@@ -108,16 +109,19 @@ export const ImageContent = as<'div', ImageContentProps>(
     );
 
     const handleLoad = (evt: React.SyntheticEvent<HTMLImageElement>) => {
+      if (shouldPauseGif) loadedImgRef.current = evt.currentTarget;
       setLoad(true);
-      if (shouldPauseGif && canvasRef.current) {
-        const img = evt.currentTarget;
-        const canvas = canvasRef.current;
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-        const ctx = canvas.getContext('2d');
-        ctx?.drawImage(img, 0, 0);
-      }
     };
+
+    useLayoutEffect(() => {
+      if (!shouldPauseGif || !load || !loadedImgRef.current || !canvasRef.current) return;
+      const img = loadedImgRef.current;
+      const canvas = canvasRef.current;
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      ctx?.drawImage(img, 0, 0);
+    }, [shouldPauseGif, load]);
     const handleError = () => {
       setLoad(false);
       setError(true);
