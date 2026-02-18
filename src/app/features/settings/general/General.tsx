@@ -892,6 +892,7 @@ function Messages() {
     settingsAtom,
     'hideNickAvatarEvents'
   );
+  const [pauseGifs, setPauseGifs] = useSetting(settingsAtom, 'pauseGifs');
   const [mediaAutoLoad, setMediaAutoLoad] = useSetting(settingsAtom, 'mediaAutoLoad');
   const [urlPreview, setUrlPreview] = useSetting(settingsAtom, 'urlPreview');
   const [encUrlPreview, setEncUrlPreview] = useSetting(settingsAtom, 'encUrlPreview');
@@ -944,6 +945,13 @@ function Messages() {
               onChange={setHideNickAvatarEvents}
             />
           }
+        />
+      </SequenceCard>
+      <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
+        <SettingTile
+          title="Play GIFs on Hover"
+          description="GIFs are paused by default and only animate while hovered."
+          after={<Switch variant="Primary" value={pauseGifs} onChange={setPauseGifs} />}
         />
       </SequenceCard>
       <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">

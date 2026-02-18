@@ -1,4 +1,4 @@
-import React, { ReactNode, useCallback, useEffect, useState } from 'react';
+import React, { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import {
   Badge,
   Box,
@@ -23,6 +23,8 @@ import { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
 import { IImageInfo, MATRIX_BLUR_HASH_PROPERTY_NAME } from '../../../../types/matrix/common';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
+import { useSetting } from '../../../state/hooks/settings';
+import { settingsAtom } from '../../../state/settings';
 import * as css from './style.css';
 import { bytesToSize } from '../../../utils/common';
 import { FALLBACK_MIMETYPE } from '../../../utils/mimeTypes';
@@ -41,7 +43,7 @@ type RenderImageProps = {
   alt: string;
   title: string;
   src: string;
-  onLoad: () => void;
+  onLoad: (evt: React.SyntheticEvent<HTMLImageElement>) => void;
   onError: () => void;
   onClick: () => void;
   tabIndex: number;
@@ -80,6 +82,13 @@ export const ImageContent = as<'div', ImageContentProps>(
     const useAuthentication = useMediaAuthentication();
     const blurHash = validBlurHash(info?.[MATRIX_BLUR_HASH_PROPERTY_NAME]);
 
+    const [pauseGifs] = useSetting(settingsAtom, 'pauseGifs');
+    const isGif = mimeType === 'image/gif' || mimeType === 'image/apng';
+    const shouldPauseGif = pauseGifs && isGif;
+
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [isHovered, setIsHovered] = useState(false);
+
     const [load, setLoad] = useState(false);
     const [error, setError] = useState(false);
     const [viewer, setViewer] = useState(false);
@@ -98,8 +107,16 @@ export const ImageContent = as<'div', ImageContentProps>(
       }, [mx, url, useAuthentication, mimeType, encInfo])
     );
 
-    const handleLoad = () => {
+    const handleLoad = (evt: React.SyntheticEvent<HTMLImageElement>) => {
       setLoad(true);
+      if (shouldPauseGif && canvasRef.current) {
+        const img = evt.currentTarget;
+        const canvas = canvasRef.current;
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0);
+      }
     };
     const handleError = () => {
       setLoad(false);
@@ -178,6 +195,23 @@ export const ImageContent = as<'div', ImageContentProps>(
               tabIndex: 0,
             })}
           </Box>
+        )}
+        {shouldPauseGif && load && !blurred && srcState.status === AsyncStatus.Success && (
+          <canvas
+            ref={canvasRef}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              display: isHovered ? 'none' : 'block',
+              cursor: 'pointer',
+            }}
+            onClick={() => setViewer(true)}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+          />
         )}
         {blurred && !error && srcState.status !== AsyncStatus.Error && (
           <Box className={css.AbsoluteContainer} alignItems="Center" justifyContent="Center">

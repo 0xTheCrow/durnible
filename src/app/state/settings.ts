@@ -34,6 +34,7 @@ export interface Settings {
   showHiddenEvents: boolean;
   legacyUsernameColor: boolean;
   unfocusedAutoScroll: boolean;
+  pauseGifs: boolean;
 
   showNotifications: boolean;
   isNotificationSounds: boolean;
@@ -69,6 +70,7 @@ const defaultSettings: Settings = {
   showHiddenEvents: false,
   legacyUsernameColor: false,
   unfocusedAutoScroll: false,
+  pauseGifs: false,
 
   showNotifications: true,
   isNotificationSounds: true,
