@@ -789,7 +789,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
     useCallback(
       (inFocus) => {
         if (inFocus && atBottomRef.current) {
-          if (unreadInfo?.inLiveTimeline) {
+          if (!unfocusedAutoScroll && unreadInfo?.inLiveTimeline) {
             handleOpenEvent(unreadInfo.readUptoEventId, false, (scrolled) => {
               // the unread event is already in view
               // so, try mark as read;
@@ -802,7 +802,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
           tryAutoMarkAsRead();
         }
       },
-      [tryAutoMarkAsRead, unreadInfo, handleOpenEvent]
+      [tryAutoMarkAsRead, unreadInfo, handleOpenEvent, unfocusedAutoScroll]
     )
   );
 
