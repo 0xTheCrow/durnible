@@ -201,21 +201,29 @@ export const ImageContent = as<'div', ImageContentProps>(
           </Box>
         )}
         {shouldPauseGif && load && !blurred && srcState.status === AsyncStatus.Success && (
-          <canvas
-            ref={canvasRef}
+          <div
             style={{
               position: 'absolute',
               top: 0,
               left: 0,
               width: '100%',
               height: '100%',
-              display: isHovered ? 'none' : 'block',
               cursor: 'pointer',
             }}
-            onClick={() => setViewer(true)}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
-          />
+            onClick={() => setViewer(true)}
+          >
+            <canvas
+              ref={canvasRef}
+              style={{
+                width: '100%',
+                height: '100%',
+                display: isHovered ? 'none' : 'block',
+                pointerEvents: 'none',
+              }}
+            />
+          </div>
         )}
         {blurred && !error && srcState.status !== AsyncStatus.Error && (
           <Box className={css.AbsoluteContainer} alignItems="Center" justifyContent="Center">
