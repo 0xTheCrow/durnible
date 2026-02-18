@@ -44,23 +44,24 @@ export const getPowerTagIconSrc = (
 export const useAccessiblePowerTagColors = (
   themeKind: ThemeKind,
   creatorsTag: MemberPowerTag,
-  powerLevelTags: PowerLevelTags
+  powerLevelTags: PowerLevelTags,
+  bypassLightness = false
 ): Map<string, string> => {
   const accessibleColors: Map<string, string> = useMemo(() => {
     const colors: Map<string, string> = new Map();
     if (creatorsTag.color) {
-      colors.set(creatorsTag.color, accessibleColor(themeKind, creatorsTag.color));
+      colors.set(creatorsTag.color, accessibleColor(themeKind, creatorsTag.color, bypassLightness));
     }
 
     Object.values(powerLevelTags).forEach((tag) => {
       const { color } = tag;
       if (!color) return;
 
-      colors.set(color, accessibleColor(themeKind, color));
+      colors.set(color, accessibleColor(themeKind, color, bypassLightness));
     });
 
     return colors;
-  }, [powerLevelTags, creatorsTag, themeKind]);
+  }, [powerLevelTags, creatorsTag, themeKind, bypassLightness]);
 
   return accessibleColors;
 };

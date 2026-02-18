@@ -124,6 +124,8 @@ function EditPower({ maxPower, power, tag, onSave, onClose }: EditPowerProps) {
             <Box gap="200">
               <HexColorPickerPopOut
                 picker={<HexColorPicker color={tagColor} onChange={setTagColor} />}
+                color={tagColor}
+                onChange={setTagColor}
                 onRemove={() => setTagColor(undefined)}
               >
                 {(openPicker, opened) => (

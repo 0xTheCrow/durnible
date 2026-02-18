@@ -949,13 +949,6 @@ function Messages() {
       </SequenceCard>
       <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
         <SettingTile
-          title="Play GIFs on Hover"
-          description="GIFs are paused by default and only animate while hovered."
-          after={<Switch variant="Primary" value={pauseGifs} onChange={setPauseGifs} />}
-        />
-      </SequenceCard>
-      <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
-        <SettingTile
           title="Disable Media Auto Load"
           after={
             <Switch
@@ -997,6 +990,13 @@ function Messages() {
               onChange={setUnfocusedAutoScroll}
             />
           }
+        />
+      </SequenceCard>
+      <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
+        <SettingTile
+          title="Play GIFs on Hover"
+          description="GIFs are paused by default and only animate while hovered."
+          after={<Switch variant="Primary" value={pauseGifs} onChange={setPauseGifs} />}
         />
       </SequenceCard>
     </Box>

@@ -154,7 +154,8 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     const accessibleTagColors = useAccessiblePowerTagColors(
       theme.kind,
       creatorsTag,
-      powerLevelTags
+      powerLevelTags,
+      true
     );
 
     const replyPowerTag = replyUserID ? getMemberPowerTag(replyUserID) : undefined;
