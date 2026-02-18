@@ -501,6 +501,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
   atBottomRef.current = atBottom;
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const scrollToBottomRef = useRef({
     count: 0,
     smooth: true,
@@ -695,6 +696,25 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
         setTimeline(getInitialTimeline(room));
       }
     }, [room, liveTimelineLinked])
+  );
+
+  // Stay at bottom when message content grows (e.g. a tall image finishes loading)
+  useResizeObserver(
+    useMemo(() => {
+      let mounted = false;
+      return () => {
+        if (!mounted) {
+          mounted = true;
+          return;
+        }
+        const scrollElement = getScrollElement();
+        if (!scrollElement) return;
+        if (atBottomRef.current) {
+          scrollToBottom(scrollElement);
+        }
+      };
+    }, [getScrollElement]),
+    useCallback(() => contentRef.current, [])
   );
 
   // Stay at bottom when room editor resize
@@ -1849,6 +1869,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
       )}
       <Scroll ref={scrollRef} visibility="Hover">
         <Box
+          ref={contentRef}
           direction="Column"
           justifyContent="End"
           style={{ minHeight: '100%', padding: `${config.space.S600} 0` }}
