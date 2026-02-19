@@ -122,7 +122,12 @@ export function UploadCardRenderer({
   const { file } = upload;
   const fileSizeExceeded = file.size >= allowSize;
 
-  if (upload.status === UploadStatus.Idle && !fileSizeExceeded) {
+  if (
+    upload.status === UploadStatus.Idle &&
+    !fileSizeExceeded &&
+    !fileItem.isEncrypting &&
+    fileItem.isEncryptionSuccessful !== false
+  ) {
     startUpload();
   }
 
@@ -182,7 +187,13 @@ export function UploadCardRenderer({
               <PreviewVideo fileItem={fileItem} />
             </MediaPreview>
           )}
-          {upload.status === UploadStatus.Idle && !fileSizeExceeded && (
+          {fileItem.isEncrypting && <Text size="T200">Encrypting...</Text>}
+          {fileItem.isEncryptionSuccessful === false && (
+            <UploadCardError>
+              <Text size="T200">{fileItem.encryptError}</Text>
+            </UploadCardError>
+          )}
+          {upload.status === UploadStatus.Idle && !fileSizeExceeded && !fileItem.isEncrypting && fileItem.isEncryptionSuccessful !== false && (
             <UploadCardProgress sentBytes={0} totalBytes={file.size} />
           )}
           {upload.status === UploadStatus.Loading && (
@@ -208,6 +219,9 @@ export function UploadCardRenderer({
       <Text size="H6" truncate>
         {file.name}
       </Text>
+      {fileItem.isEncryptionSuccessful && (
+        <Icon style={{ color: color.Success.Main }} src={Icons.Lock} size="100" />
+      )}
       {upload.status === UploadStatus.Success && (
         <Icon style={{ color: color.Success.Main }} src={Icons.Check} size="100" />
       )}

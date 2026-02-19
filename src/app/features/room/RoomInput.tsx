@@ -59,11 +59,11 @@ import { EmojiBoard, EmojiBoardTab } from '../../components/emoji-board';
 import { UseStateProvider } from '../../components/UseStateProvider';
 import {
   TUploadContent,
-  encryptFile,
   getImageInfo,
   getMxIdLocalPart,
   mxcUrlToHttp,
 } from '../../utils/matrix';
+import { encryptFileInWorker } from '../../utils/encryptWorker';
 import { useTypingStatusUpdater } from '../../hooks/useTypingStatusUpdater';
 import { useFilePicker } from '../../hooks/useFilePicker';
 import { useFilePasteHandler } from '../../hooks/useFilePasteHandler';
@@ -183,39 +183,55 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     const sendTypingStatus = useTypingStatusUpdater(mx, roomId);
 
     const handleFiles = useCallback(
-      async (files: File[]) => {
+      (files: File[]) => {
         setUploadBoard(true);
         const safeFiles = files.map(safeFile);
-        const fileItems: TUploadItem[] = [];
 
         if (room.hasEncryptionStateEvent()) {
-          const encryptFiles = fulfilledPromiseSettledResult(
-            await Promise.allSettled(safeFiles.map((f) => encryptFile(f)))
-          );
-          encryptFiles.forEach((ef) =>
-            fileItems.push({
-              ...ef,
-              metadata: {
-                markedAsSpoiler: false,
-              },
-            })
-          );
+          const placeholders: TUploadItem[] = safeFiles.map((f) => ({
+            file: f,
+            originalFile: f,
+            encInfo: undefined,
+            metadata: { markedAsSpoiler: false },
+            isEncrypting: true,
+          }));
+          setSelectedFiles({ type: 'PUT', item: placeholders });
+
+          safeFiles.forEach(async (f, i) => {
+            try {
+              const encrypted = await encryptFileInWorker(f);
+              setSelectedFiles({
+                type: 'REPLACE',
+                item: placeholders[i],
+                replacement: {
+                  ...encrypted,
+                  metadata: { markedAsSpoiler: false },
+                  isEncryptionSuccessful: true,
+                },
+              });
+            } catch (e) {
+              setSelectedFiles({
+                type: 'REPLACE',
+                item: placeholders[i],
+                replacement: {
+                  ...placeholders[i],
+                  file: new File([], f.name, { type: f.type }),
+                  isEncrypting: false,
+                  isEncryptionSuccessful: false,
+                  encryptError: e instanceof Error ? e.message : 'Encryption failed',
+                },
+              });
+            }
+          });
         } else {
-          safeFiles.forEach((f) =>
-            fileItems.push({
-              file: f,
-              originalFile: f,
-              encInfo: undefined,
-              metadata: {
-                markedAsSpoiler: false,
-              },
-            })
-          );
+          const fileItems: TUploadItem[] = safeFiles.map((f) => ({
+            file: f,
+            originalFile: f,
+            encInfo: undefined,
+            metadata: { markedAsSpoiler: false },
+          }));
+          setSelectedFiles({ type: 'PUT', item: fileItems });
         }
-        setSelectedFiles({
-          type: 'PUT',
-          item: fileItems,
-        });
       },
       [setSelectedFiles, room]
     );
