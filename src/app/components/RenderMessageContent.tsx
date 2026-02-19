@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { MsgType } from 'matrix-js-sdk';
 import { HTMLReactParserOptions } from 'html-react-parser';
 import { Opts } from 'linkifyjs';
@@ -32,6 +32,29 @@ import { TextViewer } from './text-viewer';
 import { testMatrixTo } from '../plugins/matrix-to';
 import { testYouTubeUrl, getYouTubeVideoId } from '../utils/youtube';
 import { IImageContent } from '../../types/matrix/common';
+
+const MEDIA_VOLUME_KEY = 'cinny_media_volume';
+
+function VideoWithPersistedVolume(props: React.VideoHTMLAttributes<HTMLVideoElement>) {
+  const ref = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    const stored = localStorage.getItem(MEDIA_VOLUME_KEY);
+    el.volume = stored !== null ? Math.max(0, Math.min(1, parseFloat(stored))) : 0.5;
+
+    const handleVolumeChange = () => {
+      localStorage.setItem(MEDIA_VOLUME_KEY, String(el.volume));
+    };
+
+    el.addEventListener('volumechange', handleVolumeChange);
+    return () => el.removeEventListener('volumechange', handleVolumeChange);
+  }, []);
+
+  return <Video {...props} ref={ref} />;
+}
 
 type RenderMessageContentProps = {
   displayName: string;
@@ -256,7 +279,7 @@ export function RenderMessageContent({
                     )
                   : undefined
               }
-              renderVideo={(p) => <Video {...p} />}
+              renderVideo={(p) => <VideoWithPersistedVolume {...p} />}
             />
           )}
           outlined={outlineAttachment}
