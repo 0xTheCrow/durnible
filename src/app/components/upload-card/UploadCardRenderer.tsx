@@ -219,6 +219,9 @@ export function UploadCardRenderer({
       <Text size="H6" truncate>
         {file.name}
       </Text>
+      {fileItem.isEncryptionSuccessful && (
+        <Icon style={{ color: color.Success.Main }} src={Icons.Lock} size="100" />
+      )}
       {upload.status === UploadStatus.Success && (
         <Icon style={{ color: color.Success.Main }} src={Icons.Check} size="100" />
       )}
