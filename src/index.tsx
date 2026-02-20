@@ -38,6 +38,17 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+const setupVirtualKeyboard = () => {
+  const vv = window.visualViewport;
+  if (!vv) return;
+  const update = () =>
+    document.documentElement.style.setProperty('--app-height', `${vv.height}px`);
+  update();
+  vv.addEventListener('resize', update);
+};
+
+setupVirtualKeyboard();
+
 const mountApp = () => {
   const rootContainer = document.getElementById('root');
 
