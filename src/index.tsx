@@ -43,8 +43,13 @@ const setupVirtualKeyboard = () => {
   if (!mobileOrTablet()) return;
   const vv = window.visualViewport;
   if (!vv) return;
-  const update = () =>
-    document.documentElement.style.setProperty('--app-height', `${vv.height}px`);
+  const update = () => {
+    if (vv.height < window.innerHeight) {
+      document.documentElement.style.setProperty('--app-height', `${vv.height}px`);
+    } else {
+      document.documentElement.style.removeProperty('--app-height');
+    }
+  };
   update();
   vv.addEventListener('resize', update);
 };
