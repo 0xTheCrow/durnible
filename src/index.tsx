@@ -11,6 +11,7 @@ enableMapSet();
 import './index.css';
 
 import { trimTrailingSlash } from './app/utils/common';
+import { mobileOrTablet } from './app/utils/user-agent';
 import App from './app/pages/App';
 
 // import i18n (needs to be bundled ;))
@@ -39,6 +40,7 @@ if ('serviceWorker' in navigator) {
 }
 
 const setupVirtualKeyboard = () => {
+  if (!mobileOrTablet()) return;
   const vv = window.visualViewport;
   if (!vv) return;
   const update = () =>
