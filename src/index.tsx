@@ -11,6 +11,7 @@ enableMapSet();
 import './index.css';
 
 import { trimTrailingSlash } from './app/utils/common';
+import { mobileOrTablet } from './app/utils/user-agent';
 import App from './app/pages/App';
 
 // import i18n (needs to be bundled ;))
@@ -37,6 +38,18 @@ if ('serviceWorker' in navigator) {
     }
   });
 }
+
+const setupVirtualKeyboard = () => {
+  if (!mobileOrTablet()) return;
+  const vv = window.visualViewport;
+  if (!vv) return;
+  const update = () =>
+    document.documentElement.style.setProperty('--app-height', `${vv.height}px`);
+  update();
+  vv.addEventListener('resize', update);
+};
+
+setupVirtualKeyboard();
 
 const mountApp = () => {
   const rootContainer = document.getElementById('root');
