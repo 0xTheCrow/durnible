@@ -8,7 +8,7 @@ export const RoomViewFollowingPlaceholder = style([
     height: toRem(28),
     '@media': {
       'screen and (max-width: 750px)': {
-        height: 0,
+        height: toRem(8),
       },
     },
   },
