@@ -22,6 +22,7 @@ import { settingsAtom } from '../../state/settings';
 import { useSetting } from '../../state/hooks/settings';
 import { useRoomPermissions } from '../../hooks/useRoomPermissions';
 import { useRoomCreators } from '../../hooks/useRoomCreators';
+import * as css from './RoomView.css';
 
 const FN_KEYS_REGEX = /^F\d+$/;
 const shouldFocusMessageField = (evt: KeyboardEvent): boolean => {
@@ -104,7 +105,7 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
         />
         <RoomViewTyping room={room} />
       </Box>
-      <Box shrink="No" direction="Column" style={{ overscrollBehavior: 'none' }}>
+      <Box shrink="No" direction="Column" className={css.MobileFixedInputBar}>
         <div style={{ padding: `0 ${config.space.S400}` }}>
           {tombstoneEvent ? (
             <RoomTombstone
