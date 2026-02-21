@@ -195,13 +195,13 @@ export function MImage({ content, renderImageContent, outlined }: MImageProps) {
   if (typeof mxcUrl !== 'string') {
     return <BrokenContent />;
   }
-  const height = scaleYDimension(imgInfo?.w || 400, 400, imgInfo?.h || 400);
-
   return (
     <Attachment outlined={outlined}>
       <AttachmentBox
         style={{
-          height: toRem(height < 48 ? 48 : height),
+          aspectRatio: `${imgInfo?.w || 1} / ${imgInfo?.h || 1}`,
+          minWidth: toRem(48),
+          minHeight: toRem(48),
         }}
       >
         {renderImageContent({
