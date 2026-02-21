@@ -13,4 +13,12 @@ export const ImageViewerModal = style({
   maxWidth: '90vw',
   maxHeight: '90vh',
   borderRadius: '0',
+  '@media': {
+    'screen and (max-width: 750px)': {
+      width: '100vw',
+      maxWidth: '100vw',
+      minWidth: 'unset',
+      margin: '0',
+    },
+  },
 });
