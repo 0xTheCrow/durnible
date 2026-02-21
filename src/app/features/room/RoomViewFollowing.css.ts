@@ -5,7 +5,7 @@ import { DefaultReset, color, config, toRem } from 'folds';
 export const RoomViewFollowingPlaceholder = style([
   DefaultReset,
   {
-    height: toRem(28),
+    height: toRem(16),
   },
 ]);
 

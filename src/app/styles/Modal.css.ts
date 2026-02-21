@@ -12,4 +12,5 @@ export const ImageViewerModal = style({
   minHeight: '15rem',
   maxWidth: '90vw',
   maxHeight: '90vh',
+  borderRadius: '0',
 });
