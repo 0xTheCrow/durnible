@@ -139,23 +139,13 @@ export const ImageContent = as<'div', ImageContentProps>(
     return (
       <Box className={classNames(css.RelativeBase, className)} {...props} ref={ref}>
         {srcState.status === AsyncStatus.Success && (
-          <Overlay
-            open={viewer}
-            backdrop={
-              <OverlayBackdrop
-                onPointerDown={(e) => {
-                  e.stopPropagation();
-                  setViewer(false);
-                }}
-              />
-            }
-          >
+          <Overlay open={viewer} backdrop={<OverlayBackdrop />}>
             <OverlayCenter>
               <FocusTrap
                 focusTrapOptions={{
                   initialFocus: false,
                   onDeactivate: () => setViewer(false),
-                  clickOutsideDeactivates: false,
+                  clickOutsideDeactivates: true,
                   escapeDeactivates: stopPropagation,
                 }}
               >

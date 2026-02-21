@@ -133,12 +133,12 @@ export const VideoContent = as<'div', VideoContentProps>(
             <Button
               variant="Secondary"
               fill="Solid"
-              radii="300"
-              size="300"
+              radii="400"
+              size="500"
               onClick={loadSrc}
               before={<Icon size="Inherit" src={Icons.Play} filled />}
             >
-              <Text size="B300">Watch</Text>
+              <Text size="B500">Watch</Text>
             </Button>
           </Box>
         )}
