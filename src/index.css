@@ -57,7 +57,7 @@ body {
 }
 #root {
   width: 100%;
-  height: 100%;
+  height: var(--app-height, 100%);
   display: flex;
   flex-direction: column;
 }
