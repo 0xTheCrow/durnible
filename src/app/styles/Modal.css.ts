@@ -8,6 +8,8 @@ export const ModalWide = style({
 export const ImageViewerModal = style({
   width: 'fit-content',
   height: 'fit-content',
+  minWidth: '20rem',
+  minHeight: '15rem',
   maxWidth: '90vw',
   maxHeight: '90vh',
 });
