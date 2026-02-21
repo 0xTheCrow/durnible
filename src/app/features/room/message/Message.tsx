@@ -659,6 +659,7 @@ export type MessageProps = {
   mEvent: MatrixEvent;
   collapse: boolean;
   highlight: boolean;
+  mentionHighlight?: boolean;
   edit?: boolean;
   canDelete?: boolean;
   canSendReaction?: boolean;
@@ -693,6 +694,7 @@ export const Message = as<'div', MessageProps>(
       mEvent,
       collapse,
       highlight,
+      mentionHighlight,
       edit,
       canDelete,
       canSendReaction,
@@ -885,6 +887,7 @@ export const Message = as<'div', MessageProps>(
         space={messageSpacing}
         collapse={collapse}
         highlight={highlight}
+        mentionHighlight={mentionHighlight}
         selected={!!menuAnchor || !!emojiBoardAnchor}
         {...props}
         {...hoverProps}
