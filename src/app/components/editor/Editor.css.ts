@@ -19,7 +19,9 @@ export const EditorOptions = style([
   },
 ]);
 
-export const EditorTextareaScroll = style({});
+export const EditorTextareaScroll = style({
+  overscrollBehavior: 'contain',
+});
 
 export const EditorTextarea = style([
   DefaultReset,
