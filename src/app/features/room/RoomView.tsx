@@ -104,7 +104,7 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
         />
         <RoomViewTyping room={room} />
       </Box>
-      <Box shrink="No" direction="Column">
+      <Box shrink="No" direction="Column" style={{ overscrollBehavior: 'none' }}>
         <div style={{ padding: `0 ${config.space.S400}` }}>
           {tombstoneEvent ? (
             <RoomTombstone
