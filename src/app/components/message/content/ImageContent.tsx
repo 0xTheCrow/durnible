@@ -31,7 +31,7 @@ import { FALLBACK_MIMETYPE } from '../../../utils/mimeTypes';
 import { stopPropagation } from '../../../utils/keyboard';
 import { decryptFile, downloadEncryptedMedia, mxcUrlToHttp } from '../../../utils/matrix';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
-import { ModalWide } from '../../../styles/Modal.css';
+import { ImageViewerModal } from '../../../styles/Modal.css';
 import { validBlurHash } from '../../../utils/blurHash';
 
 type RenderViewerProps = {
@@ -150,7 +150,7 @@ export const ImageContent = as<'div', ImageContentProps>(
                 }}
               >
                 <Modal
-                  className={ModalWide}
+                  className={ImageViewerModal}
                   size="500"
                   onContextMenu={(evt: any) => evt.stopPropagation()}
                 >

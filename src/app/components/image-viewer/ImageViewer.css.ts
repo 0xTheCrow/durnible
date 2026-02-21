@@ -1,12 +1,7 @@
 import { style } from '@vanilla-extract/css';
 import { DefaultReset, color, config } from 'folds';
 
-export const ImageViewer = style([
-  DefaultReset,
-  {
-    height: '100%',
-  },
-]);
+export const ImageViewer = style([DefaultReset, {}]);
 
 export const ImageViewerHeader = style([
   DefaultReset,
@@ -32,10 +27,11 @@ export const ImageViewerImg = style([
   DefaultReset,
   {
     objectFit: 'contain',
+    display: 'block',
     width: 'auto',
     height: 'auto',
-    maxWidth: '100%',
-    maxHeight: '100%',
+    maxWidth: '85vw',
+    maxHeight: 'calc(85vh - 2.5rem)',
     backgroundColor: color.Surface.Container,
     transition: 'transform 100ms linear',
   },
