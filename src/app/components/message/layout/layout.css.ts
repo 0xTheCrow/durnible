@@ -71,6 +71,13 @@ const SelectedVariant = styleVariants({
   },
 });
 
+const MentionHighlightVariant = styleVariants({
+  true: {
+    backgroundColor: color.Secondary.Container,
+    boxShadow: `inset ${toRem(3)} 0 0 ${color.Secondary.Main}`,
+  },
+});
+
 const AutoCollapse = style({
   selectors: {
     [`&+&`]: {
@@ -99,6 +106,7 @@ export const MessageBase = recipe({
       true: AutoCollapse,
     },
     highlight: HighlightVariant,
+    mentionHighlight: MentionHighlightVariant,
     selected: SelectedVariant,
   },
   defaultVariants: {

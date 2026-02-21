@@ -1062,6 +1062,9 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
         const hasReactions = reactions && reactions.length > 0;
         const { replyEventId, threadRootId } = mEvent;
         const highlighted = focusItem?.index === item && focusItem.highlight;
+        const replyToMe =
+          !!replyEventId &&
+          timelineSet.findEventById(replyEventId)?.getSender() === mx.getSafeUserId();
 
         const editedEvent = getEditedEvent(mEventId, mEvent, timelineSet);
         const getContent = (() =>
@@ -1082,6 +1085,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
             messageLayout={messageLayout}
             collapse={collapse}
             highlight={highlighted}
+            mentionHighlight={replyToMe}
             edit={editId === mEventId}
             canDelete={canRedact || mEvent.getSender() === mx.getUserId()}
             canSendReaction={canSendReaction}
@@ -1152,6 +1156,9 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
         const hasReactions = reactions && reactions.length > 0;
         const { replyEventId, threadRootId } = mEvent;
         const highlighted = focusItem?.index === item && focusItem.highlight;
+        const replyToMe =
+          !!replyEventId &&
+          timelineSet.findEventById(replyEventId)?.getSender() === mx.getSafeUserId();
 
         return (
           <Message
@@ -1164,6 +1171,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
             messageLayout={messageLayout}
             collapse={collapse}
             highlight={highlighted}
+            mentionHighlight={replyToMe}
             edit={editId === mEventId}
             canDelete={canRedact || mEvent.getSender() === mx.getUserId()}
             canSendReaction={canSendReaction}
