@@ -32,7 +32,13 @@ export const ImageViewerImg = style([
     height: 'auto',
     maxWidth: '85vw',
     maxHeight: 'calc(85vh - 2.5rem)',
+    margin: 'auto',
     backgroundColor: color.Surface.Container,
     transition: 'transform 100ms linear',
+    '@media': {
+      'screen and (max-width: 750px)': {
+        maxWidth: '100vw',
+      },
+    },
   },
 ]);
