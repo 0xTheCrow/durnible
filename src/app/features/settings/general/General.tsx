@@ -901,6 +901,7 @@ function Messages() {
     settingsAtom,
     'unfocusedAutoScroll'
   );
+  const [replyHighlight, setReplyHighlight] = useSetting(settingsAtom, 'replyHighlight');
 
   return (
     <Box direction="Column" gap="100">
@@ -997,6 +998,15 @@ function Messages() {
           title="Play GIFs on Hover"
           description="GIFs are paused by default and only animate while hovered."
           after={<Switch variant="Primary" value={pauseGifs} onChange={setPauseGifs} />}
+        />
+      </SequenceCard>
+      <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
+        <SettingTile
+          title="Reply & Mention Highlighting"
+          description="Highlight messages that reply to you or mention you by @username."
+          after={
+            <Switch variant="Primary" value={replyHighlight} onChange={setReplyHighlight} />
+          }
         />
       </SequenceCard>
     </Box>
