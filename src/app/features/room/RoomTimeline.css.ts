@@ -33,7 +33,7 @@ export type TimelineFloatVariants = RecipeVariants<typeof TimelineFloat>;
 export const MobileScrollPadding = style({
   '@media': {
     'screen and (max-width: 750px)': {
-      paddingBottom: `calc(${toRem(56)} + var(--cinny-keyboard-height, 0px))`,
+      paddingBottom: toRem(56),
     },
   },
 });

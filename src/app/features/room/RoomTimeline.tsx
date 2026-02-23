@@ -503,6 +503,23 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
   atBottomRef.current = atBottom;
 
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  useEffect(() => {
+    const vv = window.visualViewport;
+    const update = () => setKeyboardHeight(Math.max(0, window.innerHeight - vv!.offsetTop - vv!.height));
+    vv?.addEventListener('resize', update);
+    vv?.addEventListener('scroll', update);
+    return () => {
+      vv?.removeEventListener('resize', update);
+      vv?.removeEventListener('scroll', update);
+    };
+  }, []);
+  useLayoutEffect(() => {
+    const scrollEl = scrollRef.current;
+    if (scrollEl && atBottomRef.current) scrollToBottom(scrollEl);
+  }, [keyboardHeight]);
+
   const contentRef = useRef<HTMLDivElement>(null);
   const scrollToBottomRef = useRef({
     count: 0,
@@ -1883,7 +1900,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
           </Chip>
         </TimelineFloat>
       )}
-      <Scroll ref={scrollRef} visibility="Hover" className={css.MobileScrollPadding} style={{ overscrollBehavior: 'none' }}>
+      <Scroll ref={scrollRef} visibility="Hover" className={css.MobileScrollPadding} style={{ overscrollBehavior: 'none', paddingBottom: keyboardHeight > 0 ? `${56 + keyboardHeight}px` : undefined }}>
         <Box
           ref={contentRef}
           direction="Column"

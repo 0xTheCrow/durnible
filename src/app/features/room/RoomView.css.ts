@@ -5,7 +5,7 @@ export const MobileFixedInputBar = style({
   '@media': {
     'screen and (max-width: 750px)': {
       position: 'fixed',
-      bottom: 'var(--cinny-keyboard-height, 0px)',
+      bottom: 0,
       left: 0,
       right: 0,
       zIndex: 10,
