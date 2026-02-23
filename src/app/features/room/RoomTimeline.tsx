@@ -450,6 +450,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
   const [showHiddenEvents] = useSetting(settingsAtom, 'showHiddenEvents');
   const [unfocusedAutoScroll] = useSetting(settingsAtom, 'unfocusedAutoScroll');
   const [showDeveloperTools] = useSetting(settingsAtom, 'developerTools');
+  const [replyHighlight] = useSetting(settingsAtom, 'replyHighlight');
 
   const [hour24Clock] = useSetting(settingsAtom, 'hour24Clock');
   const [dateFormatString] = useSetting(settingsAtom, 'dateFormatString');
@@ -1062,9 +1063,12 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
         const hasReactions = reactions && reactions.length > 0;
         const { replyEventId, threadRootId } = mEvent;
         const highlighted = focusItem?.index === item && focusItem.highlight;
+        const myUserId = mx.getSafeUserId();
         const replyToMe =
           !!replyEventId &&
-          timelineSet.findEventById(replyEventId)?.getSender() === mx.getSafeUserId();
+          timelineSet.findEventById(replyEventId)?.getSender() === myUserId;
+        const mentionedMe =
+          (mEvent.getContent()['m.mentions']?.user_ids as string[] | undefined)?.includes(myUserId) ?? false;
 
         const editedEvent = getEditedEvent(mEventId, mEvent, timelineSet);
         const getContent = (() =>
@@ -1085,7 +1089,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
             messageLayout={messageLayout}
             collapse={collapse}
             highlight={highlighted}
-            mentionHighlight={replyToMe}
+            mentionHighlight={replyHighlight && (replyToMe || mentionedMe)}
             edit={editId === mEventId}
             canDelete={canRedact || mEvent.getSender() === mx.getUserId()}
             canSendReaction={canSendReaction}
@@ -1156,9 +1160,12 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
         const hasReactions = reactions && reactions.length > 0;
         const { replyEventId, threadRootId } = mEvent;
         const highlighted = focusItem?.index === item && focusItem.highlight;
+        const myUserId = mx.getSafeUserId();
         const replyToMe =
           !!replyEventId &&
-          timelineSet.findEventById(replyEventId)?.getSender() === mx.getSafeUserId();
+          timelineSet.findEventById(replyEventId)?.getSender() === myUserId;
+        const mentionedMe =
+          (mEvent.getContent()['m.mentions']?.user_ids as string[] | undefined)?.includes(myUserId) ?? false;
 
         return (
           <Message
@@ -1171,7 +1178,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
             messageLayout={messageLayout}
             collapse={collapse}
             highlight={highlighted}
-            mentionHighlight={replyToMe}
+            mentionHighlight={replyHighlight && (replyToMe || mentionedMe)}
             edit={editId === mEventId}
             canDelete={canRedact || mEvent.getSender() === mx.getUserId()}
             canSendReaction={canSendReaction}
