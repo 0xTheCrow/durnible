@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useRef } from 'react';
 import { Box, Text, config } from 'folds';
 import { EventType, Room } from 'matrix-js-sdk';
 import { ReactEditor } from 'slate-react';
@@ -75,18 +75,6 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
   const permissions = useRoomPermissions(creators, powerLevels);
   const canMessage = permissions.event(EventType.RoomMessage, mx.getSafeUserId());
 
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
-  useEffect(() => {
-    const vv = window.visualViewport;
-    const update = () => setKeyboardHeight(Math.max(0, window.innerHeight - vv!.offsetTop - vv!.height));
-    vv?.addEventListener('resize', update);
-    vv?.addEventListener('scroll', update);
-    return () => {
-      vv?.removeEventListener('resize', update);
-      vv?.removeEventListener('scroll', update);
-    };
-  }, []);
-
   useKeyDown(
     window,
     useCallback(
@@ -117,7 +105,7 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
         />
         <RoomViewTyping room={room} />
       </Box>
-      <Box shrink="No" direction="Column" className={css.MobileFixedInputBar} style={keyboardHeight > 0 ? { bottom: keyboardHeight } : undefined}>
+      <Box shrink="No" direction="Column" className={css.MobileFixedInputBar}>
         <div style={{ padding: `0 ${config.space.S400}` }}>
           {tombstoneEvent ? (
             <RoomTombstone
