@@ -147,7 +147,7 @@ export const ImageContent = as<'div', ImageContentProps>(
                 focusTrapOptions={{
                   initialFocus: false,
                   onDeactivate: () => setViewer(false),
-                  clickOutsideDeactivates: false,
+                  clickOutsideDeactivates: true,
                   escapeDeactivates: stopPropagation,
                 }}
               >

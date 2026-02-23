@@ -33,7 +33,7 @@ export type TimelineFloatVariants = RecipeVariants<typeof TimelineFloat>;
 export const MobileScrollPadding = style({
   '@media': {
     'screen and (max-width: 750px)': {
-      paddingBottom: toRem(80),
+      paddingBottom: toRem(56),
     },
   },
 });
