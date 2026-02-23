@@ -242,7 +242,7 @@ export const abyssTheme = createTheme(color, {
     MainActive: '#C2C2C8',
     MainLine: '#B7B7BE',
     OnMain: '#09090B',
-    Container: '#222229',
+    Container: '#16161d',
     ContainerHover: '#2A2A33',
     ContainerActive: '#33333D',
     ContainerLine: '#3D3D47',

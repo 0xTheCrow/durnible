@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { Box, Text, config } from 'folds';
 import { EventType, Room } from 'matrix-js-sdk';
 import { ReactEditor } from 'slate-react';
@@ -74,6 +74,21 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
 
   const permissions = useRoomPermissions(creators, powerLevels);
   const canMessage = permissions.event(EventType.RoomMessage, mx.getSafeUserId());
+
+  useEffect(() => {
+    const vv = window.visualViewport;
+    const updateKeyboardInset = () => {
+      const height = Math.max(0, window.innerHeight - vv!.offsetTop - vv!.height);
+      document.documentElement.style.setProperty('--cinny-keyboard-height', `${height}px`);
+    };
+    vv?.addEventListener('resize', updateKeyboardInset);
+    vv?.addEventListener('scroll', updateKeyboardInset);
+    return () => {
+      vv?.removeEventListener('resize', updateKeyboardInset);
+      vv?.removeEventListener('scroll', updateKeyboardInset);
+      document.documentElement.style.removeProperty('--cinny-keyboard-height');
+    };
+  }, []);
 
   useKeyDown(
     window,
