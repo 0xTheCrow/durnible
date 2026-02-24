@@ -1902,7 +1902,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
           </Chip>
         </TimelineFloat>
       )}
-      <Scroll ref={scrollRef} visibility="Hover" className={css.MobileScrollPadding} style={{ overscrollBehavior: 'none' }}>
+      <Scroll ref={scrollRef} visibility="Hover" style={{ overscrollBehavior: 'none' }}>
         <Box
           ref={contentRef}
           direction="Column"
