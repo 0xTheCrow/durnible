@@ -98,25 +98,37 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
 
     const renderLeaf = useCallback((props: RenderLeafProps) => <RenderLeaf {...props} />, []);
 
+    const syncSelectionFromDOM = useCallback(() => {
+      requestAnimationFrame(() => {
+        const domSelection = window.getSelection();
+        if (!domSelection || !domSelection.rangeCount) return;
+        try {
+          const slateRange = ReactEditor.toSlateRange(editor, domSelection, {
+            exactMatch: false,
+            suppressThrow: true,
+          });
+          if (slateRange) Transforms.setSelection(editor, slateRange);
+        } catch {
+          // ignore if DOM selection can't be mapped to Slate
+        }
+      });
+    }, [editor]);
+
     const handleDOMBeforeInput = useCallback(
       (e: InputEvent) => {
-        if (e.inputType !== 'insertReplacementText') return;
-        requestAnimationFrame(() => {
-          const domSelection = window.getSelection();
-          if (!domSelection || !domSelection.rangeCount) return;
-          try {
-            const slateRange = ReactEditor.toSlateRange(editor, domSelection, {
-              exactMatch: false,
-              suppressThrow: true,
-            });
-            if (slateRange) Transforms.setSelection(editor, slateRange);
-          } catch {
-            // ignore if DOM selection can't be mapped to Slate
-          }
-        });
+        if (
+          e.inputType === 'insertReplacementText' ||
+          e.inputType === 'insertCompositionText'
+        ) {
+          syncSelectionFromDOM();
+        }
       },
-      [editor]
+      [syncSelectionFromDOM]
     );
+
+    const handleCompositionEnd = useCallback(() => {
+      syncSelectionFromDOM();
+    }, [syncSelectionFromDOM]);
 
     const handleKeydown: KeyboardEventHandler = useCallback(
       (evt) => {
@@ -168,6 +180,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
                 onKeyUp={onKeyUp}
                 onPaste={onPaste}
                 onDOMBeforeInput={handleDOMBeforeInput}
+                onCompositionEnd={handleCompositionEnd}
               />
             </Scroll>
             {after && (
