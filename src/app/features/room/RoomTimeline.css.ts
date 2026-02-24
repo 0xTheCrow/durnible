@@ -1,6 +1,5 @@
-import { style } from '@vanilla-extract/css';
 import { RecipeVariants, recipe } from '@vanilla-extract/recipes';
-import { DefaultReset, config, toRem } from 'folds';
+import { DefaultReset, config } from 'folds';
 
 export const TimelineFloat = recipe({
   base: [
@@ -30,10 +29,3 @@ export const TimelineFloat = recipe({
 
 export type TimelineFloatVariants = RecipeVariants<typeof TimelineFloat>;
 
-export const MobileScrollPadding = style({
-  '@media': {
-    'screen and (max-width: 750px)': {
-      paddingBottom: toRem(56),
-    },
-  },
-});
