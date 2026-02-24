@@ -24,6 +24,7 @@ import { RenderElement, RenderLeaf } from './Elements';
 import { CustomElement } from './slate';
 import * as css from './Editor.css';
 import { toggleKeyboardShortcut } from './keyboard';
+import { mobileOrTablet } from '../../utils/user-agent';
 
 const initialValue: CustomElement[] = [
   {
@@ -98,7 +99,50 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
 
     const renderLeaf = useCallback((props: RenderLeafProps) => <RenderLeaf {...props} />, []);
 
-    const syncSelectionFromDOM = useCallback(() => {
+    const handleDOMBeforeInput = useCallback(
+      (e: InputEvent) => {
+        if (e.inputType !== 'insertReplacementText') return;
+
+        // On mobile, handle replacement text ourselves to avoid Slate's
+        // user-selection restore which computes wrong cursor positions
+        // for text prediction / autocorrect. On desktop, fall through
+        // to Slate's normal handling (which correctly restores cursor
+        // position for right-click spell check corrections).
+        if (!mobileOrTablet()) return;
+
+        const [targetRange] = e.getTargetRanges();
+        if (!targetRange) return;
+
+        const replacementText = e.dataTransfer
+          ? e.dataTransfer.getData('text/plain')
+          : e.data;
+        if (!replacementText) return;
+
+        try {
+          const slateRange = ReactEditor.toSlateRange(editor, targetRange, {
+            exactMatch: false,
+            suppressThrow: true,
+          });
+          if (!slateRange) return;
+
+          e.preventDefault();
+          Transforms.select(editor, slateRange);
+          Editor.insertText(editor, replacementText);
+
+          // Return true to tell Slate the event is handled.
+          // eslint-disable-next-line consistent-return
+          return true;
+        } catch {
+          // Fall through to Slate's default handling
+        }
+      },
+      [editor]
+    );
+
+    const handleCompositionEnd = useCallback(() => {
+      // After composition ends, sync Slate's selection with the DOM.
+      // Covers Android text prediction which uses composition events
+      // rather than insertReplacementText.
       requestAnimationFrame(() => {
         const domSelection = window.getSelection();
         if (!domSelection || !domSelection.rangeCount) return;
@@ -113,22 +157,6 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
         }
       });
     }, [editor]);
-
-    const handleDOMBeforeInput = useCallback(
-      (e: InputEvent) => {
-        if (
-          e.inputType === 'insertReplacementText' ||
-          e.inputType === 'insertCompositionText'
-        ) {
-          syncSelectionFromDOM();
-        }
-      },
-      [syncSelectionFromDOM]
-    );
-
-    const handleCompositionEnd = useCallback(() => {
-      syncSelectionFromDOM();
-    }, [syncSelectionFromDOM]);
 
     const handleKeydown: KeyboardEventHandler = useCallback(
       (evt) => {
