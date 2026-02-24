@@ -37,6 +37,14 @@ if ('serviceWorker' in navigator) {
       });
     }
   });
+
+  // Proactively push the auth token to the SW so it is available for uncontrolled
+  // pages (e.g. hard refresh) where the SW cannot ask the client for the token because
+  // the client↔SW message channel may not be bidirectional for uncontrolled clients.
+  navigator.serviceWorker.ready.then((reg) => {
+    const token = localStorage.getItem('cinny_access_token');
+    if (token) reg.active?.postMessage({ type: 'setToken', token });
+  });
 }
 
 const setupVirtualKeyboard = () => {

@@ -3,6 +3,10 @@
 export type {};
 declare const self: ServiceWorkerGlobalScope;
 
+// Token pushed proactively by the main page on every load (including hard refresh).
+// Used as fallback when the requesting client is uncontrolled (i.e. clients.get() fails).
+let storedToken: string | undefined;
+
 async function askForAccessToken(client: Client): Promise<string | undefined> {
   return new Promise((resolve) => {
     const responseKey = Math.random().toString(36);
@@ -31,6 +35,12 @@ self.addEventListener('activate', (event: ExtendableEvent) => {
   event.waitUntil(clients.claim());
 });
 
+self.addEventListener('message', (event: ExtendableMessageEvent) => {
+  if (event.data?.type === 'setToken') {
+    storedToken = event.data.token;
+  }
+});
+
 self.addEventListener('fetch', (event: FetchEvent) => {
   const { url, method } = event.request;
   if (method !== 'GET') return;
@@ -42,18 +52,18 @@ self.addEventListener('fetch', (event: FetchEvent) => {
   }
   event.respondWith(
     (async (): Promise<Response> => {
-      // clients.get() only returns controlled clients.
-      // On hard refresh the page bypasses the SW for the navigation request, leaving it
-      // uncontrolled — so clients.get() returns undefined even though the client exists.
-      // Fall back to matchAll with includeUncontrolled to find it by ID.
-      let client: Client | undefined = await self.clients.get(event.clientId);
-      if (!client && event.clientId) {
-        const all = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-        client = all.find((c) => c.id === event.clientId);
-      }
-
+      const client = await self.clients.get(event.clientId);
       let token: string | undefined;
-      if (client) token = await askForAccessToken(client);
+      if (client) {
+        // Controlled client: ask for the live token and keep storedToken up to date.
+        token = await askForAccessToken(client);
+        storedToken = token;
+      } else {
+        // Uncontrolled client (e.g. hard refresh): the bidirectional message channel
+        // between SW and page is unreliable, so use the token pushed by the page via
+        // the 'setToken' message sent from navigator.serviceWorker.ready.then().
+        token = storedToken;
+      }
 
       return fetch(url, fetchConfig(token));
     })()
