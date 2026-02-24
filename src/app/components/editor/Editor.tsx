@@ -12,6 +12,7 @@ import { Descendant, Editor, Transforms, createEditor } from 'slate';
 import {
   Slate,
   Editable,
+  ReactEditor,
   withReact,
   RenderLeafProps,
   RenderElementProps,
@@ -100,14 +101,18 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
     const handleDOMBeforeInput = useCallback(
       (e: InputEvent) => {
         if (e.inputType !== 'insertReplacementText') return;
-        const replacementText = e.data ?? '';
-        const targetRanges = e.getTargetRanges();
-        if (!targetRanges.length) return;
-        const replacedLength = targetRanges[0].toString().length;
-        const extra = replacementText.length - replacedLength;
-        if (extra <= 0) return;
-        queueMicrotask(() => {
-          Transforms.move(editor, { distance: extra, unit: 'offset' });
+        requestAnimationFrame(() => {
+          const domSelection = window.getSelection();
+          if (!domSelection || !domSelection.rangeCount) return;
+          try {
+            const slateRange = ReactEditor.toSlateRange(editor, domSelection, {
+              exactMatch: false,
+              suppressThrow: true,
+            });
+            if (slateRange) Transforms.setSelection(editor, slateRange);
+          } catch {
+            // ignore if DOM selection can't be mapped to Slate
+          }
         });
       },
       [editor]
