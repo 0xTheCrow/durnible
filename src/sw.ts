@@ -42,7 +42,16 @@ self.addEventListener('fetch', (event: FetchEvent) => {
   }
   event.respondWith(
     (async (): Promise<Response> => {
-      const client = await self.clients.get(event.clientId);
+      // clients.get() only returns controlled clients.
+      // On hard refresh the page bypasses the SW for the navigation request, leaving it
+      // uncontrolled — so clients.get() returns undefined even though the client exists.
+      // Fall back to matchAll with includeUncontrolled to find it by ID.
+      let client: Client | undefined = await self.clients.get(event.clientId);
+      if (!client && event.clientId) {
+        const all = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+        client = all.find((c) => c.id === event.clientId);
+      }
+
       let token: string | undefined;
       if (client) token = await askForAccessToken(client);
 
