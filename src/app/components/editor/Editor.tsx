@@ -8,7 +8,7 @@ import React, {
   useState,
 } from 'react';
 import { Box, Scroll, Text } from 'folds';
-import { Descendant, Editor, createEditor } from 'slate';
+import { Descendant, Editor, Transforms, createEditor } from 'slate';
 import {
   Slate,
   Editable,
@@ -97,6 +97,22 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
 
     const renderLeaf = useCallback((props: RenderLeafProps) => <RenderLeaf {...props} />, []);
 
+    const handleDOMBeforeInput = useCallback(
+      (e: InputEvent) => {
+        if (e.inputType !== 'insertReplacementText') return;
+        const replacementText = e.data ?? '';
+        const targetRanges = e.getTargetRanges();
+        if (!targetRanges.length) return;
+        const replacedLength = targetRanges[0].toString().length;
+        const extra = replacementText.length - replacedLength;
+        if (extra <= 0) return;
+        queueMicrotask(() => {
+          Transforms.move(editor, { distance: extra, unit: 'offset' });
+        });
+      },
+      [editor]
+    );
+
     const handleKeydown: KeyboardEventHandler = useCallback(
       (evt) => {
         onKeyDown?.(evt);
@@ -146,6 +162,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
                 onKeyDown={handleKeydown}
                 onKeyUp={onKeyUp}
                 onPaste={onPaste}
+                onDOMBeforeInput={handleDOMBeforeInput}
               />
             </Scroll>
             {after && (
