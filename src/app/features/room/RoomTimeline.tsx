@@ -742,6 +742,25 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
     useCallback(() => roomInputRef.current, [roomInputRef])
   );
 
+  // Stay at bottom when the scroll container itself resizes (e.g. window resize, keyboard open)
+  useResizeObserver(
+    useMemo(() => {
+      let mounted = false;
+      return () => {
+        if (!mounted) {
+          mounted = true;
+          return;
+        }
+        const scrollElement = getScrollElement();
+        if (!scrollElement) return;
+        if (atBottomRef.current) {
+          scrollToBottom(scrollElement);
+        }
+      };
+    }, [getScrollElement]),
+    useCallback(() => scrollRef.current, [])
+  );
+
   const tryAutoMarkAsRead = useCallback(() => {
     const readUptoEventId = readUptoEventIdRef.current;
     if (!readUptoEventId) {
