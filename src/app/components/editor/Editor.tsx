@@ -155,24 +155,46 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
       [editor]
     );
 
-    const handleCompositionEnd = useCallback(() => {
-      // After composition ends, sync Slate's selection with the DOM.
-      // Covers Android text prediction which uses composition events
-      // rather than insertReplacementText.
-      requestAnimationFrame(() => {
-        const domSelection = window.getSelection();
-        if (!domSelection || !domSelection.rangeCount) return;
-        try {
-          const slateRange = ReactEditor.toSlateRange(editor, domSelection, {
-            exactMatch: false,
-            suppressThrow: true,
-          });
-          if (slateRange) Transforms.setSelection(editor, slateRange);
-        } catch {
-          // ignore if DOM selection can't be mapped to Slate
-        }
-      });
-    }, [editor]);
+    const handleCompositionEnd = useCallback(
+      (e: React.CompositionEvent) => {
+        if (!mobileOrTablet()) return;
+        const composedText = e.data;
+        if (!composedText) return;
+
+        // Slate's Android input manager flushes 25ms after compositionEnd.
+        // During flush it correctly inserts text but then overwrites the
+        // cursor with the browser's DOM selection (at the divergence point).
+        // Wait for the flush to complete, then correct the cursor to the
+        // end of the composed text.
+        setTimeout(() => {
+          if (!editor.selection) return;
+          const { anchor } = editor.selection;
+          try {
+            const [textNode] = Editor.node(editor, anchor.path);
+            const text = (textNode as { text?: string }).text;
+            if (typeof text !== 'string') return;
+
+            // The cursor is at the divergence point within the composed text.
+            // Search backwards from the cursor to find where the composed
+            // text starts, then place the cursor at its end.
+            const searchStart = Math.max(0, anchor.offset - composedText.length);
+            for (let i = searchStart; i <= anchor.offset; i++) {
+              if (text.startsWith(composedText, i)) {
+                const correctOffset = i + composedText.length;
+                if (correctOffset !== anchor.offset) {
+                  const point = { path: anchor.path, offset: correctOffset };
+                  Transforms.select(editor, { anchor: point, focus: point });
+                }
+                break;
+              }
+            }
+          } catch {
+            // ignore if selection is no longer valid
+          }
+        }, 60);
+      },
+      [editor]
+    );
 
     const handleKeydown: KeyboardEventHandler = useCallback(
       (evt) => {
