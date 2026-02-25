@@ -49,6 +49,7 @@ import {
   ImageGroupIcon,
   DraggableImageGroupIcon,
   GroupIcon,
+  DraggableGroupIcon,
   getEmojiItemInfo,
   EmojiGroup,
   EmojiBoardLayout,
@@ -72,7 +73,8 @@ type StickerGroupItem = {
 
 const useGroups = (
   tab: EmojiBoardTab,
-  imagePacks: ImagePack[]
+  imagePacks: ImagePack[],
+  packOrder: string[]
 ): [EmojiGroupItem[], StickerGroupItem[]] => {
   const mx = useMatrixClient();
 
@@ -80,27 +82,37 @@ const useGroups = (
   const labels = useEmojiGroupLabels();
 
   const emojiGroupItems = useMemo(() => {
-    const g: EmojiGroupItem[] = [];
-    if (tab !== EmojiBoardTab.Emoji) return g;
+    if (tab !== EmojiBoardTab.Emoji) return [];
 
-    g.push({
+    const recentGroup: EmojiGroupItem = {
       id: RECENT_GROUP_ID,
       name: 'Recent',
       items: recentEmojis,
-    });
+    };
 
-    imagePacks.forEach((pack) => {
+    const packGroups: EmojiGroupItem[] = imagePacks.map((pack) => {
       let label = pack.meta.name;
       if (!label) label = isUserId(pack.id) ? 'Personal Pack' : mx.getRoom(pack.id)?.name;
-
-      g.push({
+      return {
         id: pack.id,
         name: label ?? 'Unknown',
         items: pack
           .getImages(ImageUsage.Emoticon)
           .sort((a, b) => a.shortcode.localeCompare(b.shortcode)),
-      });
+      };
     });
+
+    const reorderableGroups = [recentGroup, ...packGroups];
+    if (packOrder.length > 0) {
+      const orderMap = new Map(packOrder.map((id, i) => [id, i]));
+      reorderableGroups.sort((a, b) => {
+        const ai = orderMap.get(a.id) ?? Infinity;
+        const bi = orderMap.get(b.id) ?? Infinity;
+        return ai - bi;
+      });
+    }
+
+    const g: EmojiGroupItem[] = [...reorderableGroups];
 
     emojiGroups.forEach((group) => {
       g.push({
@@ -111,7 +123,7 @@ const useGroups = (
     });
 
     return g;
-  }, [mx, recentEmojis, labels, imagePacks, tab]);
+  }, [mx, recentEmojis, labels, imagePacks, tab, packOrder]);
 
   const stickerGroupItems = useMemo(() => {
     const g: StickerGroupItem[] = [];
@@ -170,10 +182,11 @@ const useItemRenderer = (tab: EmojiBoardTab) => {
 type EmojiSidebarProps = {
   activeGroupAtom: PrimitiveAtom<string | undefined>;
   packs: ImagePack[];
+  packOrder: string[];
   onScrollToGroup: (groupId: string) => void;
   setPackOrder: (ids: string[]) => void;
 };
-function EmojiSidebar({ activeGroupAtom, packs, onScrollToGroup, setPackOrder }: EmojiSidebarProps) {
+function EmojiSidebar({ activeGroupAtom, packs, packOrder, onScrollToGroup, setPackOrder }: EmojiSidebarProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
 
@@ -187,6 +200,11 @@ function EmojiSidebar({ activeGroupAtom, packs, onScrollToGroup, setPackOrder }:
     onScrollToGroup(groupId);
   };
 
+  const reorderableIds = useMemo(
+    () => [RECENT_GROUP_ID, ...packs.map((p) => p.id)],
+    [packs]
+  );
+
   useEffect(
     () =>
       monitorForElements({
@@ -198,7 +216,7 @@ function EmojiSidebar({ activeGroupAtom, packs, onScrollToGroup, setPackOrder }:
           const instructionType = dropTargets[0].data.instructionType as string | undefined;
           if (!instructionType || !draggedId || !targetId) return;
 
-          const currentIds = packs.map((p) => p.id);
+          const currentIds = [...reorderableIds];
           const fromIndex = currentIds.indexOf(draggedId);
           if (fromIndex < 0) return;
 
@@ -211,44 +229,64 @@ function EmojiSidebar({ activeGroupAtom, packs, onScrollToGroup, setPackOrder }:
           setPackOrder(without);
         },
       }),
-    [packs, setPackOrder]
+    [reorderableIds, setPackOrder]
   );
+
+  const sortedItems = useMemo(() => {
+    type SidebarItem = { type: 'recent' } | { type: 'pack'; pack: ImagePack };
+    const items: SidebarItem[] = [
+      { type: 'recent' },
+      ...packs.map((pack) => ({ type: 'pack' as const, pack })),
+    ];
+    if (packOrder.length > 0) {
+      const orderMap = new Map(packOrder.map((id, i) => [id, i]));
+      items.sort((a, b) => {
+        const aId = a.type === 'recent' ? RECENT_GROUP_ID : a.pack.id;
+        const bId = b.type === 'recent' ? RECENT_GROUP_ID : b.pack.id;
+        const ai = orderMap.get(aId) ?? Infinity;
+        const bi = orderMap.get(bId) ?? Infinity;
+        return ai - bi;
+      });
+    }
+    return items;
+  }, [packs, packOrder]);
 
   return (
     <Sidebar>
       <SidebarStack>
-        <GroupIcon
-          active={activeGroupId === RECENT_GROUP_ID}
-          id={RECENT_GROUP_ID}
-          label="Recent"
-          icon={Icons.RecentClock}
-          onClick={handleScrollToGroup}
-        />
-      </SidebarStack>
-      {packs.length > 0 && (
-        <SidebarStack>
-          <SidebarDivider />
-          {packs.map((pack) => {
-            let label = pack.meta.name;
-            if (!label) label = isUserId(pack.id) ? 'Personal Pack' : mx.getRoom(pack.id)?.name;
-
-            const url =
-              mxcUrlToHttp(mx, pack.getAvatarUrl(usage) ?? '', useAuthentication) ||
-              pack.meta.avatar;
-
+        {sortedItems.map((item) => {
+          if (item.type === 'recent') {
             return (
-              <DraggableImageGroupIcon
-                key={pack.id}
-                active={activeGroupId === pack.id}
-                id={pack.id}
-                label={label ?? 'Unknown Pack'}
-                url={url}
+              <DraggableGroupIcon
+                key={RECENT_GROUP_ID}
+                active={activeGroupId === RECENT_GROUP_ID}
+                id={RECENT_GROUP_ID}
+                label="Recent"
+                icon={Icons.RecentClock}
                 onClick={handleScrollToGroup}
               />
             );
-          })}
-        </SidebarStack>
-      )}
+          }
+          const { pack } = item;
+          let label = pack.meta.name;
+          if (!label) label = isUserId(pack.id) ? 'Personal Pack' : mx.getRoom(pack.id)?.name;
+
+          const url =
+            mxcUrlToHttp(mx, pack.getAvatarUrl(usage) ?? '', useAuthentication) ||
+            pack.meta.avatar;
+
+          return (
+            <DraggableImageGroupIcon
+              key={pack.id}
+              active={activeGroupId === pack.id}
+              id={pack.id}
+              label={label ?? 'Unknown Pack'}
+              url={url}
+              onClick={handleScrollToGroup}
+            />
+          );
+        })}
+      </SidebarStack>
       <SidebarStack
         style={{
           position: 'sticky',
@@ -460,7 +498,7 @@ export function EmojiBoard({
     });
   }, [rawImagePacks, packOrder]);
 
-  const [emojiGroupItems, stickerGroupItems] = useGroups(tab, imagePacks);
+  const [emojiGroupItems, stickerGroupItems] = useGroups(tab, imagePacks, packOrder);
   const groups = emojiTab ? emojiGroupItems : stickerGroupItems;
   const renderItem = useItemRenderer(tab);
 
@@ -592,6 +630,7 @@ export function EmojiBoard({
             <EmojiSidebar
               activeGroupAtom={activeGroupIdAtom}
               packs={imagePacks}
+              packOrder={packOrder}
               onScrollToGroup={handleScrollToGroup}
               setPackOrder={setPackOrder}
             />

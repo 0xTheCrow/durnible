@@ -114,6 +114,78 @@ export function GroupIcon<T extends string>({
   );
 }
 
+type DraggableGroupIconProps = {
+  active: boolean;
+  id: string;
+  label: string;
+  icon: IconSrc;
+  onClick: (id: string) => void;
+};
+export function DraggableGroupIcon({
+  active,
+  id,
+  label,
+  icon,
+  onClick,
+}: DraggableGroupIconProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [dropState, setDropState] = useState<Instruction>();
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return undefined;
+
+    return combine(
+      draggable({
+        element: el,
+        getInitialData: () => ({ packId: id }),
+      }),
+      dropTargetForElements({
+        element: el,
+        canDrop: ({ source }) => source.data.packId !== id,
+        getData: ({ input, element }) => {
+          const insData = attachInstruction(
+            {},
+            {
+              input,
+              element,
+              currentLevel: 0,
+              indentPerLevel: 0,
+              mode: 'standard',
+              block: ['reparent', 'make-child'],
+            }
+          );
+          const instruction: Instruction | null = extractInstruction(insData);
+          setDropState(instruction ?? undefined);
+          return {
+            packId: id,
+            instructionType: instruction?.type,
+          };
+        },
+        onDragLeave: () => setDropState(undefined),
+        onDrop: () => setDropState(undefined),
+      })
+    );
+  }, [id]);
+
+  return (
+    <div
+      ref={ref}
+      className={css.SidebarDropTarget}
+      data-drop-above={dropState?.type === 'reorder-above' || undefined}
+      data-drop-below={dropState?.type === 'reorder-below' || undefined}
+    >
+      <GroupIcon
+        active={active}
+        id={id}
+        label={label}
+        icon={icon}
+        onClick={onClick}
+      />
+    </div>
+  );
+}
+
 type ImageGroupIconProps<T extends string> = {
   active: boolean;
   id: T;
