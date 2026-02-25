@@ -116,7 +116,7 @@ export const PreviewImg = style([
 
 export const EmojiGroup = style({
   position: 'relative',
-  padding: `${config.space.S300} 0`,
+  padding: `${config.space.S100} 0`,
 });
 
 export const EmojiGroupLabel = style({
