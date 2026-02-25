@@ -131,7 +131,7 @@ export function ImageGroupIcon<T extends string>({
   return (
     <SidebarBtn active={active} id={id} label={label} onClick={onClick}>
       {url ? (
-        <img className={css.SidebarBtnImg} src={url} alt={label} />
+        <img className={css.SidebarBtnImg} src={url} alt={label} draggable={false} />
       ) : (
         <Icon src={Icons.Photo} filled={active} />
       )}

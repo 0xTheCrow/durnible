@@ -171,8 +171,9 @@ type EmojiSidebarProps = {
   activeGroupAtom: PrimitiveAtom<string | undefined>;
   packs: ImagePack[];
   onScrollToGroup: (groupId: string) => void;
+  setPackOrder: (ids: string[]) => void;
 };
-function EmojiSidebar({ activeGroupAtom, packs, onScrollToGroup }: EmojiSidebarProps) {
+function EmojiSidebar({ activeGroupAtom, packs, onScrollToGroup, setPackOrder }: EmojiSidebarProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
 
@@ -185,6 +186,33 @@ function EmojiSidebar({ activeGroupAtom, packs, onScrollToGroup }: EmojiSidebarP
     setActiveGroupId(groupId);
     onScrollToGroup(groupId);
   };
+
+  useEffect(
+    () =>
+      monitorForElements({
+        onDrop: ({ source, location }) => {
+          const { dropTargets } = location.current;
+          if (dropTargets.length === 0) return;
+          const draggedId = source.data.packId as string;
+          const targetId = dropTargets[0].data.packId as string;
+          const instructionType = dropTargets[0].data.instructionType as string | undefined;
+          if (!instructionType || !draggedId || !targetId) return;
+
+          const currentIds = packs.map((p) => p.id);
+          const fromIndex = currentIds.indexOf(draggedId);
+          if (fromIndex < 0) return;
+
+          const without = currentIds.filter((id) => id !== draggedId);
+          const targetIndex = without.indexOf(targetId);
+          if (targetIndex < 0) return;
+
+          const insertIndex = instructionType === 'reorder-above' ? targetIndex : targetIndex + 1;
+          without.splice(insertIndex, 0, draggedId);
+          setPackOrder(without);
+        },
+      }),
+    [packs, setPackOrder]
+  );
 
   return (
     <Sidebar>
@@ -209,7 +237,7 @@ function EmojiSidebar({ activeGroupAtom, packs, onScrollToGroup }: EmojiSidebarP
               pack.meta.avatar;
 
             return (
-              <ImageGroupIcon
+              <DraggableImageGroupIcon
                 key={pack.id}
                 active={activeGroupId === pack.id}
                 id={pack.id}
@@ -423,14 +451,14 @@ export function EmojiBoard({
   const [packOrder, setPackOrder] = useStickerPackOrder();
 
   const imagePacks = useMemo(() => {
-    if (tab !== EmojiBoardTab.Sticker || packOrder.length === 0) return rawImagePacks;
+    if (packOrder.length === 0) return rawImagePacks;
     const orderMap = new Map(packOrder.map((id, i) => [id, i]));
     return [...rawImagePacks].sort((a, b) => {
       const ai = orderMap.get(a.id) ?? Infinity;
       const bi = orderMap.get(b.id) ?? Infinity;
       return ai - bi;
     });
-  }, [rawImagePacks, packOrder, tab]);
+  }, [rawImagePacks, packOrder]);
 
   const [emojiGroupItems, stickerGroupItems] = useGroups(tab, imagePacks);
   const groups = emojiTab ? emojiGroupItems : stickerGroupItems;
@@ -565,6 +593,7 @@ export function EmojiBoard({
               activeGroupAtom={activeGroupIdAtom}
               packs={imagePacks}
               onScrollToGroup={handleScrollToGroup}
+              setPackOrder={setPackOrder}
             />
           ) : (
             <StickerSidebar
