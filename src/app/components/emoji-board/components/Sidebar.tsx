@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useEffect, useRef, useState } from 'react';
 import {
   Box,
   Scroll,
@@ -13,6 +13,16 @@ import {
   Icons,
 } from 'folds';
 import classNames from 'classnames';
+import {
+  draggable,
+  dropTargetForElements,
+} from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
+import {
+  attachInstruction,
+  extractInstruction,
+  Instruction,
+} from '@atlaskit/pragmatic-drag-and-drop-hitbox/tree-item';
+import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
 import * as css from './styles.css';
 
 export function Sidebar({ children }: { children: ReactNode }) {
@@ -126,5 +136,77 @@ export function ImageGroupIcon<T extends string>({
         <Icon src={Icons.Photo} filled={active} />
       )}
     </SidebarBtn>
+  );
+}
+
+type DraggableImageGroupIconProps = {
+  active: boolean;
+  id: string;
+  label: string;
+  url?: string;
+  onClick: (id: string) => void;
+};
+export function DraggableImageGroupIcon({
+  active,
+  id,
+  label,
+  url,
+  onClick,
+}: DraggableImageGroupIconProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [dropState, setDropState] = useState<Instruction>();
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return undefined;
+
+    return combine(
+      draggable({
+        element: el,
+        getInitialData: () => ({ packId: id }),
+      }),
+      dropTargetForElements({
+        element: el,
+        canDrop: ({ source }) => source.data.packId !== id,
+        getData: ({ input, element }) => {
+          const insData = attachInstruction(
+            {},
+            {
+              input,
+              element,
+              currentLevel: 0,
+              indentPerLevel: 0,
+              mode: 'standard',
+              block: ['reparent', 'make-child'],
+            }
+          );
+          const instruction: Instruction | null = extractInstruction(insData);
+          setDropState(instruction ?? undefined);
+          return {
+            packId: id,
+            instructionType: instruction?.type,
+          };
+        },
+        onDragLeave: () => setDropState(undefined),
+        onDrop: () => setDropState(undefined),
+      })
+    );
+  }, [id]);
+
+  return (
+    <div
+      ref={ref}
+      className={css.SidebarDropTarget}
+      data-drop-above={dropState?.type === 'reorder-above' || undefined}
+      data-drop-below={dropState?.type === 'reorder-below' || undefined}
+    >
+      <ImageGroupIcon
+        active={active}
+        id={id}
+        label={label}
+        url={url}
+        onClick={onClick}
+      />
+    </div>
   );
 }
