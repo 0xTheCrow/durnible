@@ -129,22 +129,6 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
           Transforms.select(editor, slateRange);
           Editor.insertText(editor, replacementText);
 
-          // On Android, preventDefault() is a no-op for beforeinput events,
-          // so the browser still modifies the DOM and fires selectionchange.
-          // Slate's onDOMSelectionChange reads the browser's cursor (at the
-          // text divergence point) and overwrites our correct cursor.
-          // Re-apply the correct selection after those events settle.
-          const correctSelection = editor.selection;
-          if (correctSelection) {
-            requestAnimationFrame(() => {
-              try {
-                Transforms.select(editor, correctSelection);
-              } catch {
-                // ignore if selection is no longer valid
-              }
-            });
-          }
-
           // Return true to tell Slate the event is handled.
           // eslint-disable-next-line consistent-return
           return true;
