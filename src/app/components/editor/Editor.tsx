@@ -24,6 +24,7 @@ import { RenderElement, RenderLeaf } from './Elements';
 import { CustomElement } from './slate';
 import * as css from './Editor.css';
 import { toggleKeyboardShortcut } from './keyboard';
+import { mobileOrTablet } from '../../utils/user-agent';
 
 const initialValue: CustomElement[] = [
   {
@@ -101,19 +102,80 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
     const handleDOMBeforeInput = useCallback(
       (e: InputEvent) => {
         if (e.inputType !== 'insertReplacementText') return;
-        requestAnimationFrame(() => {
-          const domSelection = window.getSelection();
-          if (!domSelection || !domSelection.rangeCount) return;
+
+        // On mobile, handle replacement text ourselves to avoid Slate's
+        // user-selection restore which computes wrong cursor positions
+        // for text prediction / autocorrect. On desktop, fall through
+        // to Slate's normal handling (which correctly restores cursor
+        // position for right-click spell check corrections).
+        if (!mobileOrTablet()) return;
+
+        const [targetRange] = e.getTargetRanges();
+        if (!targetRange) return;
+
+        const replacementText = e.dataTransfer
+          ? e.dataTransfer.getData('text/plain')
+          : e.data;
+        if (!replacementText) return;
+
+        try {
+          const slateRange = ReactEditor.toSlateRange(editor, targetRange, {
+            exactMatch: false,
+            suppressThrow: true,
+          });
+          if (!slateRange) return;
+
+          e.preventDefault();
+          Transforms.select(editor, slateRange);
+          Editor.insertText(editor, replacementText);
+
+          // Return true to tell Slate the event is handled.
+          // eslint-disable-next-line consistent-return
+          return true;
+        } catch {
+          // Fall through to Slate's default handling
+        }
+      },
+      [editor]
+    );
+
+    const handleCompositionEnd = useCallback(
+      (e: React.CompositionEvent) => {
+        if (!mobileOrTablet()) return;
+        const composedText = e.data;
+        if (!composedText) return;
+
+        // Slate's Android input manager flushes 25ms after compositionEnd.
+        // During flush it correctly inserts text but then overwrites the
+        // cursor with the browser's DOM selection (at the divergence point).
+        // Wait for the flush to complete, then correct the cursor to the
+        // end of the composed text.
+        setTimeout(() => {
+          if (!editor.selection) return;
+          const { anchor } = editor.selection;
           try {
-            const slateRange = ReactEditor.toSlateRange(editor, domSelection, {
-              exactMatch: false,
-              suppressThrow: true,
-            });
-            if (slateRange) Transforms.setSelection(editor, slateRange);
+            const [textNode] = Editor.node(editor, anchor.path);
+            const text = (textNode as { text?: string }).text;
+            if (typeof text !== 'string') return;
+
+            // The cursor is at the divergence point within the composed text.
+            // Search backwards from the cursor to find where the composed
+            // text starts, then place the cursor at its end.
+            const searchStart = Math.max(0, anchor.offset - composedText.length);
+            for (let i = searchStart; i <= anchor.offset; i++) {
+              if (text.startsWith(composedText, i)) {
+                const correctOffset = i + composedText.length;
+                if (correctOffset !== anchor.offset) {
+                  const point = { path: anchor.path, offset: correctOffset };
+                  Transforms.select(editor, { anchor: point, focus: point });
+                }
+                break;
+              }
+            }
           } catch {
-            // ignore if DOM selection can't be mapped to Slate
+            // ignore if selection is no longer valid
           }
-        });
+        }, 60);
       },
       [editor]
     );
@@ -168,6 +230,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
                 onKeyUp={onKeyUp}
                 onPaste={onPaste}
                 onDOMBeforeInput={handleDOMBeforeInput}
+                onCompositionEnd={handleCompositionEnd}
               />
             </Scroll>
             {after && (
