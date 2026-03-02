@@ -1,4 +1,4 @@
-import { style } from '@vanilla-extract/css';
+import { createVar, style } from '@vanilla-extract/css';
 import { toRem, color, config, DefaultReset, FocusOutline } from 'folds';
 
 /**
@@ -52,6 +52,31 @@ export const SidebarBtnImg = style({
   objectFit: 'contain',
 });
 
+const DropLineDist = createVar();
+export const SidebarDropTarget = style({
+  position: 'relative',
+  vars: {
+    [DropLineDist]: toRem(-4),
+  },
+  selectors: {
+    '&[data-drop-above=true]::after, &[data-drop-below=true]::after': {
+      content: '',
+      display: 'block',
+      position: 'absolute',
+      left: toRem(0),
+      width: '100%',
+      height: config.borderWidth.B700,
+      backgroundColor: color.Success.Main,
+    },
+    '&[data-drop-above=true]::after': {
+      top: DropLineDist,
+    },
+    '&[data-drop-below=true]::after': {
+      bottom: DropLineDist,
+    },
+  },
+});
+
 /**
  * Preview
  */
@@ -91,7 +116,7 @@ export const PreviewImg = style([
 
 export const EmojiGroup = style({
   position: 'relative',
-  padding: `${config.space.S300} 0`,
+  padding: `${config.space.S100} 0`,
 });
 
 export const EmojiGroupLabel = style({

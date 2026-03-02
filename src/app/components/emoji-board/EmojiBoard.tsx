@@ -15,6 +15,7 @@ import { isKeyHotkey } from 'is-hotkey';
 import { Room } from 'matrix-js-sdk';
 import { atom, PrimitiveAtom, useAtom, useSetAtom } from 'jotai';
 import { useVirtualizer } from '@tanstack/react-virtual';
+import { monitorForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import { IEmoji, emojiGroups, emojis } from '../../plugins/emoji';
 import { useEmojiGroupLabels } from './useEmojiGroupLabels';
 import { useEmojiGroupIcons } from './useEmojiGroupIcons';
@@ -31,6 +32,7 @@ import { addRecentEmoji } from '../../plugins/recent-emoji';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
 import { ImagePack, ImageUsage, PackImageReader } from '../../plugins/custom-emoji';
 import { getEmoticonSearchStr } from '../../plugins/utils';
+import { useStickerPackOrder } from '../../hooks/useStickerPackOrder';
 import {
   SearchInput,
   EmojiBoardTabs,
@@ -45,7 +47,9 @@ import {
   StickerItem,
   CustomEmojiItem,
   ImageGroupIcon,
+  DraggableImageGroupIcon,
   GroupIcon,
+  DraggableGroupIcon,
   getEmojiItemInfo,
   EmojiGroup,
   EmojiBoardLayout,
@@ -69,7 +73,8 @@ type StickerGroupItem = {
 
 const useGroups = (
   tab: EmojiBoardTab,
-  imagePacks: ImagePack[]
+  imagePacks: ImagePack[],
+  packOrder: string[]
 ): [EmojiGroupItem[], StickerGroupItem[]] => {
   const mx = useMatrixClient();
 
@@ -77,27 +82,37 @@ const useGroups = (
   const labels = useEmojiGroupLabels();
 
   const emojiGroupItems = useMemo(() => {
-    const g: EmojiGroupItem[] = [];
-    if (tab !== EmojiBoardTab.Emoji) return g;
+    if (tab !== EmojiBoardTab.Emoji) return [];
 
-    g.push({
+    const recentGroup: EmojiGroupItem = {
       id: RECENT_GROUP_ID,
       name: 'Recent',
       items: recentEmojis,
-    });
+    };
 
-    imagePacks.forEach((pack) => {
+    const packGroups: EmojiGroupItem[] = imagePacks.map((pack) => {
       let label = pack.meta.name;
       if (!label) label = isUserId(pack.id) ? 'Personal Pack' : mx.getRoom(pack.id)?.name;
-
-      g.push({
+      return {
         id: pack.id,
         name: label ?? 'Unknown',
         items: pack
           .getImages(ImageUsage.Emoticon)
           .sort((a, b) => a.shortcode.localeCompare(b.shortcode)),
-      });
+      };
     });
+
+    const reorderableGroups = [recentGroup, ...packGroups];
+    if (packOrder.length > 0) {
+      const orderMap = new Map(packOrder.map((id, i) => [id, i]));
+      reorderableGroups.sort((a, b) => {
+        const ai = orderMap.get(a.id) ?? Infinity;
+        const bi = orderMap.get(b.id) ?? Infinity;
+        return ai - bi;
+      });
+    }
+
+    const g: EmojiGroupItem[] = [...reorderableGroups];
 
     emojiGroups.forEach((group) => {
       g.push({
@@ -108,7 +123,7 @@ const useGroups = (
     });
 
     return g;
-  }, [mx, recentEmojis, labels, imagePacks, tab]);
+  }, [mx, recentEmojis, labels, imagePacks, tab, packOrder]);
 
   const stickerGroupItems = useMemo(() => {
     const g: StickerGroupItem[] = [];
@@ -167,9 +182,11 @@ const useItemRenderer = (tab: EmojiBoardTab) => {
 type EmojiSidebarProps = {
   activeGroupAtom: PrimitiveAtom<string | undefined>;
   packs: ImagePack[];
+  packOrder: string[];
   onScrollToGroup: (groupId: string) => void;
+  setPackOrder: (ids: string[]) => void;
 };
-function EmojiSidebar({ activeGroupAtom, packs, onScrollToGroup }: EmojiSidebarProps) {
+function EmojiSidebar({ activeGroupAtom, packs, packOrder, onScrollToGroup, setPackOrder }: EmojiSidebarProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
 
@@ -183,41 +200,93 @@ function EmojiSidebar({ activeGroupAtom, packs, onScrollToGroup }: EmojiSidebarP
     onScrollToGroup(groupId);
   };
 
+  const reorderableIds = useMemo(
+    () => [RECENT_GROUP_ID, ...packs.map((p) => p.id)],
+    [packs]
+  );
+
+  useEffect(
+    () =>
+      monitorForElements({
+        onDrop: ({ source, location }) => {
+          const { dropTargets } = location.current;
+          if (dropTargets.length === 0) return;
+          const draggedId = source.data.packId as string;
+          const targetId = dropTargets[0].data.packId as string;
+          const instructionType = dropTargets[0].data.instructionType as string | undefined;
+          if (!instructionType || !draggedId || !targetId) return;
+
+          const currentIds = [...reorderableIds];
+          const fromIndex = currentIds.indexOf(draggedId);
+          if (fromIndex < 0) return;
+
+          const without = currentIds.filter((id) => id !== draggedId);
+          const targetIndex = without.indexOf(targetId);
+          if (targetIndex < 0) return;
+
+          const insertIndex = instructionType === 'reorder-above' ? targetIndex : targetIndex + 1;
+          without.splice(insertIndex, 0, draggedId);
+          setPackOrder(without);
+        },
+      }),
+    [reorderableIds, setPackOrder]
+  );
+
+  const sortedItems = useMemo(() => {
+    type SidebarItem = { type: 'recent' } | { type: 'pack'; pack: ImagePack };
+    const items: SidebarItem[] = [
+      { type: 'recent' },
+      ...packs.map((pack) => ({ type: 'pack' as const, pack })),
+    ];
+    if (packOrder.length > 0) {
+      const orderMap = new Map(packOrder.map((id, i) => [id, i]));
+      items.sort((a, b) => {
+        const aId = a.type === 'recent' ? RECENT_GROUP_ID : a.pack.id;
+        const bId = b.type === 'recent' ? RECENT_GROUP_ID : b.pack.id;
+        const ai = orderMap.get(aId) ?? Infinity;
+        const bi = orderMap.get(bId) ?? Infinity;
+        return ai - bi;
+      });
+    }
+    return items;
+  }, [packs, packOrder]);
+
   return (
     <Sidebar>
       <SidebarStack>
-        <GroupIcon
-          active={activeGroupId === RECENT_GROUP_ID}
-          id={RECENT_GROUP_ID}
-          label="Recent"
-          icon={Icons.RecentClock}
-          onClick={handleScrollToGroup}
-        />
-      </SidebarStack>
-      {packs.length > 0 && (
-        <SidebarStack>
-          <SidebarDivider />
-          {packs.map((pack) => {
-            let label = pack.meta.name;
-            if (!label) label = isUserId(pack.id) ? 'Personal Pack' : mx.getRoom(pack.id)?.name;
-
-            const url =
-              mxcUrlToHttp(mx, pack.getAvatarUrl(usage) ?? '', useAuthentication) ||
-              pack.meta.avatar;
-
+        {sortedItems.map((item) => {
+          if (item.type === 'recent') {
             return (
-              <ImageGroupIcon
-                key={pack.id}
-                active={activeGroupId === pack.id}
-                id={pack.id}
-                label={label ?? 'Unknown Pack'}
-                url={url}
+              <DraggableGroupIcon
+                key={RECENT_GROUP_ID}
+                active={activeGroupId === RECENT_GROUP_ID}
+                id={RECENT_GROUP_ID}
+                label="Recent"
+                icon={Icons.RecentClock}
                 onClick={handleScrollToGroup}
               />
             );
-          })}
-        </SidebarStack>
-      )}
+          }
+          const { pack } = item;
+          let label = pack.meta.name;
+          if (!label) label = isUserId(pack.id) ? 'Personal Pack' : mx.getRoom(pack.id)?.name;
+
+          const url =
+            mxcUrlToHttp(mx, pack.getAvatarUrl(usage) ?? '', useAuthentication) ||
+            pack.meta.avatar;
+
+          return (
+            <DraggableImageGroupIcon
+              key={pack.id}
+              active={activeGroupId === pack.id}
+              id={pack.id}
+              label={label ?? 'Unknown Pack'}
+              url={url}
+              onClick={handleScrollToGroup}
+            />
+          );
+        })}
+      </SidebarStack>
       <SidebarStack
         style={{
           position: 'sticky',
@@ -245,8 +314,9 @@ type StickerSidebarProps = {
   activeGroupAtom: PrimitiveAtom<string | undefined>;
   packs: ImagePack[];
   onScrollToGroup: (groupId: string) => void;
+  setPackOrder: (ids: string[]) => void;
 };
-function StickerSidebar({ activeGroupAtom, packs, onScrollToGroup }: StickerSidebarProps) {
+function StickerSidebar({ activeGroupAtom, packs, onScrollToGroup, setPackOrder }: StickerSidebarProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
 
@@ -257,6 +327,33 @@ function StickerSidebar({ activeGroupAtom, packs, onScrollToGroup }: StickerSide
     setActiveGroupId(groupId);
     onScrollToGroup(groupId);
   };
+
+  useEffect(
+    () =>
+      monitorForElements({
+        onDrop: ({ source, location }) => {
+          const { dropTargets } = location.current;
+          if (dropTargets.length === 0) return;
+          const draggedId = source.data.packId as string;
+          const targetId = dropTargets[0].data.packId as string;
+          const instructionType = dropTargets[0].data.instructionType as string | undefined;
+          if (!instructionType || !draggedId || !targetId) return;
+
+          const currentIds = packs.map((p) => p.id);
+          const fromIndex = currentIds.indexOf(draggedId);
+          if (fromIndex < 0) return;
+
+          const without = currentIds.filter((id) => id !== draggedId);
+          const targetIndex = without.indexOf(targetId);
+          if (targetIndex < 0) return;
+
+          const insertIndex = instructionType === 'reorder-above' ? targetIndex : targetIndex + 1;
+          without.splice(insertIndex, 0, draggedId);
+          setPackOrder(without);
+        },
+      }),
+    [packs, setPackOrder]
+  );
 
   return (
     <Sidebar>
@@ -269,7 +366,7 @@ function StickerSidebar({ activeGroupAtom, packs, onScrollToGroup }: StickerSide
             mxcUrlToHttp(mx, pack.getAvatarUrl(usage) ?? '', useAuthentication) || pack.meta.avatar;
 
           return (
-            <ImageGroupIcon
+            <DraggableImageGroupIcon
               key={pack.id}
               active={activeGroupId === pack.id}
               id={pack.id}
@@ -388,8 +485,20 @@ export function EmojiBoard({
   );
   const activeGroupIdAtom = useMemo(() => atom<string | undefined>(undefined), []);
   const setActiveGroupId = useSetAtom(activeGroupIdAtom);
-  const imagePacks = useRelevantImagePacks(usage, imagePackRooms);
-  const [emojiGroupItems, stickerGroupItems] = useGroups(tab, imagePacks);
+  const rawImagePacks = useRelevantImagePacks(usage, imagePackRooms);
+  const [packOrder, setPackOrder] = useStickerPackOrder();
+
+  const imagePacks = useMemo(() => {
+    if (packOrder.length === 0) return rawImagePacks;
+    const orderMap = new Map(packOrder.map((id, i) => [id, i]));
+    return [...rawImagePacks].sort((a, b) => {
+      const ai = orderMap.get(a.id) ?? Infinity;
+      const bi = orderMap.get(b.id) ?? Infinity;
+      return ai - bi;
+    });
+  }, [rawImagePacks, packOrder]);
+
+  const [emojiGroupItems, stickerGroupItems] = useGroups(tab, imagePacks, packOrder);
   const groups = emojiTab ? emojiGroupItems : stickerGroupItems;
   const renderItem = useItemRenderer(tab);
 
@@ -521,13 +630,16 @@ export function EmojiBoard({
             <EmojiSidebar
               activeGroupAtom={activeGroupIdAtom}
               packs={imagePacks}
+              packOrder={packOrder}
               onScrollToGroup={handleScrollToGroup}
+              setPackOrder={setPackOrder}
             />
           ) : (
             <StickerSidebar
               activeGroupAtom={activeGroupIdAtom}
               packs={imagePacks}
               onScrollToGroup={handleScrollToGroup}
+              setPackOrder={setPackOrder}
             />
           )
         }
