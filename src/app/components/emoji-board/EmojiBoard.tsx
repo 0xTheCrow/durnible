@@ -200,10 +200,15 @@ function EmojiSidebar({ activeGroupAtom, packs, packOrder, onScrollToGroup, setP
     onScrollToGroup(groupId);
   };
 
-  const reorderableIds = useMemo(
-    () => [RECENT_GROUP_ID, ...packs.map((p) => p.id)],
-    [packs]
-  );
+  const reorderableIds = useMemo(() => {
+    const packIds = packs.map((p) => p.id);
+    const recentIndex = packOrder.indexOf(RECENT_GROUP_ID);
+    if (recentIndex < 0) return [RECENT_GROUP_ID, ...packIds];
+    const packIdSet = new Set(packIds);
+    const insertAt = packOrder.slice(0, recentIndex).filter((id) => packIdSet.has(id)).length;
+    packIds.splice(insertAt, 0, RECENT_GROUP_ID);
+    return packIds;
+  }, [packs, packOrder]);
 
   useEffect(
     () =>
