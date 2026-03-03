@@ -505,6 +505,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
                 onToggle={() => setUploadBoard(!uploadBoard)}
                 uploadFamilyObserverAtom={uploadFamilyObserverAtom}
                 onSend={handleSendUpload}
+                onSubmit={submit}
                 imperativeHandlerRef={uploadBoardHandlers}
                 onCancel={handleCancelUpload}
               />
