@@ -172,7 +172,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       selectedFiles.map((f) => f.file)
     );
     const uploadBoardHandlers = useRef<UploadBoardImperativeHandlers>();
-    const applyReplyToUploadsRef = useRef(false);
+    const uploadsReplyDraftRef = useRef<typeof replyDraft>(undefined);
 
     const imagePackRooms: Room[] = useImagePackRooms(roomId, roomToParents);
     const imagePacks = useRelevantImagePacks(ImageUsage.Emoticon, imagePackRooms);
@@ -315,16 +315,18 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
         return getFileMsgContent(fileItem, upload.mxc);
       });
       handleCancelUpload(uploads);
+      const uploadReplyDraft = uploadsReplyDraftRef.current;
+      uploadsReplyDraftRef.current = undefined;
       const contents = fulfilledPromiseSettledResult(await Promise.allSettled(contentsPromises));
       contents.forEach((content) => {
-        if (applyReplyToUploadsRef.current && replyDraft) {
+        if (uploadReplyDraft) {
           content['m.relates_to'] = {
             'm.in_reply_to': {
-              event_id: replyDraft.eventId,
+              event_id: uploadReplyDraft.eventId,
             },
           };
-          if (replyDraft.relation?.rel_type === RelationType.Thread) {
-            content['m.relates_to'].event_id = replyDraft.relation.event_id;
+          if (uploadReplyDraft.relation?.rel_type === RelationType.Thread) {
+            content['m.relates_to'].event_id = uploadReplyDraft.relation.event_id;
             content['m.relates_to'].rel_type = RelationType.Thread;
             content['m.relates_to'].is_falling_back = false;
           }
@@ -417,9 +419,8 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       }
 
       // Send files: if no text was sent, uploads carry the reply context
-      applyReplyToUploadsRef.current = plainText === '' && !!replyDraft;
+      uploadsReplyDraftRef.current = plainText === '' ? replyDraft : undefined;
       uploadBoardHandlers.current?.handleSend();
-      applyReplyToUploadsRef.current = false;
 
       resetEditor(editor);
       resetEditorHistory(editor);
