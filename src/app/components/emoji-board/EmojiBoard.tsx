@@ -57,7 +57,7 @@ import {
   EmojiGroup,
   EmojiBoardLayout,
 } from './components';
-import { EmojiBoardTab, EmojiType } from './types';
+import { EmojiBoardTab, EmojiItemInfo, EmojiType } from './types';
 import { VirtualTile } from '../virtualizer';
 
 const RECENT_GROUP_ID = 'recent_group';
