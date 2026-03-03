@@ -172,6 +172,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       selectedFiles.map((f) => f.file)
     );
     const uploadBoardHandlers = useRef<UploadBoardImperativeHandlers>();
+    const applyReplyToUploadsRef = useRef(false);
 
     const imagePackRooms: Room[] = useImagePackRooms(roomId, roomToParents);
     const imagePacks = useRelevantImagePacks(ImageUsage.Emoticon, imagePackRooms);
@@ -315,12 +316,24 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       });
       handleCancelUpload(uploads);
       const contents = fulfilledPromiseSettledResult(await Promise.allSettled(contentsPromises));
-      contents.forEach((content) => mx.sendMessage(roomId, content as any));
+      contents.forEach((content) => {
+        if (applyReplyToUploadsRef.current && replyDraft) {
+          content['m.relates_to'] = {
+            'm.in_reply_to': {
+              event_id: replyDraft.eventId,
+            },
+          };
+          if (replyDraft.relation?.rel_type === RelationType.Thread) {
+            content['m.relates_to'].event_id = replyDraft.relation.event_id;
+            content['m.relates_to'].rel_type = RelationType.Thread;
+            content['m.relates_to'].is_falling_back = false;
+          }
+        }
+        mx.sendMessage(roomId, content as any);
+      });
     };
 
     const submit = useCallback(() => {
-      uploadBoardHandlers.current?.handleSend();
-
       const shortcodeMap = buildShortcodeMap(imagePacks, unicodeEmojis);
       const processedChildren = replaceShortcodes(editor.children, shortcodeMap);
 
@@ -363,46 +376,56 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
         return;
       }
 
-      if (plainText === '') return;
+      const hasFiles = selectedFiles.length > 0;
 
-      const body = plainText;
-      const formattedBody = customHtml;
-      const mentionData = getMentions(mx, roomId, editor);
+      if (plainText === '' && !hasFiles) return;
 
-      const content: IContent = {
-        msgtype: msgType,
-        body,
-      };
+      if (plainText !== '') {
+        const body = plainText;
+        const formattedBody = customHtml;
+        const mentionData = getMentions(mx, roomId, editor);
 
-      if (replyDraft && replyDraft.userId !== mx.getUserId()) {
-        mentionData.users.add(replyDraft.userId);
-      }
-
-      const mMentions = getMentionContent(Array.from(mentionData.users), mentionData.room);
-      content['m.mentions'] = mMentions;
-
-      if (replyDraft || !customHtmlEqualsPlainText(formattedBody, body)) {
-        content.format = 'org.matrix.custom.html';
-        content.formatted_body = formattedBody;
-      }
-      if (replyDraft) {
-        content['m.relates_to'] = {
-          'm.in_reply_to': {
-            event_id: replyDraft.eventId,
-          },
+        const content: IContent = {
+          msgtype: msgType,
+          body,
         };
-        if (replyDraft.relation?.rel_type === RelationType.Thread) {
-          content['m.relates_to'].event_id = replyDraft.relation.event_id;
-          content['m.relates_to'].rel_type = RelationType.Thread;
-          content['m.relates_to'].is_falling_back = false;
+
+        if (replyDraft && replyDraft.userId !== mx.getUserId()) {
+          mentionData.users.add(replyDraft.userId);
         }
+
+        const mMentions = getMentionContent(Array.from(mentionData.users), mentionData.room);
+        content['m.mentions'] = mMentions;
+
+        if (replyDraft || !customHtmlEqualsPlainText(formattedBody, body)) {
+          content.format = 'org.matrix.custom.html';
+          content.formatted_body = formattedBody;
+        }
+        if (replyDraft) {
+          content['m.relates_to'] = {
+            'm.in_reply_to': {
+              event_id: replyDraft.eventId,
+            },
+          };
+          if (replyDraft.relation?.rel_type === RelationType.Thread) {
+            content['m.relates_to'].event_id = replyDraft.relation.event_id;
+            content['m.relates_to'].rel_type = RelationType.Thread;
+            content['m.relates_to'].is_falling_back = false;
+          }
+        }
+        mx.sendMessage(roomId, content as any);
       }
-      mx.sendMessage(roomId, content as any);
+
+      // Send files: if no text was sent, uploads carry the reply context
+      applyReplyToUploadsRef.current = plainText === '' && !!replyDraft;
+      uploadBoardHandlers.current?.handleSend();
+      applyReplyToUploadsRef.current = false;
+
       resetEditor(editor);
       resetEditorHistory(editor);
       setReplyDraft(undefined);
       sendTypingStatus(false);
-    }, [mx, roomId, editor, replyDraft, sendTypingStatus, setReplyDraft, isMarkdown, commands, imagePacks]);
+    }, [mx, roomId, editor, replyDraft, sendTypingStatus, setReplyDraft, isMarkdown, commands, imagePacks, selectedFiles]);
 
     const handleKeyDown: KeyboardEventHandler = useCallback(
       (evt) => {
