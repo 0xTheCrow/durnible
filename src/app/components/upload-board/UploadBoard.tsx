@@ -32,6 +32,7 @@ type UploadBoardHeaderProps = {
   uploadFamilyObserverAtom: TUploadFamilyObserverAtom;
   onCancel: (uploads: Upload[]) => void;
   onSend: (uploads: UploadSuccess[]) => Promise<void>;
+  onSubmit?: () => void;
   imperativeHandlerRef: MutableRefObject<UploadBoardImperativeHandlers | undefined>;
 };
 
@@ -41,6 +42,7 @@ export function UploadBoardHeader({
   uploadFamilyObserverAtom,
   onCancel,
   onSend,
+  onSubmit,
   imperativeHandlerRef,
 }: UploadBoardHeaderProps) {
   const sendingRef = useRef(false);
@@ -94,7 +96,7 @@ export function UploadBoardHeader({
         {isSuccess && (
           <Chip
             as="button"
-            onClick={handleSend}
+            onClick={onSubmit ?? handleSend}
             variant="Primary"
             radii="Pill"
             outlined
