@@ -740,6 +740,7 @@ export function EmojiBoard({
   }, [tab, virtualizer, groups]);
 
   return (
+    <>
     <FocusTrap
       focusTrapOptions={{
         returnFocusOnDeactivate,
@@ -833,46 +834,47 @@ export function EmojiBoard({
         </Box>
         <Preview previewAtom={previewAtom} />
       </EmojiBoardLayout>
-      {contextMenuAnchor && (
-        <PopOut
-          anchor={contextMenuAnchor}
-          position="Right"
-          align="Start"
-          content={
-            <FocusTrap
-              focusTrapOptions={{
-                initialFocus: false,
-                returnFocusOnDeactivate: false,
-                onDeactivate: () => {
-                  setContextMenuAnchor(undefined);
-                  setContextMenuEmojiInfo(undefined);
-                },
-                clickOutsideDeactivates: true,
-                isKeyForward: (evt: KeyboardEvent) => evt.key === 'ArrowDown',
-                isKeyBackward: (evt: KeyboardEvent) => evt.key === 'ArrowUp',
-                escapeDeactivates: stopPropagation,
-              }}
-            >
-              <Menu style={{ maxWidth: toRem(250), width: '100vw' }}>
-                <Box direction="Column" gap="100" style={{ padding: config.space.S100 }}>
-                  <MenuItem
-                    onClick={handleToggleFavorite}
-                    size="300"
-                    radii="300"
-                    before={<Icon size="100" src={Icons.Star} />}
-                  >
-                    <Text size="T300">
-                      {contextMenuEmojiInfo && isFavoriteEmoji(favoriteEntries, contextMenuEmojiInfo.type, contextMenuEmojiInfo.data)
-                        ? 'Remove from Favorites'
-                        : 'Add to Favorites'}
-                    </Text>
-                  </MenuItem>
-                </Box>
-              </Menu>
-            </FocusTrap>
-          }
-        />
-      )}
     </FocusTrap>
+    {contextMenuAnchor && (
+      <PopOut
+        anchor={contextMenuAnchor}
+        position="Right"
+        align="Start"
+        content={
+          <FocusTrap
+            focusTrapOptions={{
+              initialFocus: false,
+              returnFocusOnDeactivate: false,
+              onDeactivate: () => {
+                setContextMenuAnchor(undefined);
+                setContextMenuEmojiInfo(undefined);
+              },
+              clickOutsideDeactivates: true,
+              isKeyForward: (evt: KeyboardEvent) => evt.key === 'ArrowDown',
+              isKeyBackward: (evt: KeyboardEvent) => evt.key === 'ArrowUp',
+              escapeDeactivates: stopPropagation,
+            }}
+          >
+            <Menu style={{ maxWidth: toRem(250), width: '100vw' }}>
+              <Box direction="Column" gap="100" style={{ padding: config.space.S100 }}>
+                <MenuItem
+                  onClick={handleToggleFavorite}
+                  size="300"
+                  radii="300"
+                  before={<Icon size="100" src={Icons.Star} />}
+                >
+                  <Text size="T300">
+                    {contextMenuEmojiInfo && isFavoriteEmoji(favoriteEntries, contextMenuEmojiInfo.type, contextMenuEmojiInfo.data)
+                      ? 'Remove from Favorites'
+                      : 'Add to Favorites'}
+                  </Text>
+                </MenuItem>
+              </Box>
+            </Menu>
+          </FocusTrap>
+        }
+      />
+    )}
+    </>
   );
 }
