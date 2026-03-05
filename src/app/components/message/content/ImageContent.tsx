@@ -43,6 +43,7 @@ type RenderImageProps = {
   alt: string;
   title: string;
   src: string;
+  style?: React.CSSProperties;
   onLoad: (evt: React.SyntheticEvent<HTMLImageElement>) => void;
   onError: () => void;
   onClick: () => void;
@@ -196,6 +197,12 @@ export const ImageContent = as<'div', ImageContentProps>(
               alt: body,
               title: body,
               src: srcState.data,
+              // Use cover for excessively tall images so they fill
+              // the maxHeight-clamped container instead of appearing
+              // as a narrow sliver with pillarboxing.
+              style: info?.w && info?.h && info.h / info.w > 3
+                ? { objectFit: 'cover' }
+                : undefined,
               onLoad: handleLoad,
               onError: handleError,
               onClick: () => setViewer(true),

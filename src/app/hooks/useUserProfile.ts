@@ -5,7 +5,12 @@ import { useMatrixClient } from './useMatrixClient';
 export type UserProfile = {
   avatarUrl?: string;
   displayName?: string;
+  bannerUrl?: string;
 };
+
+type BannerCacheEntry = { url: string | undefined; fetched: boolean };
+const bannerCache = new Map<string, BannerCacheEntry>();
+
 export const useUserProfile = (userId: string): UserProfile => {
   const mx = useMatrixClient();
 
@@ -14,6 +19,7 @@ export const useUserProfile = (userId: string): UserProfile => {
     return {
       avatarUrl: user?.avatarUrl,
       displayName: user?.displayName,
+      bannerUrl: bannerCache.get(userId)?.url,
     };
   });
 
@@ -33,11 +39,26 @@ export const useUserProfile = (userId: string): UserProfile => {
     };
 
     mx.getProfileInfo(userId).then((info) =>
-      setProfile({
+      setProfile((cp) => ({
+        ...cp,
         avatarUrl: info.avatar_url,
         displayName: info.displayname,
-      })
+      }))
     );
+
+    const cached = bannerCache.get(userId);
+    if (!cached?.fetched) {
+      mx.getExtendedProfileProperty(userId, 'banner_url')
+        .then((value: unknown) => {
+          const url =
+            typeof value === 'string' && value.startsWith('mxc://') ? value : undefined;
+          bannerCache.set(userId, { url, fetched: true });
+          setProfile((cp) => ({ ...cp, bannerUrl: url }));
+        })
+        .catch(() => {
+          bannerCache.set(userId, { url: undefined, fetched: true });
+        });
+    }
 
     user?.on(UserEvent.AvatarUrl, onAvatarChange);
     user?.on(UserEvent.DisplayName, onDisplayNameChange);
@@ -48,4 +69,8 @@ export const useUserProfile = (userId: string): UserProfile => {
   }, [mx, userId]);
 
   return profile;
+};
+
+export const setBannerUrlCache = (userId: string, mxc: string | undefined) => {
+  bannerCache.set(userId, { url: mxc, fetched: true });
 };

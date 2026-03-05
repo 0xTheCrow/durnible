@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { UserHero, UserHeroName } from './UserHero';
 import { getMxIdServer, mxcUrlToHttp } from '../../utils/matrix';
 import { getMemberAvatarMxc, getMemberDisplayName } from '../../utils/room';
+import { useUserProfile } from '../../hooks/useUserProfile';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
 import { usePowerLevels } from '../../hooks/usePowerLevels';
@@ -57,6 +58,11 @@ export function UserRoomProfile({ userId }: UserRoomProfileProps) {
   const avatarMxc = getMemberAvatarMxc(room, userId);
   const avatarUrl = (avatarMxc && mxcUrlToHttp(mx, avatarMxc, useAuthentication)) ?? undefined;
 
+  const userProfile = useUserProfile(userId);
+  const bannerUrl =
+    (userProfile.bannerUrl && mxcUrlToHttp(mx, userProfile.bannerUrl, useAuthentication)) ??
+    undefined;
+
   const presence = useUserPresence(userId);
 
   const handleMessage = () => {
@@ -72,6 +78,7 @@ export function UserRoomProfile({ userId }: UserRoomProfileProps) {
       <UserHero
         userId={userId}
         avatarUrl={avatarUrl}
+        bannerUrl={bannerUrl}
         presence={presence && presence.lastActiveTs !== 0 ? presence : undefined}
       />
       <Box direction="Column" gap="500" style={{ padding: config.space.S400 }}>
