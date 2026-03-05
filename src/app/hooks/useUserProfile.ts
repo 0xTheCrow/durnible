@@ -7,6 +7,9 @@ export type UserProfile = {
   displayName?: string;
   bannerUrl?: string;
 };
+
+const bannerUrlCache = new Map<string, string>();
+
 export const useUserProfile = (userId: string): UserProfile => {
   const mx = useMatrixClient();
 
@@ -15,6 +18,7 @@ export const useUserProfile = (userId: string): UserProfile => {
     return {
       avatarUrl: user?.avatarUrl,
       displayName: user?.displayName,
+      bannerUrl: bannerUrlCache.get(userId),
     };
   });
 
@@ -44,7 +48,11 @@ export const useUserProfile = (userId: string): UserProfile => {
     mx.getExtendedProfileProperty(userId, 'banner_url')
       .then((value: unknown) => {
         if (typeof value === 'string' && value.startsWith('mxc://')) {
+          bannerUrlCache.set(userId, value);
           setProfile((cp) => ({ ...cp, bannerUrl: value }));
+        } else {
+          bannerUrlCache.delete(userId);
+          setProfile((cp) => ({ ...cp, bannerUrl: undefined }));
         }
       })
       .catch(() => {
@@ -60,4 +68,12 @@ export const useUserProfile = (userId: string): UserProfile => {
   }, [mx, userId]);
 
   return profile;
+};
+
+export const setBannerUrlCache = (userId: string, mxc: string | undefined) => {
+  if (mxc) {
+    bannerUrlCache.set(userId, mxc);
+  } else {
+    bannerUrlCache.delete(userId);
+  }
 };

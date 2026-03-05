@@ -30,7 +30,7 @@ import { SequenceCard } from '../../../components/sequence-card';
 import { SequenceCardStyle } from '../styles.css';
 import { SettingTile } from '../../../components/setting-tile';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
-import { UserProfile, useUserProfile } from '../../../hooks/useUserProfile';
+import { UserProfile, useUserProfile, setBannerUrlCache } from '../../../hooks/useUserProfile';
 import { getMxIdLocalPart, mxcUrlToHttp } from '../../../utils/matrix';
 import { UserAvatar } from '../../../components/user-avatar';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
@@ -210,9 +210,15 @@ function ProfileBanner({ profile, userId }: ProfileProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
   const [alertRemove, setAlertRemove] = useState(false);
+  const [localBannerMxc, setLocalBannerMxc] = useState<string | undefined>(profile.bannerUrl);
 
-  const bannerUrl = profile.bannerUrl
-    ? mxcUrlToHttp(mx, profile.bannerUrl, useAuthentication) ?? undefined
+  useEffect(() => {
+    setLocalBannerMxc(profile.bannerUrl);
+  }, [profile.bannerUrl]);
+
+  const bannerMxc = localBannerMxc;
+  const bannerUrl = bannerMxc
+    ? mxcUrlToHttp(mx, bannerMxc, useAuthentication) ?? undefined
     : undefined;
 
   const [imageFile, setImageFile] = useState<File>();
@@ -230,13 +236,17 @@ function ProfileBanner({ profile, userId }: ProfileProps) {
   const handleUploaded = useCallback(
     (upload: UploadSuccess) => {
       const { mxc } = upload;
+      setLocalBannerMxc(mxc);
+      setBannerUrlCache(userId, mxc);
       mx.setExtendedProfileProperty('banner_url', mxc);
       handleRemoveUpload();
     },
-    [mx, handleRemoveUpload]
+    [mx, userId, handleRemoveUpload]
   );
 
   const handleRemoveBanner = () => {
+    setLocalBannerMxc(undefined);
+    setBannerUrlCache(userId, undefined);
     mx.deleteExtendedProfileProperty('banner_url');
     setAlertRemove(false);
   };
