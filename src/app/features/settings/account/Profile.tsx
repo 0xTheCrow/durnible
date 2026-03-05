@@ -461,9 +461,9 @@ export function Profile() {
         direction="Column"
         gap="400"
       >
+        <ProfileDisplayName userId={userId} profile={profile} />
         <ProfileAvatar userId={userId} profile={profile} />
         <ProfileBanner userId={userId} profile={profile} />
-        <ProfileDisplayName userId={userId} profile={profile} />
       </SequenceCard>
     </Box>
   );
