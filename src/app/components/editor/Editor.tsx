@@ -150,13 +150,11 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
     const handleCompositionStart = useCallback(() => {
       if (!mobileOrTablet()) return;
 
-      // Cancel any pending cursor correction from a previous composition
-      // to avoid stale corrections interfering with the new one.
-      if (compositionTimeoutRef.current !== null) {
-        clearTimeout(compositionTimeoutRef.current);
-        compositionTimeoutRef.current = null;
-      }
-
+      // Record cursor position as a proximity hint for the text search
+      // in compositionEnd. Do NOT cancel pending timeouts here — the
+      // correction from a previous compositionEnd must still fire so
+      // the cursor doesn't stay at the wrong position when the user
+      // resumes typing quickly after backspacing.
       if (editor.selection) {
         compositionStartRef.current = {
           path: [...editor.selection.anchor.path],
@@ -175,6 +173,12 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
         const startInfo = compositionStartRef.current;
         compositionStartRef.current = null;
 
+        // Cancel any pending timeout from a previous compositionEnd so
+        // only the latest correction runs.
+        if (compositionTimeoutRef.current !== null) {
+          clearTimeout(compositionTimeoutRef.current);
+        }
+
         // Slate's Android input manager flushes 25ms after compositionEnd.
         // During flush it correctly inserts text but then overwrites the
         // cursor with the browser's DOM selection (at the divergence point).
@@ -182,6 +186,12 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
         // end of the composed text.
         compositionTimeoutRef.current = setTimeout(() => {
           compositionTimeoutRef.current = null;
+
+          // If a new composition is already active, don't change the
+          // cursor — it would disrupt the keyboard's composing state.
+          // The correction will be retried when that composition ends.
+          if (compositionStartRef.current !== null) return;
+
           if (!editor.selection) return;
           const { anchor } = editor.selection;
 
