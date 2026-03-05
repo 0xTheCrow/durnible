@@ -28,7 +28,7 @@ export const ImageViewer = as<'div', ImageViewerProps>(
 
     return (
       <Box
-        className={classNames(css.ImageViewer, className)}
+        className={classNames(css.ImageViewer, zoom > 1 && css.ImageViewerExpanded, className)}
         direction="Column"
         {...props}
         ref={ref}

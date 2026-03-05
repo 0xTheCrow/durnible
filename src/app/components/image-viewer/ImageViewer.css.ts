@@ -3,6 +3,16 @@ import { DefaultReset, color, config } from 'folds';
 
 export const ImageViewer = style([DefaultReset, { height: '100%' }]);
 
+export const ImageViewerExpanded = style({
+  width: '90vw',
+  height: '90vh',
+  '@media': {
+    'screen and (max-width: 750px)': {
+      width: '100vw',
+    },
+  },
+});
+
 export const ImageViewerHeader = style([
   DefaultReset,
   {
