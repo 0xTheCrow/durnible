@@ -25,9 +25,10 @@ import { stopPropagation } from '../../utils/keyboard';
 type UserHeroProps = {
   userId: string;
   avatarUrl?: string;
+  bannerUrl?: string;
   presence?: UserPresence;
 };
-export function UserHero({ userId, avatarUrl, presence }: UserHeroProps) {
+export function UserHero({ userId, avatarUrl, bannerUrl, presence }: UserHeroProps) {
   const [viewAvatar, setViewAvatar] = useState<string>();
 
   return (
@@ -36,11 +37,15 @@ export function UserHero({ userId, avatarUrl, presence }: UserHeroProps) {
         className={css.UserHeroCoverContainer}
         style={{
           backgroundColor: colorMXID(userId),
-          filter: avatarUrl ? undefined : 'brightness(50%)',
+          filter: !avatarUrl && !bannerUrl ? 'brightness(50%)' : undefined,
         }}
       >
-        {avatarUrl && (
-          <img className={css.UserHeroCover} src={avatarUrl} alt={userId} draggable="false" />
+        {bannerUrl ? (
+          <img className={css.UserHeroBanner} src={bannerUrl} alt={userId} draggable="false" />
+        ) : (
+          avatarUrl && (
+            <img className={css.UserHeroCover} src={avatarUrl} alt={userId} draggable="false" />
+          )
         )}
       </div>
       <div className={css.UserHeroAvatarContainer}>

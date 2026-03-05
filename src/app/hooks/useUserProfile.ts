@@ -5,6 +5,7 @@ import { useMatrixClient } from './useMatrixClient';
 export type UserProfile = {
   avatarUrl?: string;
   displayName?: string;
+  bannerUrl?: string;
 };
 export const useUserProfile = (userId: string): UserProfile => {
   const mx = useMatrixClient();
@@ -33,11 +34,22 @@ export const useUserProfile = (userId: string): UserProfile => {
     };
 
     mx.getProfileInfo(userId).then((info) =>
-      setProfile({
+      setProfile((cp) => ({
+        ...cp,
         avatarUrl: info.avatar_url,
         displayName: info.displayname,
-      })
+      }))
     );
+
+    mx.getExtendedProfileProperty(userId, 'banner_url')
+      .then((value: unknown) => {
+        if (typeof value === 'string' && value.startsWith('mxc://')) {
+          setProfile((cp) => ({ ...cp, bannerUrl: value }));
+        }
+      })
+      .catch(() => {
+        // Server doesn't support MSC4133 or property not set
+      });
 
     user?.on(UserEvent.AvatarUrl, onAvatarChange);
     user?.on(UserEvent.DisplayName, onDisplayNameChange);

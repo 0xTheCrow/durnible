@@ -23,6 +23,7 @@ import {
   Header,
   config,
   Spinner,
+  toRem,
 } from 'folds';
 import FocusTrap from 'focus-trap-react';
 import { SequenceCard } from '../../../components/sequence-card';
@@ -205,6 +206,139 @@ function ProfileAvatar({ profile, userId }: ProfileProps) {
   );
 }
 
+function ProfileBanner({ profile, userId }: ProfileProps) {
+  const mx = useMatrixClient();
+  const useAuthentication = useMediaAuthentication();
+  const [alertRemove, setAlertRemove] = useState(false);
+
+  const bannerUrl = profile.bannerUrl
+    ? mxcUrlToHttp(mx, profile.bannerUrl, useAuthentication) ?? undefined
+    : undefined;
+
+  const [imageFile, setImageFile] = useState<File>();
+  const uploadAtom = useMemo(() => {
+    if (imageFile) return createUploadAtom(imageFile);
+    return undefined;
+  }, [imageFile]);
+
+  const pickFile = useFilePicker(setImageFile, false);
+
+  const handleRemoveUpload = useCallback(() => {
+    setImageFile(undefined);
+  }, []);
+
+  const handleUploaded = useCallback(
+    (upload: UploadSuccess) => {
+      const { mxc } = upload;
+      mx.setExtendedProfileProperty('banner_url', mxc);
+      handleRemoveUpload();
+    },
+    [mx, handleRemoveUpload]
+  );
+
+  const handleRemoveBanner = () => {
+    mx.deleteExtendedProfileProperty('banner_url');
+    setAlertRemove(false);
+  };
+
+  return (
+    <SettingTile
+      title={
+        <Text as="span" size="L400">
+          Banner
+        </Text>
+      }
+      after={
+        bannerUrl ? (
+          <img
+            src={bannerUrl}
+            alt="Banner"
+            style={{
+              width: toRem(120),
+              height: toRem(48),
+              objectFit: 'cover',
+              borderRadius: config.radii.R300,
+            }}
+          />
+        ) : undefined
+      }
+    >
+      {uploadAtom ? (
+        <Box gap="200" direction="Column">
+          <CompactUploadCardRenderer
+            uploadAtom={uploadAtom}
+            onRemove={handleRemoveUpload}
+            onComplete={handleUploaded}
+          />
+        </Box>
+      ) : (
+        <Box gap="200">
+          <Button
+            onClick={() => pickFile('image/*')}
+            size="300"
+            variant="Secondary"
+            fill="Soft"
+            outlined
+            radii="300"
+          >
+            <Text size="B300">Upload</Text>
+          </Button>
+          {bannerUrl && (
+            <Button
+              size="300"
+              variant="Critical"
+              fill="None"
+              radii="300"
+              onClick={() => setAlertRemove(true)}
+            >
+              <Text size="B300">Remove</Text>
+            </Button>
+          )}
+        </Box>
+      )}
+
+      <Overlay open={alertRemove} backdrop={<OverlayBackdrop />}>
+        <OverlayCenter>
+          <FocusTrap
+            focusTrapOptions={{
+              initialFocus: false,
+              onDeactivate: () => setAlertRemove(false),
+              clickOutsideDeactivates: true,
+              escapeDeactivates: stopPropagation,
+            }}
+          >
+            <Dialog variant="Surface">
+              <Header
+                style={{
+                  padding: `0 ${config.space.S200} 0 ${config.space.S400}`,
+                  borderBottomWidth: config.borderWidth.B300,
+                }}
+                variant="Surface"
+                size="500"
+              >
+                <Box grow="Yes">
+                  <Text size="H4">Remove Banner</Text>
+                </Box>
+                <IconButton size="300" onClick={() => setAlertRemove(false)} radii="300">
+                  <Icon src={Icons.Cross} />
+                </IconButton>
+              </Header>
+              <Box style={{ padding: config.space.S400 }} direction="Column" gap="400">
+                <Box direction="Column" gap="200">
+                  <Text priority="400">Are you sure you want to remove your profile banner?</Text>
+                </Box>
+                <Button variant="Critical" onClick={handleRemoveBanner}>
+                  <Text size="B400">Remove</Text>
+                </Button>
+              </Box>
+            </Dialog>
+          </FocusTrap>
+        </OverlayCenter>
+      </Overlay>
+    </SettingTile>
+  );
+}
+
 function ProfileDisplayName({ profile, userId }: ProfileProps) {
   const mx = useMatrixClient();
   const capabilities = useCapabilities();
@@ -318,6 +452,7 @@ export function Profile() {
         gap="400"
       >
         <ProfileAvatar userId={userId} profile={profile} />
+        <ProfileBanner userId={userId} profile={profile} />
         <ProfileDisplayName userId={userId} profile={profile} />
       </SequenceCard>
     </Box>
