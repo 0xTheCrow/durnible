@@ -196,10 +196,11 @@ export function MImage({ content, renderImageContent, outlined }: MImageProps) {
     return <BrokenContent />;
   }
   return (
-    <Attachment outlined={outlined}>
+    <Attachment outlined={outlined} style={{ width: '100%' }}>
       <AttachmentBox
         style={{
           aspectRatio: `${imgInfo?.w || 1} / ${imgInfo?.h || 1}`,
+          width: '100%',
           minWidth: toRem(48),
           minHeight: toRem(48),
         }}
