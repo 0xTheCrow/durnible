@@ -186,49 +186,43 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
           const { anchor } = editor.selection;
 
           try {
-            // Primary strategy: use the tracked start position.
-            // This is reliable even when the cursor drifts far from the
-            // composed text (e.g. composing in the middle of existing text).
-            if (startInfo) {
-              const [textNode] = Editor.node(editor, startInfo.path);
-              const text = (textNode as { text?: string }).text;
-              if (typeof text === 'string') {
-                const correctOffset = startInfo.offset + composedText.length;
-                if (correctOffset <= text.length) {
-                  // If cursor is already at or past the end of the composed
-                  // text, it's in a valid position (possibly after a trailing
-                  // space/punctuation that ended the composition). The
-                  // divergence point that causes the bug always pulls the
-                  // cursor *before* the composed text, so we only need to
-                  // correct when the cursor is before correctOffset.
-                  const samePath = startInfo.path.length === anchor.path.length &&
-                    startInfo.path.every((v, i) => v === anchor.path[i]);
-                  if (samePath && anchor.offset >= correctOffset) {
-                    return;
-                  }
-                  const point = { path: startInfo.path, offset: correctOffset };
-                  Transforms.select(editor, { anchor: point, focus: point });
-                  return;
-                }
-              }
-            }
-
-            // Fallback: search for composed text near the current cursor.
-            const [textNode] = Editor.node(editor, anchor.path);
+            // Search the text node for the composed text. Use the tracked
+            // start position to pick the right occurrence when duplicates
+            // exist (e.g. "the" appears twice). Some keyboards re-compose
+            // from the start of the word rather than from our cursor, so
+            // we can't assume composedText starts at startInfo.offset —
+            // instead we use it as a proximity hint.
+            const searchPath = startInfo?.path ?? anchor.path;
+            const [textNode] = Editor.node(editor, searchPath);
             const text = (textNode as { text?: string }).text;
             if (typeof text !== 'string') return;
 
-            const searchStart = Math.max(0, anchor.offset - composedText.length);
-            for (let i = searchStart; i <= anchor.offset; i++) {
+            const hint = startInfo?.offset ?? anchor.offset;
+            let bestMatch = -1;
+            let bestDistance = Infinity;
+            for (let i = 0; i <= text.length - composedText.length; i++) {
               if (text.startsWith(composedText, i)) {
-                const correctOffset = i + composedText.length;
-                if (correctOffset !== anchor.offset) {
-                  const point = { path: anchor.path, offset: correctOffset };
-                  Transforms.select(editor, { anchor: point, focus: point });
+                const dist = Math.abs(i - hint);
+                if (dist < bestDistance) {
+                  bestDistance = dist;
+                  bestMatch = i;
                 }
-                break;
               }
             }
+            if (bestMatch === -1) return;
+
+            const correctOffset = bestMatch + composedText.length;
+            // If cursor is already at or past the end of the composed
+            // text, it's in a valid position (e.g. after a trailing space
+            // that ended the composition). Only correct when the cursor
+            // is before correctOffset (the divergence-point bug).
+            const samePath = searchPath.length === anchor.path.length &&
+              searchPath.every((v, i) => v === anchor.path[i]);
+            if (samePath && anchor.offset >= correctOffset) {
+              return;
+            }
+            const point = { path: searchPath, offset: correctOffset };
+            Transforms.select(editor, { anchor: point, focus: point });
           } catch {
             // ignore if selection is no longer valid
           }
