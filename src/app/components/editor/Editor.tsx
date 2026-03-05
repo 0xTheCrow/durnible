@@ -195,6 +195,17 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
               if (typeof text === 'string') {
                 const correctOffset = startInfo.offset + composedText.length;
                 if (correctOffset <= text.length) {
+                  // If cursor is already at or past the end of the composed
+                  // text, it's in a valid position (possibly after a trailing
+                  // space/punctuation that ended the composition). The
+                  // divergence point that causes the bug always pulls the
+                  // cursor *before* the composed text, so we only need to
+                  // correct when the cursor is before correctOffset.
+                  const samePath = startInfo.path.length === anchor.path.length &&
+                    startInfo.path.every((v, i) => v === anchor.path[i]);
+                  if (samePath && anchor.offset >= correctOffset) {
+                    return;
+                  }
                   const point = { path: startInfo.path, offset: correctOffset };
                   Transforms.select(editor, { anchor: point, focus: point });
                   return;
