@@ -5,6 +5,7 @@ import React, {
   ReactNode,
   forwardRef,
   useCallback,
+  useRef,
   useState,
 } from 'react';
 import { Box, Scroll, Text } from 'folds';
@@ -139,28 +140,73 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
       [editor]
     );
 
+    // Track where composition starts so we can reliably place the cursor
+    // after Slate's Android input manager flushes. Without this, the
+    // fallback search can miss when the cursor drifts far from the
+    // composed text (e.g. composing in the middle of existing text).
+    const compositionStartRef = useRef<{ path: number[]; offset: number } | null>(null);
+    const compositionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const handleCompositionStart = useCallback(() => {
+      if (!mobileOrTablet()) return;
+
+      // Cancel any pending cursor correction from a previous composition
+      // to avoid stale corrections interfering with the new one.
+      if (compositionTimeoutRef.current !== null) {
+        clearTimeout(compositionTimeoutRef.current);
+        compositionTimeoutRef.current = null;
+      }
+
+      if (editor.selection) {
+        compositionStartRef.current = {
+          path: [...editor.selection.anchor.path],
+          offset: editor.selection.anchor.offset,
+        };
+      }
+    }, [editor]);
+
     const handleCompositionEnd = useCallback(
       (e: React.CompositionEvent) => {
         if (!mobileOrTablet()) return;
         const composedText = e.data;
         if (!composedText) return;
 
+        // Capture start info now, before a new composition can overwrite the ref.
+        const startInfo = compositionStartRef.current;
+        compositionStartRef.current = null;
+
         // Slate's Android input manager flushes 25ms after compositionEnd.
         // During flush it correctly inserts text but then overwrites the
         // cursor with the browser's DOM selection (at the divergence point).
         // Wait for the flush to complete, then correct the cursor to the
         // end of the composed text.
-        setTimeout(() => {
+        compositionTimeoutRef.current = setTimeout(() => {
+          compositionTimeoutRef.current = null;
           if (!editor.selection) return;
           const { anchor } = editor.selection;
+
           try {
+            // Primary strategy: use the tracked start position.
+            // This is reliable even when the cursor drifts far from the
+            // composed text (e.g. composing in the middle of existing text).
+            if (startInfo) {
+              const [textNode] = Editor.node(editor, startInfo.path);
+              const text = (textNode as { text?: string }).text;
+              if (typeof text === 'string') {
+                const correctOffset = startInfo.offset + composedText.length;
+                if (correctOffset <= text.length) {
+                  const point = { path: startInfo.path, offset: correctOffset };
+                  Transforms.select(editor, { anchor: point, focus: point });
+                  return;
+                }
+              }
+            }
+
+            // Fallback: search for composed text near the current cursor.
             const [textNode] = Editor.node(editor, anchor.path);
             const text = (textNode as { text?: string }).text;
             if (typeof text !== 'string') return;
 
-            // The cursor is at the divergence point within the composed text.
-            // Search backwards from the cursor to find where the composed
-            // text starts, then place the cursor at its end.
             const searchStart = Math.max(0, anchor.offset - composedText.length);
             for (let i = searchStart; i <= anchor.offset; i++) {
               if (text.startsWith(composedText, i)) {
@@ -230,6 +276,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
                 onKeyUp={onKeyUp}
                 onPaste={onPaste}
                 onDOMBeforeInput={handleDOMBeforeInput}
+                onCompositionStart={handleCompositionStart}
                 onCompositionEnd={handleCompositionEnd}
               />
             </Scroll>
