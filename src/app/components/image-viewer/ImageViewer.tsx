@@ -6,6 +6,7 @@ import { Box, Chip, Header, Icon, IconButton, Icons, Text, as } from 'folds';
 import * as css from './ImageViewer.css';
 import { useZoom } from '../../hooks/useZoom';
 import { usePan } from '../../hooks/usePan';
+import { useTouchGesture } from '../../hooks/useTouchGesture';
 import { downloadMedia } from '../../utils/matrix';
 
 export type ImageViewerProps = {
@@ -16,8 +17,9 @@ export type ImageViewerProps = {
 
 export const ImageViewer = as<'div', ImageViewerProps>(
   ({ className, alt, src, requestClose, ...props }, ref) => {
-    const { zoom, zoomIn, zoomOut, setZoom } = useZoom(0.2);
-    const { pan, cursor, onMouseDown } = usePan(zoom !== 1);
+    const { zoom, zoomIn, zoomOut, setZoom, onWheel } = useZoom(0.2);
+    const { pan, setPan, cursor, onMouseDown } = usePan(zoom !== 1);
+    const { onTouchStart, onTouchMove, onTouchEnd } = useTouchGesture(setZoom, setPan);
 
     const handleDownload = async () => {
       const fileContent = await downloadMedia(src);
@@ -79,6 +81,7 @@ export const ImageViewer = as<'div', ImageViewerProps>(
           className={css.ImageViewerContent}
           justifyContent="Center"
           alignItems="Center"
+          onWheel={onWheel}
         >
           <img
             className={css.ImageViewerImg}
@@ -89,6 +92,9 @@ export const ImageViewer = as<'div', ImageViewerProps>(
             src={src}
             alt={alt}
             onMouseDown={onMouseDown}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
           />
         </Box>
       </Box>

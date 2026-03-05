@@ -33,8 +33,8 @@ export const ImageViewerImg = style([
     maxWidth: '85vw',
     maxHeight: 'calc(85vh - 2.5rem)',
     margin: 'auto',
+    touchAction: 'none',
     backgroundColor: color.Surface.Container,
-    transition: 'transform 100ms linear',
     '@media': {
       'screen and (max-width: 750px)': {
         maxWidth: '100vw',
