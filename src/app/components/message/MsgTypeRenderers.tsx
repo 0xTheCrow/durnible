@@ -195,12 +195,13 @@ export function MImage({ content, renderImageContent, outlined }: MImageProps) {
   if (typeof mxcUrl !== 'string') {
     return <BrokenContent />;
   }
+  const imgWidth = Math.max(imgInfo?.w || 400, 400);
   return (
-    <Attachment outlined={outlined}>
+    <Attachment outlined={outlined} style={{ width: toRem(imgWidth) }}>
       <AttachmentBox
         style={{
           aspectRatio: `${imgInfo?.w || 1} / ${imgInfo?.h || 1}`,
-          minWidth: toRem(48),
+          width: toRem(imgWidth),
           minHeight: toRem(48),
         }}
       >
