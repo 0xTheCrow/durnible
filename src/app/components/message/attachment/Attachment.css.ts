@@ -30,7 +30,7 @@ export const AttachmentBox = style([
   DefaultReset,
   {
     maxWidth: '100%',
-    maxHeight: toRem(600),
+    maxHeight: toRem(400),
     width: toRem(400),
     overflow: 'hidden',
   },
