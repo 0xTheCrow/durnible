@@ -1,7 +1,7 @@
 import { style } from '@vanilla-extract/css';
 import { DefaultReset, color, config } from 'folds';
 
-export const ImageViewer = style([DefaultReset, { height: '100%' }]);
+export const ImageViewer = style([DefaultReset, { height: '100%', flexGrow: 1 }]);
 
 export const ImageViewerExpanded = style({
   width: '90vw',
