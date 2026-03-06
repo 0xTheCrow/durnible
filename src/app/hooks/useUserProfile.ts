@@ -8,7 +8,7 @@ export type UserProfile = {
   bannerUrl?: string;
 };
 
-type BannerCacheEntry = { url: string | undefined; fetched: boolean };
+type BannerCacheEntry = { url: string | undefined; fetched: boolean; lastFetchTimestamp?: number };
 const bannerCache = new Map<string, BannerCacheEntry>();
 
 export const useUserProfile = (userId: string): UserProfile => {
@@ -47,12 +47,14 @@ export const useUserProfile = (userId: string): UserProfile => {
     );
 
     const cached = bannerCache.get(userId);
-    if (!cached?.fetched) {
+    const cacheExpired = cached?.lastFetchTimestamp !== undefined
+      && Date.now() - cached.lastFetchTimestamp > 60_000;
+    if (!cached?.fetched || cacheExpired) {
       mx.getExtendedProfileProperty(userId, 'banner_url')
         .then((value: unknown) => {
           const url =
             typeof value === 'string' && value.startsWith('mxc://') ? value : undefined;
-          bannerCache.set(userId, { url, fetched: true });
+          bannerCache.set(userId, { url, fetched: true, lastFetchTimestamp: Date.now() });
           setProfile((cp) => ({ ...cp, bannerUrl: url }));
         })
         .catch(() => {
