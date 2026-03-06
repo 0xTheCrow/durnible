@@ -17,7 +17,7 @@ export const useZoom = (step: number, min = 0.1, max = 5) => {
     });
   };
 
-  const scrollStep = step / 2;
+  const scrollStep = 0.25;
   const onWheel = useCallback(
     (event: React.WheelEvent) => {
       event.preventDefault();
