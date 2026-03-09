@@ -1,10 +1,12 @@
 /* eslint-disable no-param-reassign */
 import React, {
+  ChangeEventHandler,
   ClipboardEventHandler,
   KeyboardEventHandler,
   ReactNode,
   forwardRef,
   useCallback,
+  useEffect,
   useRef,
   useState,
 } from 'react';
@@ -26,6 +28,8 @@ import { CustomElement } from './slate';
 import * as css from './Editor.css';
 import { toggleKeyboardShortcut } from './keyboard';
 import { mobileOrTablet } from '../../utils/user-agent';
+import { useSetting } from '../../state/hooks/settings';
+import { settingsAtom } from '../../state/settings';
 
 const initialValue: CustomElement[] = [
   {
@@ -60,6 +64,18 @@ export const useEditor = (): Editor => {
   return editor;
 };
 
+const extractEditorText = (children: Descendant[]): string =>
+  children
+    .map((node) => {
+      if ('text' in node) return node.text;
+      if ('children' in node)
+        return (node.children as Descendant[])
+          .map((child) => ('text' in child ? child.text : ''))
+          .join('');
+      return '';
+    })
+    .join('');
+
 export type EditorChangeHandler = (value: Descendant[]) => void;
 type CustomEditorProps = {
   editableName?: string;
@@ -93,6 +109,41 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
     },
     ref
   ) => {
+    const [alternateInput] = useSetting(settingsAtom, 'alternateInput');
+
+    const [inputValue, setInputValue] = useState(() => extractEditorText(editor.children));
+
+    useEffect(() => {
+      if (!alternateInput) return undefined;
+
+      const origOnChange = editor.onChange;
+      editor.onChange = (...args: Parameters<typeof origOnChange>) => {
+        origOnChange.apply(editor, args);
+        setInputValue(extractEditorText(editor.children));
+      };
+      return () => {
+        editor.onChange = origOnChange;
+      };
+    }, [editor, alternateInput]);
+
+    const handleInputChange: ChangeEventHandler<HTMLInputElement> = useCallback(
+      (e) => {
+        const text = e.target.value;
+        setInputValue(text);
+        editor.children = [
+          { type: BlockType.Paragraph, children: [{ text }] },
+        ];
+      },
+      [editor]
+    );
+
+    const handleInputKeyDown: KeyboardEventHandler<HTMLInputElement> = useCallback(
+      (evt) => {
+        onKeyDown?.(evt);
+      },
+      [onKeyDown]
+    );
+
     const renderElement = useCallback(
       (props: RenderElementProps) => <RenderElement {...props} />,
       []
@@ -261,6 +312,45 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
       ),
       []
     );
+
+    if (alternateInput) {
+      return (
+        <div className={css.Editor} ref={ref}>
+          {top}
+          <Box alignItems="Start">
+            {before && (
+              <Box className={css.EditorOptions} alignItems="Center" gap="100" shrink="No">
+                {before}
+              </Box>
+            )}
+            <Scroll
+              className={css.EditorTextareaScroll}
+              variant="SurfaceVariant"
+              style={{ maxHeight }}
+              size="300"
+              visibility="Hover"
+              hideTrack
+            >
+              <input
+                data-editable-name={editableName}
+                className={css.AlternateInput}
+                placeholder={placeholder}
+                value={inputValue}
+                onChange={handleInputChange}
+                onKeyDown={handleInputKeyDown}
+                onKeyUp={onKeyUp}
+                onPaste={onPaste}
+              />
+            </Scroll>
+            {after && (
+              <Box className={css.EditorOptions} alignItems="Center" gap="100" shrink="No">
+                {after}
+              </Box>
+            )}
+          </Box>
+        </div>
+      );
+    }
 
     return (
       <div className={css.Editor} ref={ref}>

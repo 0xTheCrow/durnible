@@ -43,6 +43,8 @@ export interface Settings {
   hour24Clock: boolean;
   dateFormatString: string;
 
+  alternateInput: boolean;
+
   developerTools: boolean;
 }
 
@@ -79,6 +81,8 @@ const defaultSettings: Settings = {
 
   hour24Clock: false,
   dateFormatString: 'D MMM YYYY',
+
+  alternateInput: false,
 
   developerTools: false,
 };
