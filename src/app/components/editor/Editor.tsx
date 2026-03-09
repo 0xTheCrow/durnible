@@ -112,6 +112,9 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
     const [alternateInput] = useSetting(settingsAtom, 'alternateInput');
 
     const [inputValue, setInputValue] = useState(() => extractEditorText(editor.children));
+    const inputRef = useRef<HTMLInputElement>(null);
+    const inputValueRef = useRef(inputValue);
+    inputValueRef.current = inputValue;
 
     useEffect(() => {
       if (!alternateInput) return undefined;
@@ -121,8 +124,28 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
         origOnChange.apply(editor, args);
         setInputValue(extractEditorText(editor.children));
       };
+
+      (editor as any).insertAlternateText = (text: string) => {
+        const el = inputRef.current;
+        const pos = el?.selectionStart ?? inputValueRef.current.length;
+        const cur = inputValueRef.current;
+        const newValue = cur.slice(0, pos) + text + cur.slice(pos);
+        setInputValue(newValue);
+        editor.children = [
+          { type: BlockType.Paragraph, children: [{ text: newValue }] },
+        ];
+        requestAnimationFrame(() => {
+          if (el) {
+            const newPos = pos + text.length;
+            el.setSelectionRange(newPos, newPos);
+            el.focus();
+          }
+        });
+      };
+
       return () => {
         editor.onChange = origOnChange;
+        delete (editor as any).insertAlternateText;
       };
     }, [editor, alternateInput]);
 
@@ -332,6 +355,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
               hideTrack
             >
               <input
+                ref={inputRef}
                 data-editable-name={editableName}
                 className={css.AlternateInput}
                 placeholder={placeholder}

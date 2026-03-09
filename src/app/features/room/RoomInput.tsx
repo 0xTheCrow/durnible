@@ -136,6 +136,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     const [isMarkdown] = useSetting(settingsAtom, 'isMarkdown');
     const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
     const [legacyUsernameColor] = useSetting(settingsAtom, 'legacyUsernameColor');
+    const [alternateInput] = useSetting(settingsAtom, 'alternateInput');
     const direct = useIsDirectRoom();
     const commands = useCommands(mx, room);
     const emojiBtnRef = useRef<HTMLButtonElement>(null);
@@ -475,6 +476,11 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     }, [editor]);
 
     const handleEmoticonSelect = (key: string, shortcode: string) => {
+      if (alternateInput && (editor as any).insertAlternateText) {
+        const emojiText = key.startsWith('mxc://') ? `:${shortcode}:` : key;
+        (editor as any).insertAlternateText(emojiText);
+        return;
+      }
       editor.insertNode(createEmoticonElement(key, shortcode));
       moveCursor(editor);
     };
