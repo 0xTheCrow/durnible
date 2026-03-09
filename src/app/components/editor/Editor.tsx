@@ -364,6 +364,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
                 onKeyDown={handleInputKeyDown}
                 onKeyUp={onKeyUp}
                 onPaste={onPaste}
+                autoCapitalize="sentences"
               />
             </Scroll>
             {after && (

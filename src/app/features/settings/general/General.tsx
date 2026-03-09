@@ -740,7 +740,7 @@ function Editor() {
       </SequenceCard>
       <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
         <SettingTile
-          title="Alternate Message Input"
+          title="Alternate Message Input (very experimental)"
           description="Use a simple text input instead of the rich text editor."
           after={
             <Switch variant="Primary" value={alternateInput} onChange={setAlternateInput} />
