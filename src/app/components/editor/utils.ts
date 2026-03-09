@@ -162,6 +162,7 @@ export const resetEditorDirect = (editor: Editor) => {
   editor.selection = null;
   // eslint-disable-next-line no-param-reassign
   editor.history = { undos: [], redos: [] };
+  editor.onChange();
 };
 
 export const createMentionElement = (
