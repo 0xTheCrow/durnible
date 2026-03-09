@@ -64,6 +64,17 @@ export const selectFile = <M extends boolean | undefined = undefined>(
     if (accept) input.accept = accept;
     if (multiple) input.multiple = true;
 
+    // Append to DOM to prevent iOS from garbage-collecting the
+    // input while the photo library picker is still open.
+    input.style.display = 'none';
+    document.body.appendChild(input);
+
+    const cleanup = () => {
+      input.removeEventListener('change', changeHandler);
+      input.removeEventListener('cancel', cancelHandler);
+      input.remove();
+    };
+
     const changeHandler = () => {
       const fileList = input.files;
       if (!fileList) {
@@ -72,10 +83,16 @@ export const selectFile = <M extends boolean | undefined = undefined>(
         const files: File[] = getFilesFromFileList(fileList);
         resolve((multiple ? files : files[0]) as FilesOrFile<M>);
       }
-      input.removeEventListener('change', changeHandler);
+      cleanup();
+    };
+
+    const cancelHandler = () => {
+      resolve(undefined);
+      cleanup();
     };
 
     input.addEventListener('change', changeHandler);
+    input.addEventListener('cancel', cancelHandler);
     input.click();
   });
 
