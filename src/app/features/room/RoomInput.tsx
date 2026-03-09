@@ -41,6 +41,7 @@ import {
   getAutocompleteQuery,
   getPrevWorldRange,
   resetEditor,
+  resetEditorDirect,
   RoomMentionAutocomplete,
   UserMentionAutocomplete,
   EmoticonAutocomplete,
@@ -250,21 +251,37 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     );
 
     useEffect(() => {
-      Transforms.insertFragment(editor, msgDraft);
-    }, [editor, msgDraft]);
+      if (alternateInput) {
+        if (msgDraft.length > 0) {
+          editor.children = JSON.parse(JSON.stringify(msgDraft));
+        }
+      } else {
+        Transforms.insertFragment(editor, msgDraft);
+      }
+    }, [editor, msgDraft, alternateInput]);
 
     useEffect(
       () => () => {
-        if (!isEmptyEditor(editor)) {
-          const parsedDraft = JSON.parse(JSON.stringify(editor.children));
-          setMsgDraft(parsedDraft);
+        if (alternateInput) {
+          const text = (editor.children[0] as any)?.children?.[0]?.text ?? '';
+          if (text) {
+            setMsgDraft(JSON.parse(JSON.stringify(editor.children)));
+          } else {
+            setMsgDraft([]);
+          }
+          resetEditorDirect(editor);
         } else {
-          setMsgDraft([]);
+          if (!isEmptyEditor(editor)) {
+            const parsedDraft = JSON.parse(JSON.stringify(editor.children));
+            setMsgDraft(parsedDraft);
+          } else {
+            setMsgDraft([]);
+          }
+          resetEditor(editor);
+          resetEditorHistory(editor);
         }
-        resetEditor(editor);
-        resetEditorHistory(editor);
       },
-      [roomId, editor, setMsgDraft]
+      [roomId, editor, setMsgDraft, alternateInput]
     );
 
     const handleFileMetadata = useCallback(
@@ -373,8 +390,12 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
         if (commandContent) {
           commandContent.exe(plainText);
         }
-        resetEditor(editor);
-        resetEditorHistory(editor);
+        if (alternateInput) {
+          resetEditorDirect(editor);
+        } else {
+          resetEditor(editor);
+          resetEditorHistory(editor);
+        }
         sendTypingStatus(false);
         return;
       }
@@ -423,11 +444,15 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       uploadsReplyDraftRef.current = plainText === '' ? replyDraft : undefined;
       uploadBoardHandlers.current?.handleSend();
 
-      resetEditor(editor);
-      resetEditorHistory(editor);
+      if (alternateInput) {
+        resetEditorDirect(editor);
+      } else {
+        resetEditor(editor);
+        resetEditorHistory(editor);
+      }
       setReplyDraft(undefined);
       sendTypingStatus(false);
-    }, [mx, roomId, editor, replyDraft, sendTypingStatus, setReplyDraft, isMarkdown, commands, imagePacks, selectedFiles]);
+    }, [mx, roomId, editor, replyDraft, sendTypingStatus, setReplyDraft, isMarkdown, commands, imagePacks, selectedFiles, alternateInput]);
 
     const handleKeyDown: KeyboardEventHandler = useCallback(
       (evt) => {

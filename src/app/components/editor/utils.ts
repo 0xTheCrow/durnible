@@ -155,6 +155,15 @@ export const resetEditorHistory = (editor: Editor) => {
   };
 };
 
+export const resetEditorDirect = (editor: Editor) => {
+  // eslint-disable-next-line no-param-reassign
+  editor.children = [{ type: BlockType.Paragraph, children: [{ text: '' }] }];
+  // eslint-disable-next-line no-param-reassign
+  editor.selection = null;
+  // eslint-disable-next-line no-param-reassign
+  editor.history = { undos: [], redos: [] };
+};
+
 export const createMentionElement = (
   id: string,
   name: string,
