@@ -90,7 +90,6 @@ type CustomEditorProps = {
   onKeyUp?: KeyboardEventHandler;
   onChange?: EditorChangeHandler;
   onPaste?: ClipboardEventHandler;
-  onFileInsert?: (files: File[]) => void;
 };
 export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
   (
@@ -107,7 +106,6 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
       onKeyUp,
       onChange,
       onPaste,
-      onFileInsert,
     },
     ref
   ) => {
@@ -178,17 +176,6 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
 
     const handleDOMBeforeInput = useCallback(
       (e: InputEvent) => {
-        // Mobile keyboards (Gboard, SwiftKey, etc.) insert GIFs via
-        // insertFromPaste with the image in dataTransfer.files.
-        if (e.inputType === 'insertFromPaste' && onFileInsert) {
-          const files = e.dataTransfer?.files;
-          if (files && files.length > 0) {
-            e.preventDefault();
-            onFileInsert(Array.from(files));
-            return;
-          }
-        }
-
         if (e.inputType !== 'insertReplacementText') return;
 
         // On mobile, handle replacement text ourselves to avoid Slate's
@@ -224,7 +211,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
           // Fall through to Slate's default handling
         }
       },
-      [editor, onFileInsert]
+      [editor]
     );
 
     // Track where composition starts so we can reliably place the cursor
