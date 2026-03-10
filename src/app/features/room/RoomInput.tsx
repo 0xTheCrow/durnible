@@ -497,8 +497,8 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
 
     const handleCloseAutocomplete = useCallback(() => {
       setAutocompleteQuery(undefined);
-      ReactEditor.focus(editor);
-    }, [editor]);
+      if (!alternateInput) ReactEditor.focus(editor);
+    }, [editor, alternateInput]);
 
     const handleEmoticonSelect = (key: string, shortcode: string) => {
       if (alternateInput && (editor as any).insertAlternateText) {
@@ -708,7 +708,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
                         requestClose={() => {
                           setEmojiBoardTab((t) => {
                             if (t) {
-                              if (!mobileOrTablet()) ReactEditor.focus(editor);
+                              if (!mobileOrTablet() && !alternateInput) ReactEditor.focus(editor);
                               return undefined;
                             }
                             return t;
