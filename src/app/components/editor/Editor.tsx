@@ -112,7 +112,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
     const [alternateInput] = useSetting(settingsAtom, 'alternateInput');
 
     const [inputValue, setInputValue] = useState(() => extractEditorText(editor.children));
-    const inputRef = useRef<HTMLInputElement>(null);
+    const inputRef = useRef<HTMLTextAreaElement>(null);
     const inputValueRef = useRef(inputValue);
     inputValueRef.current = inputValue;
 
@@ -149,7 +149,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
       };
     }, [editor, alternateInput]);
 
-    const handleInputChange: ChangeEventHandler<HTMLInputElement> = useCallback(
+    const handleInputChange: ChangeEventHandler<HTMLTextAreaElement> = useCallback(
       (e) => {
         const text = e.target.value;
         setInputValue(text);
@@ -160,7 +160,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
       [editor]
     );
 
-    const handleInputKeyDown: KeyboardEventHandler<HTMLInputElement> = useCallback(
+    const handleInputKeyDown: KeyboardEventHandler<HTMLTextAreaElement> = useCallback(
       (evt) => {
         onKeyDown?.(evt);
       },
@@ -354,7 +354,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
               visibility="Hover"
               hideTrack
             >
-              <input
+              <textarea
                 ref={inputRef}
                 data-editable-name={editableName}
                 className={css.AlternateInput}
@@ -365,6 +365,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
                 onKeyUp={onKeyUp}
                 onPaste={onPaste}
                 autoCapitalize="sentences"
+                rows={1}
               />
             </Scroll>
             {after && (

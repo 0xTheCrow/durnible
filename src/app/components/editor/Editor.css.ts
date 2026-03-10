@@ -74,6 +74,7 @@ export const AlternateInput = style([
     fontFamily: 'inherit',
     fontSize: 'inherit',
     lineHeight: 'inherit',
+    resize: 'none',
     selectors: {
       [`${EditorTextareaScroll}:first-child &`]: {
         paddingLeft: toRem(13),
