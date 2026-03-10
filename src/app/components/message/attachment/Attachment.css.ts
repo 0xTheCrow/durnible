@@ -17,6 +17,12 @@ export const Attachment = recipe({
         boxShadow: `inset 0 0 0 ${config.borderWidth.B300} ${color.SurfaceVariant.ContainerLine}`,
       },
     },
+    media: {
+      true: {
+        backgroundColor: 'transparent',
+        borderRadius: 0,
+      },
+    },
   },
 });
 

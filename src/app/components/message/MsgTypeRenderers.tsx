@@ -189,7 +189,7 @@ type MImageProps = {
   renderImageContent: (props: RenderImageContentProps) => ReactNode;
   outlined?: boolean;
 };
-export function MImage({ content, renderImageContent, outlined }: MImageProps) {
+export function MImage({ content, renderImageContent }: MImageProps) {
   const imgInfo = content?.info;
   const mxcUrl = content.file?.url ?? content.url;
   if (typeof mxcUrl !== 'string') {
@@ -197,7 +197,7 @@ export function MImage({ content, renderImageContent, outlined }: MImageProps) {
   }
   const imgWidth = Math.max(imgInfo?.w || 400, 400);
   return (
-    <Attachment outlined={outlined} style={{ width: toRem(imgWidth) }}>
+    <Attachment media style={{ width: toRem(imgWidth) }}>
       <AttachmentBox
         style={{
           aspectRatio: `${imgInfo?.w || 1} / ${imgInfo?.h || 1}`,
