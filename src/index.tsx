@@ -53,8 +53,10 @@ if ('serviceWorker' in navigator) {
     });
   });
 
-  // Reload the page when the new SW takes over
+  // Reload the page when the new SW takes over (but not on first registration)
+  const hadController = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController) return;
     window.location.reload();
   });
 
