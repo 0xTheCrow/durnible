@@ -197,12 +197,12 @@ export const ImageContent = as<'div', ImageContentProps>(
               alt: body,
               title: body,
               src: srcState.data,
-              // Use cover for excessively tall images so they fill
-              // the maxHeight-clamped container instead of appearing
-              // as a narrow sliver with pillarboxing.
-              style: info?.w && info?.h && info.h / info.w > 3
-                ? { objectFit: 'cover' }
-                : undefined,
+              style: {
+                width: 'auto',
+                height: 'auto',
+                maxWidth: '100%',
+                maxHeight: '100%',
+              },
               onLoad: handleLoad,
               onError: handleError,
               onClick: () => setViewer(true),
