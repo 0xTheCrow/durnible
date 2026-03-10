@@ -5,6 +5,7 @@ export const Image = style([
   DefaultReset,
   {
     objectFit: 'contain',
+    objectPosition: 'left top',
     width: '100%',
     height: '100%',
   },
