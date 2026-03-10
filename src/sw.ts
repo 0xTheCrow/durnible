@@ -1,7 +1,14 @@
 /// <reference lib="WebWorker" />
 
+import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
+
 export type {};
 declare const self: ServiceWorkerGlobalScope;
+
+// Precache all assets built by Vite (injected by vite-plugin-pwa at build time).
+// This ensures lazy-loaded chunks survive deploys.
+precacheAndRoute(self.__WB_MANIFEST);
+cleanupOutdatedCaches();
 
 // Token pushed proactively by the main page on every load (including hard refresh).
 // Used as fallback when the requesting client is uncontrolled (i.e. clients.get() fails).
@@ -38,6 +45,9 @@ self.addEventListener('activate', (event: ExtendableEvent) => {
 self.addEventListener('message', (event: ExtendableMessageEvent) => {
   if (event.data?.type === 'setToken') {
     storedToken = event.data.token;
+  }
+  if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting();
   }
 });
 

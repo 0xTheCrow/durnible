@@ -98,7 +98,7 @@ export default defineConfig({
       injectRegister: false,
       manifest: false,
       injectManifest: {
-        injectionPoint: undefined,
+        globPatterns: ['**/*.{js,css,html,wasm}'],
       },
       devOptions: {
         enabled: true,

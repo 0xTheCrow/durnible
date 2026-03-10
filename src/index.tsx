@@ -19,14 +19,6 @@ import './app/i18n';
 
 document.body.classList.add(configClass, varsClass);
 
-window.addEventListener('vite:preloadError', () => {
-  const lastReload = sessionStorage.getItem('preload-error-reload');
-  if (!lastReload || Date.now() - Number(lastReload) > 10000) {
-    sessionStorage.setItem('preload-error-reload', String(Date.now()));
-    window.location.reload();
-  }
-});
-
 // Register Service Worker
 if ('serviceWorker' in navigator) {
   const swUrl =
@@ -34,7 +26,38 @@ if ('serviceWorker' in navigator) {
       ? `${trimTrailingSlash(import.meta.env.BASE_URL)}/sw.js`
       : `/dev-sw.js?dev-sw`;
 
-  navigator.serviceWorker.register(swUrl);
+  navigator.serviceWorker.register(swUrl).then((reg) => {
+    // Check for SW updates periodically (every 30 minutes)
+    setInterval(() => reg.update(), 30 * 60 * 1000);
+
+    const promptUpdate = (waitingSW: ServiceWorker) => {
+      if (window.confirm('A new version of Cinny is available. Reload to update?')) {
+        waitingSW.postMessage({ type: 'SKIP_WAITING' });
+      }
+    };
+
+    // A new SW is already waiting (e.g. installed while the page was idle)
+    if (reg.waiting) {
+      promptUpdate(reg.waiting);
+    }
+
+    // A new SW has been installed and is waiting to activate
+    reg.addEventListener('updatefound', () => {
+      const newSW = reg.installing;
+      if (!newSW) return;
+      newSW.addEventListener('statechange', () => {
+        if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+          promptUpdate(newSW);
+        }
+      });
+    });
+  });
+
+  // Reload the page when the new SW takes over
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    window.location.reload();
+  });
+
   navigator.serviceWorker.addEventListener('message', (event) => {
     if (event.data?.type === 'token' && event.data?.responseKey) {
       // Get the token for SW.
