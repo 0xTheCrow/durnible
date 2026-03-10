@@ -19,6 +19,14 @@ import './app/i18n';
 
 document.body.classList.add(configClass, varsClass);
 
+window.addEventListener('vite:preloadError', () => {
+  const lastReload = sessionStorage.getItem('preload-error-reload');
+  if (!lastReload || Date.now() - Number(lastReload) > 10000) {
+    sessionStorage.setItem('preload-error-reload', String(Date.now()));
+    window.location.reload();
+  }
+});
+
 // Register Service Worker
 if ('serviceWorker' in navigator) {
   const swUrl =
