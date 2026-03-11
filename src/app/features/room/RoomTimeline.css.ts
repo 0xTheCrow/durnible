@@ -1,4 +1,5 @@
 import { RecipeVariants, recipe } from '@vanilla-extract/recipes';
+import { style } from '@vanilla-extract/css';
 import { DefaultReset, config } from 'folds';
 
 export const TimelineFloat = recipe({
@@ -24,6 +25,22 @@ export const TimelineFloat = recipe({
   },
   defaultVariants: {
     position: 'Top',
+  },
+});
+
+export const JumpToLatestFloat = style({
+  transition: 'opacity 150ms ease, transform 150ms ease',
+  selectors: {
+    '&[data-visible="true"]': {
+      opacity: 1,
+      transform: 'translateX(-50%) translateY(0)',
+      pointerEvents: 'auto',
+    },
+    '&[data-visible="false"]': {
+      opacity: 0,
+      transform: 'translateX(-50%) translateY(8px)',
+      pointerEvents: 'none',
+    },
   },
 });
 

@@ -98,7 +98,8 @@ import {
   useIntersectionObserver,
 } from '../../hooks/useIntersectionObserver';
 import { markAsRead } from '../../utils/notifications';
-import { useDebounce } from '../../hooks/useDebounce';
+
+
 import { getResizeObserverEntry, useResizeObserver } from '../../hooks/useResizeObserver';
 import * as css from './RoomTimeline.css';
 import { inSameDay, minuteDifference, timeDayMonthYear, today, yesterday } from '../../utils/time';
@@ -499,8 +500,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
 
   const atBottomAnchorRef = useRef<HTMLElement>(null);
   const [atBottom, setAtBottom] = useState<boolean>(true);
-  const atBottomRef = useRef(atBottom);
-  atBottomRef.current = atBottom;
+  const atBottomRef = useRef(true);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -774,27 +774,25 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
     }
   }, [mx, room, hideActivity]);
 
-  const debounceSetAtBottom = useDebounce(
-    useCallback((entry: IntersectionObserverEntry) => {
-      if (!entry.isIntersecting) setAtBottom(false);
-    }, []),
-    { wait: 1000 }
-  );
   useIntersectionObserver(
     useCallback(
       (entries) => {
         const target = atBottomAnchorRef.current;
         if (!target) return;
         const targetEntry = getIntersectionObserverEntry(target, entries);
-        if (targetEntry) debounceSetAtBottom(targetEntry);
-        if (targetEntry?.isIntersecting && atLiveEndRef.current) {
+        if (!targetEntry) return;
+        if (targetEntry.isIntersecting && atLiveEndRef.current) {
+          atBottomRef.current = true;
           setAtBottom(true);
           if (document.hasFocus()) {
             tryAutoMarkAsRead();
           }
+        } else if (!targetEntry.isIntersecting) {
+          atBottomRef.current = false;
+          setAtBottom(false);
         }
       },
-      [debounceSetAtBottom, tryAutoMarkAsRead]
+      [tryAutoMarkAsRead]
     ),
     useCallback(
       () => ({
@@ -1990,19 +1988,21 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
           <span ref={atBottomAnchorRef} />
         </Box>
       </Scroll>
-      {!atBottom && (
-        <TimelineFloat position="Bottom">
-          <Chip
-            variant="SurfaceVariant"
-            radii="Pill"
-            outlined
-            before={<Icon size="50" src={Icons.ArrowBottom} />}
-            onClick={handleJumpToLatest}
-          >
-            <Text size="L400">Jump to Latest</Text>
-          </Chip>
-        </TimelineFloat>
-      )}
+      <TimelineFloat
+        className={css.JumpToLatestFloat}
+        position="Bottom"
+        data-visible={!atBottom}
+      >
+        <Chip
+          variant="SurfaceVariant"
+          radii="Pill"
+          outlined
+          before={<Icon size="50" src={Icons.ArrowBottom} />}
+          onClick={handleJumpToLatest}
+        >
+          <Text size="L400">Jump to Latest</Text>
+        </Chip>
+      </TimelineFloat>
     </Box>
   );
 }
