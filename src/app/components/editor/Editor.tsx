@@ -28,7 +28,6 @@ import { CustomElement } from './slate';
 import * as css from './Editor.css';
 import { toggleKeyboardShortcut } from './keyboard';
 import { mobileOrTablet } from '../../utils/user-agent';
-import { getDataTransferFiles } from '../../utils/dom';
 import { useSetting } from '../../state/hooks/settings';
 import { settingsAtom } from '../../state/settings';
 
@@ -179,32 +178,6 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
 
     const handleDOMBeforeInput = useCallback(
       (e: InputEvent) => {
-        console.log('[beforeinput]', e.inputType, {
-          hasDataTransfer: !!e.dataTransfer,
-          filesCount: e.dataTransfer?.files?.length,
-          itemsCount: e.dataTransfer?.items?.length,
-          items: e.dataTransfer?.items
-            ? Array.from(e.dataTransfer.items).map((item) => ({
-                kind: item.kind,
-                type: item.type,
-              }))
-            : null,
-          data: e.data,
-          types: e.dataTransfer?.types,
-        });
-
-        // Mobile keyboards (Gboard, SwiftKey, etc.) insert GIFs via
-        // insertFromPaste. The file may be in dataTransfer.files or .items.
-        if (e.inputType === 'insertFromPaste' && e.dataTransfer && onFileInsert) {
-          const files = getDataTransferFiles(e.dataTransfer);
-          console.log('[beforeinput] insertFromPaste files:', files);
-          if (files) {
-            e.preventDefault();
-            onFileInsert(files);
-            return;
-          }
-        }
-
         if (e.inputType !== 'insertReplacementText') return;
 
         // On mobile, handle replacement text ourselves to avoid Slate's
@@ -240,7 +213,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
           // Fall through to Slate's default handling
         }
       },
-      [editor, onFileInsert]
+      [editor]
     );
 
     // Track where composition starts so we can reliably place the cursor
@@ -364,6 +337,50 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
       ),
       []
     );
+
+    // Intercept <img> elements inserted directly into the contentEditable by
+    // mobile keyboards (e.g. Gboard GIF picker). Fetch the image, convert to
+    // a File, and route through the upload pipeline.
+    useEffect(() => {
+      const editorEl = ref && typeof ref !== 'function' ? ref.current : null;
+      if (!editorEl || !onFileInsert) return undefined;
+
+      const observer = new MutationObserver((mutations) => {
+        const imgs: HTMLImageElement[] = [];
+        for (const mutation of mutations) {
+          for (const node of mutation.addedNodes) {
+            if (node instanceof HTMLImageElement) {
+              imgs.push(node);
+            } else if (node instanceof HTMLElement) {
+              node.querySelectorAll('img').forEach((img) => imgs.push(img));
+            }
+          }
+        }
+        if (imgs.length === 0) return;
+
+        // Remove the <img> from the DOM so Slate doesn't try to serialize it.
+        for (const img of imgs) {
+          img.remove();
+        }
+
+        // Fetch each image and pass as File to the upload handler.
+        Promise.all(
+          imgs.map((img) =>
+            fetch(img.src)
+              .then((res) => res.blob())
+              .then((blob) => {
+                const ext = blob.type.split('/')[1] || 'gif';
+                return new File([blob], `keyboard-image.${ext}`, { type: blob.type });
+              })
+          )
+        )
+          .then((files) => onFileInsert(files))
+          .catch((err) => console.error('Failed to fetch keyboard image:', err));
+      });
+
+      observer.observe(editorEl, { childList: true, subtree: true });
+      return () => observer.disconnect();
+    }, [ref, onFileInsert]);
 
     if (alternateInput) {
       return (
