@@ -76,6 +76,7 @@ if ('serviceWorker' in navigator) {
 
       const msg = document.createElement('span');
       msg.textContent = 'A new version is available';
+      msg.style.flexGrow = '1';
 
       const btn = document.createElement('button');
       btn.textContent = 'Update';
