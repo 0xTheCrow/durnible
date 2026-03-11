@@ -60,7 +60,6 @@ if ('serviceWorker' in navigator) {
         display: 'flex',
         alignItems: 'center',
         gap: '1rem',
-        padding: '0.75rem 1.25rem',
       });
 
       const style = document.createElement('style');
@@ -77,6 +76,7 @@ if ('serviceWorker' in navigator) {
       const msg = document.createElement('span');
       msg.textContent = 'A new version is available';
       msg.style.flexGrow = '1';
+      msg.style.padding = '0.75rem 0 0.75rem 1.25rem';
 
       const btn = document.createElement('button');
       btn.textContent = 'Update';
@@ -100,10 +100,11 @@ if ('serviceWorker' in navigator) {
       Object.assign(dismiss.style, {
         background: 'none',
         border: 'none',
+        borderLeft: '1px solid #333',
         color: '#999',
         fontSize: '1.25rem',
         cursor: 'pointer',
-        padding: '0 0.25rem',
+        padding: '0.75rem 1.25rem',
         lineHeight: '1',
       });
       dismiss.addEventListener('click', () => toast.remove());
