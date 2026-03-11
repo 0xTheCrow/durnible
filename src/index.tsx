@@ -38,7 +38,7 @@ if ('serviceWorker' in navigator) {
       toast.id = 'sw-update-toast';
       Object.assign(toast.style, {
         position: 'fixed',
-        top: '1.5rem',
+        top: '4.5rem',
         left: '50%',
         transform: 'translateX(-50%)',
         zIndex: '9999',
@@ -51,6 +51,8 @@ if ('serviceWorker' in navigator) {
         fontFamily: 'inherit',
         boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
         overflow: 'hidden',
+        minWidth: '24rem',
+        maxWidth: 'calc(100vw - 2rem)',
       });
 
       const content = document.createElement('div');
