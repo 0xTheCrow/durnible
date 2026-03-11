@@ -90,7 +90,6 @@ type CustomEditorProps = {
   onKeyUp?: KeyboardEventHandler;
   onChange?: EditorChangeHandler;
   onPaste?: ClipboardEventHandler;
-  onFileInsert?: (files: File[]) => void;
 };
 export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
   (
@@ -107,7 +106,6 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
       onKeyUp,
       onChange,
       onPaste,
-      onFileInsert,
     },
     ref
   ) => {
@@ -337,50 +335,6 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
       ),
       []
     );
-
-    // Intercept <img> elements inserted directly into the contentEditable by
-    // mobile keyboards (e.g. Gboard GIF picker). Fetch the image, convert to
-    // a File, and route through the upload pipeline.
-    useEffect(() => {
-      const editorEl = ref && typeof ref !== 'function' ? ref.current : null;
-      if (!editorEl || !onFileInsert) return undefined;
-
-      const observer = new MutationObserver((mutations) => {
-        const imgs: HTMLImageElement[] = [];
-        for (const mutation of mutations) {
-          for (const node of mutation.addedNodes) {
-            if (node instanceof HTMLImageElement) {
-              imgs.push(node);
-            } else if (node instanceof HTMLElement) {
-              node.querySelectorAll('img').forEach((img) => imgs.push(img));
-            }
-          }
-        }
-        if (imgs.length === 0) return;
-
-        // Remove the <img> from the DOM so Slate doesn't try to serialize it.
-        for (const img of imgs) {
-          img.remove();
-        }
-
-        // Fetch each image and pass as File to the upload handler.
-        Promise.all(
-          imgs.map((img) =>
-            fetch(img.src)
-              .then((res) => res.blob())
-              .then((blob) => {
-                const ext = blob.type.split('/')[1] || 'gif';
-                return new File([blob], `keyboard-image.${ext}`, { type: blob.type });
-              })
-          )
-        )
-          .then((files) => onFileInsert(files))
-          .catch((err) => console.error('Failed to fetch keyboard image:', err));
-      });
-
-      observer.observe(editorEl, { childList: true, subtree: true });
-      return () => observer.disconnect();
-    }, [ref, onFileInsert]);
 
     if (alternateInput) {
       return (

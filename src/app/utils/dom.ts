@@ -97,24 +97,10 @@ export const selectFile = <M extends boolean | undefined = undefined>(
   });
 
 export const getDataTransferFiles = (dataTransfer: DataTransfer): File[] | undefined => {
-  const files: File[] = getFilesFromFileList(dataTransfer.files);
-  if (files.length > 0) return files;
-
-  // Some mobile keyboards (Gboard, SwiftKey) place GIFs/images in items
-  // as blobs rather than in the files list.
-  if (dataTransfer.items) {
-    const itemFiles: File[] = [];
-    for (let i = 0; i < dataTransfer.items.length; i++) {
-      const item = dataTransfer.items[i];
-      if (item.kind === 'file') {
-        const file = item.getAsFile();
-        if (file) itemFiles.push(file);
-      }
-    }
-    if (itemFiles.length > 0) return itemFiles;
-  }
-
-  return undefined;
+  const fileList = dataTransfer.files;
+  const files: File[] = getFilesFromFileList(fileList);
+  if (files.length === 0) return undefined;
+  return files;
 };
 
 export const renameFile = (file: File, name: string): File =>
