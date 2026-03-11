@@ -179,10 +179,25 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
 
     const handleDOMBeforeInput = useCallback(
       (e: InputEvent) => {
+        console.log('[beforeinput]', e.inputType, {
+          hasDataTransfer: !!e.dataTransfer,
+          filesCount: e.dataTransfer?.files?.length,
+          itemsCount: e.dataTransfer?.items?.length,
+          items: e.dataTransfer?.items
+            ? Array.from(e.dataTransfer.items).map((item) => ({
+                kind: item.kind,
+                type: item.type,
+              }))
+            : null,
+          data: e.data,
+          types: e.dataTransfer?.types,
+        });
+
         // Mobile keyboards (Gboard, SwiftKey, etc.) insert GIFs via
         // insertFromPaste. The file may be in dataTransfer.files or .items.
         if (e.inputType === 'insertFromPaste' && e.dataTransfer && onFileInsert) {
           const files = getDataTransferFiles(e.dataTransfer);
+          console.log('[beforeinput] insertFromPaste files:', files);
           if (files) {
             e.preventDefault();
             onFileInsert(files);
