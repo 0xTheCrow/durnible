@@ -57,19 +57,19 @@ if ('serviceWorker' in navigator) {
       Object.assign(content.style, {
         display: 'flex',
         alignItems: 'center',
-        gap: '0.75rem',
-        padding: '0.75rem 1rem',
+        gap: '1rem',
+        padding: '0.75rem 1.25rem',
       });
+
+      const style = document.createElement('style');
+      style.textContent = `@keyframes sw-toast-progress { from { width: 100%; } to { width: 0%; } }`;
+      toast.appendChild(style);
 
       const progressBar = document.createElement('div');
       Object.assign(progressBar.style, {
         height: '3px',
         background: '#3b82f6',
-        width: '100%',
-        transition: 'width 20s linear',
-      });
-      requestAnimationFrame(() => {
-        progressBar.style.width = '0%';
+        animation: 'sw-toast-progress 20s linear forwards',
       });
 
       const msg = document.createElement('span');
