@@ -11,10 +11,13 @@ export const VIDEO_MIME_TYPES = ['video/mp4', 'video/webm', 'video/ogg', 'video/
 
 export const AUDIO_MIME_TYPES = [
   'audio/mp4',
+  'audio/x-m4a',
   'audio/webm',
   'audio/aac',
   'audio/mpeg',
+  'audio/mp3',
   'audio/ogg',
+  'audio/opus',
   'audio/wave',
   'audio/wav',
   'audio/x-wav',
@@ -114,6 +117,10 @@ export const getBlobSafeMimeType = (mimeType: string) => {
   // Required for Chromium browsers
   if (type === 'video/quicktime') {
     return 'video/mp4';
+  }
+  // Map non-standard audio types to standard equivalents for browser compatibility
+  if (type === 'audio/x-m4a') {
+    return 'audio/mp4';
   }
   return type;
 };

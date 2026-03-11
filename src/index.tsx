@@ -12,6 +12,7 @@ import './index.css';
 
 import { trimTrailingSlash } from './app/utils/common';
 import { mobileOrTablet } from './app/utils/user-agent';
+import { getSettings } from './app/state/settings';
 import App from './app/pages/App';
 
 // import i18n (needs to be bundled ;))
@@ -31,9 +32,89 @@ if ('serviceWorker' in navigator) {
     setInterval(() => reg.update(), 30 * 60 * 1000);
 
     const promptUpdate = (waitingSW: ServiceWorker) => {
-      if (window.confirm('A new version of Cinny is available. Reload to update?')) {
+      if (!getSettings().pwaMode) return;
+      // Remove any existing toast
+      document.getElementById('sw-update-toast')?.remove();
+
+      const toast = document.createElement('div');
+      toast.id = 'sw-update-toast';
+      Object.assign(toast.style, {
+        position: 'fixed',
+        top: '4.5rem',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: '9999',
+        display: 'flex',
+        flexDirection: 'column',
+        borderRadius: '0.75rem',
+        background: '#1a1a1a',
+        color: '#fff',
+        fontSize: '0.875rem',
+        fontFamily: 'inherit',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+        overflow: 'hidden',
+        minWidth: '24rem',
+        maxWidth: 'calc(100vw - 2rem)',
+      });
+
+      const content = document.createElement('div');
+      Object.assign(content.style, {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '1rem',
+      });
+
+      const style = document.createElement('style');
+      style.textContent = `@keyframes sw-toast-progress { from { width: 100%; } to { width: 0%; } }`;
+      toast.appendChild(style);
+
+      const progressBar = document.createElement('div');
+      Object.assign(progressBar.style, {
+        height: '3px',
+        background: '#3b82f6',
+        animation: 'sw-toast-progress 20s linear forwards',
+      });
+
+      const msg = document.createElement('span');
+      msg.textContent = 'A new version is available';
+      msg.style.flexGrow = '1';
+      msg.style.padding = '0.75rem 0 0.75rem 1.25rem';
+
+      const btn = document.createElement('button');
+      btn.textContent = 'Update';
+      Object.assign(btn.style, {
+        padding: '0.375rem 0.75rem',
+        borderRadius: '0.5rem',
+        border: 'none',
+        background: '#3b82f6',
+        color: '#fff',
+        fontSize: '0.875rem',
+        fontWeight: '500',
+        cursor: 'pointer',
+      });
+      btn.addEventListener('click', () => {
         waitingSW.postMessage({ type: 'SKIP_WAITING' });
-      }
+        toast.remove();
+      });
+
+      const dismiss = document.createElement('button');
+      dismiss.textContent = '\u00d7';
+      Object.assign(dismiss.style, {
+        background: 'none',
+        border: 'none',
+        borderLeft: '1px solid #333',
+        color: '#999',
+        fontSize: '1.25rem',
+        cursor: 'pointer',
+        padding: '0.75rem 1.25rem',
+        lineHeight: '1',
+      });
+      dismiss.addEventListener('click', () => toast.remove());
+
+      content.append(msg, btn, dismiss);
+      toast.append(content, progressBar);
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 20000);
     };
 
     // A new SW is already waiting (e.g. installed while the page was idle)
