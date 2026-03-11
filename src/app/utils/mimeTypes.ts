@@ -118,6 +118,10 @@ export const getBlobSafeMimeType = (mimeType: string) => {
   if (type === 'video/quicktime') {
     return 'video/mp4';
   }
+  // Map non-standard audio types to standard equivalents for browser compatibility
+  if (type === 'audio/x-m4a') {
+    return 'audio/mp4';
+  }
   return type;
 };
 

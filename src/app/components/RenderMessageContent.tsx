@@ -31,7 +31,8 @@ import { PdfViewer } from './Pdf-viewer';
 import { TextViewer } from './text-viewer';
 import { testMatrixTo } from '../plugins/matrix-to';
 import { testYouTubeUrl, getYouTubeVideoId } from '../utils/youtube';
-import { IImageContent } from '../../types/matrix/common';
+import { IAudioContent, IImageContent } from '../../types/matrix/common';
+import { getBlobSafeMimeType } from '../utils/mimeTypes';
 
 const MEDIA_VOLUME_KEY = 'cinny_media_volume';
 
@@ -306,6 +307,23 @@ export function RenderMessageContent({
   }
 
   if (msgType === MsgType.File) {
+    const fileContent: IAudioContent = getContent();
+    const fileMimeType = getBlobSafeMimeType(fileContent.info?.mimetype ?? '');
+    if (fileMimeType.startsWith('audio')) {
+      return (
+        <>
+          <MAudio
+            content={fileContent}
+            renderAsFile={renderFile}
+            renderAudioContent={(props) => (
+              <AudioContent {...props} renderMediaControl={(p) => <MediaControl {...p} />} />
+            )}
+            outlined={outlineAttachment}
+          />
+          {renderCaption()}
+        </>
+      );
+    }
     return renderFile();
   }
 
