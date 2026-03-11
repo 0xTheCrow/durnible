@@ -46,6 +46,8 @@ export interface Settings {
   alternateInput: boolean;
 
   developerTools: boolean;
+
+  pwaMode: boolean;
 }
 
 const defaultSettings: Settings = {
@@ -85,6 +87,8 @@ const defaultSettings: Settings = {
   alternateInput: false,
 
   developerTools: false,
+
+  pwaMode: false,
 };
 
 export const getSettings = () => {

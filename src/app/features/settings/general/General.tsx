@@ -1023,6 +1023,23 @@ function Messages() {
   );
 }
 
+function Advanced() {
+  const [pwaMode, setPwaMode] = useSetting(settingsAtom, 'pwaMode');
+
+  return (
+    <Box direction="Column" gap="100">
+      <Text size="L400">Advanced</Text>
+      <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
+        <SettingTile
+          title="PWA Mode"
+          description="Show update notifications when a new version is available."
+          after={<Switch variant="Primary" value={pwaMode} onChange={setPwaMode} />}
+        />
+      </SequenceCard>
+    </Box>
+  );
+}
+
 type GeneralProps = {
   requestClose: () => void;
 };
@@ -1051,6 +1068,7 @@ export function General({ requestClose }: GeneralProps) {
               <DateAndTime />
               <Editor />
               <Messages />
+              <Advanced />
             </Box>
           </PageContent>
         </Scroll>

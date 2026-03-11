@@ -12,6 +12,7 @@ import './index.css';
 
 import { trimTrailingSlash } from './app/utils/common';
 import { mobileOrTablet } from './app/utils/user-agent';
+import { getSettings } from './app/state/settings';
 import App from './app/pages/App';
 
 // import i18n (needs to be bundled ;))
@@ -31,6 +32,7 @@ if ('serviceWorker' in navigator) {
     setInterval(() => reg.update(), 30 * 60 * 1000);
 
     const promptUpdate = (waitingSW: ServiceWorker) => {
+      if (!getSettings().pwaMode) return;
       // Remove any existing toast
       document.getElementById('sw-update-toast')?.remove();
 
