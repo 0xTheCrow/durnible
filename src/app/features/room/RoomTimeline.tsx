@@ -455,6 +455,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
 
   const [hour24Clock] = useSetting(settingsAtom, 'hour24Clock');
   const [dateFormatString] = useSetting(settingsAtom, 'dateFormatString');
+  const [alternateInput] = useSetting(settingsAtom, 'alternateInput');
 
   const ignoredUsersList = useIgnoredUsers();
   const ignoredUsersSet = useMemo(() => new Set(ignoredUsersList), [ignoredUsersList]);
@@ -667,6 +668,11 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
       highlight = true,
       onScroll: ((scrolled: boolean) => void) | undefined = undefined
     ) => {
+      // Immediately mark as not at bottom to prevent auto-scroll-to-bottom
+      // from firing during the smooth scroll animation (race with IntersectionObserver)
+      atBottomRef.current = false;
+      setAtBottom(false);
+
       const evtTimeline = getEventTimeline(room, evtId);
       const absoluteIndex =
         evtTimeline && getEventIdAbsoluteIndex(timeline.linkedTimelines, evtTimeline, evtId);
@@ -991,17 +997,23 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
         return;
       }
       const name = getMemberDisplayName(room, userId) ?? getMxIdLocalPart(userId) ?? userId;
-      editor.insertNode(
-        createMentionElement(
-          userId,
-          name.startsWith('@') ? name : `@${name}`,
-          userId === mx.getUserId()
-        )
-      );
-      ReactEditor.focus(editor);
-      moveCursor(editor);
+      if (alternateInput && (editor as any).insertAlternateText) {
+        (editor as any).insertAlternateText(
+          name.startsWith('@') ? name : `@${name}`
+        );
+      } else {
+        editor.insertNode(
+          createMentionElement(
+            userId,
+            name.startsWith('@') ? name : `@${name}`,
+            userId === mx.getUserId()
+          )
+        );
+        ReactEditor.focus(editor);
+        moveCursor(editor);
+      }
     },
-    [mx, room, editor]
+    [mx, room, editor, alternateInput]
   );
 
   const handleReplyClick: MouseEventHandler<HTMLButtonElement> = useCallback(
@@ -1028,10 +1040,16 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
           formattedBody,
           relation,
         });
-        setTimeout(() => ReactEditor.focus(editor), 100);
+        setTimeout(() => {
+          if (alternateInput) {
+            roomInputRef.current?.querySelector('textarea')?.focus();
+          } else {
+            ReactEditor.focus(editor);
+          }
+        }, 100);
       }
     },
-    [room, setReplyDraft, editor]
+    [room, setReplyDraft, editor, alternateInput, roomInputRef]
   );
 
   const handleReactionToggle = useCallback(
@@ -1064,9 +1082,13 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
         return;
       }
       setEditId(undefined);
-      ReactEditor.focus(editor);
+      if (alternateInput) {
+        roomInputRef.current?.querySelector('textarea')?.focus();
+      } else {
+        ReactEditor.focus(editor);
+      }
     },
-    [editor]
+    [editor, alternateInput, roomInputRef]
   );
   const { t } = useTranslation();
 

@@ -90,6 +90,7 @@ type CustomEditorProps = {
   onKeyUp?: KeyboardEventHandler;
   onChange?: EditorChangeHandler;
   onPaste?: ClipboardEventHandler;
+  forceSlate?: boolean;
 };
 export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
   (
