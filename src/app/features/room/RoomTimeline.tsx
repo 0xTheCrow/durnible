@@ -1057,7 +1057,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
       const relations = getEventReactions(room.getUnfilteredTimelineSet(), targetEventId);
       const allReactions = relations?.getSortedAnnotationsByKey() ?? [];
       const [, reactionsSet] = allReactions.find(([k]) => k === key) ?? [];
-      const reactions = reactionsSet ? Array.from(reactionsSet) : [];
+      const reactions: MatrixEvent[] = reactionsSet ? Array.from(reactionsSet) : [];
       const myReaction = reactions.find(factoryEventSentBy(mx.getUserId()!));
 
       if (myReaction && !!myReaction?.isRelation()) {

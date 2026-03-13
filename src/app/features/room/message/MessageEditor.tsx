@@ -289,7 +289,35 @@ export const MessageEditor = as<'div', MessageEditorProps>(
           placeholder="Edit message..."
           onKeyDown={handleKeyDown}
           onKeyUp={handleKeyUp}
+          after={
+            alternateInput ? (
+              <>
+                <IconButton
+                  onClick={handleSave}
+                  variant="Primary"
+                  size="300"
+                  radii="300"
+                  disabled={saveState.status === AsyncStatus.Loading}
+                >
+                  {saveState.status === AsyncStatus.Loading ? (
+                    <Spinner variant="Primary" fill="Soft" size="100" />
+                  ) : (
+                    <Icon size="400" src={Icons.Check} />
+                  )}
+                </IconButton>
+                <IconButton
+                  onClick={onCancel}
+                  variant="SurfaceVariant"
+                  size="300"
+                  radii="300"
+                >
+                  <Icon size="400" src={Icons.Cross} />
+                </IconButton>
+              </>
+            ) : undefined
+          }
           bottom={
+            alternateInput ? undefined : (
             <>
               <Box
                 style={{ padding: config.space.S200, paddingTop: 0 }}
@@ -341,13 +369,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
                             requestClose={() => {
                               setAnchor((v) => {
                                 if (v) {
-                                  if (!mobileOrTablet()) {
-                                    if (alternateInput) {
-                                      editorRef.current?.querySelector('textarea')?.focus();
-                                    } else {
-                                      ReactEditor.focus(editor);
-                                    }
-                                  }
+                                  if (!mobileOrTablet()) ReactEditor.focus(editor);
                                   return undefined;
                                 }
                                 return v;
@@ -375,13 +397,14 @@ export const MessageEditor = as<'div', MessageEditorProps>(
                   </UseStateProvider>
                 </Box>
               </Box>
-              {toolbar && !alternateInput && (
+              {toolbar && (
                 <div>
                   <Line variant="SurfaceVariant" size="300" />
                   <Toolbar />
                 </div>
               )}
             </>
+            )
           }
         />
       </div>
