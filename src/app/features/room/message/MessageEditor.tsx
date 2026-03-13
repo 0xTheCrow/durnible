@@ -316,8 +316,8 @@ export const MessageEditor = as<'div', MessageEditorProps>(
                     <Text size="B300">Cancel</Text>
                   </Chip>
                 </Box>
-                {!alternateInput && (
-                  <Box gap="Inherit">
+                <Box gap="Inherit">
+                  {!alternateInput && (
                     <IconButton
                       variant="SurfaceVariant"
                       size="300"
@@ -326,50 +326,54 @@ export const MessageEditor = as<'div', MessageEditorProps>(
                     >
                       <Icon size="400" src={toolbar ? Icons.AlphabetUnderline : Icons.Alphabet} />
                     </IconButton>
-                    <UseStateProvider initial={undefined}>
-                      {(anchor: RectCords | undefined, setAnchor) => (
-                        <PopOut
-                          anchor={anchor}
-                          alignOffset={-8}
-                          position="Top"
-                          align="End"
-                          content={
-                            <EmojiBoard
-                              imagePackRooms={imagePackRooms ?? []}
-                              returnFocusOnDeactivate={false}
-                              onEmojiSelect={handleEmoticonSelect}
-                              onCustomEmojiSelect={handleEmoticonSelect}
-                              requestClose={() => {
-                                setAnchor((v) => {
-                                  if (v) {
-                                    if (!mobileOrTablet()) ReactEditor.focus(editor);
-                                    return undefined;
+                  )}
+                  <UseStateProvider initial={undefined}>
+                    {(anchor: RectCords | undefined, setAnchor) => (
+                      <PopOut
+                        anchor={anchor}
+                        alignOffset={-8}
+                        position="Top"
+                        align="End"
+                        content={
+                          <EmojiBoard
+                            imagePackRooms={imagePackRooms ?? []}
+                            returnFocusOnDeactivate={false}
+                            onEmojiSelect={handleEmoticonSelect}
+                            onCustomEmojiSelect={handleEmoticonSelect}
+                            requestClose={() => {
+                              setAnchor((v) => {
+                                if (v) {
+                                  if (alternateInput) {
+                                    editorRef.current?.querySelector('textarea')?.focus();
+                                  } else if (!mobileOrTablet()) {
+                                    ReactEditor.focus(editor);
                                   }
-                                  return v;
-                                });
-                              }}
-                            />
+                                  return undefined;
+                                }
+                                return v;
+                              });
+                            }}
+                          />
+                        }
+                      >
+                        <IconButton
+                          aria-pressed={anchor !== undefined}
+                          onClick={
+                            ((evt) =>
+                              setAnchor(
+                                evt.currentTarget.getBoundingClientRect()
+                              )) as MouseEventHandler<HTMLButtonElement>
                           }
+                          variant="SurfaceVariant"
+                          size="300"
+                          radii="300"
                         >
-                          <IconButton
-                            aria-pressed={anchor !== undefined}
-                            onClick={
-                              ((evt) =>
-                                setAnchor(
-                                  evt.currentTarget.getBoundingClientRect()
-                                )) as MouseEventHandler<HTMLButtonElement>
-                            }
-                            variant="SurfaceVariant"
-                            size="300"
-                            radii="300"
-                          >
-                            <Icon size="400" src={Icons.Smile} filled={anchor !== undefined} />
-                          </IconButton>
-                        </PopOut>
-                      )}
-                    </UseStateProvider>
-                  </Box>
-                )}
+                          <Icon size="400" src={Icons.Smile} filled={anchor !== undefined} />
+                        </IconButton>
+                      </PopOut>
+                    )}
+                  </UseStateProvider>
+                </Box>
               </Box>
               {!alternateInput && toolbar && (
                 <div>

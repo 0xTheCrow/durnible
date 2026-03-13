@@ -92,6 +92,10 @@ export const AlternateInput = style([
   },
 ]);
 
+export const AlternateInputBottom = style({
+  paddingTop: config.space.S200,
+});
+
 export const EditorToolbarBase = style({
   padding: `0 ${config.borderWidth.B300}`,
 });

@@ -375,7 +375,11 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
               </Box>
             )}
           </Box>
-          {bottom}
+          {bottom && (
+            <div className={css.AlternateInputBottom}>
+              {bottom}
+            </div>
+          )}
         </div>
       );
     }
