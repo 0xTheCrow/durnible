@@ -98,7 +98,8 @@ import {
   useIntersectionObserver,
 } from '../../hooks/useIntersectionObserver';
 import { markAsRead } from '../../utils/notifications';
-import { useDebounce } from '../../hooks/useDebounce';
+
+
 import { getResizeObserverEntry, useResizeObserver } from '../../hooks/useResizeObserver';
 import * as css from './RoomTimeline.css';
 import { inSameDay, minuteDifference, timeDayMonthYear, today, yesterday } from '../../utils/time';
@@ -454,6 +455,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
 
   const [hour24Clock] = useSetting(settingsAtom, 'hour24Clock');
   const [dateFormatString] = useSetting(settingsAtom, 'dateFormatString');
+  const [alternateInput] = useSetting(settingsAtom, 'alternateInput');
 
   const ignoredUsersList = useIgnoredUsers();
   const ignoredUsersSet = useMemo(() => new Set(ignoredUsersList), [ignoredUsersList]);
@@ -499,8 +501,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
 
   const atBottomAnchorRef = useRef<HTMLElement>(null);
   const [atBottom, setAtBottom] = useState<boolean>(true);
-  const atBottomRef = useRef(atBottom);
-  atBottomRef.current = atBottom;
+  const atBottomRef = useRef(true);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -667,6 +668,11 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
       highlight = true,
       onScroll: ((scrolled: boolean) => void) | undefined = undefined
     ) => {
+      // Immediately mark as not at bottom to prevent auto-scroll-to-bottom
+      // from firing during the smooth scroll animation (race with IntersectionObserver)
+      atBottomRef.current = false;
+      setAtBottom(false);
+
       const evtTimeline = getEventTimeline(room, evtId);
       const absoluteIndex =
         evtTimeline && getEventIdAbsoluteIndex(timeline.linkedTimelines, evtTimeline, evtId);
@@ -774,27 +780,25 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
     }
   }, [mx, room, hideActivity]);
 
-  const debounceSetAtBottom = useDebounce(
-    useCallback((entry: IntersectionObserverEntry) => {
-      if (!entry.isIntersecting) setAtBottom(false);
-    }, []),
-    { wait: 1000 }
-  );
   useIntersectionObserver(
     useCallback(
       (entries) => {
         const target = atBottomAnchorRef.current;
         if (!target) return;
         const targetEntry = getIntersectionObserverEntry(target, entries);
-        if (targetEntry) debounceSetAtBottom(targetEntry);
-        if (targetEntry?.isIntersecting && atLiveEndRef.current) {
+        if (!targetEntry) return;
+        if (targetEntry.isIntersecting && atLiveEndRef.current) {
+          atBottomRef.current = true;
           setAtBottom(true);
           if (document.hasFocus()) {
             tryAutoMarkAsRead();
           }
+        } else if (!targetEntry.isIntersecting) {
+          atBottomRef.current = false;
+          setAtBottom(false);
         }
       },
-      [debounceSetAtBottom, tryAutoMarkAsRead]
+      [tryAutoMarkAsRead]
     ),
     useCallback(
       () => ({
@@ -993,17 +997,23 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
         return;
       }
       const name = getMemberDisplayName(room, userId) ?? getMxIdLocalPart(userId) ?? userId;
-      editor.insertNode(
-        createMentionElement(
-          userId,
-          name.startsWith('@') ? name : `@${name}`,
-          userId === mx.getUserId()
-        )
-      );
-      ReactEditor.focus(editor);
-      moveCursor(editor);
+      if (alternateInput && (editor as any).insertAlternateText) {
+        (editor as any).insertAlternateText(
+          name.startsWith('@') ? name : `@${name}`
+        );
+      } else {
+        editor.insertNode(
+          createMentionElement(
+            userId,
+            name.startsWith('@') ? name : `@${name}`,
+            userId === mx.getUserId()
+          )
+        );
+        ReactEditor.focus(editor);
+        moveCursor(editor);
+      }
     },
-    [mx, room, editor]
+    [mx, room, editor, alternateInput]
   );
 
   const handleReplyClick: MouseEventHandler<HTMLButtonElement> = useCallback(
@@ -1030,10 +1040,16 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
           formattedBody,
           relation,
         });
-        setTimeout(() => ReactEditor.focus(editor), 100);
+        setTimeout(() => {
+          if (alternateInput) {
+            roomInputRef.current?.querySelector('textarea')?.focus();
+          } else {
+            ReactEditor.focus(editor);
+          }
+        }, 100);
       }
     },
-    [room, setReplyDraft, editor]
+    [room, setReplyDraft, editor, alternateInput, roomInputRef]
   );
 
   const handleReactionToggle = useCallback(
@@ -1041,7 +1057,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
       const relations = getEventReactions(room.getUnfilteredTimelineSet(), targetEventId);
       const allReactions = relations?.getSortedAnnotationsByKey() ?? [];
       const [, reactionsSet] = allReactions.find(([k]) => k === key) ?? [];
-      const reactions = reactionsSet ? Array.from(reactionsSet) : [];
+      const reactions: MatrixEvent[] = reactionsSet ? Array.from(reactionsSet) : [];
       const myReaction = reactions.find(factoryEventSentBy(mx.getUserId()!));
 
       if (myReaction && !!myReaction?.isRelation()) {
@@ -1066,9 +1082,13 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
         return;
       }
       setEditId(undefined);
-      ReactEditor.focus(editor);
+      if (alternateInput) {
+        roomInputRef.current?.querySelector('textarea')?.focus();
+      } else {
+        ReactEditor.focus(editor);
+      }
     },
-    [editor]
+    [editor, alternateInput, roomInputRef]
   );
   const { t } = useTranslation();
 
@@ -1990,19 +2010,21 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
           <span ref={atBottomAnchorRef} />
         </Box>
       </Scroll>
-      {!atBottom && (
-        <TimelineFloat position="Bottom">
-          <Chip
-            variant="SurfaceVariant"
-            radii="Pill"
-            outlined
-            before={<Icon size="50" src={Icons.ArrowBottom} />}
-            onClick={handleJumpToLatest}
-          >
-            <Text size="L400">Jump to Latest</Text>
-          </Chip>
-        </TimelineFloat>
-      )}
+      <TimelineFloat
+        className={css.JumpToLatestFloat}
+        position="Bottom"
+        data-visible={!atBottom}
+      >
+        <Chip
+          variant="SurfaceVariant"
+          radii="Pill"
+          outlined
+          before={<Icon size="50" src={Icons.ArrowBottom} />}
+          onClick={handleJumpToLatest}
+        >
+          <Text size="L400">Jump to Latest</Text>
+        </Chip>
+      </TimelineFloat>
     </Box>
   );
 }

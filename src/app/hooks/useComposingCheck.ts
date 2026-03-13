@@ -21,7 +21,7 @@ export function useCompositionEndTracking(): void {
     return () => {
       window.removeEventListener('compositionend', recordCompositionEnd, { capture: true });
     };
-  });
+  }, [recordCompositionEnd]);
 }
 
 interface IsComposingLike {

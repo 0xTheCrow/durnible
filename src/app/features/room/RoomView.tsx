@@ -61,6 +61,7 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
   const roomViewRef = useRef<HTMLDivElement>(null);
 
   const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
+  const [alternateInput] = useSetting(settingsAtom, 'alternateInput');
 
   const { roomId } = room;
   const editor = useEditor();
@@ -84,10 +85,14 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
           return;
         }
         if (shouldFocusMessageField(evt) || isKeyHotkey('mod+v', evt)) {
-          ReactEditor.focus(editor);
+          if (alternateInput) {
+            roomInputRef.current?.querySelector('textarea')?.focus();
+          } else {
+            ReactEditor.focus(editor);
+          }
         }
       },
-      [editor]
+      [editor, alternateInput, roomInputRef]
     )
   );
 

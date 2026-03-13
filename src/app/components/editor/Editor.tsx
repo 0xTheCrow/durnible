@@ -90,6 +90,7 @@ type CustomEditorProps = {
   onKeyUp?: KeyboardEventHandler;
   onChange?: EditorChangeHandler;
   onPaste?: ClipboardEventHandler;
+  forceSlate?: boolean;
 };
 export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
   (
@@ -374,6 +375,11 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
               </Box>
             )}
           </Box>
+          {bottom && (
+            <div className={css.AlternateInputBottom}>
+              {bottom}
+            </div>
+          )}
         </div>
       );
     }

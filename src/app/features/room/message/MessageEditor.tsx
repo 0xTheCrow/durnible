@@ -27,6 +27,7 @@ import {
   AUTOCOMPLETE_PREFIXES,
   AutocompletePrefix,
   AutocompleteQuery,
+  BlockType,
   CustomEditor,
   EmoticonAutocomplete,
   RoomMentionAutocomplete,
@@ -73,8 +74,10 @@ export const MessageEditor = as<'div', MessageEditorProps>(
     const [enterForNewline] = useSetting(settingsAtom, 'enterForNewline');
     const [globalToolbar] = useSetting(settingsAtom, 'editorToolbar');
     const [isMarkdown] = useSetting(settingsAtom, 'isMarkdown');
+    const [alternateInput] = useSetting(settingsAtom, 'alternateInput');
     const [toolbar, setToolbar] = useState(globalToolbar);
     const isComposing = useComposingCheck();
+    const editorRef = React.useRef<HTMLDivElement>(null);
     const imagePacks = useRelevantImagePacks(ImageUsage.Emoticon, imagePackRooms || []);
 
     const [autocompleteQuery, setAutocompleteQuery] =
@@ -195,41 +198,58 @@ export const MessageEditor = as<'div', MessageEditorProps>(
           return;
         }
 
+        if (alternateInput) return;
         const prevWordRange = getPrevWorldRange(editor);
         const query = prevWordRange
           ? getAutocompleteQuery<AutocompletePrefix>(editor, prevWordRange, AUTOCOMPLETE_PREFIXES)
           : undefined;
         setAutocompleteQuery(query);
       },
-      [editor]
+      [editor, alternateInput]
     );
 
     const handleCloseAutocomplete = useCallback(() => {
-      ReactEditor.focus(editor);
+      if (!alternateInput) ReactEditor.focus(editor);
       setAutocompleteQuery(undefined);
-    }, [editor]);
+    }, [editor, alternateInput]);
 
     const handleEmoticonSelect = (key: string, shortcode: string) => {
-      editor.insertNode(createEmoticonElement(key, shortcode));
-      moveCursor(editor);
+      if (alternateInput && (editor as any).insertAlternateText) {
+        (editor as any).insertAlternateText(key);
+      } else {
+        editor.insertNode(createEmoticonElement(key, shortcode));
+        moveCursor(editor);
+      }
     };
 
     useEffect(() => {
       const [body, customHtml] = getPrevBodyAndFormattedBody();
 
-      const initialValue =
-        typeof customHtml === 'string'
-          ? htmlToEditorInput(customHtml, isMarkdown)
-          : plainToEditorInput(typeof body === 'string' ? body : '', isMarkdown);
+      if (alternateInput) {
+        const text = typeof body === 'string' ? body : '';
+        editor.children = [
+          { type: BlockType.Paragraph, children: [{ text }] },
+        ];
+        editor.onChange();
+        requestAnimationFrame(() => {
+          const textarea = editorRef.current?.querySelector('textarea');
+          if (textarea) textarea.focus();
+        });
+      } else {
+        const initialValue =
+          typeof customHtml === 'string'
+            ? htmlToEditorInput(customHtml, isMarkdown)
+            : plainToEditorInput(typeof body === 'string' ? body : '', isMarkdown);
 
-      Transforms.select(editor, {
-        anchor: Editor.start(editor, []),
-        focus: Editor.end(editor, []),
-      });
+        Transforms.select(editor, {
+          anchor: Editor.start(editor, []),
+          focus: Editor.end(editor, []),
+        });
 
-      editor.insertFragment(initialValue);
-      if (!mobileOrTablet()) ReactEditor.focus(editor);
-    }, [editor, getPrevBodyAndFormattedBody, isMarkdown]);
+        editor.insertFragment(initialValue);
+        if (!mobileOrTablet()) ReactEditor.focus(editor);
+      }
+    }, [editor, getPrevBodyAndFormattedBody, isMarkdown, alternateInput]);
 
     useEffect(() => {
       if (saveState.status === AsyncStatus.Success) {
@@ -264,6 +284,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
           />
         )}
         <CustomEditor
+          ref={editorRef}
           editor={editor}
           placeholder="Edit message..."
           onKeyDown={handleKeyDown}
@@ -296,14 +317,16 @@ export const MessageEditor = as<'div', MessageEditorProps>(
                   </Chip>
                 </Box>
                 <Box gap="Inherit">
-                  <IconButton
-                    variant="SurfaceVariant"
-                    size="300"
-                    radii="300"
-                    onClick={() => setToolbar(!toolbar)}
-                  >
-                    <Icon size="400" src={toolbar ? Icons.AlphabetUnderline : Icons.Alphabet} />
-                  </IconButton>
+                  {!alternateInput && (
+                    <IconButton
+                      variant="SurfaceVariant"
+                      size="300"
+                      radii="300"
+                      onClick={() => setToolbar(!toolbar)}
+                    >
+                      <Icon size="400" src={toolbar ? Icons.AlphabetUnderline : Icons.Alphabet} />
+                    </IconButton>
+                  )}
                   <UseStateProvider initial={undefined}>
                     {(anchor: RectCords | undefined, setAnchor) => (
                       <PopOut
@@ -320,7 +343,11 @@ export const MessageEditor = as<'div', MessageEditorProps>(
                             requestClose={() => {
                               setAnchor((v) => {
                                 if (v) {
-                                  if (!mobileOrTablet()) ReactEditor.focus(editor);
+                                  if (alternateInput) {
+                                    editorRef.current?.querySelector('textarea')?.focus();
+                                  } else if (!mobileOrTablet()) {
+                                    ReactEditor.focus(editor);
+                                  }
                                   return undefined;
                                 }
                                 return v;
@@ -348,7 +375,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
                   </UseStateProvider>
                 </Box>
               </Box>
-              {toolbar && (
+              {!alternateInput && toolbar && (
                 <div>
                   <Line variant="SurfaceVariant" size="300" />
                   <Toolbar />
