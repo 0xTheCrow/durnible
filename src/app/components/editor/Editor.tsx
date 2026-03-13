@@ -375,6 +375,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
               </Box>
             )}
           </Box>
+          {bottom}
         </div>
       );
     }

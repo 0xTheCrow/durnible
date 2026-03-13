@@ -289,35 +289,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
           placeholder="Edit message..."
           onKeyDown={handleKeyDown}
           onKeyUp={handleKeyUp}
-          after={
-            alternateInput ? (
-              <>
-                <IconButton
-                  onClick={handleSave}
-                  variant="Primary"
-                  size="300"
-                  radii="300"
-                  disabled={saveState.status === AsyncStatus.Loading}
-                >
-                  {saveState.status === AsyncStatus.Loading ? (
-                    <Spinner variant="Primary" fill="Soft" size="100" />
-                  ) : (
-                    <Icon size="400" src={Icons.Check} />
-                  )}
-                </IconButton>
-                <IconButton
-                  onClick={onCancel}
-                  variant="SurfaceVariant"
-                  size="300"
-                  radii="300"
-                >
-                  <Icon size="400" src={Icons.Cross} />
-                </IconButton>
-              </>
-            ) : undefined
-          }
           bottom={
-            alternateInput ? undefined : (
             <>
               <Box
                 style={{ padding: config.space.S200, paddingTop: 0 }}
@@ -344,67 +316,68 @@ export const MessageEditor = as<'div', MessageEditorProps>(
                     <Text size="B300">Cancel</Text>
                   </Chip>
                 </Box>
-                <Box gap="Inherit">
-                  <IconButton
-                    variant="SurfaceVariant"
-                    size="300"
-                    radii="300"
-                    onClick={() => setToolbar(!toolbar)}
-                  >
-                    <Icon size="400" src={toolbar ? Icons.AlphabetUnderline : Icons.Alphabet} />
-                  </IconButton>
-                  <UseStateProvider initial={undefined}>
-                    {(anchor: RectCords | undefined, setAnchor) => (
-                      <PopOut
-                        anchor={anchor}
-                        alignOffset={-8}
-                        position="Top"
-                        align="End"
-                        content={
-                          <EmojiBoard
-                            imagePackRooms={imagePackRooms ?? []}
-                            returnFocusOnDeactivate={false}
-                            onEmojiSelect={handleEmoticonSelect}
-                            onCustomEmojiSelect={handleEmoticonSelect}
-                            requestClose={() => {
-                              setAnchor((v) => {
-                                if (v) {
-                                  if (!mobileOrTablet()) ReactEditor.focus(editor);
-                                  return undefined;
-                                }
-                                return v;
-                              });
-                            }}
-                          />
-                        }
-                      >
-                        <IconButton
-                          aria-pressed={anchor !== undefined}
-                          onClick={
-                            ((evt) =>
-                              setAnchor(
-                                evt.currentTarget.getBoundingClientRect()
-                              )) as MouseEventHandler<HTMLButtonElement>
+                {!alternateInput && (
+                  <Box gap="Inherit">
+                    <IconButton
+                      variant="SurfaceVariant"
+                      size="300"
+                      radii="300"
+                      onClick={() => setToolbar(!toolbar)}
+                    >
+                      <Icon size="400" src={toolbar ? Icons.AlphabetUnderline : Icons.Alphabet} />
+                    </IconButton>
+                    <UseStateProvider initial={undefined}>
+                      {(anchor: RectCords | undefined, setAnchor) => (
+                        <PopOut
+                          anchor={anchor}
+                          alignOffset={-8}
+                          position="Top"
+                          align="End"
+                          content={
+                            <EmojiBoard
+                              imagePackRooms={imagePackRooms ?? []}
+                              returnFocusOnDeactivate={false}
+                              onEmojiSelect={handleEmoticonSelect}
+                              onCustomEmojiSelect={handleEmoticonSelect}
+                              requestClose={() => {
+                                setAnchor((v) => {
+                                  if (v) {
+                                    if (!mobileOrTablet()) ReactEditor.focus(editor);
+                                    return undefined;
+                                  }
+                                  return v;
+                                });
+                              }}
+                            />
                           }
-                          variant="SurfaceVariant"
-                          size="300"
-                          radii="300"
                         >
-                          <Icon size="400" src={Icons.Smile} filled={anchor !== undefined} />
-                        </IconButton>
-                      </PopOut>
-                    )}
-                  </UseStateProvider>
-                </Box>
+                          <IconButton
+                            aria-pressed={anchor !== undefined}
+                            onClick={
+                              ((evt) =>
+                                setAnchor(
+                                  evt.currentTarget.getBoundingClientRect()
+                                )) as MouseEventHandler<HTMLButtonElement>
+                            }
+                            variant="SurfaceVariant"
+                            size="300"
+                            radii="300"
+                          >
+                            <Icon size="400" src={Icons.Smile} filled={anchor !== undefined} />
+                          </IconButton>
+                        </PopOut>
+                      )}
+                    </UseStateProvider>
+                  </Box>
+                )}
               </Box>
-              {toolbar && (
+              {!alternateInput && toolbar && (
                 <div>
                   <Line variant="SurfaceVariant" size="300" />
                   <Toolbar />
                 </div>
               )}
             </>
-            )
           }
         />
       </div>
