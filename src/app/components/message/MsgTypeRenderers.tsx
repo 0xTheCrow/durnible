@@ -195,7 +195,7 @@ export function MImage({ content, renderImageContent }: MImageProps) {
   if (typeof mxcUrl !== 'string') {
     return <BrokenContent />;
   }
-  const imgWidth = Math.max(imgInfo?.w || 400, 400);
+  const imgWidth = imgInfo?.w || 400;
   return (
     <Attachment media style={{ width: toRem(imgWidth) }}>
       <AttachmentBox
