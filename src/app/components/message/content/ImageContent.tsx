@@ -192,7 +192,10 @@ export const ImageContent = as<'div', ImageContentProps>(
           </Box>
         )}
         {srcState.status === AsyncStatus.Success && (
-          <Box className={classNames(css.AbsoluteContainer, blurred && css.Blur)}>
+          <Box
+            className={classNames(css.AbsoluteContainer, blurred && css.Blur)}
+            style={shouldPauseGif && load && !isHovered ? { visibility: 'hidden' } : undefined}
+          >
             {renderImage({
               alt: body,
               title: body,
@@ -229,7 +232,6 @@ export const ImageContent = as<'div', ImageContentProps>(
               style={{
                 width: '100%',
                 height: '100%',
-                display: isHovered ? 'none' : 'block',
                 pointerEvents: 'none',
               }}
             />
