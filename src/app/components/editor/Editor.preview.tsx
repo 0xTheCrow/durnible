@@ -15,11 +15,14 @@ import {
 import { CustomEditor, useEditor } from './Editor';
 import { Toolbar } from './Toolbar';
 import { stopPropagation } from '../../utils/keyboard';
+import { useSetting } from '../../state/hooks/settings';
+import { settingsAtom } from '../../state/settings';
 
 export function EditorPreview() {
   const [open, setOpen] = useState(false);
   const editor = useEditor();
   const [toolbar, setToolbar] = useState(false);
+  const [alternateInput] = useSetting(settingsAtom, 'alternateInput');
 
   return (
     <>
@@ -65,7 +68,7 @@ export function EditorPreview() {
                     </>
                   }
                   bottom={
-                    toolbar && (
+                    !alternateInput && toolbar && (
                       <div>
                         <Line variant="SurfaceVariant" size="300" />
                         <Toolbar />

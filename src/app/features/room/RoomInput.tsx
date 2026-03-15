@@ -757,7 +757,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
             </>
           }
           bottom={
-            toolbar && (
+            !alternateInput && toolbar && (
               <div>
                 <Line variant="SurfaceVariant" size="300" />
                 <Toolbar />
