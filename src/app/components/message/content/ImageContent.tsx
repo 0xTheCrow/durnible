@@ -198,6 +198,7 @@ export const ImageContent = as<'div', ImageContentProps>(
                 width: '100%',
                 height: '100%',
                 pointerEvents: 'none',
+                visibility: isHovered ? 'hidden' : 'visible',
               }}
             />
           </div>
