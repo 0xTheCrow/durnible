@@ -110,17 +110,22 @@ export const VideoContent = as<'div', VideoContentProps>(
       if (autoPlay) loadSrc();
     }, [autoPlay, loadSrc]);
 
-    useEffect(
-      () => () => {
-        const el = containerRef.current;
-        if (el) {
-          el.querySelectorAll('video').forEach((v) => {
-            v.pause();
-          });
-        }
-      },
-      []
-    );
+    useEffect(() => {
+      const el = containerRef.current;
+      if (!el) return undefined;
+
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (!entry.isIntersecting) {
+            el.querySelectorAll('video').forEach((v) => v.pause());
+          }
+        },
+        { threshold: 0 }
+      );
+      observer.observe(el);
+
+      return () => observer.disconnect();
+    }, [srcState.status]);
 
     return (
       <Box className={classNames(css.RelativeBase, className)} {...props} ref={ref}>
