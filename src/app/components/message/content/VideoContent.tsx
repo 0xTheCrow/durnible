@@ -1,4 +1,4 @@
-import React, { ReactNode, useCallback, useEffect, useState } from 'react';
+import React, { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Badge,
   Box,
@@ -104,12 +104,40 @@ export const VideoContent = as<'div', VideoContentProps>(
       loadSrc();
     };
 
+    const containerRef = useRef<HTMLDivElement | null>(null);
+    const mergedRef = useMemo(() => {
+      const setRef = (node: HTMLDivElement | null) => {
+        containerRef.current = node;
+        if (typeof ref === 'function') ref(node);
+        else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+      };
+      return setRef;
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [ref]);
+
     useEffect(() => {
       if (autoPlay) loadSrc();
     }, [autoPlay, loadSrc]);
 
+    useEffect(() => {
+      const el = containerRef.current;
+      if (!el) return undefined;
+
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (!entry.isIntersecting) {
+            el.querySelectorAll('video').forEach((v) => v.pause());
+          }
+        },
+        { threshold: 0 }
+      );
+      observer.observe(el);
+
+      return () => observer.disconnect();
+    }, []);
+
     return (
-      <Box className={classNames(css.RelativeBase, className)} {...props} ref={ref}>
+      <Box className={classNames(css.RelativeBase, className)} {...props} ref={mergedRef}>
         {typeof blurHash === 'string' && !load && (
           <BlurhashCanvas
             style={{ width: '100%', height: '100%' }}

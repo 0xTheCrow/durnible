@@ -111,7 +111,6 @@ import { useKeyDown } from '../../hooks/useKeyDown';
 import { useDocumentFocusChange } from '../../hooks/useDocumentFocusChange';
 import { RenderMessageContent } from '../../components/RenderMessageContent';
 import { Image } from '../../components/media';
-import { ImageViewer } from '../../components/image-viewer';
 import { roomToParentsAtom } from '../../state/room/roomToParents';
 import { useRoomUnread } from '../../state/hooks/unread';
 import { roomToUnreadAtom } from '../../state/room/roomToUnread';
@@ -456,6 +455,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
   const [hour24Clock] = useSetting(settingsAtom, 'hour24Clock');
   const [dateFormatString] = useSetting(settingsAtom, 'dateFormatString');
   const [alternateInput] = useSetting(settingsAtom, 'alternateInput');
+  const [pauseGifs] = useSetting(settingsAtom, 'pauseGifs');
 
   const ignoredUsersList = useIgnoredUsers();
   const ignoredUsersSet = useMemo(() => new Set(ignoredUsersList), [ignoredUsersList]);
@@ -536,8 +536,9 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
         useAuthentication,
         handleSpoilerClick: spoilerClickHandler,
         handleMentionClick: mentionClickHandler,
+        pauseGifs,
       }),
-    [mx, room, linkifyOpts, spoilerClickHandler, mentionClickHandler, useAuthentication]
+    [mx, room, linkifyOpts, spoilerClickHandler, mentionClickHandler, useAuthentication, pauseGifs]
   );
   const parseMemberEvent = useMemberEventParser();
 
@@ -1275,7 +1276,6 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
                           {...props}
                           autoPlay={mediaAutoLoad}
                           renderImage={(p) => <Image {...p} loading="lazy" />}
-                          renderViewer={(p) => <ImageViewer {...p} />}
                         />
                       )}
                     />
@@ -1383,7 +1383,6 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
                     {...props}
                     autoPlay={mediaAutoLoad}
                     renderImage={(p) => <Image {...p} loading="lazy" />}
-                    renderViewer={(p) => <ImageViewer {...p} />}
                   />
                 )}
               />

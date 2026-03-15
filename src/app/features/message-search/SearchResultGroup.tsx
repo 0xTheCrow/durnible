@@ -29,7 +29,6 @@ import {
 } from '../../components/message';
 import { RenderMessageContent } from '../../components/RenderMessageContent';
 import { Image } from '../../components/media';
-import { ImageViewer } from '../../components/image-viewer';
 import * as customHtmlCss from '../../styles/CustomHtml.css';
 import { RoomAvatar, RoomIcon } from '../../components/room-avatar';
 import { getMemberAvatarMxc, getMemberDisplayName, getRoomAvatarUrl } from '../../utils/room';
@@ -39,6 +38,8 @@ import { UserAvatar } from '../../components/user-avatar';
 import { useMentionClickHandler } from '../../hooks/useMentionClickHandler';
 import { useSpoilerClickHandler } from '../../hooks/useSpoilerClickHandler';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
+import { useSetting } from '../../state/hooks/settings';
+import { settingsAtom } from '../../state/settings';
 import { usePowerLevels } from '../../hooks/usePowerLevels';
 import { usePowerLevelTags } from '../../hooks/usePowerLevelTags';
 import { useTheme } from '../../hooks/useTheme';
@@ -76,6 +77,7 @@ export function SearchResultGroup({
 }: SearchResultGroupProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
+  const [pauseGifs] = useSetting(settingsAtom, 'pauseGifs');
   const highlightRegex = useMemo(() => makeHighlightRegex(highlights), [highlights]);
 
   const powerLevels = usePowerLevels(room);
@@ -108,6 +110,7 @@ export function SearchResultGroup({
         useAuthentication,
         handleSpoilerClick: spoilerClickHandler,
         handleMentionClick: mentionClickHandler,
+        pauseGifs,
       }),
     [
       mx,
@@ -117,6 +120,7 @@ export function SearchResultGroup({
       mentionClickHandler,
       spoilerClickHandler,
       useAuthentication,
+      pauseGifs,
     ]
   );
 
@@ -154,7 +158,6 @@ export function SearchResultGroup({
                 {...props}
                 autoPlay={mediaAutoLoad}
                 renderImage={(p) => <Image {...p} loading="lazy" />}
-                renderViewer={(p) => <ImageViewer {...p} />}
               />
             )}
           />

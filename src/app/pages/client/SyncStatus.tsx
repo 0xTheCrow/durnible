@@ -3,6 +3,7 @@ import React, { useCallback, useState } from 'react';
 import { Box, config, Line, Text } from 'folds';
 import { useSyncState } from '../../hooks/useSyncState';
 import { ContainerColor } from '../../styles/ContainerColor.css';
+import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
 
 type StateData = {
   current: SyncState | null;
@@ -13,6 +14,7 @@ type SyncStatusProps = {
   mx: MatrixClient;
 };
 export function SyncStatus({ mx }: SyncStatusProps) {
+  const screenSize = useScreenSizeContext();
   const [stateData, setStateData] = useState<StateData>({
     current: null,
     previous: undefined,
@@ -29,6 +31,8 @@ export function SyncStatus({ mx }: SyncStatusProps) {
       });
     }, [])
   );
+
+  if (screenSize !== ScreenSize.Mobile) return null;
 
   if (
     (stateData.current === SyncState.Prepared ||

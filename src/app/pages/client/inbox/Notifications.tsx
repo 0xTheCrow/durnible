@@ -66,7 +66,6 @@ import { RenderMessageContent } from '../../../components/RenderMessageContent';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
 import { Image } from '../../../components/media';
-import { ImageViewer } from '../../../components/image-viewer';
 import { GetContentCallback, MessageEvent, StateEvent } from '../../../../types/matrix/room';
 import { useMatrixEventRenderer } from '../../../hooks/useMatrixEventRenderer';
 import * as customHtmlCss from '../../../styles/CustomHtml.css';
@@ -224,6 +223,7 @@ function RoomNotificationsGroupComp({
 }: RoomNotificationsGroupProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
+  const [pauseGifs] = useSetting(settingsAtom, 'pauseGifs');
   const unread = useRoomUnread(room.roomId, roomToUnreadAtom);
 
   const powerLevels = usePowerLevels(room);
@@ -255,8 +255,9 @@ function RoomNotificationsGroupComp({
         useAuthentication,
         handleSpoilerClick: spoilerClickHandler,
         handleMentionClick: mentionClickHandler,
+        pauseGifs,
       }),
-    [mx, room, linkifyOpts, mentionClickHandler, spoilerClickHandler, useAuthentication]
+    [mx, room, linkifyOpts, mentionClickHandler, spoilerClickHandler, useAuthentication, pauseGifs]
   );
 
   const renderMatrixEvent = useMatrixEventRenderer<[IRoomEvent, string, GetContentCallback]>(
@@ -309,7 +310,6 @@ function RoomNotificationsGroupComp({
                         {...props}
                         autoPlay={mediaAutoLoad}
                         renderImage={(p) => <Image {...p} loading="lazy" />}
-                        renderViewer={(p) => <ImageViewer {...p} />}
                       />
                     )}
                   />
@@ -365,7 +365,6 @@ function RoomNotificationsGroupComp({
                 {...props}
                 autoPlay={mediaAutoLoad}
                 renderImage={(p) => <Image {...p} loading="lazy" />}
-                renderViewer={(p) => <ImageViewer {...p} />}
               />
             )}
           />

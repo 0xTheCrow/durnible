@@ -22,6 +22,7 @@ import Linkify from 'linkify-react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { ChildNode } from 'domhandler';
 import * as css from '../styles/CustomHtml.css';
+import { AnimatedImg } from '../components/AnimatedImg';
 import {
   getMxIdLocalPart,
   getCanonicalAliasRoomId,
@@ -318,6 +319,7 @@ export const getReactCustomHtmlParser = (
     handleSpoilerClick?: ReactEventHandler<HTMLElement>;
     handleMentionClick?: ReactEventHandler<HTMLElement>;
     useAuthentication?: boolean;
+    pauseGifs?: boolean;
   }
 ): HTMLReactParserOptions => {
   const opts: HTMLReactParserOptions = {
@@ -485,7 +487,12 @@ export const getReactCustomHtmlParser = (
             return (
               <span className={css.EmoticonBase}>
                 <span className={css.Emoticon()}>
-                  <img {...props} className={css.EmoticonImg} src={htmlSrc} />
+                  <AnimatedImg
+                    {...props}
+                    className={css.EmoticonImg}
+                    src={htmlSrc}
+                    pauseGifs={params.pauseGifs ?? false}
+                  />
                 </span>
               </span>
             );

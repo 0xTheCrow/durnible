@@ -1,4 +1,4 @@
-import { MouseEventHandler, useEffect, useState } from 'react';
+import { MouseEventHandler, useEffect, useRef, useState } from 'react';
 
 export type Pan = {
   translateX: number;
@@ -10,11 +10,13 @@ const INITIAL_PAN = {
   translateY: 0,
 };
 
-export const usePan = (active: boolean) => {
+export const usePan = (active: boolean, zoom = 1) => {
   const [pan, setPan] = useState<Pan>(INITIAL_PAN);
   const [cursor, setCursor] = useState<'grab' | 'grabbing' | 'initial'>(
     active ? 'grab' : 'initial'
   );
+  const zoomRef = useRef(zoom);
+  zoomRef.current = zoom;
 
   useEffect(() => {
     setCursor(active ? 'grab' : 'initial');
@@ -26,8 +28,8 @@ export const usePan = (active: boolean) => {
 
     setPan((p) => {
       const { translateX, translateY } = p;
-      const mX = translateX + evt.movementX;
-      const mY = translateY + evt.movementY;
+      const mX = translateX + evt.movementX / zoomRef.current;
+      const mY = translateY + evt.movementY / zoomRef.current;
 
       return { translateX: mX, translateY: mY };
     });

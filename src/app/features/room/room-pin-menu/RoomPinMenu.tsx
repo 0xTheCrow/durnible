@@ -66,7 +66,6 @@ import { settingsAtom } from '../../../state/settings';
 import * as customHtmlCss from '../../../styles/CustomHtml.css';
 import { EncryptedContent } from '../message';
 import { Image } from '../../../components/media';
-import { ImageViewer } from '../../../components/image-viewer';
 import { useRoomNavigate } from '../../../hooks/useRoomNavigate';
 import { VirtualTile } from '../../../components/virtualizer';
 import { usePowerLevelsContext } from '../../../hooks/usePowerLevels';
@@ -280,6 +279,7 @@ export const RoomPinMenu = forwardRef<HTMLDivElement, RoomPinMenuProps>(
 
     const [hour24Clock] = useSetting(settingsAtom, 'hour24Clock');
     const [dateFormatString] = useSetting(settingsAtom, 'dateFormatString');
+    const [pauseGifs] = useSetting(settingsAtom, 'pauseGifs');
 
     const { navigateRoom } = useRoomNavigate();
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -310,8 +310,9 @@ export const RoomPinMenu = forwardRef<HTMLDivElement, RoomPinMenuProps>(
           useAuthentication,
           handleSpoilerClick: spoilerClickHandler,
           handleMentionClick: mentionClickHandler,
+          pauseGifs,
         }),
-      [mx, room, linkifyOpts, mentionClickHandler, spoilerClickHandler, useAuthentication]
+      [mx, room, linkifyOpts, mentionClickHandler, spoilerClickHandler, useAuthentication, pauseGifs]
     );
 
     const renderMatrixEvent = useMatrixEventRenderer<[MatrixEvent, string, GetContentCallback]>(
@@ -368,7 +369,6 @@ export const RoomPinMenu = forwardRef<HTMLDivElement, RoomPinMenuProps>(
                           {...props}
                           autoPlay={mediaAutoLoad}
                           renderImage={(p) => <Image {...p} loading="lazy" />}
-                          renderViewer={(p) => <ImageViewer {...p} />}
                         />
                       )}
                     />
@@ -422,7 +422,6 @@ export const RoomPinMenu = forwardRef<HTMLDivElement, RoomPinMenuProps>(
                   {...props}
                   autoPlay={mediaAutoLoad}
                   renderImage={(p) => <Image {...p} loading="lazy" />}
-                  renderViewer={(p) => <ImageViewer {...p} />}
                 />
               )}
             />
