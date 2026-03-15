@@ -111,7 +111,6 @@ import { useKeyDown } from '../../hooks/useKeyDown';
 import { useDocumentFocusChange } from '../../hooks/useDocumentFocusChange';
 import { RenderMessageContent } from '../../components/RenderMessageContent';
 import { Image } from '../../components/media';
-import { ImageViewer } from '../../components/image-viewer';
 import { roomToParentsAtom } from '../../state/room/roomToParents';
 import { useRoomUnread } from '../../state/hooks/unread';
 import { roomToUnreadAtom } from '../../state/room/roomToUnread';
@@ -1275,7 +1274,6 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
                           {...props}
                           autoPlay={mediaAutoLoad}
                           renderImage={(p) => <Image {...p} loading="lazy" />}
-                          renderViewer={(p) => <ImageViewer {...p} />}
                         />
                       )}
                     />
@@ -1383,7 +1381,6 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
                     {...props}
                     autoPlay={mediaAutoLoad}
                     renderImage={(p) => <Image {...p} loading="lazy" />}
-                    renderViewer={(p) => <ImageViewer {...p} />}
                   />
                 )}
               />

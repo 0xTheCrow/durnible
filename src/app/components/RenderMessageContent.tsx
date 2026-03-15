@@ -26,7 +26,6 @@ import {
 } from './message';
 import { UrlPreviewCard, UrlPreviewHolder, YouTubeEmbed } from './url-preview';
 import { Image, MediaControl, Video } from './media';
-import { ImageViewer } from './image-viewer';
 import { PdfViewer } from './Pdf-viewer';
 import { TextViewer } from './text-viewer';
 import { testMatrixTo } from '../plugins/matrix-to';
@@ -247,7 +246,6 @@ export function RenderMessageContent({
               {...props}
               autoPlay={mediaAutoLoad}
               renderImage={(p) => <Image {...p} loading="lazy" />}
-              renderViewer={(p) => <ImageViewer {...p} />}
             />
           )}
           outlined={outlineAttachment}
