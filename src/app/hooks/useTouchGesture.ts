@@ -66,9 +66,10 @@ export const useTouchGesture = (
       const dx = midX - gestureRef.current.lastTouchX;
       const dy = midY - gestureRef.current.lastTouchY;
       if (dx !== 0 || dy !== 0) {
+        const z = zoomRef.current;
         setPan((p) => ({
-          translateX: p.translateX + dx,
-          translateY: p.translateY + dy,
+          translateX: p.translateX + dx / z,
+          translateY: p.translateY + dy / z,
         }));
       }
       gestureRef.current.lastTouchX = midX;
@@ -76,9 +77,10 @@ export const useTouchGesture = (
     } else if (e.touches.length === 1 && zoomRef.current !== 1) {
       const dx = e.touches[0].clientX - gestureRef.current.lastTouchX;
       const dy = e.touches[0].clientY - gestureRef.current.lastTouchY;
+      const z = zoomRef.current;
       setPan((p) => ({
-        translateX: p.translateX + dx,
-        translateY: p.translateY + dy,
+        translateX: p.translateX + dx / z,
+        translateY: p.translateY + dy / z,
       }));
       gestureRef.current.lastTouchX = e.touches[0].clientX;
       gestureRef.current.lastTouchY = e.touches[0].clientY;

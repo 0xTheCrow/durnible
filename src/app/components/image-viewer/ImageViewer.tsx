@@ -18,7 +18,7 @@ export type ImageViewerProps = {
 export const ImageViewer = as<'div', ImageViewerProps>(
   ({ className, alt, src, requestClose, ...props }, ref) => {
     const { zoom, zoomIn, zoomOut, setZoom, onWheel } = useZoom(0.2);
-    const { pan, setPan, cursor, onMouseDown } = usePan(zoom !== 1);
+    const { pan, setPan, cursor, onMouseDown } = usePan(zoom !== 1, zoom);
     const { onTouchStart, onTouchMove, onTouchEnd } = useTouchGesture(setZoom, setPan);
 
     const handleDownload = async () => {
