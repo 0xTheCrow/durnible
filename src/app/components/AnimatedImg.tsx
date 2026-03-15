@@ -2,13 +2,17 @@ import React, { useLayoutEffect, useRef, useState } from 'react';
 
 type AnimatedImgProps = React.ImgHTMLAttributes<HTMLImageElement> & {
   pauseGifs: boolean;
+  hovered?: boolean;
 };
 
-export function AnimatedImg({ pauseGifs, ...imgProps }: AnimatedImgProps) {
+export function AnimatedImg({ pauseGifs, hovered: hoveredProp, ...imgProps }: AnimatedImgProps) {
   const imgRef = useRef<HTMLImageElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [loaded, setLoaded] = useState(false);
-  const [hovered, setHovered] = useState(false);
+  const [hoveredSelf, setHoveredSelf] = useState(false);
+
+  const hovered = hoveredProp ?? hoveredSelf;
+  const selfManaged = hoveredProp === undefined;
 
   useLayoutEffect(() => {
     if (!pauseGifs || !loaded || !imgRef.current || !canvasRef.current) return;
@@ -28,8 +32,8 @@ export function AnimatedImg({ pauseGifs, ...imgProps }: AnimatedImgProps) {
   return (
     <span
       style={{ position: 'relative', display: 'inline-flex' }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseEnter={selfManaged ? () => setHoveredSelf(true) : undefined}
+      onMouseLeave={selfManaged ? () => setHoveredSelf(false) : undefined}
     >
       {/* eslint-disable-next-line jsx-a11y/alt-text */}
       <img

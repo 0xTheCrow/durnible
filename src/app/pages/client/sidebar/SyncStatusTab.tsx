@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react';
-import { Icon, IconSrc, Icons } from 'folds';
+import { Icon, IconSrc, Icons, color } from 'folds';
 import { SyncState } from 'matrix-js-sdk';
-import { SidebarAvatar, SidebarItem, SidebarItemTooltip } from '../../../components/sidebar';
+import { SidebarItemTooltip } from '../../../components/sidebar';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { useSyncState } from '../../../hooks/useSyncState';
 
@@ -42,26 +42,28 @@ export function SyncStatusTab() {
 
   let tooltip: string;
   let iconSrc: IconSrc;
+  let iconColor: string;
   if (error) {
     tooltip = 'Connection Lost!';
     iconSrc = Icons.Warning;
+    iconColor = color.Critical.Main;
   } else if (reconnecting) {
     tooltip = 'Reconnecting...';
     iconSrc = Icons.Warning;
+    iconColor = color.Warning.Main;
   } else {
     tooltip = 'Connecting...';
     iconSrc = Icons.Reload;
+    iconColor = color.Success.Main;
   }
 
   return (
-    <SidebarItem>
-      <SidebarItemTooltip tooltip={tooltip}>
-        {(triggerRef) => (
-          <SidebarAvatar ref={triggerRef} outlined>
-            <Icon src={iconSrc} />
-          </SidebarAvatar>
-        )}
-      </SidebarItemTooltip>
-    </SidebarItem>
+    <SidebarItemTooltip tooltip={tooltip}>
+      {(triggerRef) => (
+        <span ref={triggerRef} style={{ color: iconColor, lineHeight: 0 }}>
+          <Icon size="200" src={iconSrc} filled />
+        </span>
+      )}
+    </SidebarItemTooltip>
   );
 }

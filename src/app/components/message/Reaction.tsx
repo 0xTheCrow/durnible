@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Box, Text, as } from 'folds';
 import classNames from 'classnames';
 import { MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk';
@@ -17,35 +17,42 @@ export const Reaction = as<
     useAuthentication?: boolean;
     pauseGifs?: boolean;
   }
->(({ className, mx, count, reaction, useAuthentication, pauseGifs, ...props }, ref) => (
-  <Box
-    as="button"
-    className={classNames(css.Reaction, className)}
-    alignItems="Center"
-    shrink="No"
-    gap="200"
-    {...props}
-    ref={ref}
-  >
-    <Text className={css.ReactionText} as="span" size="T500">
-      {reaction.startsWith('mxc://') ? (
-        <AnimatedImg
-          className={css.ReactionImg}
-          src={mxcUrlToHttp(mx, reaction, useAuthentication) ?? reaction}
-          alt={reaction}
-          pauseGifs={pauseGifs ?? false}
-        />
-      ) : (
-        <Text as="span" size="Inherit" truncate>
-          {reaction}
-        </Text>
-      )}
-    </Text>
-    <Text as="span" size="T300">
-      {count}
-    </Text>
-  </Box>
-));
+>(({ className, mx, count, reaction, useAuthentication, pauseGifs, ...props }, ref) => {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <Box
+      as="button"
+      className={classNames(css.Reaction, className)}
+      alignItems="Center"
+      shrink="No"
+      gap="200"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      {...props}
+      ref={ref}
+    >
+      <Text className={css.ReactionText} as="span" size="T500">
+        {reaction.startsWith('mxc://') ? (
+          <AnimatedImg
+            className={css.ReactionImg}
+            src={mxcUrlToHttp(mx, reaction, useAuthentication) ?? reaction}
+            alt={reaction}
+            pauseGifs={pauseGifs ?? false}
+            hovered={hovered}
+          />
+        ) : (
+          <Text as="span" size="Inherit" truncate>
+            {reaction}
+          </Text>
+        )}
+      </Text>
+      <Text as="span" size="T300">
+        {count}
+      </Text>
+    </Box>
+  );
+});
 
 type ReactionTooltipMsgProps = {
   room: Room;
