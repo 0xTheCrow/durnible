@@ -279,6 +279,7 @@ export const RoomPinMenu = forwardRef<HTMLDivElement, RoomPinMenuProps>(
 
     const [hour24Clock] = useSetting(settingsAtom, 'hour24Clock');
     const [dateFormatString] = useSetting(settingsAtom, 'dateFormatString');
+    const [pauseGifs] = useSetting(settingsAtom, 'pauseGifs');
 
     const { navigateRoom } = useRoomNavigate();
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -309,8 +310,9 @@ export const RoomPinMenu = forwardRef<HTMLDivElement, RoomPinMenuProps>(
           useAuthentication,
           handleSpoilerClick: spoilerClickHandler,
           handleMentionClick: mentionClickHandler,
+          pauseGifs,
         }),
-      [mx, room, linkifyOpts, mentionClickHandler, spoilerClickHandler, useAuthentication]
+      [mx, room, linkifyOpts, mentionClickHandler, spoilerClickHandler, useAuthentication, pauseGifs]
     );
 
     const renderMatrixEvent = useMatrixEventRenderer<[MatrixEvent, string, GetContentCallback]>(

@@ -135,6 +135,7 @@ export const Reactions = as<'div', ReactionsProps>(
                   onContextMenu={handleViewReaction}
                   aria-disabled={!canSendReaction}
                   useAuthentication={useAuthentication}
+                  pauseGifs={pauseGifs}
                 />
               )}
             </TooltipProvider>

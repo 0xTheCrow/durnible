@@ -455,6 +455,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
   const [hour24Clock] = useSetting(settingsAtom, 'hour24Clock');
   const [dateFormatString] = useSetting(settingsAtom, 'dateFormatString');
   const [alternateInput] = useSetting(settingsAtom, 'alternateInput');
+  const [pauseGifs] = useSetting(settingsAtom, 'pauseGifs');
 
   const ignoredUsersList = useIgnoredUsers();
   const ignoredUsersSet = useMemo(() => new Set(ignoredUsersList), [ignoredUsersList]);
@@ -535,8 +536,9 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
         useAuthentication,
         handleSpoilerClick: spoilerClickHandler,
         handleMentionClick: mentionClickHandler,
+        pauseGifs,
       }),
-    [mx, room, linkifyOpts, spoilerClickHandler, mentionClickHandler, useAuthentication]
+    [mx, room, linkifyOpts, spoilerClickHandler, mentionClickHandler, useAuthentication, pauseGifs]
   );
   const parseMemberEvent = useMemberEventParser();
 
