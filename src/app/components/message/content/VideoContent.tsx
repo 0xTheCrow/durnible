@@ -1,4 +1,4 @@
-import React, { ReactNode, useCallback, useEffect, useState } from 'react';
+import React, { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import {
   Badge,
   Box,
@@ -104,9 +104,23 @@ export const VideoContent = as<'div', VideoContentProps>(
       loadSrc();
     };
 
+    const containerRef = useRef<HTMLDivElement>(null);
+
     useEffect(() => {
       if (autoPlay) loadSrc();
     }, [autoPlay, loadSrc]);
+
+    useEffect(
+      () => () => {
+        const el = containerRef.current;
+        if (el) {
+          el.querySelectorAll('video').forEach((v) => {
+            v.pause();
+          });
+        }
+      },
+      []
+    );
 
     return (
       <Box className={classNames(css.RelativeBase, className)} {...props} ref={ref}>
@@ -143,7 +157,7 @@ export const VideoContent = as<'div', VideoContentProps>(
           </Box>
         )}
         {srcState.status === AsyncStatus.Success && (
-          <Box className={classNames(css.AbsoluteContainer, blurred && css.Blur)}>
+          <Box ref={containerRef} className={classNames(css.AbsoluteContainer, blurred && css.Blur)}>
             {renderVideo({
               title: body,
               src: srcState.data,
