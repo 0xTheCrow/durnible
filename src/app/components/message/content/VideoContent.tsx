@@ -1,4 +1,4 @@
-import React, { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import React, { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Badge,
   Box,
@@ -104,7 +104,16 @@ export const VideoContent = as<'div', VideoContentProps>(
       loadSrc();
     };
 
-    const containerRef = useRef<HTMLDivElement>(null);
+    const containerRef = useRef<HTMLDivElement | null>(null);
+    const mergedRef = useMemo(() => {
+      const setRef = (node: HTMLDivElement | null) => {
+        containerRef.current = node;
+        if (typeof ref === 'function') ref(node);
+        else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+      };
+      return setRef;
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [ref]);
 
     useEffect(() => {
       if (autoPlay) loadSrc();
@@ -125,10 +134,10 @@ export const VideoContent = as<'div', VideoContentProps>(
       observer.observe(el);
 
       return () => observer.disconnect();
-    }, [srcState.status]);
+    }, []);
 
     return (
-      <Box className={classNames(css.RelativeBase, className)} {...props} ref={ref}>
+      <Box className={classNames(css.RelativeBase, className)} {...props} ref={mergedRef}>
         {typeof blurHash === 'string' && !load && (
           <BlurhashCanvas
             style={{ width: '100%', height: '100%' }}
@@ -162,7 +171,7 @@ export const VideoContent = as<'div', VideoContentProps>(
           </Box>
         )}
         {srcState.status === AsyncStatus.Success && (
-          <Box ref={containerRef} className={classNames(css.AbsoluteContainer, blurred && css.Blur)}>
+          <Box className={classNames(css.AbsoluteContainer, blurred && css.Blur)}>
             {renderVideo({
               title: body,
               src: srcState.data,

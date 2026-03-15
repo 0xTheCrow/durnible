@@ -6,6 +6,7 @@ import * as css from './Reaction.css';
 import { getHexcodeForEmoji, getShortcodeFor } from '../../plugins/emoji';
 import { getMemberDisplayName } from '../../utils/room';
 import { eventWithShortcode, getMxIdLocalPart, mxcUrlToHttp } from '../../utils/matrix';
+import { AnimatedImg } from '../AnimatedImg';
 
 export const Reaction = as<
   'button',
@@ -14,8 +15,9 @@ export const Reaction = as<
     count: number;
     reaction: string;
     useAuthentication?: boolean;
+    pauseGifs?: boolean;
   }
->(({ className, mx, count, reaction, useAuthentication, ...props }, ref) => (
+>(({ className, mx, count, reaction, useAuthentication, pauseGifs, ...props }, ref) => (
   <Box
     as="button"
     className={classNames(css.Reaction, className)}
@@ -27,11 +29,11 @@ export const Reaction = as<
   >
     <Text className={css.ReactionText} as="span" size="T500">
       {reaction.startsWith('mxc://') ? (
-        <img
+        <AnimatedImg
           className={css.ReactionImg}
-          src={mxcUrlToHttp(mx, reaction, useAuthentication) ?? reaction
-          }
+          src={mxcUrlToHttp(mx, reaction, useAuthentication) ?? reaction}
           alt={reaction}
+          pauseGifs={pauseGifs ?? false}
         />
       ) : (
         <Text as="span" size="Inherit" truncate>
