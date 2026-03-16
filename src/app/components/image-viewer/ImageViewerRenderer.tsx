@@ -16,8 +16,7 @@ export function ImageViewerRenderer() {
   return (
     <Overlay open={open} backdrop={<OverlayBackdrop />}>
       <OverlayCenter
-        onPointerDown={(e: React.PointerEvent) => {
-          e.preventDefault();
+        onClick={(e: React.MouseEvent) => {
           e.stopPropagation();
           requestClose();
         }}
@@ -26,14 +25,16 @@ export function ImageViewerRenderer() {
           focusTrapOptions={{
             initialFocus: false,
             onDeactivate: requestClose,
-            clickOutsideDeactivates: true,
+            clickOutsideDeactivates: (e) => {
+              e.preventDefault();
+              return true;
+            },
             escapeDeactivates: stopPropagation,
           }}
         >
           <Modal
             className={ImageViewerModal}
             size="500"
-            onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
             onClick={(e: React.MouseEvent) => e.stopPropagation()}
             onContextMenu={(evt: any) => evt.stopPropagation()}
           >
