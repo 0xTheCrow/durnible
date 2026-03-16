@@ -811,6 +811,35 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
     useCallback(() => atBottomAnchorRef.current, [])
   );
 
+  // Track whether the last message is visible at all (for hiding Jump to Latest)
+  const [lastMsgVisible, setLastMsgVisible] = useState(true);
+  useEffect(() => {
+    const scrollEl = scrollRef.current;
+    if (!scrollEl || !liveTimelineLinked || !rangeAtEnd) {
+      setLastMsgVisible(false);
+      return undefined;
+    }
+
+    const lastIndex = timeline.range.end - 1;
+    if (lastIndex < timeline.range.start) return undefined;
+    const lastEl = scrollEl.querySelector(
+      `[data-message-item="${lastIndex}"]`
+    ) as HTMLElement | null;
+    if (!lastEl) return undefined;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries.find((e) => e.target === lastEl);
+        if (entry) {
+          setLastMsgVisible(entry.isIntersecting);
+        }
+      },
+      { root: scrollEl }
+    );
+    observer.observe(lastEl);
+    return () => observer.disconnect();
+  }, [timeline.range.end, eventsLength, liveTimelineLinked, rangeAtEnd]);
+
   useDocumentFocusChange(
     useCallback(
       (inFocus) => {
@@ -2012,7 +2041,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
       <TimelineFloat
         className={css.JumpToLatestFloat}
         position="Bottom"
-        data-visible={!atBottom}
+        data-visible={!atBottom && !lastMsgVisible}
       >
         <Chip
           variant="SurfaceVariant"
