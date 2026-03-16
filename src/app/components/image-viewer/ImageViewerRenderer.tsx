@@ -25,7 +25,10 @@ export function ImageViewerRenderer() {
           focusTrapOptions={{
             initialFocus: false,
             onDeactivate: requestClose,
-            clickOutsideDeactivates: true,
+            clickOutsideDeactivates: (e) => {
+              e.preventDefault();
+              return true;
+            },
             escapeDeactivates: stopPropagation,
           }}
         >
