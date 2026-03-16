@@ -32,6 +32,8 @@ import React, {
 } from 'react';
 import FocusTrap from 'focus-trap-react';
 import { useHover, useFocusWithin } from 'react-aria';
+import { useAtom } from 'jotai';
+import { messageOptionsAtom } from './messageOptionsAtom';
 import { MatrixEvent, Room } from 'matrix-js-sdk';
 import { Relations } from 'matrix-js-sdk/lib/models/relations';
 import classNames from 'classnames';
@@ -726,7 +728,15 @@ export const Message = as<'div', MessageProps>(
     const useAuthentication = useMediaAuthentication();
     const senderId = mEvent.getSender() ?? '';
 
-    const [hover, setHover] = useState(false);
+    const eventId = mEvent.getId() ?? '';
+    const [activeMessageOptionsId, setActiveMessageOptionsId] = useAtom(messageOptionsAtom);
+    const hover = activeMessageOptionsId === eventId;
+    const setHover = useCallback(
+      (isHovered: boolean) => {
+        setActiveMessageOptionsId(isHovered ? eventId : (prev) => (prev === eventId ? null : prev));
+      },
+      [eventId, setActiveMessageOptionsId]
+    );
     const { hoverProps } = useHover({ onHoverChange: setHover });
     const { focusWithinProps } = useFocusWithin({ onFocusWithinChange: setHover });
     const [menuAnchor, setMenuAnchor] = useState<RectCords>();
@@ -1181,7 +1191,15 @@ export const Event = as<'div', EventProps>(
     ref
   ) => {
     const mx = useMatrixClient();
-    const [hover, setHover] = useState(false);
+    const eventId = mEvent.getId() ?? '';
+    const [activeMessageOptionsId, setActiveMessageOptionsId] = useAtom(messageOptionsAtom);
+    const hover = activeMessageOptionsId === eventId;
+    const setHover = useCallback(
+      (isHovered: boolean) => {
+        setActiveMessageOptionsId(isHovered ? eventId : (prev) => (prev === eventId ? null : prev));
+      },
+      [eventId, setActiveMessageOptionsId]
+    );
     const { hoverProps } = useHover({ onHoverChange: setHover });
     const { focusWithinProps } = useFocusWithin({ onFocusWithinChange: setHover });
     const [menuAnchor, setMenuAnchor] = useState<RectCords>();
