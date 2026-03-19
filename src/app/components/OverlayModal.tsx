@@ -56,37 +56,33 @@ export function OverlayModal({
     };
   }, [open]);
 
+  // Prevent click-through to elements behind the overlay portal
+  // by calling preventDefault in clickOutsideDeactivates.
+  const resolvedClickOutside = clickOutsideCloses
+    ? focusTrapOptions?.clickOutsideDeactivates ?? ((e: MouseEvent | TouchEvent) => {
+        e.preventDefault();
+        return true;
+      })
+    : false;
+
   const mergedFocusTrapOptions: FocusTrapOptions = {
     initialFocus: false,
-    clickOutsideDeactivates: true,
     onDeactivate: requestClose,
     escapeDeactivates: stopPropagation,
     ...focusTrapOptions,
+    clickOutsideDeactivates: resolvedClickOutside,
   };
 
   return (
     <Overlay
       open={open}
       backdrop={backdrop ? <OverlayBackdrop /> : undefined}
-      onPointerDown={(e: React.PointerEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-      }}
-      onClick={(e: React.MouseEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-      }}
       {...overlayProps}
     >
       <OverlayCenter
-        onPointerDown={(e: React.PointerEvent) => {
-          if (e.target !== e.currentTarget) return;
-          if (clickOutsideCloses) {
-            requestClose();
-          }
-        }}
         onClick={(e: React.MouseEvent) => {
           if (e.target !== e.currentTarget) return;
+          e.stopPropagation();
           if (clickOutsideCloses) {
             requestClose();
           }
