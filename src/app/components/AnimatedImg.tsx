@@ -1,5 +1,4 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
-import { color } from 'folds';
 
 type AnimatedImgProps = React.ImgHTMLAttributes<HTMLImageElement> & {
   pauseGifs: boolean;
@@ -59,7 +58,6 @@ export function AnimatedImg({ pauseGifs, hovered: hoveredProp, ...imgProps }: An
             width: '100%',
             height: '100%',
             pointerEvents: 'none',
-            backgroundColor: color.Surface.Container,
             visibility: hovered ? 'hidden' : 'visible',
           }}
         />
