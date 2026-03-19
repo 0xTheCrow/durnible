@@ -79,13 +79,11 @@ export function OverlayModal({
           }
         }}
       >
-        <FocusTrap focusTrapOptions={mergedFocusTrapOptions}>
-          <div
-            role="presentation"
-            onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
-          >
-            {children}
-          </div>
+        <FocusTrap
+          focusTrapOptions={mergedFocusTrapOptions}
+          onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
+        >
+          {children}
         </FocusTrap>
       </OverlayCenter>
     </Overlay>
