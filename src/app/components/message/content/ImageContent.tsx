@@ -11,6 +11,7 @@ import {
   Tooltip,
   TooltipProvider,
   as,
+  color,
 } from 'folds';
 import classNames from 'classnames';
 import { BlurhashCanvas } from 'react-blurhash';
@@ -77,9 +78,7 @@ export const ImageContent = as<'div', ImageContentProps>(
     const shouldPauseGif = pauseGifs && isGif;
 
     const loadedImgRef = useRef<HTMLImageElement | null>(null);
-    const offscreenCanvasRef = useRef<HTMLCanvasElement | null>(null);
     const [isHovered, setIsHovered] = useState(false);
-    const [canvasReady, setCanvasReady] = useState(false);
 
     const [load, setLoad] = useState(false);
     const [error, setError] = useState(false);
@@ -99,20 +98,7 @@ export const ImageContent = as<'div', ImageContentProps>(
     );
 
     const handleLoad = (evt: React.SyntheticEvent<HTMLImageElement>) => {
-      const img = evt.currentTarget;
-      loadedImgRef.current = img;
-
-      if (shouldPauseGif && img.naturalWidth > 0 && img.naturalHeight > 0) {
-        const offscreen = document.createElement('canvas');
-        offscreen.width = img.naturalWidth;
-        offscreen.height = img.naturalHeight;
-        const ctx = offscreen.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(img, 0, 0);
-          offscreenCanvasRef.current = offscreen;
-        }
-      }
-
+      loadedImgRef.current = evt.currentTarget;
       setLoad(true);
     };
 
@@ -120,19 +106,13 @@ export const ImageContent = as<'div', ImageContentProps>(
     // (e.g., after spoiler reveal or source retry)
     const canvasCallbackRef = useCallback(
       (canvas: HTMLCanvasElement | null) => {
-        if (!canvas) return;
-        const source = offscreenCanvasRef.current ?? loadedImgRef.current;
-        if (!source) return;
-        const w = source instanceof HTMLCanvasElement ? source.width : source.naturalWidth;
-        const h = source instanceof HTMLCanvasElement ? source.height : source.naturalHeight;
-        if (w === 0 || h === 0) return;
-        canvas.width = w;
-        canvas.height = h;
+        if (!canvas || !loadedImgRef.current) return;
+        const img = loadedImgRef.current;
+        if (img.naturalWidth === 0 || img.naturalHeight === 0) return;
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
         const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(source, 0, 0);
-          setCanvasReady(true);
-        }
+        ctx?.drawImage(img, 0, 0);
       },
       // eslint-disable-next-line react-hooks/exhaustive-deps
       [load]
@@ -200,7 +180,6 @@ export const ImageContent = as<'div', ImageContentProps>(
                 height: 'auto',
                 maxWidth: '100%',
                 maxHeight: '100%',
-                visibility: shouldPauseGif && canvasReady && !isHovered ? 'hidden' : 'visible',
               },
               onLoad: handleLoad,
               onError: handleError,
@@ -217,6 +196,7 @@ export const ImageContent = as<'div', ImageContentProps>(
                   width: '100%',
                   height: '100%',
                   pointerEvents: 'none',
+                  backgroundColor: color.Surface.Container,
                   visibility: isHovered ? 'hidden' : 'visible',
                 }}
               />
