@@ -165,7 +165,6 @@ export const ImageContent = as<'div', ImageContentProps>(
         {srcState.status === AsyncStatus.Success && (
           <Box
             className={classNames(css.AbsoluteContainer, blurred && css.Blur)}
-            style={shouldPauseGif && load && !isHovered ? { visibility: 'hidden' } : undefined}
           >
             {renderImage({
               alt: body,
@@ -176,6 +175,7 @@ export const ImageContent = as<'div', ImageContentProps>(
                 height: 'auto',
                 maxWidth: '100%',
                 maxHeight: '100%',
+                visibility: shouldPauseGif && load && !isHovered ? 'hidden' : 'visible',
               },
               onLoad: handleLoad,
               onError: handleError,
