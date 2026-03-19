@@ -61,6 +61,9 @@ export const ReactionViewer = as<'div', ReactionViewerProps>(
       return Array.from(reactSet);
     };
 
+    const maxUserCount = Math.max(
+      ...reactions.filter(([k]) => typeof k === 'string').map(([, evts]) => evts.size)
+    );
     const selectedReactions = getReactionsForKey(selectedKey);
     const selectedShortcode =
       selectedReactions.find(eventWithShortcode)?.getContent().shortcode ??
@@ -105,7 +108,7 @@ export const ReactionViewer = as<'div', ReactionViewerProps>(
             </IconButton>
           </Header>
 
-          <Box grow="Yes">
+          <Box grow="Yes" style={{ minHeight: `calc(${maxUserCount} * 2.5rem)` }}>
             <Scroll visibility="Hover" hideTrack size="300">
               <Box className={css.Content} direction="Column">
                 {selectedReactions.map((mEvent) => {
