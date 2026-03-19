@@ -142,6 +142,7 @@ export const Reactions = as<'div', ReactionsProps>(
             open={!!viewer}
             requestClose={() => setViewer(false)}
             overlayProps={{ onContextMenu: (evt: any) => { evt.stopPropagation(); } }}
+            overlayCenterProps={{ style: { alignItems: 'flex-start' } }}
             focusTrapOptions={{
               returnFocusOnDeactivate: false,
             }}
@@ -149,6 +150,7 @@ export const Reactions = as<'div', ReactionsProps>(
             <Modal
               variant="Surface"
               size="300"
+              flexHeight
             >
               <ReactionViewer
                 room={room}

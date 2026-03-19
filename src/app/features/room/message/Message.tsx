@@ -143,9 +143,10 @@ export const MessageAllReactionItem = as<
         open={open}
         requestClose={handleClose}
         overlayProps={{ onContextMenu: (evt: any) => evt.stopPropagation() }}
+        overlayCenterProps={{ style: { alignItems: 'flex-start' } }}
         focusTrapOptions={{ returnFocusOnDeactivate: false }}
       >
-        <Modal variant="Surface" size="300">
+        <Modal variant="Surface" size="300" flexHeight>
           <ReactionViewer
             room={room}
             relations={relations}
