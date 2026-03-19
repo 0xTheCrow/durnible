@@ -172,6 +172,10 @@ export const ImageContent = as<'div', ImageContentProps>(
         {srcState.status === AsyncStatus.Success && (
           <Box
             className={classNames(css.AbsoluteContainer, blurred && css.Blur)}
+            onMouseEnter={shouldPauseGif ? () => setIsHovered(true) : undefined}
+            onMouseLeave={shouldPauseGif ? () => setIsHovered(false) : undefined}
+            onClick={openViewer}
+            style={shouldPauseGif ? { cursor: 'pointer' } : undefined}
           >
             {renderImage({
               alt: body,
@@ -189,32 +193,21 @@ export const ImageContent = as<'div', ImageContentProps>(
               onClick: openViewer,
               tabIndex: 0,
             })}
+            {shouldPauseGif && load && !blurred && (
+              <canvas
+                ref={canvasCallbackRef}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  pointerEvents: 'none',
+                  visibility: isHovered ? 'hidden' : 'visible',
+                }}
+              />
+            )}
           </Box>
-        )}
-        {shouldPauseGif && load && !blurred && srcState.status === AsyncStatus.Success && (
-          <div
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              cursor: 'pointer',
-            }}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-            onClick={openViewer}
-          >
-            <canvas
-              ref={canvasCallbackRef}
-              style={{
-                width: '100%',
-                height: '100%',
-                pointerEvents: 'none',
-                visibility: isHovered ? 'hidden' : 'visible',
-              }}
-            />
-          </div>
         )}
         {blurred && !error && srcState.status !== AsyncStatus.Error && (
           <Box className={css.AbsoluteContainer} alignItems="Center" justifyContent="Center">
