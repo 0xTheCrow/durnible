@@ -68,13 +68,25 @@ export function OverlayModal({
     <Overlay
       open={open}
       backdrop={backdrop ? <OverlayBackdrop /> : undefined}
+      onPointerDown={(e: React.PointerEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+      onClick={(e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
       {...overlayProps}
     >
       <OverlayCenter
         onPointerDown={(e: React.PointerEvent) => {
           if (e.target !== e.currentTarget) return;
-          e.preventDefault();
-          e.stopPropagation();
+          if (clickOutsideCloses) {
+            requestClose();
+          }
+        }}
+        onClick={(e: React.MouseEvent) => {
+          if (e.target !== e.currentTarget) return;
           if (clickOutsideCloses) {
             requestClose();
           }

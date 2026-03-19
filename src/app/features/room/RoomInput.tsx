@@ -679,6 +679,8 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
                   variant="SurfaceVariant"
                   size="300"
                   radii="300"
+                  onMouseDown={(e: React.MouseEvent) => e.preventDefault()}
+                  onTouchStart={(e: React.TouchEvent) => e.preventDefault()}
                   onClick={() => setToolbar(!toolbar)}
                 >
                   <Icon src={toolbar ? Icons.AlphabetUnderline : Icons.Alphabet} />
