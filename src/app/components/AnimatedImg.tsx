@@ -1,37 +1,29 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
+import { color } from 'folds';
 
 type AnimatedImgProps = React.ImgHTMLAttributes<HTMLImageElement> & {
   pauseGifs: boolean;
   hovered?: boolean;
 };
 
-function drawFirstFrame(img: HTMLImageElement, canvas: HTMLCanvasElement): boolean {
-  if (img.naturalWidth === 0 || img.naturalHeight === 0) return false;
-  canvas.width = img.naturalWidth;
-  canvas.height = img.naturalHeight;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return false;
-  ctx.drawImage(img, 0, 0);
-  return true;
-}
-
 export function AnimatedImg({ pauseGifs, hovered: hoveredProp, ...imgProps }: AnimatedImgProps) {
   const imgRef = useRef<HTMLImageElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [loaded, setLoaded] = useState(false);
   const [hoveredSelf, setHoveredSelf] = useState(false);
 
   const hovered = hoveredProp ?? hoveredSelf;
   const selfManaged = hoveredProp === undefined;
 
-  // Use a callback ref so the canvas is drawn every time the element mounts
-  const canvasCallbackRef = useCallback(
-    (canvas: HTMLCanvasElement | null) => {
-      if (!canvas || !imgRef.current) return;
-      drawFirstFrame(imgRef.current, canvas);
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [loaded]
-  );
+  useLayoutEffect(() => {
+    if (!pauseGifs || !loaded || !imgRef.current || !canvasRef.current) return;
+    const img = imgRef.current;
+    const canvas = canvasRef.current;
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext('2d');
+    ctx?.drawImage(img, 0, 0);
+  }, [pauseGifs, loaded]);
 
   if (!pauseGifs) {
     // eslint-disable-next-line jsx-a11y/alt-text
@@ -59,7 +51,7 @@ export function AnimatedImg({ pauseGifs, hovered: hoveredProp, ...imgProps }: An
       />
       {loaded && (
         <canvas
-          ref={canvasCallbackRef}
+          ref={canvasRef}
           style={{
             position: 'absolute',
             top: 0,
@@ -67,6 +59,7 @@ export function AnimatedImg({ pauseGifs, hovered: hoveredProp, ...imgProps }: An
             width: '100%',
             height: '100%',
             pointerEvents: 'none',
+            backgroundColor: color.Surface.Container,
             visibility: hovered ? 'hidden' : 'visible',
           }}
         />

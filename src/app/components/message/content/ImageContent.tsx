@@ -1,4 +1,4 @@
-import React, { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import React, { ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   Badge,
   Box,
@@ -77,6 +77,7 @@ export const ImageContent = as<'div', ImageContentProps>(
     const isGif = mimeType === 'image/gif' || mimeType === 'image/apng';
     const shouldPauseGif = pauseGifs && isGif;
 
+    const canvasRef = useRef<HTMLCanvasElement>(null);
     const loadedImgRef = useRef<HTMLImageElement | null>(null);
     const [isHovered, setIsHovered] = useState(false);
 
@@ -102,21 +103,15 @@ export const ImageContent = as<'div', ImageContentProps>(
       setLoad(true);
     };
 
-    // Use a callback ref so the canvas is drawn every time the element mounts
-    // (e.g., after spoiler reveal or source retry)
-    const canvasCallbackRef = useCallback(
-      (canvas: HTMLCanvasElement | null) => {
-        if (!canvas || !loadedImgRef.current) return;
-        const img = loadedImgRef.current;
-        if (img.naturalWidth === 0 || img.naturalHeight === 0) return;
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-        const ctx = canvas.getContext('2d');
-        ctx?.drawImage(img, 0, 0);
-      },
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      [load]
-    );
+    useLayoutEffect(() => {
+      if (!shouldPauseGif || !load || !loadedImgRef.current || !canvasRef.current) return;
+      const img = loadedImgRef.current;
+      const canvas = canvasRef.current;
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      ctx?.drawImage(img, 0, 0);
+    }, [shouldPauseGif, load]);
 
     const handleError = () => {
       setLoad(false);
@@ -188,7 +183,7 @@ export const ImageContent = as<'div', ImageContentProps>(
             })}
             {shouldPauseGif && load && !blurred && (
               <canvas
-                ref={canvasCallbackRef}
+                ref={canvasRef}
                 style={{
                   position: 'absolute',
                   top: 0,
@@ -197,7 +192,7 @@ export const ImageContent = as<'div', ImageContentProps>(
                   height: '100%',
                   pointerEvents: 'none',
                   backgroundColor: color.Surface.Container,
-                  visibility: isHovered ? 'hidden' : 'visible',
+                  display: isHovered ? 'none' : 'block',
                 }}
               />
             )}
