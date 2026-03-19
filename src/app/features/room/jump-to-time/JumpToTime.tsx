@@ -2,9 +2,6 @@ import React, { MouseEventHandler, useCallback, useMemo, useState } from 'react'
 import FocusTrap from 'focus-trap-react';
 import {
   Dialog,
-  Overlay,
-  OverlayCenter,
-  OverlayBackdrop,
   Header,
   config,
   Box,
@@ -19,6 +16,7 @@ import {
   PopOut,
   RectCords,
 } from 'folds';
+import { OverlayModal } from '../../../components/OverlayModal';
 import { Direction, MatrixError } from 'matrix-js-sdk';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
@@ -86,16 +84,7 @@ export function JumpToTime({ onCancel, onSubmit }: JumpToTimeProps) {
   };
 
   return (
-    <Overlay open backdrop={<OverlayBackdrop />}>
-      <OverlayCenter>
-        <FocusTrap
-          focusTrapOptions={{
-            initialFocus: false,
-            onDeactivate: onCancel,
-            clickOutsideDeactivates: true,
-            escapeDeactivates: stopPropagation,
-          }}
-        >
+    <OverlayModal open requestClose={onCancel}>
           <Dialog variant="Surface">
             <Header
               style={{
@@ -253,8 +242,6 @@ export function JumpToTime({ onCancel, onSubmit }: JumpToTimeProps) {
               </Button>
             </Box>
           </Dialog>
-        </FocusTrap>
-      </OverlayCenter>
-    </Overlay>
+    </OverlayModal>
   );
 }

@@ -1,10 +1,6 @@
 import React, { useCallback, useEffect } from 'react';
-import FocusTrap from 'focus-trap-react';
 import {
   Dialog,
-  Overlay,
-  OverlayCenter,
-  OverlayBackdrop,
   Header,
   config,
   Box,
@@ -19,7 +15,7 @@ import {
 import { MatrixError } from 'matrix-js-sdk';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { AsyncStatus, useAsyncCallback } from '../../hooks/useAsyncCallback';
-import { stopPropagation } from '../../utils/keyboard';
+import { OverlayModal } from '../OverlayModal';
 
 type LeaveSpacePromptProps = {
   roomId: string;
@@ -46,16 +42,7 @@ export function LeaveSpacePrompt({ roomId, onDone, onCancel }: LeaveSpacePromptP
   }, [leaveState, onDone]);
 
   return (
-    <Overlay open backdrop={<OverlayBackdrop />}>
-      <OverlayCenter>
-        <FocusTrap
-          focusTrapOptions={{
-            initialFocus: false,
-            onDeactivate: onCancel,
-            clickOutsideDeactivates: true,
-            escapeDeactivates: stopPropagation,
-          }}
-        >
+    <OverlayModal open requestClose={onCancel}>
           <Dialog variant="Surface">
             <Header
               style={{
@@ -101,8 +88,6 @@ export function LeaveSpacePrompt({ roomId, onDone, onCancel }: LeaveSpacePromptP
               </Button>
             </Box>
           </Dialog>
-        </FocusTrap>
-      </OverlayCenter>
-    </Overlay>
+    </OverlayModal>
   );
 }

@@ -8,16 +8,12 @@ import {
   Icon,
   IconButton,
   Icons,
-  Overlay,
-  OverlayBackdrop,
-  OverlayCenter,
   Spinner,
   Text,
   Input,
 } from 'folds';
-import FocusTrap from 'focus-trap-react';
 import React, { useCallback, useRef, useState } from 'react';
-import { stopPropagation } from '../../utils/keyboard';
+import { OverlayModal } from '../OverlayModal';
 import { useRoom } from '../../hooks/useRoom';
 import { CutoutCard } from '../cutout-card';
 import { SettingTile } from '../setting-tile';
@@ -284,15 +280,7 @@ export function UserModeration({ userId, canKick, canBan, canInvite }: UserModer
         <Text size="B300">Moderation</Text>
       </Button>
       {modalOpen && (
-        <Overlay open backdrop={<OverlayBackdrop />}>
-          <OverlayCenter>
-            <FocusTrap
-              focusTrapOptions={{
-                onDeactivate: () => setModalOpen(false),
-                clickOutsideDeactivates: true,
-                escapeDeactivates: stopPropagation,
-              }}
-            >
+        <OverlayModal open requestClose={() => setModalOpen(false)}>
               <Dialog variant="Surface">
                 <Header
                   style={{
@@ -404,9 +392,7 @@ export function UserModeration({ userId, canKick, canBan, canInvite }: UserModer
                   </Box>
                 </Box>
               </Dialog>
-            </FocusTrap>
-          </OverlayCenter>
-        </Overlay>
+        </OverlayModal>
       )}
     </>
   );

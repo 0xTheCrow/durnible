@@ -12,9 +12,6 @@ import {
   Menu,
   MenuItem,
   Modal,
-  Overlay,
-  OverlayBackdrop,
-  OverlayCenter,
   PopOut,
   RectCords,
   Spinner,
@@ -73,6 +70,7 @@ import { MessageEditor } from './MessageEditor';
 import { UserAvatar } from '../../../components/user-avatar';
 import { copyToClipboard } from '../../../utils/dom';
 import { stopPropagation } from '../../../utils/keyboard';
+import { OverlayModal } from '../../../components/OverlayModal';
 import { getMatrixToRoomEvent } from '../../../plugins/matrix-to';
 import { getViaServers } from '../../../plugins/via-servers';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
@@ -141,33 +139,20 @@ export const MessageAllReactionItem = as<
 
   return (
     <>
-      <Overlay
-        onContextMenu={(evt: any) => {
-          evt.stopPropagation();
-        }}
+      <OverlayModal
         open={open}
-        backdrop={<OverlayBackdrop />}
+        requestClose={handleClose}
+        overlayProps={{ onContextMenu: (evt: any) => evt.stopPropagation() }}
+        focusTrapOptions={{ returnFocusOnDeactivate: false }}
       >
-        <OverlayCenter>
-          <FocusTrap
-            focusTrapOptions={{
-              initialFocus: false,
-              returnFocusOnDeactivate: false,
-              onDeactivate: () => handleClose(),
-              clickOutsideDeactivates: true,
-              escapeDeactivates: stopPropagation,
-            }}
-          >
-            <Modal variant="Surface" size="300">
-              <ReactionViewer
-                room={room}
-                relations={relations}
-                requestClose={() => setOpen(false)}
-              />
-            </Modal>
-          </FocusTrap>
-        </OverlayCenter>
-      </Overlay>
+        <Modal variant="Surface" size="300">
+          <ReactionViewer
+            room={room}
+            relations={relations}
+            requestClose={() => setOpen(false)}
+          />
+        </Modal>
+      </OverlayModal>
       <MenuItem
         size="300"
         after={<Icon size="100" src={Icons.Smile} />}
@@ -202,22 +187,11 @@ export const MessageReadReceiptItem = as<
 
   return (
     <>
-      <Overlay open={open} backdrop={<OverlayBackdrop />}>
-        <OverlayCenter>
-          <FocusTrap
-            focusTrapOptions={{
-              initialFocus: false,
-              onDeactivate: handleClose,
-              clickOutsideDeactivates: true,
-              escapeDeactivates: stopPropagation,
-            }}
-          >
-            <Modal variant="Surface" size="300">
-              <EventReaders room={room} eventId={eventId} requestClose={handleClose} />
-            </Modal>
-          </FocusTrap>
-        </OverlayCenter>
-      </Overlay>
+      <OverlayModal open={open} requestClose={handleClose}>
+        <Modal variant="Surface" size="300">
+          <EventReaders room={room} eventId={eventId} requestClose={handleClose} />
+        </Modal>
+      </OverlayModal>
       <MenuItem
         size="300"
         after={<Icon size="100" src={Icons.CheckTwice} />}
@@ -280,27 +254,16 @@ export const MessageSourceCodeItem = as<
 
   return (
     <>
-      <Overlay open={open} backdrop={<OverlayBackdrop />}>
-        <OverlayCenter>
-          <FocusTrap
-            focusTrapOptions={{
-              initialFocus: false,
-              onDeactivate: handleClose,
-              clickOutsideDeactivates: true,
-              escapeDeactivates: stopPropagation,
-            }}
-          >
-            <Modal variant="Surface" size="500">
-              <TextViewer
-                name="Source Code"
-                langName="json"
-                text={getText()}
-                requestClose={handleClose}
-              />
-            </Modal>
-          </FocusTrap>
-        </OverlayCenter>
-      </Overlay>
+      <OverlayModal open={open} requestClose={handleClose}>
+        <Modal variant="Surface" size="500">
+          <TextViewer
+            name="Source Code"
+            langName="json"
+            text={getText()}
+            requestClose={handleClose}
+          />
+        </Modal>
+      </OverlayModal>
       <MenuItem
         size="300"
         after={<Icon size="100" src={Icons.BlockCode} />}
@@ -434,75 +397,64 @@ export const MessageDeleteItem = as<
 
   return (
     <>
-      <Overlay open={open} backdrop={<OverlayBackdrop />}>
-        <OverlayCenter>
-          <FocusTrap
-            focusTrapOptions={{
-              initialFocus: false,
-              onDeactivate: handleClose,
-              clickOutsideDeactivates: true,
-              escapeDeactivates: stopPropagation,
+      <OverlayModal open={open} requestClose={handleClose}>
+        <Dialog variant="Surface">
+          <Header
+            style={{
+              padding: `0 ${config.space.S200} 0 ${config.space.S400}`,
+              borderBottomWidth: config.borderWidth.B300,
             }}
+            variant="Surface"
+            size="500"
           >
-            <Dialog variant="Surface">
-              <Header
-                style={{
-                  padding: `0 ${config.space.S200} 0 ${config.space.S400}`,
-                  borderBottomWidth: config.borderWidth.B300,
-                }}
-                variant="Surface"
-                size="500"
-              >
-                <Box grow="Yes">
-                  <Text size="H4">Delete Message</Text>
-                </Box>
-                <IconButton size="300" onClick={handleClose} radii="300">
-                  <Icon src={Icons.Cross} />
-                </IconButton>
-              </Header>
-              <Box
-                as="form"
-                onSubmit={handleSubmit}
-                style={{ padding: config.space.S400 }}
-                direction="Column"
-                gap="400"
-              >
-                <Text priority="400">
-                  This action is irreversible! Are you sure that you want to delete this message?
+            <Box grow="Yes">
+              <Text size="H4">Delete Message</Text>
+            </Box>
+            <IconButton size="300" onClick={handleClose} radii="300">
+              <Icon src={Icons.Cross} />
+            </IconButton>
+          </Header>
+          <Box
+            as="form"
+            onSubmit={handleSubmit}
+            style={{ padding: config.space.S400 }}
+            direction="Column"
+            gap="400"
+          >
+            <Text priority="400">
+              This action is irreversible! Are you sure that you want to delete this message?
+            </Text>
+            <Box direction="Column" gap="100">
+              <Text size="L400">
+                Reason{' '}
+                <Text as="span" size="T200">
+                  (optional)
                 </Text>
-                <Box direction="Column" gap="100">
-                  <Text size="L400">
-                    Reason{' '}
-                    <Text as="span" size="T200">
-                      (optional)
-                    </Text>
-                  </Text>
-                  <Input name="reasonInput" variant="Background" />
-                  {deleteState.status === AsyncStatus.Error && (
-                    <Text style={{ color: color.Critical.Main }} size="T300">
-                      Failed to delete message! Please try again.
-                    </Text>
-                  )}
-                </Box>
-                <Button
-                  type="submit"
-                  variant="Critical"
-                  before={
-                    deleteState.status === AsyncStatus.Loading ? (
-                      <Spinner fill="Solid" variant="Critical" size="200" />
-                    ) : undefined
-                  }
-                  aria-disabled={deleteState.status === AsyncStatus.Loading}
-                >
-                  <Text size="B400">
-                    {deleteState.status === AsyncStatus.Loading ? 'Deleting...' : 'Delete'}
-                  </Text>
-                </Button>
-              </Box>
-            </Dialog>
-          </FocusTrap>
-        </OverlayCenter>
-      </Overlay>
+              </Text>
+              <Input name="reasonInput" variant="Background" />
+              {deleteState.status === AsyncStatus.Error && (
+                <Text style={{ color: color.Critical.Main }} size="T300">
+                  Failed to delete message! Please try again.
+                </Text>
+              )}
+            </Box>
+            <Button
+              type="submit"
+              variant="Critical"
+              before={
+                deleteState.status === AsyncStatus.Loading ? (
+                  <Spinner fill="Solid" variant="Critical" size="200" />
+                ) : undefined
+              }
+              aria-disabled={deleteState.status === AsyncStatus.Loading}
+            >
+              <Text size="B400">
+                {deleteState.status === AsyncStatus.Loading ? 'Deleting...' : 'Delete'}
+              </Text>
+            </Button>
+          </Box>
+        </Dialog>
+      </OverlayModal>
       <Button
         variant="Critical"
         fill="None"
@@ -564,79 +516,68 @@ export const MessageReportItem = as<
 
   return (
     <>
-      <Overlay open={open} backdrop={<OverlayBackdrop />}>
-        <OverlayCenter>
-          <FocusTrap
-            focusTrapOptions={{
-              initialFocus: false,
-              onDeactivate: handleClose,
-              clickOutsideDeactivates: true,
-              escapeDeactivates: stopPropagation,
+      <OverlayModal open={open} requestClose={handleClose}>
+        <Dialog variant="Surface">
+          <Header
+            style={{
+              padding: `0 ${config.space.S200} 0 ${config.space.S400}`,
+              borderBottomWidth: config.borderWidth.B300,
             }}
+            variant="Surface"
+            size="500"
           >
-            <Dialog variant="Surface">
-              <Header
-                style={{
-                  padding: `0 ${config.space.S200} 0 ${config.space.S400}`,
-                  borderBottomWidth: config.borderWidth.B300,
-                }}
-                variant="Surface"
-                size="500"
-              >
-                <Box grow="Yes">
-                  <Text size="H4">Report Message</Text>
-                </Box>
-                <IconButton size="300" onClick={handleClose} radii="300">
-                  <Icon src={Icons.Cross} />
-                </IconButton>
-              </Header>
-              <Box
-                as="form"
-                onSubmit={handleSubmit}
-                style={{ padding: config.space.S400 }}
-                direction="Column"
-                gap="400"
-              >
-                <Text priority="400">
-                  Report this message to server, which may then notify the appropriate people to
-                  take action.
+            <Box grow="Yes">
+              <Text size="H4">Report Message</Text>
+            </Box>
+            <IconButton size="300" onClick={handleClose} radii="300">
+              <Icon src={Icons.Cross} />
+            </IconButton>
+          </Header>
+          <Box
+            as="form"
+            onSubmit={handleSubmit}
+            style={{ padding: config.space.S400 }}
+            direction="Column"
+            gap="400"
+          >
+            <Text priority="400">
+              Report this message to server, which may then notify the appropriate people to
+              take action.
+            </Text>
+            <Box direction="Column" gap="100">
+              <Text size="L400">Reason</Text>
+              <Input name="reasonInput" variant="Background" required />
+              {reportState.status === AsyncStatus.Error && (
+                <Text style={{ color: color.Critical.Main }} size="T300">
+                  Failed to report message! Please try again.
                 </Text>
-                <Box direction="Column" gap="100">
-                  <Text size="L400">Reason</Text>
-                  <Input name="reasonInput" variant="Background" required />
-                  {reportState.status === AsyncStatus.Error && (
-                    <Text style={{ color: color.Critical.Main }} size="T300">
-                      Failed to report message! Please try again.
-                    </Text>
-                  )}
-                  {reportState.status === AsyncStatus.Success && (
-                    <Text style={{ color: color.Success.Main }} size="T300">
-                      Message has been reported to server.
-                    </Text>
-                  )}
-                </Box>
-                <Button
-                  type="submit"
-                  variant="Critical"
-                  before={
-                    reportState.status === AsyncStatus.Loading ? (
-                      <Spinner fill="Solid" variant="Critical" size="200" />
-                    ) : undefined
-                  }
-                  aria-disabled={
-                    reportState.status === AsyncStatus.Loading ||
-                    reportState.status === AsyncStatus.Success
-                  }
-                >
-                  <Text size="B400">
-                    {reportState.status === AsyncStatus.Loading ? 'Reporting...' : 'Report'}
-                  </Text>
-                </Button>
-              </Box>
-            </Dialog>
-          </FocusTrap>
-        </OverlayCenter>
-      </Overlay>
+              )}
+              {reportState.status === AsyncStatus.Success && (
+                <Text style={{ color: color.Success.Main }} size="T300">
+                  Message has been reported to server.
+                </Text>
+              )}
+            </Box>
+            <Button
+              type="submit"
+              variant="Critical"
+              before={
+                reportState.status === AsyncStatus.Loading ? (
+                  <Spinner fill="Solid" variant="Critical" size="200" />
+                ) : undefined
+              }
+              aria-disabled={
+                reportState.status === AsyncStatus.Loading ||
+                reportState.status === AsyncStatus.Success
+              }
+            >
+              <Text size="B400">
+                {reportState.status === AsyncStatus.Loading ? 'Reporting...' : 'Report'}
+              </Text>
+            </Button>
+          </Box>
+        </Dialog>
+      </OverlayModal>
       <Button
         variant="Critical"
         fill="None"

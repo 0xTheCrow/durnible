@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import FocusTrap from 'focus-trap-react';
 import {
   config,
   Icon,
@@ -7,14 +6,11 @@ import {
   Icons,
   Line,
   Modal,
-  Overlay,
-  OverlayBackdrop,
-  OverlayCenter,
 } from 'folds';
 
 import { CustomEditor, useEditor } from './Editor';
 import { Toolbar } from './Toolbar';
-import { stopPropagation } from '../../utils/keyboard';
+import { OverlayModal } from '../OverlayModal';
 import { useSetting } from '../../state/hooks/settings';
 import { settingsAtom } from '../../state/settings';
 
@@ -29,16 +25,7 @@ export function EditorPreview() {
       <IconButton variant="SurfaceVariant" onClick={() => setOpen(!open)}>
         <Icon src={Icons.BlockQuote} />
       </IconButton>
-      <Overlay open={open} backdrop={<OverlayBackdrop />}>
-        <OverlayCenter>
-          <FocusTrap
-            focusTrapOptions={{
-              initialFocus: false,
-              onDeactivate: () => setOpen(false),
-              clickOutsideDeactivates: true,
-              escapeDeactivates: stopPropagation,
-            }}
-          >
+      <OverlayModal open={open} requestClose={() => setOpen(false)}>
             <Modal size="500">
               <div style={{ padding: config.space.S400 }}>
                 <CustomEditor
@@ -78,9 +65,7 @@ export function EditorPreview() {
                 />
               </div>
             </Modal>
-          </FocusTrap>
-        </OverlayCenter>
-      </Overlay>
+      </OverlayModal>
     </>
   );
 }

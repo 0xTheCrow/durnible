@@ -1,10 +1,6 @@
 import React, { FormEventHandler, useState } from 'react';
-import FocusTrap from 'focus-trap-react';
 import {
   Dialog,
-  Overlay,
-  OverlayCenter,
-  OverlayBackdrop,
   Header,
   config,
   Box,
@@ -16,7 +12,7 @@ import {
   Input,
   color,
 } from 'folds';
-import { stopPropagation } from '../../utils/keyboard';
+import { OverlayModal } from '../OverlayModal';
 import { isRoomAlias, isRoomId } from '../../utils/matrix';
 import { parseMatrixToRoom, parseMatrixToRoomEvent, testMatrixTo } from '../../plugins/matrix-to';
 import { tryDecodeURIComponent } from '../../utils/dom';
@@ -61,16 +57,7 @@ export function JoinAddressPrompt({ onOpen, onCancel }: JoinAddressProps) {
   };
 
   return (
-    <Overlay open backdrop={<OverlayBackdrop />}>
-      <OverlayCenter>
-        <FocusTrap
-          focusTrapOptions={{
-            initialFocus: false,
-            onDeactivate: onCancel,
-            clickOutsideDeactivates: true,
-            escapeDeactivates: stopPropagation,
-          }}
-        >
+    <OverlayModal open requestClose={onCancel}>
           <Dialog variant="Surface">
             <Header
               style={{
@@ -124,8 +111,6 @@ export function JoinAddressPrompt({ onOpen, onCancel }: JoinAddressProps) {
               </Button>
             </Box>
           </Dialog>
-        </FocusTrap>
-      </OverlayCenter>
-    </Overlay>
+    </OverlayModal>
   );
 }

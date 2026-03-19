@@ -4,9 +4,6 @@ import {
   Box,
   Avatar,
   Text,
-  Overlay,
-  OverlayCenter,
-  OverlayBackdrop,
   IconButton,
   Icon,
   Icons,
@@ -22,6 +19,7 @@ import {
   Badge,
   Spinner,
 } from 'folds';
+import { OverlayModal } from '../../components/OverlayModal';
 import { useNavigate } from 'react-router-dom';
 import { JoinRule, Room } from 'matrix-js-sdk';
 import { useAtomValue } from 'jotai';
@@ -332,24 +330,13 @@ export function RoomViewHeader() {
               <UseStateProvider initial={false}>
                 {(viewTopic, setViewTopic) => (
                   <>
-                    <Overlay open={viewTopic} backdrop={<OverlayBackdrop />}>
-                      <OverlayCenter>
-                        <FocusTrap
-                          focusTrapOptions={{
-                            initialFocus: false,
-                            clickOutsideDeactivates: true,
-                            onDeactivate: () => setViewTopic(false),
-                            escapeDeactivates: stopPropagation,
-                          }}
-                        >
+                    <OverlayModal open={viewTopic} requestClose={() => setViewTopic(false)}>
                           <RoomTopicViewer
                             name={name}
                             topic={topic}
                             requestClose={() => setViewTopic(false)}
                           />
-                        </FocusTrap>
-                      </OverlayCenter>
-                    </Overlay>
+                    </OverlayModal>
                     <Text
                       as="button"
                       type="button"

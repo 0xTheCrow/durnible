@@ -5,13 +5,9 @@ import {
   Icon,
   Icons,
   Modal,
-  Overlay,
-  OverlayBackdrop,
-  OverlayCenter,
   Text,
 } from 'folds';
 import classNames from 'classnames';
-import FocusTrap from 'focus-trap-react';
 import * as css from './styles.css';
 import { UserAvatar } from '../user-avatar';
 import colorMXID from '../../../util/colorMXID';
@@ -20,7 +16,7 @@ import { BreakWord, LineClamp3 } from '../../styles/Text.css';
 import { UserPresence } from '../../hooks/useUserPresence';
 import { AvatarPresence, PresenceBadge } from '../presence';
 import { ImageViewer } from '../image-viewer';
-import { stopPropagation } from '../../utils/keyboard';
+import { OverlayModal } from '../OverlayModal';
 
 type UserHeroProps = {
   userId: string;
@@ -71,16 +67,7 @@ export function UserHero({ userId, avatarUrl, bannerUrl, presence }: UserHeroPro
           </Avatar>
         </AvatarPresence>
         {viewAvatar && (
-          <Overlay open backdrop={<OverlayBackdrop />}>
-            <OverlayCenter>
-              <FocusTrap
-                focusTrapOptions={{
-                  initialFocus: false,
-                  onDeactivate: () => setViewAvatar(undefined),
-                  clickOutsideDeactivates: true,
-                  escapeDeactivates: stopPropagation,
-                }}
-              >
+          <OverlayModal open requestClose={() => setViewAvatar(undefined)}>
                 <Modal size="500" onContextMenu={(evt: any) => evt.stopPropagation()}>
                   <ImageViewer
                     src={viewAvatar}
@@ -88,9 +75,7 @@ export function UserHero({ userId, avatarUrl, bannerUrl, presence }: UserHeroPro
                     requestClose={() => setViewAvatar(undefined)}
                   />
                 </Modal>
-              </FocusTrap>
-            </OverlayCenter>
-          </Overlay>
+          </OverlayModal>
         )}
       </div>
     </Box>

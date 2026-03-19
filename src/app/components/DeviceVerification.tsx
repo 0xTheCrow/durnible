@@ -15,13 +15,9 @@ import {
   Icon,
   IconButton,
   Icons,
-  Overlay,
-  OverlayBackdrop,
-  OverlayCenter,
   Spinner,
   Text,
 } from 'folds';
-import FocusTrap from 'focus-trap-react';
 import {
   useVerificationRequestPhase,
   useVerificationRequestReceived,
@@ -30,6 +26,7 @@ import {
 } from '../hooks/useVerificationRequest';
 import { AsyncStatus, useAsyncCallback } from '../hooks/useAsyncCallback';
 import { ContainerColor } from '../styles/ContainerColor.css';
+import { OverlayModal } from './OverlayModal';
 
 const DialogHeaderStyles: CSSProperties = {
   padding: `0 ${config.space.S200} 0 ${config.space.S400}`,
@@ -247,55 +244,52 @@ export function DeviceVerification({ request, onExit }: DeviceVerificationProps)
   }, [request]);
 
   return (
-    <Overlay open backdrop={<OverlayBackdrop />}>
-      <OverlayCenter>
-        <FocusTrap
-          focusTrapOptions={{
-            initialFocus: false,
-            clickOutsideDeactivates: false,
-            escapeDeactivates: false,
-          }}
-        >
-          <Dialog variant="Surface">
-            <Header style={DialogHeaderStyles} variant="Surface" size="500">
-              <Box grow="Yes">
-                <Text size="H4">Device Verification</Text>
-              </Box>
-              <IconButton size="300" radii="300" onClick={handleCancel}>
-                <Icon src={Icons.Cross} />
-              </IconButton>
-            </Header>
-            <Box style={{ padding: config.space.S400 }} direction="Column" gap="400">
-              {phase === VerificationPhase.Requested &&
-                (request.initiatedByMe ? (
-                  <VerificationWaitAccept />
-                ) : (
-                  <VerificationAccept onAccept={handleAccept} />
-                ))}
-              {phase === VerificationPhase.Ready &&
-                (request.initiatedByMe ? (
-                  <AutoVerificationStart onStart={handleStart} />
-                ) : (
-                  <VerificationWaitStart />
-                ))}
-              {phase === VerificationPhase.Started &&
-                (request.verifier ? (
-                  <SasVerification verifier={request.verifier} onCancel={handleCancel} />
-                ) : (
-                  <VerificationUnexpected
-                    message="Unexpected Error! Verification is started but verifier is missing."
-                    onClose={handleCancel}
-                  />
-                ))}
-              {phase === VerificationPhase.Done && <VerificationDone onExit={onExit} />}
-              {phase === VerificationPhase.Cancelled && (
-                <VerificationCanceled onClose={handleCancel} />
-              )}
-            </Box>
-          </Dialog>
-        </FocusTrap>
-      </OverlayCenter>
-    </Overlay>
+    <OverlayModal
+      open
+      requestClose={handleCancel}
+      focusTrapOptions={{
+        clickOutsideDeactivates: false,
+        escapeDeactivates: false,
+      }}
+    >
+      <Dialog variant="Surface">
+        <Header style={DialogHeaderStyles} variant="Surface" size="500">
+          <Box grow="Yes">
+            <Text size="H4">Device Verification</Text>
+          </Box>
+          <IconButton size="300" radii="300" onClick={handleCancel}>
+            <Icon src={Icons.Cross} />
+          </IconButton>
+        </Header>
+        <Box style={{ padding: config.space.S400 }} direction="Column" gap="400">
+          {phase === VerificationPhase.Requested &&
+            (request.initiatedByMe ? (
+              <VerificationWaitAccept />
+            ) : (
+              <VerificationAccept onAccept={handleAccept} />
+            ))}
+          {phase === VerificationPhase.Ready &&
+            (request.initiatedByMe ? (
+              <AutoVerificationStart onStart={handleStart} />
+            ) : (
+              <VerificationWaitStart />
+            ))}
+          {phase === VerificationPhase.Started &&
+            (request.verifier ? (
+              <SasVerification verifier={request.verifier} onCancel={handleCancel} />
+            ) : (
+              <VerificationUnexpected
+                message="Unexpected Error! Verification is started but verifier is missing."
+                onClose={handleCancel}
+              />
+            ))}
+          {phase === VerificationPhase.Done && <VerificationDone onExit={onExit} />}
+          {phase === VerificationPhase.Cancelled && (
+            <VerificationCanceled onClose={handleCancel} />
+          )}
+        </Box>
+      </Dialog>
+    </OverlayModal>
   );
 }
 

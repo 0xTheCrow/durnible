@@ -9,15 +9,11 @@ import {
   Icon,
   IconButton,
   Icons,
-  Overlay,
-  OverlayBackdrop,
-  OverlayCenter,
   Spinner,
   Text,
 } from 'folds';
 import React, { useCallback, useState } from 'react';
 import { MatrixError } from 'matrix-js-sdk';
-import FocusTrap from 'focus-trap-react';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SequenceCardStyle } from '../../room-settings/styles.css';
 import { SettingTile } from '../../../components/setting-tile';
@@ -26,8 +22,8 @@ import { StateEvent } from '../../../../types/matrix/room';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { useRoom } from '../../../hooks/useRoom';
 import { useStateEvent } from '../../../hooks/useStateEvent';
-import { stopPropagation } from '../../../utils/keyboard';
 import { RoomPermissionsAPI } from '../../../hooks/useRoomPermissions';
+import { OverlayModal } from '../../../components/OverlayModal';
 
 const ROOM_ENC_ALGO = 'm.megolm.v1.aes-sha2';
 
@@ -101,16 +97,7 @@ export function RoomEncryption({ permissions }: RoomEncryptionProps) {
           </Text>
         )}
         {prompt && (
-          <Overlay open backdrop={<OverlayBackdrop />}>
-            <OverlayCenter>
-              <FocusTrap
-                focusTrapOptions={{
-                  initialFocus: false,
-                  onDeactivate: () => setPrompt(false),
-                  clickOutsideDeactivates: true,
-                  escapeDeactivates: stopPropagation,
-                }}
-              >
+          <OverlayModal open requestClose={() => setPrompt(false)}>
                 <Dialog variant="Surface">
                   <Header
                     style={{
@@ -136,9 +123,7 @@ export function RoomEncryption({ permissions }: RoomEncryptionProps) {
                     </Button>
                   </Box>
                 </Dialog>
-              </FocusTrap>
-            </OverlayCenter>
-          </Overlay>
+          </OverlayModal>
         )}
       </SettingTile>
     </SequenceCard>

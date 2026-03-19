@@ -8,9 +8,6 @@ import React, {
   useState,
 } from 'react';
 import {
-  Overlay,
-  OverlayBackdrop,
-  OverlayCenter,
   Box,
   Header,
   config,
@@ -33,6 +30,7 @@ import { Room } from 'matrix-js-sdk';
 import { isKeyHotkey } from 'is-hotkey';
 import FocusTrap from 'focus-trap-react';
 import { stopPropagation } from '../../utils/keyboard';
+import { OverlayModal } from '../OverlayModal';
 import { useDirectUsers } from '../../hooks/useDirectUsers';
 import { getMxIdLocalPart, getMxIdServer, isUserId } from '../../utils/matrix';
 import { Membership } from '../../../types/matrix/room';
@@ -151,16 +149,11 @@ export function InviteUserPrompt({ room, requestClose }: InviteUserProps) {
   };
 
   return (
-    <Overlay open backdrop={<OverlayBackdrop />}>
-      <OverlayCenter>
-        <FocusTrap
-          focusTrapOptions={{
-            initialFocus: () => inputRef.current,
-            clickOutsideDeactivates: true,
-            onDeactivate: requestClose,
-            escapeDeactivates: stopPropagation,
-          }}
-        >
+    <OverlayModal
+      open
+      requestClose={requestClose}
+      focusTrapOptions={{ initialFocus: () => inputRef.current }}
+    >
           <Dialog>
             <Box grow="Yes" direction="Column">
               <Header
@@ -284,8 +277,6 @@ export function InviteUserPrompt({ room, requestClose }: InviteUserProps) {
               </Box>
             </Box>
           </Dialog>
-        </FocusTrap>
-      </OverlayCenter>
-    </Overlay>
+    </OverlayModal>
   );
 }

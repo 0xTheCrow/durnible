@@ -8,9 +8,6 @@ import {
   Dialog,
   Icon,
   Icons,
-  Overlay,
-  OverlayBackdrop,
-  OverlayCenter,
   Spinner,
   Text,
   as,
@@ -18,7 +15,6 @@ import {
   config,
 } from 'folds';
 import classNames from 'classnames';
-import FocusTrap from 'focus-trap-react';
 import * as css from './style.css';
 import { RoomAvatar } from '../room-avatar';
 import { getMxIdLocalPart, mxcUrlToHttp } from '../../utils/matrix';
@@ -26,7 +22,8 @@ import { nameInitials } from '../../utils/common';
 import { millify } from '../../plugins/millify';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { AsyncStatus, useAsyncCallback } from '../../hooks/useAsyncCallback';
-import { onEnterOrSpace, stopPropagation } from '../../utils/keyboard';
+import { onEnterOrSpace } from '../../utils/keyboard';
+import { OverlayModal } from '../OverlayModal';
 import { RoomType, StateEvent } from '../../../types/matrix/room';
 import { useJoinedRoomId } from '../../hooks/useJoinedRoomId';
 import { useElementSizeObserver } from '../../hooks/useElementSizeObserver';
@@ -101,16 +98,7 @@ function ErrorDialog({
   return (
     <>
       {children(openError)}
-      <Overlay open={viewError} backdrop={<OverlayBackdrop />}>
-        <OverlayCenter>
-          <FocusTrap
-            focusTrapOptions={{
-              initialFocus: false,
-              clickOutsideDeactivates: true,
-              onDeactivate: closeError,
-              escapeDeactivates: stopPropagation,
-            }}
-          >
+      <OverlayModal open={viewError} requestClose={closeError}>
             <Dialog variant="Surface">
               <Box style={{ padding: config.space.S400 }} direction="Column" gap="400">
                 <Box direction="Column" gap="100">
@@ -124,9 +112,7 @@ function ErrorDialog({
                 </Button>
               </Box>
             </Dialog>
-          </FocusTrap>
-        </OverlayCenter>
-      </Overlay>
+      </OverlayModal>
     </>
   );
 }
@@ -234,20 +220,9 @@ export const RoomCard = as<'div', RoomCardProps>(
             {roomTopic}
           </RoomCardTopic>
 
-          <Overlay open={viewTopic} backdrop={<OverlayBackdrop />}>
-            <OverlayCenter>
-              <FocusTrap
-                focusTrapOptions={{
-                  initialFocus: false,
-                  clickOutsideDeactivates: true,
-                  onDeactivate: closeTopic,
-                  escapeDeactivates: stopPropagation,
-                }}
-              >
+          <OverlayModal open={viewTopic} requestClose={closeTopic}>
                 {renderTopicViewer(roomName, roomTopic, closeTopic)}
-              </FocusTrap>
-            </OverlayCenter>
-          </Overlay>
+          </OverlayModal>
         </Box>
         {typeof joinedMemberCount === 'number' && (
           <Box gap="100">

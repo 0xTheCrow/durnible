@@ -9,9 +9,6 @@ import {
   Icons,
   Spinner,
   Text,
-  Overlay,
-  OverlayBackdrop,
-  OverlayCenter,
   IconButton,
   RectCords,
   PopOut,
@@ -35,6 +32,7 @@ import { stopPropagation } from '../../../utils/keyboard';
 import { useAuthMetadata } from '../../../hooks/useAuthMetadata';
 import { withSearchParam } from '../../../pages/pathUtils';
 import { useAccountManagementActions } from '../../../hooks/useAccountManagement';
+import { OverlayModal } from '../../../components/OverlayModal';
 
 type VerificationStatusBadgeProps = {
   verificationStatus: VerificationStatus;
@@ -235,19 +233,16 @@ export function EnableVerification({ visible }: EnableVerificationProps) {
         </Button>
       )}
       {open && (
-        <Overlay open backdrop={<OverlayBackdrop />}>
-          <OverlayCenter>
-            <FocusTrap
-              focusTrapOptions={{
-                initialFocus: false,
-                clickOutsideDeactivates: false,
-                escapeDeactivates: false,
-              }}
-            >
-              <DeviceVerificationSetup onCancel={handleCancel} />
-            </FocusTrap>
-          </OverlayCenter>
-        </Overlay>
+        <OverlayModal
+          open
+          requestClose={handleCancel}
+          focusTrapOptions={{
+            clickOutsideDeactivates: false,
+            escapeDeactivates: false,
+          }}
+        >
+          <DeviceVerificationSetup onCancel={handleCancel} />
+        </OverlayModal>
       )}
     </>
   );
@@ -333,19 +328,16 @@ export function DeviceVerificationOptions() {
         }
       />
       {reset && (
-        <Overlay open backdrop={<OverlayBackdrop />}>
-          <OverlayCenter>
-            <FocusTrap
-              focusTrapOptions={{
-                initialFocus: false,
-                clickOutsideDeactivates: false,
-                escapeDeactivates: false,
-              }}
-            >
-              <DeviceVerificationReset onCancel={handleCancelReset} />
-            </FocusTrap>
-          </OverlayCenter>
-        </Overlay>
+        <OverlayModal
+          open
+          requestClose={handleCancelReset}
+          focusTrapOptions={{
+            clickOutsideDeactivates: false,
+            escapeDeactivates: false,
+          }}
+        >
+          <DeviceVerificationReset onCancel={handleCancelReset} />
+        </OverlayModal>
       )}
     </>
   );

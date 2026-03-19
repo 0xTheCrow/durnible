@@ -11,9 +11,6 @@ import {
   Line,
   Menu,
   MenuItem,
-  Overlay,
-  OverlayBackdrop,
-  OverlayCenter,
   PopOut,
   RectCords,
   Spinner,
@@ -23,6 +20,7 @@ import {
 import React, { MouseEventHandler, useCallback, useState } from 'react';
 import FocusTrap from 'focus-trap-react';
 import { isKeyHotkey } from 'is-hotkey';
+import { OverlayModal } from '../OverlayModal';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
 import { PowerColorBadge, PowerIcon } from '../power';
@@ -51,16 +49,7 @@ type SelfDemoteAlertProps = {
 };
 function SelfDemoteAlert({ power, onCancel, onChange }: SelfDemoteAlertProps) {
   return (
-    <Overlay open backdrop={<OverlayBackdrop />}>
-      <OverlayCenter>
-        <FocusTrap
-          focusTrapOptions={{
-            initialFocus: false,
-            onDeactivate: onCancel,
-            clickOutsideDeactivates: true,
-            escapeDeactivates: stopPropagation,
-          }}
-        >
+    <OverlayModal open requestClose={onCancel}>
           <Dialog variant="Surface">
             <Header
               style={{ padding: `0 ${config.space.S200} 0 ${config.space.S400}` }}
@@ -88,9 +77,7 @@ function SelfDemoteAlert({ power, onCancel, onChange }: SelfDemoteAlertProps) {
               </Box>
             </Box>
           </Dialog>
-        </FocusTrap>
-      </OverlayCenter>
-    </Overlay>
+    </OverlayModal>
   );
 }
 
@@ -101,16 +88,7 @@ type SharedPowerAlertProps = {
 };
 function SharedPowerAlert({ power, onCancel, onChange }: SharedPowerAlertProps) {
   return (
-    <Overlay open backdrop={<OverlayBackdrop />}>
-      <OverlayCenter>
-        <FocusTrap
-          focusTrapOptions={{
-            initialFocus: false,
-            onDeactivate: onCancel,
-            clickOutsideDeactivates: true,
-            escapeDeactivates: stopPropagation,
-          }}
-        >
+    <OverlayModal open requestClose={onCancel}>
           <Dialog variant="Surface">
             <Header
               style={{ padding: `0 ${config.space.S200} 0 ${config.space.S400}` }}
@@ -138,9 +116,7 @@ function SharedPowerAlert({ power, onCancel, onChange }: SharedPowerAlertProps) 
               </Box>
             </Box>
           </Dialog>
-        </FocusTrap>
-      </OverlayCenter>
-    </Overlay>
+    </OverlayModal>
   );
 }
 
