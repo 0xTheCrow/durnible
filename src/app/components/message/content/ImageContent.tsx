@@ -78,6 +78,7 @@ export const ImageContent = as<'div', ImageContentProps>(
 
     const loadedImgRef = useRef<HTMLImageElement | null>(null);
     const [isHovered, setIsHovered] = useState(false);
+    const [canvasReady, setCanvasReady] = useState(false);
 
     const [load, setLoad] = useState(false);
     const [error, setError] = useState(false);
@@ -105,13 +106,19 @@ export const ImageContent = as<'div', ImageContentProps>(
     // (e.g., after spoiler reveal or source retry)
     const canvasCallbackRef = useCallback(
       (canvas: HTMLCanvasElement | null) => {
-        if (!canvas || !loadedImgRef.current) return;
+        if (!canvas || !loadedImgRef.current) {
+          setCanvasReady(false);
+          return;
+        }
         const img = loadedImgRef.current;
         if (img.naturalWidth === 0 || img.naturalHeight === 0) return;
         canvas.width = img.naturalWidth;
         canvas.height = img.naturalHeight;
         const ctx = canvas.getContext('2d');
-        ctx?.drawImage(img, 0, 0);
+        if (ctx) {
+          ctx.drawImage(img, 0, 0);
+          setCanvasReady(true);
+        }
       },
       // eslint-disable-next-line react-hooks/exhaustive-deps
       [load]
@@ -175,7 +182,7 @@ export const ImageContent = as<'div', ImageContentProps>(
                 height: 'auto',
                 maxWidth: '100%',
                 maxHeight: '100%',
-                visibility: shouldPauseGif && load && !isHovered ? 'hidden' : 'visible',
+                visibility: shouldPauseGif && canvasReady && !isHovered ? 'hidden' : 'visible',
               },
               onLoad: handleLoad,
               onError: handleError,
