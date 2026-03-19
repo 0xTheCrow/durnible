@@ -7,9 +7,6 @@ import {
   Icon,
   Icons,
   Line,
-  Overlay,
-  OverlayBackdrop,
-  OverlayCenter,
   Spinner,
   Text,
   Tooltip,
@@ -18,8 +15,8 @@ import {
   color,
   toRem,
 } from 'folds';
-import FocusTrap from 'focus-trap-react';
 import { JoinRule, MatrixError, Room } from 'matrix-js-sdk';
+import { OverlayModal } from '../../components/OverlayModal';
 import { IHierarchyRoom } from 'matrix-js-sdk/lib/@types/spaces';
 import { RoomAvatar, RoomIcon } from '../../components/room-avatar';
 import { SequenceCard } from '../../components/sequence-card';
@@ -29,7 +26,7 @@ import { millify } from '../../plugins/millify';
 import { LocalRoomSummaryLoader } from '../../components/RoomSummaryLoader';
 import { UseStateProvider } from '../../components/UseStateProvider';
 import { RoomTopicViewer } from '../../components/room-topic-viewer';
-import { onEnterOrSpace, stopPropagation } from '../../utils/keyboard';
+import { onEnterOrSpace } from '../../utils/keyboard';
 import { Membership } from '../../../types/matrix/room';
 import * as css from './RoomItem.css';
 import * as styleCss from './style.css';
@@ -247,24 +244,13 @@ function RoomProfile({
                   >
                     {topic}
                   </Text>
-                  <Overlay open={view} backdrop={<OverlayBackdrop />}>
-                    <OverlayCenter>
-                      <FocusTrap
-                        focusTrapOptions={{
-                          initialFocus: false,
-                          clickOutsideDeactivates: true,
-                          onDeactivate: () => setView(false),
-                          escapeDeactivates: stopPropagation,
-                        }}
-                      >
+                  <OverlayModal open={view} requestClose={() => setView(false)}>
                         <RoomTopicViewer
                           name={name}
                           topic={topic}
                           requestClose={() => setView(false)}
                         />
-                      </FocusTrap>
-                    </OverlayCenter>
-                  </Overlay>
+                  </OverlayModal>
                 </>
               )}
             </UseStateProvider>

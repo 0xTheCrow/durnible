@@ -1,6 +1,5 @@
 import React, { FormEventHandler, useCallback, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import FocusTrap from 'focus-trap-react';
 import {
   Avatar,
   Box,
@@ -11,9 +10,6 @@ import {
   IconButton,
   Icons,
   Input,
-  Overlay,
-  OverlayBackdrop,
-  OverlayCenter,
   Text,
   color,
   config,
@@ -36,7 +32,7 @@ import { getMxIdServer } from '../../../utils/matrix';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { useNavToActivePathMapper } from '../../../hooks/useNavToActivePathMapper';
 import { PageNav, PageNavContent, PageNavHeader } from '../../../components/page';
-import { stopPropagation } from '../../../utils/keyboard';
+import { OverlayModal } from '../../../components/OverlayModal';
 
 export function AddServer() {
   const mx = useMatrixClient();
@@ -74,16 +70,7 @@ export function AddServer() {
 
   return (
     <>
-      <Overlay open={dialog} backdrop={<OverlayBackdrop />}>
-        <OverlayCenter>
-          <FocusTrap
-            focusTrapOptions={{
-              initialFocus: false,
-              clickOutsideDeactivates: true,
-              onDeactivate: () => setDialog(false),
-              escapeDeactivates: stopPropagation,
-            }}
-          >
+      <OverlayModal open={dialog} requestClose={() => setDialog(false)}>
             <Dialog variant="Surface">
               <Header
                 style={{
@@ -137,9 +124,7 @@ export function AddServer() {
                 </Box>
               </Box>
             </Dialog>
-          </FocusTrap>
-        </OverlayCenter>
-      </Overlay>
+      </OverlayModal>
       <Button
         variant="Secondary"
         fill="Soft"

@@ -1,4 +1,3 @@
-import FocusTrap from 'focus-trap-react';
 import {
   Avatar,
   Box,
@@ -9,8 +8,6 @@ import {
   Line,
   MenuItem,
   Modal,
-  Overlay,
-  OverlayCenter,
   Scroll,
   Text,
   toRem,
@@ -59,6 +56,7 @@ import { useKeyDown } from '../../hooks/useKeyDown';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
 import { KeySymbol } from '../../utils/key-symbol';
 import { isMacOS } from '../../utils/user-agent';
+import { OverlayModal } from '../../components/OverlayModal';
 
 enum SearchRoomType {
   Rooms = '#',
@@ -242,22 +240,21 @@ export function Search({ requestClose }: SearchProps) {
   }, [listFocus.index]);
 
   return (
-    <Overlay open>
-      <OverlayCenter>
-        <FocusTrap
-          focusTrapOptions={{
-            initialFocus: () => inputRef.current,
-            returnFocusOnDeactivate: false,
-            allowOutsideClick: true,
-            clickOutsideDeactivates: true,
-            onDeactivate: requestClose,
-            escapeDeactivates: (evt) => {
-              evt.stopPropagation();
-              return true;
-            },
-          }}
-        >
-          <Modal size="400" style={{ maxHeight: toRem(400), borderRadius: config.radii.R500 }}>
+    <OverlayModal
+      open
+      requestClose={requestClose}
+      backdrop={false}
+      focusTrapOptions={{
+        initialFocus: () => inputRef.current,
+        returnFocusOnDeactivate: false,
+        allowOutsideClick: true,
+        escapeDeactivates: (evt) => {
+          evt.stopPropagation();
+          return true;
+        },
+      }}
+    >
+      <Modal size="400" style={{ maxHeight: toRem(400), borderRadius: config.radii.R500 }}>
             <Box
               shrink="No"
               style={{ padding: config.space.S400, paddingBottom: 0 }}
@@ -414,9 +411,7 @@ export function Search({ requestClose }: SearchProps) {
               </Text>
             </Box>
           </Modal>
-        </FocusTrap>
-      </OverlayCenter>
-    </Overlay>
+    </OverlayModal>
   );
 }
 

@@ -9,12 +9,8 @@ import {
   Icons,
   IconSrc,
   MenuItem,
-  Overlay,
-  OverlayBackdrop,
-  OverlayCenter,
   Text,
 } from 'folds';
-import FocusTrap from 'focus-trap-react';
 import { General } from './general';
 import { PageNav, PageNavContent, PageNavHeader, PageRoot } from '../../components/page';
 import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
@@ -31,8 +27,8 @@ import { EmojisStickers } from './emojis-stickers';
 import { DeveloperTools } from './developer-tools';
 import { About } from './about';
 import { UseStateProvider } from '../../components/UseStateProvider';
-import { stopPropagation } from '../../utils/keyboard';
 import { LogoutDialog } from '../../components/LogoutDialog';
+import { OverlayModal } from '../../components/OverlayModal';
 
 export enum SettingsPages {
   GeneralPage,
@@ -187,19 +183,9 @@ export function Settings({ initialPage, requestClose }: SettingsProps) {
                         <Text size="B400">Logout</Text>
                       </Button>
                       {logout && (
-                        <Overlay open backdrop={<OverlayBackdrop />}>
-                          <OverlayCenter>
-                            <FocusTrap
-                              focusTrapOptions={{
-                                onDeactivate: () => setLogout(false),
-                                clickOutsideDeactivates: true,
-                                escapeDeactivates: stopPropagation,
-                              }}
-                            >
+                        <OverlayModal open requestClose={() => setLogout(false)}>
                               <LogoutDialog handleClose={() => setLogout(false)} />
-                            </FocusTrap>
-                          </OverlayCenter>
-                        </Overlay>
+                        </OverlayModal>
                       )}
                     </>
                   )}

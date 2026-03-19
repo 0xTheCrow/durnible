@@ -11,12 +11,8 @@ import {
   color,
   Spinner,
   toRem,
-  Overlay,
-  OverlayBackdrop,
-  OverlayCenter,
 } from 'folds';
 import { CryptoApi } from 'matrix-js-sdk/lib/crypto-api';
-import FocusTrap from 'focus-trap-react';
 import { IMyDevice, MatrixError } from 'matrix-js-sdk';
 import { SettingTile } from '../../../components/setting-tile';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
@@ -26,7 +22,7 @@ import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SequenceCardStyle } from '../styles.css';
 import { LogoutDialog } from '../../../components/LogoutDialog';
-import { stopPropagation } from '../../../utils/keyboard';
+import { OverlayModal } from '../../../components/OverlayModal';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
 
@@ -206,19 +202,9 @@ export function DeviceLogoutBtn() {
         <Text size="B300">Logout</Text>
       </Chip>
       {prompt && (
-        <Overlay open backdrop={<OverlayBackdrop />}>
-          <OverlayCenter>
-            <FocusTrap
-              focusTrapOptions={{
-                onDeactivate: handleClose,
-                clickOutsideDeactivates: true,
-                escapeDeactivates: stopPropagation,
-              }}
-            >
+        <OverlayModal open requestClose={handleClose}>
               <LogoutDialog handleClose={handleClose} />
-            </FocusTrap>
-          </OverlayCenter>
-        </Overlay>
+        </OverlayModal>
       )}
     </>
   );

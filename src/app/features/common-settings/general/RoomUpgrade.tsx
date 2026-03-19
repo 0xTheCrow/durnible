@@ -4,9 +4,6 @@ import {
   color,
   Spinner,
   Text,
-  Overlay,
-  OverlayBackdrop,
-  OverlayCenter,
   Dialog,
   Header,
   config,
@@ -15,7 +12,6 @@ import {
   Icon,
   Icons,
 } from 'folds';
-import FocusTrap from 'focus-trap-react';
 import { MatrixError, Method } from 'matrix-js-sdk';
 import { RoomTombstoneEventContent } from 'matrix-js-sdk/lib/types';
 import { SequenceCard } from '../../../components/sequence-card';
@@ -28,7 +24,7 @@ import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { useStateEvent } from '../../../hooks/useStateEvent';
 import { useRoomNavigate } from '../../../hooks/useRoomNavigate';
 import { useCapabilities } from '../../../hooks/useCapabilities';
-import { stopPropagation } from '../../../utils/keyboard';
+import { OverlayModal } from '../../../components/OverlayModal';
 import { RoomPermissionsAPI } from '../../../hooks/useRoomPermissions';
 import {
   AdditionalCreatorInput,
@@ -83,16 +79,7 @@ function RoomUpgradeDialog({ requestClose }: { requestClose: () => void }) {
   };
 
   return (
-    <Overlay open backdrop={<OverlayBackdrop />}>
-      <OverlayCenter>
-        <FocusTrap
-          focusTrapOptions={{
-            initialFocus: false,
-            onDeactivate: requestClose,
-            clickOutsideDeactivates: true,
-            escapeDeactivates: stopPropagation,
-          }}
-        >
+    <OverlayModal open requestClose={requestClose}>
           <Dialog variant="Surface">
             <Header
               style={{
@@ -152,9 +139,7 @@ function RoomUpgradeDialog({ requestClose }: { requestClose: () => void }) {
               </Button>
             </Box>
           </Dialog>
-        </FocusTrap>
-      </OverlayCenter>
-    </Overlay>
+    </OverlayModal>
   );
 }
 

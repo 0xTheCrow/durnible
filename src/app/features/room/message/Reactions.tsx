@@ -2,9 +2,6 @@ import React, { MouseEventHandler, useCallback, useMemo, useState } from 'react'
 import {
   Box,
   Modal,
-  Overlay,
-  OverlayBackdrop,
-  OverlayCenter,
   Text,
   Tooltip,
   TooltipProvider,
@@ -14,17 +11,16 @@ import {
 import classNames from 'classnames';
 import { EventType, MatrixEvent, RelationType, Room } from 'matrix-js-sdk';
 import { type Relations } from 'matrix-js-sdk/lib/models/relations';
-import FocusTrap from 'focus-trap-react';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { factoryEventSentBy } from '../../../utils/matrix';
 import { Reaction, ReactionTooltipMsg } from '../../../components/message';
 import { useRelations } from '../../../hooks/useRelations';
 import * as css from './styles.css';
 import { ReactionViewer } from '../reaction-viewer';
-import { stopPropagation } from '../../../utils/keyboard';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
+import { OverlayModal } from '../../../components/OverlayModal';
 
 export type ReactionsProps = {
   room: Room;
@@ -142,34 +138,26 @@ export const Reactions = as<'div', ReactionsProps>(
           );
         })}
         {reactions.length > 0 && (
-          <Overlay
-            onContextMenu={(evt: any) => {
-              evt.stopPropagation();
-            }}
+          <OverlayModal
             open={!!viewer}
-            backdrop={<OverlayBackdrop />}
+            requestClose={() => setViewer(false)}
+            overlayProps={{ onContextMenu: (evt: any) => { evt.stopPropagation(); } }}
+            focusTrapOptions={{
+              returnFocusOnDeactivate: false,
+            }}
           >
-            <OverlayCenter>
-              <FocusTrap
-                focusTrapOptions={{
-                  initialFocus: false,
-                  returnFocusOnDeactivate: false,
-                  onDeactivate: () => setViewer(false),
-                  clickOutsideDeactivates: true,
-                  escapeDeactivates: stopPropagation,
-                }}
-              >
-                <Modal variant="Surface" size="300">
-                  <ReactionViewer
-                    room={room}
-                    initialKey={typeof viewer === 'string' ? viewer : undefined}
-                    relations={relations}
-                    requestClose={() => setViewer(false)}
-                  />
-                </Modal>
-              </FocusTrap>
-            </OverlayCenter>
-          </Overlay>
+            <Modal
+              variant="Surface"
+              size="300"
+            >
+              <ReactionViewer
+                room={room}
+                initialKey={typeof viewer === 'string' ? viewer : undefined}
+                relations={relations}
+                requestClose={() => setViewer(false)}
+              />
+            </Modal>
+          </OverlayModal>
         )}
       </Box>
     );

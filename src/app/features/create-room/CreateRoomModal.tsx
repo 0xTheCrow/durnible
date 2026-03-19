@@ -7,13 +7,9 @@ import {
   IconButton,
   Icons,
   Modal,
-  Overlay,
-  OverlayBackdrop,
-  OverlayCenter,
   Scroll,
   Text,
 } from 'folds';
-import FocusTrap from 'focus-trap-react';
 import { useAllJoinedRoomsSet, useGetRoom } from '../../hooks/useGetRoom';
 import { SpaceProvider } from '../../hooks/useSpace';
 import { CreateRoomForm } from './CreateRoom';
@@ -22,7 +18,7 @@ import {
   useCreateRoomModalState,
 } from '../../state/hooks/createRoomModal';
 import { CreateRoomModalState } from '../../state/createRoomModal';
-import { stopPropagation } from '../../utils/keyboard';
+import { OverlayModal } from '../../components/OverlayModal';
 
 type CreateRoomModalProps = {
   state: CreateRoomModalState;
@@ -37,16 +33,7 @@ function CreateRoomModal({ state }: CreateRoomModalProps) {
 
   return (
     <SpaceProvider value={space ?? null}>
-      <Overlay open backdrop={<OverlayBackdrop />}>
-        <OverlayCenter>
-          <FocusTrap
-            focusTrapOptions={{
-              initialFocus: false,
-              clickOutsideDeactivates: true,
-              onDeactivate: closeDialog,
-              escapeDeactivates: stopPropagation,
-            }}
-          >
+      <OverlayModal open requestClose={closeDialog}>
             <Modal size="300" flexHeight>
               <Box direction="Column">
                 <Header
@@ -79,9 +66,7 @@ function CreateRoomModal({ state }: CreateRoomModalProps) {
                 </Scroll>
               </Box>
             </Modal>
-          </FocusTrap>
-        </OverlayCenter>
-      </Overlay>
+      </OverlayModal>
     </SpaceProvider>
   );
 }

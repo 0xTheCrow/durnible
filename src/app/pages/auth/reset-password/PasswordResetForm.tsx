@@ -13,7 +13,6 @@ import {
   config,
 } from 'folds';
 import { useNavigate } from 'react-router-dom';
-import FocusTrap from 'focus-trap-react';
 import { AuthDict, AuthType, MatrixError, createClient } from 'matrix-js-sdk';
 import { useAutoDiscoveryInfo } from '../../../hooks/useAutoDiscoveryInfo';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
@@ -25,6 +24,7 @@ import { FieldError } from '../FiledError';
 import { UIAFlowOverlay } from '../../../components/UIAFlowOverlay';
 import { EmailStageDialog } from '../../../components/uia-stages';
 import { ResetPasswordResult, resetPassword } from './resetPasswordUtil';
+import { OverlayModal } from '../../../components/OverlayModal';
 import { getLoginPath, withSearchParam } from '../../pathUtils';
 import { LoginPathSearchParams } from '../../paths';
 import { getUIAError, getUIAErrorCode } from '../../../utils/matrix-uia';
@@ -50,9 +50,7 @@ function ResetPasswordComplete({ email }: { email?: string }) {
   };
 
   return (
-    <Overlay open backdrop={<OverlayBackdrop />}>
-      <OverlayCenter>
-        <FocusTrap>
+    <OverlayModal open requestClose={handleClick}>
           <Dialog>
             <Box style={{ padding: config.space.S400 }} direction="Column" gap="400">
               <Text>
@@ -65,9 +63,7 @@ function ResetPasswordComplete({ email }: { email?: string }) {
               </Button>
             </Box>
           </Dialog>
-        </FocusTrap>
-      </OverlayCenter>
-    </Overlay>
+    </OverlayModal>
   );
 }
 

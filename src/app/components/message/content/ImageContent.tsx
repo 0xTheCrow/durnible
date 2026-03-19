@@ -1,4 +1,4 @@
-import React, { ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import {
   Badge,
   Box,
@@ -76,7 +76,6 @@ export const ImageContent = as<'div', ImageContentProps>(
     const isGif = mimeType === 'image/gif' || mimeType === 'image/apng';
     const shouldPauseGif = pauseGifs && isGif;
 
-    const canvasRef = useRef<HTMLCanvasElement>(null);
     const loadedImgRef = useRef<HTMLImageElement | null>(null);
     const [isHovered, setIsHovered] = useState(false);
 
@@ -98,19 +97,26 @@ export const ImageContent = as<'div', ImageContentProps>(
     );
 
     const handleLoad = (evt: React.SyntheticEvent<HTMLImageElement>) => {
-      if (shouldPauseGif) loadedImgRef.current = evt.currentTarget;
+      loadedImgRef.current = evt.currentTarget;
       setLoad(true);
     };
 
-    useLayoutEffect(() => {
-      if (!shouldPauseGif || !load || !loadedImgRef.current || !canvasRef.current) return;
-      const img = loadedImgRef.current;
-      const canvas = canvasRef.current;
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      const ctx = canvas.getContext('2d');
-      ctx?.drawImage(img, 0, 0);
-    }, [shouldPauseGif, load]);
+    // Use a callback ref so the canvas is drawn every time the element mounts
+    // (e.g., after spoiler reveal or source retry)
+    const canvasCallbackRef = useCallback(
+      (canvas: HTMLCanvasElement | null) => {
+        if (!canvas || !loadedImgRef.current) return;
+        const img = loadedImgRef.current;
+        if (img.naturalWidth === 0 || img.naturalHeight === 0) return;
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0);
+      },
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [load]
+    );
+
     const handleError = () => {
       setLoad(false);
       setError(true);
@@ -193,7 +199,7 @@ export const ImageContent = as<'div', ImageContentProps>(
             onClick={openViewer}
           >
             <canvas
-              ref={canvasRef}
+              ref={canvasCallbackRef}
               style={{
                 width: '100%',
                 height: '100%',

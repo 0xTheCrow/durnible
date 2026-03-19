@@ -4,16 +4,12 @@ import {
   Icon,
   Icons,
   Modal,
-  Overlay,
-  OverlayBackdrop,
-  OverlayCenter,
   Text,
   as,
   config,
 } from 'folds';
 import { Room } from 'matrix-js-sdk';
 import classNames from 'classnames';
-import FocusTrap from 'focus-trap-react';
 
 import { getMemberDisplayName } from '../../utils/room';
 import { getMxIdLocalPart } from '../../utils/matrix';
@@ -22,7 +18,7 @@ import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { useRoomLatestRenderedEvent } from '../../hooks/useRoomLatestRenderedEvent';
 import { useRoomEventReaders } from '../../hooks/useRoomEventReaders';
 import { EventReaders } from '../../components/event-readers';
-import { stopPropagation } from '../../utils/keyboard';
+import { OverlayModal } from '../../components/OverlayModal';
 
 export function RoomViewFollowingPlaceholder() {
   return <div className={css.RoomViewFollowingPlaceholder} />;
@@ -48,22 +44,11 @@ export const RoomViewFollowing = as<'div', RoomViewFollowingProps>(
     return (
       <>
         {eventId && (
-          <Overlay open={open} backdrop={<OverlayBackdrop />}>
-            <OverlayCenter>
-              <FocusTrap
-                focusTrapOptions={{
-                  initialFocus: false,
-                  onDeactivate: () => setOpen(false),
-                  clickOutsideDeactivates: true,
-                  escapeDeactivates: stopPropagation,
-                }}
-              >
+          <OverlayModal open={open} requestClose={() => setOpen(false)}>
                 <Modal variant="Surface" size="300">
                   <EventReaders room={room} eventId={eventId} requestClose={() => setOpen(false)} />
                 </Modal>
-              </FocusTrap>
-            </OverlayCenter>
-          </Overlay>
+          </OverlayModal>
         )}
         <Box
           as={names.length > 0 ? 'button' : 'div'}

@@ -5,9 +5,6 @@ import {
   Icon,
   Icons,
   Modal,
-  Overlay,
-  OverlayBackdrop,
-  OverlayCenter,
   Spinner,
   Text,
   Tooltip,
@@ -16,7 +13,6 @@ import {
 } from 'folds';
 import FileSaver from 'file-saver';
 import { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
-import FocusTrap from 'focus-trap-react';
 import { IFileInfo } from '../../../../types/matrix/common';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
@@ -27,7 +23,7 @@ import {
   getFileNameExt,
   mimeTypeToExt,
 } from '../../../utils/mimeTypes';
-import { stopPropagation } from '../../../utils/keyboard';
+import { OverlayModal } from '../../OverlayModal';
 import {
   decryptFile,
   downloadEncryptedMedia,
@@ -100,16 +96,7 @@ export function ReadTextFile({ body, mimeType, url, encInfo, renderViewer }: Rea
   return (
     <>
       {textState.status === AsyncStatus.Success && (
-        <Overlay open={textViewer} backdrop={<OverlayBackdrop />}>
-          <OverlayCenter>
-            <FocusTrap
-              focusTrapOptions={{
-                initialFocus: false,
-                onDeactivate: () => setTextViewer(false),
-                clickOutsideDeactivates: true,
-                escapeDeactivates: stopPropagation,
-              }}
-            >
+        <OverlayModal open={textViewer} requestClose={() => setTextViewer(false)}>
               <Modal
                 className={ModalWide}
                 size="500"
@@ -124,9 +111,7 @@ export function ReadTextFile({ body, mimeType, url, encInfo, renderViewer }: Rea
                   requestClose: () => setTextViewer(false),
                 })}
               </Modal>
-            </FocusTrap>
-          </OverlayCenter>
-        </Overlay>
+        </OverlayModal>
       )}
       {textState.status === AsyncStatus.Error ? (
         renderErrorButton(loadText, 'Open File')
@@ -188,16 +173,7 @@ export function ReadPdfFile({ body, mimeType, url, encInfo, renderViewer }: Read
   return (
     <>
       {pdfState.status === AsyncStatus.Success && (
-        <Overlay open={pdfViewer} backdrop={<OverlayBackdrop />}>
-          <OverlayCenter>
-            <FocusTrap
-              focusTrapOptions={{
-                initialFocus: false,
-                onDeactivate: () => setPdfViewer(false),
-                clickOutsideDeactivates: true,
-                escapeDeactivates: stopPropagation,
-              }}
-            >
+        <OverlayModal open={pdfViewer} requestClose={() => setPdfViewer(false)}>
               <Modal
                 className={ModalWide}
                 size="500"
@@ -209,9 +185,7 @@ export function ReadPdfFile({ body, mimeType, url, encInfo, renderViewer }: Read
                   requestClose: () => setPdfViewer(false),
                 })}
               </Modal>
-            </FocusTrap>
-          </OverlayCenter>
-        </Overlay>
+        </OverlayModal>
       )}
       {pdfState.status === AsyncStatus.Error ? (
         renderErrorButton(loadPdf, 'Open PDF')

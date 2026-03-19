@@ -26,6 +26,7 @@ import {
   toRem,
 } from 'folds';
 import FocusTrap from 'focus-trap-react';
+import { OverlayModal } from '../../../components/OverlayModal';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SequenceCardStyle } from '../styles.css';
 import { SettingTile } from '../../../components/setting-tile';
@@ -164,16 +165,7 @@ function ProfileAvatar({ profile, userId }: ProfileProps) {
         </Overlay>
       )}
 
-      <Overlay open={alertRemove} backdrop={<OverlayBackdrop />}>
-        <OverlayCenter>
-          <FocusTrap
-            focusTrapOptions={{
-              initialFocus: false,
-              onDeactivate: () => setAlertRemove(false),
-              clickOutsideDeactivates: true,
-              escapeDeactivates: stopPropagation,
-            }}
-          >
+      <OverlayModal open={alertRemove} requestClose={() => setAlertRemove(false)}>
             <Dialog variant="Surface">
               <Header
                 style={{
@@ -199,9 +191,7 @@ function ProfileAvatar({ profile, userId }: ProfileProps) {
                 </Button>
               </Box>
             </Dialog>
-          </FocusTrap>
-        </OverlayCenter>
-      </Overlay>
+      </OverlayModal>
     </SettingTile>
   );
 }
@@ -307,16 +297,7 @@ function ProfileBanner({ profile, userId }: ProfileProps) {
         </Box>
       )}
 
-      <Overlay open={alertRemove} backdrop={<OverlayBackdrop />}>
-        <OverlayCenter>
-          <FocusTrap
-            focusTrapOptions={{
-              initialFocus: false,
-              onDeactivate: () => setAlertRemove(false),
-              clickOutsideDeactivates: true,
-              escapeDeactivates: stopPropagation,
-            }}
-          >
+      <OverlayModal open={alertRemove} requestClose={() => setAlertRemove(false)}>
             <Dialog variant="Surface">
               <Header
                 style={{
@@ -342,9 +323,7 @@ function ProfileBanner({ profile, userId }: ProfileProps) {
                 </Button>
               </Box>
             </Dialog>
-          </FocusTrap>
-        </OverlayCenter>
-      </Overlay>
+      </OverlayModal>
     </SettingTile>
   );
 }

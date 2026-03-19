@@ -37,6 +37,11 @@ import { useSetting } from '../../state/hooks/settings';
 import { settingsAtom } from '../../state/settings';
 import { stopPropagation } from '../../utils/keyboard';
 
+// Prevent mousedown/touchstart from stealing focus away from the Slate
+// editor. Without this, editor.selection becomes null and toolbar
+// operations (toggleMark, toggleBlock) throw or corrupt editor state.
+const preventFocusLoss = (e: React.MouseEvent | React.TouchEvent) => e.preventDefault();
+
 function BtnTooltip({ text, shortCode }: { text: string; shortCode?: string }) {
   return (
     <Tooltip style={{ padding: config.space.S300 }}>
@@ -74,6 +79,8 @@ export function MarkButton({ format, icon, tooltip }: MarkButtonProps) {
         <IconButton
           ref={triggerRef}
           variant="SurfaceVariant"
+          onMouseDown={preventFocusLoss}
+          onTouchStart={preventFocusLoss}
           onClick={handleClick}
           aria-pressed={isMarkActive(editor, format)}
           size="400"
@@ -106,6 +113,8 @@ export function BlockButton({ format, icon, tooltip }: BlockButtonProps) {
         <IconButton
           ref={triggerRef}
           variant="SurfaceVariant"
+          onMouseDown={preventFocusLoss}
+          onTouchStart={preventFocusLoss}
           onClick={handleClick}
           aria-pressed={isBlockActive(editor, format)}
           size="400"
@@ -164,6 +173,8 @@ export function HeadingBlockButton() {
                 {(triggerRef) => (
                   <IconButton
                     ref={triggerRef}
+                    onMouseDown={preventFocusLoss}
+          onTouchStart={preventFocusLoss}
                     onClick={() => handleMenuSelect(1)}
                     size="400"
                     radii="300"
@@ -179,6 +190,8 @@ export function HeadingBlockButton() {
                 {(triggerRef) => (
                   <IconButton
                     ref={triggerRef}
+                    onMouseDown={preventFocusLoss}
+          onTouchStart={preventFocusLoss}
                     onClick={() => handleMenuSelect(2)}
                     size="400"
                     radii="300"
@@ -194,6 +207,8 @@ export function HeadingBlockButton() {
                 {(triggerRef) => (
                   <IconButton
                     ref={triggerRef}
+                    onMouseDown={preventFocusLoss}
+          onTouchStart={preventFocusLoss}
                     onClick={() => handleMenuSelect(3)}
                     size="400"
                     radii="300"
@@ -210,6 +225,7 @@ export function HeadingBlockButton() {
       <IconButton
         style={{ width: 'unset' }}
         variant="SurfaceVariant"
+        onMouseDown={preventFocusLoss}
         onClick={handleMenuOpen}
         aria-pressed={isActive}
         size="400"
@@ -241,6 +257,8 @@ export function ExitFormatting({ tooltip }: ExitFormattingProps) {
         <IconButton
           ref={triggerRef}
           variant="SurfaceVariant"
+          onMouseDown={preventFocusLoss}
+          onTouchStart={preventFocusLoss}
           onClick={handleClick}
           size="400"
           radii="300"
@@ -346,6 +364,8 @@ export function Toolbar() {
                 <IconButton
                   ref={triggerRef}
                   variant="SurfaceVariant"
+                  onMouseDown={preventFocusLoss}
+          onTouchStart={preventFocusLoss}
                   onClick={() => setIsMarkdown(!isMarkdown)}
                   aria-pressed={isMarkdown}
                   size="300"

@@ -1,11 +1,10 @@
 import React from 'react';
 import { useAtom } from 'jotai';
-import { Modal, Overlay, OverlayBackdrop, OverlayCenter } from 'folds';
-import FocusTrap from 'focus-trap-react';
+import { Modal } from 'folds';
 import { imageViewerAtom } from '../../state/imageViewer';
 import { ImageViewer } from './ImageViewer';
 import { ImageViewerModal } from '../../styles/Modal.css';
-import { stopPropagation } from '../../utils/keyboard';
+import { OverlayModal } from '../OverlayModal';
 
 export function ImageViewerRenderer() {
   const [viewerState, setViewerState] = useAtom(imageViewerAtom);
@@ -14,40 +13,23 @@ export function ImageViewerRenderer() {
   const requestClose = () => setViewerState(undefined);
 
   return (
-    <Overlay open={open} backdrop={<OverlayBackdrop />}>
-      <OverlayCenter
-        onClick={(e: React.MouseEvent) => {
-          e.stopPropagation();
-          requestClose();
-        }}
+    <OverlayModal
+      open={open}
+      requestClose={requestClose}
+    >
+      <Modal
+        className={ImageViewerModal}
+        size="500"
+        onContextMenu={(evt: any) => evt.stopPropagation()}
       >
-        <FocusTrap
-          focusTrapOptions={{
-            initialFocus: false,
-            onDeactivate: requestClose,
-            clickOutsideDeactivates: (e) => {
-              e.preventDefault();
-              return true;
-            },
-            escapeDeactivates: stopPropagation,
-          }}
-        >
-          <Modal
-            className={ImageViewerModal}
-            size="500"
-            onClick={(e: React.MouseEvent) => e.stopPropagation()}
-            onContextMenu={(evt: any) => evt.stopPropagation()}
-          >
-            {viewerState && (
-              <ImageViewer
-                src={viewerState.src}
-                alt={viewerState.alt}
-                requestClose={requestClose}
-              />
-            )}
-          </Modal>
-        </FocusTrap>
-      </OverlayCenter>
-    </Overlay>
+        {viewerState && (
+          <ImageViewer
+            src={viewerState.src}
+            alt={viewerState.alt}
+            requestClose={requestClose}
+          />
+        )}
+      </Modal>
+    </OverlayModal>
   );
 }
