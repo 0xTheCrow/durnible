@@ -77,6 +77,7 @@ export const ImageContent = as<'div', ImageContentProps>(
     const shouldPauseGif = pauseGifs && isGif;
 
     const loadedImgRef = useRef<HTMLImageElement | null>(null);
+    const offscreenCanvasRef = useRef<HTMLCanvasElement | null>(null);
     const [isHovered, setIsHovered] = useState(false);
     const [canvasReady, setCanvasReady] = useState(false);
 
@@ -98,7 +99,20 @@ export const ImageContent = as<'div', ImageContentProps>(
     );
 
     const handleLoad = (evt: React.SyntheticEvent<HTMLImageElement>) => {
-      loadedImgRef.current = evt.currentTarget;
+      const img = evt.currentTarget;
+      loadedImgRef.current = img;
+
+      if (shouldPauseGif && img.naturalWidth > 0 && img.naturalHeight > 0) {
+        const offscreen = document.createElement('canvas');
+        offscreen.width = img.naturalWidth;
+        offscreen.height = img.naturalHeight;
+        const ctx = offscreen.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0);
+          offscreenCanvasRef.current = offscreen;
+        }
+      }
+
       setLoad(true);
     };
 
@@ -106,17 +120,17 @@ export const ImageContent = as<'div', ImageContentProps>(
     // (e.g., after spoiler reveal or source retry)
     const canvasCallbackRef = useCallback(
       (canvas: HTMLCanvasElement | null) => {
-        if (!canvas || !loadedImgRef.current) {
-          setCanvasReady(false);
-          return;
-        }
-        const img = loadedImgRef.current;
-        if (img.naturalWidth === 0 || img.naturalHeight === 0) return;
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
+        if (!canvas) return;
+        const source = offscreenCanvasRef.current ?? loadedImgRef.current;
+        if (!source) return;
+        const w = source instanceof HTMLCanvasElement ? source.width : source.naturalWidth;
+        const h = source instanceof HTMLCanvasElement ? source.height : source.naturalHeight;
+        if (w === 0 || h === 0) return;
+        canvas.width = w;
+        canvas.height = h;
         const ctx = canvas.getContext('2d');
         if (ctx) {
-          ctx.drawImage(img, 0, 0);
+          ctx.drawImage(source, 0, 0);
           setCanvasReady(true);
         }
       },
