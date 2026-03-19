@@ -56,21 +56,18 @@ export function OverlayModal({
     };
   }, [open]);
 
-  // Prevent click-through to elements behind the overlay portal
-  // by calling preventDefault in clickOutsideDeactivates.
-  const resolvedClickOutside = clickOutsideCloses
-    ? focusTrapOptions?.clickOutsideDeactivates ?? ((e: MouseEvent | TouchEvent) => {
-        e.preventDefault();
-        return true;
-      })
-    : false;
-
   const mergedFocusTrapOptions: FocusTrapOptions = {
     initialFocus: false,
     onDeactivate: requestClose,
     escapeDeactivates: stopPropagation,
     ...focusTrapOptions,
-    clickOutsideDeactivates: resolvedClickOutside,
+    // Never let FocusTrap close on outside clicks — it fires on
+    // pointerdown which closes the modal before the user releases.
+    // Instead, our onClick handler on OverlayCenter handles closing
+    // on full click (press + release), and allowOutsideClick lets
+    // pointer events reach the OverlayCenter without deactivating.
+    clickOutsideDeactivates: false,
+    allowOutsideClick: true,
   };
 
   return (
