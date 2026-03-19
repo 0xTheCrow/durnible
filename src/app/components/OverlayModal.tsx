@@ -72,6 +72,7 @@ export function OverlayModal({
     >
       <OverlayCenter
         onPointerDown={(e: React.PointerEvent) => {
+          if (e.target !== e.currentTarget) return;
           e.preventDefault();
           e.stopPropagation();
           if (clickOutsideCloses) {
@@ -79,10 +80,7 @@ export function OverlayModal({
           }
         }}
       >
-        <FocusTrap
-          focusTrapOptions={mergedFocusTrapOptions}
-          onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
-        >
+        <FocusTrap focusTrapOptions={mergedFocusTrapOptions}>
           {children}
         </FocusTrap>
       </OverlayCenter>
