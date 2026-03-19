@@ -107,10 +107,12 @@ export const ImageContent = as<'div', ImageContentProps>(
       if (!shouldPauseGif || !load || !loadedImgRef.current || !canvasRef.current) return;
       const img = loadedImgRef.current;
       const canvas = canvasRef.current;
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      const ctx = canvas.getContext('2d');
-      ctx?.drawImage(img, 0, 0);
+      img.decode().then(() => {
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0);
+      }).catch(() => {});
     }, [shouldPauseGif, load]);
 
     const handleError = () => {
