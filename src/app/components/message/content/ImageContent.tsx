@@ -99,7 +99,7 @@ export const ImageContent = as<'div', ImageContentProps>(
     );
 
     const handleLoad = (evt: React.SyntheticEvent<HTMLImageElement>) => {
-      loadedImgRef.current = evt.currentTarget;
+      if (shouldPauseGif) loadedImgRef.current = evt.currentTarget;
       setLoad(true);
     };
 
@@ -159,13 +159,7 @@ export const ImageContent = as<'div', ImageContentProps>(
           </Box>
         )}
         {srcState.status === AsyncStatus.Success && (
-          <Box
-            className={classNames(css.AbsoluteContainer, blurred && css.Blur)}
-            onMouseEnter={shouldPauseGif ? () => setIsHovered(true) : undefined}
-            onMouseLeave={shouldPauseGif ? () => setIsHovered(false) : undefined}
-            onClick={openViewer}
-            style={shouldPauseGif ? { cursor: 'pointer' } : undefined}
-          >
+          <Box className={classNames(css.AbsoluteContainer, blurred && css.Blur)}>
             {renderImage({
               alt: body,
               title: body,
@@ -181,22 +175,33 @@ export const ImageContent = as<'div', ImageContentProps>(
               onClick: openViewer,
               tabIndex: 0,
             })}
-            {shouldPauseGif && load && !blurred && (
-              <canvas
-                ref={canvasRef}
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                  height: '100%',
-                  pointerEvents: 'none',
-                  backgroundColor: color.Surface.Container,
-                  display: isHovered ? 'none' : 'block',
-                }}
-              />
-            )}
           </Box>
+        )}
+        {shouldPauseGif && load && !blurred && srcState.status === AsyncStatus.Success && (
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              cursor: 'pointer',
+            }}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            onClick={openViewer}
+          >
+            <canvas
+              ref={canvasRef}
+              style={{
+                width: '100%',
+                height: '100%',
+                display: isHovered ? 'none' : 'block',
+                pointerEvents: 'none',
+                backgroundColor: color.Surface.Container,
+              }}
+            />
+          </div>
         )}
         {blurred && !error && srcState.status !== AsyncStatus.Error && (
           <Box className={css.AbsoluteContainer} alignItems="Center" justifyContent="Center">
