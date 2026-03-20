@@ -66,7 +66,6 @@ import { RenderMessageContent } from '../../../components/RenderMessageContent';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
 import { Image } from '../../../components/media';
-import { ImageViewer } from '../../../components/image-viewer';
 import { GetContentCallback, MessageEvent, StateEvent } from '../../../../types/matrix/room';
 import { useMatrixEventRenderer } from '../../../hooks/useMatrixEventRenderer';
 import * as customHtmlCss from '../../../styles/CustomHtml.css';
@@ -311,7 +310,6 @@ function RoomNotificationsGroupComp({
                         {...props}
                         autoPlay={mediaAutoLoad}
                         renderImage={(p) => <Image {...p} loading="lazy" />}
-                        renderViewer={(p) => <ImageViewer {...p} />}
                       />
                     )}
                   />
@@ -367,7 +365,6 @@ function RoomNotificationsGroupComp({
                 {...props}
                 autoPlay={mediaAutoLoad}
                 renderImage={(p) => <Image {...p} loading="lazy" />}
-                renderViewer={(p) => <ImageViewer {...p} />}
               />
             )}
           />

@@ -10,9 +10,6 @@ describe('ImageContent', () => {
     mimeType: 'image/png',
     url: 'mxc://matrix.org/test',
     autoPlay: true,
-    renderViewer: ({ src, alt, requestClose }: any) => (
-      <div data-testid="viewer">{alt}</div>
-    ),
     renderImage: ({ alt, title, src, onLoad, onError, onClick, tabIndex }: any) => (
       <img
         alt={alt}
@@ -30,23 +27,6 @@ describe('ImageContent', () => {
     render(
       <MatrixTestWrapper>
         <ImageContent {...defaultProps} />
-      </MatrixTestWrapper>
-    );
-  });
-
-  it('renders without crashing when renderViewer is provided', () => {
-    // This is the scenario that was causing "c is not a function"
-    render(
-      <MatrixTestWrapper>
-        <ImageContent
-          {...defaultProps}
-          renderViewer={({ src, alt, requestClose }) => (
-            <div>
-              <img src={src} alt={alt} />
-              <button onClick={requestClose}>Close</button>
-            </div>
-          )}
-        />
       </MatrixTestWrapper>
     );
   });

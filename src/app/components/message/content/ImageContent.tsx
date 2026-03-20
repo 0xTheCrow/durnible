@@ -6,10 +6,6 @@ import {
   Chip,
   Icon,
   Icons,
-  Modal,
-  Overlay,
-  OverlayBackdrop,
-  OverlayCenter,
   Spinner,
   Text,
   Tooltip,
@@ -18,7 +14,7 @@ import {
 } from 'folds';
 import classNames from 'classnames';
 import { BlurhashCanvas } from 'react-blurhash';
-import FocusTrap from 'focus-trap-react';
+import { useSetAtom } from 'jotai';
 import { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
 import { IImageInfo, MATRIX_BLUR_HASH_PROPERTY_NAME } from '../../../../types/matrix/common';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
@@ -28,17 +24,11 @@ import { settingsAtom } from '../../../state/settings';
 import * as css from './style.css';
 import { bytesToSize } from '../../../utils/common';
 import { FALLBACK_MIMETYPE } from '../../../utils/mimeTypes';
-import { stopPropagation } from '../../../utils/keyboard';
 import { decryptFile, downloadEncryptedMedia, mxcUrlToHttp } from '../../../utils/matrix';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
-import { ImageViewerModal } from '../../../styles/Modal.css';
 import { validBlurHash } from '../../../utils/blurHash';
+import { imageViewerAtom } from '../../../state/imageViewer';
 
-type RenderViewerProps = {
-  src: string;
-  alt: string;
-  requestClose: () => void;
-};
 type RenderImageProps = {
   alt: string;
   title: string;
@@ -58,7 +48,6 @@ export type ImageContentProps = {
   autoPlay?: boolean;
   markedAsSpoiler?: boolean;
   spoilerReason?: string;
-  renderViewer: (props: RenderViewerProps) => ReactNode;
   renderImage: (props: RenderImageProps) => ReactNode;
 };
 export const ImageContent = as<'div', ImageContentProps>(
@@ -73,7 +62,6 @@ export const ImageContent = as<'div', ImageContentProps>(
       autoPlay,
       markedAsSpoiler,
       spoilerReason,
-      renderViewer,
       renderImage,
       ...props
     },
@@ -91,9 +79,10 @@ export const ImageContent = as<'div', ImageContentProps>(
     const loadedImgRef = useRef<HTMLImageElement | null>(null);
     const [isHovered, setIsHovered] = useState(false);
 
+    const setViewerState = useSetAtom(imageViewerAtom);
+
     const [load, setLoad] = useState(false);
     const [error, setError] = useState(false);
-    const [viewer, setViewer] = useState(false);
     const [blurred, setBlurred] = useState(markedAsSpoiler ?? false);
 
     const [srcState, loadSrc] = useAsyncCallback(
@@ -139,35 +128,6 @@ export const ImageContent = as<'div', ImageContentProps>(
 
     return (
       <Box className={classNames(css.RelativeBase, className)} {...props} ref={ref}>
-        {srcState.status === AsyncStatus.Success && (
-          <Overlay open={viewer} backdrop={<OverlayBackdrop />}>
-            <OverlayCenter
-              onClick={(e) => { e.stopPropagation(); setViewer(false); }}
-            >
-              <FocusTrap
-                focusTrapOptions={{
-                  initialFocus: false,
-                  onDeactivate: () => setViewer(false),
-                  clickOutsideDeactivates: true,
-                  escapeDeactivates: stopPropagation,
-                }}
-              >
-                <Modal
-                  className={ImageViewerModal}
-                  size="500"
-                  onClick={(e) => e.stopPropagation()}
-                  onContextMenu={(evt: any) => evt.stopPropagation()}
-                >
-                  {renderViewer({
-                    src: srcState.data,
-                    alt: body,
-                    requestClose: () => setViewer(false),
-                  })}
-                </Modal>
-              </FocusTrap>
-            </OverlayCenter>
-          </Overlay>
-        )}
         {typeof blurHash === 'string' && !load && (
           <BlurhashCanvas
             style={{
@@ -211,7 +171,7 @@ export const ImageContent = as<'div', ImageContentProps>(
               },
               onLoad: handleLoad,
               onError: handleError,
-              onClick: () => setViewer(true),
+              onClick: () => setViewerState({ src: srcState.data, alt: body }),
               tabIndex: 0,
             })}
           </Box>
@@ -228,7 +188,7 @@ export const ImageContent = as<'div', ImageContentProps>(
             }}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
-            onClick={() => setViewer(true)}
+            onClick={() => setViewerState({ src: srcState.data, alt: body })}
           >
             <canvas
               ref={canvasRef}
