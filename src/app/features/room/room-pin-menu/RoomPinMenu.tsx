@@ -66,6 +66,7 @@ import { settingsAtom } from '../../../state/settings';
 import * as customHtmlCss from '../../../styles/CustomHtml.css';
 import { EncryptedContent } from '../message';
 import { Image } from '../../../components/media';
+import { ImageViewer } from '../../../components/image-viewer';
 import { useRoomNavigate } from '../../../hooks/useRoomNavigate';
 import { VirtualTile } from '../../../components/virtualizer';
 import { usePowerLevelsContext } from '../../../hooks/usePowerLevels';
@@ -369,6 +370,7 @@ export const RoomPinMenu = forwardRef<HTMLDivElement, RoomPinMenuProps>(
                           {...props}
                           autoPlay={mediaAutoLoad}
                           renderImage={(p) => <Image {...p} loading="lazy" />}
+                          renderViewer={(p) => <ImageViewer {...p} />}
                         />
                       )}
                     />
@@ -422,6 +424,7 @@ export const RoomPinMenu = forwardRef<HTMLDivElement, RoomPinMenuProps>(
                   {...props}
                   autoPlay={mediaAutoLoad}
                   renderImage={(p) => <Image {...p} loading="lazy" />}
+                  renderViewer={(p) => <ImageViewer {...p} />}
                 />
               )}
             />

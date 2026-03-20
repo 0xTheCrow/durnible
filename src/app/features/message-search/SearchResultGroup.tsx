@@ -29,6 +29,7 @@ import {
 } from '../../components/message';
 import { RenderMessageContent } from '../../components/RenderMessageContent';
 import { Image } from '../../components/media';
+import { ImageViewer } from '../../components/image-viewer';
 import * as customHtmlCss from '../../styles/CustomHtml.css';
 import { RoomAvatar, RoomIcon } from '../../components/room-avatar';
 import { getMemberAvatarMxc, getMemberDisplayName, getRoomAvatarUrl } from '../../utils/room';
@@ -158,6 +159,7 @@ export function SearchResultGroup({
                 {...props}
                 autoPlay={mediaAutoLoad}
                 renderImage={(p) => <Image {...p} loading="lazy" />}
+                renderViewer={(p) => <ImageViewer {...p} />}
               />
             )}
           />
