@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-const EDGE_ZONE = 50; // px from left edge to start swipe
+const EDGE_ZONE_RATIO = 0.5; // left half of screen to start swipe
 const MIN_SWIPE_DISTANCE = 60; // px to trigger open/close
 const DRAWER_WIDTH = 280; // px
 
@@ -22,7 +22,7 @@ export function useSwipeDrawer() {
 
   const handleTouchStart = useCallback((e: TouchEvent) => {
     const touch = e.touches[0];
-    const inEdgeZone = touch.clientX < EDGE_ZONE;
+    const inEdgeZone = touch.clientX < window.innerWidth * EDGE_ZONE_RATIO;
 
     if (!openRef.current && !inEdgeZone) return;
 
