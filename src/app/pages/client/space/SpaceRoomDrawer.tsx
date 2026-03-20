@@ -79,7 +79,7 @@ export function SpaceRoomDrawer({ children }: SpaceRoomDrawerProps) {
           className={ContainerColor({ variant: 'Background' })}
           style={{ height: '100%' }}
         >
-          <Space />
+          <Space isDrawerMode />
         </Box>
       </SwipeDrawer>
     </>

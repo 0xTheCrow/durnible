@@ -374,7 +374,10 @@ export function SpaceTombstone({ roomId, replacementRoomId }: SpaceTombstoneProp
   );
 }
 
-export function Space() {
+type SpaceProps = {
+  isDrawerMode?: boolean;
+};
+export function Space({ isDrawerMode }: SpaceProps = {}) {
   const mx = useMatrixClient();
   const space = useSpace();
   useNavToActivePathMapper(space.roomId);
@@ -442,7 +445,11 @@ export function Space() {
     <PageNav>
       <SpaceHeader />
       <PageNavContent scrollRef={scrollRef}>
-        <Box direction="Column" gap="300">
+        <Box
+          direction="Column"
+          gap="300"
+          style={isDrawerMode ? { minHeight: '100%', justifyContent: 'center' } : undefined}
+        >
           {tombstoneEvent && (
             <SpaceTombstone
               roomId={space.roomId}
@@ -527,6 +534,7 @@ export function Space() {
                     direct={mDirects.has(roomId)}
                     linkPath={getToLink(roomId)}
                     notificationMode={getRoomNotificationMode(notificationPreferences, room.roomId)}
+                    isDrawerMode={isDrawerMode}
                   />
                 </VirtualTile>
               );
