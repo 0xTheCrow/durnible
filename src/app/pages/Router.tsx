@@ -42,7 +42,7 @@ import {
 import { ClientBindAtoms, ClientLayout, ClientRoot } from './client';
 import { Home, HomeRouteRoomProvider, HomeSearch } from './client/home';
 import { Direct, DirectCreate, DirectRouteRoomProvider } from './client/direct';
-import { RouteSpaceProvider, Space, SpaceRouteRoomProvider, SpaceSearch } from './client/space';
+import { RouteSpaceProvider, Space, SpaceRoomDrawer, SpaceRouteRoomProvider, SpaceSearch } from './client/space';
 import { Explore, FeaturedRooms, PublicRooms } from './client/explore';
 import { Notifications, Inbox, Invites } from './client/inbox';
 import { setAfterLoginRedirectPath } from './afterLoginRedirectPath';
@@ -213,7 +213,9 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
                   </MobileFriendlyPageNav>
                 }
               >
-                <Outlet />
+                <SpaceRoomDrawer>
+                  <Outlet />
+                </SpaceRoomDrawer>
               </PageRoot>
             </RouteSpaceProvider>
           }

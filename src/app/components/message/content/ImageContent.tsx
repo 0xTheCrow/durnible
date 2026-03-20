@@ -202,6 +202,7 @@ export const ImageContent = as<'div', ImageContentProps>(
                 height: 'auto',
                 maxWidth: '100%',
                 maxHeight: '100%',
+                ...(shouldPauseGif && load && !isHovered ? { visibility: 'hidden' as const } : {}),
               },
               onLoad: handleLoad,
               onError: handleError,
