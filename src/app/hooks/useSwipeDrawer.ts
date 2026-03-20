@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-const EDGE_ZONE = 30; // px from left edge to start swipe
+const EDGE_ZONE = 50; // px from left edge to start swipe
 const MIN_SWIPE_DISTANCE = 60; // px to trigger open/close
 const DRAWER_WIDTH = 280; // px
 
@@ -16,63 +16,56 @@ type TouchState = {
 export function useSwipeDrawer() {
   const [open, setOpen] = useState(false);
   const [dragOffset, setDragOffset] = useState<number | null>(null);
+  const openRef = useRef(open);
+  openRef.current = open;
   const touchRef = useRef<TouchState | null>(null);
 
-  const handleTouchStart = useCallback(
-    (e: TouchEvent) => {
-      const touch = e.touches[0];
-      const inEdgeZone = touch.clientX < EDGE_ZONE;
+  const handleTouchStart = useCallback((e: TouchEvent) => {
+    const touch = e.touches[0];
+    const inEdgeZone = touch.clientX < EDGE_ZONE;
 
-      if (!open && !inEdgeZone) return;
+    if (!openRef.current && !inEdgeZone) return;
 
-      touchRef.current = {
-        startX: touch.clientX,
-        startY: touch.clientY,
-        currentX: touch.clientX,
-        tracking: true,
-        directionLocked: false,
-        isHorizontal: false,
-      };
-    },
-    [open]
-  );
+    touchRef.current = {
+      startX: touch.clientX,
+      startY: touch.clientY,
+      currentX: touch.clientX,
+      tracking: true,
+      directionLocked: false,
+      isHorizontal: false,
+    };
+  }, []);
 
-  const handleTouchMove = useCallback(
-    (e: TouchEvent) => {
-      const state = touchRef.current;
-      if (!state || !state.tracking) return;
+  const handleTouchMove = useCallback((e: TouchEvent) => {
+    const state = touchRef.current;
+    if (!state || !state.tracking) return;
 
-      const touch = e.touches[0];
-      const dx = touch.clientX - state.startX;
-      const dy = touch.clientY - state.startY;
+    const touch = e.touches[0];
+    const dx = touch.clientX - state.startX;
+    const dy = touch.clientY - state.startY;
 
-      // Lock direction after enough movement
-      if (!state.directionLocked && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
-        state.directionLocked = true;
-        state.isHorizontal = Math.abs(dx) > Math.abs(dy);
-        if (!state.isHorizontal) {
-          state.tracking = false;
-          setDragOffset(null);
-          return;
-        }
+    if (!state.directionLocked && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
+      state.directionLocked = true;
+      state.isHorizontal = Math.abs(dx) > Math.abs(dy);
+      if (!state.isHorizontal) {
+        state.tracking = false;
+        setDragOffset(null);
+        return;
       }
+    }
 
-      if (!state.directionLocked) return;
+    if (!state.directionLocked) return;
 
-      state.currentX = touch.clientX;
+    state.currentX = touch.clientX;
 
-      if (open) {
-        // Closing: clamp between 0 and DRAWER_WIDTH
-        const offset = Math.max(0, Math.min(DRAWER_WIDTH, DRAWER_WIDTH + dx));
-        setDragOffset(offset);
-      } else {
-        // Opening: clamp between 0 and DRAWER_WIDTH
-        const offset = Math.max(0, Math.min(DRAWER_WIDTH, dx));
-        setDragOffset(offset);
-      }
-    },
-    [open]
-  );
+    if (openRef.current) {
+      const offset = Math.max(0, Math.min(DRAWER_WIDTH, DRAWER_WIDTH + dx));
+      setDragOffset(offset);
+    } else {
+      const offset = Math.max(0, Math.min(DRAWER_WIDTH, dx));
+      setDragOffset(offset);
+    }
+  }, []);
 
   const handleTouchEnd = useCallback(() => {
     const state = touchRef.current;
@@ -83,13 +76,11 @@ export function useSwipeDrawer() {
 
     const dx = state.currentX - state.startX;
 
-    if (open) {
-      // Close if swiped left far enough
+    if (openRef.current) {
       if (dx < -MIN_SWIPE_DISTANCE) {
         setOpen(false);
       }
     } else {
-      // Open if swiped right far enough
       if (dx > MIN_SWIPE_DISTANCE) {
         setOpen(true);
       }
@@ -97,7 +88,7 @@ export function useSwipeDrawer() {
 
     setDragOffset(null);
     touchRef.current = null;
-  }, [open]);
+  }, []);
 
   useEffect(() => {
     document.addEventListener('touchstart', handleTouchStart, { passive: true });
