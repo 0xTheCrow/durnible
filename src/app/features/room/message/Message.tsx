@@ -122,6 +122,46 @@ export const MessageQuickReactions = as<'div', MessageQuickReactionsProps>(
   }
 );
 
+export const MessageAllReactionButton = as<
+  'button',
+  {
+    room: Room;
+    relations: Relations;
+  }
+>(({ room, relations, ...props }, ref) => {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <OverlayModal
+        open={open}
+        requestClose={() => setOpen(false)}
+        overlayProps={{ onContextMenu: (evt: any) => evt.stopPropagation() }}
+        focusTrapOptions={{ returnFocusOnDeactivate: false }}
+      >
+        <Modal variant="Surface" size="300" flexHeight>
+          <ReactionViewer
+            room={room}
+            relations={relations}
+            requestClose={() => setOpen(false)}
+          />
+        </Modal>
+      </OverlayModal>
+      <IconButton
+        variant="SurfaceVariant"
+        size="300"
+        radii="300"
+        onClick={() => setOpen(true)}
+        aria-pressed={open}
+        {...props}
+        ref={ref}
+      >
+        <Icon src={Icons.Smile} size="100" />
+      </IconButton>
+    </>
+  );
+});
+
 export const MessageAllReactionItem = as<
   'button',
   {
@@ -827,8 +867,6 @@ export const Message = as<'div', MessageProps>(
       }, 100);
     };
 
-    const isThreadedMessage = mEvent.threadRootId !== undefined;
-
     return (
       <MessageBase
         className={classNames(css.MessageBase, className, {
@@ -885,6 +923,12 @@ export const Message = as<'div', MessageProps>(
                     </IconButton>
                   </PopOut>
                 )}
+                {relations && (
+                  <MessageAllReactionButton
+                    room={room}
+                    relations={relations}
+                  />
+                )}
                 <IconButton
                   onClick={onReplyClick}
                   data-event-id={mEvent.getId()}
@@ -894,17 +938,6 @@ export const Message = as<'div', MessageProps>(
                 >
                   <Icon src={Icons.ReplyArrow} size="100" />
                 </IconButton>
-                {!isThreadedMessage && (
-                  <IconButton
-                    onClick={(ev) => onReplyClick(ev, true)}
-                    data-event-id={mEvent.getId()}
-                    variant="SurfaceVariant"
-                    size="300"
-                    radii="300"
-                  >
-                    <Icon src={Icons.ThreadPlus} size="100" />
-                  </IconButton>
-                )}
                 {canEditEvent(mx, mEvent) && onEditId && (
                   <IconButton
                     onClick={() => onEditId(mEvent.getId())}
@@ -984,27 +1017,6 @@ export const Message = as<'div', MessageProps>(
                               Reply
                             </Text>
                           </MenuItem>
-                          {!isThreadedMessage && (
-                            <MenuItem
-                              size="300"
-                              after={<Icon src={Icons.ThreadPlus} size="100" />}
-                              radii="300"
-                              data-event-id={mEvent.getId()}
-                              onClick={(evt: any) => {
-                                onReplyClick(evt, true);
-                                closeMenu();
-                              }}
-                            >
-                              <Text
-                                className={css.MessageMenuItemText}
-                                as="span"
-                                size="T300"
-                                truncate
-                              >
-                                Reply in Thread
-                              </Text>
-                            </MenuItem>
-                          )}
                           {canEditEvent(mx, mEvent) && onEditId && (
                             <MenuItem
                               size="300"
