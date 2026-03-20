@@ -13,6 +13,7 @@ type OverlayModalProps = {
   focusTrapOptions?: Partial<FocusTrapOptions>;
   backdrop?: boolean;
   overlayProps?: React.HTMLAttributes<HTMLDivElement>;
+  overlayCenterProps?: React.HTMLAttributes<HTMLDivElement>;
 };
 
 export function OverlayModal({
@@ -22,6 +23,7 @@ export function OverlayModal({
   focusTrapOptions,
   backdrop = true,
   overlayProps,
+  overlayCenterProps,
 }: OverlayModalProps) {
   const requestCloseRef = useRef(requestClose);
   requestCloseRef.current = requestClose;
@@ -77,6 +79,7 @@ export function OverlayModal({
       {...overlayProps}
     >
       <OverlayCenter
+        {...overlayCenterProps}
         onClick={(e: React.MouseEvent) => {
           if (e.target !== e.currentTarget) return;
           e.stopPropagation();

@@ -1,4 +1,4 @@
-import React, { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import React, { ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   Badge,
   Box,
@@ -69,15 +69,17 @@ export const ImageContent = as<'div', ImageContentProps>(
   ) => {
     const mx = useMatrixClient();
     const useAuthentication = useMediaAuthentication();
-    const setImageViewer = useSetAtom(imageViewerAtom);
     const blurHash = validBlurHash(info?.[MATRIX_BLUR_HASH_PROPERTY_NAME]);
 
     const [pauseGifs] = useSetting(settingsAtom, 'pauseGifs');
     const isGif = mimeType === 'image/gif' || mimeType === 'image/apng';
     const shouldPauseGif = pauseGifs && isGif;
 
+    const canvasRef = useRef<HTMLCanvasElement>(null);
     const loadedImgRef = useRef<HTMLImageElement | null>(null);
     const [isHovered, setIsHovered] = useState(false);
+
+    const setViewerState = useSetAtom(imageViewerAtom);
 
     const [load, setLoad] = useState(false);
     const [error, setError] = useState(false);
@@ -97,26 +99,19 @@ export const ImageContent = as<'div', ImageContentProps>(
     );
 
     const handleLoad = (evt: React.SyntheticEvent<HTMLImageElement>) => {
-      loadedImgRef.current = evt.currentTarget;
+      if (shouldPauseGif) loadedImgRef.current = evt.currentTarget;
       setLoad(true);
     };
 
-    // Use a callback ref so the canvas is drawn every time the element mounts
-    // (e.g., after spoiler reveal or source retry)
-    const canvasCallbackRef = useCallback(
-      (canvas: HTMLCanvasElement | null) => {
-        if (!canvas || !loadedImgRef.current) return;
-        const img = loadedImgRef.current;
-        if (img.naturalWidth === 0 || img.naturalHeight === 0) return;
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-        const ctx = canvas.getContext('2d');
-        ctx?.drawImage(img, 0, 0);
-      },
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      [load]
-    );
-
+    useLayoutEffect(() => {
+      if (!shouldPauseGif || !load || !loadedImgRef.current || !canvasRef.current) return;
+      const img = loadedImgRef.current;
+      const canvas = canvasRef.current;
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      ctx?.drawImage(img, 0, 0);
+    }, [shouldPauseGif, load]);
     const handleError = () => {
       setLoad(false);
       setError(true);
@@ -131,17 +126,16 @@ export const ImageContent = as<'div', ImageContentProps>(
       if (autoPlay) loadSrc();
     }, [autoPlay, loadSrc]);
 
-    const openViewer = () => {
-      if (srcState.status === AsyncStatus.Success) {
-        setImageViewer({ src: srcState.data, alt: body });
-      }
-    };
-
     return (
       <Box className={classNames(css.RelativeBase, className)} {...props} ref={ref}>
         {typeof blurHash === 'string' && !load && (
           <BlurhashCanvas
-            style={{ width: '100%', height: '100%' }}
+            style={{
+              width: info?.w ?? 400,
+              height: info?.h ?? 400,
+              maxWidth: '100%',
+              maxHeight: '100%',
+            }}
             width={32}
             height={32}
             hash={blurHash}
@@ -163,10 +157,7 @@ export const ImageContent = as<'div', ImageContentProps>(
           </Box>
         )}
         {srcState.status === AsyncStatus.Success && (
-          <Box
-            className={classNames(css.AbsoluteContainer, blurred && css.Blur)}
-            style={shouldPauseGif && load && !isHovered ? { visibility: 'hidden' } : undefined}
-          >
+          <Box className={classNames(css.AbsoluteContainer, blurred && css.Blur)}>
             {renderImage({
               alt: body,
               title: body,
@@ -176,10 +167,11 @@ export const ImageContent = as<'div', ImageContentProps>(
                 height: 'auto',
                 maxWidth: '100%',
                 maxHeight: '100%',
+                ...(shouldPauseGif && load && !isHovered ? { visibility: 'hidden' as const } : {}),
               },
               onLoad: handleLoad,
               onError: handleError,
-              onClick: openViewer,
+              onClick: () => setViewerState({ src: srcState.data, alt: body }),
               tabIndex: 0,
             })}
           </Box>
@@ -196,15 +188,15 @@ export const ImageContent = as<'div', ImageContentProps>(
             }}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
-            onClick={openViewer}
+            onClick={() => setViewerState({ src: srcState.data, alt: body })}
           >
             <canvas
-              ref={canvasCallbackRef}
+              ref={canvasRef}
               style={{
                 width: '100%',
                 height: '100%',
+                display: isHovered ? 'none' : 'block',
                 pointerEvents: 'none',
-                visibility: isHovered ? 'hidden' : 'visible',
               }}
             />
           </div>

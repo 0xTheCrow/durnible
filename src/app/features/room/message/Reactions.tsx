@@ -149,6 +149,7 @@ export const Reactions = as<'div', ReactionsProps>(
             <Modal
               variant="Surface"
               size="300"
+              flexHeight
             >
               <ReactionViewer
                 room={room}

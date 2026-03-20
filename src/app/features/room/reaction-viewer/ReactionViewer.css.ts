@@ -3,9 +3,6 @@ import { DefaultReset, color, config } from 'folds';
 
 export const ReactionViewer = style([
   DefaultReset,
-  {
-    height: '100%',
-  },
 ]);
 
 export const Sidebar = style({
