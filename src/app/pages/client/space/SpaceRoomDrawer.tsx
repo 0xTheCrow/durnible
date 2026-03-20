@@ -5,6 +5,8 @@ import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
 import { useSwipeDrawer } from '../../../hooks/useSwipeDrawer';
 import { SwipeDrawer } from '../../../components/swipe-drawer';
 import { ContainerColor } from '../../../styles/ContainerColor.css';
+import { useSetting } from '../../../state/hooks/settings';
+import { settingsAtom } from '../../../state/settings';
 import { SPACE_PATH } from '../../paths';
 import { Space } from './Space';
 
@@ -16,6 +18,7 @@ export function SpaceRoomDrawer({ children }: SpaceRoomDrawerProps) {
   const screenSize = useScreenSizeContext();
   const isMobileOrTablet = screenSize !== ScreenSize.Desktop;
   const isSpaceRoot = useMatch({ path: SPACE_PATH, caseSensitive: true, end: true });
+  const [swipeGestures] = useSetting(settingsAtom, 'swipeGestures');
   const { open, setOpen, dragOffset, drawerWidth } = useSwipeDrawer();
   const location = useLocation();
   const prevPathRef = useRef(location.pathname);
@@ -57,7 +60,7 @@ export function SpaceRoomDrawer({ children }: SpaceRoomDrawerProps) {
     };
   }, [open]);
 
-  if (!isMobileOrTablet || isSpaceRoot) {
+  if (!isMobileOrTablet || isSpaceRoot || !swipeGestures) {
     return <>{children}</>;
   }
 

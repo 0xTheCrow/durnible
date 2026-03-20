@@ -47,6 +47,8 @@ export interface Settings {
 
   developerTools: boolean;
 
+  swipeGestures: boolean;
+
   pwaMode: boolean;
 }
 
@@ -87,6 +89,8 @@ const defaultSettings: Settings = {
   alternateInput: false,
 
   developerTools: false,
+
+  swipeGestures: true,
 
   pwaMode: false,
 };

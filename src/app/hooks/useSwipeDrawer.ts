@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 const EDGE_ZONE_RATIO = 1; // fraction of screen width for swipe zone
-const MIN_SWIPE_DISTANCE = 60; // px to trigger open/close
+const MIN_OPEN_DISTANCE = 60; // px to trigger open
+const MIN_CLOSE_DISTANCE = 30; // px to trigger close
 const DRAWER_WIDTH = 280; // px
 
 type TouchState = {
@@ -77,11 +78,11 @@ export function useSwipeDrawer() {
     const dx = state.currentX - state.startX;
 
     if (openRef.current) {
-      if (dx < -MIN_SWIPE_DISTANCE) {
+      if (dx < -MIN_CLOSE_DISTANCE) {
         setOpen(false);
       }
     } else {
-      if (dx > MIN_SWIPE_DISTANCE) {
+      if (dx > MIN_OPEN_DISTANCE) {
         setOpen(true);
       }
     }

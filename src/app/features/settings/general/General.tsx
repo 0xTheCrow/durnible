@@ -1025,10 +1025,20 @@ function Messages() {
 
 function Advanced() {
   const [pwaMode, setPwaMode] = useSetting(settingsAtom, 'pwaMode');
+  const [swipeGestures, setSwipeGestures] = useSetting(settingsAtom, 'swipeGestures');
 
   return (
     <Box direction="Column" gap="100">
       <Text size="L400">Advanced</Text>
+      <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
+        <SettingTile
+          title="Swipe Gestures"
+          description="Enable swipe gestures on mobile and tablet, such as swiping to open the room drawer."
+          after={
+            <Switch variant="Primary" value={swipeGestures} onChange={setSwipeGestures} />
+          }
+        />
+      </SequenceCard>
       <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
         <SettingTile
           title="PWA Mode"
