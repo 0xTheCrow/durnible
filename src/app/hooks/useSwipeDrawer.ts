@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-const EDGE_ZONE_RATIO = 0.5; // left half of screen to start swipe
+const EDGE_ZONE_RATIO = 1; // fraction of screen width for swipe zone
 const MIN_SWIPE_DISTANCE = 60; // px to trigger open/close
 const DRAWER_WIDTH = 280; // px
 
