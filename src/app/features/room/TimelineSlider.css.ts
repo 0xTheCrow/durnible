@@ -1,4 +1,4 @@
-import { keyframes, style } from '@vanilla-extract/css';
+import { style } from '@vanilla-extract/css';
 import { color, config, toRem } from 'folds';
 
 export const SliderContainer = style({
@@ -6,24 +6,18 @@ export const SliderContainer = style({
   right: 0,
   top: 0,
   bottom: 0,
-  width: toRem(28),
+  width: toRem(48),
   zIndex: 10,
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  opacity: 0,
-  transition: 'opacity 0.2s',
-  selectors: {
-    '&[data-visible]': {
-      opacity: 1,
-    },
-  },
+  padding: `${toRem(8)} 0`,
 });
 
 export const SliderTrack = style({
-  width: toRem(4),
+  width: toRem(6),
   height: '100%',
-  borderRadius: toRem(2),
+  borderRadius: toRem(3),
   backgroundColor: color.SurfaceVariant.ContainerActive,
   position: 'relative',
   cursor: 'pointer',
@@ -32,29 +26,48 @@ export const SliderTrack = style({
 
 export const SliderThumb = style({
   position: 'absolute',
-  width: toRem(14),
-  height: toRem(14),
-  borderRadius: '50%',
+  width: toRem(40),
+  height: toRem(40),
+  borderRadius: toRem(20),
   backgroundColor: color.Primary.Main,
   left: '50%',
   transform: 'translate(-50%, -50%)',
   cursor: 'grab',
-  pointerEvents: 'none',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  boxShadow: `0 2px 8px rgba(0, 0, 0, 0.3)`,
+  transition: 'width 0.1s, height 0.1s',
   selectors: {
     '&[data-dragging="true"]': {
       cursor: 'grabbing',
-      width: toRem(16),
-      height: toRem(16),
+      width: toRem(46),
+      height: toRem(46),
     },
   },
 });
 
+export const SliderThumbGrip = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: toRem(3),
+  alignItems: 'center',
+  pointerEvents: 'none',
+});
+
+export const SliderThumbGripLine = style({
+  width: toRem(16),
+  height: toRem(2),
+  borderRadius: toRem(1),
+  backgroundColor: 'rgba(255, 255, 255, 0.7)',
+});
+
 export const SliderTooltip = style({
   position: 'absolute',
-  right: toRem(32),
+  right: toRem(56),
   transform: 'translateY(-50%)',
   backgroundColor: color.SurfaceVariant.Container,
-  padding: `${config.space.S100} ${config.space.S200}`,
+  padding: `${config.space.S200} ${config.space.S300}`,
   borderRadius: config.radii.R300,
   whiteSpace: 'nowrap',
   pointerEvents: 'none',

@@ -42,7 +42,6 @@ export function TimelineSlider({ room }: TimelineSliderProps) {
 
   const trackRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState(false);
-  const [hovered, setHovered] = useState(false);
   const [position, setPosition] = useState(0);
   const [loading, setLoading] = useState(false);
 
@@ -113,18 +112,10 @@ export function TimelineSlider({ room }: TimelineSliderProps) {
     [dragging, getPositionFromPointer, positionToTs, mx, room.roomId, alive, navigateRoom]
   );
 
-  const showThumb = dragging || hovered;
-
   if (!visible) return null;
 
   return (
-    <div
-      className={css.SliderContainer}
-      data-dragging={dragging}
-      data-visible
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
+    <div className={css.SliderContainer}>
       <div
         ref={trackRef}
         className={css.SliderTrack}
@@ -133,13 +124,17 @@ export function TimelineSlider({ room }: TimelineSliderProps) {
         onPointerUp={handlePointerUp}
         onPointerCancel={() => setDragging(false)}
       >
-        {showThumb && (
-          <div
-            className={css.SliderThumb}
-            data-dragging={dragging}
-            style={{ top: `${position * 100}%` }}
-          />
-        )}
+        <div
+          className={css.SliderThumb}
+          data-dragging={dragging}
+          style={{ top: `${position * 100}%` }}
+        >
+          <div className={css.SliderThumbGrip}>
+            <div className={css.SliderThumbGripLine} />
+            <div className={css.SliderThumbGripLine} />
+            <div className={css.SliderThumbGripLine} />
+          </div>
+        </div>
         {dragging && (
           <div className={css.SliderTooltip} style={{ top: `${position * 100}%` }}>
             <Text size="T200">
