@@ -72,7 +72,7 @@ export function TimelineSlider({ room }: TimelineSliderProps) {
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
       e.preventDefault();
-      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+      e.currentTarget.setPointerCapture(e.pointerId);
       setDragging(true);
       setPosition(getPositionFromPointer(e.clientY));
     },
