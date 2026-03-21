@@ -68,9 +68,17 @@ export function TimelineSlider({ room }: TimelineSliderProps) {
     []
   );
 
-  // Use refs to share latest values with document-level listeners
+  // Refs so document-level listeners always access latest values
   const positionRef = useRef(position);
   positionRef.current = position;
+  const mxRef = useRef(mx);
+  mxRef.current = mx;
+  const navigateRoomRef = useRef(navigateRoom);
+  navigateRoomRef.current = navigateRoom;
+  const aliveRef = useRef(alive);
+  aliveRef.current = alive;
+  const roomIdRef = useRef(room.roomId);
+  roomIdRef.current = room.roomId;
   const minTsRef = useRef(minTs);
   minTsRef.current = minTs;
   const maxTsRef = useRef(maxTs);
@@ -101,14 +109,18 @@ export function TimelineSlider({ room }: TimelineSliderProps) {
 
         try {
           setLoading(true);
-          const result = await mx.timestampToEvent(room.roomId, ts, Direction.Forward);
-          if (alive()) {
-            navigateRoom(room.roomId, result.event_id);
+          const result = await mxRef.current.timestampToEvent(
+            roomIdRef.current,
+            ts,
+            Direction.Forward
+          );
+          if (aliveRef.current()) {
+            navigateRoomRef.current(roomIdRef.current, result.event_id);
           }
-        } catch {
-          // server may not support MSC3030
+        } catch (err) {
+          console.error('Timeline slider navigation failed:', err);
         } finally {
-          if (alive()) {
+          if (aliveRef.current()) {
             setLoading(false);
           }
         }
@@ -117,7 +129,7 @@ export function TimelineSlider({ room }: TimelineSliderProps) {
       document.addEventListener('pointermove', onMove);
       document.addEventListener('pointerup', onUp);
     },
-    [getPositionFromPointer, mx, room.roomId, alive, navigateRoom]
+    [getPositionFromPointer]
   );
 
   if (!visible) return null;

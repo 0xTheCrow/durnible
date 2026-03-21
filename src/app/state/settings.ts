@@ -98,7 +98,7 @@ const defaultSettings: Settings = {
 
   pwaMode: false,
 
-  timelineSliderRange: 'all',
+  timelineSliderRange: 'day',
 };
 
 export const getSettings = () => {
