@@ -22,7 +22,7 @@ import {
 import { OverlayModal } from '../../components/OverlayModal';
 import { useNavigate } from 'react-router-dom';
 import { JoinRule, Room } from 'matrix-js-sdk';
-import { useAtomValue, useSetAtom } from 'jotai';
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 
 import { useStateEvent } from '../../hooks/useStateEvent';
 import { PageHeader } from '../../components/page';
@@ -318,7 +318,7 @@ export function RoomViewHeader() {
     : undefined;
 
   const [peopleDrawer, setPeopleDrawer] = useSetting(settingsAtom, 'isPeopleDrawer');
-  const setSliderVisible = useSetAtom(timelineSliderVisibleAtom);
+  const [sliderVisible, setSliderVisible] = useAtom(timelineSliderVisibleAtom);
 
   const handleSearchClick = () => {
     const searchParams: _SearchPathSearchParams = {
@@ -490,8 +490,9 @@ export function RoomViewHeader() {
               <IconButton
                 ref={triggerRef}
                 onClick={() => setSliderVisible((v) => !v)}
+                aria-pressed={sliderVisible}
               >
-                <Icon size="400" src={Icons.ArrowUpDown} />
+                <Icon size="400" src={Icons.ArrowUpDown} filled={sliderVisible} />
               </IconButton>
             )}
           </TooltipProvider>

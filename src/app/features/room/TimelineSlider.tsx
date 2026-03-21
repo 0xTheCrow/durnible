@@ -24,11 +24,12 @@ const rangeToMs: Record<TimelineSliderRange, number | null> = {
 type TimelineSliderProps = {
   room: Room;
   onJumpToTimestamp: (timestamp: number) => void;
+  onJumpToLatest: () => void;
   loading?: boolean;
   error?: string;
 };
 
-export function TimelineSlider({ room, onJumpToTimestamp, loading, error }: TimelineSliderProps) {
+export function TimelineSlider({ room, onJumpToTimestamp, onJumpToLatest, loading, error }: TimelineSliderProps) {
   const visible = useAtomValue(timelineSliderVisibleAtom);
 
   const createStateEvent = useStateEvent(room, StateEvent.RoomCreate);
@@ -64,9 +65,11 @@ export function TimelineSlider({ room, onJumpToTimestamp, loading, error }: Time
     []
   );
 
-  // Ref so the document-level onUp always reads the latest callback
+  // Refs so the document-level onUp always reads the latest callbacks
   const onJumpRef = useRef(onJumpToTimestamp);
   onJumpRef.current = onJumpToTimestamp;
+  const onJumpLatestRef = useRef(onJumpToLatest);
+  onJumpLatestRef.current = onJumpToLatest;
   const positionRef = useRef(position);
   positionRef.current = position;
   const minTsRef = useRef(minTs);
@@ -95,8 +98,12 @@ export function TimelineSlider({ room, onJumpToTimestamp, loading, error }: Time
         setDragging(false);
 
         const finalPos = positionRef.current;
-        const ts = minTsRef.current + (maxTsRef.current - minTsRef.current) * finalPos;
-        onJumpRef.current(ts);
+        if (finalPos >= 0.98) {
+          onJumpLatestRef.current();
+        } else {
+          const ts = minTsRef.current + (maxTsRef.current - minTsRef.current) * finalPos;
+          onJumpRef.current(ts);
+        }
       };
 
       document.addEventListener('pointermove', onMove);

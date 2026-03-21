@@ -97,6 +97,10 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
     [timestampToEvent, alive, navigateRoom, room.roomId]
   );
 
+  const handleJumpToLatest = useCallback(() => {
+    navigateRoom(room.roomId, undefined, { replace: true });
+  }, [navigateRoom, room.roomId]);
+
   const tombstoneEvent = useStateEvent(room, StateEvent.RoomTombstone);
   const powerLevels = usePowerLevelsContext();
   const creators = useRoomCreators(room);
@@ -140,6 +144,7 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
         <TimelineSlider
           room={room}
           onJumpToTimestamp={handleJumpToTimestamp}
+          onJumpToLatest={handleJumpToLatest}
           loading={jumpState.status === AsyncStatus.Loading}
           error={jumpState.status === AsyncStatus.Error ? jumpState.error.message : undefined}
         />
