@@ -35,7 +35,7 @@ export function TimelineSlider({ room, onJumpToTimestamp, loading, error }: Time
   const createTs = useMemo(() => createStateEvent?.getTs() ?? 0, [createStateEvent]);
 
   const [hour24Clock] = useSetting(settingsAtom, 'hour24Clock');
-  const [sliderRange] = useSetting(settingsAtom, 'timelineSliderRange');
+  const [sliderRange, setSliderRange] = useSetting(settingsAtom, 'timelineSliderRange');
 
   const trackRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -107,8 +107,32 @@ export function TimelineSlider({ room, onJumpToTimestamp, loading, error }: Time
 
   if (!visible) return null;
 
+  const rangeLabels: { key: TimelineSliderRange; label: string }[] = [
+    { key: 'day', label: '1D' },
+    { key: 'week', label: '1W' },
+    { key: 'month', label: '1M' },
+    { key: '3months', label: '3M' },
+    { key: '6months', label: '6M' },
+    { key: 'year', label: '1Y' },
+    { key: 'all', label: 'All' },
+  ];
+
   return (
     <div className={css.SliderContainer}>
+      <div className={css.RangeChips}>
+        {rangeLabels.map(({ key, label }) => (
+          <div
+            key={key}
+            className={css.RangeChip}
+            data-active={sliderRange === key}
+            onClick={() => setSliderRange(key)}
+          >
+            <Text size="T200" style={{ color: sliderRange === key ? 'white' : undefined }}>
+              {label}
+            </Text>
+          </div>
+        ))}
+      </div>
       <div
         ref={trackRef}
         className={css.SliderTrack}

@@ -62,6 +62,31 @@ export const SliderThumbGripLine = style({
   backgroundColor: 'rgba(255, 255, 255, 0.7)',
 });
 
+export const RangeChips = style({
+  position: 'absolute',
+  right: toRem(52),
+  top: 0,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: toRem(2),
+  pointerEvents: 'auto',
+});
+
+export const RangeChip = style({
+  padding: `${toRem(2)} ${toRem(6)}`,
+  borderRadius: config.radii.R300,
+  backgroundColor: color.SurfaceVariant.Container,
+  border: `${config.borderWidth.B300} solid ${color.SurfaceVariant.ContainerLine}`,
+  cursor: 'pointer',
+  whiteSpace: 'nowrap',
+  selectors: {
+    '&[data-active="true"]': {
+      backgroundColor: color.Primary.Main,
+      borderColor: color.Primary.Main,
+    },
+  },
+});
+
 export const SliderTooltip = style({
   position: 'absolute',
   right: toRem(56),
