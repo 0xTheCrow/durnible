@@ -17,6 +17,7 @@ export const SliderContainer = style({
 export const SliderTrack = style({
   width: toRem(6),
   flex: 1,
+  marginTop: toRem(20),
   borderRadius: toRem(3),
   backgroundColor: color.SurfaceVariant.ContainerActive,
   position: 'relative',
