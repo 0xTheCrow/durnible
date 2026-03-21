@@ -42,7 +42,7 @@ export function TimelineSlider({ room }: TimelineSliderProps) {
 
   const trackRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState(false);
-  const [position, setPosition] = useState(0);
+  const [position, setPosition] = useState(1);
   const [loading, setLoading] = useState(false);
 
   const now = Date.now();
@@ -50,7 +50,6 @@ export function TimelineSlider({ room }: TimelineSliderProps) {
   const minTs = rangeDuration !== null ? Math.max(createTs, now - rangeDuration) : createTs;
   const maxTs = now;
 
-  // position: 0 = top = past (minTs), 1 = bottom = now (maxTs)
   const positionToTs = useCallback(
     (pos: number): number => minTs + (maxTs - minTs) * pos,
     [minTs, maxTs]
@@ -69,47 +68,56 @@ export function TimelineSlider({ room }: TimelineSliderProps) {
     []
   );
 
+  // Use refs to share latest values with document-level listeners
+  const positionRef = useRef(position);
+  positionRef.current = position;
+  const minTsRef = useRef(minTs);
+  minTsRef.current = minTs;
+  const maxTsRef = useRef(maxTs);
+  maxTsRef.current = maxTs;
+
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
       e.preventDefault();
-      e.currentTarget.setPointerCapture(e.pointerId);
-      setDragging(true);
-      setPosition(getPositionFromPointer(e.clientY));
-    },
-    [getPositionFromPointer]
-  );
-
-  const handlePointerMove = useCallback(
-    (e: React.PointerEvent) => {
-      if (!dragging) return;
-      e.preventDefault();
-      setPosition(getPositionFromPointer(e.clientY));
-    },
-    [dragging, getPositionFromPointer]
-  );
-
-  const handlePointerUp = useCallback(
-    async (e: React.PointerEvent) => {
-      if (!dragging) return;
-      setDragging(false);
       const pos = getPositionFromPointer(e.clientY);
-      const ts = positionToTs(pos);
+      positionRef.current = pos;
+      setPosition(pos);
+      setDragging(true);
 
-      try {
-        setLoading(true);
-        const result = await mx.timestampToEvent(room.roomId, ts, Direction.Forward);
-        if (alive()) {
-          navigateRoom(room.roomId, result.event_id);
+      const onMove = (ev: PointerEvent) => {
+        ev.preventDefault();
+        const p = getPositionFromPointer(ev.clientY);
+        positionRef.current = p;
+        setPosition(p);
+      };
+
+      const onUp = async () => {
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onUp);
+        setDragging(false);
+
+        const finalPos = positionRef.current;
+        const ts = minTsRef.current + (maxTsRef.current - minTsRef.current) * finalPos;
+
+        try {
+          setLoading(true);
+          const result = await mx.timestampToEvent(room.roomId, ts, Direction.Forward);
+          if (alive()) {
+            navigateRoom(room.roomId, result.event_id);
+          }
+        } catch {
+          // server may not support MSC3030
+        } finally {
+          if (alive()) {
+            setLoading(false);
+          }
         }
-      } catch {
-        // server may not support MSC3030
-      } finally {
-        if (alive()) {
-          setLoading(false);
-        }
-      }
+      };
+
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp);
     },
-    [dragging, getPositionFromPointer, positionToTs, mx, room.roomId, alive, navigateRoom]
+    [getPositionFromPointer, mx, room.roomId, alive, navigateRoom]
   );
 
   if (!visible) return null;
@@ -120,9 +128,6 @@ export function TimelineSlider({ room }: TimelineSliderProps) {
         ref={trackRef}
         className={css.SliderTrack}
         onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={() => setDragging(false)}
       >
         <div
           className={css.SliderThumb}
