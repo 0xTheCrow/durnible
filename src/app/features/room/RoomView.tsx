@@ -77,7 +77,7 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
   const [jumpState, timestampToEvent] = useAsyncCallback<string, MatrixError, [number]>(
     useCallback(
       async (ts) => {
-        const result = await mx.timestampToEvent(room.roomId, ts, Direction.Forward);
+        const result = await mx.timestampToEvent(room.roomId, Math.floor(ts), Direction.Forward);
         return result.event_id;
       },
       [mx, room]
