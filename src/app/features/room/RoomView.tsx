@@ -13,6 +13,7 @@ import { RoomTimeline } from './RoomTimeline';
 import { RoomViewTyping } from './RoomViewTyping';
 import { RoomTombstone } from './RoomTombstone';
 import { RoomInput } from './RoomInput';
+import { TimelineSlider } from './TimelineSlider';
 import { /*RoomViewFollowing,*/ RoomViewFollowingPlaceholder } from './RoomViewFollowing';
 import { Page } from '../../components/page';
 import { RoomViewHeader } from './RoomViewHeader';
@@ -99,7 +100,7 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
   return (
     <Page ref={roomViewRef}>
       <RoomViewHeader />
-      <Box grow="Yes" direction="Column">
+      <Box grow="Yes" direction="Column" style={{ position: 'relative' }}>
         <RoomTimeline
           key={roomId}
           room={room}
@@ -108,6 +109,7 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
           editor={editor}
         />
         <RoomViewTyping room={room} />
+        <TimelineSlider room={room} />
       </Box>
       <Box shrink="No" direction="Column">
         <div style={{ padding: `0 ${config.space.S400}` }}>

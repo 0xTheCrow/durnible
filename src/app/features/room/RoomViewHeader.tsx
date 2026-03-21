@@ -22,7 +22,7 @@ import {
 import { OverlayModal } from '../../components/OverlayModal';
 import { useNavigate } from 'react-router-dom';
 import { JoinRule, Room } from 'matrix-js-sdk';
-import { useAtomValue } from 'jotai';
+import { useAtomValue, useSetAtom } from 'jotai';
 
 import { useStateEvent } from '../../hooks/useStateEvent';
 import { PageHeader } from '../../components/page';
@@ -55,6 +55,7 @@ import { BackRouteHandler } from '../../components/BackRouteHandler';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
 import { useRoomPinnedEvents } from '../../hooks/useRoomPinnedEvents';
 import { RoomPinMenu } from './room-pin-menu';
+import { timelineSliderVisibleAtom } from './TimelineSlider';
 import { useOpenRoomSettings } from '../../state/hooks/roomSettings';
 import { RoomNotificationModeSwitcher } from '../../components/RoomNotificationSwitcher';
 import {
@@ -74,6 +75,8 @@ type RoomMenuProps = {
 };
 const RoomMenu = forwardRef<HTMLDivElement, RoomMenuProps>(({ room, requestClose }, ref) => {
   const mx = useMatrixClient();
+  const screenSize = useScreenSizeContext();
+  const isMobile = screenSize === ScreenSize.Mobile;
   const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
   const unread = useRoomUnread(room.roomId, roomToUnreadAtom);
   const powerLevels = usePowerLevelsContext();
@@ -84,6 +87,8 @@ const RoomMenu = forwardRef<HTMLDivElement, RoomMenuProps>(({ room, requestClose
   const notificationPreferences = useRoomsNotificationPreferencesContext();
   const notificationMode = getRoomNotificationMode(notificationPreferences, room.roomId);
   const { navigateRoom } = useRoomNavigate();
+  const pinnedEvents = useRoomPinnedEvents(room);
+  const [pinMenuAnchor, setPinMenuAnchor] = useState<RectCords>();
 
   const [invitePrompt, setInvitePrompt] = useState(false);
 
@@ -154,6 +159,45 @@ const RoomMenu = forwardRef<HTMLDivElement, RoomMenuProps>(({ room, requestClose
             </MenuItem>
           )}
         </RoomNotificationModeSwitcher>
+        {isMobile && (
+          <>
+            <MenuItem
+              onClick={(evt: React.MouseEvent<HTMLButtonElement>) => {
+                setPinMenuAnchor(evt.currentTarget.getBoundingClientRect());
+              }}
+              size="300"
+              after={<Icon size="100" src={Icons.Pin} />}
+              radii="300"
+              aria-pressed={!!pinMenuAnchor}
+            >
+              <Text style={{ flexGrow: 1 }} as="span" size="T300" truncate>
+                Pinned Messages{pinnedEvents.length > 0 ? ` (${pinnedEvents.length})` : ''}
+              </Text>
+            </MenuItem>
+            <PopOut
+              anchor={pinMenuAnchor}
+              position="Bottom"
+              content={
+                <FocusTrap
+                  focusTrapOptions={{
+                    initialFocus: false,
+                    returnFocusOnDeactivate: false,
+                    onDeactivate: () => setPinMenuAnchor(undefined),
+                    clickOutsideDeactivates: true,
+                    isKeyForward: (evt: KeyboardEvent) => evt.key === 'ArrowDown',
+                    isKeyBackward: (evt: KeyboardEvent) => evt.key === 'ArrowUp',
+                    escapeDeactivates: stopPropagation,
+                  }}
+                >
+                  <RoomPinMenu room={room} requestClose={() => {
+                    setPinMenuAnchor(undefined);
+                    requestClose();
+                  }} />
+                </FocusTrap>
+              }
+            />
+          </>
+        )}
       </Box>
       <Line variant="Surface" size="300" />
       <Box direction="Column" gap="100" style={{ padding: config.space.S100 }}>
@@ -274,6 +318,7 @@ export function RoomViewHeader() {
     : undefined;
 
   const [peopleDrawer, setPeopleDrawer] = useSetting(settingsAtom, 'isPeopleDrawer');
+  const setSliderVisible = useSetAtom(timelineSliderVisibleAtom);
 
   const handleSearchClick = () => {
     const searchParams: _SearchPathSearchParams = {
@@ -372,62 +417,84 @@ export function RoomViewHeader() {
               )}
             </TooltipProvider>
           )}
+          {screenSize !== ScreenSize.Mobile && (
+            <>
+              <TooltipProvider
+                position="Bottom"
+                offset={4}
+                tooltip={
+                  <Tooltip>
+                    <Text>Pinned Messages</Text>
+                  </Tooltip>
+                }
+              >
+                {(triggerRef) => (
+                  <IconButton
+                    style={{ position: 'relative' }}
+                    onClick={handleOpenPinMenu}
+                    ref={triggerRef}
+                    aria-pressed={!!pinMenuAnchor}
+                  >
+                    {pinnedEvents.length > 0 && (
+                      <Badge
+                        style={{
+                          position: 'absolute',
+                          left: toRem(3),
+                          top: toRem(3),
+                        }}
+                        variant="Secondary"
+                        size="400"
+                        fill="Solid"
+                        radii="Pill"
+                      >
+                        <Text as="span" size="L400">
+                          {pinnedEvents.length}
+                        </Text>
+                      </Badge>
+                    )}
+                    <Icon size="400" src={Icons.Pin} filled={!!pinMenuAnchor} />
+                  </IconButton>
+                )}
+              </TooltipProvider>
+              <PopOut
+                anchor={pinMenuAnchor}
+                position="Bottom"
+                content={
+                  <FocusTrap
+                    focusTrapOptions={{
+                      initialFocus: false,
+                      returnFocusOnDeactivate: false,
+                      onDeactivate: () => setPinMenuAnchor(undefined),
+                      clickOutsideDeactivates: true,
+                      isKeyForward: (evt: KeyboardEvent) => evt.key === 'ArrowDown',
+                      isKeyBackward: (evt: KeyboardEvent) => evt.key === 'ArrowUp',
+                      escapeDeactivates: stopPropagation,
+                    }}
+                  >
+                    <RoomPinMenu room={room} requestClose={() => setPinMenuAnchor(undefined)} />
+                  </FocusTrap>
+                }
+              />
+            </>
+          )}
           <TooltipProvider
             position="Bottom"
             offset={4}
             tooltip={
               <Tooltip>
-                <Text>Pinned Messages</Text>
+                <Text>Timeline Slider</Text>
               </Tooltip>
             }
           >
             {(triggerRef) => (
               <IconButton
-                style={{ position: 'relative' }}
-                onClick={handleOpenPinMenu}
                 ref={triggerRef}
-                aria-pressed={!!pinMenuAnchor}
+                onClick={() => setSliderVisible((v) => !v)}
               >
-                {pinnedEvents.length > 0 && (
-                  <Badge
-                    style={{
-                      position: 'absolute',
-                      left: toRem(3),
-                      top: toRem(3),
-                    }}
-                    variant="Secondary"
-                    size="400"
-                    fill="Solid"
-                    radii="Pill"
-                  >
-                    <Text as="span" size="L400">
-                      {pinnedEvents.length}
-                    </Text>
-                  </Badge>
-                )}
-                <Icon size="400" src={Icons.Pin} filled={!!pinMenuAnchor} />
+                <Icon size="400" src={Icons.ArrowUpDown} />
               </IconButton>
             )}
           </TooltipProvider>
-          <PopOut
-            anchor={pinMenuAnchor}
-            position="Bottom"
-            content={
-              <FocusTrap
-                focusTrapOptions={{
-                  initialFocus: false,
-                  returnFocusOnDeactivate: false,
-                  onDeactivate: () => setPinMenuAnchor(undefined),
-                  clickOutsideDeactivates: true,
-                  isKeyForward: (evt: KeyboardEvent) => evt.key === 'ArrowDown',
-                  isKeyBackward: (evt: KeyboardEvent) => evt.key === 'ArrowUp',
-                  escapeDeactivates: stopPropagation,
-                }}
-              >
-                <RoomPinMenu room={room} requestClose={() => setPinMenuAnchor(undefined)} />
-              </FocusTrap>
-            }
-          />
           {screenSize === ScreenSize.Desktop && (
             <TooltipProvider
               position="Bottom"
