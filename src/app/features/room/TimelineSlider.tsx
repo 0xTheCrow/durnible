@@ -42,6 +42,7 @@ export function TimelineSlider({ room, onJumpToTimestamp, onJumpToLatest, loadin
   const trackRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState(false);
   const [hovering, setHovering] = useState(false);
+  const [hoverPos, setHoverPos] = useState(0);
   const [position, setPosition] = useAtom(timelineSliderPositionAtom);
 
   const now = Date.now();
@@ -146,13 +147,16 @@ export function TimelineSlider({ room, onJumpToTimestamp, onJumpToLatest, loadin
         ref={trackRef}
         className={css.SliderTrack}
         onPointerDown={handlePointerDown}
+        onPointerEnter={() => setHovering(true)}
+        onPointerLeave={() => setHovering(false)}
+        onPointerMove={(e) => {
+          if (!dragging) setHoverPos(getPositionFromPointer(e.clientY));
+        }}
       >
         <div
           className={css.SliderThumb}
           data-dragging={dragging}
           style={{ top: `${position * 100}%` }}
-          onPointerEnter={() => setHovering(true)}
-          onPointerLeave={() => setHovering(false)}
         >
           {loading ? (
             <Spinner size="200" variant="Primary" fill="Solid" />
@@ -164,10 +168,17 @@ export function TimelineSlider({ room, onJumpToTimestamp, onJumpToLatest, loadin
             </div>
           )}
         </div>
-        {(dragging || hovering) && (
+        {dragging && (
           <div className={css.SliderTooltip} style={{ top: `${position * 100}%` }}>
             <Text size="T200">
               {timeDayMonthYear(currentTs)} {timeHourMinute(currentTs, hour24Clock)}
+            </Text>
+          </div>
+        )}
+        {hovering && !dragging && (
+          <div className={css.SliderTooltip} style={{ top: `${hoverPos * 100}%` }}>
+            <Text size="T200">
+              {timeDayMonthYear(positionToTs(hoverPos))} {timeHourMinute(positionToTs(hoverPos), hour24Clock)}
             </Text>
           </div>
         )}
