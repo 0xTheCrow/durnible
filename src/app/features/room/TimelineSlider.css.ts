@@ -11,7 +11,7 @@ export const SliderContainer = style({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  padding: `${toRem(8)} 0`,
+  padding: `${toRem(8)} 0 ${toRem(24)} 0`,
 });
 
 export const SliderTrack = style({

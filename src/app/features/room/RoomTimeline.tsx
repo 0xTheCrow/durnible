@@ -891,8 +891,12 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
       setAtBottom(false);
       setTimeline(getEmptyTimeline());
       loadEventTimeline(eventId);
+    } else {
+      setTimeline(getInitialTimeline(room));
+      scrollToBottomRef.current.count += 1;
+      scrollToBottomRef.current.smooth = false;
     }
-  }, [eventId, loadEventTimeline]);
+  }, [eventId, loadEventTimeline, room]);
 
   // Scroll to bottom on initial timeline load
   useLayoutEffect(() => {
