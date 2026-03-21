@@ -74,12 +74,13 @@ export const RangeChips = style({
 });
 
 export const RangeChip = style({
-  padding: `${toRem(2)} ${toRem(6)}`,
+  width: toRem(36),
+  padding: `${toRem(4)} 0`,
   borderRadius: config.radii.R300,
   backgroundColor: color.SurfaceVariant.Container,
   border: `${config.borderWidth.B300} solid ${color.SurfaceVariant.ContainerLine}`,
   cursor: 'pointer',
-  whiteSpace: 'nowrap',
+  textAlign: 'center',
   selectors: {
     '&[data-active="true"]': {
       backgroundColor: color.Primary.Main,
