@@ -128,7 +128,7 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
   return (
     <Page ref={roomViewRef} style={{ position: 'relative' }}>
       <RoomViewHeader />
-      <Box grow="Yes" direction="Column">
+      <Box grow="Yes" direction="Column" style={{ position: 'relative' }}>
         <RoomTimeline
           key={roomId}
           room={room}
@@ -137,13 +137,13 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
           editor={editor}
         />
         <RoomViewTyping room={room} />
+        <TimelineSlider
+          room={room}
+          onJumpToTimestamp={handleJumpToTimestamp}
+          loading={jumpState.status === AsyncStatus.Loading}
+          error={jumpState.status === AsyncStatus.Error ? jumpState.error.message : undefined}
+        />
       </Box>
-      <TimelineSlider
-        room={room}
-        onJumpToTimestamp={handleJumpToTimestamp}
-        loading={jumpState.status === AsyncStatus.Loading}
-        error={jumpState.status === AsyncStatus.Error ? jumpState.error.message : undefined}
-      />
       <Box shrink="No" direction="Column">
         <div style={{ padding: `0 ${config.space.S400}` }}>
           {tombstoneEvent ? (
