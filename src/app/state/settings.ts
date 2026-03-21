@@ -9,6 +9,8 @@ export enum MessageLayout {
   Bubble = 2,
 }
 
+export type TimelineSliderRange = 'day' | 'week' | 'month' | '3months' | '6months' | 'year' | 'all';
+
 export interface Settings {
   themeId?: string;
   useSystemTheme: boolean;
@@ -50,6 +52,8 @@ export interface Settings {
   swipeGestures: boolean;
 
   pwaMode: boolean;
+
+  timelineSliderRange: TimelineSliderRange;
 }
 
 const defaultSettings: Settings = {
@@ -93,6 +97,8 @@ const defaultSettings: Settings = {
   swipeGestures: true,
 
   pwaMode: false,
+
+  timelineSliderRange: 'day',
 };
 
 export const getSettings = () => {

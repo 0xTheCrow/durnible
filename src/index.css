@@ -58,6 +58,9 @@ body {
   font-variant-ligatures: no-contextual;
 }
 #root {
+  position: fixed;
+  top: 0;
+  left: 0;
   width: 100%;
   height: var(--app-height, 100%);
   display: flex;
@@ -131,4 +134,9 @@ textarea {
 
 audio:not([controls]) {
   display: none !important;
+}
+
+@keyframes sync-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
 }

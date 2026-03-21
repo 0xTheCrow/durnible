@@ -119,6 +119,7 @@ import { useSpoilerClickHandler } from '../../hooks/useSpoilerClickHandler';
 import { useRoomNavigate } from '../../hooks/useRoomNavigate';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
 import { useIgnoredUsers } from '../../hooks/useIgnoredUsers';
+import { timelineSliderPositionAtom, timelineSliderVisibleAtom } from './TimelineSlider';
 import { useImagePackRooms } from '../../hooks/useImagePackRooms';
 import { useIsDirectRoom } from '../../hooks/useRoom';
 import { useOpenUserRoomProfile } from '../../state/hooks/userRoomProfile';
@@ -461,6 +462,8 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
   const ignoredUsersSet = useMemo(() => new Set(ignoredUsersList), [ignoredUsersList]);
 
   const setReplyDraft = useSetAtom(roomIdToReplyDraftAtomFamily(room.roomId));
+  const setSliderPosition = useSetAtom(timelineSliderPositionAtom);
+  const sliderVisible = useAtomValue(timelineSliderVisibleAtom);
   const powerLevels = usePowerLevelsContext();
   const creators = useRoomCreators(room);
 
@@ -887,10 +890,16 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
 
   useEffect(() => {
     if (eventId) {
+      atBottomRef.current = false;
+      setAtBottom(false);
       setTimeline(getEmptyTimeline());
       loadEventTimeline(eventId);
+    } else {
+      setTimeline(getInitialTimeline(room));
+      scrollToBottomRef.current.count += 1;
+      scrollToBottomRef.current.smooth = false;
     }
-  }, [eventId, loadEventTimeline]);
+  }, [eventId, loadEventTimeline, room]);
 
   // Scroll to bottom on initial timeline load
   useLayoutEffect(() => {
@@ -978,6 +987,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
     setTimeline(getInitialTimeline(room));
     scrollToBottomRef.current.count += 1;
     scrollToBottomRef.current.smooth = false;
+    setSliderPosition(1);
   };
 
   const handleJumpToUnread = () => {
@@ -1955,7 +1965,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
           ref={contentRef}
           direction="Column"
           justifyContent="End"
-          style={{ minHeight: '100%', padding: `${config.space.S600} 0` }}
+          style={{ minHeight: '100%', padding: `${config.space.S600} ${sliderVisible ? toRem(48) : '0'} ${config.space.S600} 0` }}
         >
           {!canPaginateBack && rangeAtStart && getItems().length > 0 && (
             <div

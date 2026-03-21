@@ -111,11 +111,13 @@ export const Reactions = as<'div', ReactionsProps>(
               key={key}
               position="Top"
               tooltip={
-                <Tooltip style={{ maxWidth: toRem(200) }}>
-                  <Text className={css.ReactionsTooltipText} size="T300">
-                    <ReactionTooltipMsg room={room} reaction={key} events={rEvents} />
-                  </Text>
-                </Tooltip>
+                viewer ? undefined : (
+                  <Tooltip style={{ maxWidth: toRem(200) }}>
+                    <Text className={css.ReactionsTooltipText} size="T300">
+                      <ReactionTooltipMsg room={room} reaction={key} events={rEvents} />
+                    </Text>
+                  </Tooltip>
+                )
               }
             >
               {(targetRef) => (
