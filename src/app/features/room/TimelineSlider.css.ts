@@ -9,14 +9,14 @@ export const SliderContainer = style({
   width: toRem(48),
   zIndex: 10,
   display: 'flex',
+  flexDirection: 'column',
   alignItems: 'center',
-  justifyContent: 'center',
-  padding: `${toRem(8)} 0 ${toRem(24)} 0`,
+  padding: `${toRem(4)} 0 ${toRem(24)} 0`,
 });
 
 export const SliderTrack = style({
   width: toRem(6),
-  height: '100%',
+  flex: 1,
   borderRadius: toRem(3),
   backgroundColor: color.SurfaceVariant.ContainerActive,
   position: 'relative',
@@ -63,12 +63,12 @@ export const SliderThumbGripLine = style({
 });
 
 export const RangeChips = style({
-  position: 'absolute',
-  right: toRem(52),
-  top: 0,
   display: 'flex',
-  flexDirection: 'column',
+  flexDirection: 'row',
+  flexWrap: 'wrap',
+  justifyContent: 'center',
   gap: toRem(2),
+  marginBottom: toRem(4),
   pointerEvents: 'auto',
 });
 
