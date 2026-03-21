@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Spinner, Text, color } from 'folds';
-import { atom, useAtomValue } from 'jotai';
+import { atom, useAtom, useAtomValue } from 'jotai';
 import { Room } from 'matrix-js-sdk';
 import { useStateEvent } from '../../hooks/useStateEvent';
 import { StateEvent } from '../../../types/matrix/room';
@@ -10,6 +10,7 @@ import { settingsAtom, TimelineSliderRange } from '../../state/settings';
 import * as css from './TimelineSlider.css';
 
 export const timelineSliderVisibleAtom = atom(false);
+export const timelineSliderPositionAtom = atom(1);
 
 const rangeToMs: Record<TimelineSliderRange, number | null> = {
   day: 24 * 60 * 60 * 1000,
@@ -41,7 +42,7 @@ export function TimelineSlider({ room, onJumpToTimestamp, onJumpToLatest, loadin
   const trackRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState(false);
   const [hovering, setHovering] = useState(false);
-  const [position, setPosition] = useState(1);
+  const [position, setPosition] = useAtom(timelineSliderPositionAtom);
 
   const now = Date.now();
   const rangeDuration = rangeToMs[sliderRange];

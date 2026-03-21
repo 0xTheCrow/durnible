@@ -119,6 +119,7 @@ import { useSpoilerClickHandler } from '../../hooks/useSpoilerClickHandler';
 import { useRoomNavigate } from '../../hooks/useRoomNavigate';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
 import { useIgnoredUsers } from '../../hooks/useIgnoredUsers';
+import { timelineSliderPositionAtom } from './TimelineSlider';
 import { useImagePackRooms } from '../../hooks/useImagePackRooms';
 import { useIsDirectRoom } from '../../hooks/useRoom';
 import { useOpenUserRoomProfile } from '../../state/hooks/userRoomProfile';
@@ -461,6 +462,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
   const ignoredUsersSet = useMemo(() => new Set(ignoredUsersList), [ignoredUsersList]);
 
   const setReplyDraft = useSetAtom(roomIdToReplyDraftAtomFamily(room.roomId));
+  const setSliderPosition = useSetAtom(timelineSliderPositionAtom);
   const powerLevels = usePowerLevelsContext();
   const creators = useRoomCreators(room);
 
@@ -984,6 +986,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
     setTimeline(getInitialTimeline(room));
     scrollToBottomRef.current.count += 1;
     scrollToBottomRef.current.smooth = false;
+    setSliderPosition(1);
   };
 
   const handleJumpToUnread = () => {
