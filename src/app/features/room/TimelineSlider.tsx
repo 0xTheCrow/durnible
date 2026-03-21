@@ -46,8 +46,6 @@ export function TimelineSlider({ room }: TimelineSliderProps) {
   const [position, setPosition] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  if (!visible) return null;
-
   const now = Date.now();
   const rangeDuration = rangeToMs[sliderRange];
   const minTs = rangeDuration !== null ? Math.max(createTs, now - rangeDuration) : createTs;
@@ -116,6 +114,8 @@ export function TimelineSlider({ room }: TimelineSliderProps) {
   );
 
   const showThumb = dragging || hovered;
+
+  if (!visible) return null;
 
   return (
     <div
