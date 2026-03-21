@@ -887,6 +887,8 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
 
   useEffect(() => {
     if (eventId) {
+      atBottomRef.current = false;
+      setAtBottom(false);
       setTimeline(getEmptyTimeline());
       loadEventTimeline(eventId);
     }
