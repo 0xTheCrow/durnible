@@ -98,9 +98,9 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
   );
 
   return (
-    <Page ref={roomViewRef}>
+    <Page ref={roomViewRef} style={{ position: 'relative' }}>
       <RoomViewHeader />
-      <Box grow="Yes" direction="Column" style={{ position: 'relative' }}>
+      <Box grow="Yes" direction="Column">
         <RoomTimeline
           key={roomId}
           room={room}
@@ -109,8 +109,8 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
           editor={editor}
         />
         <RoomViewTyping room={room} />
-        <TimelineSlider room={room} />
       </Box>
+      <TimelineSlider room={room} />
       <Box shrink="No" direction="Column">
         <div style={{ padding: `0 ${config.space.S400}` }}>
           {tombstoneEvent ? (
