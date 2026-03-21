@@ -1,10 +1,7 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { Spinner, Text } from 'folds';
+import { Spinner, Text, color } from 'folds';
 import { atom, useAtomValue } from 'jotai';
-import { Direction, Room } from 'matrix-js-sdk';
-import { useMatrixClient } from '../../hooks/useMatrixClient';
-import { useRoomNavigate } from '../../hooks/useRoomNavigate';
-import { useAlive } from '../../hooks/useAlive';
+import { Room } from 'matrix-js-sdk';
 import { useStateEvent } from '../../hooks/useStateEvent';
 import { StateEvent } from '../../../types/matrix/room';
 import { timeDayMonthYear, timeHourMinute } from '../../utils/time';
@@ -26,12 +23,12 @@ const rangeToMs: Record<TimelineSliderRange, number | null> = {
 
 type TimelineSliderProps = {
   room: Room;
+  onJumpToTimestamp: (timestamp: number) => void;
+  loading?: boolean;
+  error?: string;
 };
 
-export function TimelineSlider({ room }: TimelineSliderProps) {
-  const mx = useMatrixClient();
-  const { navigateRoom } = useRoomNavigate();
-  const alive = useAlive();
+export function TimelineSlider({ room, onJumpToTimestamp, loading, error }: TimelineSliderProps) {
   const visible = useAtomValue(timelineSliderVisibleAtom);
 
   const createStateEvent = useStateEvent(room, StateEvent.RoomCreate);
@@ -43,7 +40,6 @@ export function TimelineSlider({ room }: TimelineSliderProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState(false);
   const [position, setPosition] = useState(1);
-  const [loading, setLoading] = useState(false);
 
   const now = Date.now();
   const rangeDuration = rangeToMs[sliderRange];
@@ -68,17 +64,11 @@ export function TimelineSlider({ room }: TimelineSliderProps) {
     []
   );
 
-  // Refs so document-level listeners always access latest values
+  // Ref so the document-level onUp always reads the latest callback
+  const onJumpRef = useRef(onJumpToTimestamp);
+  onJumpRef.current = onJumpToTimestamp;
   const positionRef = useRef(position);
   positionRef.current = position;
-  const mxRef = useRef(mx);
-  mxRef.current = mx;
-  const navigateRoomRef = useRef(navigateRoom);
-  navigateRoomRef.current = navigateRoom;
-  const aliveRef = useRef(alive);
-  aliveRef.current = alive;
-  const roomIdRef = useRef(room.roomId);
-  roomIdRef.current = room.roomId;
   const minTsRef = useRef(minTs);
   minTsRef.current = minTs;
   const maxTsRef = useRef(maxTs);
@@ -99,31 +89,14 @@ export function TimelineSlider({ room }: TimelineSliderProps) {
         setPosition(p);
       };
 
-      const onUp = async () => {
+      const onUp = () => {
         document.removeEventListener('pointermove', onMove);
         document.removeEventListener('pointerup', onUp);
         setDragging(false);
 
         const finalPos = positionRef.current;
         const ts = minTsRef.current + (maxTsRef.current - minTsRef.current) * finalPos;
-
-        try {
-          setLoading(true);
-          const result = await mxRef.current.timestampToEvent(
-            roomIdRef.current,
-            ts,
-            Direction.Forward
-          );
-          if (aliveRef.current()) {
-            navigateRoomRef.current(roomIdRef.current, result.event_id);
-          }
-        } catch (err) {
-          console.error('Timeline slider navigation failed:', err);
-        } finally {
-          if (aliveRef.current()) {
-            setLoading(false);
-          }
-        }
+        onJumpRef.current(ts);
       };
 
       document.addEventListener('pointermove', onMove);
@@ -146,11 +119,15 @@ export function TimelineSlider({ room }: TimelineSliderProps) {
           data-dragging={dragging}
           style={{ top: `${position * 100}%` }}
         >
-          <div className={css.SliderThumbGrip}>
-            <div className={css.SliderThumbGripLine} />
-            <div className={css.SliderThumbGripLine} />
-            <div className={css.SliderThumbGripLine} />
-          </div>
+          {loading ? (
+            <Spinner size="200" variant="Primary" fill="Solid" />
+          ) : (
+            <div className={css.SliderThumbGrip}>
+              <div className={css.SliderThumbGripLine} />
+              <div className={css.SliderThumbGripLine} />
+              <div className={css.SliderThumbGripLine} />
+            </div>
+          )}
         </div>
         {dragging && (
           <div className={css.SliderTooltip} style={{ top: `${position * 100}%` }}>
@@ -159,16 +136,11 @@ export function TimelineSlider({ room }: TimelineSliderProps) {
             </Text>
           </div>
         )}
-        {loading && (
-          <div
-            style={{
-              position: 'absolute',
-              top: `${position * 100}%`,
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-            }}
-          >
-            <Spinner size="200" />
+        {error && !dragging && (
+          <div className={css.SliderTooltip} style={{ top: `${position * 100}%` }}>
+            <Text size="T200" style={{ color: color.Critical.Main }}>
+              {error}
+            </Text>
           </div>
         )}
       </div>

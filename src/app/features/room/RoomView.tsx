@@ -1,6 +1,6 @@
 import React, { useCallback, useRef } from 'react';
 import { Box, Text, config } from 'folds';
-import { EventType, Room } from 'matrix-js-sdk';
+import { Direction, EventType, MatrixError, Room } from 'matrix-js-sdk';
 import { ReactEditor } from 'slate-react';
 import { isKeyHotkey } from 'is-hotkey';
 import { useStateEvent } from '../../hooks/useStateEvent';
@@ -23,6 +23,9 @@ import { settingsAtom } from '../../state/settings';
 import { useSetting } from '../../state/hooks/settings';
 import { useRoomPermissions } from '../../hooks/useRoomPermissions';
 import { useRoomCreators } from '../../hooks/useRoomCreators';
+import { useRoomNavigate } from '../../hooks/useRoomNavigate';
+import { useAlive } from '../../hooks/useAlive';
+import { AsyncStatus, useAsyncCallback } from '../../hooks/useAsyncCallback';
 
 const FN_KEYS_REGEX = /^F\d+$/;
 const shouldFocusMessageField = (evt: KeyboardEvent): boolean => {
@@ -68,6 +71,31 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
   const editor = useEditor();
 
   const mx = useMatrixClient();
+  const { navigateRoom } = useRoomNavigate();
+  const alive = useAlive();
+
+  const [jumpState, timestampToEvent] = useAsyncCallback<string, MatrixError, [number]>(
+    useCallback(
+      async (ts) => {
+        const result = await mx.timestampToEvent(room.roomId, ts, Direction.Forward);
+        return result.event_id;
+      },
+      [mx, room]
+    )
+  );
+
+  const handleJumpToTimestamp = useCallback(
+    (ts: number) => {
+      timestampToEvent(ts).then((evId) => {
+        if (alive()) {
+          navigateRoom(room.roomId, evId);
+        }
+      }).catch(() => {
+        // error state is handled by useAsyncCallback
+      });
+    },
+    [timestampToEvent, alive, navigateRoom, room.roomId]
+  );
 
   const tombstoneEvent = useStateEvent(room, StateEvent.RoomTombstone);
   const powerLevels = usePowerLevelsContext();
@@ -110,7 +138,12 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
         />
         <RoomViewTyping room={room} />
       </Box>
-      <TimelineSlider room={room} />
+      <TimelineSlider
+        room={room}
+        onJumpToTimestamp={handleJumpToTimestamp}
+        loading={jumpState.status === AsyncStatus.Loading}
+        error={jumpState.status === AsyncStatus.Error ? jumpState.error.message : undefined}
+      />
       <Box shrink="No" direction="Column">
         <div style={{ padding: `0 ${config.space.S400}` }}>
           {tombstoneEvent ? (
