@@ -341,7 +341,7 @@ const useTimelinePagination = (
         })
       );
       if (err) {
-        // TODO: handle pagination error.
+        fetching = false;
         return;
       }
       const fetchedTimeline =
