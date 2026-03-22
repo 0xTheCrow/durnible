@@ -136,7 +136,7 @@ export function SearchResultGroup({
             displayName={displayName}
             msgType={event.content.msgtype ?? ''}
             ts={event.origin_server_ts}
-            getContent={getContent}
+            content={getContent()}
             mediaAutoLoad={mediaAutoLoad}
             urlPreview={urlPreview}
             htmlReactParserOptions={htmlReactParserOptions}
