@@ -30,7 +30,7 @@ import { PdfViewer } from './Pdf-viewer';
 import { TextViewer } from './text-viewer';
 import { testMatrixTo } from '../plugins/matrix-to';
 import { testYouTubeUrl, getYouTubeVideoId } from '../utils/youtube';
-import { IAudioContent, IImageContent } from '../../types/matrix/common';
+import { IAudioContent, IFileContent, IImageContent, IVideoContent } from '../../types/matrix/common';
 import { getBlobSafeMimeType } from '../utils/mimeTypes';
 
 const MEDIA_VOLUME_KEY = 'cinny_media_volume';
@@ -61,7 +61,7 @@ type RenderMessageContentProps = {
   msgType: string;
   ts: number;
   edited?: boolean;
-  getContent: <T>() => T;
+  content: Record<string, any>;
   mediaAutoLoad?: boolean;
   urlPreview?: boolean;
   highlightRegex?: RegExp;
@@ -69,12 +69,12 @@ type RenderMessageContentProps = {
   linkifyOpts: Opts;
   outlineAttachment?: boolean;
 };
-export function RenderMessageContent({
+export const RenderMessageContent = React.memo(function RenderMessageContent({
   displayName,
   msgType,
   ts,
   edited,
-  getContent,
+  content,
   mediaAutoLoad,
   urlPreview,
   highlightRegex,
@@ -123,8 +123,8 @@ export function RenderMessageContent({
     );
   };
   const renderCaption = () => {
-    const content: IImageContent = getContent();
-    if (content.filename && content.filename !== content.body) {
+    const imageContent = content as IImageContent;
+    if (imageContent.filename && imageContent.filename !== imageContent.body) {
       return (
         <MText
           style={{ marginTop: config.space.S200 }}
@@ -148,7 +148,7 @@ export function RenderMessageContent({
   const renderFile = () => (
     <>
       <MFile
-        content={getContent()}
+        content={content as IFileContent}
         renderFileContent={({ body, mimeType, info, encInfo, url }) => (
           <FileContent
             body={body}
@@ -185,7 +185,7 @@ export function RenderMessageContent({
     return (
       <MText
         edited={edited}
-        content={getContent()}
+        content={content}
         renderBody={(props) => (
           <RenderBody
             {...props}
@@ -204,7 +204,7 @@ export function RenderMessageContent({
       <MEmote
         displayName={displayName}
         edited={edited}
-        content={getContent()}
+        content={content}
         renderBody={(props) => (
           <RenderBody
             {...props}
@@ -222,7 +222,7 @@ export function RenderMessageContent({
     return (
       <MNotice
         edited={edited}
-        content={getContent()}
+        content={content}
         renderBody={(props) => (
           <RenderBody
             {...props}
@@ -240,7 +240,7 @@ export function RenderMessageContent({
     return (
       <>
         <MImage
-          content={getContent()}
+          content={content as IImageContent}
           renderImageContent={(props) => (
             <ImageContent
               {...props}
@@ -259,7 +259,7 @@ export function RenderMessageContent({
     return (
       <>
         <MVideo
-          content={getContent()}
+          content={content as IVideoContent}
           renderAsFile={renderFile}
           renderVideoContent={({ body, info, ...props }) => (
             <VideoContent
@@ -292,7 +292,7 @@ export function RenderMessageContent({
     return (
       <>
         <MAudio
-          content={getContent()}
+          content={content as IAudioContent}
           renderAsFile={renderFile}
           renderAudioContent={(props) => (
             <AudioContent {...props} renderMediaControl={(p) => <MediaControl {...p} />} />
@@ -305,7 +305,7 @@ export function RenderMessageContent({
   }
 
   if (msgType === MsgType.File) {
-    const fileContent: IAudioContent = getContent();
+    const fileContent = content as IAudioContent;
     const fileMimeType = getBlobSafeMimeType(fileContent.info?.mimetype ?? '');
     if (fileMimeType.startsWith('audio')) {
       return (
@@ -326,7 +326,7 @@ export function RenderMessageContent({
   }
 
   if (msgType === MsgType.Location) {
-    return <MLocation content={getContent()} />;
+    return <MLocation content={content} />;
   }
 
   if (msgType === 'm.bad.encrypted') {
@@ -334,4 +334,4 @@ export function RenderMessageContent({
   }
 
   return <UnsupportedContent />;
-}
+});

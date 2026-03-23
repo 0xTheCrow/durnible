@@ -272,7 +272,7 @@ function RoomNotificationsGroupComp({
             displayName={displayName}
             msgType={event.content.msgtype ?? ''}
             ts={event.origin_server_ts}
-            getContent={getContent}
+            content={getContent()}
             mediaAutoLoad={mediaAutoLoad}
             urlPreview={urlPreview}
             htmlReactParserOptions={htmlReactParserOptions}
@@ -330,7 +330,7 @@ function RoomNotificationsGroupComp({
                     msgType={mEvent.getContent().msgtype ?? ''}
                     ts={mEvent.getTs()}
                     edited={!!editedEvent}
-                    getContent={getContent}
+                    content={getContent()}
                     mediaAutoLoad={mediaAutoLoad}
                     urlPreview={urlPreview}
                     htmlReactParserOptions={htmlReactParserOptions}

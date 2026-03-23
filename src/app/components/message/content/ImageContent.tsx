@@ -129,18 +129,18 @@ export const ImageContent = as<'div', ImageContentProps>(
     return (
       <Box className={classNames(css.RelativeBase, className)} {...props} ref={ref}>
         {typeof blurHash === 'string' && !load && (
-          <BlurhashCanvas
-            style={{
-              width: info?.w ?? 400,
-              height: info?.h ?? 400,
-              maxWidth: '100%',
-              maxHeight: '100%',
-            }}
-            width={32}
-            height={32}
-            hash={blurHash}
-            punch={1}
-          />
+          <Box className={css.AbsoluteContainer}>
+            <BlurhashCanvas
+              style={{
+                width: '100%',
+                height: '100%',
+              }}
+              width={32}
+              height={32}
+              hash={blurHash}
+              punch={1}
+            />
+          </Box>
         )}
         {!autoPlay && !markedAsSpoiler && srcState.status === AsyncStatus.Idle && (
           <Box className={css.AbsoluteContainer} alignItems="Center" justifyContent="Center">

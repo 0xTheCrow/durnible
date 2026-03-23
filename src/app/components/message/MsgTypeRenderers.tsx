@@ -195,12 +195,15 @@ export function MImage({ content, renderImageContent }: MImageProps) {
   if (typeof mxcUrl !== 'string') {
     return <BrokenContent />;
   }
-  const imgWidth = imgInfo?.w || 400;
+  const MAX_HEIGHT = 400;
+  const w = imgInfo?.w || 400;
+  const h = imgInfo?.h || 400;
+  const imgWidth = h > MAX_HEIGHT ? Math.round(w * (MAX_HEIGHT / h)) : w;
   return (
     <Attachment media style={{ width: toRem(imgWidth) }}>
       <AttachmentBox
         style={{
-          aspectRatio: `${imgInfo?.w || 1} / ${imgInfo?.h || 1}`,
+          aspectRatio: `${w} / ${h}`,
           width: toRem(imgWidth),
           minHeight: toRem(48),
         }}

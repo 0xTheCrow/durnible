@@ -23,7 +23,7 @@ function renderMessageContent(
         displayName="Alice"
         msgType={msgType}
         ts={Date.now()}
-        getContent={() => content as any}
+        content={content as any}
         mediaAutoLoad={opts?.mediaAutoLoad ?? false}
         urlPreview={false}
         htmlReactParserOptions={htmlReactParserOptions}
@@ -66,7 +66,7 @@ describe('RenderMessageContent', () => {
             msgType={MsgType.Text}
             ts={Date.now()}
             edited
-            getContent={() => ({ body: 'edited message', msgtype: 'm.text' }) as any}
+            content={{ body: 'edited message', msgtype: 'm.text' } as any}
             mediaAutoLoad={false}
             urlPreview={false}
             htmlReactParserOptions={htmlReactParserOptions}

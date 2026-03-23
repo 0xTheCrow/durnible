@@ -341,7 +341,7 @@ const useTimelinePagination = (
         })
       );
       if (err) {
-        // TODO: handle pagination error.
+        fetching = false;
         return;
       }
       const fetchedTimeline =
@@ -1150,8 +1150,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
           (mEvent.getContent()['m.mentions']?.user_ids as string[] | undefined)?.includes(myUserId) ?? false;
 
         const editedEvent = getEditedEvent(mEventId, mEvent, timelineSet);
-        const getContent = (() =>
-          editedEvent?.getContent()['m.new_content'] ?? mEvent.getContent()) as GetContentCallback;
+        const content = editedEvent?.getContent()['m.new_content'] ?? mEvent.getContent();
 
         const senderId = mEvent.getSender() ?? '';
         const senderDisplayName =
@@ -1222,7 +1221,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
                 msgType={mEvent.getContent().msgtype ?? ''}
                 ts={mEvent.getTs()}
                 edited={!!editedEvent}
-                getContent={getContent}
+                content={content}
                 mediaAutoLoad={mediaAutoLoad}
                 urlPreview={showUrlPreview}
                 htmlReactParserOptions={htmlReactParserOptions}
@@ -1321,9 +1320,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
                   );
                 if (mEvent.getType() === MessageEvent.RoomMessage) {
                   const editedEvent = getEditedEvent(mEventId, mEvent, timelineSet);
-                  const getContent = (() =>
-                    editedEvent?.getContent()['m.new_content'] ??
-                    mEvent.getContent()) as GetContentCallback;
+                  const content = editedEvent?.getContent()['m.new_content'] ?? mEvent.getContent();
 
                   const senderId = mEvent.getSender() ?? '';
                   const senderDisplayName =
@@ -1334,7 +1331,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
                       msgType={mEvent.getContent().msgtype ?? ''}
                       ts={mEvent.getTs()}
                       edited={!!editedEvent}
-                      getContent={getContent}
+                      content={content}
                       mediaAutoLoad={mediaAutoLoad}
                       urlPreview={showUrlPreview}
                       htmlReactParserOptions={htmlReactParserOptions}

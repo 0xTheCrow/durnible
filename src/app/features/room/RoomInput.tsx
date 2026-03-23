@@ -240,7 +240,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     );
     const pickFile = useFilePicker(handleFiles, true);
     const handlePaste = useFilePasteHandler(handleFiles);
-    const dropZoneVisible = useFileDropZone(fileDropContainerRef, handleFiles);
+    const dropZoneVisible = useFileDropZone(fileDropContainerRef, handleFiles, true);
     const [hideStickerBtn, setHideStickerBtn] = useState(document.body.clientWidth < 500);
 
     const isComposing = useComposingCheck();

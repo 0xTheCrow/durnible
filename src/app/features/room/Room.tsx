@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { Box, Line } from 'folds';
 import { useParams } from 'react-router-dom';
 import { isKeyHotkey } from 'is-hotkey';
@@ -24,6 +24,12 @@ export function Room() {
   const screenSize = useScreenSizeContext();
   const powerLevels = usePowerLevels(room);
   const members = useRoomMembers(mx, room.roomId);
+
+  useEffect(() => {
+    if (room.hasEncryptionStateEvent()) {
+      room.loadMembersIfNeeded();
+    }
+  }, [room]);
 
   useKeyDown(
     window,
