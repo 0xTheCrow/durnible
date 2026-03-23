@@ -135,7 +135,16 @@ export function TimelineSlider({ room, onJumpToTimestamp, onJumpToLatest, loadin
             key={key}
             className={css.RangeChip}
             data-active={sliderRange === key}
-            onClick={() => setSliderRange(key)}
+            onClick={() => {
+              const currentTimestamp = minTs + (maxTs - minTs) * position;
+              const newRangeDuration = rangeToMs[key];
+              const newMinTs = newRangeDuration !== null ? Math.max(createTs, now - newRangeDuration) : createTs;
+              const newRange = maxTs - newMinTs;
+              if (newRange > 0) {
+                setPosition(Math.max(0, Math.min(1, (currentTimestamp - newMinTs) / newRange)));
+              }
+              setSliderRange(key);
+            }}
           >
             <Text size="T200" style={{ color: sliderRange === key ? 'white' : undefined }}>
               {label}
