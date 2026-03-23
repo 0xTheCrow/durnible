@@ -22,6 +22,9 @@ export function useSwipeDrawer() {
   const touchRef = useRef<TouchState | null>(null);
 
   const handleTouchStart = useCallback((e: TouchEvent) => {
+    const target = e.target as Element | null;
+    if (target?.closest?.('[data-overlay]')) return;
+
     const touch = e.touches[0];
     const inEdgeZone = touch.clientX < window.innerWidth * EDGE_ZONE_RATIO;
 
