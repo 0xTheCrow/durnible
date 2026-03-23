@@ -76,6 +76,7 @@ export function OverlayModal({
     <Overlay
       open={open}
       backdrop={backdrop ? <OverlayBackdrop /> : undefined}
+      data-overlay
       {...overlayProps}
     >
       <OverlayCenter
