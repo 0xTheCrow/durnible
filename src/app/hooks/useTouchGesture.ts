@@ -8,6 +8,12 @@ type TouchGestureState = {
   lastTouchY: number;
 };
 
+type TapState = {
+  time: number;
+  x: number;
+  y: number;
+};
+
 const getDistance = (t1: React.Touch, t2: React.Touch): number =>
   Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
 
@@ -19,6 +25,8 @@ export const useTouchGesture = (
 ) => {
   const gestureRef = useRef<TouchGestureState | null>(null);
   const zoomRef = useRef(1);
+  const lastTapRef = useRef<TapState | null>(null);
+  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
 
   // Keep zoomRef in sync via the setter pattern
   const setZoomTracked: typeof setZoom = (value) => {
@@ -44,6 +52,11 @@ export const useTouchGesture = (
         initialZoom: zoomRef.current,
         lastTouchX: e.touches[0].clientX,
         lastTouchY: e.touches[0].clientY,
+      };
+      touchStartRef.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+        time: Date.now(),
       };
     }
   };
@@ -87,8 +100,40 @@ export const useTouchGesture = (
     }
   };
 
+  const DOUBLE_TAP_DELAY = 300;
+  const TAP_MOVE_THRESHOLD = 10;
+
   const onTouchEnd: TouchEventHandler = (e) => {
     if (e.touches.length === 0) {
+      // Detect taps (short touch with minimal movement)
+      const start = touchStartRef.current;
+      if (start) {
+        const now = Date.now();
+        const elapsed = now - start.time;
+        const ct = e.changedTouches[0];
+        const dist = Math.hypot(ct.clientX - start.x, ct.clientY - start.y);
+
+        if (elapsed < 300 && dist < TAP_MOVE_THRESHOLD) {
+          const lastTap = lastTapRef.current;
+          if (
+            lastTap &&
+            now - lastTap.time < DOUBLE_TAP_DELAY &&
+            Math.hypot(ct.clientX - lastTap.x, ct.clientY - lastTap.y) < TAP_MOVE_THRESHOLD
+          ) {
+            // Double tap detected — toggle zoom
+            if (zoomRef.current === 1) {
+              setZoomTracked(2);
+            } else {
+              setZoomTracked(1);
+              setPan({ translateX: 0, translateY: 0 });
+            }
+            lastTapRef.current = null;
+          } else {
+            lastTapRef.current = { time: now, x: ct.clientX, y: ct.clientY };
+          }
+        }
+      }
+      touchStartRef.current = null;
       gestureRef.current = null;
     } else if (e.touches.length === 1) {
       // Transitioned from pinch to single finger — reset for drag
