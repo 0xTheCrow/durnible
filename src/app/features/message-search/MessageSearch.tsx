@@ -23,7 +23,7 @@ import { SearchResultGroup } from './SearchResultGroup';
 import { SearchInput } from './SearchInput';
 import { SearchFilters } from './SearchFilters';
 import { VirtualTile } from '../../components/virtualizer';
-import { FetchProgress } from '../../services/localSearch';
+import { FetchProgress, wasMessageCapExceeded } from '../../services/localSearch';
 
 const useSearchPathSearchParams = (searchParams: URLSearchParams): _SearchPathSearchParams =>
   useMemo(
@@ -289,6 +289,20 @@ export function MessageSearch({
             />
           </PageHeroSection>
         </PageHeroEmpty>
+      )}
+
+      {hasEncryptedRooms && status === 'success' && wasMessageCapExceeded() && (
+        <Box
+          className={ContainerColor({ variant: 'Warning' })}
+          style={{ padding: config.space.S300, borderRadius: config.radii.R400 }}
+          alignItems="Center"
+          gap="200"
+        >
+          <Icon size="200" src={Icons.Info} />
+          <Text size="T300">
+            The message limit was reached and older messages have been removed from the search. Try narrowing the date range for more complete results.
+          </Text>
+        </Box>
       )}
 
       {msgSearchParams.term && groups.length === 0 && status === 'success' && (

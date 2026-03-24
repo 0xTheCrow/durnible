@@ -135,8 +135,6 @@ export const useMessageSearch = (params: MessageSearchParams) => {
           }
         }
       }
-      console.log('[search] rooms:', rooms?.length, 'encrypted:', encryptedRoomIds.length, 'unencrypted:', unencryptedRoomIds.length);
-
       const allGroups: ResultGroup[] = [];
       const allHighlights: string[] = [];
       let serverNextToken: string | undefined;
@@ -147,16 +145,12 @@ export const useMessageSearch = (params: MessageSearchParams) => {
         const searchStartTs = startTs ?? now - 90 * 24 * 60 * 60 * 1000;
         const searchEndTs = endTs ?? now;
 
-        console.log('[search] searching encrypted rooms:', encryptedRoomIds);
         const localResults = await Promise.all(
           encryptedRoomIds.map((roomId) =>
             searchEncryptedRoom(mx, roomId, term, searchStartTs, searchEndTs, onProgress)
           )
         );
         const merged = localResults.flat();
-        console.log('[search] local results:', merged.length);
-        merged.sort((a, b) => b.origin_server_ts - a.origin_server_ts);
-
         allGroups.push(...localResultsToGroups(merged));
         allHighlights.push(term);
       }
@@ -192,6 +186,15 @@ export const useMessageSearch = (params: MessageSearchParams) => {
         allGroups.push(...parsed.groups);
         allHighlights.push(...parsed.highlights);
         serverNextToken = parsed.nextToken;
+      }
+
+      // Sort items within each group by timestamp
+      for (const group of allGroups) {
+        if (order === 'oldest') {
+          group.items.sort((a, b) => a.event.origin_server_ts - b.event.origin_server_ts);
+        } else {
+          group.items.sort((a, b) => b.event.origin_server_ts - a.event.origin_server_ts);
+        }
       }
 
       return {

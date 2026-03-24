@@ -23,10 +23,10 @@ import {
   ModernLayout,
   RedactedContent,
   Reply,
-  Time,
   Username,
   UsernameBold,
 } from '../../components/message';
+import { timeDayMonYear, timeHourMinute } from '../../utils/time';
 import { RenderMessageContent } from '../../components/RenderMessageContent';
 import { Image } from '../../components/media';
 import * as customHtmlCss from '../../styles/CustomHtml.css';
@@ -249,37 +249,37 @@ export function SearchResultGroup({
           return (
             <SequenceCard
               key={event.event_id}
-              style={{ padding: config.space.S400 }}
+              style={{ padding: 0 }}
               variant="SurfaceVariant"
-              direction="Column"
+              direction="Row"
             >
-              <ModernLayout
-                before={
-                  <AvatarBase>
-                    <Avatar size="300">
-                      <UserAvatar
-                        userId={event.sender}
-                        src={
-                          senderAvatarMxc
-                            ? mxcUrlToHttp(
-                                mx,
-                                senderAvatarMxc,
-                                useAuthentication,
-                                48,
-                                48,
-                                'crop'
-                              ) ?? undefined
-                            : undefined
-                        }
-                        alt={displayName}
-                        renderFallback={() => <Icon size="200" src={Icons.User} filled />}
-                      />
-                    </Avatar>
-                  </AvatarBase>
-                }
-              >
-                <Box gap="300" justifyContent="SpaceBetween" alignItems="Center" grow="Yes">
-                  <Box gap="200" alignItems="Baseline">
+              <Box grow="Yes" style={{ padding: config.space.S400 }} direction="Column">
+                <ModernLayout
+                  before={
+                    <AvatarBase>
+                      <Avatar size="300">
+                        <UserAvatar
+                          userId={event.sender}
+                          src={
+                            senderAvatarMxc
+                              ? mxcUrlToHttp(
+                                  mx,
+                                  senderAvatarMxc,
+                                  useAuthentication,
+                                  48,
+                                  48,
+                                  'crop'
+                                ) ?? undefined
+                              : undefined
+                          }
+                          alt={displayName}
+                          renderFallback={() => <Icon size="200" src={Icons.User} filled />}
+                        />
+                      </Avatar>
+                    </AvatarBase>
+                  }
+                >
+                  <Box gap="200" alignItems="Baseline" grow="Yes">
                     <Box alignItems="Center" gap="200">
                       <Username style={{ color: usernameColor }}>
                         <Text as="span" truncate>
@@ -288,36 +288,39 @@ export function SearchResultGroup({
                       </Username>
                       {tagIconSrc && <PowerIcon size="100" iconSrc={tagIconSrc} />}
                     </Box>
-                    <Time
-                      ts={event.origin_server_ts}
-                      hour24Clock={hour24Clock}
-                      dateFormatString={dateFormatString}
-                    />
+                    <Text as="time" style={{ flexShrink: 0 }} size="T200" priority="300">
+                      {`${timeDayMonYear(event.origin_server_ts, dateFormatString)} ${timeHourMinute(event.origin_server_ts, hour24Clock)}`}
+                    </Text>
                   </Box>
-                  <Box shrink="No" gap="200" alignItems="Center">
-                    <Chip
-                      data-event-id={mainEventId}
+                  {replyEventId && (
+                    <Reply
+                      room={room}
+                      replyEventId={replyEventId}
+                      threadRootId={threadRootId}
                       onClick={handleOpenClick}
-                      variant="Secondary"
-                      radii="400"
-                    >
-                      <Text size="T200">Open</Text>
-                    </Chip>
-                  </Box>
-                </Box>
-                {replyEventId && (
-                  <Reply
-                    room={room}
-                    replyEventId={replyEventId}
-                    threadRootId={threadRootId}
-                    onClick={handleOpenClick}
-                    getMemberPowerTag={getMemberPowerTag}
-                    accessibleTagColors={accessibleTagColors}
-                    legacyUsernameColor={legacyUsernameColor}
-                  />
-                )}
-                {renderMatrixEvent(event.type, false, event, displayName, getContent)}
-              </ModernLayout>
+                      getMemberPowerTag={getMemberPowerTag}
+                      accessibleTagColors={accessibleTagColors}
+                      legacyUsernameColor={legacyUsernameColor}
+                    />
+                  )}
+                  {renderMatrixEvent(event.type, false, event, displayName, getContent)}
+                </ModernLayout>
+              </Box>
+              <Chip
+                data-event-id={mainEventId}
+                onClick={handleOpenClick}
+                variant="Secondary"
+                radii="0"
+                style={{
+                  alignSelf: 'stretch',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: `0 ${config.space.S400}`,
+                }}
+              >
+                <Text size="T200">Open</Text>
+              </Chip>
             </SequenceCard>
           );
         })}

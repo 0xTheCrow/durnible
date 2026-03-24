@@ -44,9 +44,14 @@ type OrderButtonProps = {
   order?: string;
   onChange: (order?: string) => void;
 };
+const orderLabel = (order?: string): string => {
+  if (order === SearchOrderBy.Rank) return 'Relevance';
+  if (order === 'oldest') return 'Oldest';
+  return 'Recent';
+};
+
 function OrderButton({ order, onChange }: OrderButtonProps) {
   const [menuAnchor, setMenuAnchor] = useState<RectCords>();
-  const rankOrder = order === SearchOrderBy.Rank;
 
   const setOrder = (o?: string) => {
     setMenuAnchor(undefined);
@@ -81,16 +86,25 @@ function OrderButton({ order, onChange }: OrderButtonProps) {
                 variant="Surface"
                 size="300"
                 radii="300"
-                aria-pressed={!rankOrder}
+                aria-pressed={!order || order === SearchOrderBy.Recent}
               >
                 <Text size="T300">Recent</Text>
+              </MenuItem>
+              <MenuItem
+                onClick={() => setOrder('oldest')}
+                variant="Surface"
+                size="300"
+                radii="300"
+                aria-pressed={order === 'oldest'}
+              >
+                <Text size="T300">Oldest</Text>
               </MenuItem>
               <MenuItem
                 onClick={() => setOrder(SearchOrderBy.Rank)}
                 variant="Surface"
                 size="300"
                 radii="300"
-                aria-pressed={rankOrder}
+                aria-pressed={order === SearchOrderBy.Rank}
               >
                 <Text size="T300">Relevance</Text>
               </MenuItem>
@@ -105,7 +119,7 @@ function OrderButton({ order, onChange }: OrderButtonProps) {
         after={<Icon size="50" src={Icons.Sort} />}
         onClick={handleOpenMenu}
       >
-        {rankOrder ? <Text size="T200">Relevance</Text> : <Text size="T200">Recent</Text>}
+        <Text size="T200">{orderLabel(order)}</Text>
       </Chip>
     </PopOut>
   );
@@ -370,7 +384,7 @@ export function SearchFilters({
   return (
     <Box direction="Column" gap="100">
       <Text size="L400">Filter</Text>
-      <Box gap="200" wrap="Wrap">
+      <Box gap="200" wrap="Wrap" alignItems="Center">
         <Chip
           variant={!global ? 'Success' : 'Surface'}
           aria-pressed={!global}

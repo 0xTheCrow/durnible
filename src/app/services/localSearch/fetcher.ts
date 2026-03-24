@@ -35,7 +35,6 @@ export const fetchAndDecryptMessages = async (
   let fromToken: string | undefined;
   try {
     const result = await mx.timestampToEvent(roomId, endTs, Direction.Backward);
-    console.log('[fetcher] timestampToEvent succeeded, event_id:', result.event_id);
     const eventId = result.event_id;
     const path = `/rooms/${encodeURIComponent(roomId)}/context/${encodeURIComponent(eventId)}`;
     const context = await mx.http.authedRequest<{ start: string; end: string }>(
@@ -45,7 +44,6 @@ export const fetchAndDecryptMessages = async (
     );
     fromToken = context.end;
   } catch (err) {
-    console.log('[fetcher] timestampToEvent failed, using fallback:', err);
     // If timestamp_to_event fails, fall back to the room's live timeline end token
     const room = mx.getRoom(roomId);
     if (!room) return [];
@@ -55,14 +53,10 @@ export const fetchAndDecryptMessages = async (
 
   if (!fromToken) return [];
 
-  console.log('[fetcher] range:', new Date(startTs).toISOString(), 'to', new Date(endTs).toISOString());
-  console.log('[fetcher] fromToken:', fromToken);
-
   // Paginate backwards collecting raw events
   const rawEvents: IEvent[] = [];
   let token: string | undefined = fromToken;
   let fetched = 0;
-  let pages = 0;
 
   while (token) {
     // eslint-disable-next-line no-await-in-loop
@@ -71,11 +65,6 @@ export const fetchAndDecryptMessages = async (
 
     const { chunk } = response;
     if (!chunk || chunk.length === 0) break;
-
-    pages += 1;
-    const firstTs = chunk[0]?.origin_server_ts;
-    const lastTs = chunk[chunk.length - 1]?.origin_server_ts;
-    console.log(`[fetcher] page ${pages}: ${chunk.length} events, range ${new Date(lastTs).toISOString()} - ${new Date(firstTs).toISOString()}`);
 
     let reachedStart = false;
     for (const evt of chunk) {
@@ -94,10 +83,7 @@ export const fetchAndDecryptMessages = async (
     fetched += chunk.length;
     onProgress?.({ fetched, decrypting: false });
 
-    if (reachedStart) {
-      console.log('[fetcher] reached startTs, stopping');
-      break;
-    }
+    if (reachedStart) break;
     token = response.end ?? undefined;
   }
 
