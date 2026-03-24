@@ -2,6 +2,7 @@ import { style } from '@vanilla-extract/css';
 import { recipe } from '@vanilla-extract/recipes';
 import { color, config, DefaultReset, toRem } from 'folds';
 import { ContainerColor } from './ContainerColor.css';
+import { highlightBg, highlightColor } from '../../highlight.css';
 
 export const MarginSpaced = style({
   marginBottom: config.space.S200,
@@ -246,7 +247,7 @@ export const EmoticonImg = style([
 export const highlightText = style([
   DefaultReset,
   {
-    backgroundColor: 'yellow',
-    color: 'black',
+    backgroundColor: highlightBg,
+    color: highlightColor,
   },
 ]);

@@ -45,9 +45,8 @@ type OrderButtonProps = {
   onChange: (order?: string) => void;
 };
 const orderLabel = (order?: string): string => {
-  if (order === SearchOrderBy.Rank) return 'Relevance';
   if (order === 'oldest') return 'Oldest';
-  return 'Recent';
+  return 'Newest';
 };
 
 function OrderButton({ order, onChange }: OrderButtonProps) {
@@ -88,7 +87,7 @@ function OrderButton({ order, onChange }: OrderButtonProps) {
                 radii="300"
                 aria-pressed={!order || order === SearchOrderBy.Recent}
               >
-                <Text size="T300">Recent</Text>
+                <Text size="T300">Newest</Text>
               </MenuItem>
               <MenuItem
                 onClick={() => setOrder('oldest')}
@@ -98,15 +97,6 @@ function OrderButton({ order, onChange }: OrderButtonProps) {
                 aria-pressed={order === 'oldest'}
               >
                 <Text size="T300">Oldest</Text>
-              </MenuItem>
-              <MenuItem
-                onClick={() => setOrder(SearchOrderBy.Rank)}
-                variant="Surface"
-                size="300"
-                radii="300"
-                aria-pressed={order === SearchOrderBy.Rank}
-              >
-                <Text size="T300">Relevance</Text>
               </MenuItem>
             </div>
           </Menu>
@@ -341,6 +331,156 @@ function SelectRoomButton({ roomList, selectedRooms, onChange }: SelectRoomButto
   );
 }
 
+const toDateInputValue = (ts: number): string => {
+  const d = new Date(ts);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const RANGE_PRESETS = [
+  { label: '7 days', days: 7 },
+  { label: '30 days', days: 30 },
+  { label: '90 days', days: 90 },
+  { label: '1 year', days: 365 },
+] as const;
+
+const getEndOfDay = (): number => {
+  const d = new Date();
+  d.setHours(23, 59, 59, 999);
+  return d.getTime();
+};
+
+const getStartOfDaysAgo = (days: number): number => {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+};
+
+const matchesPreset = (startTs: number, endTs: number, days: number): boolean => {
+  const expectedStart = getStartOfDaysAgo(days);
+  const expectedEnd = getEndOfDay();
+  return Math.abs(startTs - expectedStart) < 60000 && Math.abs(endTs - expectedEnd) < 60000;
+};
+
+type DateRangeButtonProps = {
+  startTs: number;
+  endTs: number;
+  onStartTsChange: (ts: number) => void;
+  onEndTsChange: (ts: number) => void;
+};
+function DateRangeButton({ startTs, endTs, onStartTsChange, onEndTsChange }: DateRangeButtonProps) {
+  const [menuAnchor, setMenuAnchor] = useState<RectCords>();
+
+  const activePreset = RANGE_PRESETS.find((p) => matchesPreset(startTs, endTs, p.days));
+
+  const handlePreset = (days: number) => {
+    onStartTsChange(getStartOfDaysAgo(days));
+    onEndTsChange(getEndOfDay());
+  };
+
+  const handleOpenCustom: MouseEventHandler<HTMLButtonElement> = (evt) => {
+    setMenuAnchor(evt.currentTarget.getBoundingClientRect());
+  };
+
+  return (
+    <>
+      {RANGE_PRESETS.map((preset) => {
+        const active = activePreset?.days === preset.days;
+        return (
+          <Chip
+            key={preset.days}
+            variant={active ? 'Success' : 'Surface'}
+            aria-pressed={active}
+            before={active && <Icon size="100" src={Icons.Check} />}
+            outlined
+            onClick={() => handlePreset(preset.days)}
+          >
+            <Text size="T200">{preset.label}</Text>
+          </Chip>
+        );
+      })}
+      <PopOut
+        anchor={menuAnchor}
+        align="End"
+        position="Bottom"
+        content={
+          <FocusTrap
+            focusTrapOptions={{
+              initialFocus: false,
+              onDeactivate: () => setMenuAnchor(undefined),
+              clickOutsideDeactivates: true,
+              escapeDeactivates: stopPropagation,
+            }}
+          >
+            <Menu variant="Surface">
+              <Box direction="Column" gap="200" style={{ padding: config.space.S300 }}>
+                <Text size="L400">Custom Range</Text>
+                <Box gap="200" alignItems="Center">
+                  <Box direction="Column" gap="100">
+                    <Text size="T200">From</Text>
+                    <Input
+                      type="date"
+                      size="300"
+                      radii="300"
+                      value={toDateInputValue(startTs)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        const ts = new Date(e.target.value).getTime();
+                        if (!Number.isNaN(ts)) onStartTsChange(ts);
+                      }}
+                      style={{ width: toRem(150) }}
+                    />
+                  </Box>
+                  <Box direction="Column" gap="100">
+                    <Text size="T200">To</Text>
+                    <Input
+                      type="date"
+                      size="300"
+                      radii="300"
+                      value={toDateInputValue(endTs)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        const d = new Date(e.target.value);
+                        d.setHours(23, 59, 59, 999);
+                        const ts = d.getTime();
+                        if (!Number.isNaN(ts)) onEndTsChange(ts);
+                      }}
+                      style={{ width: toRem(150) }}
+                    />
+                  </Box>
+                </Box>
+                <Button
+                  size="300"
+                  variant="Secondary"
+                  radii="300"
+                  onClick={() => setMenuAnchor(undefined)}
+                >
+                  <Text size="B300">Done</Text>
+                </Button>
+              </Box>
+            </Menu>
+          </FocusTrap>
+        }
+      >
+        <Chip
+          variant={!activePreset ? 'Success' : 'Surface'}
+          aria-pressed={!activePreset}
+          before={!activePreset && <Icon size="100" src={Icons.Check} />}
+          outlined
+          onClick={handleOpenCustom}
+        >
+          <Text size="T200">
+            {!activePreset
+              ? `${toDateInputValue(startTs)} – ${toDateInputValue(endTs)}`
+              : 'Custom'}
+          </Text>
+        </Chip>
+      </PopOut>
+    </>
+  );
+}
+
 type SearchFiltersProps = {
   defaultRoomsFilterName: string;
   allowGlobal?: boolean;
@@ -356,11 +496,6 @@ type SearchFiltersProps = {
   endTs?: number;
   onStartTsChange?: (ts: number) => void;
   onEndTsChange?: (ts: number) => void;
-};
-
-const toDateInputValue = (ts: number): string => {
-  const d = new Date(ts);
-  return d.toISOString().split('T')[0];
 };
 
 export function SearchFilters({
@@ -439,30 +574,13 @@ export function SearchFilters({
           onChange={onSelectedRoomsChange}
         />
         <Box grow="Yes" data-spacing-node />
-        {hasEncryptedRooms && startTs !== undefined && endTs !== undefined && (
+        {hasEncryptedRooms && startTs !== undefined && endTs !== undefined && onStartTsChange && onEndTsChange && (
           <>
-            <Input
-              type="date"
-              size="300"
-              radii="300"
-              value={toDateInputValue(startTs)}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                const ts = new Date(e.target.value).getTime();
-                if (!Number.isNaN(ts)) onStartTsChange?.(ts);
-              }}
-              style={{ width: toRem(140) }}
-            />
-            <Text size="T200">to</Text>
-            <Input
-              type="date"
-              size="300"
-              radii="300"
-              value={toDateInputValue(endTs)}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                const ts = new Date(e.target.value).getTime();
-                if (!Number.isNaN(ts)) onEndTsChange?.(ts);
-              }}
-              style={{ width: toRem(140) }}
+            <DateRangeButton
+              startTs={startTs}
+              endTs={endTs}
+              onStartTsChange={onStartTsChange}
+              onEndTsChange={onEndTsChange}
             />
             <Line
               style={{ margin: `${config.space.S100} 0` }}

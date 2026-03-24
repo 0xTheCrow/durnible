@@ -69,14 +69,17 @@ export function MessageSearch({
   const { navigateRoom } = useRoomNavigate();
 
   // Date range state for encrypted room search
-  // Snap to end-of-day so the timestamps are stable across remounts (cache-friendly)
-  const endOfDay = useMemo(() => {
-    const d = new Date();
-    d.setHours(23, 59, 59, 999);
-    return d.getTime();
+  // Snap to day boundaries so timestamps are stable across remounts (cache-friendly)
+  const [defaultStartTs, defaultEndTs] = useMemo(() => {
+    const end = new Date();
+    end.setHours(23, 59, 59, 999);
+    const start = new Date();
+    start.setDate(start.getDate() - DEFAULT_RANGE_DAYS);
+    start.setHours(0, 0, 0, 0);
+    return [start.getTime(), end.getTime()];
   }, []);
-  const [startTs, setStartTs] = useState<number>(endOfDay - DEFAULT_RANGE_DAYS * 24 * 60 * 60 * 1000);
-  const [endTs, setEndTs] = useState<number>(endOfDay);
+  const [startTs, setStartTs] = useState<number>(defaultStartTs);
+  const [endTs, setEndTs] = useState<number>(defaultEndTs);
   const [fetchProgress, setFetchProgress] = useState<FetchProgress | null>(null);
 
   const onProgress = useCallback((progress: FetchProgress) => {
@@ -335,7 +338,7 @@ export function MessageSearch({
       {vItems.length > 0 && (
         <Box direction="Column" gap="300">
           <Box direction="Column" gap="200">
-            <Text size="H5">{`Results for "${msgSearchParams.term}"`}</Text>
+            <Text size="H5">{`${groups.reduce((n, g) => n + g.items.length, 0)} results for "${msgSearchParams.term}"`}</Text>
             <Line size="300" variant="Surface" />
           </Box>
           <div
