@@ -373,6 +373,8 @@ type DateRangeButtonProps = {
 };
 function DateRangeButton({ startTs, endTs, onStartTsChange, onEndTsChange }: DateRangeButtonProps) {
   const [menuAnchor, setMenuAnchor] = useState<RectCords>();
+  const [localStart, setLocalStart] = useState(startTs);
+  const [localEnd, setLocalEnd] = useState(endTs);
 
   const activePreset = RANGE_PRESETS.find((p) => matchesPreset(startTs, endTs, p.days));
 
@@ -382,7 +384,15 @@ function DateRangeButton({ startTs, endTs, onStartTsChange, onEndTsChange }: Dat
   };
 
   const handleOpenCustom: MouseEventHandler<HTMLButtonElement> = (evt) => {
+    setLocalStart(startTs);
+    setLocalEnd(endTs);
     setMenuAnchor(evt.currentTarget.getBoundingClientRect());
+  };
+
+  const handleDone = () => {
+    onStartTsChange(localStart);
+    onEndTsChange(localEnd);
+    setMenuAnchor(undefined);
   };
 
   return (
@@ -425,10 +435,11 @@ function DateRangeButton({ startTs, endTs, onStartTsChange, onEndTsChange }: Dat
                       type="date"
                       size="300"
                       radii="300"
-                      value={toDateInputValue(startTs)}
+                      value={toDateInputValue(localStart)}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                        const ts = new Date(e.target.value).getTime();
-                        if (!Number.isNaN(ts)) onStartTsChange(ts);
+                        const [y, m, d] = e.target.value.split('-').map(Number);
+                        const ts = new Date(y, m - 1, d, 0, 0, 0, 0).getTime();
+                        if (!Number.isNaN(ts)) setLocalStart(ts);
                       }}
                       style={{ width: toRem(150) }}
                     />
@@ -439,12 +450,11 @@ function DateRangeButton({ startTs, endTs, onStartTsChange, onEndTsChange }: Dat
                       type="date"
                       size="300"
                       radii="300"
-                      value={toDateInputValue(endTs)}
+                      value={toDateInputValue(localEnd)}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                        const d = new Date(e.target.value);
-                        d.setHours(23, 59, 59, 999);
-                        const ts = d.getTime();
-                        if (!Number.isNaN(ts)) onEndTsChange(ts);
+                        const [y, m, dy] = e.target.value.split('-').map(Number);
+                        const ts = new Date(y, m - 1, dy, 23, 59, 59, 999).getTime();
+                        if (!Number.isNaN(ts)) setLocalEnd(ts);
                       }}
                       style={{ width: toRem(150) }}
                     />
@@ -454,7 +464,7 @@ function DateRangeButton({ startTs, endTs, onStartTsChange, onEndTsChange }: Dat
                   size="300"
                   variant="Secondary"
                   radii="300"
-                  onClick={() => setMenuAnchor(undefined)}
+                  onClick={handleDone}
                 >
                   <Text size="B300">Done</Text>
                 </Button>
