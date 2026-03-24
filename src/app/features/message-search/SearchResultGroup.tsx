@@ -2,7 +2,7 @@
 import React, { MouseEventHandler, useMemo } from 'react';
 import { IEventWithRoomId, JoinRule, RelationType, Room } from 'matrix-js-sdk';
 import { HTMLReactParserOptions } from 'html-react-parser';
-import { Avatar, Box, Chip, Header, Icon, Icons, Text, config } from 'folds';
+import { Avatar, Box, Chip, Header, Icon, Icons, Text, config, toRem } from 'folds';
 import { Opts as LinkifyOpts } from 'linkifyjs';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import {
@@ -302,9 +302,33 @@ export function SearchResultGroup({
                     />
                   )}
                   {renderMatrixEvent(event.type, false, event, displayName, getContent)}
+                  {item.attachedImages && item.attachedImages.length > 0 && (
+                    <Box gap="200" wrap="Wrap" style={{ marginTop: config.space.S200 }}>
+                      {item.attachedImages.map((img) => {
+                        const mxcUrl = (img.content.file as Record<string, unknown>)?.url as string
+                          ?? img.content.url as string;
+                        const src = mxcUrl
+                          ? mxcUrlToHttp(mx, mxcUrl, useAuthentication, 200, 200, 'scale') ?? undefined
+                          : undefined;
+                        return src ? (
+                          <Image
+                            key={img.event_id}
+                            src={src}
+                            alt={img.content.body as string ?? 'Image'}
+                            loading="lazy"
+                            style={{
+                              maxWidth: toRem(200),
+                              maxHeight: toRem(200),
+                              borderRadius: config.radii.R300,
+                            }}
+                          />
+                        ) : null;
+                      })}
+                    </Box>
+                  )}
                 </ModernLayout>
               </Box>
-              <Box alignItems="Stretch" style={{ alignSelf: 'stretch' }}>
+              <Box shrink="No" alignItems="Stretch" style={{ alignSelf: 'stretch' }}>
                 <Chip
                   data-event-id={mainEventId}
                   onClick={handleOpenClick}

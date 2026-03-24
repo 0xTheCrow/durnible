@@ -8,6 +8,7 @@ export type DecryptedMessage = {
   origin_server_ts: number;
   body: string;
   type: string;
+  content?: Record<string, unknown>;
 };
 
 export type FetchProgress = {
@@ -97,26 +98,38 @@ export const fetchAndDecryptMessages = async (
       .map((evt) => evt.attemptDecryption(crypto as CryptoBackend, { isRetry: true }))
   );
 
-  // Extract plaintext messages, skip UTD (unable to decrypt) events
+  // Extract messages, skip UTD (unable to decrypt) events
   const messages: DecryptedMessage[] = [];
   for (const mEvt of matrixEvents) {
     const content = mEvt.getContent();
     const body = content?.body;
     if (typeof body !== 'string' || !body) continue;
-    // Skip events that are still encrypted (decryption failed)
     if (mEvt.isDecryptionFailure()) continue;
-    // Only include text-based messages, skip images/files/video/audio
     const msgtype = content.msgtype;
-    if (msgtype !== 'm.text' && msgtype !== 'm.notice' && msgtype !== 'm.emote') continue;
 
-    messages.push({
-      event_id: mEvt.getId() ?? '',
-      room_id: roomId,
-      sender: mEvt.getSender() ?? '',
-      origin_server_ts: mEvt.getTs(),
-      body,
-      type: content.msgtype ?? 'm.text',
-    });
+    // Text-based messages for searching
+    if (msgtype === 'm.text' || msgtype === 'm.notice' || msgtype === 'm.emote') {
+      messages.push({
+        event_id: mEvt.getId() ?? '',
+        room_id: roomId,
+        sender: mEvt.getSender() ?? '',
+        origin_server_ts: mEvt.getTs(),
+        body,
+        type: msgtype,
+      });
+    }
+    // Image messages for adjacency lookup
+    else if (msgtype === 'm.image') {
+      messages.push({
+        event_id: mEvt.getId() ?? '',
+        room_id: roomId,
+        sender: mEvt.getSender() ?? '',
+        origin_server_ts: mEvt.getTs(),
+        body,
+        type: msgtype,
+        content: content as Record<string, unknown>,
+      });
+    }
   }
 
   return messages;

@@ -108,6 +108,7 @@ function OrderButton({ order, onChange }: OrderButtonProps) {
         radii="Pill"
         after={<Icon size="50" src={Icons.Sort} />}
         onClick={handleOpenMenu}
+        style={{ minWidth: toRem(100) }}
       >
         <Text size="T200">{orderLabel(order)}</Text>
       </Chip>
@@ -435,6 +436,7 @@ function DateRangeButton({ startTs, endTs, onStartTsChange, onEndTsChange }: Dat
                       type="date"
                       size="300"
                       radii="300"
+                      max={toDateInputValue(localEnd)}
                       value={toDateInputValue(localStart)}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                         const [y, m, d] = e.target.value.split('-').map(Number);
@@ -450,6 +452,8 @@ function DateRangeButton({ startTs, endTs, onStartTsChange, onEndTsChange }: Dat
                       type="date"
                       size="300"
                       radii="300"
+                      min={toDateInputValue(localStart)}
+                      max={toDateInputValue(Date.now())}
                       value={toDateInputValue(localEnd)}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                         const [y, m, dy] = e.target.value.split('-').map(Number);

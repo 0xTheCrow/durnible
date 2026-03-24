@@ -8,12 +8,13 @@ import {
 } from 'matrix-js-sdk';
 import { useCallback } from 'react';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
-import { searchEncryptedRoom, type LocalSearchResult, type OnProgress } from '../../services/localSearch';
+import { searchEncryptedRoom, type LocalSearchResult, type OnProgress, type AttachedImage } from '../../services/localSearch';
 
 export type ResultItem = {
   rank: number;
   event: IEventWithRoomId;
   context: IResultContext;
+  attachedImages?: AttachedImage[];
 };
 
 export type ResultGroup = {
@@ -88,6 +89,7 @@ const localResultsToGroups = (results: LocalSearchResult[]): ResultGroup[] => {
         events_after: [],
         profile_info: {},
       },
+      attachedImages: r.attachedImages,
     };
 
     const lastGroup = groups[groups.length - 1];

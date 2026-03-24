@@ -1,6 +1,11 @@
 import { MatrixClient } from 'matrix-js-sdk';
 import { DecryptedMessage, fetchAndDecryptMessages, OnProgress } from './fetcher';
 
+export type AttachedImage = {
+  event_id: string;
+  content: Record<string, unknown>;
+};
+
 export type LocalSearchResult = {
   event_id: string;
   room_id: string;
@@ -8,6 +13,7 @@ export type LocalSearchResult = {
   origin_server_ts: number;
   body: string;
   type: string;
+  attachedImages?: AttachedImage[];
 };
 
 type RoomCache = {
@@ -83,11 +89,9 @@ export const searchEncryptedRoom = async (
   // Use cache if it fully covers the requested range
   let messages: DecryptedMessage[];
   if (cached && cached.startTs <= startTs && cached.endTs >= endTs) {
-    console.log('[search] cache HIT for', roomId, '- using', cached.messages.length, 'cached messages');
     messages = cached.messages;
   } else if (cached) {
     // Only fetch the gap(s) not covered by the cache
-    console.log('[search] cache PARTIAL for', roomId, '- fetching gaps');
     const gaps: { start: number; end: number }[] = [];
     if (startTs < cached.startTs) {
       gaps.push({ start: startTs, end: cached.startTs });
@@ -110,7 +114,6 @@ export const searchEncryptedRoom = async (
     roomCaches.set(roomId, { startTs: newStartTs, endTs: newEndTs, messages });
     trimCache();
   } else {
-    console.log('[search] cache MISS for', roomId, '- no cache');
     const fetched = await fetchAndDecryptMessages(mx, roomId, startTs, endTs, onProgress);
     messages = fetched;
 
@@ -118,14 +121,45 @@ export const searchEncryptedRoom = async (
     trimCache();
   }
 
-  // Filter by date range and query
-  const queryLower = query.toLowerCase();
-  const results = messages.filter(
-    (msg) =>
-      msg.origin_server_ts >= startTs &&
-      msg.origin_server_ts <= endTs &&
-      msg.body.toLowerCase().includes(queryLower)
+  // Parse query into terms: split on spaces, but keep quoted phrases together
+  const terms: string[] = [];
+  const regex = /"([^"]+)"|(\S+)/g;
+  let match = regex.exec(query);
+  while (match) {
+    terms.push((match[1] ?? match[2]).toLowerCase());
+    match = regex.exec(query);
+  }
+
+  // Filter by date range and all terms (AND), only on text messages
+  const TEXT_TYPES = new Set(['m.text', 'm.notice', 'm.emote']);
+  const ADJACENCY_MS = 60_000;
+
+  const textMatches = messages.filter(
+    (msg) => {
+      if (!TEXT_TYPES.has(msg.type)) return false;
+      if (msg.origin_server_ts < startTs || msg.origin_server_ts > endTs) return false;
+      const bodyLower = msg.body.toLowerCase();
+      return terms.every((term) => bodyLower.includes(term));
+    }
   );
+
+  // For each text match, find adjacent image messages from the same sender within 1 minute
+  const results: LocalSearchResult[] = textMatches.map((msg) => {
+    const adjacentImages = messages.filter(
+      (m) =>
+        m.type === 'm.image' &&
+        m.sender === msg.sender &&
+        m.content &&
+        Math.abs(m.origin_server_ts - msg.origin_server_ts) <= ADJACENCY_MS
+    );
+
+    return {
+      ...msg,
+      attachedImages: adjacentImages.length > 0
+        ? adjacentImages.map((img) => ({ event_id: img.event_id, content: img.content! }))
+        : undefined,
+    };
+  });
 
   return results;
 };
