@@ -5,7 +5,6 @@ import { cryptoCallbacks } from './secretStorageKeys';
 
 logger.setLevel('warn');
 import { clearNavToActivePathStore } from '../app/state/navToActivePath';
-import { clearIndex, clearIndexIfUserChanged } from '../app/services/localSearch';
 
 type Session = {
   baseUrl: string;
@@ -44,7 +43,6 @@ export const initClient = async (session: Session): Promise<MatrixClient> => {
 };
 
 export const startClient = async (mx: MatrixClient) => {
-  await clearIndexIfUserChanged(mx.getSafeUserId());
   await mx.startClient({
     lazyLoadMembers: true,
   });
@@ -64,7 +62,6 @@ export const logoutClient = async (mx: MatrixClient) => {
   } catch {
     // ignore if failed to logout
   }
-  await clearIndex();
   await mx.clearStores();
   window.localStorage.clear();
   window.location.reload();

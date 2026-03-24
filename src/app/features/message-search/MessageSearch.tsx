@@ -71,13 +71,6 @@ export function MessageSearch({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const scrollTopAnchorRef = useRef<HTMLDivElement>(null);
   const [searchParams, setSearchParams] = useSearchParams();
-  const hasCleared = useRef(false);
-  if (!hasCleared.current && searchParams.has('term')) {
-    hasCleared.current = true;
-    const newParams = new URLSearchParams(searchParams);
-    newParams.delete('term');
-    setSearchParams(newParams, { replace: true });
-  }
   const searchPathSearchParams = useSearchPathSearchParams(searchParams);
   const { navigateRoom } = useRoomNavigate();
 
