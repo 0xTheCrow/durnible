@@ -27,6 +27,22 @@ import { useSelectedRoom } from '../../hooks/router/useSelectedRoom';
 import { useInboxNotificationsSelected } from '../../hooks/router/useInbox';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
 
+function SyncRecovery() {
+  const mx = useMatrixClient();
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        mx.retryImmediately();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [mx]);
+
+  return null;
+}
+
 function SystemEmojiFeature() {
   const [twitterEmoji] = useSetting(settingsAtom, 'twitterEmoji');
 
@@ -260,6 +276,7 @@ type ClientNonUIFeaturesProps = {
 export function ClientNonUIFeatures({ children }: ClientNonUIFeaturesProps) {
   return (
     <>
+      <SyncRecovery />
       <SystemEmojiFeature />
       <PageZoomFeature />
       <FaviconUpdater />
