@@ -36,7 +36,7 @@ export const fetchAndDecryptMessages = async (
       path,
       { limit: 0 }
     );
-    fromToken = context.start;
+    fromToken = context.end;
   } catch (err) {
     console.log('[fetcher] timestampToEvent failed, using fallback:', err);
     // If timestamp_to_event fails, fall back to the room's live timeline end token
