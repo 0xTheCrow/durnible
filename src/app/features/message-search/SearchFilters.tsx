@@ -272,7 +272,7 @@ function SelectRoomButton({ roomList, selectedRooms, onChange }: SelectRoomButto
                           <MenuItem
                             data-room-id={roomId}
                             onClick={handleRoomClick}
-                            variant={selected ? 'Success' : 'Surface'}
+                            variant={selected ? 'Primary' : 'Surface'}
                             size="300"
                             radii="300"
                             aria-pressed={selected}
@@ -403,7 +403,7 @@ function DateRangeButton({ startTs, endTs, onStartTsChange, onEndTsChange }: Dat
         return (
           <Chip
             key={preset.days}
-            variant={active ? 'Success' : 'Surface'}
+            variant={active ? 'Primary' : 'Surface'}
             aria-pressed={active}
             before={active && <Icon size="100" src={Icons.Check} />}
             outlined
@@ -478,7 +478,7 @@ function DateRangeButton({ startTs, endTs, onStartTsChange, onEndTsChange }: Dat
         }
       >
         <Chip
-          variant={!activePreset ? 'Success' : 'Surface'}
+          variant={!activePreset ? 'Primary' : 'Surface'}
           aria-pressed={!activePreset}
           before={!activePreset && <Icon size="100" src={Icons.Check} />}
           outlined
@@ -535,7 +535,7 @@ export function SearchFilters({
       <Text size="L400">Filter</Text>
       <Box gap="200" wrap="Wrap" alignItems="Center">
         <Chip
-          variant={!global ? 'Success' : 'Surface'}
+          variant={!global ? 'Primary' : 'Surface'}
           aria-pressed={!global}
           before={!global && <Icon size="100" src={Icons.Check} />}
           outlined
@@ -545,7 +545,7 @@ export function SearchFilters({
         </Chip>
         {allowGlobal && (
           <Chip
-            variant={global ? 'Success' : 'Surface'}
+            variant={global ? 'Primary' : 'Surface'}
             aria-pressed={global}
             before={global && <Icon size="100" src={Icons.Check} />}
             outlined
@@ -567,7 +567,7 @@ export function SearchFilters({
           return (
             <Chip
               key={roomId}
-              variant="Success"
+              variant="Primary"
               onClick={() => onSelectedRoomsChange(selectedRooms.filter((rId) => rId !== roomId))}
               radii="Pill"
               before={

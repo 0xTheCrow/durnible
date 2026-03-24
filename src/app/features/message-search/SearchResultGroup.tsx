@@ -305,24 +305,27 @@ export function SearchResultGroup({
                   {item.attachedImages && item.attachedImages.length > 0 && (
                     <Box gap="200" wrap="Wrap" style={{ marginTop: config.space.S200 }}>
                       {item.attachedImages.map((img) => {
-                        const mxcUrl = (img.content.file as Record<string, unknown>)?.url as string
+                        const imgUrl = (img.content.file as Record<string, unknown>)?.url as string
                           ?? img.content.url as string;
-                        const src = mxcUrl
-                          ? mxcUrlToHttp(mx, mxcUrl, useAuthentication, 200, 200, 'scale') ?? undefined
-                          : undefined;
-                        return src ? (
-                          <Image
+                        if (!imgUrl) return null;
+                        const info = img.content.info as Record<string, unknown> | undefined;
+                        return (
+                          <ImageContent
                             key={img.event_id}
-                            src={src}
-                            alt={img.content.body as string ?? 'Image'}
-                            loading="lazy"
+                            body={img.content.body as string ?? 'Image'}
+                            mimeType={info?.mimetype as string | undefined}
+                            url={imgUrl}
+                            info={info as any}
+                            encInfo={img.content.file as any}
+                            autoPlay={mediaAutoLoad}
                             style={{
                               maxWidth: toRem(200),
                               maxHeight: toRem(200),
                               borderRadius: config.radii.R300,
                             }}
+                            renderImage={(p) => <Image {...p} loading="lazy" />}
                           />
-                        ) : null;
+                        );
                       })}
                     </Box>
                   )}
