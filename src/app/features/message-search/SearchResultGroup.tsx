@@ -2,7 +2,7 @@
 import React, { MouseEventHandler, useMemo } from 'react';
 import { IEventWithRoomId, JoinRule, RelationType, Room } from 'matrix-js-sdk';
 import { HTMLReactParserOptions } from 'html-react-parser';
-import { Avatar, Box, Chip, Header, Icon, Icons, Text, config } from 'folds';
+import { Avatar, Box, Header, Icon, Icons, Text, config } from 'folds';
 import { Opts as LinkifyOpts } from 'linkifyjs';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import {
@@ -304,21 +304,22 @@ export function SearchResultGroup({
                   {renderMatrixEvent(event.type, false, event, displayName, getContent)}
                 </ModernLayout>
               </Box>
-              <Chip
+              <Box
+                as="button"
                 data-event-id={mainEventId}
                 onClick={handleOpenClick}
-                variant="Secondary"
-                radii="0"
+                alignItems="Center"
+                justifyContent="Center"
                 style={{
                   alignSelf: 'stretch',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
                   padding: `0 ${config.space.S400}`,
+                  cursor: 'pointer',
+                  border: 'none',
+                  background: 'none',
                 }}
               >
                 <Text size="T200">Open</Text>
-              </Chip>
+              </Box>
             </SequenceCard>
           );
         })}

@@ -61,7 +61,7 @@ export const fetchAndDecryptMessages = async (
   while (token) {
     // eslint-disable-next-line no-await-in-loop
     const response: { chunk: IEvent[]; end?: string; start?: string } =
-      await mx.createMessagesRequest(roomId, token, 100, Direction.Backward, undefined);
+      await mx.createMessagesRequest(roomId, token, 1000, Direction.Backward, undefined);
 
     const { chunk } = response;
     if (!chunk || chunk.length === 0) break;

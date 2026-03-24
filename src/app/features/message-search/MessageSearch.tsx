@@ -69,9 +69,14 @@ export function MessageSearch({
   const { navigateRoom } = useRoomNavigate();
 
   // Date range state for encrypted room search
-  const now = useMemo(() => Date.now(), []);
-  const [startTs, setStartTs] = useState<number>(now - DEFAULT_RANGE_DAYS * 24 * 60 * 60 * 1000);
-  const [endTs, setEndTs] = useState<number>(now);
+  // Snap to end-of-day so the timestamps are stable across remounts (cache-friendly)
+  const endOfDay = useMemo(() => {
+    const d = new Date();
+    d.setHours(23, 59, 59, 999);
+    return d.getTime();
+  }, []);
+  const [startTs, setStartTs] = useState<number>(endOfDay - DEFAULT_RANGE_DAYS * 24 * 60 * 60 * 1000);
+  const [endTs, setEndTs] = useState<number>(endOfDay);
   const [fetchProgress, setFetchProgress] = useState<FetchProgress | null>(null);
 
   const onProgress = useCallback((progress: FetchProgress) => {
