@@ -13,7 +13,7 @@ import {
   makeMentionCustomProps,
   renderMatrixMention,
 } from '../../plugins/react-custom-html-parser';
-import { getMxIdLocalPart, mxcUrlToHttp } from '../../utils/matrix';
+import { getMxIdLocalPart } from '../../utils/matrix';
 import { useMatrixEventRenderer } from '../../hooks/useMatrixEventRenderer';
 import { GetContentCallback, MessageEvent, StateEvent } from '../../../types/matrix/room';
 import {
@@ -310,21 +310,25 @@ export function SearchResultGroup({
                         if (!imgUrl) return null;
                         const info = img.content.info as Record<string, unknown> | undefined;
                         return (
-                          <ImageContent
+                          <Box
                             key={img.event_id}
-                            body={img.content.body as string ?? 'Image'}
-                            mimeType={info?.mimetype as string | undefined}
-                            url={imgUrl}
-                            info={info as any}
-                            encInfo={img.content.file as any}
-                            autoPlay={mediaAutoLoad}
                             style={{
-                              maxWidth: toRem(200),
-                              maxHeight: toRem(200),
+                              width: toRem(200),
+                              height: toRem(200),
                               borderRadius: config.radii.R300,
+                              overflow: 'hidden',
                             }}
-                            renderImage={(p) => <Image {...p} loading="lazy" />}
-                          />
+                          >
+                            <ImageContent
+                              body={img.content.body as string ?? 'Image'}
+                              mimeType={info?.mimetype as string | undefined}
+                              url={imgUrl}
+                              info={info as any}
+                              encInfo={img.content.file as any}
+                              autoPlay={mediaAutoLoad}
+                              renderImage={(p) => <Image {...p} loading="lazy" />}
+                            />
+                          </Box>
                         );
                       })}
                     </Box>
