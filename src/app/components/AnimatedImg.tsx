@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 type AnimatedImgProps = React.ImgHTMLAttributes<HTMLImageElement> & {
   pauseGifs: boolean;
@@ -9,19 +9,28 @@ export function AnimatedImg({ pauseGifs, hovered: hoveredProp, ...imgProps }: An
   const imgRef = useRef<HTMLImageElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [loaded, setLoaded] = useState(false);
+  const [canvasReady, setCanvasReady] = useState(false);
   const [hoveredSelf, setHoveredSelf] = useState(false);
 
   const hovered = hoveredProp ?? hoveredSelf;
   const selfManaged = hoveredProp === undefined;
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (!pauseGifs || !loaded || !imgRef.current || !canvasRef.current) return;
     const img = imgRef.current;
     const canvas = canvasRef.current;
-    canvas.width = img.naturalWidth;
-    canvas.height = img.naturalHeight;
-    const ctx = canvas.getContext('2d');
-    ctx?.drawImage(img, 0, 0);
+    let cancelled = false;
+
+    img.decode().then(() => {
+      if (cancelled || !img.naturalWidth || !img.naturalHeight) return;
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      ctx?.drawImage(img, 0, 0);
+      setCanvasReady(true);
+    }).catch(() => {});
+
+    return () => { cancelled = true; };
   }, [pauseGifs, loaded]);
 
   if (!pauseGifs) {
@@ -41,7 +50,7 @@ export function AnimatedImg({ pauseGifs, hovered: hoveredProp, ...imgProps }: An
         ref={imgRef}
         style={{
           ...imgProps.style,
-          visibility: loaded && !hovered ? 'hidden' : 'visible',
+          visibility: canvasReady && !hovered ? 'hidden' : 'visible',
         }}
         onLoad={(e) => {
           setLoaded(true);
