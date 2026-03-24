@@ -48,10 +48,14 @@ export const fetchAndDecryptMessages = async (
 
   if (!fromToken) return [];
 
+  console.log('[fetcher] range:', new Date(startTs).toISOString(), 'to', new Date(endTs).toISOString());
+  console.log('[fetcher] fromToken:', fromToken);
+
   // Paginate backwards collecting raw events
   const rawEvents: IEvent[] = [];
   let token: string | undefined = fromToken;
   let fetched = 0;
+  let pages = 0;
 
   while (token) {
     // eslint-disable-next-line no-await-in-loop
@@ -60,6 +64,11 @@ export const fetchAndDecryptMessages = async (
 
     const { chunk } = response;
     if (!chunk || chunk.length === 0) break;
+
+    pages += 1;
+    const firstTs = chunk[0]?.origin_server_ts;
+    const lastTs = chunk[chunk.length - 1]?.origin_server_ts;
+    console.log(`[fetcher] page ${pages}: ${chunk.length} events, range ${new Date(lastTs).toISOString()} - ${new Date(firstTs).toISOString()}`);
 
     let reachedStart = false;
     for (const evt of chunk) {
@@ -78,7 +87,10 @@ export const fetchAndDecryptMessages = async (
     fetched += chunk.length;
     onProgress?.({ fetched, decrypting: false });
 
-    if (reachedStart) break;
+    if (reachedStart) {
+      console.log('[fetcher] reached startTs, stopping');
+      break;
+    }
     token = response.end ?? undefined;
   }
 
