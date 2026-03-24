@@ -58,7 +58,6 @@ type SearchResultGroupProps = {
   highlights: string[];
   items: ResultItem[];
   mediaAutoLoad?: boolean;
-  urlPreview?: boolean;
   onOpen: (roomId: string, eventId: string) => void;
   legacyUsernameColor?: boolean;
   hour24Clock: boolean;
@@ -69,7 +68,6 @@ export function SearchResultGroup({
   highlights,
   items,
   mediaAutoLoad,
-  urlPreview,
   onOpen,
   legacyUsernameColor,
   hour24Clock,
@@ -138,7 +136,7 @@ export function SearchResultGroup({
             ts={event.origin_server_ts}
             content={getContent()}
             mediaAutoLoad={mediaAutoLoad}
-            urlPreview={urlPreview}
+            urlPreview={false}
             htmlReactParserOptions={htmlReactParserOptions}
             linkifyOpts={linkifyOpts}
             highlightRegex={highlightRegex}

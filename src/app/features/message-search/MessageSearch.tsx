@@ -57,7 +57,6 @@ export function MessageSearch({
   const mDirects = useAtomValue(mDirectAtom);
   const allRooms = useRooms(mx, allRoomsAtom, mDirects);
   const [mediaAutoLoad] = useSetting(settingsAtom, 'mediaAutoLoad');
-  const [urlPreview] = useSetting(settingsAtom, 'urlPreview');
   const [legacyUsernameColor] = useSetting(settingsAtom, 'legacyUsernameColor');
 
   const [hour24Clock] = useSetting(settingsAtom, 'hour24Clock');
@@ -358,7 +357,6 @@ export function MessageSearch({
                     highlights={highlights}
                     items={group.items}
                     mediaAutoLoad={mediaAutoLoad}
-                    urlPreview={urlPreview}
                     onOpen={navigateRoom}
                     legacyUsernameColor={legacyUsernameColor || mDirects.has(groupRoom.roomId)}
                     hour24Clock={hour24Clock}
