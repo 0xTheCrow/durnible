@@ -85,24 +85,36 @@ export const searchEncryptedRoom = async (
   if (cached && cached.startTs <= startTs && cached.endTs >= endTs) {
     console.log('[search] cache HIT for', roomId, '- using', cached.messages.length, 'cached messages');
     messages = cached.messages;
-  } else {
-    console.log('[search] cache MISS for', roomId, cached ? '- expanding range' : '- no cache');
-    // Expand range to cover both cached and requested ranges
-    const fetchStart = cached ? Math.min(startTs, cached.startTs) : startTs;
-    const fetchEnd = cached ? Math.max(endTs, cached.endTs) : endTs;
-
-    const fetched = await fetchAndDecryptMessages(mx, roomId, fetchStart, fetchEnd, onProgress);
-
-    // Merge with existing cache, dedup by event_id
-    if (cached) {
-      const existingIds = new Set(cached.messages.map((m) => m.event_id));
-      const newMessages = fetched.filter((m) => !existingIds.has(m.event_id));
-      messages = [...cached.messages, ...newMessages];
-    } else {
-      messages = fetched;
+  } else if (cached) {
+    // Only fetch the gap(s) not covered by the cache
+    console.log('[search] cache PARTIAL for', roomId, '- fetching gaps');
+    const gaps: { start: number; end: number }[] = [];
+    if (startTs < cached.startTs) {
+      gaps.push({ start: startTs, end: cached.startTs });
+    }
+    if (endTs > cached.endTs) {
+      gaps.push({ start: cached.endTs, end: endTs });
     }
 
-    roomCaches.set(roomId, { startTs: fetchStart, endTs: fetchEnd, messages });
+    const gapResults = await Promise.all(
+      gaps.map((gap) => fetchAndDecryptMessages(mx, roomId, gap.start, gap.end, onProgress))
+    );
+    const newMessages = gapResults.flat();
+
+    const existingIds = new Set(cached.messages.map((m) => m.event_id));
+    const deduped = newMessages.filter((m) => !existingIds.has(m.event_id));
+    messages = [...cached.messages, ...deduped];
+
+    const newStartTs = Math.min(startTs, cached.startTs);
+    const newEndTs = Math.max(endTs, cached.endTs);
+    roomCaches.set(roomId, { startTs: newStartTs, endTs: newEndTs, messages });
+    trimCache();
+  } else {
+    console.log('[search] cache MISS for', roomId, '- no cache');
+    const fetched = await fetchAndDecryptMessages(mx, roomId, startTs, endTs, onProgress);
+    messages = fetched;
+
+    roomCaches.set(roomId, { startTs, endTs, messages });
     trimCache();
   }
 

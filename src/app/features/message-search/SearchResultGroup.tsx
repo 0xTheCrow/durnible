@@ -251,7 +251,7 @@ export function SearchResultGroup({
               variant="SurfaceVariant"
               direction="Row"
             >
-              <Box grow="Yes" style={{ padding: config.space.S400 }} direction="Column">
+              <Box grow="Yes" style={{ padding: config.space.S400, minWidth: 0 }} direction="Column">
                 <ModernLayout
                   before={
                     <AvatarBase>

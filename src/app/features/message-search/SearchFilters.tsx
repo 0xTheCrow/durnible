@@ -482,7 +482,7 @@ function DateRangeButton({ startTs, endTs, onStartTsChange, onEndTsChange }: Dat
         >
           <Text size="T200">
             {!activePreset
-              ? `${toDateInputValue(startTs)} – ${toDateInputValue(endTs)}`
+              ? `${new Date(startTs).toLocaleDateString()} to ${new Date(endTs).toLocaleDateString()}`
               : 'Custom'}
           </Text>
         </Chip>

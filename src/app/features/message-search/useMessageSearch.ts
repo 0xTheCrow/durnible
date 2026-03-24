@@ -145,9 +145,23 @@ export const useMessageSearch = (params: MessageSearchParams) => {
         const searchStartTs = startTs ?? now - 90 * 24 * 60 * 60 * 1000;
         const searchEndTs = endTs ?? now;
 
+        // Track progress per room and aggregate
+        const roomProgress = new Map<string, { fetched: number; decrypting: boolean }>();
+        const aggregateProgress = (roomId: string) => (p: { fetched: number; decrypting: boolean }) => {
+          roomProgress.set(roomId, p);
+          let totalFetched = 0;
+          let anyDecrypting = false;
+          for (const rp of roomProgress.values()) {
+            totalFetched += rp.fetched;
+            if (rp.decrypting) anyDecrypting = true;
+          }
+          const allDecrypting = [...roomProgress.values()].every((rp) => rp.decrypting);
+          onProgress?.({ fetched: totalFetched, decrypting: allDecrypting });
+        };
+
         const localResults = await Promise.all(
           encryptedRoomIds.map((roomId) =>
-            searchEncryptedRoom(mx, roomId, term, searchStartTs, searchEndTs, onProgress)
+            searchEncryptedRoom(mx, roomId, term, searchStartTs, searchEndTs, aggregateProgress(roomId))
           )
         );
         const merged = localResults.flat();
