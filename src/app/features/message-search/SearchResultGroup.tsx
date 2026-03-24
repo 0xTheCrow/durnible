@@ -13,7 +13,7 @@ import {
   makeMentionCustomProps,
   renderMatrixMention,
 } from '../../plugins/react-custom-html-parser';
-import { getMxIdLocalPart } from '../../utils/matrix';
+import { getMxIdLocalPart, mxcUrlToHttp } from '../../utils/matrix';
 import { useMatrixEventRenderer } from '../../hooks/useMatrixEventRenderer';
 import { GetContentCallback, MessageEvent, StateEvent } from '../../../types/matrix/room';
 import {
