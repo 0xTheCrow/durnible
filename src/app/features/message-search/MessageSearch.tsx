@@ -1,5 +1,5 @@
 import React, { RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Text, Box, Icon, Icons, config, Spinner, IconButton, Line, toRem, Input } from 'folds';
+import { Text, Box, Icon, Icons, config, Spinner, IconButton, Line, toRem } from 'folds';
 import { useAtomValue } from 'jotai';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useInfiniteQuery } from '@tanstack/react-query';
@@ -36,11 +36,6 @@ const useSearchPathSearchParams = (searchParams: URLSearchParams): _SearchPathSe
     }),
     [searchParams]
   );
-
-const toDateInputValue = (ts: number): string => {
-  const d = new Date(ts);
-  return d.toISOString().split('T')[0];
-};
 
 const DEFAULT_RANGE_DAYS = 7;
 
@@ -260,37 +255,12 @@ export function MessageSearch({
           onGlobalChange={handleGlobalChange}
           order={msgSearchParams.order}
           onOrderChange={handleOrderChange}
+          hasEncryptedRooms={hasEncryptedRooms}
+          startTs={startTs}
+          endTs={endTs}
+          onStartTsChange={setStartTs}
+          onEndTsChange={setEndTs}
         />
-        {hasEncryptedRooms && (
-          <Box direction="Column" gap="100">
-            <Text size="L400">Date Range (encrypted rooms)</Text>
-            <Box gap="200" alignItems="Center">
-              <Input
-                type="date"
-                size="300"
-                radii="300"
-                value={toDateInputValue(startTs)}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  const ts = new Date(e.target.value).getTime();
-                  if (!Number.isNaN(ts)) setStartTs(ts);
-                }}
-                style={{ width: toRem(160) }}
-              />
-              <Text size="T200">to</Text>
-              <Input
-                type="date"
-                size="300"
-                radii="300"
-                value={toDateInputValue(endTs)}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  const ts = new Date(e.target.value).getTime();
-                  if (!Number.isNaN(ts)) setEndTs(ts);
-                }}
-                style={{ width: toRem(160) }}
-              />
-            </Box>
-          </Box>
-        )}
       </Box>
 
       {fetchProgress && (

@@ -337,7 +337,18 @@ type SearchFiltersProps = {
   onGlobalChange: (global?: boolean) => void;
   order?: string;
   onOrderChange: (order?: string) => void;
+  hasEncryptedRooms?: boolean;
+  startTs?: number;
+  endTs?: number;
+  onStartTsChange?: (ts: number) => void;
+  onEndTsChange?: (ts: number) => void;
 };
+
+const toDateInputValue = (ts: number): string => {
+  const d = new Date(ts);
+  return d.toISOString().split('T')[0];
+};
+
 export function SearchFilters({
   defaultRoomsFilterName,
   allowGlobal,
@@ -348,6 +359,11 @@ export function SearchFilters({
   order,
   onGlobalChange,
   onOrderChange,
+  hasEncryptedRooms,
+  startTs,
+  endTs,
+  onStartTsChange,
+  onEndTsChange,
 }: SearchFiltersProps) {
   const mx = useMatrixClient();
 
@@ -409,6 +425,39 @@ export function SearchFilters({
           onChange={onSelectedRoomsChange}
         />
         <Box grow="Yes" data-spacing-node />
+        {hasEncryptedRooms && startTs !== undefined && endTs !== undefined && (
+          <>
+            <Input
+              type="date"
+              size="300"
+              radii="300"
+              value={toDateInputValue(startTs)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                const ts = new Date(e.target.value).getTime();
+                if (!Number.isNaN(ts)) onStartTsChange?.(ts);
+              }}
+              style={{ width: toRem(140) }}
+            />
+            <Text size="T200">to</Text>
+            <Input
+              type="date"
+              size="300"
+              radii="300"
+              value={toDateInputValue(endTs)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                const ts = new Date(e.target.value).getTime();
+                if (!Number.isNaN(ts)) onEndTsChange?.(ts);
+              }}
+              style={{ width: toRem(140) }}
+            />
+            <Line
+              style={{ margin: `${config.space.S100} 0` }}
+              direction="Vertical"
+              variant="Surface"
+              size="300"
+            />
+          </>
+        )}
         <OrderButton order={order} onChange={onOrderChange} />
       </Box>
     </Box>

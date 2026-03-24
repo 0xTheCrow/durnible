@@ -1,6 +1,14 @@
 import { MatrixClient, MatrixEvent, Direction, IEvent, Method } from 'matrix-js-sdk';
 import { CryptoBackend } from 'matrix-js-sdk/lib/common-crypto/CryptoBackend';
-import { IndexedMessage } from './db';
+
+export type DecryptedMessage = {
+  event_id: string;
+  room_id: string;
+  sender: string;
+  origin_server_ts: number;
+  body: string;
+  type: string;
+};
 
 export type FetchProgress = {
   fetched: number;
@@ -19,8 +27,7 @@ export const fetchAndDecryptMessages = async (
   startTs: number,
   endTs: number,
   onProgress?: OnProgress
-): Promise<IndexedMessage[]> => {
-  const userId = mx.getSafeUserId();
+): Promise<DecryptedMessage[]> => {
   const crypto = mx.getCrypto();
   if (!crypto) return [];
 
@@ -105,20 +112,22 @@ export const fetchAndDecryptMessages = async (
   );
 
   // Extract plaintext messages, skip UTD (unable to decrypt) events
-  const messages: IndexedMessage[] = [];
+  const messages: DecryptedMessage[] = [];
   for (const mEvt of matrixEvents) {
     const content = mEvt.getContent();
     const body = content?.body;
     if (typeof body !== 'string' || !body) continue;
     // Skip events that are still encrypted (decryption failed)
     if (mEvt.isDecryptionFailure()) continue;
+    // Only include text-based messages, skip images/files/video/audio
+    const msgtype = content.msgtype;
+    if (msgtype !== 'm.text' && msgtype !== 'm.notice' && msgtype !== 'm.emote') continue;
 
     messages.push({
       event_id: mEvt.getId() ?? '',
       room_id: roomId,
       sender: mEvt.getSender() ?? '',
       origin_server_ts: mEvt.getTs(),
-      user_id: userId,
       body,
       type: content.msgtype ?? 'm.text',
     });
