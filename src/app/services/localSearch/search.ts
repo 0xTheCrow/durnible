@@ -76,6 +76,19 @@ const trimCache = () => {
   wasTrimmed = true;
 };
 
+export const addLiveMessageToCache = (roomId: string, message: DecryptedMessage): void => {
+  const cached = roomCaches.get(roomId);
+  if (!cached) return;
+
+  if (cached.messages.some((m) => m.event_id === message.event_id)) return;
+
+  cached.messages.push(message);
+
+  if (message.origin_server_ts > cached.endTs) {
+    cached.endTs = message.origin_server_ts;
+  }
+};
+
 export const searchEncryptedRoom = async (
   mx: MatrixClient,
   roomId: string,

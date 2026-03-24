@@ -26,6 +26,60 @@ import { getMxIdLocalPart, mxcUrlToHttp } from '../../utils/matrix';
 import { useSelectedRoom } from '../../hooks/router/useSelectedRoom';
 import { useInboxNotificationsSelected } from '../../hooks/router/useInbox';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
+import { addLiveMessageToCache } from '../../services/localSearch';
+
+function SearchCacheUpdater() {
+  const mx = useMatrixClient();
+
+  useEffect(() => {
+    const handleTimelineEvent: RoomEventHandlerMap[RoomEvent.Timeline] = (
+      mEvent,
+      room,
+      _toStartOfTimeline,
+      _removed,
+      data
+    ) => {
+      if (!room || !data.liveEvent) return;
+
+      if (mEvent.isDecryptionFailure()) return;
+      const content = mEvent.getContent();
+      const body = content?.body;
+      if (typeof body !== 'string' || !body) return;
+
+      const msgtype = content.msgtype;
+      const eventId = mEvent.getId();
+      if (!eventId) return;
+
+      if (msgtype === 'm.text' || msgtype === 'm.notice' || msgtype === 'm.emote') {
+        addLiveMessageToCache(room.roomId, {
+          event_id: eventId,
+          room_id: room.roomId,
+          sender: mEvent.getSender() ?? '',
+          origin_server_ts: mEvent.getTs(),
+          body,
+          type: msgtype,
+        });
+      } else if (msgtype === 'm.image') {
+        addLiveMessageToCache(room.roomId, {
+          event_id: eventId,
+          room_id: room.roomId,
+          sender: mEvent.getSender() ?? '',
+          origin_server_ts: mEvent.getTs(),
+          body,
+          type: msgtype,
+          content: content as Record<string, unknown>,
+        });
+      }
+    };
+
+    mx.on(RoomEvent.Timeline, handleTimelineEvent);
+    return () => {
+      mx.removeListener(RoomEvent.Timeline, handleTimelineEvent);
+    };
+  }, [mx]);
+
+  return null;
+}
 
 function SyncRecovery() {
   const mx = useMatrixClient();
@@ -277,6 +331,7 @@ export function ClientNonUIFeatures({ children }: ClientNonUIFeaturesProps) {
   return (
     <>
       <SyncRecovery />
+      <SearchCacheUpdater />
       <SystemEmojiFeature />
       <PageZoomFeature />
       <FaviconUpdater />
