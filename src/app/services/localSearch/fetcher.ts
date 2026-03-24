@@ -66,6 +66,8 @@ export const fetchAndDecryptMessages = async (
         reachedStart = true;
         break;
       }
+      // Skip events newer than endTs (can happen when using fallback token)
+      if (evt.origin_server_ts > endTs) continue;
       if (evt.type === 'm.room.message' || evt.type === 'm.room.encrypted') {
         rawEvents.push(evt as IEvent);
       }

@@ -42,7 +42,7 @@ const toDateInputValue = (ts: number): string => {
   return d.toISOString().split('T')[0];
 };
 
-const DEFAULT_RANGE_DAYS = 90;
+const DEFAULT_RANGE_DAYS = 7;
 
 type MessageSearchProps = {
   defaultRoomsFilterName: string;
