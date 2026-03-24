@@ -1,4 +1,4 @@
-import React, { RefObject, useEffect, useMemo, useRef } from 'react';
+import React, { RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Text, Box, Icon, Icons, config, Spinner, IconButton, Line, toRem } from 'folds';
 import { useAtomValue } from 'jotai';
 import { useVirtualizer } from '@tanstack/react-virtual';
@@ -23,6 +23,7 @@ import { SearchResultGroup } from './SearchResultGroup';
 import { SearchInput } from './SearchInput';
 import { SearchFilters } from './SearchFilters';
 import { VirtualTile } from '../../components/virtualizer';
+import { FetchProgress, wasMessageCapExceeded } from '../../services/localSearch';
 
 const useSearchPathSearchParams = (searchParams: URLSearchParams): _SearchPathSearchParams =>
   useMemo(
@@ -35,6 +36,8 @@ const useSearchPathSearchParams = (searchParams: URLSearchParams): _SearchPathSe
     }),
     [searchParams]
   );
+
+const DEFAULT_RANGE_DAYS = 7;
 
 type MessageSearchProps = {
   defaultRoomsFilterName: string;
@@ -54,7 +57,6 @@ export function MessageSearch({
   const mDirects = useAtomValue(mDirectAtom);
   const allRooms = useRooms(mx, allRoomsAtom, mDirects);
   const [mediaAutoLoad] = useSetting(settingsAtom, 'mediaAutoLoad');
-  const [urlPreview] = useSetting(settingsAtom, 'urlPreview');
   const [legacyUsernameColor] = useSetting(settingsAtom, 'legacyUsernameColor');
 
   const [hour24Clock] = useSetting(settingsAtom, 'hour24Clock');
@@ -65,6 +67,24 @@ export function MessageSearch({
   const [searchParams, setSearchParams] = useSearchParams();
   const searchPathSearchParams = useSearchPathSearchParams(searchParams);
   const { navigateRoom } = useRoomNavigate();
+
+  // Date range state for encrypted room search
+  // Snap to day boundaries so timestamps are stable across remounts (cache-friendly)
+  const [defaultStartTs, defaultEndTs] = useMemo(() => {
+    const end = new Date();
+    end.setHours(23, 59, 59, 999);
+    const start = new Date();
+    start.setDate(start.getDate() - DEFAULT_RANGE_DAYS);
+    start.setHours(0, 0, 0, 0);
+    return [start.getTime(), end.getTime()];
+  }, []);
+  const [startTs, setStartTs] = useState<number>(defaultStartTs);
+  const [endTs, setEndTs] = useState<number>(defaultEndTs);
+  const [fetchProgress, setFetchProgress] = useState<FetchProgress | null>(null);
+
+  const onProgress = useCallback((progress: FetchProgress) => {
+    setFetchProgress(progress);
+  }, []);
 
   const searchParamRooms = useMemo(() => {
     if (searchPathSearchParams.rooms) {
@@ -85,14 +105,28 @@ export function MessageSearch({
   const msgSearchParams: MessageSearchParams = useMemo(() => {
     const isGlobal = searchPathSearchParams.global === 'true';
     const defaultRooms = isGlobal ? undefined : rooms;
+    const effectiveRooms = searchParamRooms ?? defaultRooms;
 
     return {
       term: searchPathSearchParams.term,
       order: searchPathSearchParams.order ?? SearchOrderBy.Recent,
-      rooms: searchParamRooms ?? defaultRooms,
+      rooms: effectiveRooms,
       senders: searchParamsSenders ?? senders,
+      startTs,
+      endTs,
+      onProgress,
     };
-  }, [searchPathSearchParams, searchParamRooms, searchParamsSenders, rooms, senders]);
+  }, [searchPathSearchParams, searchParamRooms, searchParamsSenders, rooms, senders, startTs, endTs, onProgress]);
+
+  // Detect if any rooms in the current search set are encrypted
+  const hasEncryptedRooms = useMemo(() => {
+    const roomIds = msgSearchParams.rooms;
+    if (!roomIds) return false;
+    return roomIds.some((roomId) => {
+      const room = mx.getRoom(roomId);
+      return room?.hasEncryptionStateEvent();
+    });
+  }, [mx, msgSearchParams.rooms]);
 
   const searchMessages = useMessageSearch(msgSearchParams);
 
@@ -104,8 +138,15 @@ export function MessageSearch({
       msgSearchParams.order,
       msgSearchParams.rooms,
       msgSearchParams.senders,
+      hasEncryptedRooms ? startTs : undefined,
+      hasEncryptedRooms ? endTs : undefined,
     ],
-    queryFn: ({ pageParam }) => searchMessages(pageParam),
+    queryFn: async ({ pageParam }) => {
+      setFetchProgress(null);
+      const result = await searchMessages(pageParam);
+      setFetchProgress(null);
+      return result;
+    },
     initialPageParam: '',
     getNextPageParam: (lastPage) => lastPage.nextToken,
   });
@@ -221,8 +262,29 @@ export function MessageSearch({
           onGlobalChange={handleGlobalChange}
           order={msgSearchParams.order}
           onOrderChange={handleOrderChange}
+          hasEncryptedRooms={hasEncryptedRooms}
+          startTs={startTs}
+          endTs={endTs}
+          onStartTsChange={setStartTs}
+          onEndTsChange={setEndTs}
         />
       </Box>
+
+      {fetchProgress && (
+        <Box
+          className={ContainerColor({ variant: 'SurfaceVariant' })}
+          style={{ padding: config.space.S300, borderRadius: config.radii.R400 }}
+          alignItems="Center"
+          gap="200"
+        >
+          <Spinner size="200" variant="Secondary" />
+          <Text size="T300">
+            {fetchProgress.decrypting
+              ? `Decrypting ${fetchProgress.fetched} messages...`
+              : `Fetching messages... (${fetchProgress.fetched} so far)`}
+          </Text>
+        </Box>
+      )}
 
       {!msgSearchParams.term && status === 'pending' && (
         <PageHeroEmpty>
@@ -234,6 +296,20 @@ export function MessageSearch({
             />
           </PageHeroSection>
         </PageHeroEmpty>
+      )}
+
+      {hasEncryptedRooms && status === 'success' && wasMessageCapExceeded() && (
+        <Box
+          className={ContainerColor({ variant: 'Warning' })}
+          style={{ padding: config.space.S300, borderRadius: config.radii.R400 }}
+          alignItems="Center"
+          gap="200"
+        >
+          <Icon size="200" src={Icons.Info} />
+          <Text size="T300">
+            The message limit was reached and older messages have been removed from the search. Try narrowing the date range for more complete results.
+          </Text>
+        </Box>
       )}
 
       {msgSearchParams.term && groups.length === 0 && status === 'success' && (
@@ -262,7 +338,7 @@ export function MessageSearch({
       {vItems.length > 0 && (
         <Box direction="Column" gap="300">
           <Box direction="Column" gap="200">
-            <Text size="H5">{`Results for "${msgSearchParams.term}"`}</Text>
+            <Text size="H5">{`${groups.reduce((n, g) => n + g.items.length, 0)} results for "${msgSearchParams.term}"`}</Text>
             <Line size="300" variant="Surface" />
           </Box>
           <div
@@ -289,7 +365,6 @@ export function MessageSearch({
                     highlights={highlights}
                     items={group.items}
                     mediaAutoLoad={mediaAutoLoad}
-                    urlPreview={urlPreview}
                     onOpen={navigateRoom}
                     legacyUsernameColor={legacyUsernameColor || mDirects.has(groupRoom.roomId)}
                     hour24Clock={hour24Clock}

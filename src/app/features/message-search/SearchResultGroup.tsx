@@ -2,7 +2,7 @@
 import React, { MouseEventHandler, useMemo } from 'react';
 import { IEventWithRoomId, JoinRule, RelationType, Room } from 'matrix-js-sdk';
 import { HTMLReactParserOptions } from 'html-react-parser';
-import { Avatar, Box, Chip, Header, Icon, Icons, Text, config } from 'folds';
+import { Avatar, Box, Chip, Header, Icon, Icons, Text, config, toRem } from 'folds';
 import { Opts as LinkifyOpts } from 'linkifyjs';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import {
@@ -23,10 +23,10 @@ import {
   ModernLayout,
   RedactedContent,
   Reply,
-  Time,
   Username,
   UsernameBold,
 } from '../../components/message';
+import { timeDayMonYear, timeHourMinute } from '../../utils/time';
 import { RenderMessageContent } from '../../components/RenderMessageContent';
 import { Image } from '../../components/media';
 import * as customHtmlCss from '../../styles/CustomHtml.css';
@@ -58,7 +58,6 @@ type SearchResultGroupProps = {
   highlights: string[];
   items: ResultItem[];
   mediaAutoLoad?: boolean;
-  urlPreview?: boolean;
   onOpen: (roomId: string, eventId: string) => void;
   legacyUsernameColor?: boolean;
   hour24Clock: boolean;
@@ -69,7 +68,6 @@ export function SearchResultGroup({
   highlights,
   items,
   mediaAutoLoad,
-  urlPreview,
   onOpen,
   legacyUsernameColor,
   hour24Clock,
@@ -138,7 +136,7 @@ export function SearchResultGroup({
             ts={event.origin_server_ts}
             content={getContent()}
             mediaAutoLoad={mediaAutoLoad}
-            urlPreview={urlPreview}
+            urlPreview={false}
             htmlReactParserOptions={htmlReactParserOptions}
             linkifyOpts={linkifyOpts}
             highlightRegex={highlightRegex}
@@ -249,37 +247,37 @@ export function SearchResultGroup({
           return (
             <SequenceCard
               key={event.event_id}
-              style={{ padding: config.space.S400 }}
+              style={{ padding: 0 }}
               variant="SurfaceVariant"
-              direction="Column"
+              direction="Row"
             >
-              <ModernLayout
-                before={
-                  <AvatarBase>
-                    <Avatar size="300">
-                      <UserAvatar
-                        userId={event.sender}
-                        src={
-                          senderAvatarMxc
-                            ? mxcUrlToHttp(
-                                mx,
-                                senderAvatarMxc,
-                                useAuthentication,
-                                48,
-                                48,
-                                'crop'
-                              ) ?? undefined
-                            : undefined
-                        }
-                        alt={displayName}
-                        renderFallback={() => <Icon size="200" src={Icons.User} filled />}
-                      />
-                    </Avatar>
-                  </AvatarBase>
-                }
-              >
-                <Box gap="300" justifyContent="SpaceBetween" alignItems="Center" grow="Yes">
-                  <Box gap="200" alignItems="Baseline">
+              <Box grow="Yes" style={{ padding: config.space.S400, minWidth: 0 }} direction="Column">
+                <ModernLayout
+                  before={
+                    <AvatarBase>
+                      <Avatar size="300">
+                        <UserAvatar
+                          userId={event.sender}
+                          src={
+                            senderAvatarMxc
+                              ? mxcUrlToHttp(
+                                  mx,
+                                  senderAvatarMxc,
+                                  useAuthentication,
+                                  48,
+                                  48,
+                                  'crop'
+                                ) ?? undefined
+                              : undefined
+                          }
+                          alt={displayName}
+                          renderFallback={() => <Icon size="200" src={Icons.User} filled />}
+                        />
+                      </Avatar>
+                    </AvatarBase>
+                  }
+                >
+                  <Box gap="200" alignItems="Baseline" grow="Yes">
                     <Box alignItems="Center" gap="200">
                       <Username style={{ color: usernameColor }}>
                         <Text as="span" truncate>
@@ -288,36 +286,70 @@ export function SearchResultGroup({
                       </Username>
                       {tagIconSrc && <PowerIcon size="100" iconSrc={tagIconSrc} />}
                     </Box>
-                    <Time
-                      ts={event.origin_server_ts}
-                      hour24Clock={hour24Clock}
-                      dateFormatString={dateFormatString}
-                    />
+                    <Text as="time" style={{ flexShrink: 0 }} size="T200" priority="300">
+                      {`${timeDayMonYear(event.origin_server_ts, dateFormatString)} ${timeHourMinute(event.origin_server_ts, hour24Clock)}`}
+                    </Text>
                   </Box>
-                  <Box shrink="No" gap="200" alignItems="Center">
-                    <Chip
-                      data-event-id={mainEventId}
+                  {replyEventId && (
+                    <Reply
+                      room={room}
+                      replyEventId={replyEventId}
+                      threadRootId={threadRootId}
                       onClick={handleOpenClick}
-                      variant="Secondary"
-                      radii="400"
-                    >
-                      <Text size="T200">Open</Text>
-                    </Chip>
-                  </Box>
-                </Box>
-                {replyEventId && (
-                  <Reply
-                    room={room}
-                    replyEventId={replyEventId}
-                    threadRootId={threadRootId}
-                    onClick={handleOpenClick}
-                    getMemberPowerTag={getMemberPowerTag}
-                    accessibleTagColors={accessibleTagColors}
-                    legacyUsernameColor={legacyUsernameColor}
-                  />
-                )}
-                {renderMatrixEvent(event.type, false, event, displayName, getContent)}
-              </ModernLayout>
+                      getMemberPowerTag={getMemberPowerTag}
+                      accessibleTagColors={accessibleTagColors}
+                      legacyUsernameColor={legacyUsernameColor}
+                    />
+                  )}
+                  {renderMatrixEvent(event.type, false, event, displayName, getContent)}
+                  {item.attachedImages && item.attachedImages.length > 0 && (
+                    <Box gap="200" wrap="Wrap" style={{ marginTop: config.space.S200 }}>
+                      {item.attachedImages.map((img) => {
+                        const imgUrl = (img.content.file as Record<string, unknown>)?.url as string
+                          ?? img.content.url as string;
+                        if (!imgUrl) return null;
+                        const info = img.content.info as Record<string, unknown> | undefined;
+                        return (
+                          <Box
+                            key={img.event_id}
+                            style={{
+                              width: toRem(200),
+                              height: toRem(200),
+                              borderRadius: config.radii.R300,
+                              overflow: 'hidden',
+                            }}
+                          >
+                            <ImageContent
+                              body={img.content.body as string ?? 'Image'}
+                              mimeType={info?.mimetype as string | undefined}
+                              url={imgUrl}
+                              info={info as any}
+                              encInfo={img.content.file as any}
+                              autoPlay={mediaAutoLoad}
+                              renderImage={(p) => <Image {...p} loading="lazy" />}
+                            />
+                          </Box>
+                        );
+                      })}
+                    </Box>
+                  )}
+                </ModernLayout>
+              </Box>
+              <Box shrink="No" alignItems="Stretch" style={{ alignSelf: 'stretch' }}>
+                <Chip
+                  data-event-id={mainEventId}
+                  onClick={handleOpenClick}
+                  variant="Secondary"
+                  radii="0"
+                  fill="None"
+                  style={{
+                    height: '100%',
+                    padding: `0 ${config.space.S400}`,
+                  }}
+                >
+                  <Text size="T200">Open</Text>
+                </Chip>
+              </Box>
             </SequenceCard>
           );
         })}

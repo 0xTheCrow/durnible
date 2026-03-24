@@ -44,9 +44,13 @@ type OrderButtonProps = {
   order?: string;
   onChange: (order?: string) => void;
 };
+const orderLabel = (order?: string): string => {
+  if (order === 'oldest') return 'Oldest';
+  return 'Newest';
+};
+
 function OrderButton({ order, onChange }: OrderButtonProps) {
   const [menuAnchor, setMenuAnchor] = useState<RectCords>();
-  const rankOrder = order === SearchOrderBy.Rank;
 
   const setOrder = (o?: string) => {
     setMenuAnchor(undefined);
@@ -81,18 +85,18 @@ function OrderButton({ order, onChange }: OrderButtonProps) {
                 variant="Surface"
                 size="300"
                 radii="300"
-                aria-pressed={!rankOrder}
+                aria-pressed={!order || order === SearchOrderBy.Recent}
               >
-                <Text size="T300">Recent</Text>
+                <Text size="T300">Newest</Text>
               </MenuItem>
               <MenuItem
-                onClick={() => setOrder(SearchOrderBy.Rank)}
+                onClick={() => setOrder('oldest')}
                 variant="Surface"
                 size="300"
                 radii="300"
-                aria-pressed={rankOrder}
+                aria-pressed={order === 'oldest'}
               >
-                <Text size="T300">Relevance</Text>
+                <Text size="T300">Oldest</Text>
               </MenuItem>
             </div>
           </Menu>
@@ -104,8 +108,9 @@ function OrderButton({ order, onChange }: OrderButtonProps) {
         radii="Pill"
         after={<Icon size="50" src={Icons.Sort} />}
         onClick={handleOpenMenu}
+        style={{ minWidth: toRem(100) }}
       >
-        {rankOrder ? <Text size="T200">Relevance</Text> : <Text size="T200">Recent</Text>}
+        <Text size="T200">{orderLabel(order)}</Text>
       </Chip>
     </PopOut>
   );
@@ -267,7 +272,7 @@ function SelectRoomButton({ roomList, selectedRooms, onChange }: SelectRoomButto
                           <MenuItem
                             data-room-id={roomId}
                             onClick={handleRoomClick}
-                            variant={selected ? 'Success' : 'Surface'}
+                            variant={selected ? 'Primary' : 'Surface'}
                             size="300"
                             radii="300"
                             aria-pressed={selected}
@@ -327,6 +332,169 @@ function SelectRoomButton({ roomList, selectedRooms, onChange }: SelectRoomButto
   );
 }
 
+const toDateInputValue = (ts: number): string => {
+  const d = new Date(ts);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const RANGE_PRESETS = [
+  { label: '7 days', days: 7 },
+  { label: '30 days', days: 30 },
+  { label: '90 days', days: 90 },
+  { label: '1 year', days: 365 },
+] as const;
+
+const getEndOfDay = (): number => {
+  const d = new Date();
+  d.setHours(23, 59, 59, 999);
+  return d.getTime();
+};
+
+const getStartOfDaysAgo = (days: number): number => {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+};
+
+const matchesPreset = (startTs: number, endTs: number, days: number): boolean => {
+  const expectedStart = getStartOfDaysAgo(days);
+  const expectedEnd = getEndOfDay();
+  return Math.abs(startTs - expectedStart) < 60000 && Math.abs(endTs - expectedEnd) < 60000;
+};
+
+type DateRangeButtonProps = {
+  startTs: number;
+  endTs: number;
+  onStartTsChange: (ts: number) => void;
+  onEndTsChange: (ts: number) => void;
+};
+function DateRangeButton({ startTs, endTs, onStartTsChange, onEndTsChange }: DateRangeButtonProps) {
+  const [menuAnchor, setMenuAnchor] = useState<RectCords>();
+  const [localStart, setLocalStart] = useState(startTs);
+  const [localEnd, setLocalEnd] = useState(endTs);
+
+  const activePreset = RANGE_PRESETS.find((p) => matchesPreset(startTs, endTs, p.days));
+
+  const handlePreset = (days: number) => {
+    onStartTsChange(getStartOfDaysAgo(days));
+    onEndTsChange(getEndOfDay());
+  };
+
+  const handleOpenCustom: MouseEventHandler<HTMLButtonElement> = (evt) => {
+    setLocalStart(startTs);
+    setLocalEnd(endTs);
+    setMenuAnchor(evt.currentTarget.getBoundingClientRect());
+  };
+
+  const handleDone = () => {
+    onStartTsChange(localStart);
+    onEndTsChange(localEnd);
+    setMenuAnchor(undefined);
+  };
+
+  return (
+    <>
+      {RANGE_PRESETS.map((preset) => {
+        const active = activePreset?.days === preset.days;
+        return (
+          <Chip
+            key={preset.days}
+            variant={active ? 'Primary' : 'Surface'}
+            aria-pressed={active}
+            before={active && <Icon size="100" src={Icons.Check} />}
+            outlined
+            onClick={() => handlePreset(preset.days)}
+          >
+            <Text size="T200">{preset.label}</Text>
+          </Chip>
+        );
+      })}
+      <PopOut
+        anchor={menuAnchor}
+        align="End"
+        position="Bottom"
+        content={
+          <FocusTrap
+            focusTrapOptions={{
+              initialFocus: false,
+              onDeactivate: () => setMenuAnchor(undefined),
+              clickOutsideDeactivates: true,
+              escapeDeactivates: stopPropagation,
+            }}
+          >
+            <Menu variant="Surface">
+              <Box direction="Column" gap="200" style={{ padding: config.space.S300 }}>
+                <Text size="L400">Custom Range</Text>
+                <Box gap="200" alignItems="Center">
+                  <Box direction="Column" gap="100">
+                    <Text size="T200">From</Text>
+                    <Input
+                      type="date"
+                      size="300"
+                      radii="300"
+                      max={toDateInputValue(localEnd)}
+                      value={toDateInputValue(localStart)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        const [y, m, d] = e.target.value.split('-').map(Number);
+                        const ts = new Date(y, m - 1, d, 0, 0, 0, 0).getTime();
+                        if (!Number.isNaN(ts)) setLocalStart(ts);
+                      }}
+                      style={{ width: toRem(150) }}
+                    />
+                  </Box>
+                  <Box direction="Column" gap="100">
+                    <Text size="T200">To</Text>
+                    <Input
+                      type="date"
+                      size="300"
+                      radii="300"
+                      min={toDateInputValue(localStart)}
+                      max={toDateInputValue(Date.now())}
+                      value={toDateInputValue(localEnd)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        const [y, m, dy] = e.target.value.split('-').map(Number);
+                        const ts = new Date(y, m - 1, dy, 23, 59, 59, 999).getTime();
+                        if (!Number.isNaN(ts)) setLocalEnd(ts);
+                      }}
+                      style={{ width: toRem(150) }}
+                    />
+                  </Box>
+                </Box>
+                <Button
+                  size="300"
+                  variant="Secondary"
+                  radii="300"
+                  onClick={handleDone}
+                >
+                  <Text size="B300">Done</Text>
+                </Button>
+              </Box>
+            </Menu>
+          </FocusTrap>
+        }
+      >
+        <Chip
+          variant={!activePreset ? 'Primary' : 'Surface'}
+          aria-pressed={!activePreset}
+          before={!activePreset && <Icon size="100" src={Icons.Check} />}
+          outlined
+          onClick={handleOpenCustom}
+        >
+          <Text size="T200">
+            {!activePreset
+              ? `${new Date(startTs).toLocaleDateString()} to ${new Date(endTs).toLocaleDateString()}`
+              : 'Custom'}
+          </Text>
+        </Chip>
+      </PopOut>
+    </>
+  );
+}
+
 type SearchFiltersProps = {
   defaultRoomsFilterName: string;
   allowGlobal?: boolean;
@@ -337,7 +505,13 @@ type SearchFiltersProps = {
   onGlobalChange: (global?: boolean) => void;
   order?: string;
   onOrderChange: (order?: string) => void;
+  hasEncryptedRooms?: boolean;
+  startTs?: number;
+  endTs?: number;
+  onStartTsChange?: (ts: number) => void;
+  onEndTsChange?: (ts: number) => void;
 };
+
 export function SearchFilters({
   defaultRoomsFilterName,
   allowGlobal,
@@ -348,15 +522,20 @@ export function SearchFilters({
   order,
   onGlobalChange,
   onOrderChange,
+  hasEncryptedRooms,
+  startTs,
+  endTs,
+  onStartTsChange,
+  onEndTsChange,
 }: SearchFiltersProps) {
   const mx = useMatrixClient();
 
   return (
     <Box direction="Column" gap="100">
       <Text size="L400">Filter</Text>
-      <Box gap="200" wrap="Wrap">
+      <Box gap="200" wrap="Wrap" alignItems="Center">
         <Chip
-          variant={!global ? 'Success' : 'Surface'}
+          variant={!global ? 'Primary' : 'Surface'}
           aria-pressed={!global}
           before={!global && <Icon size="100" src={Icons.Check} />}
           outlined
@@ -366,7 +545,7 @@ export function SearchFilters({
         </Chip>
         {allowGlobal && (
           <Chip
-            variant={global ? 'Success' : 'Surface'}
+            variant={global ? 'Primary' : 'Surface'}
             aria-pressed={global}
             before={global && <Icon size="100" src={Icons.Check} />}
             outlined
@@ -388,7 +567,7 @@ export function SearchFilters({
           return (
             <Chip
               key={roomId}
-              variant="Success"
+              variant="Primary"
               onClick={() => onSelectedRoomsChange(selectedRooms.filter((rId) => rId !== roomId))}
               radii="Pill"
               before={
@@ -409,6 +588,22 @@ export function SearchFilters({
           onChange={onSelectedRoomsChange}
         />
         <Box grow="Yes" data-spacing-node />
+        {hasEncryptedRooms && startTs !== undefined && endTs !== undefined && onStartTsChange && onEndTsChange && (
+          <>
+            <DateRangeButton
+              startTs={startTs}
+              endTs={endTs}
+              onStartTsChange={onStartTsChange}
+              onEndTsChange={onEndTsChange}
+            />
+            <Line
+              style={{ margin: `${config.space.S100} 0` }}
+              direction="Vertical"
+              variant="Surface"
+              size="300"
+            />
+          </>
+        )}
         <OrderButton order={order} onChange={onOrderChange} />
       </Box>
     </Box>
