@@ -28,6 +28,7 @@ export const fetchAndDecryptMessages = async (
   let fromToken: string | undefined;
   try {
     const result = await mx.timestampToEvent(roomId, endTs, Direction.Backward);
+    console.log('[fetcher] timestampToEvent succeeded, event_id:', result.event_id);
     const eventId = result.event_id;
     const path = `/rooms/${encodeURIComponent(roomId)}/context/${encodeURIComponent(eventId)}`;
     const context = await mx.http.authedRequest<{ start: string; end: string }>(
@@ -36,7 +37,8 @@ export const fetchAndDecryptMessages = async (
       { limit: 0 }
     );
     fromToken = context.start;
-  } catch {
+  } catch (err) {
+    console.log('[fetcher] timestampToEvent failed, using fallback:', err);
     // If timestamp_to_event fails, fall back to the room's live timeline end token
     const room = mx.getRoom(roomId);
     if (!room) return [];
