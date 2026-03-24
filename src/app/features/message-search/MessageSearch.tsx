@@ -1,5 +1,5 @@
-import React, { RefObject, useEffect, useMemo, useRef } from 'react';
-import { Text, Box, Icon, Icons, config, Spinner, IconButton, Line, toRem } from 'folds';
+import React, { RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Text, Box, Icon, Icons, config, Spinner, IconButton, Line, toRem, Input } from 'folds';
 import { useAtomValue } from 'jotai';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useInfiniteQuery } from '@tanstack/react-query';
@@ -23,6 +23,7 @@ import { SearchResultGroup } from './SearchResultGroup';
 import { SearchInput } from './SearchInput';
 import { SearchFilters } from './SearchFilters';
 import { VirtualTile } from '../../components/virtualizer';
+import { FetchProgress } from '../../services/localSearch';
 
 const useSearchPathSearchParams = (searchParams: URLSearchParams): _SearchPathSearchParams =>
   useMemo(
@@ -35,6 +36,13 @@ const useSearchPathSearchParams = (searchParams: URLSearchParams): _SearchPathSe
     }),
     [searchParams]
   );
+
+const toDateInputValue = (ts: number): string => {
+  const d = new Date(ts);
+  return d.toISOString().split('T')[0];
+};
+
+const DEFAULT_RANGE_DAYS = 90;
 
 type MessageSearchProps = {
   defaultRoomsFilterName: string;
@@ -66,6 +74,16 @@ export function MessageSearch({
   const searchPathSearchParams = useSearchPathSearchParams(searchParams);
   const { navigateRoom } = useRoomNavigate();
 
+  // Date range state for encrypted room search
+  const now = useMemo(() => Date.now(), []);
+  const [startTs, setStartTs] = useState<number>(now - DEFAULT_RANGE_DAYS * 24 * 60 * 60 * 1000);
+  const [endTs, setEndTs] = useState<number>(now);
+  const [fetchProgress, setFetchProgress] = useState<FetchProgress | null>(null);
+
+  const onProgress = useCallback((progress: FetchProgress) => {
+    setFetchProgress(progress);
+  }, []);
+
   const searchParamRooms = useMemo(() => {
     if (searchPathSearchParams.rooms) {
       const joinedRoomIds = decodeSearchParamValueArray(searchPathSearchParams.rooms).filter(
@@ -85,14 +103,28 @@ export function MessageSearch({
   const msgSearchParams: MessageSearchParams = useMemo(() => {
     const isGlobal = searchPathSearchParams.global === 'true';
     const defaultRooms = isGlobal ? undefined : rooms;
+    const effectiveRooms = searchParamRooms ?? defaultRooms;
 
     return {
       term: searchPathSearchParams.term,
       order: searchPathSearchParams.order ?? SearchOrderBy.Recent,
-      rooms: searchParamRooms ?? defaultRooms,
+      rooms: effectiveRooms,
       senders: searchParamsSenders ?? senders,
+      startTs,
+      endTs,
+      onProgress,
     };
-  }, [searchPathSearchParams, searchParamRooms, searchParamsSenders, rooms, senders]);
+  }, [searchPathSearchParams, searchParamRooms, searchParamsSenders, rooms, senders, startTs, endTs, onProgress]);
+
+  // Detect if any rooms in the current search set are encrypted
+  const hasEncryptedRooms = useMemo(() => {
+    const roomIds = msgSearchParams.rooms;
+    if (!roomIds) return false;
+    return roomIds.some((roomId) => {
+      const room = mx.getRoom(roomId);
+      return room?.hasEncryptionStateEvent();
+    });
+  }, [mx, msgSearchParams.rooms]);
 
   const searchMessages = useMessageSearch(msgSearchParams);
 
@@ -104,8 +136,15 @@ export function MessageSearch({
       msgSearchParams.order,
       msgSearchParams.rooms,
       msgSearchParams.senders,
+      hasEncryptedRooms ? startTs : undefined,
+      hasEncryptedRooms ? endTs : undefined,
     ],
-    queryFn: ({ pageParam }) => searchMessages(pageParam),
+    queryFn: async ({ pageParam }) => {
+      setFetchProgress(null);
+      const result = await searchMessages(pageParam);
+      setFetchProgress(null);
+      return result;
+    },
     initialPageParam: '',
     getNextPageParam: (lastPage) => lastPage.nextToken,
   });
@@ -222,7 +261,53 @@ export function MessageSearch({
           order={msgSearchParams.order}
           onOrderChange={handleOrderChange}
         />
+        {hasEncryptedRooms && (
+          <Box direction="Column" gap="100">
+            <Text size="L400">Date Range (encrypted rooms)</Text>
+            <Box gap="200" alignItems="Center">
+              <Input
+                type="date"
+                size="300"
+                radii="300"
+                value={toDateInputValue(startTs)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  const ts = new Date(e.target.value).getTime();
+                  if (!Number.isNaN(ts)) setStartTs(ts);
+                }}
+                style={{ width: toRem(160) }}
+              />
+              <Text size="T200">to</Text>
+              <Input
+                type="date"
+                size="300"
+                radii="300"
+                value={toDateInputValue(endTs)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  const ts = new Date(e.target.value).getTime();
+                  if (!Number.isNaN(ts)) setEndTs(ts);
+                }}
+                style={{ width: toRem(160) }}
+              />
+            </Box>
+          </Box>
+        )}
       </Box>
+
+      {fetchProgress && (
+        <Box
+          className={ContainerColor({ variant: 'SurfaceVariant' })}
+          style={{ padding: config.space.S300, borderRadius: config.radii.R400 }}
+          alignItems="Center"
+          gap="200"
+        >
+          <Spinner size="200" variant="Secondary" />
+          <Text size="T300">
+            {fetchProgress.decrypting
+              ? `Decrypting ${fetchProgress.fetched} messages...`
+              : `Fetching messages... (${fetchProgress.fetched} so far)`}
+          </Text>
+        </Box>
+      )}
 
       {!msgSearchParams.term && status === 'pending' && (
         <PageHeroEmpty>

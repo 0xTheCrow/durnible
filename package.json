@@ -40,6 +40,7 @@
     "classnames": "2.3.2",
     "dateformat": "5.0.3",
     "dayjs": "1.11.10",
+    "dexie": "4.3.0",
     "domhandler": "5.0.3",
     "emojibase": "15.3.1",
     "emojibase-data": "15.3.2",
