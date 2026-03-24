@@ -1,4 +1,4 @@
-import { MatrixClient, MatrixEvent, Direction, IEvent } from 'matrix-js-sdk';
+import { MatrixClient, MatrixEvent, Direction, IEvent, Method } from 'matrix-js-sdk';
 import { CryptoBackend } from 'matrix-js-sdk/lib/common-crypto/CryptoBackend';
 import { IndexedMessage } from './db';
 
@@ -31,9 +31,9 @@ export const fetchAndDecryptMessages = async (
     const eventId = result.event_id;
     const path = `/rooms/${encodeURIComponent(roomId)}/context/${encodeURIComponent(eventId)}`;
     const context = await mx.http.authedRequest<{ start: string; end: string }>(
-      'GET' as any,
+      Method.Get,
       path,
-      { limit: '0' }
+      { limit: 0 }
     );
     fromToken = context.start;
   } catch {
