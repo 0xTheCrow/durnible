@@ -52,6 +52,7 @@ export function SearchInput({
   const [fromToken, setFromToken] = useState<FromToken | null>(null);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const prevQueryRef = useRef('');
 
   const suggestions = useMemo(() => {
     if (!fromToken || !members || members.length === 0) return [];
@@ -73,7 +74,11 @@ export function SearchInput({
     const cursorPos = input.selectionStart ?? input.value.length;
     const token = getFromToken(input.value, cursorPos);
     setFromToken(token);
-    setHighlightedIndex(0);
+    const newQuery = token?.query ?? '';
+    if (newQuery !== prevQueryRef.current) {
+      prevQueryRef.current = newQuery;
+      setHighlightedIndex(0);
+    }
   }, [searchInputRef]);
 
   const selectMember = useCallback(

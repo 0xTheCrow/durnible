@@ -592,38 +592,6 @@ export function SearchFilters({
           selectedRooms={selectedRooms}
           onChange={onSelectedRoomsChange}
         />
-        {selectedSenders && selectedSenders.length > 0 && (
-          <>
-            <Line
-              style={{ margin: `${config.space.S100} 0` }}
-              direction="Vertical"
-              variant="Surface"
-              size="300"
-            />
-            {selectedSenders.map((userId) => {
-              let displayName: string | undefined;
-              for (const roomId of roomList) {
-                const room = mx.getRoom(roomId);
-                if (room) {
-                  displayName = getMemberDisplayName(room, userId);
-                  if (displayName) break;
-                }
-              }
-              return (
-                <Chip
-                  key={userId}
-                  variant="Primary"
-                  onClick={() => onSenderRemove?.(userId)}
-                  radii="Pill"
-                  before={<Icon size="50" src={Icons.User} />}
-                  after={<Icon size="50" src={Icons.Cross} />}
-                >
-                  <Text size="T200">{displayName ?? getMxIdLocalPart(userId) ?? userId}</Text>
-                </Chip>
-              );
-            })}
-          </>
-        )}
         <Box grow="Yes" data-spacing-node />
         {hasEncryptedRooms && startTs !== undefined && endTs !== undefined && onStartTsChange && onEndTsChange && (
           <>
@@ -643,6 +611,33 @@ export function SearchFilters({
         )}
         <OrderButton order={order} onChange={onOrderChange} />
       </Box>
+      {selectedSenders && selectedSenders.length > 0 && (
+        <Box gap="200" wrap="Wrap" alignItems="Center">
+          <Text size="T200" priority="300">From:</Text>
+          {selectedSenders.map((userId) => {
+            let displayName: string | undefined;
+            for (const roomId of roomList) {
+              const room = mx.getRoom(roomId);
+              if (room) {
+                displayName = getMemberDisplayName(room, userId);
+                if (displayName) break;
+              }
+            }
+            return (
+              <Chip
+                key={userId}
+                variant="Primary"
+                onClick={() => onSenderRemove?.(userId)}
+                radii="Pill"
+                before={<Icon size="50" src={Icons.User} />}
+                after={<Icon size="50" src={Icons.Cross} />}
+              >
+                <Text size="T200">{displayName ?? getMxIdLocalPart(userId) ?? userId}</Text>
+              </Chip>
+            );
+          })}
+        </Box>
+      )}
     </Box>
   );
 }
