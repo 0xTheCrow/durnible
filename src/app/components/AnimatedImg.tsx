@@ -21,7 +21,13 @@ export function AnimatedImg({ pauseGifs, hovered: hoveredProp, ...imgProps }: An
     canvas.width = img.naturalWidth;
     canvas.height = img.naturalHeight;
     const ctx = canvas.getContext('2d');
-    ctx?.drawImage(img, 0, 0);
+    if (ctx) {
+      try {
+        ctx.drawImage(img, 0, 0);
+      } catch (e) {
+        console.error('[AnimatedImg] drawImage threw:', e);
+      }
+    }
   }, [pauseGifs, loaded]);
 
   if (!pauseGifs) {

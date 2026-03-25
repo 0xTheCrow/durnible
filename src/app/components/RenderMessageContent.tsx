@@ -24,7 +24,7 @@ import {
   UnsupportedContent,
   VideoContent,
 } from './message';
-import { UrlPreviewCard, UrlPreviewHolder, YouTubeEmbed } from './url-preview';
+import { YouTubeEmbed } from './url-preview';
 import { Image, MediaControl, Video } from './media';
 import { PdfViewer } from './Pdf-viewer';
 import { TextViewer } from './text-viewer';
@@ -86,17 +86,8 @@ export const RenderMessageContent = React.memo(function RenderMessageContent({
     const filteredUrls = urls.filter((url) => !testMatrixTo(url));
     if (filteredUrls.length === 0) return undefined;
 
-    const youtubeUrls: string[] = [];
-    const otherUrls: string[] = [];
-    filteredUrls.forEach((url) => {
-      if (testYouTubeUrl(url)) {
-        youtubeUrls.push(url);
-      } else {
-        otherUrls.push(url);
-      }
-    });
-
-    if (youtubeUrls.length === 0 && otherUrls.length === 0) return undefined;
+    const youtubeUrls = filteredUrls.filter((url) => testYouTubeUrl(url));
+    if (youtubeUrls.length === 0) return undefined;
 
     return (
       <>
@@ -112,13 +103,6 @@ export const RenderMessageContent = React.memo(function RenderMessageContent({
             />
           ) : null;
         })}
-        {otherUrls.length > 0 && (
-          <UrlPreviewHolder>
-            {otherUrls.map((url) => (
-              <UrlPreviewCard key={url} url={url} ts={ts} />
-            ))}
-          </UrlPreviewHolder>
-        )}
       </>
     );
   };

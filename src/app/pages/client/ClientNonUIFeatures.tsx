@@ -1,7 +1,7 @@
 import { useAtomValue } from 'jotai';
 import React, { ReactNode, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { RoomEvent, RoomEventHandlerMap } from 'matrix-js-sdk';
+import { MatrixEvent, MatrixEventEvent, RoomEvent, RoomEventHandlerMap } from 'matrix-js-sdk';
 import { roomToUnreadAtom, unreadEqual, unreadInfoToUnread } from '../../state/room/roomToUnread';
 import LogoSVG from '../../../../public/res/svg/cinny.svg';
 import LogoUnreadSVG from '../../../../public/res/svg/cinny-unread.svg';
@@ -26,6 +26,99 @@ import { getMxIdLocalPart, mxcUrlToHttp } from '../../utils/matrix';
 import { useSelectedRoom } from '../../hooks/router/useSelectedRoom';
 import { useInboxNotificationsSelected } from '../../hooks/router/useInbox';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
+import { addLiveMessageToCache } from '../../services/localSearch';
+
+function SearchCacheUpdater() {
+  const mx = useMatrixClient();
+
+  useEffect(() => {
+    const pendingDecryptions = new Set<MatrixEvent>();
+
+    const tryAddToCache = (mEvent: MatrixEvent, roomId: string) => {
+      if (mEvent.isDecryptionFailure()) return;
+      const content = mEvent.getContent();
+      const body = content?.body;
+      if (typeof body !== 'string' || !body) return;
+
+      const msgtype = content.msgtype;
+      const eventId = mEvent.getId();
+      if (!eventId) return;
+
+      if (msgtype === 'm.text' || msgtype === 'm.notice' || msgtype === 'm.emote') {
+        addLiveMessageToCache(roomId, {
+          event_id: eventId,
+          room_id: roomId,
+          sender: mEvent.getSender() ?? '',
+          origin_server_ts: mEvent.getTs(),
+          body,
+          type: msgtype,
+        });
+      } else if (msgtype === 'm.image') {
+        addLiveMessageToCache(roomId, {
+          event_id: eventId,
+          room_id: roomId,
+          sender: mEvent.getSender() ?? '',
+          origin_server_ts: mEvent.getTs(),
+          body,
+          type: msgtype,
+          content: content as Record<string, unknown>,
+        });
+      }
+    };
+
+    const handleTimelineEvent: RoomEventHandlerMap[RoomEvent.Timeline] = (
+      mEvent,
+      room,
+      _toStartOfTimeline,
+      _removed,
+      data
+    ) => {
+      if (!room || !data.liveEvent) return;
+
+      // If the event is still encrypted, wait for decryption
+      if (mEvent.isEncrypted() && !mEvent.isDecryptionFailure()) {
+        const roomId = room.roomId;
+        const onDecrypted = () => {
+          mEvent.removeListener(MatrixEventEvent.Decrypted, onDecrypted);
+          pendingDecryptions.delete(mEvent);
+          tryAddToCache(mEvent, roomId);
+        };
+        pendingDecryptions.add(mEvent);
+        mEvent.on(MatrixEventEvent.Decrypted, onDecrypted);
+        return;
+      }
+
+      tryAddToCache(mEvent, room.roomId);
+    };
+
+    mx.on(RoomEvent.Timeline, handleTimelineEvent);
+    return () => {
+      mx.removeListener(RoomEvent.Timeline, handleTimelineEvent);
+      for (const evt of pendingDecryptions) {
+        evt.removeAllListeners(MatrixEventEvent.Decrypted);
+      }
+      pendingDecryptions.clear();
+    };
+  }, [mx]);
+
+  return null;
+}
+
+function SyncRecovery() {
+  const mx = useMatrixClient();
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        mx.retryImmediately();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [mx]);
+
+  return null;
+}
 
 function SystemEmojiFeature() {
   const [twitterEmoji] = useSetting(settingsAtom, 'twitterEmoji');
@@ -260,6 +353,8 @@ type ClientNonUIFeaturesProps = {
 export function ClientNonUIFeatures({ children }: ClientNonUIFeaturesProps) {
   return (
     <>
+      <SyncRecovery />
+      <SearchCacheUpdater />
       <SystemEmojiFeature />
       <PageZoomFeature />
       <FaviconUpdater />

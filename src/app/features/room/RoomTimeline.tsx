@@ -710,6 +710,39 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
     }, [room, liveTimelineLinked])
   );
 
+  // Refresh timeline when returning from OS suspend or background tab
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) return;
+      if (!atLiveEndRef.current) return;
+
+      const freshTimelines = getLinkedTimelines(getLiveTimeline(room));
+      const freshLength = getTimelinesEventsCount(freshTimelines);
+
+      let updated = false;
+      setTimeline((currentTimeline) => {
+        const currentLength = getTimelinesEventsCount(currentTimeline.linkedTimelines);
+        if (freshLength <= currentLength) return currentTimeline;
+
+        updated = true;
+        return {
+          linkedTimelines: freshTimelines,
+          range: {
+            start: Math.max(freshLength - PAGINATION_LIMIT, 0),
+            end: freshLength,
+          },
+        };
+      });
+
+      if (updated) {
+        scrollToBottomRef.current.count += 1;
+        scrollToBottomRef.current.smooth = false;
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [room]);
+
   // Stay at bottom when message content grows (e.g. a tall image finishes loading)
   useResizeObserver(
     useMemo(() => {
