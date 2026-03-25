@@ -18,20 +18,12 @@ export function AnimatedImg({ pauseGifs, hovered: hoveredProp, ...imgProps }: An
     if (!pauseGifs || !loaded || !imgRef.current || !canvasRef.current) return;
     const img = imgRef.current;
     const canvas = canvasRef.current;
-    console.log('[AnimatedImg] drawing canvas', {
-      naturalWidth: img.naturalWidth,
-      naturalHeight: img.naturalHeight,
-      complete: img.complete,
-      src: img.src?.slice(0, 80),
-    });
     canvas.width = img.naturalWidth;
     canvas.height = img.naturalHeight;
     const ctx = canvas.getContext('2d');
-    console.log('[AnimatedImg] ctx:', ctx);
     if (ctx) {
       try {
         ctx.drawImage(img, 0, 0);
-        console.log('[AnimatedImg] drawImage succeeded');
       } catch (e) {
         console.error('[AnimatedImg] drawImage threw:', e);
       }

@@ -1,7 +1,7 @@
 import { useAtomValue } from 'jotai';
 import React, { ReactNode, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { RoomEvent, RoomEventHandlerMap } from 'matrix-js-sdk';
+import { MatrixEvent, MatrixEventEvent, RoomEvent, RoomEventHandlerMap } from 'matrix-js-sdk';
 import { roomToUnreadAtom, unreadEqual, unreadInfoToUnread } from '../../state/room/roomToUnread';
 import LogoSVG from '../../../../public/res/svg/cinny.svg';
 import LogoUnreadSVG from '../../../../public/res/svg/cinny-unread.svg';
@@ -32,15 +32,9 @@ function SearchCacheUpdater() {
   const mx = useMatrixClient();
 
   useEffect(() => {
-    const handleTimelineEvent: RoomEventHandlerMap[RoomEvent.Timeline] = (
-      mEvent,
-      room,
-      _toStartOfTimeline,
-      _removed,
-      data
-    ) => {
-      if (!room || !data.liveEvent) return;
+    const pendingDecryptions = new Set<MatrixEvent>();
 
+    const tryAddToCache = (mEvent: MatrixEvent, roomId: string) => {
       if (mEvent.isDecryptionFailure()) return;
       const content = mEvent.getContent();
       const body = content?.body;
@@ -51,18 +45,18 @@ function SearchCacheUpdater() {
       if (!eventId) return;
 
       if (msgtype === 'm.text' || msgtype === 'm.notice' || msgtype === 'm.emote') {
-        addLiveMessageToCache(room.roomId, {
+        addLiveMessageToCache(roomId, {
           event_id: eventId,
-          room_id: room.roomId,
+          room_id: roomId,
           sender: mEvent.getSender() ?? '',
           origin_server_ts: mEvent.getTs(),
           body,
           type: msgtype,
         });
       } else if (msgtype === 'm.image') {
-        addLiveMessageToCache(room.roomId, {
+        addLiveMessageToCache(roomId, {
           event_id: eventId,
-          room_id: room.roomId,
+          room_id: roomId,
           sender: mEvent.getSender() ?? '',
           origin_server_ts: mEvent.getTs(),
           body,
@@ -72,9 +66,38 @@ function SearchCacheUpdater() {
       }
     };
 
+    const handleTimelineEvent: RoomEventHandlerMap[RoomEvent.Timeline] = (
+      mEvent,
+      room,
+      _toStartOfTimeline,
+      _removed,
+      data
+    ) => {
+      if (!room || !data.liveEvent) return;
+
+      // If the event is still encrypted, wait for decryption
+      if (mEvent.isEncrypted() && !mEvent.isDecryptionFailure()) {
+        const roomId = room.roomId;
+        const onDecrypted = () => {
+          mEvent.removeListener(MatrixEventEvent.Decrypted, onDecrypted);
+          pendingDecryptions.delete(mEvent);
+          tryAddToCache(mEvent, roomId);
+        };
+        pendingDecryptions.add(mEvent);
+        mEvent.on(MatrixEventEvent.Decrypted, onDecrypted);
+        return;
+      }
+
+      tryAddToCache(mEvent, room.roomId);
+    };
+
     mx.on(RoomEvent.Timeline, handleTimelineEvent);
     return () => {
       mx.removeListener(RoomEvent.Timeline, handleTimelineEvent);
+      for (const evt of pendingDecryptions) {
+        evt.removeAllListeners(MatrixEventEvent.Decrypted);
+      }
+      pendingDecryptions.clear();
     };
   }, [mx]);
 
