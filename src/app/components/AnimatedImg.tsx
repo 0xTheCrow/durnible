@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 
 type AnimatedImgProps = React.ImgHTMLAttributes<HTMLImageElement> & {
   pauseGifs: boolean;
@@ -9,28 +9,33 @@ export function AnimatedImg({ pauseGifs, hovered: hoveredProp, ...imgProps }: An
   const imgRef = useRef<HTMLImageElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [loaded, setLoaded] = useState(false);
-  const [canvasReady, setCanvasReady] = useState(false);
   const [hoveredSelf, setHoveredSelf] = useState(false);
 
   const hovered = hoveredProp ?? hoveredSelf;
   const selfManaged = hoveredProp === undefined;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!pauseGifs || !loaded || !imgRef.current || !canvasRef.current) return;
     const img = imgRef.current;
     const canvas = canvasRef.current;
-    let cancelled = false;
-
-    img.decode().then(() => {
-      if (cancelled || !img.naturalWidth || !img.naturalHeight) return;
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      const ctx = canvas.getContext('2d');
-      ctx?.drawImage(img, 0, 0);
-      setCanvasReady(true);
-    }).catch(() => {});
-
-    return () => { cancelled = true; };
+    console.log('[AnimatedImg] drawing canvas', {
+      naturalWidth: img.naturalWidth,
+      naturalHeight: img.naturalHeight,
+      complete: img.complete,
+      src: img.src?.slice(0, 80),
+    });
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext('2d');
+    console.log('[AnimatedImg] ctx:', ctx);
+    if (ctx) {
+      try {
+        ctx.drawImage(img, 0, 0);
+        console.log('[AnimatedImg] drawImage succeeded');
+      } catch (e) {
+        console.error('[AnimatedImg] drawImage threw:', e);
+      }
+    }
   }, [pauseGifs, loaded]);
 
   if (!pauseGifs) {
@@ -50,7 +55,7 @@ export function AnimatedImg({ pauseGifs, hovered: hoveredProp, ...imgProps }: An
         ref={imgRef}
         style={{
           ...imgProps.style,
-          visibility: canvasReady && !hovered ? 'hidden' : 'visible',
+          visibility: loaded && !hovered ? 'hidden' : 'visible',
         }}
         onLoad={(e) => {
           setLoaded(true);
