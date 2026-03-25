@@ -29,7 +29,8 @@ import { SearchOrderBy } from 'matrix-js-sdk';
 import FocusTrap from 'focus-trap-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
-import { joinRuleToIconSrc } from '../../utils/room';
+import { getMemberDisplayName, joinRuleToIconSrc } from '../../utils/room';
+import { getMxIdLocalPart } from '../../utils/matrix';
 import { factoryRoomIdByAtoZ } from '../../utils/sort';
 import {
   SearchItemStrGetter,
@@ -501,6 +502,8 @@ type SearchFiltersProps = {
   roomList: string[];
   selectedRooms?: string[];
   onSelectedRoomsChange: (selectedRooms?: string[]) => void;
+  selectedSenders?: string[];
+  onSenderRemove?: (userId: string) => void;
   global?: boolean;
   onGlobalChange: (global?: boolean) => void;
   order?: string;
@@ -518,6 +521,8 @@ export function SearchFilters({
   roomList,
   selectedRooms,
   onSelectedRoomsChange,
+  selectedSenders,
+  onSenderRemove,
   global,
   order,
   onGlobalChange,
@@ -587,6 +592,38 @@ export function SearchFilters({
           selectedRooms={selectedRooms}
           onChange={onSelectedRoomsChange}
         />
+        {selectedSenders && selectedSenders.length > 0 && (
+          <>
+            <Line
+              style={{ margin: `${config.space.S100} 0` }}
+              direction="Vertical"
+              variant="Surface"
+              size="300"
+            />
+            {selectedSenders.map((userId) => {
+              let displayName: string | undefined;
+              for (const roomId of roomList) {
+                const room = mx.getRoom(roomId);
+                if (room) {
+                  displayName = getMemberDisplayName(room, userId);
+                  if (displayName) break;
+                }
+              }
+              return (
+                <Chip
+                  key={userId}
+                  variant="Primary"
+                  onClick={() => onSenderRemove?.(userId)}
+                  radii="Pill"
+                  before={<Icon size="50" src={Icons.User} />}
+                  after={<Icon size="50" src={Icons.Cross} />}
+                >
+                  <Text size="T200">{displayName ?? getMxIdLocalPart(userId) ?? userId}</Text>
+                </Chip>
+              );
+            })}
+          </>
+        )}
         <Box grow="Yes" data-spacing-node />
         {hasEncryptedRooms && startTs !== undefined && endTs !== undefined && onStartTsChange && onEndTsChange && (
           <>

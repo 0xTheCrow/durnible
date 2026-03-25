@@ -95,7 +95,8 @@ export const searchEncryptedRoom = async (
   query: string,
   startTs: number,
   endTs: number,
-  onProgress?: OnProgress
+  onProgress?: OnProgress,
+  senders?: string[]
 ): Promise<LocalSearchResult[]> => {
   const cached = roomCaches.get(roomId);
 
@@ -151,6 +152,7 @@ export const searchEncryptedRoom = async (
     (msg) => {
       if (!TEXT_TYPES.has(msg.type)) return false;
       if (msg.origin_server_ts < startTs || msg.origin_server_ts > endTs) return false;
+      if (senders && senders.length > 0 && !senders.includes(msg.sender)) return false;
       const bodyLower = msg.body.toLowerCase();
       return terms.every((term) => bodyLower.includes(term));
     }

@@ -163,7 +163,7 @@ export const useMessageSearch = (params: MessageSearchParams) => {
 
         const localResults = await Promise.all(
           encryptedRoomIds.map((roomId) =>
-            searchEncryptedRoom(mx, roomId, term, searchStartTs, searchEndTs, aggregateProgress(roomId))
+            searchEncryptedRoom(mx, roomId, term, searchStartTs, searchEndTs, aggregateProgress(roomId), senders)
           )
         );
         const merged = localResults.flat();

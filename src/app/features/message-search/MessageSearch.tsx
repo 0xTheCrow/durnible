@@ -1,4 +1,5 @@
 import React, { RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { RoomMember } from 'matrix-js-sdk';
 import { Text, Box, Icon, Icons, config, Spinner, IconButton, Line, toRem } from 'folds';
 import { useAtomValue } from 'jotai';
 import { useVirtualizer } from '@tanstack/react-virtual';
@@ -128,6 +129,55 @@ export function MessageSearch({
     });
   }, [mx, msgSearchParams.rooms]);
 
+  const searchMembers = useMemo(() => {
+    const roomIds = searchPathSearchParams.global === 'true' ? allRooms : rooms;
+    const memberMap = new Map<string, RoomMember>();
+    for (const roomId of roomIds) {
+      const room = mx.getRoom(roomId);
+      if (!room) continue;
+      for (const member of room.getJoinedMembers()) {
+        if (!memberMap.has(member.userId)) {
+          memberMap.set(member.userId, member);
+        }
+      }
+    }
+    return Array.from(memberMap.values());
+  }, [mx, searchPathSearchParams.global, allRooms, rooms]);
+
+  const handleSenderAdd = useCallback(
+    (userId: string) => {
+      setSearchParams((prevParams) => {
+        const newParams = new URLSearchParams(prevParams);
+        const current = newParams.get('senders');
+        const list = current ? decodeSearchParamValueArray(current) : [];
+        if (!list.includes(userId)) {
+          list.push(userId);
+        }
+        newParams.set('senders', encodeSearchParamValueArray(list));
+        return newParams;
+      });
+    },
+    [setSearchParams]
+  );
+
+  const handleSenderRemove = useCallback(
+    (userId: string) => {
+      setSearchParams((prevParams) => {
+        const newParams = new URLSearchParams(prevParams);
+        const current = newParams.get('senders');
+        const list = current ? decodeSearchParamValueArray(current) : [];
+        const filtered = list.filter((s) => s !== userId);
+        if (filtered.length > 0) {
+          newParams.set('senders', encodeSearchParamValueArray(filtered));
+        } else {
+          newParams.delete('senders');
+        }
+        return newParams;
+      });
+    },
+    [setSearchParams]
+  );
+
   const searchMessages = useMessageSearch(msgSearchParams);
 
   const { status, data, error, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
@@ -251,6 +301,8 @@ export function MessageSearch({
           searchInputRef={searchInputRef}
           onSearch={handleSearch}
           onReset={handleSearchClear}
+          members={searchMembers}
+          onSenderAdd={handleSenderAdd}
         />
         <SearchFilters
           defaultRoomsFilterName={defaultRoomsFilterName}
@@ -258,6 +310,8 @@ export function MessageSearch({
           roomList={searchPathSearchParams.global === 'true' ? allRooms : rooms}
           selectedRooms={searchParamRooms}
           onSelectedRoomsChange={handleSelectedRoomsChange}
+          selectedSenders={searchParamsSenders}
+          onSenderRemove={handleSenderRemove}
           global={searchPathSearchParams.global === 'true'}
           onGlobalChange={handleGlobalChange}
           order={msgSearchParams.order}
