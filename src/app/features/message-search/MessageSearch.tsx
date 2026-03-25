@@ -154,6 +154,9 @@ export function MessageSearch({
           list.push(userId);
         }
         newParams.set('senders', encodeSearchParamValueArray(list));
+        if (!newParams.has('term')) {
+          newParams.set('term', '');
+        }
         return newParams;
       });
     },
@@ -181,7 +184,7 @@ export function MessageSearch({
   const searchMessages = useMessageSearch(msgSearchParams);
 
   const { status, data, error, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-    enabled: !!msgSearchParams.term,
+    enabled: !!msgSearchParams.term || !!(msgSearchParams.senders && msgSearchParams.senders.length > 0),
     queryKey: [
       'search',
       msgSearchParams.term,
@@ -296,13 +299,14 @@ export function MessageSearch({
       </ScrollTopContainer>
       <Box ref={scrollTopAnchorRef} direction="Column" gap="300">
         <SearchInput
-          active={!!msgSearchParams.term}
+          active={!!msgSearchParams.term || !!(searchParamsSenders && searchParamsSenders.length > 0)}
           loading={status === 'pending'}
           searchInputRef={searchInputRef}
           onSearch={handleSearch}
           onReset={handleSearchClear}
           members={searchMembers}
           onSenderAdd={handleSenderAdd}
+          hasSenders={!!searchParamsSenders && searchParamsSenders.length > 0}
         />
         <SearchFilters
           defaultRoomsFilterName={defaultRoomsFilterName}
@@ -340,7 +344,7 @@ export function MessageSearch({
         </Box>
       )}
 
-      {!msgSearchParams.term && status === 'pending' && (
+      {!msgSearchParams.term && !(msgSearchParams.senders && msgSearchParams.senders.length > 0) && status === 'pending' && (
         <PageHeroEmpty>
           <PageHeroSection>
             <PageHero
@@ -366,7 +370,7 @@ export function MessageSearch({
         </Box>
       )}
 
-      {msgSearchParams.term && groups.length === 0 && status === 'success' && (
+      {(msgSearchParams.term || (msgSearchParams.senders && msgSearchParams.senders.length > 0)) && groups.length === 0 && status === 'success' && (
         <Box
           className={ContainerColor({ variant: 'Warning' })}
           style={{ padding: config.space.S300, borderRadius: config.radii.R400 }}
@@ -375,12 +379,12 @@ export function MessageSearch({
         >
           <Icon size="200" src={Icons.Info} />
           <Text>
-            No results found for <b>{`"${msgSearchParams.term}"`}</b>
+            No results found{msgSearchParams.term ? <> for <b>{`"${msgSearchParams.term}"`}</b></> : null}
           </Text>
         </Box>
       )}
 
-      {((msgSearchParams.term && status === 'pending') ||
+      {(((msgSearchParams.term || (msgSearchParams.senders && msgSearchParams.senders.length > 0)) && status === 'pending') ||
         (groups.length > 0 && vItems.length === 0)) && (
         <Box direction="Column" gap="100">
           {[...Array(8).keys()].map((key) => (
@@ -392,7 +396,10 @@ export function MessageSearch({
       {vItems.length > 0 && (
         <Box direction="Column" gap="300">
           <Box direction="Column" gap="200">
-            <Text size="H5">{`${groups.reduce((n, g) => n + g.items.length, 0)} results for "${msgSearchParams.term}"`}</Text>
+            <Text size="H5">
+              {`${groups.reduce((n, g) => n + g.items.length, 0)} results`}
+              {msgSearchParams.term ? ` for "${msgSearchParams.term}"` : ''}
+            </Text>
             <Line size="300" variant="Surface" />
           </Box>
           <div

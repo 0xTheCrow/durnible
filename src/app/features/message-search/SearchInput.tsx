@@ -38,6 +38,7 @@ type SearchProps = {
   onReset: () => void;
   members?: RoomMember[];
   onSenderAdd?: (userId: string) => void;
+  hasSenders?: boolean;
 };
 
 export function SearchInput({
@@ -48,6 +49,7 @@ export function SearchInput({
   onReset,
   members,
   onSenderAdd,
+  hasSenders,
 }: SearchProps) {
   const [fromToken, setFromToken] = useState<FromToken | null>(null);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
@@ -147,8 +149,8 @@ export function SearchInput({
       searchInput: HTMLInputElement;
     };
 
-    const searchTerm = searchInput.value.trim() || undefined;
-    if (searchTerm) {
+    const searchTerm = searchInput.value.trim();
+    if (searchTerm || hasSenders) {
       onSearch(searchTerm);
     }
   };

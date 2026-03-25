@@ -118,7 +118,7 @@ export const useMessageSearch = (params: MessageSearchParams) => {
 
   const searchMessages = useCallback(
     async (nextBatch?: string) => {
-      if (!term)
+      if (!term && (!senders || senders.length === 0))
         return {
           highlights: [],
           groups: [],
@@ -168,11 +168,12 @@ export const useMessageSearch = (params: MessageSearchParams) => {
         );
         const merged = localResults.flat();
         allGroups.push(...localResultsToGroups(merged));
-        allHighlights.push(term);
+        if (term) allHighlights.push(term);
       }
 
       // Server-side search for unencrypted rooms (or all rooms if none specified)
-      if (unencryptedRoomIds.length > 0 || !rooms) {
+      // Server API requires a search_term, so skip when term is empty
+      if (term && (unencryptedRoomIds.length > 0 || !rooms)) {
         const limit = 20;
         const requestBody: ISearchRequestBody = {
           search_categories: {
