@@ -1,4 +1,5 @@
-import { MatrixClient, MatrixEvent, Direction, IEvent, Method } from 'matrix-js-sdk';
+import { MatrixClient, MatrixEvent, Direction, Method } from 'matrix-js-sdk';
+import { IRoomEvent } from 'matrix-js-sdk/lib/sync-accumulator';
 import { CryptoBackend } from 'matrix-js-sdk/lib/common-crypto/CryptoBackend';
 
 export type DecryptedMessage = {
@@ -55,13 +56,13 @@ export const fetchAndDecryptMessages = async (
   if (!fromToken) return [];
 
   // Paginate backwards collecting raw events
-  const rawEvents: IEvent[] = [];
+  const rawEvents: IRoomEvent[] = [];
   let token: string | undefined = fromToken;
   let fetched = 0;
 
   while (token) {
     // eslint-disable-next-line no-await-in-loop
-    const response: { chunk: IEvent[]; end?: string; start?: string } =
+    const response =
       await mx.createMessagesRequest(roomId, token, 1000, Direction.Backward, undefined);
 
     const { chunk } = response;
@@ -77,7 +78,7 @@ export const fetchAndDecryptMessages = async (
       // Skip events newer than endTs (can happen when using fallback token)
       if (evt.origin_server_ts > endTs) continue;
       if (evt.type === 'm.room.message' || evt.type === 'm.room.encrypted') {
-        rawEvents.push(evt as IEvent);
+        rawEvents.push(evt);
       }
     }
 

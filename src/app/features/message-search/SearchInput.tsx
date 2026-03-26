@@ -8,7 +8,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { Box, Text, Input, Icon, Icons, Spinner, Chip, config, Menu, MenuItem, toRem } from 'folds';
+import { Box, Text, Input, Icon, Icons, IconSrc, Spinner, Chip, config, Menu, MenuItem, toRem } from 'folds';
 import { RoomMember } from 'matrix-js-sdk';
 import { getMxIdLocalPart } from '../../utils/matrix';
 
@@ -204,8 +204,8 @@ export function SearchInput({
     }
   };
 
-  const hasIconSrc = (icon: string): string => {
-    const map: Record<string, string> = {
+  const hasIconSrc = (icon: string): IconSrc => {
+    const map: Record<string, IconSrc> = {
       Photo: Icons.Photo,
       Play: Icons.Play,
       File: Icons.File,

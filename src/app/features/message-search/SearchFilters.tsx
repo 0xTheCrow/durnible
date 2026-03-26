@@ -12,6 +12,7 @@ import {
   Text,
   Icon,
   Icons,
+  IconSrc,
   Line,
   config,
   PopOut,
@@ -646,7 +647,7 @@ export function SearchFilters({
         <Box gap="200" wrap="Wrap" alignItems="Center">
           <Text size="T200" priority="300">Has:</Text>
           {selectedHasTypes.map((hasType) => {
-            const iconMap: Record<string, string> = {
+            const iconMap: Record<string, IconSrc> = {
               image: Icons.Photo,
               video: Icons.Play,
               file: Icons.File,
