@@ -12,23 +12,34 @@ import { Box, Text, Input, Icon, Icons, Spinner, Chip, config, Menu, MenuItem, t
 import { RoomMember } from 'matrix-js-sdk';
 import { getMxIdLocalPart } from '../../utils/matrix';
 
-type FromToken = {
+type TokenType = 'from' | 'has';
+
+type PrefixToken = {
+  type: TokenType;
   start: number;
   end: number;
   query: string;
 };
 
-const getFromToken = (value: string, cursorPos: number): FromToken | null => {
+const getPrefixToken = (value: string, cursorPos: number): PrefixToken | null => {
   const beforeCursor = value.substring(0, cursorPos);
-  const match = beforeCursor.match(/from:(\S*)$/i);
+  const match = beforeCursor.match(/(from|has):(\S*)$/i);
   if (!match || match.index === undefined) return null;
+  const type = match[1].toLowerCase() as TokenType;
   const start = match.index;
-  const query = match[1];
+  const query = match[2];
   const afterCursor = value.substring(cursorPos);
   const spaceMatch = afterCursor.match(/^\S*/);
   const end = cursorPos + (spaceMatch ? spaceMatch[0].length : 0);
-  return { start, end, query };
+  return { type, start, end, query };
 };
+
+type HasOption = { value: string; label: string; icon: string };
+const HAS_OPTIONS: HasOption[] = [
+  { value: 'image', label: 'Image', icon: 'Photo' },
+  { value: 'video', label: 'Video', icon: 'Play' },
+  { value: 'file', label: 'File', icon: 'File' },
+];
 
 type SearchProps = {
   active?: boolean;
@@ -38,7 +49,9 @@ type SearchProps = {
   onReset: () => void;
   members?: RoomMember[];
   onSenderAdd?: (userId: string) => void;
-  hasSenders?: boolean;
+  onHasAdd?: (hasType: string) => void;
+  hasFilters?: boolean;
+  selectedHasTypes?: string[];
 };
 
 export function SearchInput({
@@ -49,16 +62,18 @@ export function SearchInput({
   onReset,
   members,
   onSenderAdd,
-  hasSenders,
+  onHasAdd,
+  hasFilters,
+  selectedHasTypes,
 }: SearchProps) {
-  const [fromToken, setFromToken] = useState<FromToken | null>(null);
+  const [token, setToken] = useState<PrefixToken | null>(null);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const prevQueryRef = useRef('');
 
-  const suggestions = useMemo(() => {
-    if (!fromToken || !members || members.length === 0) return [];
-    const q = fromToken.query.toLowerCase();
+  const memberSuggestions = useMemo(() => {
+    if (!token || token.type !== 'from' || !members || members.length === 0) return [];
+    const q = token.query.toLowerCase();
     if (!q) return members.slice(0, 8);
     return members
       .filter((m) => {
@@ -68,64 +83,98 @@ export function SearchInput({
         return displayName.includes(q) || userId.includes(q) || localPart.includes(q);
       })
       .slice(0, 8);
-  }, [fromToken, members]);
+  }, [token, members]);
 
-  const updateFromToken = useCallback(() => {
+  const hasSuggestions = useMemo(() => {
+    if (!token || token.type !== 'has') return [];
+    const q = token.query.toLowerCase();
+    const alreadySelected = new Set(selectedHasTypes ?? []);
+    return HAS_OPTIONS.filter(
+      (opt) => !alreadySelected.has(opt.value) && (!q || opt.value.includes(q) || opt.label.toLowerCase().includes(q))
+    );
+  }, [token, selectedHasTypes]);
+
+  const suggestions = token?.type === 'from' ? memberSuggestions : hasSuggestions;
+  const suggestionCount = suggestions.length;
+
+  const updateToken = useCallback(() => {
     const input = searchInputRef.current;
     if (!input) return;
     const cursorPos = input.selectionStart ?? input.value.length;
-    const token = getFromToken(input.value, cursorPos);
-    setFromToken(token);
-    const newQuery = token?.query ?? '';
+    const newToken = getPrefixToken(input.value, cursorPos);
+    setToken(newToken);
+    const newQuery = `${newToken?.type ?? ''}:${newToken?.query ?? ''}`;
     if (newQuery !== prevQueryRef.current) {
       prevQueryRef.current = newQuery;
       setHighlightedIndex(0);
     }
   }, [searchInputRef]);
 
-  const selectMember = useCallback(
-    (member: RoomMember) => {
+  const removeTokenFromInput = useCallback(
+    (tok: PrefixToken) => {
       const input = searchInputRef.current;
-      if (!input || !fromToken || !onSenderAdd) return;
-
-      const before = input.value.substring(0, fromToken.start);
-      const after = input.value.substring(fromToken.end);
+      if (!input) return;
+      const before = input.value.substring(0, tok.start);
+      const after = input.value.substring(tok.end);
       input.value = (before + after).replace(/\s{2,}/g, ' ').trim();
-
-      onSenderAdd(member.userId);
-      setFromToken(null);
+      setToken(null);
       input.focus();
     },
-    [searchInputRef, fromToken, onSenderAdd]
+    [searchInputRef]
+  );
+
+  const selectMember = useCallback(
+    (member: RoomMember) => {
+      if (!token || !onSenderAdd) return;
+      removeTokenFromInput(token);
+      onSenderAdd(member.userId);
+    },
+    [token, onSenderAdd, removeTokenFromInput]
+  );
+
+  const selectHasOption = useCallback(
+    (opt: HasOption) => {
+      if (!token || !onHasAdd) return;
+      removeTokenFromInput(token);
+      onHasAdd(opt.value);
+    },
+    [token, onHasAdd, removeTokenFromInput]
   );
 
   const handleKeyDown: KeyboardEventHandler<HTMLInputElement> = useCallback(
     (evt) => {
-      if (!fromToken || suggestions.length === 0) return;
+      if (!token || suggestionCount === 0) return;
 
       if (evt.key === 'ArrowDown') {
         evt.preventDefault();
-        setHighlightedIndex((i) => Math.min(i + 1, suggestions.length - 1));
+        setHighlightedIndex((i) => Math.min(i + 1, suggestionCount - 1));
       } else if (evt.key === 'ArrowUp') {
         evt.preventDefault();
         setHighlightedIndex((i) => Math.max(i - 1, 0));
       } else if (evt.key === 'Enter') {
         evt.preventDefault();
-        if (suggestions[highlightedIndex]) {
-          selectMember(suggestions[highlightedIndex]);
+        if (token.type === 'from' && memberSuggestions[highlightedIndex]) {
+          selectMember(memberSuggestions[highlightedIndex]);
+        } else if (token.type === 'has' && hasSuggestions[highlightedIndex]) {
+          selectHasOption(hasSuggestions[highlightedIndex]);
         }
       } else if (evt.key === 'Escape') {
-        setFromToken(null);
-      } else if (evt.key === 'Tab' && suggestions[highlightedIndex]) {
-        evt.preventDefault();
-        selectMember(suggestions[highlightedIndex]);
+        setToken(null);
+      } else if (evt.key === 'Tab') {
+        if (token.type === 'from' && memberSuggestions[highlightedIndex]) {
+          evt.preventDefault();
+          selectMember(memberSuggestions[highlightedIndex]);
+        } else if (token.type === 'has' && hasSuggestions[highlightedIndex]) {
+          evt.preventDefault();
+          selectHasOption(hasSuggestions[highlightedIndex]);
+        }
       }
     },
-    [fromToken, suggestions, highlightedIndex, selectMember]
+    [token, suggestionCount, highlightedIndex, memberSuggestions, hasSuggestions, selectMember, selectHasOption]
   );
 
   useEffect(() => {
-    if (!fromToken || suggestions.length === 0) return undefined;
+    if (!token || suggestionCount === 0) return undefined;
     const handleClick = (e: MouseEvent) => {
       const target = e.target as Node;
       if (
@@ -134,25 +183,34 @@ export function SearchInput({
         searchInputRef.current &&
         !searchInputRef.current.contains(target)
       ) {
-        setFromToken(null);
+        setToken(null);
       }
     };
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
-  }, [fromToken, suggestions.length, searchInputRef]);
+  }, [token, suggestionCount, searchInputRef]);
 
   const handleSearchSubmit: FormEventHandler<HTMLFormElement> = (evt) => {
     evt.preventDefault();
-    if (fromToken && suggestions.length > 0) return;
+    if (token && suggestionCount > 0) return;
 
     const { searchInput } = evt.target as HTMLFormElement & {
       searchInput: HTMLInputElement;
     };
 
     const searchTerm = searchInput.value.trim();
-    if (searchTerm || hasSenders) {
+    if (searchTerm || hasFilters) {
       onSearch(searchTerm);
     }
+  };
+
+  const hasIconSrc = (icon: string): string => {
+    const map: Record<string, string> = {
+      Photo: Icons.Photo,
+      Play: Icons.Play,
+      File: Icons.File,
+    };
+    return map[icon] ?? Icons.File;
   };
 
   return (
@@ -172,11 +230,11 @@ export function SearchInput({
         autoFocus
         size="500"
         variant="Background"
-        placeholder="Search messages (type from: to filter by sender)"
+        placeholder="Search messages (from: sender, has: image/video/file)"
         autoComplete="off"
-        onChange={updateFromToken}
-        onClick={updateFromToken}
-        onKeyUp={updateFromToken}
+        onChange={updateToken}
+        onClick={updateToken}
+        onKeyUp={updateToken}
         onKeyDown={handleKeyDown}
         before={
           active && loading ? (
@@ -206,7 +264,7 @@ export function SearchInput({
           )
         }
       />
-      {fromToken && suggestions.length > 0 && (
+      {token && suggestionCount > 0 && (
         <div
           ref={dropdownRef}
           style={{
@@ -219,26 +277,41 @@ export function SearchInput({
         >
           <Menu variant="Surface" style={{ maxHeight: toRem(300), overflow: 'auto' }}>
             <Box direction="Column" style={{ padding: config.space.S100 }}>
-              {suggestions.map((member, index) => (
-                <MenuItem
-                  key={member.userId}
-                  variant={index === highlightedIndex ? 'Primary' : 'Surface'}
-                  size="300"
-                  radii="300"
-                  onClick={() => selectMember(member)}
-                  onMouseEnter={() => setHighlightedIndex(index)}
-                  before={<Icon size="100" src={Icons.User} />}
-                >
-                  <Box gap="200" alignItems="Center" style={{ minWidth: 0 }}>
-                    <Text size="T300" truncate>
-                      <b>{member.rawDisplayName ?? getMxIdLocalPart(member.userId)}</b>
-                    </Text>
-                    <Text size="T200" priority="300" truncate>
-                      {getMxIdLocalPart(member.userId)}
-                    </Text>
-                  </Box>
-                </MenuItem>
-              ))}
+              {token.type === 'from' &&
+                memberSuggestions.map((member, index) => (
+                  <MenuItem
+                    key={member.userId}
+                    variant={index === highlightedIndex ? 'Primary' : 'Surface'}
+                    size="300"
+                    radii="300"
+                    onClick={() => selectMember(member)}
+                    onMouseEnter={() => setHighlightedIndex(index)}
+                    before={<Icon size="100" src={Icons.User} />}
+                  >
+                    <Box gap="200" alignItems="Center" style={{ minWidth: 0 }}>
+                      <Text size="T300" truncate>
+                        <b>{member.rawDisplayName ?? getMxIdLocalPart(member.userId)}</b>
+                      </Text>
+                      <Text size="T200" priority="300" truncate>
+                        {getMxIdLocalPart(member.userId)}
+                      </Text>
+                    </Box>
+                  </MenuItem>
+                ))}
+              {token.type === 'has' &&
+                hasSuggestions.map((opt, index) => (
+                  <MenuItem
+                    key={opt.value}
+                    variant={index === highlightedIndex ? 'Primary' : 'Surface'}
+                    size="300"
+                    radii="300"
+                    onClick={() => selectHasOption(opt)}
+                    onMouseEnter={() => setHighlightedIndex(index)}
+                    before={<Icon size="100" src={hasIconSrc(opt.icon)} />}
+                  >
+                    <Text size="T300">{opt.label}</Text>
+                  </MenuItem>
+                ))}
             </Box>
           </Menu>
         </div>

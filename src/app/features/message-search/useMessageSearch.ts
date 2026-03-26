@@ -75,10 +75,9 @@ const localResultsToGroups = (results: LocalSearchResult[]): ResultGroup[] => {
       sender: r.sender,
       origin_server_ts: r.origin_server_ts,
       type: 'm.room.message',
-      content: {
-        msgtype: r.type || 'm.text',
-        body: r.body,
-      },
+      content: r.content
+        ? { ...r.content, msgtype: r.type || 'm.text', body: r.body }
+        : { msgtype: r.type || 'm.text', body: r.body },
     };
 
     const item: ResultItem = {
@@ -103,22 +102,25 @@ const localResultsToGroups = (results: LocalSearchResult[]): ResultGroup[] => {
   return groups;
 };
 
+const hasItems = (arr?: unknown[]): boolean => arr != null && arr.length > 0;
+
 export type MessageSearchParams = {
   term?: string;
   order?: string;
   rooms?: string[];
   senders?: string[];
+  hasTypes?: string[];
   startTs?: number;
   endTs?: number;
   onProgress?: OnProgress;
 };
 export const useMessageSearch = (params: MessageSearchParams) => {
   const mx = useMatrixClient();
-  const { term, order, rooms, senders, startTs, endTs, onProgress } = params;
+  const { term, order, rooms, senders, hasTypes, startTs, endTs, onProgress } = params;
 
   const searchMessages = useCallback(
     async (nextBatch?: string) => {
-      if (!term && (!senders || senders.length === 0))
+      if (!term && !hasItems(senders) && !hasItems(hasTypes))
         return {
           highlights: [],
           groups: [],
@@ -163,7 +165,7 @@ export const useMessageSearch = (params: MessageSearchParams) => {
 
         const localResults = await Promise.all(
           encryptedRoomIds.map((roomId) =>
-            searchEncryptedRoom(mx, roomId, term, searchStartTs, searchEndTs, aggregateProgress(roomId), senders)
+            searchEncryptedRoom(mx, roomId, term ?? '', searchStartTs, searchEndTs, aggregateProgress(roomId), senders, hasTypes)
           )
         );
         const merged = localResults.flat();
@@ -220,7 +222,7 @@ export const useMessageSearch = (params: MessageSearchParams) => {
         groups: allGroups,
       };
     },
-    [mx, term, order, rooms, senders, startTs, endTs, onProgress]
+    [mx, term, order, rooms, senders, hasTypes, startTs, endTs, onProgress]
   );
 
   return searchMessages;

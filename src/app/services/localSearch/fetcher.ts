@@ -118,8 +118,13 @@ export const fetchAndDecryptMessages = async (
         type: msgtype,
       });
     }
-    // Image messages for adjacency lookup
-    else if (msgtype === 'm.image') {
+    // Media/file messages (store full content for rendering)
+    else if (
+      msgtype === 'm.image' ||
+      msgtype === 'm.video' ||
+      msgtype === 'm.audio' ||
+      msgtype === 'm.file'
+    ) {
       messages.push({
         event_id: mEvt.getId() ?? '',
         room_id: roomId,

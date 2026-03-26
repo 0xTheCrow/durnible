@@ -13,6 +13,7 @@ export type LocalSearchResult = {
   origin_server_ts: number;
   body: string;
   type: string;
+  content?: Record<string, unknown>;
   attachedImages?: AttachedImage[];
 };
 
@@ -96,7 +97,8 @@ export const searchEncryptedRoom = async (
   startTs: number,
   endTs: number,
   onProgress?: OnProgress,
-  senders?: string[]
+  senders?: string[],
+  hasTypes?: string[]
 ): Promise<LocalSearchResult[]> => {
   const cached = roomCaches.get(roomId);
 
@@ -144,15 +146,39 @@ export const searchEncryptedRoom = async (
     match = regex.exec(query);
   }
 
-  // Filter by date range and all terms (AND), only on text messages
+  // Build the set of types to match
   const TEXT_TYPES = new Set(['m.text', 'm.notice', 'm.emote']);
+  const HAS_TYPE_MAP: Record<string, string> = {
+    image: 'm.image',
+    video: 'm.video',
+    file: 'm.file',
+    audio: 'm.audio',
+  };
+  const mediaTypeSet = new Set<string>();
+  if (hasTypes && hasTypes.length > 0) {
+    for (const ht of hasTypes) {
+      const mapped = HAS_TYPE_MAP[ht];
+      if (mapped) mediaTypeSet.add(mapped);
+    }
+  }
+
   const ADJACENCY_MS = 60_000;
 
-  const textMatches = messages.filter(
+  const matched = messages.filter(
     (msg) => {
-      if (!TEXT_TYPES.has(msg.type)) return false;
       if (msg.origin_server_ts < startTs || msg.origin_server_ts > endTs) return false;
       if (senders && senders.length > 0 && !senders.includes(msg.sender)) return false;
+
+      const isText = TEXT_TYPES.has(msg.type);
+      const isMatchedMedia = mediaTypeSet.has(msg.type);
+
+      // If has: filter is active, only include text types when there are also text terms
+      if (mediaTypeSet.size > 0) {
+        if (!isMatchedMedia && !(isText && terms.length > 0)) return false;
+      } else {
+        if (!isText) return false;
+      }
+
       if (terms.length === 0) return true;
       const bodyLower = msg.body.toLowerCase();
       return terms.every((term) => bodyLower.includes(term));
@@ -160,7 +186,10 @@ export const searchEncryptedRoom = async (
   );
 
   // For each text match, find adjacent image messages from the same sender within 1 minute
-  const results: LocalSearchResult[] = textMatches.map((msg) => {
+  const results: LocalSearchResult[] = matched.map((msg) => {
+    if (!TEXT_TYPES.has(msg.type)) {
+      return { ...msg, content: msg.content };
+    }
     const adjacentImages = messages.filter(
       (m) =>
         m.type === 'm.image' &&

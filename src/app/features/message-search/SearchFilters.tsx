@@ -504,6 +504,8 @@ type SearchFiltersProps = {
   onSelectedRoomsChange: (selectedRooms?: string[]) => void;
   selectedSenders?: string[];
   onSenderRemove?: (userId: string) => void;
+  selectedHasTypes?: string[];
+  onHasRemove?: (hasType: string) => void;
   global?: boolean;
   onGlobalChange: (global?: boolean) => void;
   order?: string;
@@ -523,6 +525,8 @@ export function SearchFilters({
   onSelectedRoomsChange,
   selectedSenders,
   onSenderRemove,
+  selectedHasTypes,
+  onHasRemove,
   global,
   order,
   onGlobalChange,
@@ -548,7 +552,7 @@ export function SearchFilters({
         >
           <Text size="T200">{defaultRoomsFilterName}</Text>
         </Chip>
-        {allowGlobal && (
+        {/*allowGlobal && (
           <Chip
             variant={global ? 'Primary' : 'Surface'}
             aria-pressed={global}
@@ -558,7 +562,7 @@ export function SearchFilters({
           >
             <Text size="T200">Global</Text>
           </Chip>
-        )}
+        )*/}
         <Line
           style={{ margin: `${config.space.S100} 0` }}
           direction="Vertical"
@@ -633,6 +637,35 @@ export function SearchFilters({
                 after={<Icon size="50" src={Icons.Cross} />}
               >
                 <Text size="T200">{displayName ?? getMxIdLocalPart(userId) ?? userId}</Text>
+              </Chip>
+            );
+          })}
+        </Box>
+      )}
+      {selectedHasTypes && selectedHasTypes.length > 0 && (
+        <Box gap="200" wrap="Wrap" alignItems="Center">
+          <Text size="T200" priority="300">Has:</Text>
+          {selectedHasTypes.map((hasType) => {
+            const iconMap: Record<string, string> = {
+              image: Icons.Photo,
+              video: Icons.Play,
+              file: Icons.File,
+            };
+            const labelMap: Record<string, string> = {
+              image: 'Image',
+              video: 'Video',
+              file: 'File',
+            };
+            return (
+              <Chip
+                key={hasType}
+                variant="Primary"
+                onClick={() => onHasRemove?.(hasType)}
+                radii="Pill"
+                before={<Icon size="50" src={iconMap[hasType] ?? Icons.File} />}
+                after={<Icon size="50" src={Icons.Cross} />}
+              >
+                <Text size="T200">{labelMap[hasType] ?? hasType}</Text>
               </Chip>
             );
           })}

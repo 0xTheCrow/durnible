@@ -26,6 +26,8 @@ import { SearchFilters } from './SearchFilters';
 import { VirtualTile } from '../../components/virtualizer';
 import { FetchProgress, wasMessageCapExceeded } from '../../services/localSearch';
 
+const hasItems = (arr?: unknown[]): boolean => arr != null && arr.length > 0;
+
 const useSearchPathSearchParams = (searchParams: URLSearchParams): _SearchPathSearchParams =>
   useMemo(
     () => ({
@@ -34,6 +36,7 @@ const useSearchPathSearchParams = (searchParams: URLSearchParams): _SearchPathSe
       order: searchParams.get('order') ?? undefined,
       rooms: searchParams.get('rooms') ?? undefined,
       senders: searchParams.get('senders') ?? undefined,
+      has: searchParams.get('has') ?? undefined,
     }),
     [searchParams]
   );
@@ -102,6 +105,12 @@ export function MessageSearch({
     }
     return undefined;
   }, [searchPathSearchParams.senders]);
+  const searchParamsHas = useMemo(() => {
+    if (searchPathSearchParams.has) {
+      return decodeSearchParamValueArray(searchPathSearchParams.has);
+    }
+    return undefined;
+  }, [searchPathSearchParams.has]);
 
   const msgSearchParams: MessageSearchParams = useMemo(() => {
     const isGlobal = searchPathSearchParams.global === 'true';
@@ -113,11 +122,12 @@ export function MessageSearch({
       order: searchPathSearchParams.order ?? SearchOrderBy.Recent,
       rooms: effectiveRooms,
       senders: searchParamsSenders ?? senders,
+      hasTypes: searchParamsHas,
       startTs,
       endTs,
       onProgress,
     };
-  }, [searchPathSearchParams, searchParamRooms, searchParamsSenders, rooms, senders, startTs, endTs, onProgress]);
+  }, [searchPathSearchParams, searchParamRooms, searchParamsSenders, searchParamsHas, rooms, senders, startTs, endTs, onProgress]);
 
   // Detect if any rooms in the current search set are encrypted
   const hasEncryptedRooms = useMemo(() => {
@@ -181,16 +191,54 @@ export function MessageSearch({
     [setSearchParams]
   );
 
+  const handleHasAdd = useCallback(
+    (hasType: string) => {
+      setSearchParams((prevParams) => {
+        const newParams = new URLSearchParams(prevParams);
+        const current = newParams.get('has');
+        const list = current ? decodeSearchParamValueArray(current) : [];
+        if (!list.includes(hasType)) {
+          list.push(hasType);
+        }
+        newParams.set('has', encodeSearchParamValueArray(list));
+        if (!newParams.has('term')) {
+          newParams.set('term', '');
+        }
+        return newParams;
+      });
+    },
+    [setSearchParams]
+  );
+
+  const handleHasRemove = useCallback(
+    (hasType: string) => {
+      setSearchParams((prevParams) => {
+        const newParams = new URLSearchParams(prevParams);
+        const current = newParams.get('has');
+        const list = current ? decodeSearchParamValueArray(current) : [];
+        const filtered = list.filter((h) => h !== hasType);
+        if (filtered.length > 0) {
+          newParams.set('has', encodeSearchParamValueArray(filtered));
+        } else {
+          newParams.delete('has');
+        }
+        return newParams;
+      });
+    },
+    [setSearchParams]
+  );
+
   const searchMessages = useMessageSearch(msgSearchParams);
 
   const { status, data, error, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-    enabled: !!msgSearchParams.term || !!(msgSearchParams.senders && msgSearchParams.senders.length > 0),
+    enabled: !!msgSearchParams.term || hasItems(msgSearchParams.senders) || hasItems(msgSearchParams.hasTypes),
     queryKey: [
       'search',
       msgSearchParams.term,
       msgSearchParams.order,
       msgSearchParams.rooms,
       msgSearchParams.senders,
+      msgSearchParams.hasTypes,
       hasEncryptedRooms ? startTs : undefined,
       hasEncryptedRooms ? endTs : undefined,
     ],
@@ -283,6 +331,8 @@ export function MessageSearch({
     }
   }, [lastVItemIndex, lastGroupIndex, fetchNextPage, isFetchingNextPage, hasNextPage]);
 
+  const hasActiveSearch = !!msgSearchParams.term || hasItems(msgSearchParams.senders) || hasItems(msgSearchParams.hasTypes);
+
   return (
     <Box direction="Column" gap="700">
       <ScrollTopContainer scrollRef={scrollRef} anchorRef={scrollTopAnchorRef}>
@@ -299,14 +349,16 @@ export function MessageSearch({
       </ScrollTopContainer>
       <Box ref={scrollTopAnchorRef} direction="Column" gap="300">
         <SearchInput
-          active={!!msgSearchParams.term || !!(searchParamsSenders && searchParamsSenders.length > 0)}
+          active={!!msgSearchParams.term || hasItems(searchParamsSenders) || hasItems(searchParamsHas)}
           loading={status === 'pending'}
           searchInputRef={searchInputRef}
           onSearch={handleSearch}
           onReset={handleSearchClear}
           members={searchMembers}
           onSenderAdd={handleSenderAdd}
-          hasSenders={!!searchParamsSenders && searchParamsSenders.length > 0}
+          onHasAdd={handleHasAdd}
+          hasFilters={hasItems(searchParamsSenders) || hasItems(searchParamsHas)}
+          selectedHasTypes={searchParamsHas}
         />
         <SearchFilters
           defaultRoomsFilterName={defaultRoomsFilterName}
@@ -316,6 +368,8 @@ export function MessageSearch({
           onSelectedRoomsChange={handleSelectedRoomsChange}
           selectedSenders={searchParamsSenders}
           onSenderRemove={handleSenderRemove}
+          selectedHasTypes={searchParamsHas}
+          onHasRemove={handleHasRemove}
           global={searchPathSearchParams.global === 'true'}
           onGlobalChange={handleGlobalChange}
           order={msgSearchParams.order}
@@ -344,7 +398,7 @@ export function MessageSearch({
         </Box>
       )}
 
-      {!msgSearchParams.term && !(msgSearchParams.senders && msgSearchParams.senders.length > 0) && status === 'pending' && (
+      {!hasActiveSearch && status === 'pending' && (
         <PageHeroEmpty>
           <PageHeroSection>
             <PageHero
@@ -370,7 +424,7 @@ export function MessageSearch({
         </Box>
       )}
 
-      {(msgSearchParams.term || (msgSearchParams.senders && msgSearchParams.senders.length > 0)) && groups.length === 0 && status === 'success' && (
+      {hasActiveSearch && groups.length === 0 && status === 'success' && (
         <Box
           className={ContainerColor({ variant: 'Warning' })}
           style={{ padding: config.space.S300, borderRadius: config.radii.R400 }}
@@ -384,7 +438,7 @@ export function MessageSearch({
         </Box>
       )}
 
-      {(((msgSearchParams.term || (msgSearchParams.senders && msgSearchParams.senders.length > 0)) && status === 'pending') ||
+      {((hasActiveSearch && status === 'pending') ||
         (groups.length > 0 && vItems.length === 0)) && (
         <Box direction="Column" gap="100">
           {[...Array(8).keys()].map((key) => (
