@@ -21,6 +21,7 @@ import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
 import { OverlayModal } from '../../../components/OverlayModal';
+import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
 
 export type ReactionsProps = {
   room: Room;
@@ -33,6 +34,7 @@ export const Reactions = as<'div', ReactionsProps>(
   ({ className, room, relations, mEventId, canSendReaction, onReactionToggle, ...props }, ref) => {
     const mx = useMatrixClient();
     const useAuthentication = useMediaAuthentication();
+    const screenSize = useScreenSizeContext();
     const [pauseGifs] = useSetting(settingsAtom, 'pauseGifs');
     const [viewer, setViewer] = useState<boolean | string>(false);
     const myUserId = mx.getUserId();
@@ -111,7 +113,7 @@ export const Reactions = as<'div', ReactionsProps>(
               key={key}
               position="Top"
               tooltip={
-                viewer ? undefined : (
+                viewer || screenSize === ScreenSize.Mobile ? undefined : (
                   <Tooltip style={{ maxWidth: toRem(200) }}>
                     <Text className={css.ReactionsTooltipText} size="T300">
                       <ReactionTooltipMsg room={room} reaction={key} events={rEvents} />

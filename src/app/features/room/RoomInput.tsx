@@ -141,6 +141,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     const direct = useIsDirectRoom();
     const commands = useCommands(mx, room);
     const emojiBtnRef = useRef<HTMLButtonElement>(null);
+    const sendBtnRef = useRef<HTMLButtonElement>(null);
     const roomToParents = useAtomValue(roomToParentsAtom);
     const powerLevels = usePowerLevelsContext();
     const creators = useRoomCreators(room);
@@ -235,6 +236,8 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
           }));
           setSelectedFiles({ type: 'PUT', item: fileItems });
         }
+
+        sendBtnRef.current?.focus();
       },
       [setSelectedFiles, room]
     );
@@ -753,7 +756,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
                   </PopOut>
                 )}
               </UseStateProvider>
-              <IconButton onClick={submit} variant="SurfaceVariant" size="300" radii="300">
+              <IconButton ref={sendBtnRef} onClick={submit} variant="SurfaceVariant" size="300" radii="300">
                 <Icon src={Icons.Send} />
               </IconButton>
             </>
