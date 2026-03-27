@@ -72,6 +72,7 @@ function LongPressWrapper({
       onPointerUp={cancel}
       onPointerLeave={cancel}
       onPointerCancel={cancel}
+      onContextMenu={(e) => e.preventDefault()}
       onClickCapture={(e) => {
         if (suppressRef.current) {
           suppressRef.current = false;
@@ -79,6 +80,7 @@ function LongPressWrapper({
           e.preventDefault();
         }
       }}
+      style={{ WebkitTouchCallout: 'none', userSelect: 'none' } as React.CSSProperties}
     >
       {children}
     </div>
