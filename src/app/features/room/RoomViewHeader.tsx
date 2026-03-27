@@ -371,7 +371,7 @@ export function RoomViewHeader() {
                   height: '100%',
                   animation:
                     connectionStatus === 'connecting'
-                      ? 'sync-pulse 1.5s ease-in-out infinite'
+                      ? 'sync-pulse 2.5s ease-in-out infinite'
                       : undefined,
                 }}
               >

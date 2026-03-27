@@ -155,6 +155,7 @@ export const searchEncryptedRoom = async (
     audio: 'm.audio',
   };
   const mediaTypeSet = new Set<string>();
+  const hasLink = hasTypes?.includes('link') ?? false;
   if (hasTypes && hasTypes.length > 0) {
     for (const ht of hasTypes) {
       const mapped = HAS_TYPE_MAP[ht];
@@ -162,6 +163,7 @@ export const searchEncryptedRoom = async (
     }
   }
 
+  const URL_REGEX = /https?:\/\/\S+/i;
   const ADJACENCY_MS = 60_000;
 
   const matched = messages.filter(
@@ -172,9 +174,13 @@ export const searchEncryptedRoom = async (
       const isText = TEXT_TYPES.has(msg.type);
       const isMatchedMedia = mediaTypeSet.has(msg.type);
 
-      // If has: filter is active, only include text types when there are also text terms
-      if (mediaTypeSet.size > 0) {
-        if (!isMatchedMedia && !(isText && terms.length > 0)) return false;
+      if (mediaTypeSet.size > 0 || hasLink) {
+        if (!isMatchedMedia) {
+          if (!isText) return false;
+          const passesLink = hasLink && URL_REGEX.test(msg.body);
+          const passesTextWithTerms = mediaTypeSet.size > 0 && terms.length > 0;
+          if (!passesLink && !passesTextWithTerms) return false;
+        }
       } else {
         if (!isText) return false;
       }

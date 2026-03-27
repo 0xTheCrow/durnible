@@ -343,6 +343,7 @@ const toDateInputValue = (ts: number): string => {
 };
 
 const RANGE_PRESETS = [
+  { label: '1 day', days: 1 },
   { label: '7 days', days: 7 },
   { label: '30 days', days: 30 },
   { label: '90 days', days: 90 },
@@ -651,11 +652,13 @@ export function SearchFilters({
               image: Icons.Photo,
               video: Icons.Play,
               file: Icons.File,
+              link: Icons.Link,
             };
             const labelMap: Record<string, string> = {
               image: 'Image',
               video: 'Video',
               file: 'File',
+              link: 'Link',
             };
             return (
               <Chip

@@ -39,6 +39,7 @@ const HAS_OPTIONS: HasOption[] = [
   { value: 'image', label: 'Image', icon: 'Photo' },
   { value: 'video', label: 'Video', icon: 'Play' },
   { value: 'file', label: 'File', icon: 'File' },
+  { value: 'link', label: 'Link', icon: 'Link' },
 ];
 
 type SearchProps = {
@@ -209,6 +210,7 @@ export function SearchInput({
       Photo: Icons.Photo,
       Play: Icons.Play,
       File: Icons.File,
+      Link: Icons.Link,
     };
     return map[icon] ?? Icons.File;
   };
@@ -230,7 +232,7 @@ export function SearchInput({
         autoFocus
         size="500"
         variant="Background"
-        placeholder="Search messages (from: sender, has: image/video/file)"
+        placeholder="Search messages (from: sender, has: image/video/file/link)"
         autoComplete="off"
         onChange={updateToken}
         onClick={updateToken}

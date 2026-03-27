@@ -138,5 +138,5 @@ audio:not([controls]) {
 
 @keyframes sync-pulse {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
+  50% { opacity: 0.5; }
 }

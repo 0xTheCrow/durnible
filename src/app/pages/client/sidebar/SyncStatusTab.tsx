@@ -37,7 +37,7 @@ export function SyncStatusTab() {
           style={{
             color: props.iconColor,
             lineHeight: 0,
-            animation: status === 'connecting' ? 'sync-pulse 1.5s ease-in-out infinite' : undefined,
+            animation: status === 'connecting' ? 'sync-pulse 2.5s ease-in-out infinite' : undefined,
           }}
         >
           <Icon size="200" src={props.iconSrc} filled />

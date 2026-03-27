@@ -10,7 +10,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { Box, config, Icon, Icons, Menu, MenuItem, PopOut, RectCords, Scroll, Text, toRem } from 'folds';
+import { Box, config, Icon, IconButton, Icons, Menu, MenuItem, PopOut, RectCords, Scroll, Text, toRem } from 'folds';
 import FocusTrap from 'focus-trap-react';
 import { isKeyHotkey } from 'is-hotkey';
 import { Room } from 'matrix-js-sdk';
@@ -53,10 +53,13 @@ import {
   DraggableImageGroupIcon,
   GroupIcon,
   DraggableGroupIcon,
+  MobileSortableGroupIcon,
+  MobileSortableImageGroupIcon,
   getEmojiItemInfo,
   EmojiGroup,
   EmojiBoardLayout,
 } from './components';
+import { useScreenSize, ScreenSize } from '../../hooks/useScreenSize';
 import { EmojiBoardTab, EmojiItemInfo, EmojiType } from './types';
 import { VirtualTile } from '../virtualizer';
 
@@ -113,7 +116,7 @@ const useGroups = (
       };
     });
 
-    const reorderableGroups = [recentGroup, favoritesGroup, ...packGroups];
+    const reorderableGroups = [recentGroup, ...(favoriteEmojis.length > 0 ? [favoritesGroup] : []), ...packGroups];
     if (packOrder.length > 0) {
       const orderMap = new Map(packOrder.map((id, i) => [id, i]));
       reorderableGroups.sort((a, b) => {
@@ -214,10 +217,11 @@ type EmojiSidebarProps = {
   activeGroupAtom: PrimitiveAtom<string | undefined>;
   packs: ImagePack[];
   packOrder: string[];
+  hasFavorites: boolean;
   onScrollToGroup: (groupId: string) => void;
   setPackOrder: (ids: string[]) => void;
 };
-function EmojiSidebar({ activeGroupAtom, packs, packOrder, onScrollToGroup, setPackOrder }: EmojiSidebarProps) {
+function EmojiSidebar({ activeGroupAtom, packs, packOrder, hasFavorites, onScrollToGroup, setPackOrder }: EmojiSidebarProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
 
@@ -225,6 +229,8 @@ function EmojiSidebar({ activeGroupAtom, packs, packOrder, onScrollToGroup, setP
   const usage = ImageUsage.Emoticon;
   const labels = useEmojiGroupLabels();
   const icons = useEmojiGroupIcons();
+  const isMobile = useScreenSize() !== ScreenSize.Desktop;
+  const [reorderMode, setReorderMode] = useState(false);
 
   const handleScrollToGroup = (groupId: string) => {
     setActiveGroupId(groupId);
@@ -233,7 +239,7 @@ function EmojiSidebar({ activeGroupAtom, packs, packOrder, onScrollToGroup, setP
 
   const reorderableIds = useMemo(() => {
     const packIds = packs.map((p) => p.id);
-    const specialIds = [RECENT_GROUP_ID, FAVORITES_GROUP_ID];
+    const specialIds = hasFavorites ? [RECENT_GROUP_ID, FAVORITES_GROUP_ID] : [RECENT_GROUP_ID];
     // Insert each special ID at its correct position per packOrder
     for (const specialId of specialIds) {
       const idx = packOrder.indexOf(specialId);
@@ -248,6 +254,22 @@ function EmojiSidebar({ activeGroupAtom, packs, packOrder, onScrollToGroup, setP
     }
     return packIds;
   }, [packs, packOrder]);
+
+  const handleMoveUp = useCallback((id: string) => {
+    const idx = reorderableIds.indexOf(id);
+    if (idx <= 0) return;
+    const newIds = [...reorderableIds];
+    [newIds[idx - 1], newIds[idx]] = [newIds[idx], newIds[idx - 1]];
+    setPackOrder(newIds);
+  }, [reorderableIds, setPackOrder]);
+
+  const handleMoveDown = useCallback((id: string) => {
+    const idx = reorderableIds.indexOf(id);
+    if (idx < 0 || idx >= reorderableIds.length - 1) return;
+    const newIds = [...reorderableIds];
+    [newIds[idx + 1], newIds[idx]] = [newIds[idx], newIds[idx + 1]];
+    setPackOrder(newIds);
+  }, [reorderableIds, setPackOrder]);
 
   useEffect(
     () =>
@@ -280,7 +302,7 @@ function EmojiSidebar({ activeGroupAtom, packs, packOrder, onScrollToGroup, setP
     type SidebarItem = { type: 'recent' } | { type: 'favorites' } | { type: 'pack'; pack: ImagePack };
     const items: SidebarItem[] = [
       { type: 'recent' },
-      { type: 'favorites' },
+      ...(hasFavorites ? [{ type: 'favorites' as const }] : []),
       ...packs.map((pack) => ({ type: 'pack' as const, pack })),
     ];
     if (packOrder.length > 0) {
@@ -299,8 +321,40 @@ function EmojiSidebar({ activeGroupAtom, packs, packOrder, onScrollToGroup, setP
   return (
     <Sidebar>
       <SidebarStack>
+        {isMobile && reorderMode && (
+          <IconButton
+            size="300"
+            radii="300"
+            variant="Primary"
+            onClick={() => setReorderMode(false)}
+            aria-label="Done reordering"
+          >
+            <Icon size="100" src={Icons.Check} />
+          </IconButton>
+        )}
         {sortedItems.map((item) => {
+          const id = item.type === 'recent' ? RECENT_GROUP_ID : item.type === 'favorites' ? FAVORITES_GROUP_ID : item.pack.id;
+          const idx = reorderableIds.indexOf(id);
+
           if (item.type === 'recent') {
+            if (isMobile) {
+              return (
+                <MobileSortableGroupIcon
+                  key={RECENT_GROUP_ID}
+                  active={activeGroupId === RECENT_GROUP_ID}
+                  id={RECENT_GROUP_ID}
+                  label="Recent"
+                  icon={Icons.RecentClock}
+                  reorderMode={reorderMode}
+                  canMoveUp={idx > 0}
+                  canMoveDown={idx < reorderableIds.length - 1}
+                  onClick={handleScrollToGroup}
+                  onLongPress={() => setReorderMode(true)}
+                  onMoveUp={() => handleMoveUp(RECENT_GROUP_ID)}
+                  onMoveDown={() => handleMoveDown(RECENT_GROUP_ID)}
+                />
+              );
+            }
             return (
               <DraggableGroupIcon
                 key={RECENT_GROUP_ID}
@@ -313,6 +367,24 @@ function EmojiSidebar({ activeGroupAtom, packs, packOrder, onScrollToGroup, setP
             );
           }
           if (item.type === 'favorites') {
+            if (isMobile) {
+              return (
+                <MobileSortableGroupIcon
+                  key={FAVORITES_GROUP_ID}
+                  active={activeGroupId === FAVORITES_GROUP_ID}
+                  id={FAVORITES_GROUP_ID}
+                  label="Favorites"
+                  icon={Icons.Star}
+                  reorderMode={reorderMode}
+                  canMoveUp={idx > 0}
+                  canMoveDown={idx < reorderableIds.length - 1}
+                  onClick={handleScrollToGroup}
+                  onLongPress={() => setReorderMode(true)}
+                  onMoveUp={() => handleMoveUp(FAVORITES_GROUP_ID)}
+                  onMoveDown={() => handleMoveDown(FAVORITES_GROUP_ID)}
+                />
+              );
+            }
             return (
               <DraggableGroupIcon
                 key={FAVORITES_GROUP_ID}
@@ -332,6 +404,24 @@ function EmojiSidebar({ activeGroupAtom, packs, packOrder, onScrollToGroup, setP
             mxcUrlToHttp(mx, pack.getAvatarUrl(usage) ?? '', useAuthentication) ||
             pack.meta.avatar;
 
+          if (isMobile) {
+            return (
+              <MobileSortableImageGroupIcon
+                key={pack.id}
+                active={activeGroupId === pack.id}
+                id={pack.id}
+                label={label ?? 'Unknown Pack'}
+                url={url}
+                reorderMode={reorderMode}
+                canMoveUp={idx > 0}
+                canMoveDown={idx < reorderableIds.length - 1}
+                onClick={handleScrollToGroup}
+                onLongPress={() => setReorderMode(true)}
+                onMoveUp={() => handleMoveUp(pack.id)}
+                onMoveDown={() => handleMoveDown(pack.id)}
+              />
+            );
+          }
           return (
             <DraggableImageGroupIcon
               key={pack.id}
@@ -381,6 +471,8 @@ function StickerSidebar({ activeGroupAtom, packs, packOrder, hasFavorites, onScr
 
   const [activeGroupId, setActiveGroupId] = useAtom(activeGroupAtom);
   const usage = ImageUsage.Sticker;
+  const isMobile = useScreenSize() !== ScreenSize.Desktop;
+  const [reorderMode, setReorderMode] = useState(false);
 
   const handleScrollToGroup = (groupId: string) => {
     setActiveGroupId(groupId);
@@ -401,6 +493,22 @@ function StickerSidebar({ activeGroupAtom, packs, packOrder, hasFavorites, onScr
     }
     return ids;
   }, [packs, packOrder, hasFavorites]);
+
+  const handleMoveUp = useCallback((id: string) => {
+    const idx = reorderableIds.indexOf(id);
+    if (idx <= 0) return;
+    const newIds = [...reorderableIds];
+    [newIds[idx - 1], newIds[idx]] = [newIds[idx], newIds[idx - 1]];
+    setPackOrder(newIds);
+  }, [reorderableIds, setPackOrder]);
+
+  const handleMoveDown = useCallback((id: string) => {
+    const idx = reorderableIds.indexOf(id);
+    if (idx < 0 || idx >= reorderableIds.length - 1) return;
+    const newIds = [...reorderableIds];
+    [newIds[idx + 1], newIds[idx]] = [newIds[idx], newIds[idx + 1]];
+    setPackOrder(newIds);
+  }, [reorderableIds, setPackOrder]);
 
   useEffect(
     () =>
@@ -451,8 +559,40 @@ function StickerSidebar({ activeGroupAtom, packs, packOrder, hasFavorites, onScr
   return (
     <Sidebar>
       <SidebarStack>
+        {isMobile && reorderMode && (
+          <IconButton
+            size="300"
+            radii="300"
+            variant="Primary"
+            onClick={() => setReorderMode(false)}
+            aria-label="Done reordering"
+          >
+            <Icon size="100" src={Icons.Check} />
+          </IconButton>
+        )}
         {sortedItems.map((item) => {
+          const id = item.type === 'favorites' ? FAVORITES_GROUP_ID : item.pack.id;
+          const idx = reorderableIds.indexOf(id);
+
           if (item.type === 'favorites') {
+            if (isMobile) {
+              return (
+                <MobileSortableGroupIcon
+                  key={FAVORITES_GROUP_ID}
+                  active={activeGroupId === FAVORITES_GROUP_ID}
+                  id={FAVORITES_GROUP_ID}
+                  label="Favorites"
+                  icon={Icons.Star}
+                  reorderMode={reorderMode}
+                  canMoveUp={idx > 0}
+                  canMoveDown={idx < reorderableIds.length - 1}
+                  onClick={handleScrollToGroup}
+                  onLongPress={() => setReorderMode(true)}
+                  onMoveUp={() => handleMoveUp(FAVORITES_GROUP_ID)}
+                  onMoveDown={() => handleMoveDown(FAVORITES_GROUP_ID)}
+                />
+              );
+            }
             return (
               <DraggableGroupIcon
                 key={FAVORITES_GROUP_ID}
@@ -471,6 +611,24 @@ function StickerSidebar({ activeGroupAtom, packs, packOrder, hasFavorites, onScr
           const url =
             mxcUrlToHttp(mx, pack.getAvatarUrl(usage) ?? '', useAuthentication) || pack.meta.avatar;
 
+          if (isMobile) {
+            return (
+              <MobileSortableImageGroupIcon
+                key={pack.id}
+                active={activeGroupId === pack.id}
+                id={pack.id}
+                label={label ?? 'Unknown Pack'}
+                url={url}
+                reorderMode={reorderMode}
+                canMoveUp={idx > 0}
+                canMoveDown={idx < reorderableIds.length - 1}
+                onClick={handleScrollToGroup}
+                onLongPress={() => setReorderMode(true)}
+                onMoveUp={() => handleMoveUp(pack.id)}
+                onMoveDown={() => handleMoveDown(pack.id)}
+              />
+            );
+          }
           return (
             <DraggableImageGroupIcon
               key={pack.id}
@@ -774,6 +932,7 @@ export function EmojiBoard({
               activeGroupAtom={activeGroupIdAtom}
               packs={imagePacks}
               packOrder={packOrder}
+              hasFavorites={emojiGroupItems.some((g) => g.id === FAVORITES_GROUP_ID)}
               onScrollToGroup={handleScrollToGroup}
               setPackOrder={setPackOrder}
             />
