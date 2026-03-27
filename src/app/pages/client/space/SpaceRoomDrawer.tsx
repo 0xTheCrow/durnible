@@ -1,6 +1,7 @@
 import React, { ReactNode, useEffect, useRef } from 'react';
 import { useLocation, useMatch } from 'react-router-dom';
-import { Box } from 'folds';
+import { Box, Line, Text, config } from 'folds';
+import { useAtomValue } from 'jotai';
 import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
 import { useSwipeDrawer } from '../../../hooks/useSwipeDrawer';
 import { SwipeDrawer } from '../../../components/swipe-drawer';
@@ -9,6 +10,80 @@ import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
 import { SPACE_PATH } from '../../paths';
 import { Space } from './Space';
+import { useFavoriteRooms } from '../../../hooks/useFavoriteRooms';
+import { useMatrixClient } from '../../../hooks/useMatrixClient';
+import { mDirectAtom } from '../../../state/mDirectList';
+import { roomToParentsAtom } from '../../../state/room/roomToParents';
+import { getOrphanParents, guessPerfectParent } from '../../../utils/room';
+import {
+  getCanonicalAliasOrRoomId,
+} from '../../../utils/matrix';
+import {
+  getDirectRoomPath,
+  getHomeRoomPath,
+  getSpaceRoomPath,
+} from '../../pathUtils';
+import { NavCategory, NavCategoryHeader } from '../../../components/nav';
+import { useSelectedRoom } from '../../../hooks/router/useSelectedRoom';
+import {
+  getRoomNotificationMode,
+  useRoomsNotificationPreferencesContext,
+} from '../../../hooks/useRoomsNotificationPreferences';
+import { RoomNavItem } from '../../../features/room-nav';
+
+function useFavoriteRoomPath() {
+  const mx = useMatrixClient();
+  const mDirects = useAtomValue(mDirectAtom);
+  const roomToParents = useAtomValue(roomToParentsAtom);
+
+  return (roomId: string): string => {
+    const roomIdOrAlias = getCanonicalAliasOrRoomId(mx, roomId);
+    const orphanParents = getOrphanParents(roomToParents, roomId);
+    if (orphanParents.length > 0) {
+      const parent = guessPerfectParent(mx, roomId, orphanParents) ?? orphanParents[0];
+      const pIdOrAlias = getCanonicalAliasOrRoomId(mx, parent);
+      return getSpaceRoomPath(pIdOrAlias, roomIdOrAlias);
+    }
+    if (mDirects.has(roomId)) {
+      return getDirectRoomPath(roomIdOrAlias);
+    }
+    return getHomeRoomPath(roomIdOrAlias);
+  };
+}
+
+function FavoritesSection() {
+  const mx = useMatrixClient();
+  const favorites = useFavoriteRooms(mx);
+  const mDirects = useAtomValue(mDirectAtom);
+  const selectedRoomId = useSelectedRoom();
+  const notificationPreferences = useRoomsNotificationPreferencesContext();
+  const getRoomPath = useFavoriteRoomPath();
+
+  if (favorites.length === 0) return null;
+
+  return (
+    <Box direction="Column" gap="100" style={{ paddingTop: config.space.S400 }}>
+      <Line variant="Background" size="300" />
+      <NavCategory style={{ paddingTop: config.space.S200 }}>
+        <NavCategoryHeader>
+          <Text size="L400" style={{ paddingLeft: config.space.S200 }}>Favorites</Text>
+        </NavCategoryHeader>
+        {favorites.map((room) => (
+          <RoomNavItem
+            key={room.roomId}
+            room={room}
+            selected={selectedRoomId === room.roomId}
+            showAvatar={mDirects.has(room.roomId)}
+            direct={mDirects.has(room.roomId)}
+            linkPath={getRoomPath(room.roomId)}
+            notificationMode={getRoomNotificationMode(notificationPreferences, room.roomId)}
+            isDrawerMode
+          />
+        ))}
+      </NavCategory>
+    </Box>
+  );
+}
 
 type SpaceRoomDrawerProps = {
   children: ReactNode;
@@ -79,7 +154,7 @@ export function SpaceRoomDrawer({ children }: SpaceRoomDrawerProps) {
           className={ContainerColor({ variant: 'Background' })}
           style={{ height: '100%' }}
         >
-          <Space isDrawerMode />
+          <Space isDrawerMode extra={<FavoritesSection />} />
         </Box>
       </SwipeDrawer>
     </>
