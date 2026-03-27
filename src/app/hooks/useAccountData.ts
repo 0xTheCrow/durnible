@@ -1,10 +1,13 @@
 import { useState, useCallback } from 'react';
+import type { AccountDataEvents } from 'matrix-js-sdk/lib/@types/event';
 import { useMatrixClient } from './useMatrixClient';
 import { useAccountDataCallback } from './useAccountDataCallback';
 
 export function useAccountData(eventType: string) {
   const mx = useMatrixClient();
-  const [event, setEvent] = useState(() => mx.getAccountData(eventType));
+  const [event, setEvent] = useState(() =>
+    mx.getAccountData(eventType as keyof AccountDataEvents)
+  );
 
   useAccountDataCallback(
     mx,

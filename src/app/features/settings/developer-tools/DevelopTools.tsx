@@ -23,18 +23,25 @@ export function DeveloperTools({ requestClose }: DeveloperToolsProps) {
   const [expand, setExpend] = useState(false);
   const [accountDataType, setAccountDataType] = useState<string | null>();
 
+  // Developer tools intentionally work with arbitrary event type strings from user input.
+  // These casts are narrow and limited to this component.
+  const mxRaw = mx as unknown as {
+    setAccountData: (type: string, content: object) => Promise<void>;
+    getAccountData: (type: string) => ReturnType<typeof mx.getAccountData>;
+  };
+
   const submitAccountData: AccountDataSubmitCallback = useCallback(
     async (type, content) => {
-      await mx.setAccountData(type, content);
+      await mxRaw.setAccountData(type, content);
     },
-    [mx]
+    [mxRaw]
   );
 
   if (accountDataType !== undefined) {
     return (
       <AccountDataEditor
         type={accountDataType ?? undefined}
-        content={accountDataType ? mx.getAccountData(accountDataType)?.getContent() : undefined}
+        content={accountDataType ? mxRaw.getAccountData(accountDataType)?.getContent() : undefined}
         submitChange={submitAccountData}
         requestClose={() => setAccountDataType(undefined)}
       />
