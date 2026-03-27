@@ -39,7 +39,7 @@ function fetchConfig(token?: string): RequestInit | undefined {
 }
 
 self.addEventListener('activate', (event: ExtendableEvent) => {
-  event.waitUntil(clients.claim());
+  event.waitUntil(self.clients.claim());
 });
 
 self.addEventListener('message', (event: ExtendableMessageEvent) => {

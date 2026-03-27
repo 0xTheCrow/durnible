@@ -12,6 +12,7 @@ import {
   Text,
   Icon,
   Icons,
+  IconSrc,
   Line,
   config,
   PopOut,
@@ -29,7 +30,8 @@ import { SearchOrderBy } from 'matrix-js-sdk';
 import FocusTrap from 'focus-trap-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
-import { joinRuleToIconSrc } from '../../utils/room';
+import { getMemberDisplayName, joinRuleToIconSrc } from '../../utils/room';
+import { getMxIdLocalPart } from '../../utils/matrix';
 import { factoryRoomIdByAtoZ } from '../../utils/sort';
 import {
   SearchItemStrGetter,
@@ -341,6 +343,7 @@ const toDateInputValue = (ts: number): string => {
 };
 
 const RANGE_PRESETS = [
+  { label: '1 day', days: 1 },
   { label: '7 days', days: 7 },
   { label: '30 days', days: 30 },
   { label: '90 days', days: 90 },
@@ -501,6 +504,10 @@ type SearchFiltersProps = {
   roomList: string[];
   selectedRooms?: string[];
   onSelectedRoomsChange: (selectedRooms?: string[]) => void;
+  selectedSenders?: string[];
+  onSenderRemove?: (userId: string) => void;
+  selectedHasTypes?: string[];
+  onHasRemove?: (hasType: string) => void;
   global?: boolean;
   onGlobalChange: (global?: boolean) => void;
   order?: string;
@@ -518,6 +525,10 @@ export function SearchFilters({
   roomList,
   selectedRooms,
   onSelectedRoomsChange,
+  selectedSenders,
+  onSenderRemove,
+  selectedHasTypes,
+  onHasRemove,
   global,
   order,
   onGlobalChange,
@@ -543,7 +554,7 @@ export function SearchFilters({
         >
           <Text size="T200">{defaultRoomsFilterName}</Text>
         </Chip>
-        {allowGlobal && (
+        {/*allowGlobal && (
           <Chip
             variant={global ? 'Primary' : 'Surface'}
             aria-pressed={global}
@@ -553,7 +564,7 @@ export function SearchFilters({
           >
             <Text size="T200">Global</Text>
           </Chip>
-        )}
+        )*/}
         <Line
           style={{ margin: `${config.space.S100} 0` }}
           direction="Vertical"
@@ -606,6 +617,64 @@ export function SearchFilters({
         )}
         <OrderButton order={order} onChange={onOrderChange} />
       </Box>
+      {selectedSenders && selectedSenders.length > 0 && (
+        <Box gap="200" wrap="Wrap" alignItems="Center">
+          <Text size="T200" priority="300">From:</Text>
+          {selectedSenders.map((userId) => {
+            let displayName: string | undefined;
+            for (const roomId of roomList) {
+              const room = mx.getRoom(roomId);
+              if (room) {
+                displayName = getMemberDisplayName(room, userId);
+                if (displayName) break;
+              }
+            }
+            return (
+              <Chip
+                key={userId}
+                variant="Primary"
+                onClick={() => onSenderRemove?.(userId)}
+                radii="Pill"
+                before={<Icon size="50" src={Icons.User} />}
+                after={<Icon size="50" src={Icons.Cross} />}
+              >
+                <Text size="T200">{displayName ?? getMxIdLocalPart(userId) ?? userId}</Text>
+              </Chip>
+            );
+          })}
+        </Box>
+      )}
+      {selectedHasTypes && selectedHasTypes.length > 0 && (
+        <Box gap="200" wrap="Wrap" alignItems="Center">
+          <Text size="T200" priority="300">Has:</Text>
+          {selectedHasTypes.map((hasType) => {
+            const iconMap: Record<string, IconSrc> = {
+              image: Icons.Photo,
+              video: Icons.Play,
+              file: Icons.File,
+              link: Icons.Link,
+            };
+            const labelMap: Record<string, string> = {
+              image: 'Image',
+              video: 'Video',
+              file: 'File',
+              link: 'Link',
+            };
+            return (
+              <Chip
+                key={hasType}
+                variant="Primary"
+                onClick={() => onHasRemove?.(hasType)}
+                radii="Pill"
+                before={<Icon size="50" src={iconMap[hasType] ?? Icons.File} />}
+                after={<Icon size="50" src={Icons.Cross} />}
+              >
+                <Text size="T200">{labelMap[hasType] ?? hasType}</Text>
+              </Chip>
+            );
+          })}
+        </Box>
+      )}
     </Box>
   );
 }

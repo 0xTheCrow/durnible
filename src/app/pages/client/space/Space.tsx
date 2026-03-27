@@ -376,8 +376,9 @@ export function SpaceTombstone({ roomId, replacementRoomId }: SpaceTombstoneProp
 
 type SpaceProps = {
   isDrawerMode?: boolean;
+  extra?: React.ReactNode;
 };
-export function Space({ isDrawerMode }: SpaceProps = {}) {
+export function Space({ isDrawerMode, extra }: SpaceProps = {}) {
   const mx = useMatrixClient();
   const space = useSpace();
   useNavToActivePathMapper(space.roomId);
@@ -541,6 +542,7 @@ export function Space({ isDrawerMode }: SpaceProps = {}) {
             })}
           </NavCategory>
         </Box>
+        {extra}
       </PageNavContent>
     </PageNav>
   );

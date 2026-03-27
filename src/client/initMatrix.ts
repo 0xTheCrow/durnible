@@ -3,7 +3,7 @@ import { logger } from 'matrix-js-sdk/lib/logger';
 
 import { cryptoCallbacks } from './secretStorageKeys';
 
-logger.setLevel('warn');
+(logger as unknown as { setLevel: (level: string) => void }).setLevel('warn');
 import { clearNavToActivePathStore } from '../app/state/navToActivePath';
 
 type Session = {

@@ -53,6 +53,8 @@ import { getMatrixToRoom } from '../../plugins/matrix-to';
 import { getViaServers } from '../../plugins/via-servers';
 import { BackRouteHandler } from '../../components/BackRouteHandler';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
+import { useConnectionStatus } from '../../hooks/useConnectionStatus';
+import { getConnectionStatusProps } from '../../pages/client/sidebar/SyncStatusTab';
 import { useRoomPinnedEvents } from '../../hooks/useRoomPinnedEvents';
 import { RoomPinMenu } from './room-pin-menu';
 import { timelineSliderVisibleAtom } from './TimelineSlider';
@@ -317,6 +319,9 @@ export function RoomViewHeader() {
     ? mxcUrlToHttp(mx, avatarMxc, useAuthentication, 96, 96, 'crop') ?? undefined
     : undefined;
 
+  const connectionStatus = useConnectionStatus();
+  const connectionProps = getConnectionStatusProps(connectionStatus);
+
   const [peopleDrawer, setPeopleDrawer] = useSetting(settingsAtom, 'isPeopleDrawer');
   const [sliderVisible, setSliderVisible] = useAtom(timelineSliderVisibleAtom);
 
@@ -354,18 +359,38 @@ export function RoomViewHeader() {
         )}
         <Box grow="Yes" alignItems="Center" gap="300">
           <Avatar size="300">
-            <RoomAvatar
-              roomId={room.roomId}
-              src={avatarUrl}
-              alt={name}
-              renderFallback={() => (
-                <RoomIcon
-                  size="200"
-                  joinRule={room.getJoinRule() ?? JoinRule.Restricted}
-                  filled
-                />
-              )}
-            />
+            {screenSize === ScreenSize.Mobile && connectionProps ? (
+              <span
+                style={{
+                  color: connectionProps.iconColor,
+                  lineHeight: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '100%',
+                  height: '100%',
+                  animation:
+                    connectionStatus === 'connecting'
+                      ? 'sync-pulse 2.5s ease-in-out infinite'
+                      : undefined,
+                }}
+              >
+                <Icon size="200" src={connectionProps.iconSrc} filled />
+              </span>
+            ) : (
+              <RoomAvatar
+                roomId={room.roomId}
+                src={avatarUrl}
+                alt={name}
+                renderFallback={() => (
+                  <RoomIcon
+                    size="200"
+                    joinRule={room.getJoinRule() ?? JoinRule.Restricted}
+                    filled
+                  />
+                )}
+              />
+            )}
           </Avatar>
           <Box direction="Column">
             <Text size={topic ? 'H5' : 'H3'} truncate>

@@ -95,7 +95,7 @@ export function createMockRoomMember(
     name: displayName ?? userId,
     rawDisplayName: displayName ?? userId,
     getMxcAvatarUrl: vi.fn(() => avatarUrl),
-    getAvatarUrl: vi.fn(() => avatarUrl),
+    getAvatarUrl: vi.fn(() => avatarUrl ?? null) as unknown as RoomMember['getAvatarUrl'],
   };
 }
 
@@ -166,7 +166,7 @@ export function createMockMatrixClient(): Partial<MatrixClient> {
     getRoom: vi.fn(() => null),
     getAccountData: vi.fn(() => undefined),
     sendEvent: vi.fn(async () => ({ event_id: '$sent' })),
-    redactEvent: vi.fn(async () => ({})),
+    redactEvent: vi.fn(async () => ({ event_id: '$redacted' })) as unknown as MatrixClient['redactEvent'],
     on: vi.fn().mockReturnThis(),
     off: vi.fn().mockReturnThis(),
     removeListener: vi.fn().mockReturnThis(),

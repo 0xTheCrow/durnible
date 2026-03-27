@@ -1,4 +1,4 @@
-import React, { ReactNode, useEffect, useRef, useState } from 'react';
+import React, { ReactNode, useEffect, useRef, useState, useCallback } from 'react';
 import {
   Box,
   Scroll,
@@ -280,5 +280,162 @@ export function DraggableImageGroupIcon({
         onClick={onClick}
       />
     </div>
+  );
+}
+
+function LongPressWrapper({
+  onLongPress,
+  children,
+}: {
+  onLongPress: () => void;
+  children: ReactNode;
+}) {
+  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const suppressRef = useRef(false);
+
+  const start = useCallback(() => {
+    suppressRef.current = false;
+    timerRef.current = setTimeout(() => {
+      suppressRef.current = true;
+      onLongPress();
+    }, 500);
+  }, [onLongPress]);
+
+  const cancel = useCallback(() => clearTimeout(timerRef.current), []);
+
+  return (
+    <div
+      onPointerDown={start}
+      onPointerUp={cancel}
+      onPointerLeave={cancel}
+      onPointerCancel={cancel}
+      onClickCapture={(e) => {
+        if (suppressRef.current) {
+          suppressRef.current = false;
+          e.stopPropagation();
+          e.preventDefault();
+        }
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+type MobileSortableGroupIconProps = {
+  active: boolean;
+  id: string;
+  label: string;
+  icon: IconSrc;
+  reorderMode: boolean;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+  onClick: (id: string) => void;
+  onLongPress: () => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+};
+export function MobileSortableGroupIcon({
+  active,
+  id,
+  label,
+  icon,
+  reorderMode,
+  canMoveUp,
+  canMoveDown,
+  onClick,
+  onLongPress,
+  onMoveUp,
+  onMoveDown,
+}: MobileSortableGroupIconProps) {
+  return (
+    <Box direction="Column" alignItems="Center">
+      {reorderMode && (
+        <IconButton
+          size="300"
+          radii="300"
+          variant="Surface"
+          disabled={!canMoveUp}
+          onClick={onMoveUp}
+          aria-label="Move up"
+        >
+          <Icon size="100" src={Icons.ChevronTop} />
+        </IconButton>
+      )}
+      <LongPressWrapper onLongPress={onLongPress}>
+        <GroupIcon active={active} id={id} label={label} icon={icon} onClick={onClick} />
+      </LongPressWrapper>
+      {reorderMode && (
+        <IconButton
+          size="300"
+          radii="300"
+          variant="Surface"
+          disabled={!canMoveDown}
+          onClick={onMoveDown}
+          aria-label="Move down"
+        >
+          <Icon size="100" src={Icons.ChevronBottom} />
+        </IconButton>
+      )}
+    </Box>
+  );
+}
+
+type MobileSortableImageGroupIconProps = {
+  active: boolean;
+  id: string;
+  label: string;
+  url?: string;
+  reorderMode: boolean;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+  onClick: (id: string) => void;
+  onLongPress: () => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+};
+export function MobileSortableImageGroupIcon({
+  active,
+  id,
+  label,
+  url,
+  reorderMode,
+  canMoveUp,
+  canMoveDown,
+  onClick,
+  onLongPress,
+  onMoveUp,
+  onMoveDown,
+}: MobileSortableImageGroupIconProps) {
+  return (
+    <Box direction="Column" alignItems="Center">
+      {reorderMode && (
+        <IconButton
+          size="300"
+          radii="300"
+          variant="Surface"
+          disabled={!canMoveUp}
+          onClick={onMoveUp}
+          aria-label="Move up"
+        >
+          <Icon size="100" src={Icons.ChevronTop} />
+        </IconButton>
+      )}
+      <LongPressWrapper onLongPress={onLongPress}>
+        <ImageGroupIcon active={active} id={id} label={label} url={url} onClick={onClick} />
+      </LongPressWrapper>
+      {reorderMode && (
+        <IconButton
+          size="300"
+          radii="300"
+          variant="Surface"
+          disabled={!canMoveDown}
+          onClick={onMoveDown}
+          aria-label="Move down"
+        >
+          <Icon size="100" src={Icons.ChevronBottom} />
+        </IconButton>
+      )}
+    </Box>
   );
 }

@@ -9,6 +9,7 @@ import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
 import { SPACE_PATH } from '../../paths';
 import { Space } from './Space';
+import { FavoritesSection } from '../FavoritesDrawer';
 
 type SpaceRoomDrawerProps = {
   children: ReactNode;
@@ -79,7 +80,7 @@ export function SpaceRoomDrawer({ children }: SpaceRoomDrawerProps) {
           className={ContainerColor({ variant: 'Background' })}
           style={{ height: '100%' }}
         >
-          <Space isDrawerMode />
+          <Space isDrawerMode extra={<FavoritesSection />} />
         </Box>
       </SwipeDrawer>
     </>

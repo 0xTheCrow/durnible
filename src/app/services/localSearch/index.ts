@@ -1,3 +1,3 @@
-export { searchEncryptedRoom, wasMessageCapExceeded, addLiveMessageToCache } from './search';
-export type { LocalSearchResult, AttachedImage } from './search';
-export type { FetchProgress, OnProgress, DecryptedMessage } from './fetcher';
+export { streamSearchEncryptedRoom, wasMessageCapExceeded, addLiveMessageToCache } from './search';
+export type { LocalSearchResult, AttachedImage, SearchStreamChunk } from './search';
+export type { DecryptedMessage } from './fetcher';
