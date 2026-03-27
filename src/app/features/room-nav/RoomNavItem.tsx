@@ -72,6 +72,17 @@ const RoomNavItemMenu = forwardRef<HTMLDivElement, RoomNavItemMenuProps>(
 
     const [invitePrompt, setInvitePrompt] = useState(false);
 
+    const isFavorite = 'm.favourite' in room.tags;
+
+    const handleToggleFavorite = () => {
+      if (isFavorite) {
+        mx.deleteRoomTag(room.roomId, 'm.favourite');
+      } else {
+        mx.setRoomTag(room.roomId, 'm.favourite', { order: 0.5 });
+      }
+      requestClose();
+    };
+
     const handleMarkAsRead = () => {
       markAsRead(mx, room.roomId, hideActivity);
       requestClose();
@@ -114,6 +125,16 @@ const RoomNavItemMenu = forwardRef<HTMLDivElement, RoomNavItemMenuProps>(
           >
             <Text style={{ flexGrow: 1 }} as="span" size="T300" truncate>
               Mark as Read
+            </Text>
+          </MenuItem>
+          <MenuItem
+            onClick={handleToggleFavorite}
+            size="300"
+            after={<Icon size="100" src={Icons.Star} filled={isFavorite} />}
+            radii="300"
+          >
+            <Text style={{ flexGrow: 1 }} as="span" size="T300" truncate>
+              {isFavorite ? 'Unfavorite' : 'Favorite'}
             </Text>
           </MenuItem>
           <RoomNotificationModeSwitcher roomId={room.roomId} value={notificationMode}>
