@@ -50,19 +50,14 @@ const useSearchPathSearchParams = (searchParams: URLSearchParams): _SearchPathSe
 
 const DEFAULT_RANGE_DAYS = 7;
 
-type RoomProgress = {
-  fetched: number;
-  decrypted: number;
-  done: boolean;
-};
-
 type StreamState = {
   groups: ResultGroup[];
-  progress: Map<string, RoomProgress>;
+  fetched: number;
+  decrypted: number;
   isSearching: boolean;
 };
 
-const EMPTY_STREAM: StreamState = { groups: [], progress: new Map(), isSearching: false };
+const EMPTY_STREAM: StreamState = { groups: [], fetched: 0, decrypted: 0, isSearching: false };
 
 type MessageSearchProps = {
   defaultRoomsFilterName: string;
@@ -174,11 +169,7 @@ export function MessageSearch({
 
     let cancelled = false;
 
-    // Initialise progress entries for all rooms
-    const initProgress = new Map<string, RoomProgress>(
-      encryptedRoomIds.map((id) => [id, { fetched: 0, decrypted: 0, done: false }])
-    );
-    setStreamState({ groups: [], progress: initProgress, isSearching: true });
+    setStreamState({ groups: [], fetched: 0, decrypted: 0, isSearching: true });
 
     const run = async () => {
       const roomPromises = encryptedRoomIds.map(async (roomId) => {
@@ -193,29 +184,17 @@ export function MessageSearch({
         )) {
           if (cancelled) break;
           setStreamState((prev) => {
-            const newProgress = new Map(prev.progress);
-            newProgress.set(roomId, {
-              fetched: chunk.fetched,
-              decrypted: chunk.decrypted,
-              done: false,
-            });
-            // Replace this room's group with fresh results
             const otherGroups = prev.groups.filter((g) => g.roomId !== roomId);
             const newGroups =
               chunk.results.length > 0
                 ? [...otherGroups, ...localResultsToGroups(chunk.results)]
                 : otherGroups;
-            return { groups: newGroups, progress: newProgress, isSearching: true };
-          });
-        }
-
-        // Mark room done after its generator is exhausted
-        if (!cancelled) {
-          setStreamState((prev) => {
-            const newProgress = new Map(prev.progress);
-            const existing = newProgress.get(roomId);
-            if (existing) newProgress.set(roomId, { ...existing, done: true });
-            return { ...prev, progress: newProgress };
+            return {
+              groups: newGroups,
+              fetched: prev.fetched + chunk.fetched,
+              decrypted: prev.decrypted + chunk.decrypted,
+              isSearching: true,
+            };
           });
         }
       });
@@ -301,13 +280,6 @@ export function MessageSearch({
     if (term) h.push(term);
     return Array.from(new Set(h));
   }, [serverHighlights, term]);
-
-  // ── Room name lookup for progress display ─────────────────────────────────
-
-  const getProgressRoomName = useCallback(
-    (roomId: string) => mx.getRoom(roomId)?.name ?? roomId,
-    [mx]
-  );
 
   // ── Virtualizer ───────────────────────────────────────────────────────────
 
@@ -513,40 +485,15 @@ export function MessageSearch({
         />
       </Box>
 
-      {/* Per-room streaming progress */}
-      {streamState.progress.size > 0 && (
-        <Box
-          className={ContainerColor({ variant: 'SurfaceVariant' })}
-          style={{ padding: config.space.S300, borderRadius: config.radii.R400 }}
-          direction="Column"
-          gap="200"
-        >
-          {[...streamState.progress.entries()].map(([roomId, prog]) => (
-            <Box key={roomId} alignItems="Center" gap="200">
-              {prog.done ? (
-                <Icon size="200" src={Icons.Check} />
-              ) : (
-                <Spinner size="200" variant="Secondary" />
-              )}
-              <Box grow="Yes" direction="Column" gap="100">
-                <Text size="T300" truncate>
-                  {getProgressRoomName(roomId)}
-                </Text>
-                {!prog.done && prog.fetched > 0 && (
-                  <Text size="T200" priority="300">
-                    {`${prog.fetched.toLocaleString()} events fetched · ${prog.decrypted.toLocaleString()} messages decrypted`}
-                  </Text>
-                )}
-                {prog.done && (
-                  <Text size="T200" priority="300">
-                    {prog.decrypted > 0
-                      ? `${prog.decrypted.toLocaleString()} messages searched`
-                      : 'Complete'}
-                  </Text>
-                )}
-              </Box>
-            </Box>
-          ))}
+      {/* Aggregate streaming progress */}
+      {isStreaming && (
+        <Box alignItems="Center" gap="200">
+          <Spinner size="200" variant="Secondary" />
+          <Text size="T300" priority="300">
+            {streamState.fetched > 0
+              ? `${streamState.fetched.toLocaleString()} events fetched · ${streamState.decrypted.toLocaleString()} messages decrypted`
+              : 'Searching encrypted rooms…'}
+          </Text>
         </Box>
       )}
 
