@@ -8,7 +8,7 @@ import {
 } from 'matrix-js-sdk';
 import { useCallback } from 'react';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
-import { searchEncryptedRoom, type LocalSearchResult, type OnProgress, type AttachedImage } from '../../services/localSearch';
+import type { LocalSearchResult, AttachedImage } from '../../services/localSearch';
 
 export type ResultItem = {
   rank: number;
@@ -56,16 +56,14 @@ const groupSearchResult = (results: ISearchResult[]): ResultGroup[] => {
 const parseSearchResult = (result: ISearchResponse): SearchResult => {
   const roomEvents = result.search_categories.room_events;
 
-  const searchResult: SearchResult = {
+  return {
     nextToken: roomEvents?.next_batch,
     highlights: roomEvents?.highlights ?? [],
     groups: groupSearchResult(roomEvents?.results ?? []),
   };
-
-  return searchResult;
 };
 
-const localResultsToGroups = (results: LocalSearchResult[]): ResultGroup[] => {
+export const localResultsToGroups = (results: LocalSearchResult[]): ResultGroup[] => {
   const groups: ResultGroup[] = [];
 
   for (const r of results) {
@@ -102,128 +100,51 @@ const localResultsToGroups = (results: LocalSearchResult[]): ResultGroup[] => {
   return groups;
 };
 
-const hasItems = (arr?: unknown[]): boolean => arr != null && arr.length > 0;
-
-export type MessageSearchParams = {
+export type ServerSearchParams = {
   term?: string;
   order?: string;
-  rooms?: string[];
+  rooms?: string[]; // unencrypted rooms only (or undefined for global)
   senders?: string[];
-  hasTypes?: string[];
-  startTs?: number;
-  endTs?: number;
-  onProgress?: OnProgress;
 };
-export const useMessageSearch = (params: MessageSearchParams) => {
+
+/**
+ * Returns a callback for server-side (unencrypted room) search with pagination.
+ * Encrypted rooms are handled separately via streamSearchEncryptedRoom.
+ */
+export const useServerSearch = (params: ServerSearchParams) => {
   const mx = useMatrixClient();
-  const { term, order, rooms, senders, hasTypes, startTs, endTs, onProgress } = params;
+  const { term, order, rooms, senders } = params;
 
-  const searchMessages = useCallback(
-    async (nextBatch?: string) => {
-      if (!term && !hasItems(senders) && !hasItems(hasTypes))
-        return {
-          highlights: [],
-          groups: [],
-        };
+  return useCallback(
+    async (nextBatch?: string): Promise<SearchResult> => {
+      if (!term) return { highlights: [], groups: [] };
 
-      // Split rooms into encrypted and unencrypted
-      const encryptedRoomIds: string[] = [];
-      const unencryptedRoomIds: string[] = [];
-      if (rooms) {
-        for (const roomId of rooms) {
-          const room = mx.getRoom(roomId);
-          if (room?.hasEncryptionStateEvent()) {
-            encryptedRoomIds.push(roomId);
-          } else {
-            unencryptedRoomIds.push(roomId);
-          }
-        }
-      }
-      const allGroups: ResultGroup[] = [];
-      const allHighlights: string[] = [];
-      let serverNextToken: string | undefined;
-
-      // Local search for encrypted rooms
-      if (encryptedRoomIds.length > 0) {
-        const now = Date.now();
-        const searchStartTs = startTs ?? now - 90 * 24 * 60 * 60 * 1000;
-        const searchEndTs = endTs ?? now;
-
-        // Track progress per room and aggregate
-        const roomProgress = new Map<string, { fetched: number; decrypting: boolean }>();
-        const aggregateProgress = (roomId: string) => (p: { fetched: number; decrypting: boolean }) => {
-          roomProgress.set(roomId, p);
-          let totalFetched = 0;
-          let anyDecrypting = false;
-          for (const rp of roomProgress.values()) {
-            totalFetched += rp.fetched;
-            if (rp.decrypting) anyDecrypting = true;
-          }
-          const allDecrypting = [...roomProgress.values()].every((rp) => rp.decrypting);
-          onProgress?.({ fetched: totalFetched, decrypting: allDecrypting });
-        };
-
-        const localResults = await Promise.all(
-          encryptedRoomIds.map((roomId) =>
-            searchEncryptedRoom(mx, roomId, term ?? '', searchStartTs, searchEndTs, aggregateProgress(roomId), senders, hasTypes)
-          )
-        );
-        const merged = localResults.flat();
-        allGroups.push(...localResultsToGroups(merged));
-        if (term) allHighlights.push(term);
-      }
-
-      // Server-side search for unencrypted rooms (or all rooms if none specified)
-      // Server API requires a search_term, so skip when term is empty
-      if (term && (unencryptedRoomIds.length > 0 || !rooms)) {
-        const limit = 20;
-        const requestBody: ISearchRequestBody = {
-          search_categories: {
-            room_events: {
-              event_context: {
-                before_limit: 0,
-                after_limit: 0,
-                include_profile: false,
-              },
-              filter: {
-                limit,
-                rooms: rooms ? unencryptedRoomIds : undefined,
-                senders,
-              },
-              include_state: false,
-              order_by: order as SearchOrderBy.Recent,
-              search_term: term,
+      const requestBody: ISearchRequestBody = {
+        search_categories: {
+          room_events: {
+            event_context: {
+              before_limit: 0,
+              after_limit: 0,
+              include_profile: false,
             },
+            filter: {
+              limit: 20,
+              rooms: rooms,
+              senders,
+            },
+            include_state: false,
+            order_by: order as SearchOrderBy.Recent,
+            search_term: term,
           },
-        };
-
-        const r = await mx.search({
-          body: requestBody,
-          next_batch: nextBatch === '' ? undefined : nextBatch,
-        });
-        const parsed = parseSearchResult(r);
-        allGroups.push(...parsed.groups);
-        allHighlights.push(...parsed.highlights);
-        serverNextToken = parsed.nextToken;
-      }
-
-      // Sort items within each group by timestamp
-      for (const group of allGroups) {
-        if (order === 'oldest') {
-          group.items.sort((a, b) => a.event.origin_server_ts - b.event.origin_server_ts);
-        } else {
-          group.items.sort((a, b) => b.event.origin_server_ts - a.event.origin_server_ts);
-        }
-      }
-
-      return {
-        nextToken: serverNextToken,
-        highlights: [...new Set(allHighlights)],
-        groups: allGroups,
+        },
       };
-    },
-    [mx, term, order, rooms, senders, hasTypes, startTs, endTs, onProgress]
-  );
 
-  return searchMessages;
+      const r = await mx.search({
+        body: requestBody,
+        next_batch: nextBatch === '' ? undefined : nextBatch,
+      });
+      return parseSearchResult(r);
+    },
+    [mx, term, order, rooms, senders]
+  );
 };

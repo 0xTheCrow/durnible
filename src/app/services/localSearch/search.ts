@@ -1,5 +1,5 @@
 import { MatrixClient } from 'matrix-js-sdk';
-import { DecryptedMessage, fetchAndDecryptMessages, OnProgress } from './fetcher';
+import { DecryptedMessage, streamFetchDecrypt } from './fetcher';
 
 export type AttachedImage = {
   event_id: string;
@@ -15,6 +15,13 @@ export type LocalSearchResult = {
   type: string;
   content?: Record<string, unknown>;
   attachedImages?: AttachedImage[];
+};
+
+export type SearchStreamChunk = {
+  roomId: string;
+  results: LocalSearchResult[]; // all results accumulated so far for this room
+  fetched: number; // cumulative raw events fetched
+  decrypted: number; // cumulative messages extracted
 };
 
 type RoomCache = {
@@ -47,8 +54,6 @@ const trimCache = () => {
   }
 
   const excess = total - MAX_CACHED_MESSAGES;
-
-  // Collect all messages with their room reference, sorted oldest first
   const all: { ts: number; eventId: string; roomId: string }[] = [];
   for (const [roomId, cache] of roomCaches) {
     for (const msg of cache.messages) {
@@ -57,13 +62,11 @@ const trimCache = () => {
   }
   all.sort((a, b) => a.ts - b.ts);
 
-  // Mark the oldest messages for removal
   const toRemove = new Set<string>();
   for (let i = 0; i < excess && i < all.length; i++) {
     toRemove.add(all[i].eventId);
   }
 
-  // Remove from each room's cache and update startTs
   for (const [roomId, cache] of roomCaches) {
     const filtered = cache.messages.filter((m) => !toRemove.has(m.event_id));
     if (filtered.length === 0) {
@@ -80,64 +83,14 @@ const trimCache = () => {
 export const addLiveMessageToCache = (roomId: string, message: DecryptedMessage): void => {
   const cached = roomCaches.get(roomId);
   if (!cached) return;
-
   if (cached.messages.some((m) => m.event_id === message.event_id)) return;
-
   cached.messages.push(message);
-
   if (message.origin_server_ts > cached.endTs) {
     cached.endTs = message.origin_server_ts;
   }
 };
 
-export const searchEncryptedRoom = async (
-  mx: MatrixClient,
-  roomId: string,
-  query: string,
-  startTs: number,
-  endTs: number,
-  onProgress?: OnProgress,
-  senders?: string[],
-  hasTypes?: string[]
-): Promise<LocalSearchResult[]> => {
-  const cached = roomCaches.get(roomId);
-
-  // Use cache if it fully covers the requested range
-  let messages: DecryptedMessage[];
-  if (cached && cached.startTs <= startTs && cached.endTs >= endTs) {
-    messages = cached.messages;
-  } else if (cached) {
-    // Only fetch the gap(s) not covered by the cache
-    const gaps: { start: number; end: number }[] = [];
-    if (startTs < cached.startTs) {
-      gaps.push({ start: startTs, end: cached.startTs });
-    }
-    if (endTs > cached.endTs) {
-      gaps.push({ start: cached.endTs, end: endTs });
-    }
-
-    const gapResults = await Promise.all(
-      gaps.map((gap) => fetchAndDecryptMessages(mx, roomId, gap.start, gap.end, onProgress))
-    );
-    const newMessages = gapResults.flat();
-
-    const existingIds = new Set(cached.messages.map((m) => m.event_id));
-    const deduped = newMessages.filter((m) => !existingIds.has(m.event_id));
-    messages = [...cached.messages, ...deduped];
-
-    const newStartTs = Math.min(startTs, cached.startTs);
-    const newEndTs = Math.max(endTs, cached.endTs);
-    roomCaches.set(roomId, { startTs: newStartTs, endTs: newEndTs, messages });
-    trimCache();
-  } else {
-    const fetched = await fetchAndDecryptMessages(mx, roomId, startTs, endTs, onProgress);
-    messages = fetched;
-
-    roomCaches.set(roomId, { startTs, endTs, messages });
-    trimCache();
-  }
-
-  // Parse query into terms: split on spaces, but keep quoted phrases together
+const parseTerms = (query: string): string[] => {
   const terms: string[] = [];
   const regex = /"([^"]+)"|(\S+)/g;
   let match = regex.exec(query);
@@ -145,72 +98,114 @@ export const searchEncryptedRoom = async (
     terms.push((match[1] ?? match[2]).toLowerCase());
     match = regex.exec(query);
   }
+  return terms;
+};
 
-  // Build the set of types to match
-  const TEXT_TYPES = new Set(['m.text', 'm.notice', 'm.emote']);
-  const HAS_TYPE_MAP: Record<string, string> = {
-    image: 'm.image',
-    video: 'm.video',
-    file: 'm.file',
-    audio: 'm.audio',
-  };
+const TEXT_TYPES = new Set(['m.text', 'm.notice', 'm.emote']);
+const HAS_TYPE_MAP: Record<string, string> = {
+  image: 'm.image',
+  video: 'm.video',
+  file: 'm.file',
+  audio: 'm.audio',
+};
+const URL_REGEX = /https?:\/\/\S+/i;
+const ADJACENCY_MS = 60_000;
+
+const filterAndBuild = (
+  allMessages: DecryptedMessage[],
+  terms: string[],
+  startTs: number,
+  endTs: number,
+  senders?: string[],
+  hasTypes?: string[]
+): LocalSearchResult[] => {
   const mediaTypeSet = new Set<string>();
   const hasLink = hasTypes?.includes('link') ?? false;
-  if (hasTypes && hasTypes.length > 0) {
+  if (hasTypes) {
     for (const ht of hasTypes) {
       const mapped = HAS_TYPE_MAP[ht];
       if (mapped) mediaTypeSet.add(mapped);
     }
   }
 
-  const URL_REGEX = /https?:\/\/\S+/i;
-  const ADJACENCY_MS = 60_000;
+  const matched = allMessages.filter((msg) => {
+    if (msg.origin_server_ts < startTs || msg.origin_server_ts > endTs) return false;
+    if (senders && senders.length > 0 && !senders.includes(msg.sender)) return false;
 
-  const matched = messages.filter(
-    (msg) => {
-      if (msg.origin_server_ts < startTs || msg.origin_server_ts > endTs) return false;
-      if (senders && senders.length > 0 && !senders.includes(msg.sender)) return false;
+    const isText = TEXT_TYPES.has(msg.type);
+    const isMatchedMedia = mediaTypeSet.has(msg.type);
 
-      const isText = TEXT_TYPES.has(msg.type);
-      const isMatchedMedia = mediaTypeSet.has(msg.type);
-
-      if (mediaTypeSet.size > 0 || hasLink) {
-        if (!isMatchedMedia) {
-          if (!isText) return false;
-          const passesLink = hasLink && URL_REGEX.test(msg.body);
-          const passesTextWithTerms = mediaTypeSet.size > 0 && terms.length > 0;
-          if (!passesLink && !passesTextWithTerms) return false;
-        }
-      } else {
+    if (mediaTypeSet.size > 0 || hasLink) {
+      if (!isMatchedMedia) {
         if (!isText) return false;
+        const passesLink = hasLink && URL_REGEX.test(msg.body);
+        const passesTextWithTerms = mediaTypeSet.size > 0 && terms.length > 0;
+        if (!passesLink && !passesTextWithTerms) return false;
       }
-
-      if (terms.length === 0) return true;
-      const bodyLower = msg.body.toLowerCase();
-      return terms.every((term) => bodyLower.includes(term));
+    } else {
+      if (!isText) return false;
     }
-  );
 
-  // For each text match, find adjacent image messages from the same sender within 1 minute
-  const results: LocalSearchResult[] = matched.map((msg) => {
-    if (!TEXT_TYPES.has(msg.type)) {
-      return { ...msg, content: msg.content };
-    }
-    const adjacentImages = messages.filter(
+    if (terms.length === 0) return true;
+    const bodyLower = msg.body.toLowerCase();
+    return terms.every((term) => bodyLower.includes(term));
+  });
+
+  return matched.map((msg) => {
+    if (!TEXT_TYPES.has(msg.type)) return { ...msg, content: msg.content };
+    const adjacentImages = allMessages.filter(
       (m) =>
         m.type === 'm.image' &&
         m.sender === msg.sender &&
         m.content &&
         Math.abs(m.origin_server_ts - msg.origin_server_ts) <= ADJACENCY_MS
     );
-
     return {
       ...msg,
-      attachedImages: adjacentImages.length > 0
-        ? adjacentImages.map((img) => ({ event_id: img.event_id, content: img.content! }))
-        : undefined,
+      attachedImages:
+        adjacentImages.length > 0
+          ? adjacentImages.map((img) => ({ event_id: img.event_id, content: img.content! }))
+          : undefined,
     };
   });
-
-  return results;
 };
+
+/**
+ * Async generator that searches an encrypted room, yielding results after each
+ * fetched+decrypted page so the UI can show intermediate results.
+ * On a full cache hit, yields once immediately and returns.
+ */
+export async function* streamSearchEncryptedRoom(
+  mx: MatrixClient,
+  roomId: string,
+  query: string,
+  startTs: number,
+  endTs: number,
+  senders?: string[],
+  hasTypes?: string[]
+): AsyncGenerator<SearchStreamChunk> {
+  const cached = roomCaches.get(roomId);
+
+  // Full cache hit — yield immediately
+  if (cached && cached.startTs <= startTs && cached.endTs >= endTs) {
+    const terms = parseTerms(query);
+    const results = filterAndBuild(cached.messages, terms, startTs, endTs, senders, hasTypes);
+    yield { roomId, results, fetched: 0, decrypted: cached.messages.length };
+    return;
+  }
+
+  const terms = parseTerms(query);
+  const allMessages: DecryptedMessage[] = [];
+
+  for await (const page of streamFetchDecrypt(mx, roomId, startTs, endTs)) {
+    allMessages.push(...page.newMessages);
+    const results = filterAndBuild(allMessages, terms, startTs, endTs, senders, hasTypes);
+    yield { roomId, results, fetched: page.fetched, decrypted: allMessages.length };
+  }
+
+  // Populate cache after streaming completes
+  if (allMessages.length > 0) {
+    roomCaches.set(roomId, { startTs, endTs, messages: allMessages });
+    trimCache();
+  }
+}
