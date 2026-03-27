@@ -103,6 +103,7 @@ import {
 } from './msgContent';
 import { getMemberDisplayName, getMentionContent, trimReplyFromBody } from '../../utils/room';
 import { CommandAutocomplete } from './CommandAutocomplete';
+import { VoiceMessageRecorder } from './VoiceMessageRecorder';
 import { Command, SHRUG, TABLEFLIP, UNFLIP, useCommands } from '../../hooks/useCommands';
 import { mobileOrTablet } from '../../utils/user-agent';
 import { useElementSizeObserver } from '../../hooks/useElementSizeObserver';
@@ -167,6 +168,8 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       : undefined;
     const replyUsernameColor =
       legacyUsernameColor || direct ? colorMXID(replyUserID ?? '') : replyPowerColor;
+
+    const [isVoiceRecording, setIsVoiceRecording] = useState(false);
 
     const [uploadBoard, setUploadBoard] = useState(true);
     const [selectedFiles, setSelectedFiles] = useAtom(roomIdToUploadItemsAtomFamily(roomId));
@@ -241,6 +244,16 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       },
       [setSelectedFiles, room]
     );
+    const handleVoiceSend = useCallback(
+      (blob: Blob, mimeType: string, _duration: number) => {
+        setIsVoiceRecording(false);
+        const ext = mimeType.startsWith('audio/ogg') ? 'ogg' : 'webm';
+        const file = new File([blob], `voice-message.${ext}`, { type: mimeType });
+        handleFiles([file]);
+      },
+      [handleFiles]
+    );
+
     const pickFile = useFilePicker(handleFiles, true);
     const handlePaste = useFilePasteHandler(handleFiles);
     const dropZoneVisible = useFileDropZone(fileDropContainerRef, handleFiles, true);
@@ -620,6 +633,12 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
             requestClose={handleCloseAutocomplete}
           />
         )}
+        {isVoiceRecording ? (
+          <VoiceMessageRecorder
+            onSend={handleVoiceSend}
+            onCancel={() => setIsVoiceRecording(false)}
+          />
+        ) : (
         <CustomEditor
           editableName="RoomInput"
           editor={editor}
@@ -724,16 +743,12 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
                   >
                     {!hideStickerBtn && (
                       <IconButton
-                        aria-pressed={emojiBoardTab === EmojiBoardTab.Sticker}
-                        onClick={() => setEmojiBoardTab(EmojiBoardTab.Sticker)}
+                        onClick={() => setIsVoiceRecording(true)}
                         variant="SurfaceVariant"
                         size="300"
                         radii="300"
                       >
-                        <Icon
-                          src={Icons.Sticker}
-                          filled={emojiBoardTab === EmojiBoardTab.Sticker}
-                        />
+                        <Icon src={Icons.Mic} />
                       </IconButton>
                     )}
                     <IconButton
@@ -770,6 +785,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
             )
           }
         />
+        )}
       </div>
     );
   }
