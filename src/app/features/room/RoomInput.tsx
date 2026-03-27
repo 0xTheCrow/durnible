@@ -741,16 +741,14 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
                       />
                     }
                   >
-                    {!hideStickerBtn && (
-                      <IconButton
-                        onClick={() => setIsVoiceRecording(true)}
-                        variant="SurfaceVariant"
-                        size="300"
-                        radii="300"
-                      >
-                        <Icon src={Icons.Mic} />
-                      </IconButton>
-                    )}
+                    <IconButton
+                      onClick={() => setIsVoiceRecording(true)}
+                      variant="SurfaceVariant"
+                      size="300"
+                      radii="300"
+                    >
+                      <Icon src={Icons.Mic} />
+                    </IconButton>
                     <IconButton
                       ref={emojiBtnRef}
                       aria-pressed={
