@@ -249,7 +249,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     const handleVoiceSend = useCallback(
       (blob: Blob, mimeType: string, _duration: number) => {
         setIsVoiceRecording(false);
-        const ext = mimeType.startsWith('audio/ogg') ? 'ogg' : 'webm';
+        const ext = mimeType.startsWith('audio/ogg') ? 'ogg' : mimeType.startsWith('audio/mp4') ? 'm4a' : 'webm';
         const file = new File([blob], `voice-message.${ext}`, { type: mimeType });
         handleFiles([file]);
       },

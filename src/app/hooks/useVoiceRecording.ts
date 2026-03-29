@@ -21,6 +21,8 @@ const getSupportedMimeType = (): string => {
     'audio/ogg;codecs=opus',
     'audio/webm',
     'audio/ogg',
+    'audio/mp4;codecs=aac',
+    'audio/mp4',
   ];
   return candidates.find((t) => MediaRecorder.isTypeSupported(t)) ?? '';
 };
