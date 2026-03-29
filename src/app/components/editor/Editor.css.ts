@@ -67,14 +67,8 @@ export const AlternateInput = style([
     flexGrow: 1,
     width: '100%',
     padding: `${toRem(13)} ${toRem(1)}`,
-    border: 'none',
-    background: 'transparent',
-    color: 'inherit',
-    fontFamily: 'inherit',
-    fontSize: 'inherit',
-    lineHeight: 'inherit',
-    resize: 'none',
-    overflowY: 'hidden',
+    whiteSpace: 'pre-wrap',
+    wordBreak: 'break-word',
     selectors: {
       [`${EditorTextareaScroll}:first-child &`]: {
         paddingLeft: toRem(13),
@@ -85,8 +79,12 @@ export const AlternateInput = style([
       '&:focus': {
         outline: 'none',
       },
-      '&::placeholder': {
+      // Placeholder via data-empty + data-placeholder attributes
+      '&[data-empty]::before': {
+        content: 'attr(data-placeholder)',
         opacity: config.opacity.Placeholder,
+        pointerEvents: 'none',
+        userSelect: 'none',
       },
     },
   },

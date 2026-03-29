@@ -1,7 +1,7 @@
 /* eslint-disable no-param-reassign */
 import React, {
-  ChangeEventHandler,
   ClipboardEventHandler,
+  FormEventHandler,
   KeyboardEventHandler,
   ReactNode,
   forwardRef,
@@ -113,20 +113,9 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
     const [alternateInput] = useSetting(settingsAtom, 'alternateInput');
 
     const [inputValue, setInputValue] = useState(() => extractEditorText(editor.children));
-    const inputRef = useRef<HTMLTextAreaElement>(null);
+    const inputRef = useRef<HTMLDivElement>(null);
     const inputValueRef = useRef(inputValue);
     inputValueRef.current = inputValue;
-
-    const resizeInput = useCallback((canShrink = false) => {
-      const el = inputRef.current;
-      if (!el) return;
-      if (canShrink) {
-        el.style.height = 'auto';
-        el.style.height = `${el.scrollHeight}px`;
-      } else if (el.scrollHeight > el.clientHeight) {
-        el.style.height = `${el.scrollHeight}px`;
-      }
-    }, []);
 
     useEffect(() => {
       if (!alternateInput) return undefined;
@@ -134,48 +123,60 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
       const origOnChange = editor.onChange;
       editor.onChange = (...args: Parameters<typeof origOnChange>) => {
         origOnChange.apply(editor, args);
-        setInputValue(extractEditorText(editor.children));
+        const newText = extractEditorText(editor.children);
+        setInputValue(newText);
+        // Sync DOM when editor is cleared externally (e.g. after sending a message)
+        const el = inputRef.current;
+        if (el && newText === '' && el.textContent !== '') {
+          el.textContent = '';
+        }
       };
 
       (editor as any).insertAlternateText = (text: string) => {
         const el = inputRef.current;
-        const pos = el?.selectionStart ?? inputValueRef.current.length;
-        const cur = inputValueRef.current;
-        const newValue = cur.slice(0, pos) + text + cur.slice(pos);
+        if (!el) return;
+        el.focus();
+        document.execCommand('insertText', false, text);
+        const newValue = el.innerText.replace(/\n$/, '');
         setInputValue(newValue);
         editor.children = [
           { type: BlockType.Paragraph, children: [{ text: newValue }] },
         ];
-        requestAnimationFrame(() => {
-          if (el) {
-            const newPos = pos + text.length;
-            el.setSelectionRange(newPos, newPos);
-            el.focus();
-          }
-          resizeInput();
-        });
       };
 
       return () => {
         editor.onChange = origOnChange;
         delete (editor as any).insertAlternateText;
       };
-    }, [editor, alternateInput, resizeInput]);
+    }, [editor, alternateInput]);
 
-    const handleInputChange: ChangeEventHandler<HTMLTextAreaElement> = useCallback(
+    const handleInput: FormEventHandler<HTMLDivElement> = useCallback(
       (e) => {
-        const text = e.target.value;
-        const shrinking = text.length < inputValueRef.current.length;
+        const text = e.currentTarget.innerText.replace(/\n$/, '');
         setInputValue(text);
         editor.children = [
           { type: BlockType.Paragraph, children: [{ text }] },
         ];
-        resizeInput(shrinking);
       },
-      [editor, resizeInput]
+      [editor]
     );
 
-    const handleInputKeyDown: KeyboardEventHandler<HTMLTextAreaElement> = useCallback(
+    const handleAlternatePaste: React.ClipboardEventHandler<HTMLDivElement> = useCallback(
+      (e) => {
+        const hasFiles = Array.from(e.clipboardData.items).some((item) => item.kind === 'file');
+        if (hasFiles) {
+          onPaste?.(e);
+          return;
+        }
+        // Strip any rich formatting — insert as plain text only
+        e.preventDefault();
+        const text = e.clipboardData.getData('text/plain');
+        if (text) document.execCommand('insertText', false, text);
+      },
+      [onPaste]
+    );
+
+    const handleInputKeyDown: KeyboardEventHandler<HTMLDivElement> = useCallback(
       (evt) => {
         onKeyDown?.(evt);
       },
@@ -369,18 +370,22 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
               visibility="Hover"
               hideTrack
             >
-              <textarea
+              <div
                 ref={inputRef}
                 data-editable-name={editableName}
                 className={css.AlternateInput}
-                placeholder={placeholder}
-                value={inputValue}
-                onChange={handleInputChange}
+                contentEditable
+                suppressContentEditableWarning
+                data-placeholder={placeholder}
+                data-empty={inputValue.length === 0 ? '' : undefined}
+                onInput={handleInput}
                 onKeyDown={handleInputKeyDown}
                 onKeyUp={onKeyUp}
-                onPaste={onPaste}
+                onPaste={handleAlternatePaste}
                 autoCapitalize="sentences"
-                rows={1}
+                role="textbox"
+                aria-multiline="true"
+                aria-label={placeholder}
               />
             </Scroll>
             {after && (
