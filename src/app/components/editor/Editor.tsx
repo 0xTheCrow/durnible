@@ -27,6 +27,7 @@ import { RenderElement, RenderLeaf } from './Elements';
 import { CustomElement } from './slate';
 import * as css from './Editor.css';
 import { toggleKeyboardShortcut } from './keyboard';
+import { getImageUrlBlob } from '../../utils/dom';
 import { mobileOrTablet } from '../../utils/user-agent';
 import { useSetting } from '../../state/hooks/settings';
 import { settingsAtom } from '../../state/settings';
@@ -163,9 +164,60 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
       [editor]
     );
 
+    const fetchUrlAsFile = useCallback(
+      (url: string) => {
+        getImageUrlBlob(url)
+          .then((blob) => {
+            const ext = blob.type.split('/')[1] || 'gif';
+            const name = url.split('/').pop()?.split('?')[0] || `image.${ext}`;
+            onFiles?.([new File([blob], name, { type: blob.type })]);
+          })
+          .catch(() => {});
+      },
+      [onFiles]
+    );
+
     const handleAlternatePaste: React.ClipboardEventHandler<HTMLDivElement> = useCallback(
       (e) => {
+        e.preventDefault();
+
+        // Binary file items (screenshot, local image)
         const files = Array.from(e.clipboardData.items)
+          .filter((item) => item.kind === 'file')
+          .map((item) => item.getAsFile())
+          .filter((f): f is File => f !== null);
+        if (files.length > 0) {
+          onFiles?.(files);
+          return;
+        }
+
+        // HTML paste containing an img (e.g. keyboard GIF delivered as markup)
+        const html = e.clipboardData.getData('text/html');
+        if (html) {
+          const doc = new DOMParser().parseFromString(html, 'text/html');
+          const src = doc.querySelector('img')?.getAttribute('src');
+          if (src) {
+            fetchUrlAsFile(src);
+            return;
+          }
+        }
+
+        // Plain text
+        const text = e.clipboardData.getData('text/plain');
+        if (text) document.execCommand('insertText', false, text);
+      },
+      [onFiles, fetchUrlAsFile]
+    );
+
+    const handleBeforeInput: React.FormEventHandler<HTMLDivElement> = useCallback(
+      (e) => {
+        const ie = e.nativeEvent as InputEvent;
+        if (ie.inputType !== 'insertContent' || !ie.dataTransfer) return;
+
+        const items = Array.from(ie.dataTransfer.items);
+
+        // Binary file (keyboard delivers actual image bytes)
+        const files = items
           .filter((item) => item.kind === 'file')
           .map((item) => item.getAsFile())
           .filter((f): f is File => f !== null);
@@ -174,28 +226,19 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
           onFiles?.(files);
           return;
         }
-        // Strip any rich formatting — insert as plain text only
-        e.preventDefault();
-        const text = e.clipboardData.getData('text/plain');
-        if (text) document.execCommand('insertText', false, text);
-      },
-      [onFiles]
-    );
 
-    const handleBeforeInput: React.FormEventHandler<HTMLDivElement> = useCallback(
-      (e) => {
-        const ie = e.nativeEvent as InputEvent;
-        if (ie.inputType !== 'insertContent' || !ie.dataTransfer) return;
-        const files = Array.from(ie.dataTransfer.items)
-          .filter((item) => item.kind === 'file')
-          .map((item) => item.getAsFile())
-          .filter((f): f is File => f !== null);
-        if (files.length > 0) {
+        // URI string (Gboard GIF from Tenor/Giphy CDN)
+        const uriItem = items.find((item) => item.kind === 'string');
+        if (uriItem) {
           e.preventDefault();
-          onFiles?.(files);
+          uriItem.getAsString((raw) => {
+            // uri-list format: lines starting with # are comments
+            const url = raw.split('\n').map((s) => s.trim()).find((s) => s && !s.startsWith('#'));
+            if (url) fetchUrlAsFile(url);
+          });
         }
       },
-      [onFiles]
+      [onFiles, fetchUrlAsFile]
     );
 
     const handleInputKeyDown: KeyboardEventHandler<HTMLDivElement> = useCallback(
