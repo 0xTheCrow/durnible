@@ -117,13 +117,13 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
     const inputValueRef = useRef(inputValue);
     inputValueRef.current = inputValue;
 
-    const resizeInput = useCallback(() => {
+    const resizeInput = useCallback((canShrink = false) => {
       const el = inputRef.current;
       if (!el) return;
-      if (el.scrollHeight > el.clientHeight) {
-        el.style.height = `${el.scrollHeight}px`;
-      } else if (el.scrollHeight < el.clientHeight) {
+      if (canShrink) {
         el.style.height = 'auto';
+        el.style.height = `${el.scrollHeight}px`;
+      } else if (el.scrollHeight > el.clientHeight) {
         el.style.height = `${el.scrollHeight}px`;
       }
     }, []);
@@ -165,11 +165,12 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
     const handleInputChange: ChangeEventHandler<HTMLTextAreaElement> = useCallback(
       (e) => {
         const text = e.target.value;
+        const shrinking = text.length < inputValueRef.current.length;
         setInputValue(text);
         editor.children = [
           { type: BlockType.Paragraph, children: [{ text }] },
         ];
-        resizeInput();
+        resizeInput(shrinking);
       },
       [editor, resizeInput]
     );
