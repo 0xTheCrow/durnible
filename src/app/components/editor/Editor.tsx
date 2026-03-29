@@ -120,8 +120,12 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
     const resizeInput = useCallback(() => {
       const el = inputRef.current;
       if (!el) return;
-      el.style.height = 'auto';
-      el.style.height = `${el.scrollHeight}px`;
+      if (el.scrollHeight > el.clientHeight) {
+        el.style.height = `${el.scrollHeight}px`;
+      } else if (el.scrollHeight < el.clientHeight) {
+        el.style.height = 'auto';
+        el.style.height = `${el.scrollHeight}px`;
+      }
     }, []);
 
     useEffect(() => {
