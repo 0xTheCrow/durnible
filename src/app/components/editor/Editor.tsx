@@ -90,6 +90,7 @@ type CustomEditorProps = {
   onKeyUp?: KeyboardEventHandler;
   onChange?: EditorChangeHandler;
   onPaste?: ClipboardEventHandler;
+  onFiles?: (files: File[]) => void;
   forceSlate?: boolean;
 };
 export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
@@ -107,6 +108,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
       onKeyUp,
       onChange,
       onPaste,
+      onFiles,
     },
     ref
   ) => {
@@ -163,9 +165,13 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
 
     const handleAlternatePaste: React.ClipboardEventHandler<HTMLDivElement> = useCallback(
       (e) => {
-        const hasFiles = Array.from(e.clipboardData.items).some((item) => item.kind === 'file');
-        if (hasFiles) {
-          onPaste?.(e);
+        const files = Array.from(e.clipboardData.items)
+          .filter((item) => item.kind === 'file')
+          .map((item) => item.getAsFile())
+          .filter((f): f is File => f !== null);
+        if (files.length > 0) {
+          e.preventDefault();
+          onFiles?.(files);
           return;
         }
         // Strip any rich formatting — insert as plain text only
@@ -173,7 +179,23 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
         const text = e.clipboardData.getData('text/plain');
         if (text) document.execCommand('insertText', false, text);
       },
-      [onPaste]
+      [onFiles]
+    );
+
+    const handleBeforeInput: React.FormEventHandler<HTMLDivElement> = useCallback(
+      (e) => {
+        const ie = e.nativeEvent as InputEvent;
+        if (ie.inputType !== 'insertContent' || !ie.dataTransfer) return;
+        const files = Array.from(ie.dataTransfer.items)
+          .filter((item) => item.kind === 'file')
+          .map((item) => item.getAsFile())
+          .filter((f): f is File => f !== null);
+        if (files.length > 0) {
+          e.preventDefault();
+          onFiles?.(files);
+        }
+      },
+      [onFiles]
     );
 
     const handleInputKeyDown: KeyboardEventHandler<HTMLDivElement> = useCallback(
@@ -379,6 +401,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
                 data-placeholder={placeholder}
                 data-empty={inputValue.length === 0 ? '' : undefined}
                 onInput={handleInput}
+                onBeforeInput={handleBeforeInput}
                 onKeyDown={handleInputKeyDown}
                 onKeyUp={onKeyUp}
                 onPaste={handleAlternatePaste}
