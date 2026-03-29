@@ -65,7 +65,6 @@ export const AlternateInput = style([
   DefaultReset,
   {
     flexGrow: 1,
-    height: '100%',
     width: '100%',
     padding: `${toRem(13)} ${toRem(1)}`,
     border: 'none',
@@ -75,6 +74,7 @@ export const AlternateInput = style([
     fontSize: 'inherit',
     lineHeight: 'inherit',
     resize: 'none',
+    overflowY: 'hidden',
     selectors: {
       [`${EditorTextareaScroll}:first-child &`]: {
         paddingLeft: toRem(13),

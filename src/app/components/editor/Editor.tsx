@@ -117,6 +117,13 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
     const inputValueRef = useRef(inputValue);
     inputValueRef.current = inputValue;
 
+    const resizeInput = useCallback(() => {
+      const el = inputRef.current;
+      if (!el) return;
+      el.style.height = 'auto';
+      el.style.height = `${el.scrollHeight}px`;
+    }, []);
+
     useEffect(() => {
       if (!alternateInput) return undefined;
 
@@ -141,6 +148,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
             el.setSelectionRange(newPos, newPos);
             el.focus();
           }
+          resizeInput();
         });
       };
 
@@ -148,7 +156,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
         editor.onChange = origOnChange;
         delete (editor as any).insertAlternateText;
       };
-    }, [editor, alternateInput]);
+    }, [editor, alternateInput, resizeInput]);
 
     const handleInputChange: ChangeEventHandler<HTMLTextAreaElement> = useCallback(
       (e) => {
@@ -157,8 +165,9 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
         editor.children = [
           { type: BlockType.Paragraph, children: [{ text }] },
         ];
+        resizeInput();
       },
-      [editor]
+      [editor, resizeInput]
     );
 
     const handleInputKeyDown: KeyboardEventHandler<HTMLTextAreaElement> = useCallback(
