@@ -39,6 +39,11 @@
   --font-secondary: 'InterVariable', var(--font-emoji), sans-serif;
 }
 
+@keyframes voice-recording-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+
 html {
   height: 100%;
   overflow: hidden;

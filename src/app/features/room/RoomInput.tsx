@@ -103,6 +103,7 @@ import {
 } from './msgContent';
 import { getMemberDisplayName, getMentionContent, trimReplyFromBody } from '../../utils/room';
 import { CommandAutocomplete } from './CommandAutocomplete';
+import { VoiceMessageRecorder } from './VoiceMessageRecorder';
 import { Command, SHRUG, TABLEFLIP, UNFLIP, useCommands } from '../../hooks/useCommands';
 import { mobileOrTablet } from '../../utils/user-agent';
 import { useElementSizeObserver } from '../../hooks/useElementSizeObserver';
@@ -142,6 +143,8 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     const commands = useCommands(mx, room);
     const emojiBtnRef = useRef<HTMLButtonElement>(null);
     const sendBtnRef = useRef<HTMLButtonElement>(null);
+    const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const didLongPress = useRef(false);
     const roomToParents = useAtomValue(roomToParentsAtom);
     const powerLevels = usePowerLevelsContext();
     const creators = useRoomCreators(room);
@@ -167,6 +170,8 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       : undefined;
     const replyUsernameColor =
       legacyUsernameColor || direct ? colorMXID(replyUserID ?? '') : replyPowerColor;
+
+    const [isVoiceRecording, setIsVoiceRecording] = useState(false);
 
     const [uploadBoard, setUploadBoard] = useState(true);
     const [selectedFiles, setSelectedFiles] = useAtom(roomIdToUploadItemsAtomFamily(roomId));
@@ -241,6 +246,16 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       },
       [setSelectedFiles, room]
     );
+    const handleVoiceSend = useCallback(
+      (blob: Blob, mimeType: string, _duration: number) => {
+        setIsVoiceRecording(false);
+        const ext = mimeType.startsWith('audio/ogg') ? 'ogg' : mimeType.startsWith('audio/mp4') ? 'm4a' : 'webm';
+        const file = new File([blob], `voice-message.${ext}`, { type: mimeType });
+        handleFiles([file]);
+      },
+      [handleFiles]
+    );
+
     const pickFile = useFilePicker(handleFiles, true);
     const handlePaste = useFilePasteHandler(handleFiles);
     const dropZoneVisible = useFileDropZone(fileDropContainerRef, handleFiles, true);
@@ -457,6 +472,26 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       sendTypingStatus(false);
     }, [mx, roomId, editor, replyDraft, sendTypingStatus, setReplyDraft, isMarkdown, commands, imagePacks, selectedFiles, alternateInput]);
 
+    const handleSendPointerDown = useCallback(() => {
+      didLongPress.current = false;
+      longPressTimer.current = setTimeout(() => {
+        didLongPress.current = true;
+        setIsVoiceRecording(true);
+      }, 500);
+    }, []);
+
+    const handleSendPointerUp = useCallback(() => {
+      if (longPressTimer.current !== null) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+      }
+    }, []);
+
+    const handleSendClick = useCallback(() => {
+      if (didLongPress.current) return;
+      submit();
+    }, [submit]);
+
     const handleKeyDown: KeyboardEventHandler = useCallback(
       (evt) => {
         if (
@@ -620,12 +655,19 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
             requestClose={handleCloseAutocomplete}
           />
         )}
+        {isVoiceRecording ? (
+          <VoiceMessageRecorder
+            onSend={handleVoiceSend}
+            onCancel={() => setIsVoiceRecording(false)}
+          />
+        ) : (
         <CustomEditor
           editableName="RoomInput"
           editor={editor}
           onKeyDown={handleKeyDown}
           onKeyUp={handleKeyUp}
           onPaste={handlePaste}
+          onFiles={handleFiles}
           top={
             replyDraft && (
               <div>
@@ -722,18 +764,14 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
                       />
                     }
                   >
-                    {!hideStickerBtn && (
+                    {!mobileOrTablet() && (
                       <IconButton
-                        aria-pressed={emojiBoardTab === EmojiBoardTab.Sticker}
-                        onClick={() => setEmojiBoardTab(EmojiBoardTab.Sticker)}
+                        onClick={() => setIsVoiceRecording(true)}
                         variant="SurfaceVariant"
                         size="300"
                         radii="300"
                       >
-                        <Icon
-                          src={Icons.Sticker}
-                          filled={emojiBoardTab === EmojiBoardTab.Sticker}
-                        />
+                        <Icon src={Icons.Mic} />
                       </IconButton>
                     )}
                     <IconButton
@@ -756,7 +794,18 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
                   </PopOut>
                 )}
               </UseStateProvider>
-              <IconButton ref={sendBtnRef} onClick={submit} variant="SurfaceVariant" size="300" radii="300">
+              <IconButton
+                ref={sendBtnRef}
+                onClick={mobileOrTablet() ? handleSendClick : submit}
+                onPointerDown={mobileOrTablet() ? handleSendPointerDown : undefined}
+                onPointerUp={mobileOrTablet() ? handleSendPointerUp : undefined}
+                onPointerLeave={mobileOrTablet() ? handleSendPointerUp : undefined}
+                onPointerCancel={mobileOrTablet() ? handleSendPointerUp : undefined}
+                onContextMenu={mobileOrTablet() ? (e) => e.preventDefault() : undefined}
+                variant="SurfaceVariant"
+                size="300"
+                radii="300"
+              >
                 <Icon src={Icons.Send} />
               </IconButton>
             </>
@@ -770,6 +819,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
             )
           }
         />
+        )}
       </div>
     );
   }

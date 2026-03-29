@@ -1,7 +1,7 @@
 /* eslint-disable no-param-reassign */
 import React, {
-  ChangeEventHandler,
   ClipboardEventHandler,
+  FormEventHandler,
   KeyboardEventHandler,
   ReactNode,
   forwardRef,
@@ -27,6 +27,7 @@ import { RenderElement, RenderLeaf } from './Elements';
 import { CustomElement } from './slate';
 import * as css from './Editor.css';
 import { toggleKeyboardShortcut } from './keyboard';
+import { getImageUrlBlob } from '../../utils/dom';
 import { mobileOrTablet } from '../../utils/user-agent';
 import { useSetting } from '../../state/hooks/settings';
 import { settingsAtom } from '../../state/settings';
@@ -90,6 +91,7 @@ type CustomEditorProps = {
   onKeyUp?: KeyboardEventHandler;
   onChange?: EditorChangeHandler;
   onPaste?: ClipboardEventHandler;
+  onFiles?: (files: File[]) => void;
   forceSlate?: boolean;
 };
 export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
@@ -107,13 +109,14 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
       onKeyUp,
       onChange,
       onPaste,
+      onFiles,
     },
     ref
   ) => {
     const [alternateInput] = useSetting(settingsAtom, 'alternateInput');
 
     const [inputValue, setInputValue] = useState(() => extractEditorText(editor.children));
-    const inputRef = useRef<HTMLTextAreaElement>(null);
+    const inputRef = useRef<HTMLDivElement>(null);
     const inputValueRef = useRef(inputValue);
     inputValueRef.current = inputValue;
 
@@ -123,25 +126,25 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
       const origOnChange = editor.onChange;
       editor.onChange = (...args: Parameters<typeof origOnChange>) => {
         origOnChange.apply(editor, args);
-        setInputValue(extractEditorText(editor.children));
+        const newText = extractEditorText(editor.children);
+        setInputValue(newText);
+        // Sync DOM when editor is cleared externally (e.g. after sending a message)
+        const el = inputRef.current;
+        if (el && newText === '' && el.textContent !== '') {
+          el.textContent = '';
+        }
       };
 
       (editor as any).insertAlternateText = (text: string) => {
         const el = inputRef.current;
-        const pos = el?.selectionStart ?? inputValueRef.current.length;
-        const cur = inputValueRef.current;
-        const newValue = cur.slice(0, pos) + text + cur.slice(pos);
+        if (!el) return;
+        el.focus();
+        document.execCommand('insertText', false, text);
+        const newValue = el.innerText.replace(/\n$/, '');
         setInputValue(newValue);
         editor.children = [
           { type: BlockType.Paragraph, children: [{ text: newValue }] },
         ];
-        requestAnimationFrame(() => {
-          if (el) {
-            const newPos = pos + text.length;
-            el.setSelectionRange(newPos, newPos);
-            el.focus();
-          }
-        });
       };
 
       return () => {
@@ -150,9 +153,9 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
       };
     }, [editor, alternateInput]);
 
-    const handleInputChange: ChangeEventHandler<HTMLTextAreaElement> = useCallback(
+    const handleInput: FormEventHandler<HTMLDivElement> = useCallback(
       (e) => {
-        const text = e.target.value;
+        const text = e.currentTarget.innerText.replace(/\n$/, '');
         setInputValue(text);
         editor.children = [
           { type: BlockType.Paragraph, children: [{ text }] },
@@ -161,7 +164,84 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
       [editor]
     );
 
-    const handleInputKeyDown: KeyboardEventHandler<HTMLTextAreaElement> = useCallback(
+    const fetchUrlAsFile = useCallback(
+      (url: string) => {
+        getImageUrlBlob(url)
+          .then((blob) => {
+            const ext = blob.type.split('/')[1] || 'gif';
+            const name = url.split('/').pop()?.split('?')[0] || `image.${ext}`;
+            onFiles?.([new File([blob], name, { type: blob.type })]);
+          })
+          .catch(() => {});
+      },
+      [onFiles]
+    );
+
+    const handleAlternatePaste: React.ClipboardEventHandler<HTMLDivElement> = useCallback(
+      (e) => {
+        e.preventDefault();
+
+        // Binary file items (screenshot, local image)
+        const files = Array.from(e.clipboardData.items)
+          .filter((item) => item.kind === 'file')
+          .map((item) => item.getAsFile())
+          .filter((f): f is File => f !== null);
+        if (files.length > 0) {
+          onFiles?.(files);
+          return;
+        }
+
+        // HTML paste containing an img (e.g. keyboard GIF delivered as markup)
+        const html = e.clipboardData.getData('text/html');
+        if (html) {
+          const doc = new DOMParser().parseFromString(html, 'text/html');
+          const src = doc.querySelector('img')?.getAttribute('src');
+          if (src) {
+            fetchUrlAsFile(src);
+            return;
+          }
+        }
+
+        // Plain text
+        const text = e.clipboardData.getData('text/plain');
+        if (text) document.execCommand('insertText', false, text);
+      },
+      [onFiles, fetchUrlAsFile]
+    );
+
+    const handleBeforeInput: React.FormEventHandler<HTMLDivElement> = useCallback(
+      (e) => {
+        const ie = e.nativeEvent as InputEvent;
+        if (ie.inputType !== 'insertContent' || !ie.dataTransfer) return;
+
+        const items = Array.from(ie.dataTransfer.items);
+
+        // Binary file (keyboard delivers actual image bytes)
+        const files = items
+          .filter((item) => item.kind === 'file')
+          .map((item) => item.getAsFile())
+          .filter((f): f is File => f !== null);
+        if (files.length > 0) {
+          e.preventDefault();
+          onFiles?.(files);
+          return;
+        }
+
+        // URI string (Gboard GIF from Tenor/Giphy CDN)
+        const uriItem = items.find((item) => item.kind === 'string');
+        if (uriItem) {
+          e.preventDefault();
+          uriItem.getAsString((raw) => {
+            // uri-list format: lines starting with # are comments
+            const url = raw.split('\n').map((s) => s.trim()).find((s) => s && !s.startsWith('#'));
+            if (url) fetchUrlAsFile(url);
+          });
+        }
+      },
+      [onFiles, fetchUrlAsFile]
+    );
+
+    const handleInputKeyDown: KeyboardEventHandler<HTMLDivElement> = useCallback(
       (evt) => {
         onKeyDown?.(evt);
       },
@@ -355,18 +435,23 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
               visibility="Hover"
               hideTrack
             >
-              <textarea
+              <div
                 ref={inputRef}
                 data-editable-name={editableName}
                 className={css.AlternateInput}
-                placeholder={placeholder}
-                value={inputValue}
-                onChange={handleInputChange}
+                contentEditable
+                suppressContentEditableWarning
+                data-placeholder={placeholder}
+                data-empty={inputValue.length === 0 ? '' : undefined}
+                onInput={handleInput}
+                onBeforeInput={handleBeforeInput}
                 onKeyDown={handleInputKeyDown}
                 onKeyUp={onKeyUp}
-                onPaste={onPaste}
+                onPaste={handleAlternatePaste}
                 autoCapitalize="sentences"
-                rows={1}
+                role="textbox"
+                aria-multiline="true"
+                aria-label={placeholder}
               />
             </Scroll>
             {after && (
