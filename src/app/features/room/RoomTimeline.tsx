@@ -605,6 +605,10 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
         });
         requestAnimationFrame(() => {
           if (!alive()) return;
+          // By this frame React has committed the timeline render to the DOM.
+          // Image containers already have their correct height from the CSS
+          // aspect-ratio set via Matrix metadata (info.w / info.h), so we can
+          // scroll without waiting for image data to download.
           setFocusItem({
             index: evtAbsIndex,
             eventId: evtId,
