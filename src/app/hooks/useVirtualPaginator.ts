@@ -278,13 +278,16 @@ export const useVirtualPaginator = <TScrollElement extends HTMLElement>(
           return;
         }
         if (scrollEl) {
+          // Compute the drop boundary first so the restore anchor is chosen
+          // from items that will still exist after the re-render. Without this,
+          // the anchor could land on an item that gets dropped, causing
+          // getItemElement to return undefined in useLayoutEffect and skipping
+          // scroll restoration entirely (visible as a jump to old messages).
+          end = getDropIndex(scrollEl, currentRange, Direction.Forward, getItemElement, 2) ?? end;
           restoreScrollRef.current = getRestoreScrollData(
             scrollEl.scrollTop,
             getRestoreAnchor({ start, end }, getItemElement, Direction.Backward)
           );
-        }
-        if (scrollEl) {
-          end = getDropIndex(scrollEl, currentRange, Direction.Forward, getItemElement, 2) ?? end;
         }
         start = Math.max(start - currentLimit, 0);
       }
@@ -296,16 +299,15 @@ export const useVirtualPaginator = <TScrollElement extends HTMLElement>(
           return;
         }
         if (scrollEl) {
+          // Same fix for forward: compute drop boundary before capturing anchor.
+          start =
+            getDropIndex(scrollEl, currentRange, Direction.Backward, getItemElement, 2) ?? start;
           restoreScrollRef.current = getRestoreScrollData(
             scrollEl.scrollTop,
             getRestoreAnchor({ start, end }, getItemElement, Direction.Forward)
           );
         }
         end = Math.min(end + currentLimit, currentCount);
-        if (scrollEl) {
-          start =
-            getDropIndex(scrollEl, currentRange, Direction.Backward, getItemElement, 2) ?? start;
-        }
       }
 
       onRangeChange({
