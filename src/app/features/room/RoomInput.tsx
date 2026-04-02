@@ -505,10 +505,6 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
           return;
         }
 
-        if (alternateInput) {
-          setHasEditorContent(!isEmptyEditor(editor));
-        }
-
         if (!hideActivity) {
           sendTypingStatus(!isEmptyEditor(editor));
         }
@@ -519,7 +515,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
           : undefined;
         setAutocompleteQuery(query);
       },
-      [editor, sendTypingStatus, hideActivity, alternateInput]
+      [editor, sendTypingStatus, hideActivity]
     );
 
     const handleCloseAutocomplete = useCallback(() => {
@@ -655,7 +651,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
           editor={editor}
           onKeyDown={handleKeyDown}
           onKeyUp={handleKeyUp}
-          onChange={!alternateInput ? handleEditorChange : undefined}
+          onChange={handleEditorChange}
           onPaste={handlePaste}
           onFiles={handleFiles}
           top={
