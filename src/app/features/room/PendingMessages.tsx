@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Avatar, Box, Icon, IconButton, Icons, Spinner, Text, color } from 'folds';
 import { Room } from 'matrix-js-sdk';
 import { useAtom } from 'jotai';
@@ -25,6 +25,9 @@ import {
 } from '../../components/message';
 
 const SEND_TIMEOUT_MS = 30_000;
+// Only show the pending UI if the message is still in-flight after this delay.
+// Fast sends resolve before this fires and never flash the indicator.
+const SHOW_DELAY_MS = 600;
 
 type PendingMessageItemProps = {
   msg: PendingMessage;
@@ -47,6 +50,19 @@ function PendingMessageItem({
   onRetry,
   onDelete,
 }: PendingMessageItemProps) {
+  const [visible, setVisible] = useState(msg.status === 'failed');
+
+  useEffect(() => {
+    if (msg.status === 'failed') {
+      setVisible(true);
+      return undefined;
+    }
+    const timer = setTimeout(() => setVisible(true), SHOW_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [msg.status]);
+
+  if (!visible) return null;
+
   const isPending = msg.status === 'pending';
   const isFailed = msg.status === 'failed';
 

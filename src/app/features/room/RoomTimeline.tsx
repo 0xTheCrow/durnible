@@ -1892,6 +1892,12 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
       return null;
     }
 
+    // Local echoes (pending/queued/failed events) are handled by PendingMessages.
+    // Suppress them here to avoid showing duplicates.
+    if (mEvent.status !== null) {
+      return null;
+    }
+
     if (!newDivider && readUptoEventIdRef.current) {
       newDivider = prevEvent?.getId() === readUptoEventIdRef.current;
     }
