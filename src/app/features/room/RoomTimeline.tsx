@@ -996,7 +996,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
     if (focusItem && focusItem.scrollTo) {
       scrollToItem(focusItem.index, {
         behavior: 'instant',
-        align: 'center',
+        align: 'start',
       });
     }
   }, [focusItem, scrollToItem]);
