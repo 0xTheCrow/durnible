@@ -130,7 +130,6 @@ import { useAccessiblePowerTagColors, useGetMemberPowerTag } from '../../hooks/u
 import { useTheme } from '../../hooks/useTheme';
 import { useRoomCreatorsTag } from '../../hooks/useRoomCreatorsTag';
 import { usePowerLevelTags } from '../../hooks/usePowerLevelTags';
-import { PendingMessages } from './PendingMessages';
 
 const TimelineFloat = as<'div', css.TimelineFloatVariants>(
   ({ position, className, ...props }, ref) => (
@@ -666,6 +665,22 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
       [mx, room, unreadInfo, hideActivity, unfocusedAutoScroll]
     )
   );
+
+  // Re-render when a local echo status changes (QUEUED → SENDING → sent / NOT_SENT).
+  // RoomEvent.Timeline only fires for new events, so echoes updating in-place are missed.
+  useEffect(() => {
+    const handleLocalEchoUpdated: RoomEventHandlerMap[RoomEvent.LocalEchoUpdated] = (
+      _mEvent,
+      eventRoom
+    ) => {
+      if (eventRoom?.roomId !== room.roomId) return;
+      setTimeline((ct) => ({ ...ct }));
+    };
+    room.on(RoomEvent.LocalEchoUpdated, handleLocalEchoUpdated);
+    return () => {
+      room.off(RoomEvent.LocalEchoUpdated, handleLocalEchoUpdated);
+    };
+  }, [room, setTimeline]);
 
   const handleOpenEvent = useCallback(
     async (
@@ -1892,11 +1907,6 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
       return null;
     }
 
-    // Local echoes (pending/queued/failed events) are handled by PendingMessages.
-    // Suppress them here to avoid showing duplicates.
-    if (mEvent.status !== null) {
-      return null;
-    }
 
     if (!newDivider && readUptoEventIdRef.current) {
       newDivider = prevEvent?.getId() === readUptoEventIdRef.current;
@@ -2050,13 +2060,6 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
 
           {getItems().map(eventRenderer)}
 
-          {liveTimelineLinked && rangeAtEnd && (
-            <PendingMessages
-              room={room}
-              messageLayout={messageLayout}
-              messageSpacing={messageSpacing}
-            />
-          )}
 
           {(!liveTimelineLinked || !rangeAtEnd) &&
             (messageLayout === MessageLayout.Compact ? (

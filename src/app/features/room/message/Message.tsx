@@ -31,7 +31,7 @@ import FocusTrap from 'focus-trap-react';
 import { useHover, useFocusWithin } from 'react-aria';
 import { useAtom } from 'jotai';
 import { messageOptionsAtom } from './messageOptionsAtom';
-import { MatrixEvent, Room } from 'matrix-js-sdk';
+import { EventStatus, MatrixEvent, Room } from 'matrix-js-sdk';
 import { Relations } from 'matrix-js-sdk/lib/models/relations';
 import classNames from 'classnames';
 import { RoomPinnedEventsEventContent } from 'matrix-js-sdk/lib/types';
@@ -736,6 +736,10 @@ export const Message = as<'div', MessageProps>(
 
     const usernameColor = legacyUsernameColor ? colorMXID(senderId) : tagColor;
 
+    const eventStatus = mEvent.status;
+    const isPending = eventStatus !== null && eventStatus !== EventStatus.NOT_SENT;
+    const isFailed = eventStatus === EventStatus.NOT_SENT;
+
     const headerJSX = !collapse && (
       <Box
         gap="300"
@@ -762,8 +766,8 @@ export const Message = as<'div', MessageProps>(
           </Username>
           {tagIconSrc && <PowerIcon size="100" iconSrc={tagIconSrc} />}
         </Box>
-        <Box shrink="No" gap="100">
-          {messageLayout === MessageLayout.Modern && hover && (
+        <Box shrink="No" gap="100" alignItems="Center">
+          {messageLayout === MessageLayout.Modern && hover && !isPending && !isFailed && (
             <>
               <Text as="span" size="T200" priority="300">
                 {senderId}
@@ -773,12 +777,47 @@ export const Message = as<'div', MessageProps>(
               </Text>
             </>
           )}
-          <Time
-            ts={mEvent.getTs()}
-            compact={messageLayout === MessageLayout.Compact}
-            hour24Clock={hour24Clock}
-            dateFormatString={dateFormatString}
-          />
+          {isPending && <Spinner size="200" />}
+          {isFailed && (
+            <>
+              <Icon size="100" src={Icons.Warning} style={{ color: color.Critical.Main }} />
+              <Text as="span" size="T200" style={{ color: color.Critical.Main }}>
+                Failed to send
+              </Text>
+              <Text
+                as="button"
+                size="T200"
+                style={{
+                  color: color.Success.Main,
+                  cursor: 'pointer',
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  font: 'inherit',
+                }}
+                onClick={() => mx.resendEvent(mEvent, room)}
+              >
+                Retry
+              </Text>
+              <IconButton
+                size="300"
+                variant="Critical"
+                radii="300"
+                onClick={() => mx.cancelPendingEvent(mEvent)}
+                aria-label="Delete"
+              >
+                <Icon size="100" src={Icons.Delete} />
+              </IconButton>
+            </>
+          )}
+          {!isPending && !isFailed && (
+            <Time
+              ts={mEvent.getTs()}
+              compact={messageLayout === MessageLayout.Compact}
+              hour24Clock={hour24Clock}
+              dateFormatString={dateFormatString}
+            />
+          )}
         </Box>
       </Box>
     );
@@ -809,7 +848,11 @@ export const Message = as<'div', MessageProps>(
     );
 
     const msgContentJSX = (
-      <Box direction="Column" alignSelf="Start" style={{ maxWidth: '100%' }}>
+      <Box
+        direction="Column"
+        alignSelf="Start"
+        style={{ maxWidth: '100%', opacity: isPending ? 0.6 : isFailed ? 0.4 : undefined }}
+      >
         {reply}
         {edit && onEditId ? (
           <MessageEditor
