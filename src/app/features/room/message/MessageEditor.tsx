@@ -233,8 +233,8 @@ export const MessageEditor = as<'div', MessageEditorProps>(
         ];
         editor.onChange();
         requestAnimationFrame(() => {
-          const textarea = editorRef.current?.querySelector('textarea');
-          if (textarea) textarea.focus();
+          const contentEl = editorRef.current?.querySelector('[contenteditable]') as HTMLElement | null;
+          if (contentEl) contentEl.focus();
         });
       } else {
         const initialValue =

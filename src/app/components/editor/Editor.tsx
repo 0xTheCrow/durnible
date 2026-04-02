@@ -130,8 +130,11 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
         setInputValue(newText);
         // Sync DOM when editor is cleared externally (e.g. after sending a message)
         const el = inputRef.current;
-        if (el && newText === '' && el.textContent !== '') {
-          el.textContent = '';
+        if (el) {
+          const domText = el.innerText.replace(/\n$/, '');
+          if (domText !== newText) {
+            el.textContent = newText;
+          }
         }
       };
 
