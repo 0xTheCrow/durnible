@@ -1,4 +1,4 @@
-import React, { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Badge,
   Box,
@@ -15,6 +15,7 @@ import {
 import classNames from 'classnames';
 import { BlurhashCanvas } from 'react-blurhash';
 import { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
+import { useAtom } from 'jotai';
 import {
   IThumbnailContent,
   IVideoInfo,
@@ -32,6 +33,7 @@ import {
 } from '../../../utils/matrix';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
 import { validBlurHash } from '../../../utils/blurHash';
+import { hiddenImagesAtom, MessageEventIdContext } from '../../../state/hiddenImages';
 
 type RenderVideoProps = {
   title: string;
@@ -75,9 +77,14 @@ export const VideoContent = as<'div', VideoContentProps>(
     const useAuthentication = useMediaAuthentication();
     const blurHash = validBlurHash(info.thumbnail_info?.[MATRIX_BLUR_HASH_PROPERTY_NAME]);
 
+    const messageEventId = useContext(MessageEventIdContext);
+    const [hiddenImages, setHiddenImages] = useAtom(hiddenImagesAtom);
+    const isForceHidden = messageEventId ? hiddenImages.has(messageEventId) : false;
+
     const [load, setLoad] = useState(false);
     const [error, setError] = useState(false);
     const [blurred, setBlurred] = useState(markedAsSpoiler ?? false);
+    const effectiveBlurred = blurred || isForceHidden;
 
     const [srcState, loadSrc] = useAsyncCallback(
       useCallback(async () => {
@@ -149,14 +156,15 @@ export const VideoContent = as<'div', VideoContentProps>(
         )}
         {renderThumbnail && !load && (
           <Box
-            className={classNames(css.AbsoluteContainer, blurred && css.Blur)}
+            className={classNames(css.AbsoluteContainer, effectiveBlurred && css.Blur)}
+            style={effectiveBlurred ? { opacity: 0.6 } : undefined}
             alignItems="Center"
             justifyContent="Center"
           >
             {renderThumbnail()}
           </Box>
         )}
-        {!autoPlay && !blurred && srcState.status === AsyncStatus.Idle && (
+        {!autoPlay && !effectiveBlurred && srcState.status === AsyncStatus.Idle && (
           <Box className={css.AbsoluteContainer} alignItems="Center" justifyContent="Center">
             <Button
               variant="Secondary"
@@ -171,7 +179,10 @@ export const VideoContent = as<'div', VideoContentProps>(
           </Box>
         )}
         {srcState.status === AsyncStatus.Success && (
-          <Box className={classNames(css.AbsoluteContainer, blurred && css.Blur)}>
+          <Box
+            className={classNames(css.AbsoluteContainer, effectiveBlurred && css.Blur)}
+            style={effectiveBlurred ? { opacity: 0.6 } : undefined}
+          >
             {renderVideo({
               title: body,
               src: srcState.data,
@@ -182,7 +193,7 @@ export const VideoContent = as<'div', VideoContentProps>(
             })}
           </Box>
         )}
-        {blurred && !error && srcState.status !== AsyncStatus.Error && (
+        {effectiveBlurred && !error && srcState.status !== AsyncStatus.Error && (
           <Box className={css.AbsoluteContainer} alignItems="Center" justifyContent="Center">
             <TooltipProvider
               tooltip={
@@ -203,10 +214,17 @@ export const VideoContent = as<'div', VideoContentProps>(
                   size="500"
                   outlined
                   onClick={() => {
+                    if (isForceHidden && messageEventId) {
+                      setHiddenImages((prev: Set<string>) => {
+                        const next = new Set(prev);
+                        next.delete(messageEventId);
+                        return next;
+                      });
+                    }
                     setBlurred(false);
                   }}
                 >
-                  <Text size="B300">Spoiler</Text>
+                  <Text size="B300">{isForceHidden ? 'Hidden' : 'Spoiler'}</Text>
                 </Chip>
               )}
             </TooltipProvider>
@@ -214,7 +232,7 @@ export const VideoContent = as<'div', VideoContentProps>(
         )}
         {(srcState.status === AsyncStatus.Loading || srcState.status === AsyncStatus.Success) &&
           !load &&
-          !blurred && (
+          !effectiveBlurred && (
             <Box className={css.AbsoluteContainer} alignItems="Center" justifyContent="Center">
               <Spinner variant="Secondary" />
             </Box>

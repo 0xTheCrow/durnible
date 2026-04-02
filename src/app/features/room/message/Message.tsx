@@ -30,7 +30,9 @@ import React, {
 import FocusTrap from 'focus-trap-react';
 import { useHover, useFocusWithin } from 'react-aria';
 import { useAtom } from 'jotai';
+import { MsgType } from 'matrix-js-sdk';
 import { messageOptionsAtom } from './messageOptionsAtom';
+import { hiddenImagesAtom, MessageEventIdContext } from '../../../state/hiddenImages';
 import { EventStatus, MatrixEvent, Room } from 'matrix-js-sdk';
 import { Relations } from 'matrix-js-sdk/lib/models/relations';
 import classNames from 'classnames';
@@ -722,6 +724,23 @@ export const Message = as<'div', MessageProps>(
     const { focusWithinProps } = useFocusWithin({ onFocusWithinChange: setHover });
     const [menuAnchor, setMenuAnchor] = useState<RectCords>();
     const [emojiBoardAnchor, setEmojiBoardAnchor] = useState<RectCords>();
+    const [hiddenImages, setHiddenImages] = useAtom(hiddenImagesAtom);
+
+    const msgType = mEvent.getContent().msgtype;
+    const isImageMessage = msgType === MsgType.Image || msgType === MsgType.Video;
+    const isImageHidden = isImageMessage && hiddenImages.has(eventId);
+
+    const toggleImageHidden = useCallback(() => {
+      setHiddenImages((prev: Set<string>) => {
+        const next = new Set(prev);
+        if (next.has(eventId)) {
+          next.delete(eventId);
+        } else {
+          next.add(eventId);
+        }
+        return next;
+      });
+    }, [eventId, setHiddenImages]);
 
     const senderDisplayName =
       getMemberDisplayName(room, senderId) ?? getMxIdLocalPart(senderId) ?? senderId;
@@ -866,7 +885,9 @@ export const Message = as<'div', MessageProps>(
             onCancel={() => onEditId()}
           />
         ) : (
-          children
+          <MessageEventIdContext.Provider value={eventId}>
+            {children}
+          </MessageEventIdContext.Provider>
         )}
         {reactions}
       </Box>
@@ -1097,6 +1118,26 @@ export const Message = as<'div', MessageProps>(
                           <MessageCopyLinkItem room={room} mEvent={mEvent} onClose={closeMenu} />
                           {canPinEvent && (
                             <MessagePinItem room={room} mEvent={mEvent} onClose={closeMenu} />
+                          )}
+                          {isImageMessage && (
+                            <MenuItem
+                              size="300"
+                              after={<Icon size="100" src={isImageHidden ? Icons.Eye : Icons.EyeBlind} />}
+                              radii="300"
+                              onClick={() => {
+                                toggleImageHidden();
+                                closeMenu();
+                              }}
+                            >
+                              <Text
+                                className={css.MessageMenuItemText}
+                                as="span"
+                                size="T300"
+                                truncate
+                              >
+                                {isImageHidden ? 'Show Image' : 'Hide Image'}
+                              </Text>
+                            </MenuItem>
                           )}
                         </Box>
                         {((!mEvent.isRedacted() && canDelete) ||
