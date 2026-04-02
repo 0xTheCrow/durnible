@@ -7,7 +7,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { useAtom, useAtomValue } from 'jotai';
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { isKeyHotkey } from 'is-hotkey';
 import { EventType, IContent, MsgType, RelationType, Room } from 'matrix-js-sdk';
 import { ReactEditor } from 'slate-react';
@@ -77,6 +77,7 @@ import {
   roomIdToUploadItemsAtomFamily,
   roomUploadAtomFamily,
 } from '../../state/room/roomInputDrafts';
+import { roomIdToPendingMessagesAtomFamily } from '../../state/room/pendingMessages';
 import { UploadCardRenderer } from '../../components/upload-card';
 import {
   UploadBoard,
@@ -190,6 +191,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       useState<AutocompleteQuery<AutocompletePrefix>>();
 
     const sendTypingStatus = useTypingStatusUpdater(mx, roomId);
+    const addPendingMessage = useSetAtom(roomIdToPendingMessagesAtomFamily(roomId));
 
     const handleFiles = useCallback(
       (files: File[]) => {
@@ -455,7 +457,15 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
             content['m.relates_to'].is_falling_back = false;
           }
         }
-        mx.sendMessage(roomId, content as any);
+        addPendingMessage((prev) => [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            content: content as any,
+            addedAt: Date.now(),
+            status: 'pending',
+          },
+        ]);
       }
 
       // Send files: if no text was sent, uploads carry the reply context
@@ -470,7 +480,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       }
       setReplyDraft(undefined);
       sendTypingStatus(false);
-    }, [mx, roomId, editor, replyDraft, sendTypingStatus, setReplyDraft, isMarkdown, commands, imagePacks, selectedFiles, alternateInput]);
+    }, [mx, roomId, editor, replyDraft, sendTypingStatus, setReplyDraft, isMarkdown, commands, imagePacks, selectedFiles, alternateInput, addPendingMessage]);
 
     const handleSendPointerDown = useCallback(() => {
       didLongPress.current = false;

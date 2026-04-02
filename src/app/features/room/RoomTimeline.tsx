@@ -130,6 +130,7 @@ import { useAccessiblePowerTagColors, useGetMemberPowerTag } from '../../hooks/u
 import { useTheme } from '../../hooks/useTheme';
 import { useRoomCreatorsTag } from '../../hooks/useRoomCreatorsTag';
 import { usePowerLevelTags } from '../../hooks/usePowerLevelTags';
+import { PendingMessages } from './PendingMessages';
 
 const TimelineFloat = as<'div', css.TimelineFloatVariants>(
   ({ position, className, ...props }, ref) => (
@@ -2042,6 +2043,14 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
             ))}
 
           {getItems().map(eventRenderer)}
+
+          {liveTimelineLinked && rangeAtEnd && (
+            <PendingMessages
+              room={room}
+              messageLayout={messageLayout}
+              messageSpacing={messageSpacing}
+            />
+          )}
 
           {(!liveTimelineLinked || !rangeAtEnd) &&
             (messageLayout === MessageLayout.Compact ? (
