@@ -713,7 +713,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
       if (typeof absoluteIndex === 'number') {
         const scrolled = scrollToItem(absoluteIndex, {
           behavior: 'smooth',
-          align: 'center',
+          align: 'start',
           stopInView: true,
         });
         if (onScroll) onScroll(scrolled);
