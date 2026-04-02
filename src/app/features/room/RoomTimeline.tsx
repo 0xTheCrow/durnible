@@ -591,17 +591,24 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
         if (!alive()) return;
         const evLength = getTimelinesEventsCount(lTimelines);
 
-        setFocusItem({
-          index: evtAbsIndex,
-          scrollTo: true,
-          highlight: evtId !== readUptoEventIdRef.current,
-        });
+        // Set the timeline first so messages render into the DOM,
+        // then defer the scroll to the next frame so layout settles
+        // before we jump — avoids missing the target when content
+        // (images, decrypted messages) shifts element heights.
         setTimeline({
           linkedTimelines: lTimelines,
           range: {
             start: Math.max(evtAbsIndex - PAGINATION_LIMIT, 0),
             end: Math.min(evtAbsIndex + PAGINATION_LIMIT, evLength),
           },
+        });
+        requestAnimationFrame(() => {
+          if (!alive()) return;
+          setFocusItem({
+            index: evtAbsIndex,
+            scrollTo: true,
+            highlight: evtId !== readUptoEventIdRef.current,
+          });
         });
       },
       [alive]
