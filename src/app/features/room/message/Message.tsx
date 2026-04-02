@@ -767,7 +767,7 @@ export const Message = as<'div', MessageProps>(
           {tagIconSrc && <PowerIcon size="100" iconSrc={tagIconSrc} />}
         </Box>
         <Box shrink="No" gap="100" alignItems="Center">
-          {messageLayout === MessageLayout.Modern && hover && !isPending && !isFailed && (
+          {messageLayout === MessageLayout.Modern && hover && !isFailed && (
             <>
               <Text as="span" size="T200" priority="300">
                 {senderId}
@@ -777,7 +777,6 @@ export const Message = as<'div', MessageProps>(
               </Text>
             </>
           )}
-          {isPending && <Spinner size="200" />}
           {isFailed && (
             <>
               <Icon size="100" src={Icons.Warning} style={{ color: color.Critical.Main }} />
@@ -810,7 +809,7 @@ export const Message = as<'div', MessageProps>(
               </IconButton>
             </>
           )}
-          {!isPending && !isFailed && (
+          {!isFailed && (
             <Time
               ts={mEvent.getTs()}
               compact={messageLayout === MessageLayout.Compact}
