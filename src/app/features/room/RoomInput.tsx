@@ -494,6 +494,10 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       [submit, setReplyDraft, enterForNewline, autocompleteQuery, isComposing]
     );
 
+    const handleEditorChange = useCallback(() => {
+      setHasEditorContent(!isEmptyEditor(editor));
+    }, [editor]);
+
     const handleKeyUp: KeyboardEventHandler = useCallback(
       (evt) => {
         if (isKeyHotkey('escape', evt)) {
@@ -501,7 +505,9 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
           return;
         }
 
-        setHasEditorContent(!isEmptyEditor(editor));
+        if (alternateInput) {
+          setHasEditorContent(!isEmptyEditor(editor));
+        }
 
         if (!hideActivity) {
           sendTypingStatus(!isEmptyEditor(editor));
@@ -513,7 +519,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
           : undefined;
         setAutocompleteQuery(query);
       },
-      [editor, sendTypingStatus, hideActivity]
+      [editor, sendTypingStatus, hideActivity, alternateInput]
     );
 
     const handleCloseAutocomplete = useCallback(() => {
@@ -649,6 +655,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
           editor={editor}
           onKeyDown={handleKeyDown}
           onKeyUp={handleKeyUp}
+          onChange={!alternateInput ? handleEditorChange : undefined}
           onPaste={handlePaste}
           onFiles={handleFiles}
           top={
