@@ -993,7 +993,6 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
       scrollToItem(focusItem.index, {
         behavior: 'instant',
         align: 'center',
-        stopInView: true,
       });
     }
   }, [focusItem, scrollToItem]);
