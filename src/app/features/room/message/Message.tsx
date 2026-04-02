@@ -851,7 +851,7 @@ export const Message = as<'div', MessageProps>(
       <Box
         direction="Column"
         alignSelf="Start"
-        style={{ maxWidth: '100%', opacity: isPending ? 0.6 : isFailed ? 0.4 : undefined }}
+        style={{ maxWidth: '100%', opacity: isPending ? 0.6 : isFailed ? 0.4 : 1, transition: 'opacity 0.6s linear' }}
       >
         {reply}
         {edit && onEditId ? (
