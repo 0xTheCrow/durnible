@@ -143,8 +143,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     const commands = useCommands(mx, room);
     const emojiBtnRef = useRef<HTMLButtonElement>(null);
     const sendBtnRef = useRef<HTMLButtonElement>(null);
-    const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const didLongPress = useRef(false);
+    const [hasEditorContent, setHasEditorContent] = useState(false);
     const roomToParents = useAtomValue(roomToParentsAtom);
     const powerLevels = usePowerLevelsContext();
     const creators = useRoomCreators(room);
@@ -276,6 +275,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       } else {
         Transforms.insertFragment(editor, msgDraft);
       }
+      setHasEditorContent(!isEmptyEditor(editor));
     }, [editor, msgDraft, alternateInput]);
 
     useEffect(
@@ -468,29 +468,10 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
         resetEditor(editor);
         resetEditorHistory(editor);
       }
+      setHasEditorContent(false);
       setReplyDraft(undefined);
       sendTypingStatus(false);
     }, [mx, roomId, editor, replyDraft, sendTypingStatus, setReplyDraft, isMarkdown, commands, imagePacks, selectedFiles, alternateInput]);
-
-    const handleSendPointerDown = useCallback(() => {
-      didLongPress.current = false;
-      longPressTimer.current = setTimeout(() => {
-        didLongPress.current = true;
-        setIsVoiceRecording(true);
-      }, 500);
-    }, []);
-
-    const handleSendPointerUp = useCallback(() => {
-      if (longPressTimer.current !== null) {
-        clearTimeout(longPressTimer.current);
-        longPressTimer.current = null;
-      }
-    }, []);
-
-    const handleSendClick = useCallback(() => {
-      if (didLongPress.current) return;
-      submit();
-    }, [submit]);
 
     const handleKeyDown: KeyboardEventHandler = useCallback(
       (evt) => {
@@ -519,6 +500,8 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
           evt.preventDefault();
           return;
         }
+
+        setHasEditorContent(!isEmptyEditor(editor));
 
         if (!hideActivity) {
           sendTypingStatus(!isEmptyEditor(editor));
@@ -764,16 +747,6 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
                       />
                     }
                   >
-                    {!mobileOrTablet() && (
-                      <IconButton
-                        onClick={() => setIsVoiceRecording(true)}
-                        variant="SurfaceVariant"
-                        size="300"
-                        radii="300"
-                      >
-                        <Icon src={Icons.Mic} />
-                      </IconButton>
-                    )}
                     <IconButton
                       ref={emojiBtnRef}
                       aria-pressed={
@@ -794,20 +767,26 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
                   </PopOut>
                 )}
               </UseStateProvider>
-              <IconButton
-                ref={sendBtnRef}
-                onClick={mobileOrTablet() ? handleSendClick : submit}
-                onPointerDown={mobileOrTablet() ? handleSendPointerDown : undefined}
-                onPointerUp={mobileOrTablet() ? handleSendPointerUp : undefined}
-                onPointerLeave={mobileOrTablet() ? handleSendPointerUp : undefined}
-                onPointerCancel={mobileOrTablet() ? handleSendPointerUp : undefined}
-                onContextMenu={mobileOrTablet() ? (e) => e.preventDefault() : undefined}
-                variant="SurfaceVariant"
-                size="300"
-                radii="300"
-              >
-                <Icon src={Icons.Send} />
-              </IconButton>
+              {hasEditorContent ? (
+                <IconButton
+                  ref={sendBtnRef}
+                  onClick={submit}
+                  variant="SurfaceVariant"
+                  size="300"
+                  radii="300"
+                >
+                  <Icon src={Icons.Send} />
+                </IconButton>
+              ) : (
+                <IconButton
+                  onClick={() => setIsVoiceRecording(true)}
+                  variant="SurfaceVariant"
+                  size="300"
+                  radii="300"
+                >
+                  <Icon src={Icons.Mic} />
+                </IconButton>
+              )}
             </>
           }
           bottom={
