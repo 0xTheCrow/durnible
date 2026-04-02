@@ -770,7 +770,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
                   </PopOut>
                 )}
               </UseStateProvider>
-              {hasEditorContent ? (
+              {hasEditorContent || !!replyDraft || selectedFiles.length > 0 ? (
                 <IconButton
                   ref={sendBtnRef}
                   onClick={submit}
