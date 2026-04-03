@@ -240,32 +240,40 @@ export function FavoritesList({ header, emptyState, scrollRef }: FavoritesListPr
 // ── FavoritesSection — appended inside the Space nav scroll area ──────────────
 
 export function FavoritesSection() {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
   return (
-    <FavoritesList
-      header={(reorderMode, onDone) => (
-        <Box direction="Column" gap="100" style={{ paddingTop: config.space.S400 }}>
-          <Line variant="Background" size="300" />
-          <NavCategoryHeader style={{ paddingTop: config.space.S200 }}>
-            <Box grow="Yes" alignItems="Center" gap="200">
-              <Text size="L400" style={{ flexGrow: 1 }}>
-                Favorites
-              </Text>
-              {reorderMode && (
-                <IconButton
-                  size="300"
-                  radii="300"
-                  variant="Surface"
-                  onClick={onDone}
-                  aria-label="Done reordering"
-                >
-                  <Icon size="100" src={Icons.Check} />
-                </IconButton>
-              )}
-            </Box>
-          </NavCategoryHeader>
-        </Box>
-      )}
-    />
+    <Box
+      direction="Column"
+      style={{ maxHeight: '40vh', overflow: 'hidden', flexShrink: 0 }}
+    >
+      <FavoritesList
+        scrollRef={scrollRef}
+        header={(reorderMode, onDone) => (
+          <Box direction="Column" gap="100" style={{ paddingTop: config.space.S400 }}>
+            <Line variant="Background" size="300" />
+            <NavCategoryHeader style={{ paddingTop: config.space.S200 }}>
+              <Box grow="Yes" alignItems="Center" gap="200">
+                <Text size="L400" style={{ flexGrow: 1 }}>
+                  Favorites
+                </Text>
+                {reorderMode && (
+                  <IconButton
+                    size="300"
+                    radii="300"
+                    variant="Surface"
+                    onClick={onDone}
+                    aria-label="Done reordering"
+                  >
+                    <Icon size="100" src={Icons.Check} />
+                  </IconButton>
+                )}
+              </Box>
+            </NavCategoryHeader>
+          </Box>
+        )}
+      />
+    </Box>
   );
 }
 

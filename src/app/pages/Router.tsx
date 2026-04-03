@@ -43,7 +43,7 @@ import { ClientBindAtoms, ClientLayout, ClientRoot } from './client';
 import { Home, HomeRouteRoomProvider, HomeSearch } from './client/home';
 import { Direct, DirectCreate, DirectRouteRoomProvider } from './client/direct';
 import { RouteSpaceProvider, Space, SpaceRoomDrawer, SpaceRouteRoomProvider, SpaceSearch } from './client/space';
-import { FavoritesDrawer } from './client/FavoritesDrawer';
+import { FavoritesDrawer, FavoritesSection } from './client/FavoritesDrawer';
 import { Explore, FeaturedRooms, PublicRooms } from './client/explore';
 import { Notifications, Inbox, Invites } from './client/inbox';
 import { setAfterLoginRedirectPath } from './afterLoginRedirectPath';
@@ -214,7 +214,7 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
               <PageRoot
                 nav={
                   <MobileFriendlyPageNav path={SPACE_PATH}>
-                    <Space />
+                    <Space extra={<FavoritesSection />} />
                   </MobileFriendlyPageNav>
                 }
               >
