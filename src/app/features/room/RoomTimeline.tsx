@@ -624,10 +624,10 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
         if (!alive()) return;
         const evLength = getTimelinesEventsCount(lTimelines);
 
-        // Set the timeline first so messages render into the DOM,
-        // then defer the scroll to the next frame so layout settles
-        // before we jump — avoids missing the target when content
-        // (images, decrypted messages) shifts element heights.
+        // Batch both updates together so React commits them in one render pass.
+        // useLayoutEffect fires after that single commit — elements are in the
+        // DOM and we can scroll before any paint, eliminating the flash of the
+        // unscrolled position.
         setTimeline({
           linkedTimelines: lTimelines,
           range: {
@@ -635,18 +635,11 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
             end: Math.min(evtAbsIndex + PAGINATION_LIMIT, evLength),
           },
         });
-        requestAnimationFrame(() => {
-          if (!alive()) return;
-          // By this frame React has committed the timeline render to the DOM.
-          // Image containers already have their correct height from the CSS
-          // aspect-ratio set via Matrix metadata (info.w / info.h), so we can
-          // scroll without waiting for image data to download.
-          setFocusItem({
-            index: evtAbsIndex,
-            eventId: evtId,
-            scrollTo: true,
-            highlight: evtId !== readUptoEventIdRef.current,
-          });
+        setFocusItem({
+          index: evtAbsIndex,
+          eventId: evtId,
+          scrollTo: true,
+          highlight: evtId !== readUptoEventIdRef.current,
         });
       },
       [alive]
