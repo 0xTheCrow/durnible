@@ -254,7 +254,7 @@ export function FavoritesSection() {
             <Line variant="Background" size="300" />
             <NavCategoryHeader style={{ paddingTop: config.space.S200 }}>
               <Box grow="Yes" alignItems="Center" gap="200">
-                <Text size="L400" style={{ flexGrow: 1 }}>
+                <Text size="L400" style={{ flexGrow: 1, paddingLeft: config.space.S400 }}>
                   Favorites
                 </Text>
                 {reorderMode && (
@@ -289,7 +289,7 @@ function FavoritesNav() {
         header={(reorderMode, onDone) => (
           <PageNavHeader>
             <Box grow="Yes" alignItems="Center" gap="200">
-              <Text size="H4" style={{ flexGrow: 1 }} truncate>
+              <Text size="H4" style={{ flexGrow: 1, paddingLeft: config.space.S400 }} truncate>
                 Favorites
               </Text>
               {reorderMode && (
