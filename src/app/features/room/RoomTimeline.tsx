@@ -997,6 +997,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
       scrollToItem(focusItem.index, {
         behavior: 'instant',
         align: 'start',
+        offset: Math.round(window.innerHeight * 0.12),
       });
     }
   }, [focusItem, scrollToItem]);
