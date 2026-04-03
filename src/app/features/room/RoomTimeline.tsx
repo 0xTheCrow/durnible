@@ -264,6 +264,10 @@ const useEventTimelineLoader = (
         return;
       }
 
+      if (room.hasEncryptionStateEvent()) {
+        await to(decryptAllTimelineEvent(mx, replyEvtTimeline));
+      }
+
       onLoad(eventId, linkedTimelines, absIndex);
     },
     [mx, room, onLoad, onError]
