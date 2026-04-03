@@ -1021,15 +1021,25 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
   }, [room, unreadInfo, scrollToItem]);
 
   // scroll to focused message
+  // Look up by eventId so stale indices (from recalibratePagination) never land
+  // on the wrong element. getBoundingClientRect gives the true current position
+  // after all image containers have applied their aspect-ratio heights.
   useLayoutEffect(() => {
-    if (focusItem && focusItem.scrollTo) {
-      scrollToItem(focusItem.index, {
-        behavior: 'instant',
-        align: 'start',
-        offset: Math.round(window.innerHeight * 0.12),
-      });
-    }
-  }, [focusItem, scrollToItem]);
+    if (!focusItem?.scrollTo) return;
+    const scrollEl = scrollRef.current;
+    if (!scrollEl) return;
+    const el = scrollEl.querySelector(
+      `[data-message-id="${focusItem.eventId}"]`
+    ) as HTMLElement | null;
+    if (!el) return;
+    const topOffset = Math.round(window.innerHeight * 0.12);
+    const newScrollTop =
+      scrollEl.scrollTop +
+      el.getBoundingClientRect().top -
+      scrollEl.getBoundingClientRect().top -
+      topOffset;
+    scrollEl.scrollTo({ top: newScrollTop, behavior: 'instant' });
+  }, [focusItem]);
 
   // clear focused message highlight after 2 s
   useEffect(() => {
