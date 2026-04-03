@@ -40,6 +40,7 @@ import { useCategoryHandler } from '../../../hooks/useCategoryHandler';
 import { useNavToActivePathMapper } from '../../../hooks/useNavToActivePathMapper';
 import { useDirectRooms } from './useDirectRooms';
 import { PageNav, PageNavContent, PageNavHeader } from '../../../components/page';
+import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
 import { FavoritesSection } from '../FavoritesDrawer';
 import { useClosedNavCategoriesAtom } from '../../../state/hooks/closedNavCategories';
 import { useRoomsUnread } from '../../../state/hooks/unread';
@@ -172,6 +173,8 @@ const DEFAULT_CATEGORY_ID = makeNavCategoryId('direct', 'direct');
 export function Direct() {
   const mx = useMatrixClient();
   useNavToActivePathMapper('direct');
+  const screenSize = useScreenSizeContext();
+  const isDesktop = screenSize === ScreenSize.Desktop;
   const scrollRef = useRef<HTMLDivElement>(null);
   const directs = useDirectRooms();
   const notificationPreferences = useRoomsNotificationPreferencesContext();
@@ -267,6 +270,7 @@ export function Direct() {
                           notificationPreferences,
                           room.roomId
                         )}
+                        tall={isDesktop}
                       />
                     </VirtualTile>
                   );

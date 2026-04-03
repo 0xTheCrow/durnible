@@ -238,6 +238,7 @@ type RoomNavItemProps = {
   showAvatar?: boolean;
   direct?: boolean;
   isDrawerMode?: boolean;
+  tall?: boolean;
 };
 export function RoomNavItem({
   room,
@@ -247,6 +248,7 @@ export function RoomNavItem({
   notificationMode,
   linkPath,
   isDrawerMode,
+  tall,
 }: RoomNavItemProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
@@ -283,7 +285,7 @@ export function RoomNavItem({
       aria-selected={selected}
       data-hover={!!menuAnchor}
       onContextMenu={isDrawerMode ? undefined : handleContextMenu}
-      style={isDrawerMode ? { minHeight: toRem(48) } : undefined}
+      style={isDrawerMode || tall ? { minHeight: toRem(48) } : undefined}
       {...hoverProps}
       {...focusWithinProps}
     >
