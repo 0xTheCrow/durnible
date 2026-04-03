@@ -1,5 +1,5 @@
 import { MatrixEvent, MatrixEventEvent, MatrixEventHandlerMap } from 'matrix-js-sdk';
-import React, { ReactNode, useEffect, useState } from 'react';
+import React, { Dispatch, ReactNode, SetStateAction, useEffect, useReducer, useState } from 'react';
 import { MessageEvent } from '../../../../types/matrix/room';
 
 // How long to wait before showing the "not decrypted" fallback on initial render.
@@ -8,13 +8,15 @@ const DECRYPT_SETTLE_MS = 500;
 
 type EncryptedContentProps = {
   mEvent: MatrixEvent;
-  children: () => ReactNode;
+  children: (retrying: boolean, setRetrying: Dispatch<SetStateAction<boolean>>) => ReactNode;
 };
 
 export function EncryptedContent({ mEvent, children }: EncryptedContentProps) {
   const [settling, setSettling] = useState(
     mEvent.getType() === MessageEvent.RoomMessageEncrypted
   );
+  const [, forceUpdate] = useReducer((n: number) => n + 1, 0);
+  const [retrying, setRetrying] = useState(false);
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -22,6 +24,7 @@ export function EncryptedContent({ mEvent, children }: EncryptedContentProps) {
     const handleDecrypted: MatrixEventHandlerMap[MatrixEventEvent.Decrypted] = () => {
       clearTimeout(timer);
       setSettling(false);
+      forceUpdate();
     };
 
     mEvent.on(MatrixEventEvent.Decrypted, handleDecrypted);
@@ -40,5 +43,5 @@ export function EncryptedContent({ mEvent, children }: EncryptedContentProps) {
   }, [mEvent]);
 
   if (settling) return null;
-  return <>{children()}</>;
+  return <>{children(retrying, setRetrying)}</>;
 }

@@ -46,7 +46,7 @@ export const useRoomEvent = (
 
   const fetchEvent = useFetchEvent(room, eventId);
 
-  const { data, error } = useQuery({
+  const { data, error, isFetching } = useQuery({
     enabled: event === undefined,
     queryKey: [room.roomId, eventId],
     queryFn: fetchEvent,
@@ -56,7 +56,7 @@ export const useRoomEvent = (
 
   if (event) return event;
   if (data) return data;
-  if (error) return null;
+  if (error && !isFetching) return null;
 
   return undefined;
 };

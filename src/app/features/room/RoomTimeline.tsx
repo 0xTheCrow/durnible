@@ -434,6 +434,34 @@ const getRoomUnreadInfo = (room: Room, scrollTo = false) => {
   };
 };
 
+const warningStyle = { color: color.Warning.Main, opacity: config.opacity.P300 };
+
+type DecryptRetryProps = {
+  retrying: boolean;
+  onRetry: () => void;
+};
+
+function DecryptRetry({ retrying, onRetry }: DecryptRetryProps) {
+  return (
+    <Text>
+      <Box as="span" alignItems="Center" gap="200" style={warningStyle}>
+        <Icon size="50" src={Icons.Lock} />
+        <i>Unable to decrypt message</i>
+        <Chip
+          as="button"
+          radii="300"
+          variant="SurfaceVariant"
+          size="400"
+          disabled={retrying}
+          onClick={onRetry}
+        >
+          <Text size="T200">{retrying ? 'Retrying…' : 'Retry'}</Text>
+        </Chip>
+      </Box>
+    </Text>
+  );
+}
+
 export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimelineProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
@@ -1372,7 +1400,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
             dateFormatString={dateFormatString}
           >
             <EncryptedContent mEvent={mEvent}>
-              {() => {
+              {(retrying, setRetrying) => {
                 if (mEvent.isRedacted()) return <RedactedContent />;
                 if (mEvent.getType() === MessageEvent.Sticker)
                   return (
@@ -1390,6 +1418,23 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
                 if (mEvent.getType() === MessageEvent.RoomMessage) {
                   const editedEvent = getEditedEvent(mEventId, mEvent, timelineSet);
                   const content = editedEvent?.getContent()['m.new_content'] ?? mEvent.getContent();
+
+                  if (content.msgtype === 'm.bad.encrypted') {
+                    return (
+                      <DecryptRetry
+                        retrying={retrying}
+                        onRetry={async () => {
+                          setRetrying(true);
+                          await Promise.allSettled(
+                            timeline.linkedTimelines.map((tl) =>
+                              decryptAllTimelineEvent(mx, tl)
+                            )
+                          );
+                          setRetrying(false);
+                        }}
+                      />
+                    );
+                  }
 
                   const senderId = mEvent.getSender() ?? '';
                   const senderDisplayName =
