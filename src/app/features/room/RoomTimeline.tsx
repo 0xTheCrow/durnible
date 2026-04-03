@@ -715,6 +715,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
           behavior: 'smooth',
           align: 'start',
           stopInView: true,
+          offset: Math.round(window.innerHeight * 0.12),
         });
         if (onScroll) onScroll(scrolled);
         setFocusItem({
