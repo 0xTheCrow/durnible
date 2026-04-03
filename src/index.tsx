@@ -165,15 +165,35 @@ const setupVirtualKeyboard = () => {
   if (!mobileOrTablet()) return;
   const vv = window.visualViewport;
   if (!vv) return;
+  // Tracks the natural (no-keyboard) height for the current orientation.
+  // Some browsers (e.g. Brave) resize both vv.height and window.innerHeight
+  // equally when the keyboard opens, so vv.height < window.innerHeight is
+  // never true. Comparing against maxSeenHeight catches that case.
+  let maxSeenHeight = vv.height;
   const update = () => {
-    if (vv.height < window.innerHeight) {
+    if (vv.height > maxSeenHeight) maxSeenHeight = vv.height;
+    const keyboardOpen = vv.height < window.innerHeight || vv.height < maxSeenHeight;
+    if (keyboardOpen) {
       document.documentElement.style.setProperty('--app-height', `${vv.height}px`);
+      // vv.offsetTop is non-zero when the browser scrolls the visual viewport
+      // to bring the focused input into view. Without this, #root stays anchored
+      // at top:0 of the layout viewport while the visual viewport has shifted
+      // down, leaving a white gap below the app content.
+      document.documentElement.style.setProperty('--app-top', `${vv.offsetTop}px`);
     } else {
       document.documentElement.style.removeProperty('--app-height');
+      document.documentElement.style.removeProperty('--app-top');
     }
   };
   update();
   vv.addEventListener('resize', update);
+  // offsetTop changes on a separate 'scroll' event from the height 'resize'.
+  vv.addEventListener('scroll', update);
+  // Zero out maxSeenHeight on orientation change so the next vv resize
+  // recalibrates it to the new orientation's natural height.
+  screen.orientation?.addEventListener('change', () => {
+    maxSeenHeight = 0;
+  });
 };
 
 setupVirtualKeyboard();

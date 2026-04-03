@@ -264,6 +264,10 @@ const useEventTimelineLoader = (
         return;
       }
 
+      if (room.hasEncryptionStateEvent()) {
+        await to(decryptAllTimelineEvent(mx, replyEvtTimeline));
+      }
+
       onLoad(eventId, linkedTimelines, absIndex);
     },
     [mx, room, onLoad, onError]
@@ -434,6 +438,34 @@ const getRoomUnreadInfo = (room: Room, scrollTo = false) => {
   };
 };
 
+const warningStyle = { color: color.Warning.Main, opacity: config.opacity.P300 };
+
+type DecryptRetryProps = {
+  retrying: boolean;
+  onRetry: () => void;
+};
+
+function DecryptRetry({ retrying, onRetry }: DecryptRetryProps) {
+  return (
+    <Text>
+      <Box as="span" alignItems="Center" gap="200" style={warningStyle}>
+        <Icon size="50" src={Icons.Lock} />
+        <i>Unable to decrypt message</i>
+        <Chip
+          as="button"
+          radii="300"
+          variant="SurfaceVariant"
+          size="400"
+          disabled={retrying}
+          onClick={onRetry}
+        >
+          <Text size="T200">{retrying ? 'Retrying…' : 'Retry'}</Text>
+        </Chip>
+      </Box>
+    </Text>
+  );
+}
+
 export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimelineProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
@@ -516,6 +548,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
   const [focusItem, setFocusItem] = useState<
     | {
         index: number;
+        eventId: string;
         scrollTo: boolean;
         highlight: boolean;
       }
@@ -591,17 +624,22 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
         if (!alive()) return;
         const evLength = getTimelinesEventsCount(lTimelines);
 
-        setFocusItem({
-          index: evtAbsIndex,
-          scrollTo: true,
-          highlight: evtId !== readUptoEventIdRef.current,
-        });
+        // Batch both updates together so React commits them in one render pass.
+        // useLayoutEffect fires after that single commit — elements are in the
+        // DOM and we can scroll before any paint, eliminating the flash of the
+        // unscrolled position.
         setTimeline({
           linkedTimelines: lTimelines,
           range: {
             start: Math.max(evtAbsIndex - PAGINATION_LIMIT, 0),
             end: Math.min(evtAbsIndex + PAGINATION_LIMIT, evLength),
           },
+        });
+        setFocusItem({
+          index: evtAbsIndex,
+          eventId: evtId,
+          scrollTo: true,
+          highlight: evtId !== readUptoEventIdRef.current,
         });
       },
       [alive]
@@ -666,6 +704,22 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
     )
   );
 
+  // Re-render when a local echo status changes (QUEUED → SENDING → sent / NOT_SENT).
+  // RoomEvent.Timeline only fires for new events, so echoes updating in-place are missed.
+  useEffect(() => {
+    const handleLocalEchoUpdated: RoomEventHandlerMap[RoomEvent.LocalEchoUpdated] = (
+      _mEvent,
+      eventRoom
+    ) => {
+      if (eventRoom?.roomId !== room.roomId) return;
+      setTimeline((ct) => ({ ...ct }));
+    };
+    room.on(RoomEvent.LocalEchoUpdated, handleLocalEchoUpdated);
+    return () => {
+      room.off(RoomEvent.LocalEchoUpdated, handleLocalEchoUpdated);
+    };
+  }, [room, setTimeline]);
+
   const handleOpenEvent = useCallback(
     async (
       evtId: string,
@@ -684,12 +738,14 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
       if (typeof absoluteIndex === 'number') {
         const scrolled = scrollToItem(absoluteIndex, {
           behavior: 'smooth',
-          align: 'center',
+          align: 'start',
           stopInView: true,
+          offset: Math.round(window.innerHeight * 0.12),
         });
         if (onScroll) onScroll(scrolled);
         setFocusItem({
           index: absoluteIndex,
+          eventId: evtId,
           scrollTo: false,
           highlight,
         });
@@ -962,23 +1018,38 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
   }, [room, unreadInfo, scrollToItem]);
 
   // scroll to focused message
+  // Look up by eventId so stale indices (from recalibratePagination) never land
+  // on the wrong element. getBoundingClientRect gives the true current position
+  // after all image containers have applied their aspect-ratio heights.
   useLayoutEffect(() => {
-    if (focusItem && focusItem.scrollTo) {
-      scrollToItem(focusItem.index, {
-        behavior: 'instant',
-        align: 'center',
-        stopInView: true,
-      });
-    }
+    if (!focusItem?.scrollTo) return;
+    const scrollEl = scrollRef.current;
+    if (!scrollEl) return;
+    const el = scrollEl.querySelector(
+      `[data-message-id="${focusItem.eventId}"]`
+    ) as HTMLElement | null;
+    if (!el) return;
+    const topOffset = Math.round(window.innerHeight * 0.12);
+    const newScrollTop =
+      scrollEl.scrollTop +
+      el.getBoundingClientRect().top -
+      scrollEl.getBoundingClientRect().top -
+      topOffset;
+    scrollEl.scrollTo({ top: newScrollTop, behavior: 'instant' });
+  }, [focusItem]);
 
-    setTimeout(() => {
+  // clear focused message highlight after 2 s
+  useEffect(() => {
+    if (!focusItem) return;
+    const id = setTimeout(() => {
       if (!alive()) return;
       setFocusItem((currentItem) => {
         if (currentItem === focusItem) return undefined;
         return currentItem;
       });
     }, 2000);
-  }, [alive, focusItem, scrollToItem]);
+    return () => clearTimeout(id);
+  }, [alive, focusItem]);
 
   // scroll to bottom of timeline
   const scrollToBottomCount = scrollToBottomRef.current.count;
@@ -1174,7 +1245,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
         const reactions = reactionRelations && reactionRelations.getSortedAnnotationsByKey();
         const hasReactions = reactions && reactions.length > 0;
         const { replyEventId, threadRootId } = mEvent;
-        const highlighted = focusItem?.index === item && focusItem.highlight;
+        const highlighted = focusItem?.eventId === mEventId && focusItem.highlight;
         const myUserId = mx.getSafeUserId();
         const replyToMe =
           !!replyEventId &&
@@ -1270,7 +1341,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
         const reactions = reactionRelations && reactionRelations.getSortedAnnotationsByKey();
         const hasReactions = reactions && reactions.length > 0;
         const { replyEventId, threadRootId } = mEvent;
-        const highlighted = focusItem?.index === item && focusItem.highlight;
+        const highlighted = focusItem?.eventId === mEventId && focusItem.highlight;
         const myUserId = mx.getSafeUserId();
         const replyToMe =
           !!replyEventId &&
@@ -1336,7 +1407,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
             dateFormatString={dateFormatString}
           >
             <EncryptedContent mEvent={mEvent}>
-              {() => {
+              {(retrying, setRetrying) => {
                 if (mEvent.isRedacted()) return <RedactedContent />;
                 if (mEvent.getType() === MessageEvent.Sticker)
                   return (
@@ -1354,6 +1425,23 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
                 if (mEvent.getType() === MessageEvent.RoomMessage) {
                   const editedEvent = getEditedEvent(mEventId, mEvent, timelineSet);
                   const content = editedEvent?.getContent()['m.new_content'] ?? mEvent.getContent();
+
+                  if (content.msgtype === 'm.bad.encrypted') {
+                    return (
+                      <DecryptRetry
+                        retrying={retrying}
+                        onRetry={async () => {
+                          setRetrying(true);
+                          await Promise.allSettled(
+                            timeline.linkedTimelines.map((tl) =>
+                              decryptAllTimelineEvent(mx, tl)
+                            )
+                          );
+                          setRetrying(false);
+                        }}
+                      />
+                    );
+                  }
 
                   const senderId = mEvent.getSender() ?? '';
                   const senderDisplayName =
@@ -1400,7 +1488,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
         const reactionRelations = getEventReactions(timelineSet, mEventId);
         const reactions = reactionRelations && reactionRelations.getSortedAnnotationsByKey();
         const hasReactions = reactions && reactions.length > 0;
-        const highlighted = focusItem?.index === item && focusItem.highlight;
+        const highlighted = focusItem?.eventId === mEventId && focusItem.highlight;
 
         return (
           <Message
@@ -1464,7 +1552,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
         const reactions = reactionRelations && reactionRelations.getSortedAnnotationsByKey();
         const hasReactions = reactions && reactions.length > 0;
         const { replyEventId, threadRootId } = mEvent;
-        const highlighted = focusItem?.index === item && focusItem.highlight;
+        const highlighted = focusItem?.eventId === mEventId && focusItem.highlight;
 
         return (
           <Message
@@ -1533,7 +1621,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
         const reactions = reactionRelations && reactionRelations.getSortedAnnotationsByKey();
         const hasReactions = reactions && reactions.length > 0;
         const { replyEventId, threadRootId } = mEvent;
-        const highlighted = focusItem?.index === item && focusItem.highlight;
+        const highlighted = focusItem?.eventId === mEventId && focusItem.highlight;
 
         return (
           <Message
@@ -1602,7 +1690,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
         if (membershipChanged && hideMembershipEvents) return null;
         if (!membershipChanged && hideNickAvatarEvents) return null;
 
-        const highlighted = focusItem?.index === item && focusItem.highlight;
+        const highlighted = focusItem?.eventId === mEventId && focusItem.highlight;
         const parsed = parseMemberEvent(mEvent);
 
         const timeJSX = (
@@ -1643,7 +1731,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
         );
       },
       [StateEvent.RoomName]: (mEventId, mEvent, item) => {
-        const highlighted = focusItem?.index === item && focusItem.highlight;
+        const highlighted = focusItem?.eventId === mEventId && focusItem.highlight;
         const senderId = mEvent.getSender() ?? '';
         const senderName = getMemberDisplayName(room, senderId) || getMxIdLocalPart(senderId);
 
@@ -1686,7 +1774,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
         );
       },
       [StateEvent.RoomTopic]: (mEventId, mEvent, item) => {
-        const highlighted = focusItem?.index === item && focusItem.highlight;
+        const highlighted = focusItem?.eventId === mEventId && focusItem.highlight;
         const senderId = mEvent.getSender() ?? '';
         const senderName = getMemberDisplayName(room, senderId) || getMxIdLocalPart(senderId);
 
@@ -1729,7 +1817,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
         );
       },
       [StateEvent.RoomAvatar]: (mEventId, mEvent, item) => {
-        const highlighted = focusItem?.index === item && focusItem.highlight;
+        const highlighted = focusItem?.eventId === mEventId && focusItem.highlight;
         const senderId = mEvent.getSender() ?? '';
         const senderName = getMemberDisplayName(room, senderId) || getMxIdLocalPart(senderId);
 
@@ -1774,7 +1862,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
     },
     (mEventId, mEvent, item) => {
       if (!showHiddenEvents) return null;
-      const highlighted = focusItem?.index === item && focusItem.highlight;
+      const highlighted = focusItem?.eventId === mEventId && focusItem.highlight;
       const senderId = mEvent.getSender() ?? '';
       const senderName = getMemberDisplayName(room, senderId) || getMxIdLocalPart(senderId);
 
@@ -1824,7 +1912,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
       if (mEvent.getRelation()) return null;
       if (mEvent.isRedaction()) return null;
 
-      const highlighted = focusItem?.index === item && focusItem.highlight;
+      const highlighted = focusItem?.eventId === mEventId && focusItem.highlight;
       const senderId = mEvent.getSender() ?? '';
       const senderName = getMemberDisplayName(room, senderId) || getMxIdLocalPart(senderId);
 
@@ -1890,6 +1978,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
     if (mEvent.isRedacted() && !showHiddenEvents) {
       return null;
     }
+
 
     if (!newDivider && readUptoEventIdRef.current) {
       newDivider = prevEvent?.getId() === readUptoEventIdRef.current;
@@ -2042,6 +2131,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
             ))}
 
           {getItems().map(eventRenderer)}
+
 
           {(!liveTimelineLinked || !rangeAtEnd) &&
             (messageLayout === MessageLayout.Compact ? (

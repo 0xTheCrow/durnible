@@ -1,4 +1,4 @@
-import React, { ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { ReactNode, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   Badge,
   Box,
@@ -14,7 +14,7 @@ import {
 } from 'folds';
 import classNames from 'classnames';
 import { BlurhashCanvas } from 'react-blurhash';
-import { useSetAtom } from 'jotai';
+import { useAtom, useSetAtom } from 'jotai';
 import { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
 import { IImageInfo, MATRIX_BLUR_HASH_PROPERTY_NAME } from '../../../../types/matrix/common';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
@@ -28,6 +28,7 @@ import { decryptFile, downloadEncryptedMedia, mxcUrlToHttp } from '../../../util
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
 import { validBlurHash } from '../../../utils/blurHash';
 import { imageViewerAtom } from '../../../state/imageViewer';
+import { hiddenImagesAtom, MessageEventIdContext } from '../../../state/hiddenImages';
 
 type RenderImageProps = {
   alt: string;
@@ -81,9 +82,14 @@ export const ImageContent = as<'div', ImageContentProps>(
 
     const setViewerState = useSetAtom(imageViewerAtom);
 
+    const messageEventId = useContext(MessageEventIdContext);
+    const [hiddenImages, setHiddenImages] = useAtom(hiddenImagesAtom);
+    const isForceHidden = messageEventId ? hiddenImages.has(messageEventId) : false;
+
     const [load, setLoad] = useState(false);
     const [error, setError] = useState(false);
     const [blurred, setBlurred] = useState(markedAsSpoiler ?? false);
+    const effectiveBlurred = blurred || isForceHidden;
 
     const [srcState, loadSrc] = useAsyncCallback(
       useCallback(async () => {
@@ -123,8 +129,8 @@ export const ImageContent = as<'div', ImageContentProps>(
     };
 
     useEffect(() => {
-      if (autoPlay) loadSrc();
-    }, [autoPlay, loadSrc]);
+      if (autoPlay || isForceHidden) loadSrc();
+    }, [autoPlay, isForceHidden, loadSrc]);
 
     return (
       <Box className={classNames(css.RelativeBase, className)} {...props} ref={ref}>
@@ -142,7 +148,7 @@ export const ImageContent = as<'div', ImageContentProps>(
             />
           </Box>
         )}
-        {!autoPlay && !markedAsSpoiler && srcState.status === AsyncStatus.Idle && (
+        {!autoPlay && !markedAsSpoiler && !isForceHidden && srcState.status === AsyncStatus.Idle && (
           <Box className={css.AbsoluteContainer} alignItems="Center" justifyContent="Center">
             <Button
               variant="Secondary"
@@ -157,7 +163,10 @@ export const ImageContent = as<'div', ImageContentProps>(
           </Box>
         )}
         {srcState.status === AsyncStatus.Success && (
-          <Box className={classNames(css.AbsoluteContainer, blurred && css.Blur)}>
+          <Box
+            className={classNames(css.AbsoluteContainer, effectiveBlurred && css.Blur)}
+            style={effectiveBlurred ? { opacity: 0.6 } : undefined}
+          >
             {renderImage({
               alt: body,
               title: body,
@@ -176,7 +185,7 @@ export const ImageContent = as<'div', ImageContentProps>(
             })}
           </Box>
         )}
-        {shouldPauseGif && load && !blurred && srcState.status === AsyncStatus.Success && (
+        {shouldPauseGif && load && !effectiveBlurred && srcState.status === AsyncStatus.Success && (
           <div
             style={{
               position: 'absolute',
@@ -201,7 +210,7 @@ export const ImageContent = as<'div', ImageContentProps>(
             />
           </div>
         )}
-        {blurred && !error && srcState.status !== AsyncStatus.Error && (
+        {effectiveBlurred && !error && srcState.status !== AsyncStatus.Error && (
           <Box className={css.AbsoluteContainer} alignItems="Center" justifyContent="Center">
             <TooltipProvider
               tooltip={
@@ -222,13 +231,20 @@ export const ImageContent = as<'div', ImageContentProps>(
                   size="500"
                   outlined
                   onClick={() => {
+                    if (isForceHidden && messageEventId) {
+                      setHiddenImages((prev: Set<string>) => {
+                        const next = new Set(prev);
+                        next.delete(messageEventId);
+                        return next;
+                      });
+                    }
                     setBlurred(false);
                     if (srcState.status === AsyncStatus.Idle) {
                       loadSrc();
                     }
                   }}
                 >
-                  <Text size="B300">Spoiler</Text>
+                  <Text size="B300">{isForceHidden ? 'Hidden' : 'Spoiler'}</Text>
                 </Chip>
               )}
             </TooltipProvider>
@@ -236,7 +252,7 @@ export const ImageContent = as<'div', ImageContentProps>(
         )}
         {(srcState.status === AsyncStatus.Loading || srcState.status === AsyncStatus.Success) &&
           !load &&
-          !blurred && (
+          !effectiveBlurred && (
             <Box className={css.AbsoluteContainer} alignItems="Center" justifyContent="Center">
               <Spinner variant="Secondary" />
             </Box>

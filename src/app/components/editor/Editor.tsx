@@ -163,8 +163,9 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
         editor.children = [
           { type: BlockType.Paragraph, children: [{ text }] },
         ];
+        onChange?.(editor.children);
       },
-      [editor]
+      [editor, onChange]
     );
 
     const fetchUrlAsFile = useCallback(
