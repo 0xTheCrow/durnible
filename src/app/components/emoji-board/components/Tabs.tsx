@@ -1,6 +1,7 @@
 import React, { CSSProperties } from 'react';
 import { Badge, Box, Text } from 'folds';
 import { EmojiBoardTab } from '../types';
+import { gifServerEnabled } from '../../../utils/gifServer';
 
 const styles: CSSProperties = {
   cursor: 'pointer',
@@ -15,6 +16,20 @@ export function EmojiBoardTabs({
 }) {
   return (
     <Box gap="100">
+      {gifServerEnabled && (
+        <Badge
+          style={styles}
+          as="button"
+          variant="Secondary"
+          fill={tab === EmojiBoardTab.Gif ? 'Solid' : 'None'}
+          size="500"
+          onClick={() => onTabChange(EmojiBoardTab.Gif)}
+        >
+          <Text as="span" size="L400">
+            GIF
+          </Text>
+        </Badge>
+      )}
       <Badge
         style={styles}
         as="button"

@@ -184,3 +184,39 @@ export const StickerImg = style([
     objectFit: 'contain',
   },
 ]);
+
+/**
+ * GIF
+ */
+
+export const GifGrid = style({
+  display: 'grid',
+  gridTemplateColumns: '1fr 1fr',
+  gap: config.space.S100,
+  padding: config.space.S200,
+});
+
+export const GifItem = style([
+  DefaultReset,
+  FocusOutline,
+  {
+    cursor: 'pointer',
+    borderRadius: config.radii.R300,
+    overflow: 'hidden',
+    display: 'block',
+    width: '100%',
+    backgroundColor: color.SurfaceVariant.Container,
+    ':hover': {
+      outline: `${config.borderWidth.B300} solid ${color.Primary.Main}`,
+    },
+  },
+]);
+
+export const GifItemImg = style([
+  DefaultReset,
+  {
+    width: '100%',
+    height: 'auto',
+    display: 'block',
+  },
+]);

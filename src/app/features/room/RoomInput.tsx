@@ -57,6 +57,7 @@ import {
   replaceShortcodes,
 } from '../../components/editor';
 import { EmojiBoard, EmojiBoardTab } from '../../components/emoji-board';
+import { GifItem, fetchGifBlob } from '../../utils/gifServer';
 import { UseStateProvider } from '../../components/UseStateProvider';
 import {
   TUploadContent,
@@ -549,6 +550,34 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       });
     };
 
+    const handleGifSelect = async (gif: GifItem) => {
+      const blob = await fetchGifBlob(gif.renditions.original.url).catch((e) => {
+        console.error('Failed to fetch GIF from server', e);
+        return null;
+      });
+      if (!blob) return;
+
+      const file = new File([blob], gif.filename, { type: 'image/gif' });
+      const uploadResult = await mx.uploadContent(file, { type: 'image/gif' }).catch((e) => {
+        console.error('Failed to upload GIF to homeserver', e);
+        return null;
+      });
+      const mxcUrl = uploadResult?.content_uri;
+      if (!mxcUrl) return;
+
+      mx.sendMessage(roomId, {
+        msgtype: 'm.image',
+        body: gif.filename,
+        url: mxcUrl,
+        info: {
+          mimetype: 'image/gif',
+          w: gif.renditions.original.width,
+          h: gif.renditions.original.height,
+          size: gif.renditions.original.size_bytes,
+        },
+      } as any);
+    };
+
     return (
       <div ref={ref}>
         {selectedFiles.length > 0 && (
@@ -738,6 +767,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
                         onEmojiSelect={handleEmoticonSelect}
                         onCustomEmojiSelect={handleEmoticonSelect}
                         onStickerSelect={handleStickerSelect}
+                        onGifSelect={handleGifSelect}
                         requestClose={() => {
                           setEmojiBoardTab((t) => {
                             if (t) {

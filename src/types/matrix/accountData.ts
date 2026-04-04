@@ -6,6 +6,8 @@ export enum AccountDataEvent {
   CinnySpaces = 'in.cinny.spaces',
   CinnyStickerPackOrder = 'in.cinny.sticker_pack_order',
   CinnyFavoriteEmoji = 'in.cinny.favorite_emoji',
+  CinnyFavoriteGif = 'in.cinny.favorite_gif',
+  CinnyRecentGif = 'in.cinny.recent_gif',
 
   ElementRecentEmoji = 'io.element.recent_emoji',
 

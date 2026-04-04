@@ -62,6 +62,8 @@ import {
 import { useScreenSize, ScreenSize } from '../../hooks/useScreenSize';
 import { EmojiBoardTab, EmojiItemInfo, EmojiType } from './types';
 import { VirtualTile } from '../virtualizer';
+import { GifBoard } from './GifBoard';
+import { gifServerEnabled } from '../../utils/gifServer';
 
 const RECENT_GROUP_ID = 'recent_group';
 const FAVORITES_GROUP_ID = 'favorites_group';
@@ -725,6 +727,7 @@ type EmojiBoardProps = {
   onEmojiSelect?: (unicode: string, shortcode: string) => void;
   onCustomEmojiSelect?: (mxc: string, shortcode: string) => void;
   onStickerSelect?: (mxc: string, shortcode: string, label: string) => void;
+  onGifSelect?: (gif: import('../../utils/gifServer').GifItem) => void;
   allowTextCustomEmoji?: boolean;
   addToRecentEmoji?: boolean;
 };
@@ -738,6 +741,7 @@ export function EmojiBoard({
   onEmojiSelect,
   onCustomEmojiSelect,
   onStickerSelect,
+  onGifSelect,
   allowTextCustomEmoji,
   addToRecentEmoji = true,
 }: EmojiBoardProps) {
@@ -913,6 +917,15 @@ export function EmojiBoard({
         escapeDeactivates: stopPropagation,
       }}
     >
+      <div style={{ display: 'contents' }}>
+      {gifServerEnabled && tab === EmojiBoardTab.Gif ? (
+        <GifBoard
+          tab={tab}
+          onTabChange={onTabChange}
+          onGifSelect={onGifSelect}
+          requestClose={requestClose}
+        />
+      ) : (
       <EmojiBoardLayout
         header={
           <Box direction="Column" gap="200">
@@ -993,6 +1006,8 @@ export function EmojiBoard({
         </Box>
         <Preview previewAtom={previewAtom} />
       </EmojiBoardLayout>
+      )}
+      </div>
     </FocusTrap>
     {contextMenuAnchor && (
       <PopOut
