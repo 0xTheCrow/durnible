@@ -542,11 +542,27 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
         await getImageUrlBlob(stickerUrl)
       );
 
-      mx.sendEvent(roomId, EventType.Sticker, {
+      const content: Record<string, unknown> = {
         body: label,
         url: mxc,
         info,
-      });
+      };
+
+      if (replyDraft) {
+        content['m.relates_to'] = {
+          'm.in_reply_to': {
+            event_id: replyDraft.eventId,
+          },
+        };
+        if (replyDraft.relation?.rel_type === RelationType.Thread) {
+          (content['m.relates_to'] as Record<string, unknown>).event_id = replyDraft.relation.event_id;
+          (content['m.relates_to'] as Record<string, unknown>).rel_type = RelationType.Thread;
+          (content['m.relates_to'] as Record<string, unknown>).is_falling_back = false;
+        }
+        setReplyDraft(undefined);
+      }
+
+      mx.sendEvent(roomId, EventType.Sticker, content);
     };
 
     return (

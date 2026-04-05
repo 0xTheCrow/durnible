@@ -67,6 +67,53 @@ const extractDecryptedMessages = (matrixEvents: MatrixEvent[], roomId: string): 
 };
 
 /**
+ * Fetches unseen (unread) messages from the room's live timeline.
+ * Uses the read receipt marker to find where unread messages begin, then
+ * attempts decryption on any that haven't been decrypted yet.
+ * Returns an empty array if there are no unseen messages.
+ */
+export async function fetchUnseenMessages(
+  mx: MatrixClient,
+  roomId: string
+): Promise<DecryptedMessage[]> {
+  const userId = mx.getUserId();
+  const room = mx.getRoom(roomId);
+  if (!userId || !room) return [];
+
+  const liveTimeline = room.getLiveTimeline();
+  const events = liveTimeline.getEvents();
+  if (events.length === 0) return [];
+
+  // Find where unseen messages begin based on the read receipt
+  const lastReadEventId = room.getEventReadUpTo(userId);
+  let unseenStartIdx = 0;
+  if (lastReadEventId) {
+    const idx = events.findIndex((e) => e.getId() === lastReadEventId);
+    // idx === -1 means the last-read event isn't in the live timeline window;
+    // treat all in-memory events as potentially unread
+    unseenStartIdx = idx !== -1 ? idx + 1 : 0;
+  }
+
+  // Filter to message events only (plaintext or not-yet-decrypted encrypted)
+  const candidates = events
+    .slice(unseenStartIdx)
+    .filter((e) => e.getType() === 'm.room.message' || e.getType() === 'm.room.encrypted');
+
+  if (candidates.length === 0) return [];
+
+  const crypto = mx.getCrypto();
+  if (crypto) {
+    await Promise.allSettled(
+      candidates
+        .filter((e) => e.isEncrypted())
+        .map((e) => e.attemptDecryption(crypto as CryptoBackend, { isRetry: true }))
+    );
+  }
+
+  return extractDecryptedMessages(candidates, roomId);
+}
+
+/**
  * Async generator that fetches and decrypts messages page by page.
  * Yields after each page so callers can show intermediate results.
  */

@@ -318,7 +318,13 @@ export function RoomNavItem({
               )}
             </Avatar>
             <Box as="span" grow="Yes">
-              <Text priority={unread ? '500' : '300'} as="span" size="Inherit" truncate>
+              <Text
+                priority={unread && notificationMode !== RoomNotificationMode.Mute ? '500' : '300'}
+                as="span"
+                size="Inherit"
+                truncate
+                style={notificationMode === RoomNotificationMode.Mute ? { opacity: 0.5 } : undefined}
+              >
                 {room.name}
               </Text>
             </Box>
@@ -327,7 +333,7 @@ export function RoomNavItem({
                 <TypingIndicator size="300" disableAnimation />
               </Badge>
             )}
-            {!optionsVisible && unread && (
+            {!optionsVisible && unread && notificationMode !== RoomNotificationMode.Mute && (
               <UnreadBadgeCenter>
                 <UnreadBadge highlight={unread.highlight > 0} count={unread.total} />
               </UnreadBadgeCenter>
