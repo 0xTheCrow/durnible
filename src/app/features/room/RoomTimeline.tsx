@@ -1096,12 +1096,15 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
 
   const handleJumpToUnread = () => {
     if (unreadInfo?.readUptoEventId) {
+      atBottomRef.current = false;
+      setAtBottom(false);
       setTimeline(getEmptyTimeline());
       loadEventTimeline(unreadInfo.readUptoEventId);
     }
   };
 
   const handleMarkAsRead = () => {
+    setUnreadInfo(undefined);
     markAsRead(mx, room.roomId, hideActivity);
   };
 

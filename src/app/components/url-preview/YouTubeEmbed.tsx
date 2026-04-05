@@ -20,9 +20,10 @@ export const YouTubeEmbed = as<'div', { videoId: string; url: string; ts: number
           className={css.YouTubeIframe}
           src={`https://www.youtube-nocookie.com/embed/${videoId}`}
           title="YouTube video"
-          allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allow="encrypted-media"
           allowFullScreen
-          referrerPolicy="origin"
+          sandbox="allow-scripts allow-same-origin allow-presentation"
+          referrerPolicy="no-referrer"
         />
         </div>
         <div className={css.YouTubeLink}>

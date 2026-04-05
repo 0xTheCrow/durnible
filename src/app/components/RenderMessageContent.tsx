@@ -24,12 +24,17 @@ import {
   UnsupportedContent,
   VideoContent,
 } from './message';
-import { YouTubeEmbed } from './url-preview';
+import { YouTubeEmbed, SpotifyEmbed, SoundCloudEmbed, BandcampEmbed } from './url-preview';
 import { Image, MediaControl, Video } from './media';
 import { PdfViewer } from './Pdf-viewer';
 import { TextViewer } from './text-viewer';
 import { testMatrixTo } from '../plugins/matrix-to';
-import { testYouTubeUrl, getYouTubeVideoId } from '../utils/youtube';
+import {
+  testYouTubeUrl, getYouTubeVideoId,
+  testSpotifyUrl, getSpotifyEmbedInfo,
+  testSoundCloudUrl, getSoundCloudEmbedInfo,
+  testBandcampUrl, getBandcampInfo,
+} from '../utils/embeds';
 import { IAudioContent, IFileContent, IImageContent, IVideoContent } from '../../types/matrix/common';
 import { getBlobSafeMimeType } from '../utils/mimeTypes';
 
@@ -87,7 +92,17 @@ export const RenderMessageContent = React.memo(function RenderMessageContent({
     if (filteredUrls.length === 0) return undefined;
 
     const youtubeUrls = filteredUrls.filter((url) => testYouTubeUrl(url));
-    if (youtubeUrls.length === 0) return undefined;
+    const spotifyUrls = filteredUrls.filter((url) => testSpotifyUrl(url));
+    const soundcloudUrls = filteredUrls.filter((url) => testSoundCloudUrl(url));
+    const bandcampUrls = filteredUrls.filter((url) => testBandcampUrl(url));
+
+    if (
+      youtubeUrls.length === 0 &&
+      spotifyUrls.length === 0 &&
+      soundcloudUrls.length === 0 &&
+      bandcampUrls.length === 0
+    )
+      return undefined;
 
     return (
       <>
@@ -99,6 +114,38 @@ export const RenderMessageContent = React.memo(function RenderMessageContent({
               videoId={videoId}
               url={url}
               ts={ts}
+              style={{ marginTop: config.space.S200 }}
+            />
+          ) : null;
+        })}
+        {spotifyUrls.map((url) => {
+          const info = getSpotifyEmbedInfo(url);
+          return info ? (
+            <SpotifyEmbed
+              key={url}
+              info={info}
+              url={url}
+              style={{ marginTop: config.space.S200 }}
+            />
+          ) : null;
+        })}
+        {soundcloudUrls.map((url) => {
+          const info = getSoundCloudEmbedInfo(url);
+          return info ? (
+            <SoundCloudEmbed
+              key={url}
+              info={info}
+              style={{ marginTop: config.space.S200 }}
+            />
+          ) : null;
+        })}
+        {bandcampUrls.map((url) => {
+          const info = getBandcampInfo(url);
+          return info ? (
+            <BandcampEmbed
+              key={url}
+              info={info}
+              url={url}
               style={{ marginTop: config.space.S200 }}
             />
           ) : null;
