@@ -3,7 +3,7 @@ import { Switch } from 'folds';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
 import { SettingTile } from '../../../components/setting-tile';
-import { SettingsPages } from '../Settings';
+import { SettingsPages } from '../settingsPages';
 
 export type SearchEntry = {
   id: string;

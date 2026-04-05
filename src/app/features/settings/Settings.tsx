@@ -31,16 +31,7 @@ import { UseStateProvider } from '../../components/UseStateProvider';
 import { LogoutDialog } from '../../components/LogoutDialog';
 import { OverlayModal } from '../../components/OverlayModal';
 import { SearchResults } from './search/SearchResults';
-
-export enum SettingsPages {
-  GeneralPage,
-  AccountPage,
-  NotificationPage,
-  DevicesPage,
-  EmojisStickersPage,
-  DeveloperToolsPage,
-  AboutPage,
-}
+import { SettingsPages } from './settingsPages';
 
 type SettingsMenuItem = {
   page: SettingsPages;

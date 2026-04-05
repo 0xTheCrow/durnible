@@ -542,7 +542,14 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
         await getImageUrlBlob(stickerUrl)
       );
 
-      const content: Record<string, unknown> = {
+      type StickerContent = {
+        body: string;
+        url: string;
+        info: Awaited<ReturnType<typeof getImageInfo>>;
+        'm.relates_to'?: Record<string, unknown>;
+      };
+
+      const content: StickerContent = {
         body: label,
         url: mxc,
         info,
@@ -555,9 +562,9 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
           },
         };
         if (replyDraft.relation?.rel_type === RelationType.Thread) {
-          (content['m.relates_to'] as Record<string, unknown>).event_id = replyDraft.relation.event_id;
-          (content['m.relates_to'] as Record<string, unknown>).rel_type = RelationType.Thread;
-          (content['m.relates_to'] as Record<string, unknown>).is_falling_back = false;
+          content['m.relates_to'].event_id = replyDraft.relation.event_id;
+          content['m.relates_to'].rel_type = RelationType.Thread;
+          content['m.relates_to'].is_falling_back = false;
         }
         setReplyDraft(undefined);
       }
