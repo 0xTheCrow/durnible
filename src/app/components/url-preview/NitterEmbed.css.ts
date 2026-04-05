@@ -18,7 +18,7 @@ export const NitterIframe = style([
   DefaultReset,
   {
     width: '100%',
-    height: toRem(220),
+    minHeight: toRem(150),
     border: 'none',
     display: 'block',
   },
