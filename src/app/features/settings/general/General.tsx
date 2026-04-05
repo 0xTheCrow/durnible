@@ -987,11 +987,15 @@ function Messages() {
           title="Url Preview in Encrypted Room"
           after={<Switch variant="Primary" value={encUrlPreview} onChange={setEncUrlPreview} />}
         />
+      </SequenceCard>
+      <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
         <SettingTile
           title="Show Embed Links"
           description="Show a clean, tracking-free link for each embed. Enables link cards even when embeds are off."
           after={<Switch variant="Primary" value={embedLinks} onChange={setEmbedLinks} />}
         />
+      </SequenceCard>
+      <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
         <SettingTile
           title="Embed Types"
           description="Toggle individual embed types."
@@ -1016,7 +1020,7 @@ function Messages() {
           }
         />
         {showEmbedToggles && (
-          <>
+          <Box direction="Column" gap="100" style={{ paddingTop: config.space.S100 }}>
             <SettingTile
               title="YouTube"
               after={
@@ -1041,7 +1045,7 @@ function Messages() {
                 <Switch variant="Primary" value={embedNitter} onChange={setEmbedNitter} />
               }
             />
-          </>
+          </Box>
         )}
       </SequenceCard>
       <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">

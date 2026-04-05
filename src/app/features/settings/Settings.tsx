@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { ChangeEventHandler, useMemo, useState } from 'react';
 import {
   Avatar,
   Box,
@@ -8,6 +8,7 @@ import {
   IconButton,
   Icons,
   IconSrc,
+  Input,
   MenuItem,
   Text,
 } from 'folds';
@@ -29,6 +30,7 @@ import { About } from './about';
 import { UseStateProvider } from '../../components/UseStateProvider';
 import { LogoutDialog } from '../../components/LogoutDialog';
 import { OverlayModal } from '../../components/OverlayModal';
+import { SearchResults } from './search/SearchResults';
 
 export enum SettingsPages {
   GeneralPage,
@@ -107,7 +109,21 @@ export function Settings({ initialPage, requestClose }: SettingsProps) {
     if (initialPage) return initialPage;
     return screenSize === ScreenSize.Mobile ? undefined : SettingsPages.GeneralPage;
   });
+  const [searchQuery, setSearchQuery] = useState('');
   const menuItems = useSettingsMenuItems();
+
+  const handleSearchChange: ChangeEventHandler<HTMLInputElement> = (evt) => {
+    setSearchQuery(evt.target.value);
+  };
+
+  const handleSearchClear = () => {
+    setSearchQuery('');
+  };
+
+  const handleNavigateTo = (page: SettingsPages) => {
+    setActivePage(page);
+    setSearchQuery('');
+  };
 
   const handlePageRequestClose = () => {
     if (screenSize === ScreenSize.Mobile) {
@@ -120,7 +136,7 @@ export function Settings({ initialPage, requestClose }: SettingsProps) {
   return (
     <PageRoot
       nav={
-        screenSize === ScreenSize.Mobile && activePage !== undefined ? undefined : (
+        screenSize === ScreenSize.Mobile && (activePage !== undefined || searchQuery.trim()) ? undefined : (
           <PageNav size="300">
             <PageNavHeader outlined={false}>
               <Box grow="Yes" gap="200">
@@ -144,6 +160,24 @@ export function Settings({ initialPage, requestClose }: SettingsProps) {
               </Box>
             </PageNavHeader>
             <Box grow="Yes" direction="Column">
+              <Box style={{ padding: `0 ${config.space.S200} ${config.space.S200}` }} shrink="No">
+                <Input
+                  variant="Background"
+                  size="300"
+                  radii="Pill"
+                  placeholder="Search settings..."
+                  before={<Icon src={Icons.Search} size="100" />}
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  after={
+                    searchQuery ? (
+                      <IconButton size="300" onClick={handleSearchClear} variant="Background" radii="Pill">
+                        <Icon src={Icons.Cross} size="100" />
+                      </IconButton>
+                    ) : undefined
+                  }
+                />
+              </Box>
               <PageNavContent>
                 <div style={{ flexGrow: 1 }}>
                   {menuItems.map((item) => (
@@ -196,25 +230,37 @@ export function Settings({ initialPage, requestClose }: SettingsProps) {
         )
       }
     >
-      {activePage === SettingsPages.GeneralPage && (
-        <General requestClose={handlePageRequestClose} />
+      {searchQuery.trim() ? (
+        <SearchResults
+          query={searchQuery}
+          requestClose={handlePageRequestClose}
+          onNavigateTo={handleNavigateTo}
+        />
+      ) : (
+        <>
+          {activePage === SettingsPages.GeneralPage && (
+            <General requestClose={handlePageRequestClose} />
+          )}
+          {activePage === SettingsPages.AccountPage && (
+            <Account requestClose={handlePageRequestClose} />
+          )}
+          {activePage === SettingsPages.NotificationPage && (
+            <Notifications requestClose={handlePageRequestClose} />
+          )}
+          {activePage === SettingsPages.DevicesPage && (
+            <Devices requestClose={handlePageRequestClose} />
+          )}
+          {activePage === SettingsPages.EmojisStickersPage && (
+            <EmojisStickers requestClose={handlePageRequestClose} />
+          )}
+          {activePage === SettingsPages.DeveloperToolsPage && (
+            <DeveloperTools requestClose={handlePageRequestClose} />
+          )}
+          {activePage === SettingsPages.AboutPage && (
+            <About requestClose={handlePageRequestClose} />
+          )}
+        </>
       )}
-      {activePage === SettingsPages.AccountPage && (
-        <Account requestClose={handlePageRequestClose} />
-      )}
-      {activePage === SettingsPages.NotificationPage && (
-        <Notifications requestClose={handlePageRequestClose} />
-      )}
-      {activePage === SettingsPages.DevicesPage && (
-        <Devices requestClose={handlePageRequestClose} />
-      )}
-      {activePage === SettingsPages.EmojisStickersPage && (
-        <EmojisStickers requestClose={handlePageRequestClose} />
-      )}
-      {activePage === SettingsPages.DeveloperToolsPage && (
-        <DeveloperTools requestClose={handlePageRequestClose} />
-      )}
-      {activePage === SettingsPages.AboutPage && <About requestClose={handlePageRequestClose} />}
     </PageRoot>
   );
 }
