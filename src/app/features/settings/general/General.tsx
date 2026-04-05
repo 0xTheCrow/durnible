@@ -906,6 +906,12 @@ function Messages() {
   const [mediaAutoLoad, setMediaAutoLoad] = useSetting(settingsAtom, 'mediaAutoLoad');
   const [urlPreview, setUrlPreview] = useSetting(settingsAtom, 'urlPreview');
   const [encUrlPreview, setEncUrlPreview] = useSetting(settingsAtom, 'encUrlPreview');
+  const [embedYouTube, setEmbedYouTube] = useSetting(settingsAtom, 'embedYouTube');
+  const [embedSpotify, setEmbedSpotify] = useSetting(settingsAtom, 'embedSpotify');
+  const [embedSoundCloud, setEmbedSoundCloud] = useSetting(settingsAtom, 'embedSoundCloud');
+  const [embedNitter, setEmbedNitter] = useSetting(settingsAtom, 'embedNitter');
+  const [embedLinks, setEmbedLinks] = useSetting(settingsAtom, 'embedLinks');
+  const [showEmbedToggles, setShowEmbedToggles] = useState(false);
   const [showHiddenEvents, setShowHiddenEvents] = useSetting(settingsAtom, 'showHiddenEvents');
   const [unfocusedAutoScroll, setUnfocusedAutoScroll] = useSetting(
     settingsAtom,
@@ -981,6 +987,62 @@ function Messages() {
           title="Url Preview in Encrypted Room"
           after={<Switch variant="Primary" value={encUrlPreview} onChange={setEncUrlPreview} />}
         />
+        <SettingTile
+          title="Show Embed Links"
+          description="Show a clean, tracking-free link for each embed. Enables link cards even when embeds are off."
+          after={<Switch variant="Primary" value={embedLinks} onChange={setEmbedLinks} />}
+        />
+        <SettingTile
+          title="Embed Types"
+          description="Toggle individual embed types."
+          after={
+            <Button
+              onClick={() => setShowEmbedToggles(!showEmbedToggles)}
+              variant="Secondary"
+              fill="Soft"
+              size="300"
+              radii="300"
+              outlined
+              before={
+                <Icon
+                  src={showEmbedToggles ? Icons.ChevronTop : Icons.ChevronBottom}
+                  size="100"
+                  filled
+                />
+              }
+            >
+              <Text size="B300">{showEmbedToggles ? 'Collapse' : 'Expand'}</Text>
+            </Button>
+          }
+        />
+        {showEmbedToggles && (
+          <>
+            <SettingTile
+              title="YouTube"
+              after={
+                <Switch variant="Primary" value={embedYouTube} onChange={setEmbedYouTube} />
+              }
+            />
+            <SettingTile
+              title="Spotify"
+              after={
+                <Switch variant="Primary" value={embedSpotify} onChange={setEmbedSpotify} />
+              }
+            />
+            <SettingTile
+              title="SoundCloud"
+              after={
+                <Switch variant="Primary" value={embedSoundCloud} onChange={setEmbedSoundCloud} />
+              }
+            />
+            <SettingTile
+              title="Twitter / X (Nitter)"
+              after={
+                <Switch variant="Primary" value={embedNitter} onChange={setEmbedNitter} />
+              }
+            />
+          </>
+        )}
       </SequenceCard>
       <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
         <SettingTile

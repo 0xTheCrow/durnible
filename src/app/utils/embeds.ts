@@ -43,20 +43,23 @@ export const getSoundCloudEmbedInfo = (url: string): SoundCloudEmbedInfo | undef
   return { cleanUrl, isSet: match[2].startsWith('sets/') };
 };
 
-// ── Bandcamp ──────────────────────────────────────────────────────────────────
-// Note: Bandcamp's embed player requires a numeric track/album ID that is NOT
-// present in the URL — it's only in the page's JSON blob. A proper iframe embed
-// would need a server-side oEmbed fetch. Until then we render a link card.
+// ── Twitter / X ──────────────────────────────────────────────────────────────
+// Embedded via a configurable Nitter instance to avoid Twitter's tracking script.
+// Set VITE_NITTER_INSTANCE in your .env to override the default.
 
-const BANDCAMP_URL_REG =
-  /^https?:\/\/([\w-]+)\.bandcamp\.com\/(track|album)\/([\w-]+)/;
+const TWITTER_URL_REG =
+  /^https?:\/\/(?:(?:www\.|mobile\.)?twitter\.com|x\.com)\/([\w]+)\/status\/(\d+)/;
 
-export type BandcampInfo = { artist: string; type: 'track' | 'album'; slug: string };
+export const NITTER_INSTANCE: string =
+  import.meta.env.VITE_NITTER_INSTANCE ?? 'nitter.net';
 
-export const testBandcampUrl = (url: string): boolean => BANDCAMP_URL_REG.test(url);
+export type TwitterEmbedInfo = { user: string; id: string };
 
-export const getBandcampInfo = (url: string): BandcampInfo | undefined => {
-  const match = url.match(BANDCAMP_URL_REG);
+export const testTwitterUrl = (url: string): boolean => TWITTER_URL_REG.test(url);
+
+export const getTwitterEmbedInfo = (url: string): TwitterEmbedInfo | undefined => {
+  const match = url.match(TWITTER_URL_REG);
   if (!match) return undefined;
-  return { artist: match[1], type: match[2] as 'track' | 'album', slug: match[3] };
+  return { user: match[1], id: match[2] };
 };
+

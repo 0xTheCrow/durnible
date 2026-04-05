@@ -1,7 +1,7 @@
 import { style } from '@vanilla-extract/css';
 import { DefaultReset, color, config, toRem } from 'folds';
 
-export const BandcampEmbed = style([
+export const NitterEmbed = style([
   DefaultReset,
   {
     width: toRem(400),
@@ -14,20 +14,19 @@ export const BandcampEmbed = style([
   },
 ]);
 
-export const BandcampBody = style([
+export const NitterIframe = style([
   DefaultReset,
   {
-    padding: config.space.S300,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: config.space.S100,
+    width: '100%',
+    height: toRem(220),
+    border: 'none',
+    display: 'block',
   },
 ]);
 
-export const BandcampLink = style([
+export const NitterLink = style([
   DefaultReset,
   {
     padding: config.space.S200,
-    borderTop: `${config.borderWidth.B300} solid ${color.SurfaceVariant.ContainerLine}`,
   },
 ]);
