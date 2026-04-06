@@ -44,6 +44,7 @@ export const ImageViewerImg = style([
     maxHeight: 'calc(85vh - 2.5rem)',
     margin: 'auto',
     touchAction: 'none',
+    userSelect: 'none',
     backgroundColor: color.Surface.Container,
     '@media': {
       'screen and (max-width: 750px)': {

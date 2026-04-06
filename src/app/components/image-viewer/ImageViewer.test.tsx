@@ -81,6 +81,26 @@ describe('ImageViewer', () => {
     });
   });
 
+  describe('image drag and selection', () => {
+    it('image has draggable set to false to prevent native browser drag', () => {
+      renderViewer();
+      const img = screen.getByRole('img', { name: defaultProps.alt });
+      expect(img).toHaveAttribute('draggable', 'false');
+    });
+
+    it('mousedown on image does not trigger selection (no preventDefault on mousedown)', () => {
+      // Removing evt.preventDefault() from handleMouseDown was necessary to stop
+      // it suppressing dblclick in Firefox. Selection is now blocked via CSS
+      // (user-select: none) instead. This test verifies that mousedown no longer
+      // calls preventDefault, so the browser's dblclick detection still works.
+      renderViewer();
+      const img = screen.getByRole('img', { name: defaultProps.alt });
+      const event = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
+      img.dispatchEvent(event);
+      expect(event.defaultPrevented).toBe(false);
+    });
+  });
+
   describe('close button', () => {
     it('calls requestClose when the back arrow is clicked', () => {
       const requestClose = vi.fn();
