@@ -92,6 +92,14 @@ export const ImageViewer = as<'div', ImageViewerProps>(
             src={src}
             alt={alt}
             onMouseDown={onMouseDown}
+            onDoubleClick={() => {
+              if (zoom === 1) {
+                setZoom(2);
+              } else {
+                setZoom(1);
+                setPan({ translateX: 0, translateY: 0 });
+              }
+            }}
             onTouchStart={onTouchStart}
             onTouchMove={onTouchMove}
             onTouchEnd={onTouchEnd}

@@ -95,11 +95,12 @@ describe('sanitizeCustomHtml', () => {
     expect(result).not.toContain('color: red');
   });
 
-  it('surfaces hex color from data-mx-color on font tags', () => {
-    // <font data-mx-color> is the Matrix spec way to colour text.
-    // The font transformer writes it into the style attribute.
+  it('preserves the Matrix color attribute value through sanitization', () => {
+    // data-mx-color is the Matrix spec attribute for text colour.
+    // The value should survive sanitization regardless of how it is applied.
     const result = sanitizeCustomHtml('<font data-mx-color="#ff0000">red</font>');
-    expect(result).toContain('#ff0000');
+    expect(result).toContain('red');      // text content preserved
+    expect(result).toContain('#ff0000'); // colour value preserved in some form
   });
 
   it('strips mx-reply tags', () => {

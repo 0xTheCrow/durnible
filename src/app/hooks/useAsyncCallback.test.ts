@@ -40,31 +40,36 @@ describe('useAsyncCallback', () => {
   });
 
   it('discards stale responses when called multiple times rapidly', async () => {
+    // Use deferred promises so we control resolution order without real timers.
+    let resolveSlow!: (v: string) => void;
+    let resolveFast!: (v: string) => void;
     let callCount = 0;
+
     const { result } = renderHook(() =>
       useAsyncCallback(async () => {
         callCount += 1;
-        const thisCall = callCount;
-        // First call takes longer than second
-        if (thisCall === 1) {
-          await new Promise((r) => setTimeout(r, 50));
-          return 'slow';
-        }
-        return 'fast';
+        return callCount === 1
+          ? new Promise<string>((res) => { resolveSlow = res; })
+          : new Promise<string>((res) => { resolveFast = res; });
       })
     );
 
     act(() => {
-      // The first (slow) call will be superseded and reject with 'Request replaced!' —
-      // that rejection is intentional; suppress it so it doesn't fail the test.
+      // First call will be superseded — suppress the intentional 'Request replaced!' rejection.
       result.current[1]().catch(() => {});
-      result.current[1](); // fast call — should win
+      result.current[1](); // second call should win
     });
+
+    // Resolve the fast (second) call first
+    await act(async () => { resolveFast('fast'); });
 
     await waitFor(() => {
       expect(result.current[0].status).toBe(AsyncStatus.Success);
     });
+    expect((result.current[0] as { status: AsyncStatus.Success; data: string }).data).toBe('fast');
 
+    // Resolving the slow (first) call afterwards must not overwrite the result
+    await act(async () => { resolveSlow('slow'); });
     expect((result.current[0] as { status: AsyncStatus.Success; data: string }).data).toBe('fast');
   });
 

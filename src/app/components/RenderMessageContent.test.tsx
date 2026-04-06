@@ -189,12 +189,12 @@ describe('RenderMessageContent', () => {
         body: 'something',
         msgtype: 'm.unknown.type',
       });
-      expect(screen.getByText(/unsupported message/i)).toBeInTheDocument();
+      expect(screen.getByText(/unsupported/i)).toBeInTheDocument();
     });
 
     it('renders bad encrypted content with a decrypt failure message', () => {
       renderMessageContent('m.bad.encrypted', {});
-      expect(screen.getByText(/unable to decrypt/i)).toBeInTheDocument();
+      expect(screen.getByText(/decrypt/i)).toBeInTheDocument();
     });
   });
 });

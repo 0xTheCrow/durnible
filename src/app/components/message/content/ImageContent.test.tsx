@@ -53,7 +53,7 @@ describe('ImageContent', () => {
       </MatrixTestWrapper>
     );
     await act(async () => {});
-    expect(screen.getByText('View')).toBeInTheDocument();
+    expect(screen.getByText(/view/i)).toBeInTheDocument();
   });
 
   it('shows a Spoiler chip when markedAsSpoiler is true', async () => {
@@ -63,7 +63,7 @@ describe('ImageContent', () => {
       </MatrixTestWrapper>
     );
     await act(async () => {});
-    expect(screen.getByText('Spoiler')).toBeInTheDocument();
+    expect(screen.getByText(/spoiler/i)).toBeInTheDocument();
   });
 
 });

@@ -612,9 +612,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
         editor.children = [{ type: BlockType.Paragraph, children: [{ text: newText }] }] as any;
         setHasEditorContent(newText.length > 0);
 
-        if (userId !== mx.getUserId()) {
-          alternateMentionsRef.current.push({ userId, displayName });
-        }
+        alternateMentionsRef.current.push({ userId, displayName });
 
         // Place cursor after inserted text
         const newPos = start + insertText.length;
