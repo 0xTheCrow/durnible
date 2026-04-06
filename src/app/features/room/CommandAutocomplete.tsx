@@ -69,6 +69,7 @@ export function CommandAutocomplete({
 
   useKeyDown(window, (evt: KeyboardEvent) => {
     onTabPress(evt, () => {
+      if (evt.target instanceof HTMLButtonElement) return;
       if (autoCompleteNames.length === 0) {
         return;
       }

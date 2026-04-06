@@ -546,15 +546,23 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
           if (domSel && domSel.rangeCount > 0) {
             const domRange = domSel.getRangeAt(0);
             if (domRange.collapsed && el.contains(domRange.startContainer)) {
-              const text = el.innerText.replace(/\n$/, '');
-              const offset = domRange.startOffset;
+              // cloneRange gives the absolute character offset from the start
+              // of el regardless of how many text nodes the browser created
+              // internally (e.g. after emoji insertion splits the content).
+              // Using domRange.startOffset directly is only correct when the
+              // cursor is in the very first text node.
+              const cloneRange = domRange.cloneRange();
+              cloneRange.selectNodeContents(el);
+              cloneRange.setEnd(domRange.startContainer, domRange.startOffset);
+              const textBefore = cloneRange.toString().replace(/\n$/, '');
+              const offset = textBefore.length;
 
               let start = offset;
-              while (start > 0 && text[start - 1] !== ' ') {
+              while (start > 0 && textBefore[start - 1] !== ' ') {
                 start--;
               }
 
-              const word = text.slice(start, offset);
+              const word = textBefore.slice(start, offset);
               const altPrefix = AUTOCOMPLETE_PREFIXES.find((p) => word.startsWith(p));
               if (altPrefix) {
                 alternateAutocompleteRangeRef.current = { start, end: offset };

@@ -127,6 +127,7 @@ export function RoomMentionAutocomplete({
 
   useKeyDown(window, (evt: KeyboardEvent) => {
     onTabPress(evt, () => {
+      if (evt.target instanceof HTMLButtonElement) return;
       if (autoCompleteRoomIds.length === 0) {
         const alias = roomAliasFromQueryText(mx, query.text);
         handleAutocomplete(alias, alias);
