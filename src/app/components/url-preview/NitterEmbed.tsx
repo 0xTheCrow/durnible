@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import classNames from 'classnames';
 import { Box, Text, as, color } from 'folds';
 import * as css from './NitterEmbed.css';
-import { TwitterEmbedInfo, NITTER_INSTANCE } from '../../utils/embeds';
+import { TwitterEmbedInfo } from '../../utils/embeds';
+import { useNitterInstance } from '../../utils/nitterInstance';
 
 const linkStyles = { color: color.Primary.Main };
 
@@ -25,12 +26,12 @@ function parseHeightFromMessage(data: unknown): number | undefined {
 
 export const NitterEmbed = as<'div', { info: TwitterEmbedInfo; url: string; showEmbed?: boolean; showLink?: boolean }>(
   ({ info, url, showEmbed = true, showLink = true, className, ...props }, ref) => {
+    const instance = useNitterInstance();
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const [iframeHeight, setIframeHeight] = useState(460);
 
-    // Try reading the iframe content height on load. This only works when the
-    // iframe is same-origin (e.g. a self-hosted Nitter on the same domain);
-    // cross-origin instances throw a SecurityError which we silently swallow.
+    // Try reading the iframe content height on load. Works only for same-origin
+    // instances; cross-origin throws SecurityError which we silently swallow.
     const handleLoad = () => {
       try {
         const doc =
@@ -41,11 +42,11 @@ export const NitterEmbed = as<'div', { info: TwitterEmbedInfo; url: string; show
           if (h > 0) setIframeHeight(h);
         }
       } catch {
-        // cross-origin: SecurityError expected — keep default height
+        // cross-origin SecurityError — keep default height
       }
     };
 
-    // Keep a postMessage listener as a bonus for Nitter forks that do send resize events.
+    // Bonus listener for Nitter forks that do send resize postMessage events.
     useEffect(() => {
       const handleMessage = (event: MessageEvent) => {
         if (event.source !== iframeRef.current?.contentWindow) return;
@@ -56,9 +57,13 @@ export const NitterEmbed = as<'div', { info: TwitterEmbedInfo; url: string; show
       return () => window.removeEventListener('message', handleMessage);
     }, []);
 
-    const embedSrc = `https://${NITTER_INSTANCE}/${info.user}/status/${info.id}/embed`;
-    const nitterUrl = `https://${NITTER_INSTANCE}/${info.user}/status/${info.id}`;
-    const showLinkBar = showLink && nitterUrl !== url;
+    const embedSrc = instance
+      ? `https://${instance}/${info.user}/status/${info.id}/embed`
+      : undefined;
+    const nitterUrl = instance
+      ? `https://${instance}/${info.user}/status/${info.id}`
+      : undefined;
+    const showLinkBar = showLink && nitterUrl !== undefined && nitterUrl !== url;
 
     return (
       <Box
@@ -69,20 +74,26 @@ export const NitterEmbed = as<'div', { info: TwitterEmbedInfo; url: string; show
         ref={ref}
       >
         {showEmbed && (
-          <iframe
-            ref={iframeRef}
-            className={css.NitterIframe}
-            style={{ height: iframeHeight }}
-            src={embedSrc}
-            title="Tweet"
-            allow="autoplay; fullscreen; picture-in-picture"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-presentation"
-            loading="lazy"
-            referrerPolicy="strict-origin"
-            onLoad={handleLoad}
-          />
+          instance ? (
+            <iframe
+              ref={iframeRef}
+              className={css.NitterIframe}
+              style={{ height: iframeHeight }}
+              src={embedSrc}
+              title="Tweet"
+              allow="autoplay; fullscreen; picture-in-picture"
+              sandbox="allow-scripts allow-popups allow-presentation"
+              loading="lazy"
+              referrerPolicy="strict-origin"
+              onLoad={handleLoad}
+            />
+          ) : (
+            <Box className={css.NitterIframe} alignItems="Center" justifyContent="Center">
+              <Text size="T200" priority="300">Resolving Nitter instance…</Text>
+            </Box>
+          )
         )}
-        {showLinkBar && (
+        {showLinkBar && nitterUrl && (
           <div className={css.NitterLink}>
             <Text
               style={linkStyles}

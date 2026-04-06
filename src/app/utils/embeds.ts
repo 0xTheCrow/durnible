@@ -45,13 +45,16 @@ export const getSoundCloudEmbedInfo = (url: string): SoundCloudEmbedInfo | undef
 
 // ── Twitter / X ──────────────────────────────────────────────────────────────
 // Embedded via a configurable Nitter instance to avoid Twitter's tracking script.
-// Set VITE_NITTER_INSTANCE in your .env to override the default.
+// Set VITE_NITTER_INSTANCES in your .env to override the default.
 
 const TWITTER_URL_REG =
   /^https?:\/\/(?:(?:www\.|mobile\.)?twitter\.com|x\.com)\/([\w]+)\/status\/(\d+)/;
 
-export const NITTER_INSTANCE: string =
-  import.meta.env.VITE_NITTER_INSTANCE ?? 'nitter.net';
+// Synchronous fallback — the first candidate. Prefer useNitterInstance() in
+// components so the resolved (health-checked) instance is used instead.
+export { NITTER_CANDIDATES } from './nitterInstance';
+import { NITTER_CANDIDATES } from './nitterInstance';
+export const NITTER_INSTANCE: string = NITTER_CANDIDATES[0] ?? 'nitter.net';
 
 export type TwitterEmbedInfo = { user: string; id: string };
 
