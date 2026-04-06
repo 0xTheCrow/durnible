@@ -231,6 +231,7 @@ type RoomTimelineProps = {
   room: Room;
   eventId?: string;
   roomInputRef: RefObject<HTMLElement>;
+  alternateInputRef: RefObject<HTMLDivElement>;
   editor: Editor;
 };
 
@@ -466,7 +467,7 @@ function DecryptRetry({ retrying, onRetry }: DecryptRetryProps) {
   );
 }
 
-export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimelineProps) {
+export function RoomTimeline({ room, eventId, roomInputRef, alternateInputRef, editor }: RoomTimelineProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
   const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
@@ -1189,7 +1190,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
         });
         setTimeout(() => {
           if (alternateInput) {
-            roomInputRef.current?.querySelector('textarea')?.focus();
+            alternateInputRef.current?.focus();
           } else {
             ReactEditor.focus(editor);
           }
@@ -1230,12 +1231,12 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
       }
       setEditId(undefined);
       if (alternateInput) {
-        roomInputRef.current?.querySelector('textarea')?.focus();
+        alternateInputRef.current?.focus();
       } else {
         ReactEditor.focus(editor);
       }
     },
-    [editor, alternateInput, roomInputRef]
+    [editor, alternateInput, alternateInputRef]
   );
   const { t } = useTranslation();
 
