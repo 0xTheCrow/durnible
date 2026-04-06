@@ -120,7 +120,9 @@ export const useTouchGesture = (
             now - lastTap.time < DOUBLE_TAP_DELAY &&
             Math.hypot(ct.clientX - lastTap.x, ct.clientY - lastTap.y) < TAP_MOVE_THRESHOLD
           ) {
-            // Double tap detected — toggle zoom
+            // Double tap detected — prevent synthesized dblclick from also firing
+            e.preventDefault();
+            // Toggle zoom
             if (zoomRef.current === 1) {
               setZoomTracked(2);
             } else {
