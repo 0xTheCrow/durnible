@@ -79,6 +79,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
     const [toolbar, setToolbar] = useState(globalToolbar);
     const isComposing = useComposingCheck();
     const editorRef = React.useRef<HTMLDivElement>(null);
+    const alternateInputRef = React.useRef<HTMLDivElement>(null);
     const imagePacks = useRelevantImagePacks(ImageUsage.Emoticon, imagePackRooms || []);
 
     const [autocompleteQuery, setAutocompleteQuery] =
@@ -233,8 +234,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
         ];
         editor.onChange();
         requestAnimationFrame(() => {
-          const contentEl = editorRef.current?.querySelector('[contenteditable]') as HTMLElement | null;
-          if (contentEl) contentEl.focus();
+          alternateInputRef.current?.focus();
         });
       } else {
         const initialValue =
@@ -287,6 +287,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
         <CustomEditor
           ref={editorRef}
           editor={editor}
+          alternateInputRef={alternateInputRef}
           placeholder="Edit message..."
           onKeyDown={handleKeyDown}
           onKeyUp={handleKeyUp}
@@ -345,7 +346,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
                               setAnchor((v) => {
                                 if (v) {
                                   if (alternateInput) {
-                                    editorRef.current?.querySelector('textarea')?.focus();
+                                    alternateInputRef.current?.focus();
                                   } else if (!mobileOrTablet()) {
                                     ReactEditor.focus(editor);
                                   }

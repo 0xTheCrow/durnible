@@ -126,6 +126,8 @@ import { useRoomCreatorsTag } from '../../hooks/useRoomCreatorsTag';
 import { usePowerLevelTags } from '../../hooks/usePowerLevelTags';
 import { useComposingCheck } from '../../hooks/useComposingCheck';
 
+export const ROOM_INPUT_EDITABLE_NAME = 'RoomInput';
+
 interface RoomInputProps {
   editor: Editor;
   fileDropContainerRef: RefObject<HTMLElement>;
@@ -883,7 +885,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
           />
         ) : (
         <CustomEditor
-          editableName="RoomInput"
+          editableName={ROOM_INPUT_EDITABLE_NAME}
           editor={editor}
           alternateInputRef={alternateInputRef}
           onKeyDown={handleKeyDown}

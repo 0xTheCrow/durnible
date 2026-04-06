@@ -130,6 +130,7 @@ import { useAccessiblePowerTagColors, useGetMemberPowerTag } from '../../hooks/u
 import { useTheme } from '../../hooks/useTheme';
 import { useRoomCreatorsTag } from '../../hooks/useRoomCreatorsTag';
 import { usePowerLevelTags } from '../../hooks/usePowerLevelTags';
+import { ROOM_INPUT_EDITABLE_NAME } from './RoomInput';
 
 const TimelineFloat = as<'div', css.TimelineFloatVariants>(
   ({ position, className, ...props }, ref) => (
@@ -962,7 +963,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, alternateInputRef, e
         if (
           isKeyHotkey('arrowup', evt) &&
           editableActiveElement() &&
-          document.activeElement?.getAttribute('data-editable-name') === 'RoomInput' &&
+          document.activeElement?.getAttribute('data-editable-name') === ROOM_INPUT_EDITABLE_NAME &&
           isEmptyEditor(editor)
         ) {
           const editableEvt = getLatestEditableEvt(room.getLiveTimeline(), (mEvt) =>
