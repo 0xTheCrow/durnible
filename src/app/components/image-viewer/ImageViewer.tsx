@@ -91,6 +91,7 @@ export const ImageViewer = as<'div', ImageViewerProps>(
             }}
             src={src}
             alt={alt}
+            draggable={false}
             onMouseDown={onMouseDown}
             onDoubleClick={() => {
               if (zoom === 1) {
