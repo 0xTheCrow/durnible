@@ -147,6 +147,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     const sendBtnRef = useRef<HTMLButtonElement>(null);
     const alternateInputRef = useRef<HTMLDivElement>(null);
     const alternateMentionsRef = useRef<Array<{ userId: string; displayName: string }>>([]);
+    const alternateRoomMentionsRef = useRef<Array<{ roomAliasOrId: string; name: string }>>([]);
     const alternateAutocompleteRangeRef = useRef<{ start: number; end: number }>({ start: 0, end: 0 });
     const [hasEditorContent, setHasEditorContent] = useState(false);
     const roomToParents = useAtomValue(roomToParentsAtom);
@@ -294,6 +295,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
           }
           resetEditorDirect(editor);
           alternateMentionsRef.current = [];
+          alternateRoomMentionsRef.current = [];
         } else {
           if (!isEmptyEditor(editor)) {
             const parsedDraft = JSON.parse(JSON.stringify(editor.children));
@@ -381,7 +383,6 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       const shortcodeMap = buildShortcodeMap(imagePacks, unicodeEmojis);
       const processedChildren = replaceShortcodes(editor.children, shortcodeMap);
 
-      const commandName = getBeginCommand(editor);
       let plainText = toPlainText(processedChildren, isMarkdown).trim();
       let customHtml = trimCustomHtml(
         toMatrixCustomHTML(processedChildren, {
@@ -390,6 +391,11 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
           allowInlineMarkdown: isMarkdown,
         })
       );
+      let commandName: string | undefined = getBeginCommand(editor);
+      if (!commandName && alternateInput) {
+        const match = plainText.match(/^\/(\S+)/);
+        if (match) commandName = match[1];
+      }
       let msgType = MsgType.Text;
 
       if (commandName) {
@@ -431,13 +437,18 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       if (plainText !== '') {
         const body = plainText;
         const mentionData = getMentions(mx, roomId, editor);
-        if (alternateInput && alternateMentionsRef.current.length > 0) {
+        if (alternateInput && (alternateMentionsRef.current.length > 0 || alternateRoomMentionsRef.current.length > 0)) {
           let html = customHtml;
           alternateMentionsRef.current.forEach(({ userId, displayName }) => {
             mentionData.users.add(userId);
-            const escapedAtName = sanitizeText(`@${displayName}`);
-            const mentionLink = `<a href="${encodeURI(`https://matrix.to/#/${userId}`)}">${escapedAtName}</a>`;
-            html = html.split(escapedAtName).join(mentionLink);
+            const escapedName = sanitizeText(`@${displayName}`);
+            const mentionLink = `<a href="${encodeURI(`https://matrix.to/#/${userId}`)}">${escapedName}</a>`;
+            html = html.split(escapedName).join(mentionLink);
+          });
+          alternateRoomMentionsRef.current.forEach(({ roomAliasOrId, name }) => {
+            const escapedName = sanitizeText(`#${name}`);
+            const mentionLink = `<a href="${encodeURI(`https://matrix.to/#/${roomAliasOrId}`)}">${escapedName}</a>`;
+            html = html.split(escapedName).join(mentionLink);
           });
           customHtml = html;
         }
@@ -481,6 +492,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       if (alternateInput) {
         resetEditorDirect(editor);
         alternateMentionsRef.current = [];
+        alternateRoomMentionsRef.current = [];
       } else {
         resetEditor(editor);
         resetEditorHistory(editor);
@@ -543,7 +555,8 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
               }
 
               const word = text.slice(start, offset);
-              if (word.startsWith(AutocompletePrefix.UserMention)) {
+              const altPrefix = AUTOCOMPLETE_PREFIXES.find((p) => word.startsWith(p));
+              if (altPrefix) {
                 alternateAutocompleteRangeRef.current = { start, end: offset };
                 const dummyRange: BaseRange = {
                   anchor: { path: [0, 0], offset: start },
@@ -551,7 +564,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
                 };
                 query = {
                   range: dummyRange,
-                  prefix: AutocompletePrefix.UserMention,
+                  prefix: altPrefix,
                   text: word.slice(1),
                 };
               }
@@ -612,6 +625,105 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
         }
       },
       [editor, mx]
+    );
+
+    const handleAlternateRoomMentionSelect = useCallback(
+      (roomAliasOrId: string, name: string) => {
+        const el = alternateInputRef.current;
+        if (!el) return;
+
+        const { start, end } = alternateAutocompleteRangeRef.current;
+        const currentText = el.innerText.replace(/\n$/, '');
+        const displayName = name.startsWith('#') ? name.slice(1) : name;
+        const insertText = `#${displayName} `;
+        const newText = currentText.slice(0, start) + insertText + currentText.slice(end);
+
+        el.textContent = newText;
+        editor.children = [{ type: BlockType.Paragraph, children: [{ text: newText }] }] as any;
+        setHasEditorContent(newText.length > 0);
+
+        alternateRoomMentionsRef.current.push({ roomAliasOrId, name: displayName });
+
+        const newPos = start + insertText.length;
+        const textNode = el.firstChild;
+        if (textNode) {
+          try {
+            const range = document.createRange();
+            range.setStart(textNode, Math.min(newPos, newText.length));
+            range.collapse(true);
+            const sel = window.getSelection();
+            sel?.removeAllRanges();
+            sel?.addRange(range);
+          } catch {
+            // ignore if cursor placement fails
+          }
+        }
+      },
+      [editor]
+    );
+
+    const handleAlternateEmoticonSelect = useCallback(
+      (key: string, shortcode: string) => {
+        const el = alternateInputRef.current;
+        if (!el) return;
+
+        const { start, end } = alternateAutocompleteRangeRef.current;
+        const currentText = el.innerText.replace(/\n$/, '');
+        const insertText = key.startsWith('mxc://') ? `:${shortcode}: ` : `${key} `;
+        const newText = currentText.slice(0, start) + insertText + currentText.slice(end);
+
+        el.textContent = newText;
+        editor.children = [{ type: BlockType.Paragraph, children: [{ text: newText }] }] as any;
+        setHasEditorContent(newText.length > 0);
+
+        const newPos = start + insertText.length;
+        const textNode = el.firstChild;
+        if (textNode) {
+          try {
+            const range = document.createRange();
+            range.setStart(textNode, Math.min(newPos, newText.length));
+            range.collapse(true);
+            const sel = window.getSelection();
+            sel?.removeAllRanges();
+            sel?.addRange(range);
+          } catch {
+            // ignore if cursor placement fails
+          }
+        }
+      },
+      [editor]
+    );
+
+    const handleAlternateCommandSelect = useCallback(
+      (commandName: string) => {
+        const el = alternateInputRef.current;
+        if (!el) return;
+
+        const { start, end } = alternateAutocompleteRangeRef.current;
+        const currentText = el.innerText.replace(/\n$/, '');
+        const insertText = `/${commandName} `;
+        const newText = currentText.slice(0, start) + insertText + currentText.slice(end);
+
+        el.textContent = newText;
+        editor.children = [{ type: BlockType.Paragraph, children: [{ text: newText }] }] as any;
+        setHasEditorContent(newText.length > 0);
+
+        const newPos = start + insertText.length;
+        const textNode = el.firstChild;
+        if (textNode) {
+          try {
+            const range = document.createRange();
+            range.setStart(textNode, Math.min(newPos, newText.length));
+            range.collapse(true);
+            const sel = window.getSelection();
+            sel?.removeAllRanges();
+            sel?.addRange(range);
+          } catch {
+            // ignore if cursor placement fails
+          }
+        }
+      },
+      [editor]
     );
 
     const handleEmoticonSelect = (key: string, shortcode: string) => {
@@ -728,6 +840,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
             editor={editor}
             query={autocompleteQuery}
             requestClose={handleCloseAutocomplete}
+            onSelect={alternateInput ? handleAlternateRoomMentionSelect : undefined}
           />
         )}
         {autocompleteQuery?.prefix === AutocompletePrefix.UserMention && (
@@ -745,6 +858,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
             editor={editor}
             query={autocompleteQuery}
             requestClose={handleCloseAutocomplete}
+            onSelect={alternateInput ? handleAlternateEmoticonSelect : undefined}
           />
         )}
         {autocompleteQuery?.prefix === AutocompletePrefix.Command && (
@@ -753,6 +867,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
             editor={editor}
             query={autocompleteQuery}
             requestClose={handleCloseAutocomplete}
+            onSelect={alternateInput ? handleAlternateCommandSelect : undefined}
           />
         )}
         {isVoiceRecording ? (
