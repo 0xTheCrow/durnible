@@ -70,9 +70,7 @@ type UserMentionAutocompleteProps = {
 };
 
 const withAllowedMembership = (member: RoomMember): boolean =>
-  member.membership === Membership.Join ||
-  member.membership === Membership.Invite ||
-  member.membership === Membership.Knock;
+  member.membership === Membership.Join;
 
 const SEARCH_OPTIONS: UseAsyncSearchOptions = {
   limit: 1000,
