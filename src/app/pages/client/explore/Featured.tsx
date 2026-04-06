@@ -4,7 +4,6 @@ import { useAtomValue } from 'jotai';
 import { useClientConfig } from '../../../hooks/useClientConfig';
 import { RoomCard, RoomCardGrid } from '../../../components/room-card';
 import { allRoomsAtom } from '../../../state/room-list/roomList';
-import { RoomSummaryLoader } from '../../../components/RoomSummaryLoader';
 import {
   Page,
   PageContent,
@@ -59,26 +58,19 @@ export function FeaturedRooms() {
                       <Text size="H4">Featured Spaces</Text>
                       <RoomCardGrid>
                         {spaces.map((roomIdOrAlias) => (
-                          <RoomSummaryLoader key={roomIdOrAlias} roomIdOrAlias={roomIdOrAlias}>
-                            {(roomSummary) => (
-                              <RoomCard
-                                roomIdOrAlias={roomIdOrAlias}
-                                allRooms={allRooms}
-                                avatarUrl={roomSummary?.avatar_url}
-                                name={roomSummary?.name}
-                                topic={roomSummary?.topic}
-                                memberCount={roomSummary?.num_joined_members}
-                                onView={navigateSpace}
-                                renderTopicViewer={(name, topic, requestClose) => (
-                                  <RoomTopicViewer
-                                    name={name}
-                                    topic={topic}
-                                    requestClose={requestClose}
-                                  />
-                                )}
+                          <RoomCard
+                            key={roomIdOrAlias}
+                            roomIdOrAlias={roomIdOrAlias}
+                            allRooms={allRooms}
+                            onView={navigateSpace}
+                            renderTopicViewer={(name, topic, requestClose) => (
+                              <RoomTopicViewer
+                                name={name}
+                                topic={topic}
+                                requestClose={requestClose}
                               />
                             )}
-                          </RoomSummaryLoader>
+                          />
                         ))}
                       </RoomCardGrid>
                     </Box>
@@ -88,26 +80,19 @@ export function FeaturedRooms() {
                       <Text size="H4">Featured Rooms</Text>
                       <RoomCardGrid>
                         {rooms.map((roomIdOrAlias) => (
-                          <RoomSummaryLoader key={roomIdOrAlias} roomIdOrAlias={roomIdOrAlias}>
-                            {(roomSummary) => (
-                              <RoomCard
-                                roomIdOrAlias={roomIdOrAlias}
-                                allRooms={allRooms}
-                                avatarUrl={roomSummary?.avatar_url}
-                                name={roomSummary?.name}
-                                topic={roomSummary?.topic}
-                                memberCount={roomSummary?.num_joined_members}
-                                onView={navigateRoom}
-                                renderTopicViewer={(name, topic, requestClose) => (
-                                  <RoomTopicViewer
-                                    name={name}
-                                    topic={topic}
-                                    requestClose={requestClose}
-                                  />
-                                )}
+                          <RoomCard
+                            key={roomIdOrAlias}
+                            roomIdOrAlias={roomIdOrAlias}
+                            allRooms={allRooms}
+                            onView={navigateRoom}
+                            renderTopicViewer={(name, topic, requestClose) => (
+                              <RoomTopicViewer
+                                name={name}
+                                topic={topic}
+                                requestClose={requestClose}
                               />
                             )}
-                          </RoomSummaryLoader>
+                          />
                         ))}
                       </RoomCardGrid>
                     </Box>

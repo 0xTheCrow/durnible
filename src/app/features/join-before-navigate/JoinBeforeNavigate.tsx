@@ -4,7 +4,6 @@ import { useAtomValue } from 'jotai';
 import { RoomCard } from '../../components/room-card';
 import { RoomTopicViewer } from '../../components/room-topic-viewer';
 import { Page, PageHeader } from '../../components/page';
-import { RoomSummaryLoader } from '../../components/RoomSummaryLoader';
 import { useRoomNavigate } from '../../hooks/useRoomNavigate';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { allRoomsAtom } from '../../state/room-list/roomList';
@@ -55,25 +54,16 @@ export function JoinBeforeNavigate({
       <Box grow="Yes">
         <Scroll hideTrack visibility="Hover" size="0">
           <Box style={{ height: '100%' }} grow="Yes" alignItems="Center" justifyContent="Center">
-            <RoomSummaryLoader roomIdOrAlias={roomIdOrAlias}>
-              {(summary) => (
-                <RoomCard
-                  style={{ maxWidth: toRem(364), width: '100%' }}
-                  roomIdOrAlias={roomIdOrAlias}
-                  allRooms={allRooms}
-                  avatarUrl={summary?.avatar_url}
-                  name={summary?.name}
-                  topic={summary?.topic}
-                  memberCount={summary?.num_joined_members}
-                  roomType={summary?.room_type}
-                  viaServers={viaServers}
-                  renderTopicViewer={(name, topic, requestClose) => (
-                    <RoomTopicViewer name={name} topic={topic} requestClose={requestClose} />
-                  )}
-                  onView={handleView}
-                />
+            <RoomCard
+              style={{ maxWidth: toRem(364), width: '100%' }}
+              roomIdOrAlias={roomIdOrAlias}
+              allRooms={allRooms}
+              viaServers={viaServers}
+              renderTopicViewer={(name, topic, requestClose) => (
+                <RoomTopicViewer name={name} topic={topic} requestClose={requestClose} />
               )}
-            </RoomSummaryLoader>
+              onView={handleView}
+            />
           </Box>
         </Scroll>
       </Box>
