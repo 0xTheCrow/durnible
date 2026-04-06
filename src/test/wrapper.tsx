@@ -31,7 +31,7 @@ export function TestWrapper({
   screenSize = ScreenSize.Desktop,
 }: TestWrapperProps) {
   return (
-    <MemoryRouter initialEntries={[route]}>
+    <MemoryRouter initialEntries={[route]} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <ScreenSizeProvider value={screenSize}>
         <ClientConfigProvider value={clientConfig}>
           {children}

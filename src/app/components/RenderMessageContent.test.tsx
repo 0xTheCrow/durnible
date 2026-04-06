@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { MsgType } from 'matrix-js-sdk';
 import { RenderMessageContent } from './RenderMessageContent';
@@ -99,7 +99,7 @@ describe('RenderMessageContent', () => {
   });
 
   describe('image messages', () => {
-    it('renders an image message without crashing', () => {
+    it('renders an image message without crashing', async () => {
       renderMessageContent(MsgType.Image, {
         body: 'photo.png',
         msgtype: 'm.image',
@@ -111,9 +111,10 @@ describe('RenderMessageContent', () => {
           mimetype: 'image/png',
         },
       });
+      await act(async () => {});
     });
 
-    it('renders an image with autoPlay loading', () => {
+    it('renders an image with autoPlay loading', async () => {
       renderMessageContent(
         MsgType.Image,
         {
@@ -129,6 +130,7 @@ describe('RenderMessageContent', () => {
         },
         { mediaAutoLoad: true }
       );
+      await act(async () => {});
     });
   });
 

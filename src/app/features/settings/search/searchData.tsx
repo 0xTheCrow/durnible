@@ -4,6 +4,13 @@ import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
 import { SettingTile } from '../../../components/setting-tile';
 import { SettingsPages } from '../settingsPages';
+import {
+  SelectTheme,
+  PageZoomInput,
+  SelectDateFormat,
+  SelectMessageLayout,
+  SelectMessageSpacing,
+} from '../components';
 
 export type SearchEntry = {
   id: string;
@@ -261,6 +268,45 @@ function PwaModeSetting() {
   );
 }
 
+// --- Appearance ---
+function ThemeSetting() {
+  return (
+    <SettingTile
+      title="Theme"
+      description="Theme to use when system theme is not enabled."
+      after={<SelectTheme />}
+    />
+  );
+}
+function PageZoomSetting() {
+  return <SettingTile title="Page Zoom" after={<PageZoomInput />} />;
+}
+
+// --- Date & Time ---
+function DateFormatSetting() {
+  return <SelectDateFormat />;
+}
+
+// --- Messages ---
+function MessageLayoutSetting() {
+  return <SettingTile title="Message Layout" after={<SelectMessageLayout />} />;
+}
+function MessageSpacingSetting() {
+  return <SettingTile title="Message Spacing" after={<SelectMessageSpacing />} />;
+}
+
+// --- Notifications ---
+function NotificationSoundSetting() {
+  const [value, setValue] = useSetting(settingsAtom, 'isNotificationSounds');
+  return (
+    <SettingTile
+      title="Notification Sound"
+      description="Play sound when new messages arrive."
+      after={<Switch variant="Primary" value={value} onChange={setValue} />}
+    />
+  );
+}
+
 export const settingsSearchData: SearchEntry[] = [
   // Appearance
   {
@@ -281,6 +327,7 @@ export const settingsSearchData: SearchEntry[] = [
     page: SettingsPages.GeneralPage,
     pageName: 'General',
     sectionName: 'Appearance',
+    Render: ThemeSetting,
   },
   {
     id: 'monochrome-mode',
@@ -307,6 +354,7 @@ export const settingsSearchData: SearchEntry[] = [
     page: SettingsPages.GeneralPage,
     pageName: 'General',
     sectionName: 'Appearance',
+    Render: PageZoomSetting,
   },
   // Date & Time
   {
@@ -325,6 +373,7 @@ export const settingsSearchData: SearchEntry[] = [
     page: SettingsPages.GeneralPage,
     pageName: 'General',
     sectionName: 'Date & Time',
+    Render: DateFormatSetting,
   },
   // Editor
   {
@@ -374,6 +423,7 @@ export const settingsSearchData: SearchEntry[] = [
     page: SettingsPages.GeneralPage,
     pageName: 'General',
     sectionName: 'Messages',
+    Render: MessageLayoutSetting,
   },
   {
     id: 'message-spacing',
@@ -382,6 +432,7 @@ export const settingsSearchData: SearchEntry[] = [
     page: SettingsPages.GeneralPage,
     pageName: 'General',
     sectionName: 'Messages',
+    Render: MessageSpacingSetting,
   },
   {
     id: 'legacy-username-color',
@@ -561,6 +612,7 @@ export const settingsSearchData: SearchEntry[] = [
     page: SettingsPages.NotificationPage,
     pageName: 'Notifications',
     sectionName: 'System',
+    Render: NotificationSoundSetting,
   },
   {
     id: 'email-notification',

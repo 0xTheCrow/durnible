@@ -153,6 +153,7 @@ export function Settings({ initialPage, requestClose }: SettingsProps) {
             <Box grow="Yes" direction="Column">
               <Box style={{ padding: `0 ${config.space.S200} ${config.space.S200}` }} shrink="No">
                 <Input
+                  style={{ width: '100%' }}
                   variant="Background"
                   size="300"
                   radii="Pill"

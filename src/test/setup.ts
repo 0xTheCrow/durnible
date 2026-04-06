@@ -1,6 +1,9 @@
 /// <reference types="vitest/globals" />
 import '@testing-library/jest-dom/vitest';
 
+// jsdom doesn't implement canvas — mock it to suppress the warning
+HTMLCanvasElement.prototype.getContext = vi.fn();
+
 // Mock SVG imports
 vi.mock('../../../../public/res/svg/cinny.svg', () => ({ default: 'cinny.svg' }));
 

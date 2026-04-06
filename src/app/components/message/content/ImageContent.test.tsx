@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { ImageContent } from './ImageContent';
 import { MatrixTestWrapper } from '../../../../test/wrapper';
@@ -23,15 +23,16 @@ describe('ImageContent', () => {
     ),
   };
 
-  it('renders without crashing', () => {
+  it('renders without crashing', async () => {
     render(
       <MatrixTestWrapper>
         <ImageContent {...defaultProps} />
       </MatrixTestWrapper>
     );
+    await act(async () => {});
   });
 
-  it('shows size badge when info.size is provided and image not loaded', () => {
+  it('shows size badge when info.size is provided and image not loaded', async () => {
     render(
       <MatrixTestWrapper>
         <ImageContent
@@ -41,6 +42,7 @@ describe('ImageContent', () => {
         />
       </MatrixTestWrapper>
     );
+    await act(async () => {});
     expect(screen.getByText('1.0 KB')).toBeInTheDocument();
   });
 });
