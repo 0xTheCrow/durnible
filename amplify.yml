@@ -1,0 +1,38 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - npm ci
+    build:
+      commands:
+        - npm run build
+  artifacts:
+    baseDirectory: dist
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - node_modules/**/*
+customRules:
+  - source: /config.json
+    target: /config.json
+    status: '200'
+  - source: /manifest.json
+    target: /manifest.json
+    status: '200'
+  - source: /sw.js
+    target: /sw.js
+    status: '200'
+  - source: /pdf.worker.min.js
+    target: /pdf.worker.min.js
+    status: '200'
+  - source: /public/*
+    target: /public/*
+    status: '200'
+  - source: /assets/*
+    target: /assets/*
+    status: '200'
+  - source: '</^[^.]+$|\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|woff2|ttf|map|json|webp|wasm)$)([^.]+$)/>'
+    target: /index.html
+    status: '200'
