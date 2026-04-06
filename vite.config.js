@@ -32,11 +32,11 @@ const copyFiles = {
     },
     {
       src: 'public/res/android',
-      dest: 'public/',
+      dest: '',
     },
     {
       src: 'public/locales',
-      dest: 'public/',
+      dest: '',
     },
   ],
 };
