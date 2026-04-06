@@ -26,8 +26,26 @@ function parseHeightFromMessage(data: unknown): number | undefined {
 export const NitterEmbed = as<'div', { info: TwitterEmbedInfo; url: string; showEmbed?: boolean; showLink?: boolean }>(
   ({ info, url, showEmbed = true, showLink = true, className, ...props }, ref) => {
     const iframeRef = useRef<HTMLIFrameElement>(null);
-    const [iframeHeight, setIframeHeight] = useState(200);
+    const [iframeHeight, setIframeHeight] = useState(460);
 
+    // Try reading the iframe content height on load. This only works when the
+    // iframe is same-origin (e.g. a self-hosted Nitter on the same domain);
+    // cross-origin instances throw a SecurityError which we silently swallow.
+    const handleLoad = () => {
+      try {
+        const doc =
+          iframeRef.current?.contentDocument ??
+          iframeRef.current?.contentWindow?.document;
+        if (doc) {
+          const h = doc.documentElement.scrollHeight || doc.body?.scrollHeight;
+          if (h > 0) setIframeHeight(h);
+        }
+      } catch {
+        // cross-origin: SecurityError expected — keep default height
+      }
+    };
+
+    // Keep a postMessage listener as a bonus for Nitter forks that do send resize events.
     useEffect(() => {
       const handleMessage = (event: MessageEvent) => {
         if (event.source !== iframeRef.current?.contentWindow) return;
@@ -57,10 +75,11 @@ export const NitterEmbed = as<'div', { info: TwitterEmbedInfo; url: string; show
             style={{ height: iframeHeight }}
             src={embedSrc}
             title="Tweet"
-            allow="autoplay; fullscreen"
-            sandbox="allow-scripts allow-same-origin allow-presentation"
+            allow="autoplay; fullscreen; picture-in-picture"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-presentation"
             loading="lazy"
-            referrerPolicy="no-referrer"
+            referrerPolicy="strict-origin"
+            onLoad={handleLoad}
           />
         )}
         {showLinkBar && (

@@ -18,9 +18,11 @@ export const NitterIframe = style([
   DefaultReset,
   {
     width: '100%',
-    minHeight: toRem(150),
+    minHeight: toRem(200),
+    maxHeight: toRem(700),
     border: 'none',
     display: 'block',
+    overflowY: 'auto',
   },
 ]);
 

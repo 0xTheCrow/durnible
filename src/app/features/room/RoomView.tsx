@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { Box, Text, config } from 'folds';
 import { Direction, EventType, MatrixError, Room } from 'matrix-js-sdk';
 import { ReactEditor } from 'slate-react';
@@ -21,6 +21,7 @@ import { useKeyDown } from '../../hooks/useKeyDown';
 import { editableActiveElement } from '../../utils/dom';
 import { settingsAtom } from '../../state/settings';
 import { useSetting } from '../../state/hooks/settings';
+import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
 import { useRoomPermissions } from '../../hooks/useRoomPermissions';
 import { useRoomCreators } from '../../hooks/useRoomCreators';
 import { useRoomNavigate } from '../../hooks/useRoomNavigate';
@@ -66,6 +67,7 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
 
   const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
   const [alternateInput] = useSetting(settingsAtom, 'alternateInput');
+  const screenSize = useScreenSizeContext();
 
   const { roomId } = room;
   const editor = useEditor();
@@ -107,6 +109,17 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
 
   const permissions = useRoomPermissions(creators, powerLevels);
   const canMessage = permissions.event(EventType.RoomMessage, mx.getSafeUserId());
+
+  useEffect(() => {
+    if (screenSize !== ScreenSize.Desktop) return;
+    if (!canMessage) return;
+    if (alternateInput) {
+      roomInputRef.current?.querySelector('textarea')?.focus();
+    } else {
+      ReactEditor.focus(editor);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomId]);
 
   useKeyDown(
     window,

@@ -103,6 +103,7 @@ import {
   getVideoMsgContent,
 } from './msgContent';
 import { getMemberDisplayName, getMentionContent, trimReplyFromBody } from '../../utils/room';
+import { sanitizeText } from '../../utils/sanitize';
 import { CommandAutocomplete } from './CommandAutocomplete';
 import { VoiceMessageRecorder } from './VoiceMessageRecorder';
 import { Command, SHRUG, TABLEFLIP, UNFLIP, useCommands } from '../../hooks/useCommands';
@@ -145,7 +146,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     const emojiBtnRef = useRef<HTMLButtonElement>(null);
     const sendBtnRef = useRef<HTMLButtonElement>(null);
     const alternateInputRef = useRef<HTMLDivElement>(null);
-    const alternateMentionUsersRef = useRef<Set<string>>(new Set());
+    const alternateMentionsRef = useRef<Array<{ userId: string; displayName: string }>>([]);
     const alternateAutocompleteRangeRef = useRef<{ start: number; end: number }>({ start: 0, end: 0 });
     const [hasEditorContent, setHasEditorContent] = useState(false);
     const roomToParents = useAtomValue(roomToParentsAtom);
@@ -292,7 +293,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
             setMsgDraft([]);
           }
           resetEditorDirect(editor);
-          alternateMentionUsersRef.current.clear();
+          alternateMentionsRef.current = [];
         } else {
           if (!isEmptyEditor(editor)) {
             const parsedDraft = JSON.parse(JSON.stringify(editor.children));
@@ -429,11 +430,18 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
 
       if (plainText !== '') {
         const body = plainText;
-        const formattedBody = customHtml;
         const mentionData = getMentions(mx, roomId, editor);
-        if (alternateInput) {
-          alternateMentionUsersRef.current.forEach((uid) => mentionData.users.add(uid));
+        if (alternateInput && alternateMentionsRef.current.length > 0) {
+          let html = customHtml;
+          alternateMentionsRef.current.forEach(({ userId, displayName }) => {
+            mentionData.users.add(userId);
+            const escapedAtName = sanitizeText(`@${displayName}`);
+            const mentionLink = `<a href="${encodeURI(`https://matrix.to/#/${userId}`)}">${escapedAtName}</a>`;
+            html = html.split(escapedAtName).join(mentionLink);
+          });
+          customHtml = html;
         }
+        const formattedBody = customHtml;
 
         const content: IContent = {
           msgtype: msgType,
@@ -472,7 +480,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
 
       if (alternateInput) {
         resetEditorDirect(editor);
-        alternateMentionUsersRef.current.clear();
+        alternateMentionsRef.current = [];
       } else {
         resetEditor(editor);
         resetEditorHistory(editor);
@@ -584,7 +592,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
         setHasEditorContent(newText.length > 0);
 
         if (userId !== mx.getUserId()) {
-          alternateMentionUsersRef.current.add(userId);
+          alternateMentionsRef.current.push({ userId, displayName });
         }
 
         // Place cursor after inserted text

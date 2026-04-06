@@ -156,7 +156,8 @@ export function Settings({ initialPage, requestClose }: SettingsProps) {
                   style={{ width: '100%' }}
                   variant="Background"
                   size="300"
-                  radii="300"
+                  radii="400"
+                  autoFocus={screenSize !== ScreenSize.Mobile}
                   placeholder="Search settings..."
                   before={<Icon src={Icons.Search} size="100" />}
                   value={searchQuery}
