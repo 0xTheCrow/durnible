@@ -35,5 +35,9 @@
   "hashRouter": {
     "enabled": false,
     "basename": "/"
+  },
+
+  "locales": {
+    "path": "/public/locales"
   }
 }

@@ -15,9 +15,6 @@ import { mobileOrTablet } from './app/utils/user-agent';
 import { getSettings } from './app/state/settings';
 import App from './app/pages/App';
 
-// import i18n (needs to be bundled ;))
-import './app/i18n';
-
 document.body.classList.add(configClass, varsClass);
 
 // Register Service Worker
