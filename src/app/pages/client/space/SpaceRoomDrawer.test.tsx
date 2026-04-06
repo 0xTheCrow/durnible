@@ -24,7 +24,7 @@ function renderDrawer(opts: {
   route: string;
 }) {
   return render(
-    <MemoryRouter initialEntries={[opts.route]}>
+    <MemoryRouter initialEntries={[opts.route]} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <ScreenSizeProvider value={opts.screenSize}>
         <Routes>
           <Route

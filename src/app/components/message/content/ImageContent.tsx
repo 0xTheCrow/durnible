@@ -117,7 +117,7 @@ export const ImageContent = as<'div', ImageContentProps>(
       canvas.height = img.naturalHeight;
       const ctx = canvas.getContext('2d');
       ctx?.drawImage(img, 0, 0);
-    }, [shouldPauseGif, load]);
+    }, [shouldPauseGif, load, effectiveBlurred]);
     const handleError = () => {
       setLoad(false);
       setError(true);

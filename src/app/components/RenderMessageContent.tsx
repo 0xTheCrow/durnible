@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { useAtomValue } from 'jotai';
 import { MsgType } from 'matrix-js-sdk';
 import { HTMLReactParserOptions } from 'html-react-parser';
 import { Opts } from 'linkifyjs';
@@ -24,12 +25,18 @@ import {
   UnsupportedContent,
   VideoContent,
 } from './message';
-import { YouTubeEmbed } from './url-preview';
+import { YouTubeEmbed, SpotifyEmbed, SoundCloudEmbed, NitterEmbed } from './url-preview';
 import { Image, MediaControl, Video } from './media';
 import { PdfViewer } from './Pdf-viewer';
 import { TextViewer } from './text-viewer';
 import { testMatrixTo } from '../plugins/matrix-to';
-import { testYouTubeUrl, getYouTubeVideoId } from '../utils/youtube';
+import {
+  testYouTubeUrl, getYouTubeVideoId,
+  testSpotifyUrl, getSpotifyEmbedInfo,
+  testSoundCloudUrl, getSoundCloudEmbedInfo,
+  testTwitterUrl, getTwitterEmbedInfo,
+} from '../utils/embeds';
+import { settingsAtom } from '../state/settings';
 import { IAudioContent, IFileContent, IImageContent, IVideoContent } from '../../types/matrix/common';
 import { getBlobSafeMimeType } from '../utils/mimeTypes';
 
@@ -82,12 +89,27 @@ export const RenderMessageContent = React.memo(function RenderMessageContent({
   linkifyOpts,
   outlineAttachment,
 }: RenderMessageContentProps) {
+  const settings = useAtomValue(settingsAtom);
+
   const renderUrlsPreview = (urls: string[]) => {
     const filteredUrls = urls.filter((url) => !testMatrixTo(url));
     if (filteredUrls.length === 0) return undefined;
 
-    const youtubeUrls = filteredUrls.filter((url) => testYouTubeUrl(url));
-    if (youtubeUrls.length === 0) return undefined;
+    const youtubeUrls = settings.embedYouTube ? filteredUrls.filter((url) => testYouTubeUrl(url)) : [];
+    const spotifyUrls = settings.embedSpotify ? filteredUrls.filter((url) => testSpotifyUrl(url)) : [];
+    const soundcloudUrls = settings.embedSoundCloud ? filteredUrls.filter((url) => testSoundCloudUrl(url)) : [];
+    const twitterUrls = settings.embedNitter ? filteredUrls.filter((url) => testTwitterUrl(url)) : [];
+
+    if (
+      youtubeUrls.length === 0 &&
+      spotifyUrls.length === 0 &&
+      soundcloudUrls.length === 0 &&
+      twitterUrls.length === 0
+    )
+      return undefined;
+
+    const showEmbed = !!urlPreview;
+    const showLink = settings.embedLinks;
 
     return (
       <>
@@ -99,6 +121,47 @@ export const RenderMessageContent = React.memo(function RenderMessageContent({
               videoId={videoId}
               url={url}
               ts={ts}
+              showEmbed={showEmbed}
+              showLink={showLink}
+              style={{ marginTop: config.space.S200 }}
+            />
+          ) : null;
+        })}
+        {spotifyUrls.map((url) => {
+          const info = getSpotifyEmbedInfo(url);
+          return info ? (
+            <SpotifyEmbed
+              key={url}
+              info={info}
+              url={url}
+              showEmbed={showEmbed}
+              showLink={showLink}
+              style={{ marginTop: config.space.S200 }}
+            />
+          ) : null;
+        })}
+        {soundcloudUrls.map((url) => {
+          const info = getSoundCloudEmbedInfo(url);
+          return info ? (
+            <SoundCloudEmbed
+              key={url}
+              info={info}
+              url={url}
+              showEmbed={showEmbed}
+              showLink={showLink}
+              style={{ marginTop: config.space.S200 }}
+            />
+          ) : null;
+        })}
+        {twitterUrls.map((url) => {
+          const info = getTwitterEmbedInfo(url);
+          return info ? (
+            <NitterEmbed
+              key={url}
+              info={info}
+              url={url}
+              showEmbed={showEmbed}
+              showLink={showLink}
               style={{ marginTop: config.space.S200 }}
             />
           ) : null;
@@ -122,7 +185,7 @@ export const RenderMessageContent = React.memo(function RenderMessageContent({
               linkifyOpts={linkifyOpts}
             />
           )}
-          renderUrlsPreview={urlPreview ? renderUrlsPreview : undefined}
+          renderUrlsPreview={(urlPreview || settings.embedLinks) ? renderUrlsPreview : undefined}
         />
       );
     }
@@ -178,7 +241,7 @@ export const RenderMessageContent = React.memo(function RenderMessageContent({
             linkifyOpts={linkifyOpts}
           />
         )}
-        renderUrlsPreview={urlPreview ? renderUrlsPreview : undefined}
+        renderUrlsPreview={(urlPreview || settings.embedLinks) ? renderUrlsPreview : undefined}
       />
     );
   }
@@ -197,7 +260,7 @@ export const RenderMessageContent = React.memo(function RenderMessageContent({
             linkifyOpts={linkifyOpts}
           />
         )}
-        renderUrlsPreview={urlPreview ? renderUrlsPreview : undefined}
+        renderUrlsPreview={(urlPreview || settings.embedLinks) ? renderUrlsPreview : undefined}
       />
     );
   }
@@ -215,7 +278,7 @@ export const RenderMessageContent = React.memo(function RenderMessageContent({
             linkifyOpts={linkifyOpts}
           />
         )}
-        renderUrlsPreview={urlPreview ? renderUrlsPreview : undefined}
+        renderUrlsPreview={(urlPreview || settings.embedLinks) ? renderUrlsPreview : undefined}
       />
     );
   }

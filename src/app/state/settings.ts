@@ -33,6 +33,11 @@ export interface Settings {
   mediaAutoLoad: boolean;
   urlPreview: boolean;
   encUrlPreview: boolean;
+  embedYouTube: boolean;
+  embedSpotify: boolean;
+  embedSoundCloud: boolean;
+  embedNitter: boolean;
+  embedLinks: boolean;
   showHiddenEvents: boolean;
   legacyUsernameColor: boolean;
   unfocusedAutoScroll: boolean;
@@ -78,6 +83,11 @@ const defaultSettings: Settings = {
   mediaAutoLoad: true,
   urlPreview: true,
   encUrlPreview: false,
+  embedYouTube: true,
+  embedSpotify: true,
+  embedSoundCloud: true,
+  embedNitter: true,
+  embedLinks: true,
   showHiddenEvents: false,
   legacyUsernameColor: false,
   unfocusedAutoScroll: false,

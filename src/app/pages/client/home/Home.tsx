@@ -52,6 +52,8 @@ import { roomToUnreadAtom } from '../../../state/room/roomToUnread';
 import { useCategoryHandler } from '../../../hooks/useCategoryHandler';
 import { useNavToActivePathMapper } from '../../../hooks/useNavToActivePathMapper';
 import { PageNav, PageNavHeader, PageNavContent } from '../../../components/page';
+import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
+import { FavoritesSection } from '../FavoritesDrawer';
 import { useRoomsUnread } from '../../../state/hooks/unread';
 import { markAsRead } from '../../../utils/notifications';
 import { useClosedNavCategoriesAtom } from '../../../state/hooks/closedNavCategories';
@@ -197,6 +199,8 @@ const DEFAULT_CATEGORY_ID = makeNavCategoryId('home', 'room');
 export function Home() {
   const mx = useMatrixClient();
   useNavToActivePathMapper('home');
+  const screenSize = useScreenSizeContext();
+  const isDesktop = screenSize === ScreenSize.Desktop;
   const scrollRef = useRef<HTMLDivElement>(null);
   const rooms = useHomeRooms();
   const notificationPreferences = useRoomsNotificationPreferencesContext();
@@ -348,6 +352,7 @@ export function Home() {
                           notificationPreferences,
                           room.roomId
                         )}
+                        tall={isDesktop}
                       />
                     </VirtualTile>
                   );
@@ -357,6 +362,7 @@ export function Home() {
           </Box>
         </PageNavContent>
       )}
+      <FavoritesSection isDrawerMode />
     </PageNav>
   );
 }

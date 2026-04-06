@@ -11,7 +11,7 @@ import { useAtom, useAtomValue } from 'jotai';
 import { isKeyHotkey } from 'is-hotkey';
 import { EventType, IContent, MsgType, RelationType, Room } from 'matrix-js-sdk';
 import { ReactEditor } from 'slate-react';
-import { Transforms, Editor } from 'slate';
+import { Transforms, Editor, BaseRange } from 'slate';
 import {
   Box,
   Dialog,
@@ -55,6 +55,7 @@ import {
   trimCommand,
   getMentions,
   replaceShortcodes,
+  BlockType,
 } from '../../components/editor';
 import { EmojiBoard, EmojiBoardTab } from '../../components/emoji-board';
 import { UseStateProvider } from '../../components/UseStateProvider';
@@ -102,6 +103,7 @@ import {
   getVideoMsgContent,
 } from './msgContent';
 import { getMemberDisplayName, getMentionContent, trimReplyFromBody } from '../../utils/room';
+import { sanitizeText } from '../../utils/sanitize';
 import { CommandAutocomplete } from './CommandAutocomplete';
 import { VoiceMessageRecorder } from './VoiceMessageRecorder';
 import { Command, SHRUG, TABLEFLIP, UNFLIP, useCommands } from '../../hooks/useCommands';
@@ -143,6 +145,9 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     const commands = useCommands(mx, room);
     const emojiBtnRef = useRef<HTMLButtonElement>(null);
     const sendBtnRef = useRef<HTMLButtonElement>(null);
+    const alternateInputRef = useRef<HTMLDivElement>(null);
+    const alternateMentionsRef = useRef<Array<{ userId: string; displayName: string }>>([]);
+    const alternateAutocompleteRangeRef = useRef<{ start: number; end: number }>({ start: 0, end: 0 });
     const [hasEditorContent, setHasEditorContent] = useState(false);
     const roomToParents = useAtomValue(roomToParentsAtom);
     const powerLevels = usePowerLevelsContext();
@@ -288,6 +293,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
             setMsgDraft([]);
           }
           resetEditorDirect(editor);
+          alternateMentionsRef.current = [];
         } else {
           if (!isEmptyEditor(editor)) {
             const parsedDraft = JSON.parse(JSON.stringify(editor.children));
@@ -424,8 +430,18 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
 
       if (plainText !== '') {
         const body = plainText;
-        const formattedBody = customHtml;
         const mentionData = getMentions(mx, roomId, editor);
+        if (alternateInput && alternateMentionsRef.current.length > 0) {
+          let html = customHtml;
+          alternateMentionsRef.current.forEach(({ userId, displayName }) => {
+            mentionData.users.add(userId);
+            const escapedAtName = sanitizeText(`@${displayName}`);
+            const mentionLink = `<a href="${encodeURI(`https://matrix.to/#/${userId}`)}">${escapedAtName}</a>`;
+            html = html.split(escapedAtName).join(mentionLink);
+          });
+          customHtml = html;
+        }
+        const formattedBody = customHtml;
 
         const content: IContent = {
           msgtype: msgType,
@@ -464,6 +480,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
 
       if (alternateInput) {
         resetEditorDirect(editor);
+        alternateMentionsRef.current = [];
       } else {
         resetEditor(editor);
         resetEditorHistory(editor);
@@ -509,19 +526,93 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
           sendTypingStatus(!isEmptyEditor(editor));
         }
 
+        if (alternateInput) {
+          const el = evt.currentTarget as HTMLDivElement;
+          const domSel = window.getSelection();
+          let query: AutocompleteQuery<AutocompletePrefix> | undefined;
+
+          if (domSel && domSel.rangeCount > 0) {
+            const domRange = domSel.getRangeAt(0);
+            if (domRange.collapsed && el.contains(domRange.startContainer)) {
+              const text = el.innerText.replace(/\n$/, '');
+              const offset = domRange.startOffset;
+
+              let start = offset;
+              while (start > 0 && text[start - 1] !== ' ') {
+                start--;
+              }
+
+              const word = text.slice(start, offset);
+              if (word.startsWith(AutocompletePrefix.UserMention)) {
+                alternateAutocompleteRangeRef.current = { start, end: offset };
+                const dummyRange: BaseRange = {
+                  anchor: { path: [0, 0], offset: start },
+                  focus: { path: [0, 0], offset: offset },
+                };
+                query = {
+                  range: dummyRange,
+                  prefix: AutocompletePrefix.UserMention,
+                  text: word.slice(1),
+                };
+              }
+            }
+          }
+
+          setAutocompleteQuery(query);
+          return;
+        }
+
         const prevWordRange = getPrevWorldRange(editor);
         const query = prevWordRange
           ? getAutocompleteQuery<AutocompletePrefix>(editor, prevWordRange, AUTOCOMPLETE_PREFIXES)
           : undefined;
         setAutocompleteQuery(query);
       },
-      [editor, sendTypingStatus, hideActivity]
+      [editor, sendTypingStatus, hideActivity, alternateInput]
     );
 
     const handleCloseAutocomplete = useCallback(() => {
       setAutocompleteQuery(undefined);
       if (!alternateInput) ReactEditor.focus(editor);
     }, [editor, alternateInput]);
+
+    const handleAlternateMentionSelect = useCallback(
+      (userId: string, name: string) => {
+        const el = alternateInputRef.current;
+        if (!el) return;
+
+        const { start, end } = alternateAutocompleteRangeRef.current;
+        const currentText = el.innerText.replace(/\n$/, '');
+        const displayName = name.startsWith('@') ? name.slice(1) : name;
+        const insertText = `@${displayName} `;
+        const newText = currentText.slice(0, start) + insertText + currentText.slice(end);
+
+        el.textContent = newText;
+        editor.children = [{ type: BlockType.Paragraph, children: [{ text: newText }] }] as any;
+        setHasEditorContent(newText.length > 0);
+
+        if (userId !== mx.getUserId()) {
+          alternateMentionsRef.current.push({ userId, displayName });
+        }
+
+        // Place cursor after inserted text
+        const newPos = start + insertText.length;
+        const textNode = el.firstChild;
+        if (textNode) {
+          try {
+            const range = document.createRange();
+            range.setStart(textNode, Math.min(newPos, newText.length));
+            range.collapse(true);
+            const sel = window.getSelection();
+            sel?.removeAllRanges();
+            sel?.addRange(range);
+          } catch {
+            // ignore if cursor placement fails
+          }
+        }
+      },
+      [editor, mx]
+    );
 
     const handleEmoticonSelect = (key: string, shortcode: string) => {
       if (alternateInput && (editor as any).insertAlternateText) {
@@ -542,11 +633,34 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
         await getImageUrlBlob(stickerUrl)
       );
 
-      mx.sendEvent(roomId, EventType.Sticker, {
+      type StickerContent = {
+        body: string;
+        url: string;
+        info: Awaited<ReturnType<typeof getImageInfo>>;
+        'm.relates_to'?: Record<string, unknown>;
+      };
+
+      const content: StickerContent = {
         body: label,
         url: mxc,
         info,
-      });
+      };
+
+      if (replyDraft) {
+        content['m.relates_to'] = {
+          'm.in_reply_to': {
+            event_id: replyDraft.eventId,
+          },
+        };
+        if (replyDraft.relation?.rel_type === RelationType.Thread) {
+          content['m.relates_to'].event_id = replyDraft.relation.event_id;
+          content['m.relates_to'].rel_type = RelationType.Thread;
+          content['m.relates_to'].is_falling_back = false;
+        }
+        setReplyDraft(undefined);
+      }
+
+      mx.sendEvent(roomId, EventType.Sticker, content);
     };
 
     return (
@@ -622,6 +736,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
             editor={editor}
             query={autocompleteQuery}
             requestClose={handleCloseAutocomplete}
+            onSelect={alternateInput ? handleAlternateMentionSelect : undefined}
           />
         )}
         {autocompleteQuery?.prefix === AutocompletePrefix.Emoticon && (
@@ -649,6 +764,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
         <CustomEditor
           editableName="RoomInput"
           editor={editor}
+          alternateInputRef={alternateInputRef}
           onKeyDown={handleKeyDown}
           onKeyUp={handleKeyUp}
           onChange={handleEditorChange}

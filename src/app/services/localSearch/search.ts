@@ -1,5 +1,5 @@
 import { MatrixClient } from 'matrix-js-sdk';
-import { DecryptedMessage, streamFetchDecrypt } from './fetcher';
+import { DecryptedMessage, fetchUnseenMessages, streamFetchDecrypt } from './fetcher';
 
 export type AttachedImage = {
   event_id: string;
@@ -195,10 +195,24 @@ export async function* streamSearchEncryptedRoom(
   }
 
   const terms = parseTerms(query);
-  const allMessages: DecryptedMessage[] = [];
+
+  // Seed with unseen messages from the live timeline so they're immediately
+  // searchable. These are messages that arrived via sync but haven't been
+  // viewed, and may fail decryption when re-fetched from the server cold.
+  const unseenMessages = await fetchUnseenMessages(mx, roomId);
+  const seenEventIds = new Set<string>(unseenMessages.map((m) => m.event_id));
+  const allMessages: DecryptedMessage[] = [...unseenMessages];
+
+  if (allMessages.length > 0) {
+    const results = filterAndBuild(allMessages, terms, startTs, endTs, senders, hasTypes);
+    yield { roomId, results, fetched: 0, decrypted: allMessages.length };
+  }
 
   for await (const page of streamFetchDecrypt(mx, roomId, startTs, endTs)) {
-    allMessages.push(...page.newMessages);
+    // Skip any messages already captured from the live timeline
+    const newMessages = page.newMessages.filter((m) => !seenEventIds.has(m.event_id));
+    for (const m of newMessages) seenEventIds.add(m.event_id);
+    allMessages.push(...newMessages);
     const results = filterAndBuild(allMessages, terms, startTs, endTs, senders, hasTypes);
     yield { roomId, results, fetched: page.fetched, decrypted: allMessages.length };
   }

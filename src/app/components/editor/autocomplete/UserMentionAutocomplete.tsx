@@ -66,12 +66,11 @@ type UserMentionAutocompleteProps = {
   editor: Editor;
   query: AutocompleteQuery<string>;
   requestClose: () => void;
+  onSelect?: (userId: string, name: string) => void;
 };
 
 const withAllowedMembership = (member: RoomMember): boolean =>
-  member.membership === Membership.Join ||
-  member.membership === Membership.Invite ||
-  member.membership === Membership.Knock;
+  member.membership === Membership.Join;
 
 const SEARCH_OPTIONS: UseAsyncSearchOptions = {
   limit: 1000,
@@ -89,6 +88,7 @@ export function UserMentionAutocomplete({
   editor,
   query,
   requestClose,
+  onSelect,
 }: UserMentionAutocompleteProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
@@ -107,6 +107,11 @@ export function UserMentionAutocomplete({
   }, [query.text, search, resetSearch]);
 
   const handleAutocomplete: MentionAutoCompleteHandler = (uId, name) => {
+    if (onSelect) {
+      onSelect(uId, name);
+      requestClose();
+      return;
+    }
     const mentionEl = createMentionElement(
       uId,
       name.startsWith('@') ? name : `@${name}`,

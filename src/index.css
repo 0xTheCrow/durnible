@@ -54,6 +54,7 @@ body {
   margin: 0;
   padding: 0;
   height: 100%;
+  overflow: hidden;
   overscroll-behavior: none;
   font-family: var(--font-secondary);
   font-size: 16px;
@@ -64,7 +65,7 @@ body {
 }
 #root {
   position: fixed;
-  top: var(--app-top, 0);
+  top: 0;
   left: 0;
   width: 100%;
   height: var(--app-height, 100%);

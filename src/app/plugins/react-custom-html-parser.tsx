@@ -17,7 +17,7 @@ import {
 import { MatrixClient } from 'matrix-js-sdk';
 import classNames from 'classnames';
 import { Box, Chip, config, Header, Icon, IconButton, Icons, Scroll, Text, toRem } from 'folds';
-import { IntermediateRepresentation, Opts as LinkifyOpts, OptFn } from 'linkifyjs';
+import { find as linkifyFind, IntermediateRepresentation, Opts as LinkifyOpts, OptFn } from 'linkifyjs';
 import Linkify from 'linkify-react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { ChildNode } from 'domhandler';
@@ -193,16 +193,56 @@ export const highlightText = (
   data.flatMap((text) => {
     if (typeof text !== 'string') return text;
 
-    return findAndReplace(
-      text,
-      regex,
-      (match, pushIndex) => (
-        <span key={`highlight-${pushIndex}`} className={css.highlightText}>
-          {match[0]}
-        </span>
-      ),
-      (txt) => txt
-    );
+    const urlRanges = linkifyFind(text);
+    if (urlRanges.length === 0) {
+      return findAndReplace(
+        text,
+        regex,
+        (match, pushIndex) => (
+          <span key={`highlight-${pushIndex}`} className={css.highlightText}>
+            {match[0]}
+          </span>
+        ),
+        (txt) => txt
+      );
+    }
+
+    // Highlight only outside URL ranges so the URL text stays intact for Linkify.
+    const result: (string | JSX.Element)[] = [];
+    let cursor = 0;
+    for (const url of urlRanges) {
+      if (url.start > cursor) {
+        result.push(
+          ...findAndReplace(
+            text.slice(cursor, url.start),
+            regex,
+            (match, i) => (
+              <span key={`highlight-${result.length + i}`} className={css.highlightText}>
+                {match[0]}
+              </span>
+            ),
+            (txt) => txt
+          )
+        );
+      }
+      result.push(text.slice(url.start, url.end));
+      cursor = url.end;
+    }
+    if (cursor < text.length) {
+      result.push(
+        ...findAndReplace(
+          text.slice(cursor),
+          regex,
+          (match, i) => (
+            <span key={`highlight-${result.length + i}`} className={css.highlightText}>
+              {match[0]}
+            </span>
+          ),
+          (txt) => txt
+        )
+      );
+    }
+    return result;
   });
 
 /**

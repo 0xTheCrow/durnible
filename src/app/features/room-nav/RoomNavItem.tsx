@@ -238,6 +238,7 @@ type RoomNavItemProps = {
   showAvatar?: boolean;
   direct?: boolean;
   isDrawerMode?: boolean;
+  tall?: boolean;
 };
 export function RoomNavItem({
   room,
@@ -247,6 +248,7 @@ export function RoomNavItem({
   notificationMode,
   linkPath,
   isDrawerMode,
+  tall,
 }: RoomNavItemProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
@@ -283,7 +285,7 @@ export function RoomNavItem({
       aria-selected={selected}
       data-hover={!!menuAnchor}
       onContextMenu={isDrawerMode ? undefined : handleContextMenu}
-      style={isDrawerMode ? { minHeight: toRem(48) } : undefined}
+      style={isDrawerMode || tall ? { minHeight: toRem(48) } : undefined}
       {...hoverProps}
       {...focusWithinProps}
     >
@@ -316,7 +318,13 @@ export function RoomNavItem({
               )}
             </Avatar>
             <Box as="span" grow="Yes">
-              <Text priority={unread ? '500' : '300'} as="span" size="Inherit" truncate>
+              <Text
+                priority={unread && notificationMode !== RoomNotificationMode.Mute ? '500' : '300'}
+                as="span"
+                size="Inherit"
+                truncate
+                style={notificationMode === RoomNotificationMode.Mute ? { opacity: 0.5 } : undefined}
+              >
                 {room.name}
               </Text>
             </Box>
@@ -325,7 +333,7 @@ export function RoomNavItem({
                 <TypingIndicator size="300" disableAnimation />
               </Badge>
             )}
-            {!optionsVisible && unread && (
+            {!optionsVisible && unread && notificationMode !== RoomNotificationMode.Mute && (
               <UnreadBadgeCenter>
                 <UnreadBadge highlight={unread.highlight > 0} count={unread.total} />
               </UnreadBadgeCenter>

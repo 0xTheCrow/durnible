@@ -1,38 +1,23 @@
-import React, {
-  ChangeEventHandler,
-  FormEventHandler,
-  KeyboardEventHandler,
-  MouseEventHandler,
-  useEffect,
-  useState,
-} from 'react';
-import dayjs from 'dayjs';
+import React, { MouseEventHandler, useState } from 'react';
 import {
-  as,
   Box,
   Button,
   Chip,
   config,
-  Header,
   Icon,
   IconButton,
   Icons,
-  Input,
-  Menu,
-  MenuItem,
   PopOut,
   RectCords,
   Scroll,
   Switch,
   Text,
-  toRem,
 } from 'folds';
-import { isKeyHotkey } from 'is-hotkey';
 import FocusTrap from 'focus-trap-react';
 import { Page, PageContent, PageHeader } from '../../../components/page';
 import { SequenceCard } from '../../../components/sequence-card';
 import { useSetting } from '../../../state/hooks/settings';
-import { DateFormat, MessageLayout, MessageSpacing, settingsAtom } from '../../../state/settings';
+import { settingsAtom } from '../../../state/settings';
 import { SettingTile } from '../../../components/setting-tile';
 import { KeySymbol } from '../../../utils/key-symbol';
 import { isMacOS } from '../../../utils/user-agent';
@@ -46,97 +31,15 @@ import {
   useThemes,
 } from '../../../hooks/useTheme';
 import { stopPropagation } from '../../../utils/keyboard';
-import { useMessageLayoutItems } from '../../../hooks/useMessageLayout';
-import { useMessageSpacingItems } from '../../../hooks/useMessageSpacing';
-import { useDateFormatItems } from '../../../hooks/useDateFormat';
 import { SequenceCardStyle } from '../styles.css';
-
-type ThemeSelectorProps = {
-  themeNames: Record<string, string>;
-  themes: Theme[];
-  selected: Theme;
-  onSelect: (theme: Theme) => void;
-};
-const ThemeSelector = as<'div', ThemeSelectorProps>(
-  ({ themeNames, themes, selected, onSelect, ...props }, ref) => (
-    <Menu {...props} ref={ref}>
-      <Box direction="Column" gap="100" style={{ padding: config.space.S100 }}>
-        {themes.map((theme) => (
-          <MenuItem
-            key={theme.id}
-            size="300"
-            variant={theme.id === selected.id ? 'Primary' : 'Surface'}
-            radii="300"
-            onClick={() => onSelect(theme)}
-          >
-            <Text size="T300">{themeNames[theme.id] ?? theme.id}</Text>
-          </MenuItem>
-        ))}
-      </Box>
-    </Menu>
-  )
-);
-
-function SelectTheme({ disabled }: { disabled?: boolean }) {
-  const themes = useThemes();
-  const themeNames = useThemeNames();
-  const [themeId, setThemeId] = useSetting(settingsAtom, 'themeId');
-  const [menuCords, setMenuCords] = useState<RectCords>();
-  const selectedTheme = themes.find((theme) => theme.id === themeId) ?? LightTheme;
-
-  const handleThemeMenu: MouseEventHandler<HTMLButtonElement> = (evt) => {
-    setMenuCords(evt.currentTarget.getBoundingClientRect());
-  };
-
-  const handleThemeSelect = (theme: Theme) => {
-    setThemeId(theme.id);
-    setMenuCords(undefined);
-  };
-
-  return (
-    <>
-      <Button
-        size="300"
-        variant="Primary"
-        outlined
-        fill="Soft"
-        radii="300"
-        after={<Icon size="300" src={Icons.ChevronBottom} />}
-        onClick={disabled ? undefined : handleThemeMenu}
-        aria-disabled={disabled}
-      >
-        <Text size="T300">{themeNames[selectedTheme.id] ?? selectedTheme.id}</Text>
-      </Button>
-      <PopOut
-        anchor={menuCords}
-        offset={5}
-        position="Bottom"
-        align="End"
-        content={
-          <FocusTrap
-            focusTrapOptions={{
-              initialFocus: false,
-              onDeactivate: () => setMenuCords(undefined),
-              clickOutsideDeactivates: true,
-              isKeyForward: (evt: KeyboardEvent) =>
-                evt.key === 'ArrowDown' || evt.key === 'ArrowRight',
-              isKeyBackward: (evt: KeyboardEvent) =>
-                evt.key === 'ArrowUp' || evt.key === 'ArrowLeft',
-              escapeDeactivates: stopPropagation,
-            }}
-          >
-            <ThemeSelector
-              themeNames={themeNames}
-              themes={themes}
-              selected={selectedTheme}
-              onSelect={handleThemeSelect}
-            />
-          </FocusTrap>
-        }
-      />
-    </>
-  );
-}
+import {
+  SelectTheme,
+  ThemeSelector,
+  PageZoomInput,
+  SelectDateFormat,
+  SelectMessageLayout,
+  SelectMessageSpacing,
+} from '../components';
 
 function SystemThemePreferences() {
   const themeKind = useSystemThemeKind();
@@ -259,50 +162,6 @@ function SystemThemePreferences() {
   );
 }
 
-function PageZoomInput() {
-  const [pageZoom, setPageZoom] = useSetting(settingsAtom, 'pageZoom');
-  const [currentZoom, setCurrentZoom] = useState(`${pageZoom}`);
-
-  const handleZoomChange: ChangeEventHandler<HTMLInputElement> = (evt) => {
-    setCurrentZoom(evt.target.value);
-  };
-
-  const handleZoomEnter: KeyboardEventHandler<HTMLInputElement> = (evt) => {
-    if (isKeyHotkey('escape', evt)) {
-      evt.stopPropagation();
-      setCurrentZoom(pageZoom.toString());
-    }
-    if (
-      isKeyHotkey('enter', evt) &&
-      'value' in evt.target &&
-      typeof evt.target.value === 'string'
-    ) {
-      const newZoom = parseInt(evt.target.value, 10);
-      if (Number.isNaN(newZoom)) return;
-      const safeZoom = Math.max(Math.min(newZoom, 150), 75);
-      setPageZoom(safeZoom);
-      setCurrentZoom(safeZoom.toString());
-    }
-  };
-
-  return (
-    <Input
-      style={{ width: toRem(100) }}
-      variant={pageZoom === parseInt(currentZoom, 10) ? 'Secondary' : 'Success'}
-      size="300"
-      radii="300"
-      type="number"
-      min="75"
-      max="150"
-      value={currentZoom}
-      onChange={handleZoomChange}
-      onKeyDown={handleZoomEnter}
-      after={<Text size="T300">%</Text>}
-      outlined
-    />
-  );
-}
-
 function Appearance() {
   const [systemTheme, setSystemTheme] = useSetting(settingsAtom, 'useSystemTheme');
   const [monochromeMode, setMonochromeMode] = useSetting(settingsAtom, 'monochromeMode');
@@ -351,339 +210,6 @@ function Appearance() {
         <SettingTile title="Page Zoom" after={<PageZoomInput />} />
       </SequenceCard>
     </Box>
-  );
-}
-
-type DateHintProps = {
-  hasChanges: boolean;
-  handleReset: () => void;
-};
-function DateHint({ hasChanges, handleReset }: DateHintProps) {
-  const [anchor, setAnchor] = useState<RectCords>();
-  const categoryPadding = { padding: config.space.S200, paddingTop: 0 };
-
-  const handleOpenMenu: MouseEventHandler<HTMLElement> = (evt) => {
-    setAnchor(evt.currentTarget.getBoundingClientRect());
-  };
-  return (
-    <PopOut
-      anchor={anchor}
-      position="Top"
-      align="End"
-      content={
-        <FocusTrap
-          focusTrapOptions={{
-            initialFocus: false,
-            onDeactivate: () => setAnchor(undefined),
-            clickOutsideDeactivates: true,
-            escapeDeactivates: stopPropagation,
-          }}
-        >
-          <Menu style={{ maxHeight: '85vh', overflowY: 'auto' }}>
-            <Header size="300" style={{ padding: `0 ${config.space.S200}` }}>
-              <Text size="L400">Formatting</Text>
-            </Header>
-
-            <Box direction="Column">
-              <Box style={categoryPadding} direction="Column">
-                <Header size="300">
-                  <Text size="L400">Year</Text>
-                </Header>
-                <Box direction="Column" tabIndex={0} gap="100">
-                  <Text size="T300">
-                    YY
-                    <Text as="span" size="Inherit" priority="300">
-                      {': '}
-                      Two-digit year
-                    </Text>{' '}
-                  </Text>
-                  <Text size="T300">
-                    YYYY
-                    <Text as="span" size="Inherit" priority="300">
-                      {': '}Four-digit year
-                    </Text>
-                  </Text>
-                </Box>
-              </Box>
-
-              <Box style={categoryPadding} direction="Column">
-                <Header size="300">
-                  <Text size="L400">Month</Text>
-                </Header>
-                <Box direction="Column" tabIndex={0} gap="100">
-                  <Text size="T300">
-                    M
-                    <Text as="span" size="Inherit" priority="300">
-                      {': '}The month
-                    </Text>
-                  </Text>
-                  <Text size="T300">
-                    MM
-                    <Text as="span" size="Inherit" priority="300">
-                      {': '}Two-digit month
-                    </Text>{' '}
-                  </Text>
-                  <Text size="T300">
-                    MMM
-                    <Text as="span" size="Inherit" priority="300">
-                      {': '}Short month name
-                    </Text>
-                  </Text>
-                  <Text size="T300">
-                    MMMM
-                    <Text as="span" size="Inherit" priority="300">
-                      {': '}Full month name
-                    </Text>
-                  </Text>
-                </Box>
-              </Box>
-
-              <Box style={categoryPadding} direction="Column">
-                <Header size="300">
-                  <Text size="L400">Day of the Month</Text>
-                </Header>
-                <Box direction="Column" tabIndex={0} gap="100">
-                  <Text size="T300">
-                    D
-                    <Text as="span" size="Inherit" priority="300">
-                      {': '}Day of the month
-                    </Text>
-                  </Text>
-                  <Text size="T300">
-                    DD
-                    <Text as="span" size="Inherit" priority="300">
-                      {': '}Two-digit day of the month
-                    </Text>
-                  </Text>
-                </Box>
-              </Box>
-              <Box style={categoryPadding} direction="Column">
-                <Header size="300">
-                  <Text size="L400">Day of the Week</Text>
-                </Header>
-                <Box direction="Column" tabIndex={0} gap="100">
-                  <Text size="T300">
-                    d
-                    <Text as="span" size="Inherit" priority="300">
-                      {': '}Day of the week (Sunday = 0)
-                    </Text>
-                  </Text>
-                  <Text size="T300">
-                    dd
-                    <Text as="span" size="Inherit" priority="300">
-                      {': '}Two-letter day name
-                    </Text>
-                  </Text>
-                  <Text size="T300">
-                    ddd
-                    <Text as="span" size="Inherit" priority="300">
-                      {': '}Short day name
-                    </Text>
-                  </Text>
-                  <Text size="T300">
-                    dddd
-                    <Text as="span" size="Inherit" priority="300">
-                      {': '}Full day name
-                    </Text>
-                  </Text>
-                </Box>
-              </Box>
-            </Box>
-          </Menu>
-        </FocusTrap>
-      }
-    >
-      {hasChanges ? (
-        <IconButton
-          tabIndex={-1}
-          onClick={handleReset}
-          type="reset"
-          variant="Secondary"
-          size="300"
-          radii="300"
-        >
-          <Icon src={Icons.Cross} size="100" />
-        </IconButton>
-      ) : (
-        <IconButton
-          tabIndex={-1}
-          onClick={handleOpenMenu}
-          type="button"
-          variant="Secondary"
-          size="300"
-          radii="300"
-          aria-pressed={!!anchor}
-        >
-          <Icon style={{ opacity: config.opacity.P300 }} size="100" src={Icons.Info} />
-        </IconButton>
-      )}
-    </PopOut>
-  );
-}
-
-type CustomDateFormatProps = {
-  value: string;
-  onChange: (format: string) => void;
-};
-function CustomDateFormat({ value, onChange }: CustomDateFormatProps) {
-  const [dateFormatCustom, setDateFormatCustom] = useState(value);
-
-  useEffect(() => {
-    setDateFormatCustom(value);
-  }, [value]);
-
-  const handleChange: ChangeEventHandler<HTMLInputElement> = (evt) => {
-    const format = evt.currentTarget.value;
-    setDateFormatCustom(format);
-  };
-
-  const handleReset = () => {
-    setDateFormatCustom(value);
-  };
-
-  const handleSubmit: FormEventHandler<HTMLFormElement> = (evt) => {
-    evt.preventDefault();
-
-    const target = evt.target as HTMLFormElement | undefined;
-    const customDateFormatInput = target?.customDateFormatInput as HTMLInputElement | undefined;
-    const format = customDateFormatInput?.value;
-    if (!format) return;
-
-    onChange(format);
-  };
-
-  const hasChanges = dateFormatCustom !== value;
-  return (
-    <SettingTile>
-      <Box as="form" onSubmit={handleSubmit} gap="200">
-        <Box grow="Yes" direction="Column">
-          <Input
-            required
-            name="customDateFormatInput"
-            value={dateFormatCustom}
-            onChange={handleChange}
-            maxLength={16}
-            autoComplete="off"
-            variant="Secondary"
-            radii="300"
-            style={{ paddingRight: config.space.S200 }}
-            after={<DateHint hasChanges={hasChanges} handleReset={handleReset} />}
-          />
-        </Box>
-        <Button
-          size="400"
-          variant={hasChanges ? 'Success' : 'Secondary'}
-          fill={hasChanges ? 'Solid' : 'Soft'}
-          outlined
-          radii="300"
-          disabled={!hasChanges}
-          type="submit"
-        >
-          <Text size="B400">Save</Text>
-        </Button>
-      </Box>
-    </SettingTile>
-  );
-}
-
-type PresetDateFormatProps = {
-  value: string;
-  onChange: (format: string) => void;
-};
-function PresetDateFormat({ value, onChange }: PresetDateFormatProps) {
-  const [menuCords, setMenuCords] = useState<RectCords>();
-  const dateFormatItems = useDateFormatItems();
-
-  const getDisplayDate = (format: string): string =>
-    format !== '' ? dayjs().format(format) : 'Custom';
-
-  const handleMenu: MouseEventHandler<HTMLButtonElement> = (evt) => {
-    setMenuCords(evt.currentTarget.getBoundingClientRect());
-  };
-
-  const handleSelect = (format: DateFormat) => {
-    onChange(format);
-    setMenuCords(undefined);
-  };
-
-  return (
-    <>
-      <Button
-        size="300"
-        variant="Secondary"
-        outlined
-        fill="Soft"
-        radii="300"
-        after={<Icon size="300" src={Icons.ChevronBottom} />}
-        onClick={handleMenu}
-      >
-        <Text size="T300">
-          {getDisplayDate(dateFormatItems.find((i) => i.format === value)?.format ?? value)}
-        </Text>
-      </Button>
-      <PopOut
-        anchor={menuCords}
-        offset={5}
-        position="Bottom"
-        align="End"
-        content={
-          <FocusTrap
-            focusTrapOptions={{
-              initialFocus: false,
-              onDeactivate: () => setMenuCords(undefined),
-              clickOutsideDeactivates: true,
-              isKeyForward: (evt: KeyboardEvent) =>
-                evt.key === 'ArrowDown' || evt.key === 'ArrowRight',
-              isKeyBackward: (evt: KeyboardEvent) =>
-                evt.key === 'ArrowUp' || evt.key === 'ArrowLeft',
-              escapeDeactivates: stopPropagation,
-            }}
-          >
-            <Menu>
-              <Box direction="Column" gap="100" style={{ padding: config.space.S100 }}>
-                {dateFormatItems.map((item) => (
-                  <MenuItem
-                    key={item.format}
-                    size="300"
-                    variant={value === item.format ? 'Primary' : 'Surface'}
-                    radii="300"
-                    onClick={() => handleSelect(item.format)}
-                  >
-                    <Text size="T300">{getDisplayDate(item.format)}</Text>
-                  </MenuItem>
-                ))}
-              </Box>
-            </Menu>
-          </FocusTrap>
-        }
-      />
-    </>
-  );
-}
-
-function SelectDateFormat() {
-  const [dateFormatString, setDateFormatString] = useSetting(settingsAtom, 'dateFormatString');
-  const [selectedDateFormat, setSelectedDateFormat] = useState(dateFormatString);
-  const customDateFormat = selectedDateFormat === '';
-
-  const handlePresetChange = (format: string) => {
-    setSelectedDateFormat(format);
-    if (format !== '') {
-      setDateFormatString(format);
-    }
-  };
-
-  return (
-    <>
-      <SettingTile
-        title="Date Format"
-        description={customDateFormat ? dayjs().format(dateFormatString) : ''}
-        after={<PresetDateFormat value={selectedDateFormat} onChange={handlePresetChange} />}
-      />
-      {customDateFormat && (
-        <CustomDateFormat value={dateFormatString} onChange={setDateFormatString} />
-      )}
-    </>
   );
 }
 
@@ -751,144 +277,6 @@ function Editor() {
   );
 }
 
-function SelectMessageLayout() {
-  const [menuCords, setMenuCords] = useState<RectCords>();
-  const [messageLayout, setMessageLayout] = useSetting(settingsAtom, 'messageLayout');
-  const messageLayoutItems = useMessageLayoutItems();
-
-  const handleMenu: MouseEventHandler<HTMLButtonElement> = (evt) => {
-    setMenuCords(evt.currentTarget.getBoundingClientRect());
-  };
-
-  const handleSelect = (layout: MessageLayout) => {
-    setMessageLayout(layout);
-    setMenuCords(undefined);
-  };
-
-  return (
-    <>
-      <Button
-        size="300"
-        variant="Secondary"
-        outlined
-        fill="Soft"
-        radii="300"
-        after={<Icon size="300" src={Icons.ChevronBottom} />}
-        onClick={handleMenu}
-      >
-        <Text size="T300">
-          {messageLayoutItems.find((i) => i.layout === messageLayout)?.name ?? messageLayout}
-        </Text>
-      </Button>
-      <PopOut
-        anchor={menuCords}
-        offset={5}
-        position="Bottom"
-        align="End"
-        content={
-          <FocusTrap
-            focusTrapOptions={{
-              initialFocus: false,
-              onDeactivate: () => setMenuCords(undefined),
-              clickOutsideDeactivates: true,
-              isKeyForward: (evt: KeyboardEvent) =>
-                evt.key === 'ArrowDown' || evt.key === 'ArrowRight',
-              isKeyBackward: (evt: KeyboardEvent) =>
-                evt.key === 'ArrowUp' || evt.key === 'ArrowLeft',
-              escapeDeactivates: stopPropagation,
-            }}
-          >
-            <Menu>
-              <Box direction="Column" gap="100" style={{ padding: config.space.S100 }}>
-                {messageLayoutItems.map((item) => (
-                  <MenuItem
-                    key={item.layout}
-                    size="300"
-                    variant={messageLayout === item.layout ? 'Primary' : 'Surface'}
-                    radii="300"
-                    onClick={() => handleSelect(item.layout)}
-                  >
-                    <Text size="T300">{item.name}</Text>
-                  </MenuItem>
-                ))}
-              </Box>
-            </Menu>
-          </FocusTrap>
-        }
-      />
-    </>
-  );
-}
-
-function SelectMessageSpacing() {
-  const [menuCords, setMenuCords] = useState<RectCords>();
-  const [messageSpacing, setMessageSpacing] = useSetting(settingsAtom, 'messageSpacing');
-  const messageSpacingItems = useMessageSpacingItems();
-
-  const handleMenu: MouseEventHandler<HTMLButtonElement> = (evt) => {
-    setMenuCords(evt.currentTarget.getBoundingClientRect());
-  };
-
-  const handleSelect = (layout: MessageSpacing) => {
-    setMessageSpacing(layout);
-    setMenuCords(undefined);
-  };
-
-  return (
-    <>
-      <Button
-        size="300"
-        variant="Secondary"
-        outlined
-        fill="Soft"
-        radii="300"
-        after={<Icon size="300" src={Icons.ChevronBottom} />}
-        onClick={handleMenu}
-      >
-        <Text size="T300">
-          {messageSpacingItems.find((i) => i.spacing === messageSpacing)?.name ?? messageSpacing}
-        </Text>
-      </Button>
-      <PopOut
-        anchor={menuCords}
-        offset={5}
-        position="Bottom"
-        align="End"
-        content={
-          <FocusTrap
-            focusTrapOptions={{
-              initialFocus: false,
-              onDeactivate: () => setMenuCords(undefined),
-              clickOutsideDeactivates: true,
-              isKeyForward: (evt: KeyboardEvent) =>
-                evt.key === 'ArrowDown' || evt.key === 'ArrowRight',
-              isKeyBackward: (evt: KeyboardEvent) =>
-                evt.key === 'ArrowUp' || evt.key === 'ArrowLeft',
-              escapeDeactivates: stopPropagation,
-            }}
-          >
-            <Menu>
-              <Box direction="Column" gap="100" style={{ padding: config.space.S100 }}>
-                {messageSpacingItems.map((item) => (
-                  <MenuItem
-                    key={item.spacing}
-                    size="300"
-                    variant={messageSpacing === item.spacing ? 'Primary' : 'Surface'}
-                    radii="300"
-                    onClick={() => handleSelect(item.spacing)}
-                  >
-                    <Text size="T300">{item.name}</Text>
-                  </MenuItem>
-                ))}
-              </Box>
-            </Menu>
-          </FocusTrap>
-        }
-      />
-    </>
-  );
-}
-
 function Messages() {
   const [legacyUsernameColor, setLegacyUsernameColor] = useSetting(
     settingsAtom,
@@ -906,6 +294,12 @@ function Messages() {
   const [mediaAutoLoad, setMediaAutoLoad] = useSetting(settingsAtom, 'mediaAutoLoad');
   const [urlPreview, setUrlPreview] = useSetting(settingsAtom, 'urlPreview');
   const [encUrlPreview, setEncUrlPreview] = useSetting(settingsAtom, 'encUrlPreview');
+  const [embedYouTube, setEmbedYouTube] = useSetting(settingsAtom, 'embedYouTube');
+  const [embedSpotify, setEmbedSpotify] = useSetting(settingsAtom, 'embedSpotify');
+  const [embedSoundCloud, setEmbedSoundCloud] = useSetting(settingsAtom, 'embedSoundCloud');
+  const [embedNitter, setEmbedNitter] = useSetting(settingsAtom, 'embedNitter');
+  const [embedLinks, setEmbedLinks] = useSetting(settingsAtom, 'embedLinks');
+  const [showEmbedToggles, setShowEmbedToggles] = useState(false);
   const [showHiddenEvents, setShowHiddenEvents] = useSetting(settingsAtom, 'showHiddenEvents');
   const [unfocusedAutoScroll, setUnfocusedAutoScroll] = useSetting(
     settingsAtom,
@@ -981,6 +375,66 @@ function Messages() {
           title="Url Preview in Encrypted Room"
           after={<Switch variant="Primary" value={encUrlPreview} onChange={setEncUrlPreview} />}
         />
+      </SequenceCard>
+      <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
+        <SettingTile
+          title="Show Embed Links"
+          description="Show a clean, tracking-free link for each embed. Enables link cards even when embeds are off."
+          after={<Switch variant="Primary" value={embedLinks} onChange={setEmbedLinks} />}
+        />
+      </SequenceCard>
+      <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
+        <SettingTile
+          title="Embed Types"
+          description="Toggle individual embed types."
+          after={
+            <Button
+              onClick={() => setShowEmbedToggles(!showEmbedToggles)}
+              variant="Secondary"
+              fill="Soft"
+              size="300"
+              radii="300"
+              outlined
+              before={
+                <Icon
+                  src={showEmbedToggles ? Icons.ChevronTop : Icons.ChevronBottom}
+                  size="100"
+                  filled
+                />
+              }
+            >
+              <Text size="B300">{showEmbedToggles ? 'Collapse' : 'Expand'}</Text>
+            </Button>
+          }
+        />
+        {showEmbedToggles && (
+          <Box direction="Column" gap="100" style={{ paddingTop: config.space.S100 }}>
+            <SettingTile
+              title="YouTube"
+              after={
+                <Switch variant="Primary" value={embedYouTube} onChange={setEmbedYouTube} />
+              }
+            />
+            <SettingTile
+              title="Spotify"
+              after={
+                <Switch variant="Primary" value={embedSpotify} onChange={setEmbedSpotify} />
+              }
+            />
+            <SettingTile
+              title="SoundCloud"
+              after={
+                <Switch variant="Primary" value={embedSoundCloud} onChange={setEmbedSoundCloud} />
+              }
+            />
+            <SettingTile
+              title="Twitter / X (Nitter)"
+              after={
+                <Switch variant="Primary" value={embedNitter} onChange={setEmbedNitter} />
+              }
+            />
+          </Box>
+        )}
       </SequenceCard>
       <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
         <SettingTile

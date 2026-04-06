@@ -150,9 +150,10 @@ type FavoritesListProps = {
   header: (reorderMode: boolean, onDone: () => void) => ReactNode;
   emptyState?: ReactNode;
   scrollRef?: React.RefObject<HTMLDivElement>;
+  isDrawerMode?: boolean;
 };
 
-export function FavoritesList({ header, emptyState, scrollRef }: FavoritesListProps) {
+export function FavoritesList({ header, emptyState, scrollRef, isDrawerMode }: FavoritesListProps) {
   const mx = useMatrixClient();
   const favorites = useFavoriteRooms(mx);
   const mDirects = useAtomValue(mDirectAtom);
@@ -221,7 +222,7 @@ export function FavoritesList({ header, emptyState, scrollRef }: FavoritesListPr
               direct={mDirects.has(room.roomId)}
               linkPath={getRoomPath(room.roomId)}
               notificationMode={getRoomNotificationMode(notificationPreferences, room.roomId)}
-              isDrawerMode
+              isDrawerMode={isDrawerMode}
             />
           </LongPressWrapper>
         )
@@ -239,33 +240,42 @@ export function FavoritesList({ header, emptyState, scrollRef }: FavoritesListPr
 
 // ── FavoritesSection — appended inside the Space nav scroll area ──────────────
 
-export function FavoritesSection() {
+export function FavoritesSection({ isDrawerMode }: { isDrawerMode?: boolean }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
   return (
-    <FavoritesList
-      header={(reorderMode, onDone) => (
-        <Box direction="Column" gap="100" style={{ paddingTop: config.space.S400 }}>
-          <Line variant="Background" size="300" />
-          <NavCategoryHeader style={{ paddingTop: config.space.S200 }}>
-            <Box grow="Yes" alignItems="Center" gap="200">
-              <Text size="L400" style={{ flexGrow: 1 }}>
-                Favorites
-              </Text>
-              {reorderMode && (
-                <IconButton
-                  size="300"
-                  radii="300"
-                  variant="Surface"
-                  onClick={onDone}
-                  aria-label="Done reordering"
-                >
-                  <Icon size="100" src={Icons.Check} />
-                </IconButton>
-              )}
-            </Box>
-          </NavCategoryHeader>
-        </Box>
-      )}
-    />
+    <Box
+      direction="Column"
+      style={{ maxHeight: '40vh', overflow: 'hidden', flexShrink: 0 }}
+    >
+      <FavoritesList
+        scrollRef={scrollRef}
+        isDrawerMode={isDrawerMode}
+        header={(reorderMode, onDone) => (
+          <Box direction="Column" gap="100" style={{ paddingTop: config.space.S400 }}>
+            <Line variant="Background" size="300" />
+            <NavCategoryHeader style={{ paddingTop: config.space.S200 }}>
+              <Box grow="Yes" alignItems="Center" gap="200">
+                <Text size="L400" style={{ flexGrow: 1, paddingLeft: config.space.S400 }}>
+                  Favorites
+                </Text>
+                {reorderMode && (
+                  <IconButton
+                    size="300"
+                    radii="300"
+                    variant="Surface"
+                    onClick={onDone}
+                    aria-label="Done reordering"
+                  >
+                    <Icon size="100" src={Icons.Check} />
+                  </IconButton>
+                )}
+              </Box>
+            </NavCategoryHeader>
+          </Box>
+        )}
+      />
+    </Box>
   );
 }
 
@@ -278,10 +288,11 @@ function FavoritesNav() {
     <PageNav>
       <FavoritesList
         scrollRef={scrollRef}
+        isDrawerMode
         header={(reorderMode, onDone) => (
           <PageNavHeader>
             <Box grow="Yes" alignItems="Center" gap="200">
-              <Text size="H4" style={{ flexGrow: 1 }} truncate>
+              <Text size="H4" style={{ flexGrow: 1, paddingLeft: config.space.S400 }} truncate>
                 Favorites
               </Text>
               {reorderMode && (

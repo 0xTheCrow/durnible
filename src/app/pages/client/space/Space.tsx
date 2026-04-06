@@ -542,8 +542,8 @@ export function Space({ isDrawerMode, extra }: SpaceProps = {}) {
             })}
           </NavCategory>
         </Box>
-        {extra}
       </PageNavContent>
+      {extra}
     </PageNav>
   );
 }
