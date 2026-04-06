@@ -80,7 +80,7 @@ export function SpaceRoomDrawer({ children }: SpaceRoomDrawerProps) {
           className={ContainerColor({ variant: 'Background' })}
           style={{ height: '100%' }}
         >
-          <Space isDrawerMode extra={<FavoritesSection />} />
+          <Space isDrawerMode extra={<FavoritesSection isDrawerMode />} />
         </Box>
       </SwipeDrawer>
     </>

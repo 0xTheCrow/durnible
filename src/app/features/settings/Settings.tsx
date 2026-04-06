@@ -156,7 +156,7 @@ export function Settings({ initialPage, requestClose }: SettingsProps) {
                   style={{ width: '100%' }}
                   variant="Background"
                   size="300"
-                  radii="Pill"
+                  radii="300"
                   placeholder="Search settings..."
                   before={<Icon src={Icons.Search} size="100" />}
                   value={searchQuery}

@@ -362,7 +362,7 @@ export function Home() {
           </Box>
         </PageNavContent>
       )}
-      <FavoritesSection />
+      <FavoritesSection isDrawerMode />
     </PageNav>
   );
 }

@@ -280,7 +280,7 @@ export function Direct() {
           </Box>
         </PageNavContent>
       )}
-      <FavoritesSection />
+      <FavoritesSection isDrawerMode />
     </PageNav>
   );
 }

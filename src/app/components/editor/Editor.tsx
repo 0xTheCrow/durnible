@@ -93,6 +93,7 @@ type CustomEditorProps = {
   onPaste?: ClipboardEventHandler;
   onFiles?: (files: File[]) => void;
   forceSlate?: boolean;
+  alternateInputRef?: React.RefObject<HTMLDivElement>;
 };
 export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
   (
@@ -110,6 +111,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
       onChange,
       onPaste,
       onFiles,
+      alternateInputRef,
     },
     ref
   ) => {
@@ -440,7 +442,12 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
               hideTrack
             >
               <div
-                ref={inputRef}
+                ref={(el) => {
+                  (inputRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+                  if (alternateInputRef) {
+                    (alternateInputRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+                  }
+                }}
                 data-editable-name={editableName}
                 className={css.AlternateInput}
                 contentEditable

@@ -150,9 +150,10 @@ type FavoritesListProps = {
   header: (reorderMode: boolean, onDone: () => void) => ReactNode;
   emptyState?: ReactNode;
   scrollRef?: React.RefObject<HTMLDivElement>;
+  isDrawerMode?: boolean;
 };
 
-export function FavoritesList({ header, emptyState, scrollRef }: FavoritesListProps) {
+export function FavoritesList({ header, emptyState, scrollRef, isDrawerMode }: FavoritesListProps) {
   const mx = useMatrixClient();
   const favorites = useFavoriteRooms(mx);
   const mDirects = useAtomValue(mDirectAtom);
@@ -221,7 +222,7 @@ export function FavoritesList({ header, emptyState, scrollRef }: FavoritesListPr
               direct={mDirects.has(room.roomId)}
               linkPath={getRoomPath(room.roomId)}
               notificationMode={getRoomNotificationMode(notificationPreferences, room.roomId)}
-              isDrawerMode
+              isDrawerMode={isDrawerMode}
             />
           </LongPressWrapper>
         )
@@ -239,7 +240,7 @@ export function FavoritesList({ header, emptyState, scrollRef }: FavoritesListPr
 
 // ── FavoritesSection — appended inside the Space nav scroll area ──────────────
 
-export function FavoritesSection() {
+export function FavoritesSection({ isDrawerMode }: { isDrawerMode?: boolean }) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   return (
@@ -249,6 +250,7 @@ export function FavoritesSection() {
     >
       <FavoritesList
         scrollRef={scrollRef}
+        isDrawerMode={isDrawerMode}
         header={(reorderMode, onDone) => (
           <Box direction="Column" gap="100" style={{ paddingTop: config.space.S400 }}>
             <Line variant="Background" size="300" />
@@ -286,6 +288,7 @@ function FavoritesNav() {
     <PageNav>
       <FavoritesList
         scrollRef={scrollRef}
+        isDrawerMode
         header={(reorderMode, onDone) => (
           <PageNavHeader>
             <Box grow="Yes" alignItems="Center" gap="200">
