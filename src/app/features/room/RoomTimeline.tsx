@@ -663,19 +663,41 @@ export function RoomTimeline({ room, eventId, roomInputRef, alternateInputRef, e
         // keep paginating timeline and conditionally mark as read
         // otherwise we update timeline without paginating
         // so timeline can be updated with evt like: edits, reactions etc
+
+        // Invisible events (reactions, edits, redactions) produce no visible
+        // output. Shifting the range window for them drops an item from the top
+        // of the rendered list without adding anything at the bottom, causing
+        // images to unmount and messages to jump upward. Skip the range shift
+        // for these events; a plain re-render is enough to update relation data.
+        const isInvisible = reactionOrEditEvent(mEvt) || mEvt.isRedaction();
+
         if (atBottomRef.current) {
-          if (document.hasFocus() && (!unreadInfo || mEvt.getSender() === mx.getUserId())) {
-            // Check if the document is in focus (user is actively viewing the app),
-            // and either there are no unread messages or the latest message is from the current user.
-            // If either condition is met, trigger the markAsRead function to send a read receipt.
-            requestAnimationFrame(() => markAsRead(mx, mEvt.getRoomId()!, hideActivity));
-          }
+          if (!isInvisible) {
+            if (document.hasFocus() && (!unreadInfo || mEvt.getSender() === mx.getUserId())) {
+              // Check if the document is in focus (user is actively viewing the app),
+              // and either there are no unread messages or the latest message is from the current user.
+              // If either condition is met, trigger the markAsRead function to send a read receipt.
+              requestAnimationFrame(() => markAsRead(mx, mEvt.getRoomId()!, hideActivity));
+            }
 
-          if (!document.hasFocus() && !unreadInfo) {
-            setUnreadInfo(getRoomUnreadInfo(room));
-          }
+            if (!document.hasFocus() && !unreadInfo) {
+              setUnreadInfo(getRoomUnreadInfo(room));
+            }
 
-          if (!document.hasFocus() && !unfocusedAutoScroll) {
+            if (!document.hasFocus() && !unfocusedAutoScroll) {
+              setTimeline((ct) => ({
+                ...ct,
+                range: {
+                  start: ct.range.start + 1,
+                  end: ct.range.end + 1,
+                },
+              }));
+              return;
+            }
+
+            scrollToBottomRef.current.count += 1;
+            scrollToBottomRef.current.smooth = document.hasFocus();
+
             setTimeline((ct) => ({
               ...ct,
               range: {
@@ -686,16 +708,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, alternateInputRef, e
             return;
           }
 
-          scrollToBottomRef.current.count += 1;
-          scrollToBottomRef.current.smooth = document.hasFocus();
-
-          setTimeline((ct) => ({
-            ...ct,
-            range: {
-              start: ct.range.start + 1,
-              end: ct.range.end + 1,
-            },
-          }));
+          setTimeline((ct) => ({ ...ct }));
           return;
         }
         setTimeline((ct) => ({ ...ct }));
