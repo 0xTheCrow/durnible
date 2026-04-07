@@ -84,4 +84,29 @@ describe('AnimatedImg', () => {
     fireEvent.load(screen.getByAltText('test'));
     expect(onLoad).toHaveBeenCalledTimes(1);
   });
+
+  it('hides the underlying img when loaded and not hovered (canvas shows frozen frame)', () => {
+    render(<AnimatedImg pauseGifs src="test.gif" alt="test" />);
+    const img = screen.getByAltText('test');
+
+    // Before load: img is visible (no frozen frame to replace it yet)
+    expect(img).not.toHaveStyle({ visibility: 'hidden' });
+
+    fireEvent.load(img);
+
+    // After load: img is hidden behind the frozen-frame canvas
+    expect(img).toHaveStyle({ visibility: 'hidden' });
+  });
+
+  it('reveals the underlying img when hovered so the GIF can animate', () => {
+    render(<AnimatedImg pauseGifs src="test.gif" alt="test" />);
+    const img = screen.getByAltText('test');
+    fireEvent.load(img);
+
+    const wrapper = img.parentElement!;
+    fireEvent.mouseEnter(wrapper);
+
+    // While hovered the img is visible (GIF plays) and the canvas is hidden
+    expect(img).not.toHaveStyle({ visibility: 'hidden' });
+  });
 });

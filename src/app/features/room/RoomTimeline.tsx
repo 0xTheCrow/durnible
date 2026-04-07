@@ -1983,100 +1983,66 @@ export function RoomTimeline({ room, eventId, roomInputRef, alternateInputRef, e
     }
   );
 
-  let prevEvent: MatrixEvent | undefined;
-  let isPrevRendered = false;
-  let newDivider = false;
-  let dayDivider = false;
-  const eventRenderer = (item: number) => {
-    const [eventTimeline, baseIndex] = getTimelineAndBaseIndex(timeline.linkedTimelines, item);
-    if (!eventTimeline) return null;
-    const timelineSet = eventTimeline?.getTimelineSet();
-    const mEvent = getTimelineEvent(eventTimeline, getTimelineRelativeIndex(item, baseIndex));
-    const mEventId = mEvent?.getId();
+  type TimelineItem =
+    | { type: 'event'; key: string; item: number; mEventId: string; mEvent: MatrixEvent; timelineSet: EventTimelineSet; collapsed: boolean }
+    | { type: 'new-messages'; key: string }
+    | { type: 'day-divider'; key: string; ts: number };
 
-    if (!mEvent || !mEventId) return null;
+  const buildTimelineItems = (): TimelineItem[] => {
+    const result: TimelineItem[] = [];
+    let prevEvent: MatrixEvent | undefined;
+    let isPrevRendered = false;
+    let newDividerPending = false;
+    let dayDividerPending = false;
 
-    const eventSender = mEvent.getSender();
-    if (eventSender && ignoredUsersSet.has(eventSender)) {
-      return null;
-    }
-    if (mEvent.isRedacted() && !showHiddenEvents) {
-      return null;
-    }
+    for (const item of getItems()) {
+      const [eventTimeline, baseIndex] = getTimelineAndBaseIndex(timeline.linkedTimelines, item);
+      if (!eventTimeline) continue;
+      const timelineSet = eventTimeline.getTimelineSet();
+      const mEvent = getTimelineEvent(eventTimeline, getTimelineRelativeIndex(item, baseIndex));
+      const mEventId = mEvent?.getId();
 
+      if (!mEvent || !mEventId) continue;
 
-    if (!newDivider && readUptoEventIdRef.current) {
-      newDivider = prevEvent?.getId() === readUptoEventIdRef.current;
-    }
-    if (!dayDivider) {
-      dayDivider = prevEvent ? !inSameDay(prevEvent.getTs(), mEvent.getTs()) : false;
-    }
+      const eventSender = mEvent.getSender();
+      if (eventSender && ignoredUsersSet.has(eventSender)) continue;
+      if (mEvent.isRedacted() && !showHiddenEvents) continue;
 
-    const collapsed =
-      isPrevRendered &&
-      !dayDivider &&
-      (!newDivider || eventSender === mx.getUserId()) &&
-      prevEvent !== undefined &&
-      prevEvent.getSender() === eventSender &&
-      prevEvent.getType() === mEvent.getType() &&
-      minuteDifference(prevEvent.getTs(), mEvent.getTs()) < 2;
+      if (!newDividerPending && readUptoEventIdRef.current) {
+        newDividerPending = prevEvent?.getId() === readUptoEventIdRef.current;
+      }
+      if (!dayDividerPending) {
+        dayDividerPending = prevEvent ? !inSameDay(prevEvent.getTs(), mEvent.getTs()) : false;
+      }
 
-    const eventJSX = reactionOrEditEvent(mEvent)
-      ? null
-      : renderMatrixEvent(
-          mEvent.getType(),
-          typeof mEvent.getStateKey() === 'string',
-          mEventId,
-          mEvent,
-          item,
-          timelineSet,
-          collapsed
-        );
-    prevEvent = mEvent;
-    isPrevRendered = !!eventJSX;
+      const collapsed =
+        isPrevRendered &&
+        !dayDividerPending &&
+        (!newDividerPending || eventSender === mx.getUserId()) &&
+        prevEvent !== undefined &&
+        prevEvent.getSender() === eventSender &&
+        prevEvent.getType() === mEvent.getType() &&
+        minuteDifference(prevEvent.getTs(), mEvent.getTs()) < 2;
 
-    const newDividerJSX =
-      newDivider && eventJSX && eventSender !== mx.getUserId() ? (
-        <MessageBase space={messageSpacing}>
-          <TimelineDivider style={{ color: color.Success.Main }} variant="Inherit">
-            <Badge as="span" size="500" variant="Success" fill="Solid" radii="300">
-              <Text size="L400">New Messages</Text>
-            </Badge>
-          </TimelineDivider>
-        </MessageBase>
-      ) : null;
+      const willRender = !reactionOrEditEvent(mEvent);
 
-    const dayDividerJSX =
-      dayDivider && eventJSX ? (
-        <MessageBase space={messageSpacing}>
-          <TimelineDivider variant="Surface">
-            <Badge as="span" size="500" variant="Secondary" fill="None" radii="300">
-              <Text size="L400">
-                {(() => {
-                  if (today(mEvent.getTs())) return 'Today';
-                  if (yesterday(mEvent.getTs())) return 'Yesterday';
-                  return timeDayMonthYear(mEvent.getTs());
-                })()}
-              </Text>
-            </Badge>
-          </TimelineDivider>
-        </MessageBase>
-      ) : null;
+      if (willRender) {
+        if (newDividerPending && eventSender !== mx.getUserId()) {
+          result.push({ type: 'new-messages', key: `new-messages-before-${mEventId}` });
+          newDividerPending = false;
+        }
+        if (dayDividerPending) {
+          result.push({ type: 'day-divider', key: `day-divider-before-${mEventId}`, ts: mEvent.getTs() });
+          dayDividerPending = false;
+        }
+        result.push({ type: 'event', key: mEventId, item, mEventId, mEvent, timelineSet, collapsed });
+      }
 
-    if (eventJSX && (newDividerJSX || dayDividerJSX)) {
-      if (newDividerJSX) newDivider = false;
-      if (dayDividerJSX) dayDivider = false;
-
-      return (
-        <React.Fragment key={mEventId}>
-          {newDividerJSX}
-          {dayDividerJSX}
-          {eventJSX}
-        </React.Fragment>
-      );
+      prevEvent = mEvent;
+      isPrevRendered = willRender;
     }
 
-    return eventJSX;
+    return result;
   };
 
   return (
@@ -2155,7 +2121,45 @@ export function RoomTimeline({ room, eventId, roomInputRef, alternateInputRef, e
               </>
             ))}
 
-          {getItems().map(eventRenderer)}
+          {buildTimelineItems().map((d) => {
+            if (d.type === 'new-messages') {
+              return (
+                <MessageBase key={d.key} space={messageSpacing}>
+                  <TimelineDivider style={{ color: color.Success.Main }} variant="Inherit">
+                    <Badge as="span" size="500" variant="Success" fill="Solid" radii="300">
+                      <Text size="L400">New Messages</Text>
+                    </Badge>
+                  </TimelineDivider>
+                </MessageBase>
+              );
+            }
+            if (d.type === 'day-divider') {
+              return (
+                <MessageBase key={d.key} space={messageSpacing}>
+                  <TimelineDivider variant="Surface">
+                    <Badge as="span" size="500" variant="Secondary" fill="None" radii="300">
+                      <Text size="L400">
+                        {(() => {
+                          if (today(d.ts)) return 'Today';
+                          if (yesterday(d.ts)) return 'Yesterday';
+                          return timeDayMonthYear(d.ts);
+                        })()}
+                      </Text>
+                    </Badge>
+                  </TimelineDivider>
+                </MessageBase>
+              );
+            }
+            return renderMatrixEvent(
+              d.mEvent.getType(),
+              typeof d.mEvent.getStateKey() === 'string',
+              d.mEventId,
+              d.mEvent,
+              d.item,
+              d.timelineSet,
+              d.collapsed
+            );
+          })}
 
 
           {(!liveTimelineLinked || !rangeAtEnd) &&
