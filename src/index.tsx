@@ -160,12 +160,15 @@ if ('serviceWorker' in navigator) {
 
 const setupVirtualKeyboard = () => {
   if (!mobileOrTablet()) return;
+  // Brave handles keyboard resize natively via interactive-widget=resizes-content;
+  // our JS adjustment interferes and causes a black content area.
+  if ((navigator as unknown as { brave?: unknown }).brave !== undefined) return;
   const vv = window.visualViewport;
   if (!vv) return;
   // Tracks the natural (no-keyboard) height for the current orientation.
-  // Some browsers (e.g. Brave) resize both vv.height and window.innerHeight
-  // equally when the keyboard opens, so vv.height < window.innerHeight is
-  // never true. Comparing against maxSeenHeight catches that case.
+  // Some browsers resize both vv.height and window.innerHeight equally when
+  // the keyboard opens, so vv.height < window.innerHeight is never true.
+  // Comparing against maxSeenHeight catches that case.
   let maxSeenHeight = vv.height;
   const update = () => {
     if (vv.height > maxSeenHeight) maxSeenHeight = vv.height;
