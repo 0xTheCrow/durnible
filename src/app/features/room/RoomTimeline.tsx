@@ -1991,6 +1991,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, alternateInputRef, e
   const buildTimelineItems = (): TimelineItem[] => {
     const result: TimelineItem[] = [];
     let prevEvent: MatrixEvent | undefined;
+    let prevRenderedEvent: MatrixEvent | undefined;
     let isPrevRendered = false;
     let newDividerPending = false;
     let dayDividerPending = false;
@@ -2009,7 +2010,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, alternateInputRef, e
       if (mEvent.isRedacted() && !showHiddenEvents) continue;
 
       if (!newDividerPending && readUptoEventIdRef.current) {
-        newDividerPending = prevEvent?.getId() === readUptoEventIdRef.current;
+        newDividerPending = prevRenderedEvent?.getId() === readUptoEventIdRef.current;
       }
       if (!dayDividerPending) {
         dayDividerPending = prevEvent ? !inSameDay(prevEvent.getTs(), mEvent.getTs()) : false;
@@ -2036,6 +2037,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, alternateInputRef, e
           dayDividerPending = false;
         }
         result.push({ type: 'event', key: mEventId, item, mEventId, mEvent, timelineSet, collapsed });
+        prevRenderedEvent = mEvent;
       }
 
       prevEvent = mEvent;
