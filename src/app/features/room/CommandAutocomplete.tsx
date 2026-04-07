@@ -22,6 +22,7 @@ type CommandAutocompleteProps = {
   editor: Editor;
   query: AutocompleteQuery<string>;
   requestClose: () => void;
+  onSelect?: (commandName: string) => void;
 };
 
 const SEARCH_OPTIONS: UseAsyncSearchOptions = {
@@ -35,6 +36,7 @@ export function CommandAutocomplete({
   editor,
   query,
   requestClose,
+  onSelect,
 }: CommandAutocompleteProps) {
   const mx = useMatrixClient();
   const commands = useCommands(mx, room);
@@ -54,6 +56,11 @@ export function CommandAutocomplete({
   }, [query.text, search, resetSearch]);
 
   const handleAutocomplete: CommandAutoCompleteHandler = (commandName) => {
+    if (onSelect) {
+      onSelect(commandName);
+      requestClose();
+      return;
+    }
     const cmdEl = createCommandElement(commandName);
     replaceWithElement(editor, query.range, cmdEl);
     moveCursor(editor, true);
@@ -62,6 +69,7 @@ export function CommandAutocomplete({
 
   useKeyDown(window, (evt: KeyboardEvent) => {
     onTabPress(evt, () => {
+      if (evt.target instanceof HTMLButtonElement) return;
       if (autoCompleteNames.length === 0) {
         return;
       }

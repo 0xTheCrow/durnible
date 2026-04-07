@@ -62,6 +62,7 @@ type RoomMentionAutocompleteProps = {
   editor: Editor;
   query: AutocompleteQuery<string>;
   requestClose: () => void;
+  onSelect?: (roomAliasOrId: string, name: string) => void;
 };
 
 const SEARCH_OPTIONS: UseAsyncSearchOptions = {
@@ -75,6 +76,7 @@ export function RoomMentionAutocomplete({
   editor,
   query,
   requestClose,
+  onSelect,
 }: RoomMentionAutocompleteProps) {
   const mx = useMatrixClient();
   const mDirects = useAtomValue(mDirectAtom);
@@ -104,6 +106,11 @@ export function RoomMentionAutocomplete({
   }, [query.text, search, resetSearch]);
 
   const handleAutocomplete: MentionAutoCompleteHandler = (roomAliasOrId, name) => {
+    if (onSelect) {
+      onSelect(roomAliasOrId, name);
+      requestClose();
+      return;
+    }
     const mentionRoom = mx.getRoom(roomAliasOrId);
     const viaServers = mentionRoom ? getViaServers(mentionRoom) : undefined;
     const mentionEl = createMentionElement(
@@ -120,6 +127,7 @@ export function RoomMentionAutocomplete({
 
   useKeyDown(window, (evt: KeyboardEvent) => {
     onTabPress(evt, () => {
+      if (evt.target instanceof HTMLButtonElement) return;
       if (autoCompleteRoomIds.length === 0) {
         const alias = roomAliasFromQueryText(mx, query.text);
         handleAutocomplete(alias, alias);

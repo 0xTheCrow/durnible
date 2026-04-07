@@ -27,6 +27,7 @@ type EmoticonAutocompleteProps = {
   editor: Editor;
   query: AutocompleteQuery<string>;
   requestClose: () => void;
+  onSelect?: (key: string, shortcode: string) => void;
 };
 
 const SEARCH_OPTIONS: UseAsyncSearchOptions = {
@@ -40,6 +41,7 @@ export function EmoticonAutocomplete({
   editor,
   query,
   requestClose,
+  onSelect,
 }: EmoticonAutocompleteProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
@@ -68,6 +70,11 @@ export function EmoticonAutocomplete({
   }, [query.text, search, resetSearch]);
 
   const handleAutocomplete: EmoticonCompleteHandler = (key, shortcode) => {
+    if (onSelect) {
+      onSelect(key, shortcode);
+      requestClose();
+      return;
+    }
     const emoticonEl = createEmoticonElement(key, shortcode);
     replaceWithElement(editor, query.range, emoticonEl);
     moveCursor(editor, true);
@@ -76,6 +83,7 @@ export function EmoticonAutocomplete({
 
   useKeyDown(window, (evt: KeyboardEvent) => {
     onTabPress(evt, () => {
+      if (evt.target instanceof HTMLButtonElement) return;
       if (autoCompleteEmoticon.length === 0) return;
       const emoticon = autoCompleteEmoticon[0];
       const key = 'url' in emoticon ? emoticon.url : emoticon.unicode;

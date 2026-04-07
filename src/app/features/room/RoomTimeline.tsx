@@ -130,6 +130,7 @@ import { useAccessiblePowerTagColors, useGetMemberPowerTag } from '../../hooks/u
 import { useTheme } from '../../hooks/useTheme';
 import { useRoomCreatorsTag } from '../../hooks/useRoomCreatorsTag';
 import { usePowerLevelTags } from '../../hooks/usePowerLevelTags';
+import { ROOM_INPUT_EDITABLE_NAME } from './RoomInput';
 
 const TimelineFloat = as<'div', css.TimelineFloatVariants>(
   ({ position, className, ...props }, ref) => (
@@ -231,6 +232,7 @@ type RoomTimelineProps = {
   room: Room;
   eventId?: string;
   roomInputRef: RefObject<HTMLElement>;
+  alternateInputRef: RefObject<HTMLDivElement>;
   editor: Editor;
 };
 
@@ -466,7 +468,7 @@ function DecryptRetry({ retrying, onRetry }: DecryptRetryProps) {
   );
 }
 
-export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimelineProps) {
+export function RoomTimeline({ room, eventId, roomInputRef, alternateInputRef, editor }: RoomTimelineProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
   const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
@@ -961,7 +963,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
         if (
           isKeyHotkey('arrowup', evt) &&
           editableActiveElement() &&
-          document.activeElement?.getAttribute('data-editable-name') === 'RoomInput' &&
+          document.activeElement?.getAttribute('data-editable-name') === ROOM_INPUT_EDITABLE_NAME &&
           isEmptyEditor(editor)
         ) {
           const editableEvt = getLatestEditableEvt(room.getLiveTimeline(), (mEvt) =>
@@ -1189,7 +1191,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
         });
         setTimeout(() => {
           if (alternateInput) {
-            roomInputRef.current?.querySelector('textarea')?.focus();
+            alternateInputRef.current?.focus();
           } else {
             ReactEditor.focus(editor);
           }
@@ -1230,12 +1232,12 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
       }
       setEditId(undefined);
       if (alternateInput) {
-        roomInputRef.current?.querySelector('textarea')?.focus();
+        alternateInputRef.current?.focus();
       } else {
         ReactEditor.focus(editor);
       }
     },
-    [editor, alternateInput, roomInputRef]
+    [editor, alternateInput, alternateInputRef]
   );
   const { t } = useTranslation();
 
@@ -1491,7 +1493,12 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
         const reactionRelations = getEventReactions(timelineSet, mEventId);
         const reactions = reactionRelations && reactionRelations.getSortedAnnotationsByKey();
         const hasReactions = reactions && reactions.length > 0;
+        const { replyEventId, threadRootId } = mEvent;
         const highlighted = focusItem?.eventId === mEventId && focusItem.highlight;
+        const myUserId = mx.getSafeUserId();
+        const replyToMe =
+          !!replyEventId &&
+          timelineSet.findEventById(replyEventId)?.getSender() === myUserId;
 
         return (
           <Message
@@ -1504,6 +1511,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
             messageLayout={messageLayout}
             collapse={collapse}
             highlight={highlighted}
+            mentionHighlight={replyHighlight && replyToMe}
             canDelete={canRedact || mEvent.getSender() === mx.getUserId()}
             canSendReaction={canSendReaction}
             canPinEvent={canPinEvent}
@@ -1513,6 +1521,20 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
             onUsernameClick={handleUsernameClick}
             onReplyClick={handleReplyClick}
             onReactionToggle={handleReactionToggle}
+            reply={
+              replyEventId && (
+                <Reply
+                  room={room}
+                  timelineSet={timelineSet}
+                  replyEventId={replyEventId}
+                  threadRootId={threadRootId}
+                  onClick={handleOpenReply}
+                  getMemberPowerTag={getMemberPowerTag}
+                  accessibleTagColors={accessiblePowerTagColors}
+                  legacyUsernameColor={legacyUsernameColor || direct}
+                />
+              )
+            }
             reactions={
               reactionRelations && (
                 <Reactions

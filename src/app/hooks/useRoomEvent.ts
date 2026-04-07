@@ -54,9 +54,15 @@ export const useRoomEvent = (
     gcTime: 60 * 60 * 1000, // 1hour
   });
 
+  const fallback = useMemo(
+    () => (error && !isFetching ? room.findEventById(eventId) ?? null : undefined),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [error, isFetching]
+  );
+
   if (event) return event;
   if (data) return data;
-  if (error && !isFetching) return null;
+  if (fallback !== undefined) return fallback;
 
   return undefined;
 };

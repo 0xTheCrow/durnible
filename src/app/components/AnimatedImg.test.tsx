@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { AnimatedImg } from './AnimatedImg';
 
 describe('AnimatedImg', () => {
@@ -33,5 +33,55 @@ describe('AnimatedImg', () => {
 
     // Canvas should appear
     expect(container.querySelector('canvas')).not.toBeNull();
+  });
+
+  it('shows the frozen-frame canvas after load when not hovered', () => {
+    const { container } = render(<AnimatedImg pauseGifs src="test.gif" alt="test" />);
+    fireEvent.load(screen.getByAltText('test'));
+    const canvas = container.querySelector('canvas')!;
+    // Canvas is the frozen frame — it should be visible, not hidden
+    expect(canvas).not.toHaveStyle({ visibility: 'hidden' });
+  });
+
+  it('hides the frozen-frame canvas on hover so the GIF can play', () => {
+    const { container } = render(<AnimatedImg pauseGifs src="test.gif" alt="test" />);
+    const img = screen.getByAltText('test');
+    const wrapper = img.parentElement!;
+
+    fireEvent.load(img);
+    const canvas = container.querySelector('canvas')!;
+
+    // Before hover: frozen frame shown
+    expect(canvas).not.toHaveStyle({ visibility: 'hidden' });
+
+    // Hover: frozen frame hidden so GIF plays underneath
+    fireEvent.mouseEnter(wrapper);
+    expect(canvas).toHaveStyle({ visibility: 'hidden' });
+
+    // Leave: frozen frame visible again
+    fireEvent.mouseLeave(wrapper);
+    expect(canvas).not.toHaveStyle({ visibility: 'hidden' });
+  });
+
+  it('respects an externally controlled hovered prop', () => {
+    const { container, rerender } = render(
+      <AnimatedImg pauseGifs hovered={false} src="test.gif" alt="test" />
+    );
+    fireEvent.load(screen.getByAltText('test'));
+    const canvas = container.querySelector('canvas')!;
+
+    // hovered=false: frozen frame shown
+    expect(canvas).not.toHaveStyle({ visibility: 'hidden' });
+
+    // hovered=true: frozen frame hidden, GIF plays
+    rerender(<AnimatedImg pauseGifs hovered src="test.gif" alt="test" />);
+    expect(canvas).toHaveStyle({ visibility: 'hidden' });
+  });
+
+  it('calls the original onLoad handler when the image loads', () => {
+    const onLoad = vi.fn();
+    render(<AnimatedImg pauseGifs src="test.gif" alt="test" onLoad={onLoad} />);
+    fireEvent.load(screen.getByAltText('test'));
+    expect(onLoad).toHaveBeenCalledTimes(1);
   });
 });

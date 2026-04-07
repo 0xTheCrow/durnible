@@ -63,6 +63,7 @@ const shouldFocusMessageField = (evt: KeyboardEvent): boolean => {
 
 export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
   const roomInputRef = useRef<HTMLDivElement>(null);
+  const alternateInputRef = useRef<HTMLDivElement>(null);
   const roomViewRef = useRef<HTMLDivElement>(null);
 
   const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
@@ -114,7 +115,7 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
     if (screenSize !== ScreenSize.Desktop) return;
     if (!canMessage) return;
     if (alternateInput) {
-      roomInputRef.current?.querySelector('textarea')?.focus();
+      alternateInputRef.current?.focus();
     } else {
       ReactEditor.focus(editor);
     }
@@ -132,13 +133,13 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
         }
         if (shouldFocusMessageField(evt) || isKeyHotkey('mod+v', evt)) {
           if (alternateInput) {
-            roomInputRef.current?.querySelector('textarea')?.focus();
+            alternateInputRef.current?.focus();
           } else {
             ReactEditor.focus(editor);
           }
         }
       },
-      [editor, alternateInput, roomInputRef]
+      [editor, alternateInput, alternateInputRef]
     )
   );
 
@@ -151,6 +152,7 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
           room={room}
           eventId={eventId}
           roomInputRef={roomInputRef}
+          alternateInputRef={alternateInputRef}
           editor={editor}
         />
         <RoomViewTyping room={room} />
@@ -178,6 +180,7 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
                   editor={editor}
                   roomId={roomId}
                   fileDropContainerRef={roomViewRef}
+                  alternateInputRef={alternateInputRef}
                   ref={roomInputRef}
                 />
               )}

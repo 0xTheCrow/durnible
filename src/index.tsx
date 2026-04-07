@@ -15,9 +15,6 @@ import { mobileOrTablet } from './app/utils/user-agent';
 import { getSettings } from './app/state/settings';
 import App from './app/pages/App';
 
-// import i18n (needs to be bundled ;))
-import './app/i18n';
-
 document.body.classList.add(configClass, varsClass);
 
 // Register Service Worker
@@ -166,15 +163,20 @@ const setupVirtualKeyboard = () => {
   const vv = window.visualViewport;
   if (!vv) return;
   // Tracks the natural (no-keyboard) height for the current orientation.
-  // Some browsers (e.g. Brave) resize both vv.height and window.innerHeight
-  // equally when the keyboard opens, so vv.height < window.innerHeight is
-  // never true. Comparing against maxSeenHeight catches that case.
   let maxSeenHeight = vv.height;
   const update = () => {
     if (vv.height > maxSeenHeight) maxSeenHeight = vv.height;
     const keyboardOpen = vv.height < window.innerHeight || vv.height < maxSeenHeight;
     if (keyboardOpen) {
-      document.documentElement.style.setProperty('--app-height', `${vv.height}px`);
+      // If the layout viewport already shrank to match the visual viewport,
+      // the browser handled the keyboard resize natively (e.g. Brave, Chrome
+      // on Android with interactive-widget=resizes-content). Setting
+      // --app-height would be redundant and can cause a black content area.
+      if (vv.height === window.innerHeight) {
+        document.documentElement.style.removeProperty('--app-height');
+      } else {
+        document.documentElement.style.setProperty('--app-height', `${vv.height}px`);
+      }
     } else {
       document.documentElement.style.removeProperty('--app-height');
     }

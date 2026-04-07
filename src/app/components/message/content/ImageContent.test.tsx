@@ -45,4 +45,25 @@ describe('ImageContent', () => {
     await act(async () => {});
     expect(screen.getByText('1.0 KB')).toBeInTheDocument();
   });
+
+  it('shows a View button when autoPlay is false and image is not a spoiler', async () => {
+    render(
+      <MatrixTestWrapper>
+        <ImageContent {...defaultProps} autoPlay={false} />
+      </MatrixTestWrapper>
+    );
+    await act(async () => {});
+    expect(screen.getByText(/view/i)).toBeInTheDocument();
+  });
+
+  it('shows a Spoiler chip when markedAsSpoiler is true', async () => {
+    render(
+      <MatrixTestWrapper>
+        <ImageContent {...defaultProps} autoPlay={false} markedAsSpoiler />
+      </MatrixTestWrapper>
+    );
+    await act(async () => {});
+    expect(screen.getByText(/spoiler/i)).toBeInTheDocument();
+  });
+
 });

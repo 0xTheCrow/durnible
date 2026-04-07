@@ -124,6 +124,9 @@ export function UserMentionAutocomplete({
 
   useKeyDown(window, (evt: KeyboardEvent) => {
     onTabPress(evt, () => {
+      // If a menu item button is focused, its own onKeyDown handler fires —
+      // skip here to avoid calling handleAutocomplete twice.
+      if (evt.target instanceof HTMLButtonElement) return;
       if (query.text === 'room') {
         handleAutocomplete(roomAliasOrId, '@room');
         return;

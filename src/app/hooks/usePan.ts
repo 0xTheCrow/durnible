@@ -45,7 +45,6 @@ export const usePan = (active: boolean, zoom = 1) => {
 
   const handleMouseDown: MouseEventHandler<HTMLElement> = (evt) => {
     if (!active) return;
-    evt.preventDefault();
     setCursor('grabbing');
 
     document.addEventListener('mousemove', handleMouseMove);

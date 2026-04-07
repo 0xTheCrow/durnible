@@ -149,16 +149,52 @@ describe('RenderMessageContent', () => {
     });
   });
 
+  describe('video messages', () => {
+    it('renders a video message without crashing', async () => {
+      renderMessageContent(MsgType.Video, {
+        body: 'video.mp4',
+        msgtype: 'm.video',
+        url: 'mxc://example.com/vid123',
+        info: {
+          w: 1280,
+          h: 720,
+          size: 5_000_000,
+          mimetype: 'video/mp4',
+          duration: 30000,
+        },
+      });
+      await act(async () => {});
+    });
+  });
+
+  describe('audio messages', () => {
+    it('renders an audio message without crashing', async () => {
+      renderMessageContent(MsgType.Audio, {
+        body: 'audio.ogg',
+        msgtype: 'm.audio',
+        url: 'mxc://example.com/aud123',
+        info: {
+          size: 200_000,
+          mimetype: 'audio/ogg',
+          duration: 10000,
+        },
+      });
+      await act(async () => {});
+    });
+  });
+
   describe('unsupported messages', () => {
     it('renders unsupported content for unknown message type', () => {
       renderMessageContent('m.unknown.type', {
         body: 'something',
         msgtype: 'm.unknown.type',
       });
+      expect(screen.getByText(/unsupported/i)).toBeInTheDocument();
     });
 
-    it('renders bad encrypted content', () => {
+    it('renders bad encrypted content with a decrypt failure message', () => {
       renderMessageContent('m.bad.encrypted', {});
+      expect(screen.getByText(/decrypt/i)).toBeInTheDocument();
     });
   });
 });
