@@ -103,6 +103,7 @@ import { markAsRead } from '../../utils/notifications';
 import { getResizeObserverEntry, useResizeObserver } from '../../hooks/useResizeObserver';
 import * as css from './RoomTimeline.css';
 import { inSameDay, minuteDifference, timeDayMonthYear, today, yesterday } from '../../utils/time';
+import { buildTimelineDescriptors } from '../../utils/buildTimelineDescriptors';
 import { createMentionElement, isEmptyEditor, moveCursor } from '../../components/editor';
 import { roomIdToReplyDraftAtomFamily } from '../../state/room/roomInputDrafts';
 import { usePowerLevelsContext } from '../../hooks/usePowerLevels';
@@ -1983,18 +1984,8 @@ export function RoomTimeline({ room, eventId, roomInputRef, alternateInputRef, e
     }
   );
 
-  type TimelineItem =
-    | { type: 'event'; key: string; item: number; mEventId: string; mEvent: MatrixEvent; timelineSet: EventTimelineSet; collapsed: boolean }
-    | { type: 'new-messages'; key: string }
-    | { type: 'day-divider'; key: string; ts: number };
-
-  const buildTimelineItems = (): TimelineItem[] => {
-    const result: TimelineItem[] = [];
-    let prevEvent: MatrixEvent | undefined;
-    let prevRenderedEvent: MatrixEvent | undefined;
-    let isPrevRendered = false;
-    let newDividerPending = false;
-    let dayDividerPending = false;
+  const buildTimelineItems = () => {
+    const events: Parameters<typeof buildTimelineDescriptors>[0] = [];
 
     for (const item of getItems()) {
       const [eventTimeline, baseIndex] = getTimelineAndBaseIndex(timeline.linkedTimelines, item);
@@ -2009,42 +2000,35 @@ export function RoomTimeline({ room, eventId, roomInputRef, alternateInputRef, e
       if (eventSender && ignoredUsersSet.has(eventSender)) continue;
       if (mEvent.isRedacted() && !showHiddenEvents) continue;
 
-      if (!newDividerPending && readUptoEventIdRef.current) {
-        newDividerPending = prevRenderedEvent?.getId() === readUptoEventIdRef.current;
-      }
-      if (!dayDividerPending) {
-        dayDividerPending = prevEvent ? !inSameDay(prevEvent.getTs(), mEvent.getTs()) : false;
-      }
-
-      const collapsed =
-        isPrevRendered &&
-        !dayDividerPending &&
-        (!newDividerPending || eventSender === mx.getUserId()) &&
-        prevEvent !== undefined &&
-        prevEvent.getSender() === eventSender &&
-        prevEvent.getType() === mEvent.getType() &&
-        minuteDifference(prevEvent.getTs(), mEvent.getTs()) < 2;
-
-      const willRender = !reactionOrEditEvent(mEvent);
-
-      if (willRender) {
-        if (newDividerPending && eventSender !== mx.getUserId()) {
-          result.push({ type: 'new-messages', key: `new-messages-before-${mEventId}` });
-          newDividerPending = false;
-        }
-        if (dayDividerPending) {
-          result.push({ type: 'day-divider', key: `day-divider-before-${mEventId}`, ts: mEvent.getTs() });
-          dayDividerPending = false;
-        }
-        result.push({ type: 'event', key: mEventId, item, mEventId, mEvent, timelineSet, collapsed });
-        prevRenderedEvent = mEvent;
-      }
-
-      prevEvent = mEvent;
-      isPrevRendered = willRender;
+      events.push({ mEvent, mEventId, timelineSet, item });
     }
 
-    return result;
+    const willEventRender = (mEvent: MatrixEvent): boolean => {
+      if (reactionOrEditEvent(mEvent)) return false;
+      if (!showHiddenEvents) {
+        if (mEvent.isRedaction()) return false;
+        const type = mEvent.getType();
+        const isRegistered =
+          type === MessageEvent.RoomMessage ||
+          type === MessageEvent.RoomMessageEncrypted ||
+          type === MessageEvent.Sticker ||
+          type === MessageEvent.PollStart ||
+          type === 'm.poll.start' ||
+          type === StateEvent.RoomMember ||
+          type === StateEvent.RoomName ||
+          type === StateEvent.RoomTopic ||
+          type === StateEvent.RoomAvatar;
+        if (!isRegistered) return false;
+      }
+      if (mEvent.getType() === StateEvent.RoomMember) {
+        const membershipChanged = isMembershipChanged(mEvent);
+        if (membershipChanged && hideMembershipEvents) return false;
+        if (!membershipChanged && hideNickAvatarEvents) return false;
+      }
+      return true;
+    };
+
+    return buildTimelineDescriptors(events, readUptoEventIdRef.current ?? undefined, mx.getSafeUserId(), willEventRender);
   };
 
   return (
