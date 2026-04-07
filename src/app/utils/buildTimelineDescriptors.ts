@@ -28,6 +28,9 @@ export type TimelineItem =
  *                         first rendered event that follows it.
  * @param myUserId     - Current user's ID. Messages from this user do not
  *                       trigger the "New Messages" divider.
+ * @param willRender   - Predicate that returns true if an event will produce
+ *                       visible output. Non-rendered events are invisible and
+ *                       transparent to divider placement and collapse grouping.
  */
 export function buildTimelineDescriptors(
   events: TimelineEventInput[],
@@ -36,9 +39,11 @@ export function buildTimelineDescriptors(
   willRender: (mEvent: MatrixEvent) => boolean = (mEvent) => !reactionOrEditEvent(mEvent),
 ): TimelineItem[] {
   const result: TimelineItem[] = [];
-  let prevEvent: MatrixEvent | undefined;
+  // Only track the last *rendered* event. Non-rendered events (reactions,
+  // redactions, hidden state events) are invisible and must not affect divider
+  // placement or collapse grouping — otherwise removing a reaction causes a
+  // one-frame collapse-state flip that looks like a flicker.
   let prevRenderedEvent: MatrixEvent | undefined;
-  let isPrevRendered = false;
   let newDividerPending = false;
   let dayDividerPending = false;
 
@@ -46,22 +51,21 @@ export function buildTimelineDescriptors(
     const eventSender = mEvent.getSender();
 
     if (!newDividerPending && readUptoEventId) {
-      // Use prevRenderedEvent (not prevEvent) so that invisible events like
-      // reactions don't shift the divider position.
       newDividerPending = prevRenderedEvent?.getId() === readUptoEventId;
     }
     if (!dayDividerPending) {
-      dayDividerPending = prevEvent ? !inSameDay(prevEvent.getTs(), mEvent.getTs()) : false;
+      dayDividerPending = prevRenderedEvent
+        ? !inSameDay(prevRenderedEvent.getTs(), mEvent.getTs())
+        : false;
     }
 
     const collapsed =
-      isPrevRendered &&
       !dayDividerPending &&
       (!newDividerPending || eventSender === myUserId) &&
-      prevEvent !== undefined &&
-      prevEvent.getSender() === eventSender &&
-      prevEvent.getType() === mEvent.getType() &&
-      minuteDifference(prevEvent.getTs(), mEvent.getTs()) < 2;
+      prevRenderedEvent !== undefined &&
+      prevRenderedEvent.getSender() === eventSender &&
+      prevRenderedEvent.getType() === mEvent.getType() &&
+      minuteDifference(prevRenderedEvent.getTs(), mEvent.getTs()) < 2;
 
     const renders = willRender(mEvent);
 
@@ -77,9 +81,6 @@ export function buildTimelineDescriptors(
       result.push({ type: 'event', key: mEventId, item, mEventId, mEvent, timelineSet, collapsed });
       prevRenderedEvent = mEvent;
     }
-
-    prevEvent = mEvent;
-    isPrevRendered = renders;
   }
 
   return result;

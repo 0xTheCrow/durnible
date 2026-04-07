@@ -183,9 +183,10 @@ describe('buildTimelineDescriptors', () => {
     expect(eventB?.collapsed).toBe(true);
   });
 
-  it('does not collapse when a reaction interrupts (reactions are invisible)', () => {
-    // A reaction between two messages from the same sender should still allow
-    // collapsing, since the reaction doesn't render.
+  it('collapses across an invisible reaction between two same-sender messages', () => {
+    // Reactions are invisible. A reaction between $A and $B must not prevent
+    // $B from collapsing against $A — and crucially, removing the reaction
+    // later must not cause a one-frame collapse-state flip (flicker).
     const result = buildTimelineDescriptors(
       [
         makeEvent({ id: '$A', sender: OTHER_USER, ts: 1000 }),
@@ -196,10 +197,7 @@ describe('buildTimelineDescriptors', () => {
       MY_USER
     );
     const eventB = result.find((d) => d.type === 'event' && d.mEventId === '$B') as Extract<TimelineItem, { type: 'event' }>;
-    // prevEvent is the reaction (same type check fails) so collapsed = false.
-    // This documents the current behaviour — reactions break collapse since
-    // prevEvent (used for type/sender checks) includes all events.
-    expect(eventB?.collapsed).toBe(false);
+    expect(eventB?.collapsed).toBe(true);
   });
 
   // ─── Custom willRender predicate ─────────────────────────────────────────────
