@@ -15,6 +15,9 @@ const useFetchEvent = (room: Room, eventId: string) => {
     if (evt.unsigned?.['m.relations'] && evt.unsigned?.['m.relations']['m.replace']) {
       const replaceEvt = evt.unsigned?.['m.relations']['m.replace'] as IEvent;
       const replaceEvent = new MatrixEvent(replaceEvt);
+      if (replaceEvent.isEncrypted() && mx.getCrypto()) {
+        await to(replaceEvent.attemptDecryption(mx.getCrypto() as CryptoBackend));
+      }
       mEvent.makeReplaced(replaceEvent);
     }
 
@@ -68,9 +71,18 @@ export const useRoomEvent = (
     const handler = () => setContentReady(true);
     result.on(MatrixEventEvent.Replaced, handler);
     result.on(MatrixEventEvent.Decrypted, handler);
+
+    const replacing = result.replacingEvent();
+    if (replacing) {
+      replacing.on(MatrixEventEvent.Decrypted, handler);
+    }
+
     return () => {
       result.removeListener(MatrixEventEvent.Replaced, handler);
       result.removeListener(MatrixEventEvent.Decrypted, handler);
+      if (replacing) {
+        replacing.removeListener(MatrixEventEvent.Decrypted, handler);
+      }
     };
   }, [result]);
 

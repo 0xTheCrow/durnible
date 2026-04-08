@@ -1,13 +1,13 @@
 import { Box, Icon, Icons, Text, as, color, toRem } from 'folds';
-import { EventTimelineSet, MatrixEventEvent, Room } from 'matrix-js-sdk';
-import React, { MouseEventHandler, ReactNode, useCallback, useEffect, useMemo, useReducer } from 'react';
+import { EventTimelineSet, Room } from 'matrix-js-sdk';
+import React, { MouseEventHandler, ReactNode, useCallback, useMemo } from 'react';
 import classNames from 'classnames';
 import { getMemberDisplayName, trimReplyFromBody } from '../../utils/room';
 import { getMxIdLocalPart } from '../../utils/matrix';
 import { LinePlaceholder } from './placeholder';
 import { randomNumberBetween } from '../../utils/common';
 import * as css from './Reply.css';
-import { MessageBadEncryptedContent, MessageDeletedContent, MessageFailedContent } from './content';
+import { MessageDeletedContent, MessageFailedContent } from './content';
 import { scaleSystemEmoji } from '../../plugins/react-custom-html-parser';
 import { useRoomEvent } from '../../hooks/useRoomEvent';
 import colorMXID from '../../../util/colorMXID';
@@ -89,16 +89,21 @@ export const Reply = as<'div', ReplyProps>(
     const powerTag = sender ? getMemberPowerTag?.(sender) : undefined;
     const tagColor = powerTag?.color ? accessibleTagColors?.get(powerTag.color) : undefined;
 
-    const usernameColor = legacyUsernameColor ? colorMXID(sender ?? replyEventId) : tagColor;
+    const usernameColor = sender
+      ? legacyUsernameColor ? colorMXID(sender) : tagColor
+      : undefined;
 
-    const fallbackBody = replyEvent?.isRedacted() ? (
-      <MessageDeletedContent />
-    ) : (
-      <MessageFailedContent />
-    );
-
-    const badEncryption = replyEvent?.getContent().msgtype === 'm.bad.encrypted';
-    const bodyJSX = body ? scaleSystemEmoji(trimReplyFromBody(body)) : fallbackBody;
+    const isRedacted = replyEvent?.isRedacted() ?? false;
+    // Show content when we have something definitive to display:
+    // - a body to render
+    // - a redacted event (show "deleted")
+    // - a null event (fetch permanently failed, show "failed to load")
+    const showContent = body || isRedacted || replyEvent === null;
+    const bodyJSX = body
+      ? scaleSystemEmoji(trimReplyFromBody(body))
+      : isRedacted
+        ? <MessageDeletedContent />
+        : <MessageFailedContent />;
 
     return (
       <Box direction="Row" gap="200" alignItems="Center" {...props} ref={ref}>
@@ -118,9 +123,9 @@ export const Reply = as<'div', ReplyProps>(
           data-event-id={replyEventId}
           onClick={onClick}
         >
-          {replyEvent !== undefined ? (
+          {showContent ? (
             <Text size="T300" truncate>
-              {badEncryption ? <MessageBadEncryptedContent /> : bodyJSX}
+              {bodyJSX}
             </Text>
           ) : (
             <LinePlaceholder
