@@ -1,1 +1,1 @@
-# Placeholder - tests run on pre-push instead
+npm test
