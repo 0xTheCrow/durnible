@@ -81,14 +81,10 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
     useCallback(
       async (ts) => {
         const floorTs = Math.floor(ts);
-        console.log('[TimelineSlider] requested ts:', new Date(floorTs).toISOString(), floorTs);
         const [fwd, bwd] = await Promise.all([
           mx.timestampToEvent(room.roomId, floorTs, Direction.Forward).catch(() => undefined),
           mx.timestampToEvent(room.roomId, floorTs, Direction.Backward).catch(() => undefined),
         ]);
-
-        console.log('[TimelineSlider] fwd result:', fwd ? { id: fwd.event_id, ts: new Date(fwd.origin_server_ts).toISOString(), dist: Math.abs(fwd.origin_server_ts - floorTs) } : 'none');
-        console.log('[TimelineSlider] bwd result:', bwd ? { id: bwd.event_id, ts: new Date(bwd.origin_server_ts).toISOString(), dist: Math.abs(bwd.origin_server_ts - floorTs) } : 'none');
 
         if (!fwd && !bwd) {
           throw new MatrixError({ errcode: 'M_NOT_FOUND', error: 'No events found near timestamp' });
@@ -99,9 +95,7 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
 
         const fwdDist = Math.abs(fwd.origin_server_ts - floorTs);
         const bwdDist = Math.abs(bwd.origin_server_ts - floorTs);
-        const chosen = bwdDist <= fwdDist ? bwd : fwd;
-        console.log('[TimelineSlider] chose:', chosen.event_id, new Date(chosen.origin_server_ts).toISOString(), 'dist:', Math.min(fwdDist, bwdDist), 'ms');
-        return chosen.event_id;
+        return bwdDist <= fwdDist ? bwd.event_id : fwd.event_id;
       },
       [mx, room]
     )
