@@ -619,6 +619,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, alternateInputRef, e
       (evtId, lTimelines, evtAbsIndex) => {
         if (!alive()) return;
         const evLength = getTimelinesEventsCount(lTimelines);
+        console.log('[TimelineSlider] loadEventTimeline SUCCESS:', evtId, 'absIndex:', evtAbsIndex, 'evLength:', evLength);
 
         // Batch both updates together so React commits them in one render pass.
         // useLayoutEffect fires after that single commit — elements are in the
@@ -642,6 +643,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, alternateInputRef, e
     ),
     useCallback(() => {
       if (!alive()) return;
+      console.log('[TimelineSlider] loadEventTimeline ERROR — resetting to latest');
       setTimeline(getInitialTimeline(room));
       scrollToBottomRef.current.count += 1;
       scrollToBottomRef.current.smooth = false;
