@@ -991,11 +991,13 @@ export function RoomTimeline({ room, eventId, roomInputRef, alternateInputRef, e
 
   useEffect(() => {
     if (eventId) {
+      console.log('[TimelineSlider] useEffect: loading eventId', eventId);
       atBottomRef.current = false;
       setAtBottom(false);
       setTimeline(getEmptyTimeline());
       loadEventTimeline(eventId);
     } else {
+      console.log('[TimelineSlider] useEffect: no eventId, resetting to latest');
       setTimeline(getInitialTimeline(room));
       scrollToBottomRef.current.count += 1;
       scrollToBottomRef.current.smooth = false;
@@ -1036,17 +1038,18 @@ export function RoomTimeline({ room, eventId, roomInputRef, alternateInputRef, e
   useLayoutEffect(() => {
     if (!focusItem?.scrollTo) return;
     const scrollEl = scrollRef.current;
-    if (!scrollEl) return;
+    if (!scrollEl) { console.log('[TimelineSlider] focusScroll: no scrollEl'); return; }
     const el = scrollEl.querySelector(
       `[data-message-id="${focusItem.eventId}"]`
     ) as HTMLElement | null;
-    if (!el) return;
+    if (!el) { console.log('[TimelineSlider] focusScroll: element NOT FOUND for', focusItem.eventId); return; }
     const topOffset = Math.round(window.innerHeight * 0.12);
     const newScrollTop =
       scrollEl.scrollTop +
       el.getBoundingClientRect().top -
       scrollEl.getBoundingClientRect().top -
       topOffset;
+    console.log('[TimelineSlider] focusScroll: scrolling to', focusItem.eventId, 'scrollTop:', newScrollTop);
     scrollEl.scrollTo({ top: newScrollTop, behavior: 'instant' });
   }, [focusItem]);
 
@@ -1067,6 +1070,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, alternateInputRef, e
   const scrollToBottomCount = scrollToBottomRef.current.count;
   useLayoutEffect(() => {
     if (scrollToBottomCount > 0) {
+      console.log('[TimelineSlider] scrollToBottom fired, count:', scrollToBottomCount);
       const scrollEl = scrollRef.current;
       if (scrollEl)
         scrollToBottom(scrollEl, scrollToBottomRef.current.smooth ? 'smooth' : 'instant');
