@@ -1,6 +1,6 @@
 import React from 'react';
 import { EventTimelineSet, MatrixEvent, Relations } from 'matrix-js-sdk';
-import { Box, Chip, Icon, Icons, Text, config, color } from 'folds';
+import { Box, Chip, Icon, Icons, Text, config, color, toRem } from 'folds';
 import { useTranslation } from 'react-i18next';
 import {
   Reply,
@@ -12,6 +12,7 @@ import {
   ImageContent,
   EventContent,
   MPoll,
+  LinePlaceholder,
 } from '../../components/message';
 import {
   getEditedEvent,
@@ -91,9 +92,6 @@ function TimelineEventComponent({
   reactionRelations,
   editedEvent,
   isRedacted,
-  // eventStatus is only used by the memo comparator — Message reads it directly
-  // from mEvent.status. Destructuring it here prevents an unused-var lint warning.
-  eventStatus: _eventStatus,
 }: MemoizedTimelineEventProps) {
   const ctx = useTimelineMessageContext();
   const parseMemberEvent = useMemberEventParser();
@@ -189,6 +187,35 @@ function TimelineEventComponent({
       />
     ) : undefined;
 
+    const baseMessageProps = {
+      'data-message-item': item,
+      'data-message-id': mEventId,
+      room,
+      mEvent,
+      messageSpacing,
+      messageLayout,
+      collapse: collapsed,
+      highlight: isHighlighted,
+      canDelete,
+      canSendReaction,
+      canPinEvent,
+      imagePackRooms,
+      relations: hasReactions ? reactionRelations : undefined,
+      onUserClick: handleUserClick,
+      onUsernameClick: handleUsernameClick,
+      onReplyClick: handleReplyClick,
+      onReactionToggle: handleReactionToggle,
+      reply: replyJSX,
+      reactions: reactionsJSX,
+      hideReadReceipts,
+      showDeveloperTools,
+      memberPowerTag: getMemberPowerTag(senderId),
+      accessibleTagColors: accessiblePowerTagColors,
+      legacyUsernameColor: legacyUsernameColor || direct,
+      hour24Clock,
+      dateFormatString,
+    };
+
     if (eventType === MessageEvent.RoomMessage) {
       const content = editedEvent?.getContent()['m.new_content'] ?? mEvent.getContent();
       const senderDisplayName =
@@ -200,35 +227,10 @@ function TimelineEventComponent({
 
       return (
         <Message
-          data-message-item={item}
-          data-message-id={mEventId}
-          room={room}
-          mEvent={mEvent}
-          messageSpacing={messageSpacing}
-          messageLayout={messageLayout}
-          collapse={collapsed}
-          highlight={isHighlighted}
+          {...baseMessageProps}
           mentionHighlight={replyHighlight && (replyToMe || mentionedMe)}
           edit={isEditing}
-          canDelete={canDelete}
-          canSendReaction={canSendReaction}
-          canPinEvent={canPinEvent}
-          imagePackRooms={imagePackRooms}
-          relations={hasReactions ? reactionRelations : undefined}
-          onUserClick={handleUserClick}
-          onUsernameClick={handleUsernameClick}
-          onReplyClick={handleReplyClick}
-          onReactionToggle={handleReactionToggle}
           onEditId={handleEdit}
-          reply={replyJSX}
-          reactions={reactionsJSX}
-          hideReadReceipts={hideReadReceipts}
-          showDeveloperTools={showDeveloperTools}
-          memberPowerTag={getMemberPowerTag(senderId)}
-          accessibleTagColors={accessiblePowerTagColors}
-          legacyUsernameColor={legacyUsernameColor || direct}
-          hour24Clock={hour24Clock}
-          dateFormatString={dateFormatString}
         >
           {isRedacted ? (
             <RedactedContent reason={mEvent.getUnsigned().redacted_because?.content.reason} />
@@ -258,35 +260,10 @@ function TimelineEventComponent({
 
       return (
         <Message
-          data-message-item={item}
-          data-message-id={mEventId}
-          room={room}
-          mEvent={mEvent}
-          messageSpacing={messageSpacing}
-          messageLayout={messageLayout}
-          collapse={collapsed}
-          highlight={isHighlighted}
+          {...baseMessageProps}
           mentionHighlight={replyHighlight && (replyToMe || mentionedMe)}
           edit={isEditing}
-          canDelete={canDelete}
-          canSendReaction={canSendReaction}
-          canPinEvent={canPinEvent}
-          imagePackRooms={imagePackRooms}
-          relations={hasReactions ? reactionRelations : undefined}
-          onUserClick={handleUserClick}
-          onUsernameClick={handleUsernameClick}
-          onReplyClick={handleReplyClick}
-          onReactionToggle={handleReactionToggle}
           onEditId={handleEdit}
-          reply={replyJSX}
-          reactions={reactionsJSX}
-          hideReadReceipts={hideReadReceipts}
-          showDeveloperTools={showDeveloperTools}
-          memberPowerTag={getMemberPowerTag(senderId)}
-          accessibleTagColors={accessiblePowerTagColors}
-          legacyUsernameColor={legacyUsernameColor || direct}
-          hour24Clock={hour24Clock}
-          dateFormatString={dateFormatString}
         >
           <EncryptedContent mEvent={mEvent}>
             {(retrying, setRetrying) => {
@@ -305,10 +282,9 @@ function TimelineEventComponent({
                   />
                 );
               if (mEvent.getType() === MessageEvent.RoomMessage) {
-                const editedEvent = getEditedEvent(mEventId, mEvent, timelineSet);
+                const editedEvt = getEditedEvent(mEventId, mEvent, timelineSet);
                 const content =
-                  editedEvent?.getContent()['m.new_content'] ??
-                  mEvent.getContent();
+                  editedEvt?.getContent()['m.new_content'] ?? mEvent.getContent();
 
                 if (content.msgtype === 'm.bad.encrypted') {
                   return (
@@ -333,7 +309,7 @@ function TimelineEventComponent({
                     displayName={senderDisplayName}
                     msgType={mEvent.getContent().msgtype ?? ''}
                     ts={mEvent.getTs()}
-                    edited={!!editedEvent}
+                    edited={!!editedEvt}
                     content={content}
                     mediaAutoLoad={mediaAutoLoad}
                     urlPreview={showUrlPreview}
@@ -348,12 +324,16 @@ function TimelineEventComponent({
                 mEvent.getType() === 'm.poll.start'
               )
                 return <MPoll mEvent={mEvent} timelineSet={timelineSet} mx={mx} />;
-              if (mEvent.getType() === MessageEvent.RoomMessageEncrypted)
+              if (mEvent.getType() === MessageEvent.RoomMessageEncrypted) {
                 return (
-                  <Text>
-                    <MessageNotDecryptedContent />
-                  </Text>
+                  <LinePlaceholder
+                    style={{
+                      backgroundColor: color.SurfaceVariant.ContainerActive,
+                      maxWidth: toRem(400),
+                    }}
+                  />
                 );
+              }
               return (
                 <Text>
                   <MessageUnsupportedContent />
@@ -367,35 +347,7 @@ function TimelineEventComponent({
 
     if (eventType === MessageEvent.Sticker) {
       return (
-        <Message
-          data-message-item={item}
-          data-message-id={mEventId}
-          room={room}
-          mEvent={mEvent}
-          messageSpacing={messageSpacing}
-          messageLayout={messageLayout}
-          collapse={collapsed}
-          highlight={isHighlighted}
-          mentionHighlight={replyHighlight && replyToMe}
-          canDelete={canDelete}
-          canSendReaction={canSendReaction}
-          canPinEvent={canPinEvent}
-          imagePackRooms={imagePackRooms}
-          relations={hasReactions ? reactionRelations : undefined}
-          onUserClick={handleUserClick}
-          onUsernameClick={handleUsernameClick}
-          onReplyClick={handleReplyClick}
-          onReactionToggle={handleReactionToggle}
-          reply={replyJSX}
-          reactions={reactionsJSX}
-          hideReadReceipts={hideReadReceipts}
-          showDeveloperTools={showDeveloperTools}
-          memberPowerTag={getMemberPowerTag(senderId)}
-          accessibleTagColors={accessiblePowerTagColors}
-          legacyUsernameColor={legacyUsernameColor || direct}
-          hour24Clock={hour24Clock}
-          dateFormatString={dateFormatString}
-        >
+        <Message {...baseMessageProps} mentionHighlight={replyHighlight && replyToMe}>
           {isRedacted ? (
             <RedactedContent reason={mEvent.getUnsigned().redacted_because?.content.reason} />
           ) : (
@@ -416,34 +368,7 @@ function TimelineEventComponent({
 
     // PollStart / m.poll.start
     return (
-      <Message
-        data-message-item={item}
-        data-message-id={mEventId}
-        room={room}
-        mEvent={mEvent}
-        messageSpacing={messageSpacing}
-        messageLayout={messageLayout}
-        collapse={collapsed}
-        highlight={isHighlighted}
-        canDelete={canDelete}
-        canSendReaction={canSendReaction}
-        canPinEvent={canPinEvent}
-        imagePackRooms={imagePackRooms}
-        relations={hasReactions ? reactionRelations : undefined}
-        onUserClick={handleUserClick}
-        onUsernameClick={handleUsernameClick}
-        onReplyClick={handleReplyClick}
-        onReactionToggle={handleReactionToggle}
-        reply={replyJSX}
-        reactions={reactionsJSX}
-        hideReadReceipts={hideReadReceipts}
-        showDeveloperTools={showDeveloperTools}
-        memberPowerTag={getMemberPowerTag(senderId)}
-        accessibleTagColors={accessiblePowerTagColors}
-        legacyUsernameColor={legacyUsernameColor || direct}
-        hour24Clock={hour24Clock}
-        dateFormatString={dateFormatString}
-      >
+      <Message {...baseMessageProps}>
         {isRedacted ? (
           <RedactedContent reason={mEvent.getUnsigned().redacted_because?.content.reason} />
         ) : (
@@ -455,33 +380,36 @@ function TimelineEventComponent({
 
   // ─── State events ───
 
+  const baseEventProps = {
+    'data-message-item': item,
+    'data-message-id': mEventId,
+    room,
+    mEvent,
+    highlight: isHighlighted,
+    messageSpacing,
+    canDelete,
+    hideReadReceipts,
+    showDeveloperTools,
+  };
+
+  const timeJSX = (
+    <Time
+      ts={mEvent.getTs()}
+      compact={messageLayout === MessageLayout.Compact}
+      hour24Clock={hour24Clock}
+      dateFormatString={dateFormatString}
+    />
+  );
+
   if (eventType === StateEvent.RoomMember) {
     const membershipChanged = isMembershipChanged(mEvent);
     if (membershipChanged && hideMembershipEvents) return null;
     if (!membershipChanged && hideNickAvatarEvents) return null;
 
     const parsed = parseMemberEvent(mEvent);
-    const timeJSX = (
-      <Time
-        ts={mEvent.getTs()}
-        compact={messageLayout === MessageLayout.Compact}
-        hour24Clock={hour24Clock}
-        dateFormatString={dateFormatString}
-      />
-    );
 
     return (
-      <Event
-        data-message-item={item}
-        data-message-id={mEventId}
-        room={room}
-        mEvent={mEvent}
-        highlight={isHighlighted}
-        messageSpacing={messageSpacing}
-        canDelete={canDelete}
-        hideReadReceipts={hideReadReceipts}
-        showDeveloperTools={showDeveloperTools}
-      >
+      <Event {...baseEventProps}>
         <EventContent
           messageLayout={messageLayout}
           time={timeJSX}
@@ -498,30 +426,18 @@ function TimelineEventComponent({
     );
   }
 
-  if (eventType === StateEvent.RoomName) {
+  const roomPropertyLabels: Record<string, string> = {
+    [StateEvent.RoomName]: t('Organisms.RoomCommon.changed_room_name'),
+    [StateEvent.RoomTopic]: ' changed room topic',
+    [StateEvent.RoomAvatar]: ' changed room avatar',
+  };
+
+  if (eventType in roomPropertyLabels) {
     const senderId = mEvent.getSender() ?? '';
     const senderName = getMemberDisplayName(room, senderId) || getMxIdLocalPart(senderId);
-    const timeJSX = (
-      <Time
-        ts={mEvent.getTs()}
-        compact={messageLayout === MessageLayout.Compact}
-        hour24Clock={hour24Clock}
-        dateFormatString={dateFormatString}
-      />
-    );
 
     return (
-      <Event
-        data-message-item={item}
-        data-message-id={mEventId}
-        room={room}
-        mEvent={mEvent}
-        highlight={isHighlighted}
-        messageSpacing={messageSpacing}
-        canDelete={canDelete}
-        hideReadReceipts={hideReadReceipts}
-        showDeveloperTools={showDeveloperTools}
-      >
+      <Event {...baseEventProps}>
         <EventContent
           messageLayout={messageLayout}
           time={timeJSX}
@@ -530,89 +446,7 @@ function TimelineEventComponent({
             <Box grow="Yes" direction="Column">
               <Text size="T300" priority="300">
                 <b>{senderName}</b>
-                {t('Organisms.RoomCommon.changed_room_name')}
-              </Text>
-            </Box>
-          }
-        />
-      </Event>
-    );
-  }
-
-  if (eventType === StateEvent.RoomTopic) {
-    const senderId = mEvent.getSender() ?? '';
-    const senderName = getMemberDisplayName(room, senderId) || getMxIdLocalPart(senderId);
-    const timeJSX = (
-      <Time
-        ts={mEvent.getTs()}
-        compact={messageLayout === MessageLayout.Compact}
-        hour24Clock={hour24Clock}
-        dateFormatString={dateFormatString}
-      />
-    );
-
-    return (
-      <Event
-        data-message-item={item}
-        data-message-id={mEventId}
-        room={room}
-        mEvent={mEvent}
-        highlight={isHighlighted}
-        messageSpacing={messageSpacing}
-        canDelete={canDelete}
-        hideReadReceipts={hideReadReceipts}
-        showDeveloperTools={showDeveloperTools}
-      >
-        <EventContent
-          messageLayout={messageLayout}
-          time={timeJSX}
-          iconSrc={Icons.Hash}
-          content={
-            <Box grow="Yes" direction="Column">
-              <Text size="T300" priority="300">
-                <b>{senderName}</b>
-                {' changed room topic'}
-              </Text>
-            </Box>
-          }
-        />
-      </Event>
-    );
-  }
-
-  if (eventType === StateEvent.RoomAvatar) {
-    const senderId = mEvent.getSender() ?? '';
-    const senderName = getMemberDisplayName(room, senderId) || getMxIdLocalPart(senderId);
-    const timeJSX = (
-      <Time
-        ts={mEvent.getTs()}
-        compact={messageLayout === MessageLayout.Compact}
-        hour24Clock={hour24Clock}
-        dateFormatString={dateFormatString}
-      />
-    );
-
-    return (
-      <Event
-        data-message-item={item}
-        data-message-id={mEventId}
-        room={room}
-        mEvent={mEvent}
-        highlight={isHighlighted}
-        messageSpacing={messageSpacing}
-        canDelete={canDelete}
-        hideReadReceipts={hideReadReceipts}
-        showDeveloperTools={showDeveloperTools}
-      >
-        <EventContent
-          messageLayout={messageLayout}
-          time={timeJSX}
-          iconSrc={Icons.Hash}
-          content={
-            <Box grow="Yes" direction="Column">
-              <Text size="T300" priority="300">
-                <b>{senderName}</b>
-                {' changed room avatar'}
+                {roomPropertyLabels[eventType]}
               </Text>
             </Box>
           }
@@ -627,28 +461,10 @@ function TimelineEventComponent({
 
   const senderId = mEvent.getSender() ?? '';
   const senderName = getMemberDisplayName(room, senderId) || getMxIdLocalPart(senderId);
-  const timeJSX = (
-    <Time
-      ts={mEvent.getTs()}
-      compact={messageLayout === MessageLayout.Compact}
-      hour24Clock={hour24Clock}
-      dateFormatString={dateFormatString}
-    />
-  );
 
   if (isStateEvent) {
     return (
-      <Event
-        data-message-item={item}
-        data-message-id={mEventId}
-        room={room}
-        mEvent={mEvent}
-        highlight={isHighlighted}
-        messageSpacing={messageSpacing}
-        canDelete={canDelete}
-        hideReadReceipts={hideReadReceipts}
-        showDeveloperTools={showDeveloperTools}
-      >
+      <Event {...baseEventProps}>
         <EventContent
           messageLayout={messageLayout}
           time={timeJSX}
@@ -673,17 +489,7 @@ function TimelineEventComponent({
   if (mEvent.isRedaction()) return null;
 
   return (
-    <Event
-      data-message-item={item}
-      data-message-id={mEventId}
-      room={room}
-      mEvent={mEvent}
-      highlight={isHighlighted}
-      messageSpacing={messageSpacing}
-      canDelete={canDelete}
-      hideReadReceipts={hideReadReceipts}
-      showDeveloperTools={showDeveloperTools}
-    >
+    <Event {...baseEventProps}>
       <EventContent
         messageLayout={messageLayout}
         time={timeJSX}

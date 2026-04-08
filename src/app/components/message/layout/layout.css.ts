@@ -199,8 +199,8 @@ export const MessageTextBody = recipe({
     },
     jumboEmoji: {
       true: {
-        fontSize: '1.504em',
-        lineHeight: '1.4962em',
+        fontSize: '2em',
+        lineHeight: '2.2em',
       },
     },
     emote: {

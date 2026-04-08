@@ -1,5 +1,5 @@
-import { IEvent, MatrixEvent, Room } from 'matrix-js-sdk';
-import { useCallback, useMemo } from 'react';
+import { IEvent, MatrixEvent, MatrixEventEvent, Room } from 'matrix-js-sdk';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import to from 'await-to-js';
 import { CryptoBackend } from 'matrix-js-sdk/lib/common-crypto/CryptoBackend';
 import { useQuery } from '@tanstack/react-query';
@@ -15,6 +15,9 @@ const useFetchEvent = (room: Room, eventId: string) => {
     if (evt.unsigned?.['m.relations'] && evt.unsigned?.['m.relations']['m.replace']) {
       const replaceEvt = evt.unsigned?.['m.relations']['m.replace'] as IEvent;
       const replaceEvent = new MatrixEvent(replaceEvt);
+      if (replaceEvent.isEncrypted() && mx.getCrypto()) {
+        await to(replaceEvent.attemptDecryption(mx.getCrypto() as CryptoBackend));
+      }
       mEvent.makeReplaced(replaceEvent);
     }
 
@@ -60,9 +63,28 @@ export const useRoomEvent = (
     [error, isFetching]
   );
 
-  if (event) return event;
-  if (data) return data;
-  if (fallback !== undefined) return fallback;
+  const result = event ?? data ?? (fallback !== undefined ? fallback : undefined);
 
-  return undefined;
+  const [, setContentReady] = useState(false);
+  useEffect(() => {
+    if (!result) return undefined;
+    const handler = () => setContentReady(true);
+    result.on(MatrixEventEvent.Replaced, handler);
+    result.on(MatrixEventEvent.Decrypted, handler);
+
+    const replacing = result.replacingEvent();
+    if (replacing) {
+      replacing.on(MatrixEventEvent.Decrypted, handler);
+    }
+
+    return () => {
+      result.removeListener(MatrixEventEvent.Replaced, handler);
+      result.removeListener(MatrixEventEvent.Decrypted, handler);
+      if (replacing) {
+        replacing.removeListener(MatrixEventEvent.Decrypted, handler);
+      }
+    };
+  }, [result]);
+
+  return result;
 };
