@@ -36,7 +36,6 @@ export const usePan = (active: boolean, zoom = 1) => {
   };
 
   const handleMouseUp = (evt: MouseEvent) => {
-    evt.preventDefault();
     setCursor('grab');
 
     document.removeEventListener('mousemove', handleMouseMove);

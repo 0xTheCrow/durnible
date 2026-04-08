@@ -1,5 +1,5 @@
 /* eslint-disable jsx-a11y/no-noninteractive-element-interactions */
-import React from 'react';
+import React, { useCallback, useRef } from 'react';
 import FileSaver from 'file-saver';
 import classNames from 'classnames';
 import { Box, Chip, Header, Icon, IconButton, Icons, Text, as } from 'folds';
@@ -20,6 +20,30 @@ export const ImageViewer = as<'div', ImageViewerProps>(
     const { zoom, zoomIn, zoomOut, setZoom, onWheel } = useZoom(0.2);
     const { pan, setPan, cursor, onMouseDown } = usePan(zoom !== 1, zoom);
     const { onTouchStart, onTouchMove, onTouchEnd } = useTouchGesture(setZoom, setPan);
+
+    const lastClickRef = useRef<{ time: number; x: number; y: number } | null>(null);
+    const handleClick = useCallback(
+      (evt: React.MouseEvent) => {
+        const now = Date.now();
+        const last = lastClickRef.current;
+        if (
+          last &&
+          now - last.time < 500 &&
+          Math.hypot(evt.clientX - last.x, evt.clientY - last.y) < 10
+        ) {
+          lastClickRef.current = null;
+          if (zoom === 1) {
+            setZoom(2);
+          } else {
+            setZoom(1);
+            setPan({ translateX: 0, translateY: 0 });
+          }
+        } else {
+          lastClickRef.current = { time: now, x: evt.clientX, y: evt.clientY };
+        }
+      },
+      [zoom, setZoom, setPan]
+    );
 
     const handleDownload = async () => {
       const fileContent = await downloadMedia(src);
@@ -92,15 +116,11 @@ export const ImageViewer = as<'div', ImageViewerProps>(
             src={src}
             alt={alt}
             draggable={false}
-            onMouseDown={onMouseDown}
-            onDoubleClick={() => {
-              if (zoom === 1) {
-                setZoom(2);
-              } else {
-                setZoom(1);
-                setPan({ translateX: 0, translateY: 0 });
-              }
+            onMouseDown={(evt) => {
+              evt.preventDefault();
+              onMouseDown(evt);
             }}
+            onClick={handleClick}
             onTouchStart={onTouchStart}
             onTouchMove={onTouchMove}
             onTouchEnd={onTouchEnd}
