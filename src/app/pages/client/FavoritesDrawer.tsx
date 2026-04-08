@@ -252,7 +252,7 @@ export function FavoritesSection({ isDrawerMode }: { isDrawerMode?: boolean }) {
         scrollRef={scrollRef}
         isDrawerMode={isDrawerMode}
         header={(reorderMode, onDone) => (
-          <Box direction="Column" gap="100" style={{ paddingTop: config.space.S400 }}>
+          <Box direction="Column" gap="100">
             <Line variant="Background" size="300" />
             <NavCategoryHeader style={{ paddingTop: config.space.S200 }}>
               <Box grow="Yes" alignItems="Center" gap="200">
