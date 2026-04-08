@@ -910,7 +910,10 @@ export function EmojiBoard({
           !editableActiveElement() && isKeyHotkey(['arrowdown', 'arrowright'], evt),
         isKeyBackward: (evt: KeyboardEvent) =>
           !editableActiveElement() && isKeyHotkey(['arrowup', 'arrowleft'], evt),
-        escapeDeactivates: stopPropagation,
+        escapeDeactivates: (evt: KeyboardEvent) => {
+          evt.stopPropagation();
+          return true;
+        },
       }}
     >
       <EmojiBoardLayout

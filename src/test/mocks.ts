@@ -166,6 +166,7 @@ export function createMockMatrixClient(): Partial<MatrixClient> {
     getRoom: vi.fn(() => null),
     getAccountData: vi.fn(() => undefined),
     sendEvent: vi.fn(async () => ({ event_id: '$sent' })),
+    sendMessage: vi.fn(async () => ({ event_id: '$sent' })) as unknown as MatrixClient['sendMessage'],
     redactEvent: vi.fn(async () => ({ event_id: '$redacted' })) as unknown as MatrixClient['redactEvent'],
     on: vi.fn().mockReturnThis(),
     off: vi.fn().mockReturnThis(),

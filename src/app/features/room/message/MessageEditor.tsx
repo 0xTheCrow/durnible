@@ -80,7 +80,8 @@ export const MessageEditor = as<'div', MessageEditorProps>(
     const isComposing = useComposingCheck();
     const editorRef = React.useRef<HTMLDivElement>(null);
     const alternateInputRef = React.useRef<HTMLDivElement>(null);
-    const imagePacks = useRelevantImagePacks(ImageUsage.Emoticon, imagePackRooms || []);
+    const stableImagePackRooms = React.useMemo(() => imagePackRooms ?? [], [imagePackRooms]);
+    const imagePacks = useRelevantImagePacks(ImageUsage.Emoticon, stableImagePackRooms);
 
     const [autocompleteQuery, setAutocompleteQuery] =
       useState<AutocompleteQuery<AutocompletePrefix>>();

@@ -82,6 +82,7 @@ export const ReactionViewer = as<'div', ReactionViewerProps>(
             <Box className={css.SidebarContent} direction="Column" gap="200">
               {reactions.map(([key, evts]) => {
                 if (typeof key !== 'string') return null;
+                if (evts.size === 0) return null;
                 return (
                   <Reaction
                     key={key}
