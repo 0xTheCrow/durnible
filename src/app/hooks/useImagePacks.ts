@@ -1,5 +1,5 @@
 import { Room } from 'matrix-js-sdk';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AccountDataEvent } from '../../types/matrix/accountData';
 import { StateEvent } from '../../types/matrix/room';
 import {
@@ -121,6 +121,11 @@ export const useRoomImagePacks = (room: Room): ImagePack[] => {
 export const useRoomsImagePacks = (rooms: Room[]) => {
   const mx = useMatrixClient();
   const [roomPacks, setRoomPacks] = useState(() => rooms.flatMap(getRoomImagePacks));
+
+  // Re-sync when rooms change (handles room navigation without RoomInput remounting)
+  useEffect(() => {
+    setRoomPacks(rooms.flatMap(getRoomImagePacks));
+  }, [rooms]);
 
   useStateEventCallback(
     mx,

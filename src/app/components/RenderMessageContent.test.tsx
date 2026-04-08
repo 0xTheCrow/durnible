@@ -1,11 +1,25 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { render, screen, act } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MsgType } from 'matrix-js-sdk';
 import { RenderMessageContent } from './RenderMessageContent';
 import { MatrixTestWrapper } from '../../test/wrapper';
 import { LINKIFY_OPTS, getReactCustomHtmlParser } from '../plugins/react-custom-html-parser';
 import { createMockMatrixClient } from '../../test/mocks';
+
+let imageContentRenderCount = 0;
+
+vi.mock('./message', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('./message')>();
+  const Real = mod.ImageContent as React.ComponentType<any>;
+  return {
+    ...mod,
+    ImageContent: (props: any) => {
+      imageContentRenderCount++;
+      return React.createElement(Real, props);
+    },
+  };
+});
 
 function renderMessageContent(
   msgType: string,
@@ -196,5 +210,129 @@ describe('RenderMessageContent', () => {
       renderMessageContent('m.bad.encrypted', {});
       expect(screen.getByText(/decrypt/i)).toBeInTheDocument();
     });
+  });
+});
+
+const STABLE_IMAGE_CONTENT = {
+  body: 'photo.png',
+  msgtype: 'm.image',
+  url: 'mxc://example.com/abc123',
+  info: { w: 800, h: 600, mimetype: 'image/png' },
+};
+
+describe('RenderMessageContent memoization', () => {
+  const mx = createMockMatrixClient();
+  const htmlReactParserOptions = getReactCustomHtmlParser(mx as any, '!room:example.com', {
+    linkifyOpts: LINKIFY_OPTS,
+  });
+
+  beforeEach(() => {
+    imageContentRenderCount = 0;
+  });
+
+  it('does NOT re-render ImageContent when parent re-renders with stable props', async () => {
+    function SimulatedMessage({ trigger: _trigger }: { trigger: number }) {
+      return (
+        <RenderMessageContent
+          displayName="Alice"
+          msgType={MsgType.Image}
+          ts={1000}
+          content={STABLE_IMAGE_CONTENT as any}
+          mediaAutoLoad={false}
+          urlPreview={false}
+          htmlReactParserOptions={htmlReactParserOptions}
+          linkifyOpts={LINKIFY_OPTS}
+        />
+      );
+    }
+
+    const { rerender } = render(
+      <MatrixTestWrapper matrixClient={mx}>
+        <SimulatedMessage trigger={0} />
+      </MatrixTestWrapper>
+    );
+    await act(async () => {});
+
+    const rendersOnMount = imageContentRenderCount;
+    expect(rendersOnMount).toBeGreaterThan(0);
+
+    for (let i = 1; i <= 3; i++) {
+      rerender(
+        <MatrixTestWrapper matrixClient={mx}>
+          <SimulatedMessage trigger={i} />
+        </MatrixTestWrapper>
+      );
+      await act(async () => {});
+    }
+
+    expect(imageContentRenderCount).toBe(rendersOnMount);
+  });
+
+  it('DOES re-render ImageContent when a Fragment wrapper appears or disappears', async () => {
+    // This test documents the bug that was fixed in RoomTimeline: when eventRenderer
+    // returned <React.Fragment key={id}> with a divider vs <Message key={id}> directly,
+    // the type-flip caused React to unmount and remount the message.
+    function WithoutWrapper() {
+      return (
+        <RenderMessageContent
+          displayName="Alice"
+          msgType={MsgType.Image}
+          ts={1000}
+          content={STABLE_IMAGE_CONTENT as any}
+          mediaAutoLoad={false}
+          urlPreview={false}
+          htmlReactParserOptions={htmlReactParserOptions}
+          linkifyOpts={LINKIFY_OPTS}
+        />
+      );
+    }
+
+    function WithWrapper() {
+      return (
+        <React.Fragment>
+          <div data-testid="divider">New Messages</div>
+          <RenderMessageContent
+            displayName="Alice"
+            msgType={MsgType.Image}
+            ts={1000}
+            content={STABLE_IMAGE_CONTENT as any}
+            mediaAutoLoad={false}
+            urlPreview={false}
+            htmlReactParserOptions={htmlReactParserOptions}
+            linkifyOpts={LINKIFY_OPTS}
+          />
+        </React.Fragment>
+      );
+    }
+
+    function SimulatedTimeline({ showDivider }: { showDivider: boolean }) {
+      return <>{showDivider ? <WithWrapper /> : <WithoutWrapper />}</>;
+    }
+
+    const { rerender } = render(
+      <MatrixTestWrapper matrixClient={mx}>
+        <SimulatedTimeline showDivider={false} />
+      </MatrixTestWrapper>
+    );
+    await act(async () => {});
+
+    const rendersBeforeDivider = imageContentRenderCount;
+
+    rerender(
+      <MatrixTestWrapper matrixClient={mx}>
+        <SimulatedTimeline showDivider={true} />
+      </MatrixTestWrapper>
+    );
+    await act(async () => {});
+    expect(screen.getByTestId('divider')).toBeInTheDocument();
+
+    rerender(
+      <MatrixTestWrapper matrixClient={mx}>
+        <SimulatedTimeline showDivider={false} />
+      </MatrixTestWrapper>
+    );
+    await act(async () => {});
+
+    expect(imageContentRenderCount).toBeGreaterThan(rendersBeforeDivider);
   });
 });

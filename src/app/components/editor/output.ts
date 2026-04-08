@@ -198,7 +198,7 @@ export const trimCommand = (cmdName: string, str: string) => {
   return str.slice(match[0].length);
 };
 
-const SHORTCODE_REG_G = /:([a-zA-Z0-9_+-]+):/g;
+const SHORTCODE_REG_G = /:([a-zA-Z0-9_.+-]+):/g;
 
 const replaceShortcodesInText = (
   textNode: Text,

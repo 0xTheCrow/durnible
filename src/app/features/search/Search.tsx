@@ -206,6 +206,7 @@ export function Search({ requestClose }: SearchProps) {
   const handleInputKeyDown: KeyboardEventHandler<HTMLInputElement> = (evt) => {
     const roomId = roomsToRender[listFocus.index];
     if (isKeyHotkey('enter', evt) && roomId) {
+      evt.preventDefault();
       openRoomId(roomId, spaces.includes(roomId));
       return;
     }
@@ -283,7 +284,7 @@ export function Search({ requestClose }: SearchProps) {
                   gap="100"
                 >
                   <Text size="H6" align="Center">
-                    {result ? 'No Match Found' : `No Rooms'}`}
+                    {result ? 'No Match Found' : `No Rooms`}
                   </Text>
                   <Text size="T200" align="Center">
                     {result

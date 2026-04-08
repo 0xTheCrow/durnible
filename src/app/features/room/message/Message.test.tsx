@@ -1,6 +1,12 @@
+// Prevents ReactEditor.focus() from firing asynchronously after component
+// unmount, which causes "Cannot resolve a DOM node from Slate node" errors.
+vi.mock('../../../utils/user-agent', () => ({
+  mobileOrTablet: () => true,
+}));
+
 import React from 'react';
-import { render, screen } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { render, screen, act } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { MsgType } from 'matrix-js-sdk';
 import { Message } from './Message';
 import { RenderMessageContent } from '../../../components/RenderMessageContent';
@@ -75,6 +81,135 @@ function renderMessage(opts: {
     </MatrixTestWrapper>
   );
 }
+
+describe('edit mode', () => {
+  // Slate schedules a focus() via setTimeout after mounting. Use fake timers so
+  // that callback never fires against a torn-down DOM and produces spurious errors.
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+  it('shows the editor immediately when edit prop flips to true', async () => {
+    const mx = createMockMatrixClient();
+    const room = createMockRoom('!testroom:example.com', mx);
+    room._addMockMember('@alice:example.com', 'alice');
+
+    const mEvent = createMockMatrixEvent({
+      sender: '@alice:example.com',
+      content: { body: 'Original content', msgtype: 'm.text' },
+      roomId: '!testroom:example.com',
+    });
+
+    const onEditId = vi.fn();
+
+    const baseProps = {
+      room: room as any,
+      mEvent,
+      collapse: false,
+      highlight: false,
+      mentionHighlight: false,
+      canDelete: false,
+      canSendReaction: false,
+      canPinEvent: false,
+      messageLayout: MessageLayout.Modern,
+      messageSpacing: '400' as const,
+      onUserClick: vi.fn(),
+      onUsernameClick: vi.fn(),
+      onReplyClick: vi.fn(),
+      onReactionToggle: vi.fn(),
+      onEditId,
+      hour24Clock: false,
+      dateFormatString: '',
+    };
+
+    const { rerender } = render(
+      <MatrixTestWrapper matrixClient={mx}>
+        <Message {...baseProps} edit={false}>
+          <span>Original content</span>
+        </Message>
+      </MatrixTestWrapper>
+    );
+
+    // Content is visible, editor is not
+    expect(screen.getByText('Original content')).toBeInTheDocument();
+    expect(screen.queryByText('Save')).not.toBeInTheDocument();
+    expect(screen.queryByText('Cancel')).not.toBeInTheDocument();
+
+    // Flip edit prop — simulates MemoizedTimelineEvent receiving isEditing=true.
+    // Drain Slate's deferred microtask state update with async act so it doesn't
+    // escape the act() boundary and produce an "update not wrapped in act" warning.
+    await act(async () => {
+      rerender(
+        <MatrixTestWrapper matrixClient={mx}>
+          <Message {...baseProps} edit={true}>
+            <span>Original content</span>
+          </Message>
+        </MatrixTestWrapper>
+      );
+    });
+
+    // Editor must appear immediately — no additional events should be needed
+    expect(screen.getByText('Save')).toBeInTheDocument();
+    expect(screen.getByText('Cancel')).toBeInTheDocument();
+    // Note: the Slate editor is pre-populated with the original content, so the
+    // text is still present in the DOM (as a slate node) — don't assert its absence.
+  });
+
+  it('hides the editor and restores content when edit prop flips back to false', async () => {
+    const mx = createMockMatrixClient();
+    const room = createMockRoom('!testroom:example.com', mx);
+    room._addMockMember('@alice:example.com', 'alice');
+
+    const mEvent = createMockMatrixEvent({
+      sender: '@alice:example.com',
+      content: { body: 'Original content', msgtype: 'm.text' },
+      roomId: '!testroom:example.com',
+    });
+
+    const onEditId = vi.fn();
+
+    const baseProps = {
+      room: room as any,
+      mEvent,
+      collapse: false,
+      highlight: false,
+      mentionHighlight: false,
+      canDelete: false,
+      canSendReaction: false,
+      canPinEvent: false,
+      messageLayout: MessageLayout.Modern,
+      messageSpacing: '400' as const,
+      onUserClick: vi.fn(),
+      onUsernameClick: vi.fn(),
+      onReplyClick: vi.fn(),
+      onReactionToggle: vi.fn(),
+      onEditId,
+      hour24Clock: false,
+      dateFormatString: '',
+    };
+
+    const { rerender } = render(
+      <MatrixTestWrapper matrixClient={mx}>
+        <Message {...baseProps} edit={true}>
+          <span>Original content</span>
+        </Message>
+      </MatrixTestWrapper>
+    );
+
+    expect(screen.getByText('Save')).toBeInTheDocument();
+
+    await act(async () => {
+      rerender(
+        <MatrixTestWrapper matrixClient={mx}>
+          <Message {...baseProps} edit={false}>
+            <span>Original content</span>
+          </Message>
+        </MatrixTestWrapper>
+      );
+    });
+
+    expect(screen.queryByText('Save')).not.toBeInTheDocument();
+    expect(screen.getByText('Original content')).toBeInTheDocument();
+  });
+});
 
 describe('Message component', () => {
   describe('text messages', () => {

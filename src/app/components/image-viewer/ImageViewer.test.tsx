@@ -68,15 +68,19 @@ describe('ImageViewer', () => {
     it('double-clicking the image zooms to 200%', () => {
       renderViewer();
       const img = screen.getByRole('img', { name: defaultProps.alt });
-      fireEvent.dblClick(img);
+      // Manual double-click detection uses onClick, not onDoubleClick
+      fireEvent.click(img, { clientX: 100, clientY: 100 });
+      fireEvent.click(img, { clientX: 100, clientY: 100 });
       expect(screen.getByText('200%')).toBeInTheDocument();
     });
 
     it('double-clicking again resets zoom to 100%', () => {
       renderViewer();
       const img = screen.getByRole('img', { name: defaultProps.alt });
-      fireEvent.dblClick(img);
-      fireEvent.dblClick(img);
+      fireEvent.click(img, { clientX: 100, clientY: 100 });
+      fireEvent.click(img, { clientX: 100, clientY: 100 });
+      fireEvent.click(img, { clientX: 100, clientY: 100 });
+      fireEvent.click(img, { clientX: 100, clientY: 100 });
       expect(screen.getByText('100%')).toBeInTheDocument();
     });
   });
@@ -88,16 +92,12 @@ describe('ImageViewer', () => {
       expect(img).toHaveAttribute('draggable', 'false');
     });
 
-    it('mousedown on image does not trigger selection (no preventDefault on mousedown)', () => {
-      // Removing evt.preventDefault() from handleMouseDown was necessary to stop
-      // it suppressing dblclick in Firefox. Selection is now blocked via CSS
-      // (user-select: none) instead. This test verifies that mousedown no longer
-      // calls preventDefault, so the browser's dblclick detection still works.
+    it('mousedown on image calls preventDefault to suppress browser drag gesture', () => {
       renderViewer();
       const img = screen.getByRole('img', { name: defaultProps.alt });
       const event = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
       img.dispatchEvent(event);
-      expect(event.defaultPrevented).toBe(false);
+      expect(event.defaultPrevented).toBe(true);
     });
   });
 

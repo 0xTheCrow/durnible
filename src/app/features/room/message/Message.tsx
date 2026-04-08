@@ -2,6 +2,7 @@ import {
   Avatar,
   Box,
   Button,
+  Checkbox,
   Dialog,
   Header,
   Icon,
@@ -29,9 +30,10 @@ import React, {
 } from 'react';
 import FocusTrap from 'focus-trap-react';
 import { useHover, useFocusWithin } from 'react-aria';
-import { useAtom } from 'jotai';
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { MsgType } from 'matrix-js-sdk';
 import { messageOptionsAtom } from './messageOptionsAtom';
+import { selectionModeAtom, selectedIdsAtom } from './selectionAtom';
 import { hiddenImagesAtom, MessageEventIdContext } from '../../../state/hiddenImages';
 import { EventStatus, MatrixEvent, Room } from 'matrix-js-sdk';
 import { Relations } from 'matrix-js-sdk/lib/models/relations';
@@ -67,8 +69,8 @@ import { EventReaders } from '../../../components/event-readers';
 import { TextViewer } from '../../../components/text-viewer';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { EmojiBoard } from '../../../components/emoji-board';
-import { ReactionViewer } from '../reaction-viewer';
 import { MessageEditor } from './MessageEditor';
+import { useOpenReactionViewer } from '../../../state/hooks/reactionViewer';
 import { UserAvatar } from '../../../components/user-avatar';
 import { copyToClipboard } from '../../../utils/dom';
 import { stopPropagation } from '../../../utils/keyboard';
@@ -127,90 +129,40 @@ export const MessageQuickReactions = as<'div', MessageQuickReactionsProps>(
 export const MessageAllReactionButton = as<
   'button',
   {
-    room: Room;
-    relations: Relations;
+    onOpen: () => void;
   }
->(({ room, relations, ...props }, ref) => {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <>
-      <OverlayModal
-        open={open}
-        requestClose={() => setOpen(false)}
-        overlayProps={{ onContextMenu: (evt: any) => evt.stopPropagation() }}
-        focusTrapOptions={{ returnFocusOnDeactivate: false }}
-      >
-        <Modal variant="Surface" size="300" flexHeight>
-          <ReactionViewer
-            room={room}
-            relations={relations}
-            requestClose={() => setOpen(false)}
-          />
-        </Modal>
-      </OverlayModal>
-      <IconButton
-        variant="SurfaceVariant"
-        size="300"
-        radii="300"
-        onClick={() => setOpen(true)}
-        aria-pressed={open}
-        {...props}
-        ref={ref}
-      >
-        <Icon src={Icons.Smile} size="100" />
-      </IconButton>
-    </>
-  );
-});
+>(({ onOpen, ...props }, ref) => (
+  <IconButton
+    variant="SurfaceVariant"
+    size="300"
+    radii="300"
+    onClick={onOpen}
+    {...props}
+    ref={ref}
+  >
+    <Icon src={Icons.Smile} size="100" />
+  </IconButton>
+));
 
 export const MessageAllReactionItem = as<
   'button',
   {
-    room: Room;
-    relations: Relations;
-    onClose?: () => void;
+    onOpen: () => void;
   }
->(({ room, relations, onClose, ...props }, ref) => {
-  const [open, setOpen] = useState(false);
-
-  const handleClose = () => {
-    setOpen(false);
-    onClose?.();
-  };
-
-  return (
-    <>
-      <OverlayModal
-        open={open}
-        requestClose={handleClose}
-        overlayProps={{ onContextMenu: (evt: any) => evt.stopPropagation() }}
-        focusTrapOptions={{ returnFocusOnDeactivate: false }}
-      >
-        <Modal variant="Surface" size="300" flexHeight>
-          <ReactionViewer
-            room={room}
-            relations={relations}
-            requestClose={() => setOpen(false)}
-          />
-        </Modal>
-      </OverlayModal>
-      <MenuItem
-        size="300"
-        after={<Icon size="100" src={Icons.Smile} />}
-        radii="300"
-        onClick={() => setOpen(true)}
-        {...props}
-        ref={ref}
-        aria-pressed={open}
-      >
-        <Text className={css.MessageMenuItemText} as="span" size="T300" truncate>
-          View Reactions
-        </Text>
-      </MenuItem>
-    </>
-  );
-});
+>(({ onOpen, ...props }, ref) => (
+  <MenuItem
+    size="300"
+    after={<Icon size="100" src={Icons.Smile} />}
+    radii="300"
+    onClick={onOpen}
+    {...props}
+    ref={ref}
+  >
+    <Text className={css.MessageMenuItemText} as="span" size="T300" truncate>
+      View Reactions
+    </Text>
+  </MenuItem>
+));
 
 export const MessageReadReceiptItem = as<
   'button',
@@ -407,6 +359,8 @@ export const MessageDeleteItem = as<
   }
 >(({ room, mEvent, onClose, ...props }, ref) => {
   const mx = useMatrixClient();
+  const setSelectionMode = useSetAtom(selectionModeAtom);
+  const setSelectedIds = useSetAtom(selectedIdsAtom);
   const [open, setOpen] = useState(false);
 
   const [deleteState, deleteMessage] = useAsyncCallback(
@@ -493,6 +447,21 @@ export const MessageDeleteItem = as<
               <Text size="B400">
                 {deleteState.status === AsyncStatus.Loading ? 'Deleting...' : 'Delete'}
               </Text>
+            </Button>
+            <Line size="300" />
+            <Button
+              variant="Secondary"
+              fill="None"
+              onClick={() => {
+                const eventId = mEvent.getId();
+                if (eventId) {
+                  setSelectionMode(true);
+                  setSelectedIds((prev) => new Set(prev).add(eventId));
+                }
+                handleClose();
+              }}
+            >
+              <Text size="B400">Select Multiple</Text>
             </Button>
           </Box>
         </Dialog>
@@ -713,17 +682,34 @@ export const Message = as<'div', MessageProps>(
 
     const eventId = mEvent.getId() ?? '';
     const [activeMessageOptionsId, setActiveMessageOptionsId] = useAtom(messageOptionsAtom);
-    const hover = activeMessageOptionsId === eventId;
+    const selectionMode = useAtomValue(selectionModeAtom);
+    const [selectedIds, setSelectedIds] = useAtom(selectedIdsAtom);
+    const setSelectionMode = useSetAtom(selectionModeAtom);
+    const isSelected = selectionMode && selectedIds.has(eventId);
+    const toggleSelection = useCallback(() => {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(eventId)) {
+          next.delete(eventId);
+        } else {
+          next.add(eventId);
+        }
+        return next;
+      });
+    }, [eventId, setSelectedIds]);
+    const hover = !selectionMode && activeMessageOptionsId === eventId;
     const setHover = useCallback(
       (isHovered: boolean) => {
+        if (selectionMode) return;
         setActiveMessageOptionsId(isHovered ? eventId : (prev) => (prev === eventId ? null : prev));
       },
-      [eventId, setActiveMessageOptionsId]
+      [eventId, setActiveMessageOptionsId, selectionMode]
     );
     const { hoverProps } = useHover({ onHoverChange: setHover });
     const { focusWithinProps } = useFocusWithin({ onFocusWithinChange: setHover });
     const [menuAnchor, setMenuAnchor] = useState<RectCords>();
     const [emojiBoardAnchor, setEmojiBoardAnchor] = useState<RectCords>();
+    const openReactionViewer = useOpenReactionViewer();
     const [hiddenImages, setHiddenImages] = useAtom(hiddenImagesAtom);
 
     const msgType = mEvent.getContent().msgtype;
@@ -894,7 +880,7 @@ export const Message = as<'div', MessageProps>(
     );
 
     const handleContextMenu: MouseEventHandler<HTMLDivElement> = (evt) => {
-      if (evt.altKey || !window.getSelection()?.isCollapsed || edit) return;
+      if (selectionMode || evt.altKey || !window.getSelection()?.isCollapsed || edit) return;
       const tag = (evt.target as any).tagName;
       if (typeof tag === 'string' && tag.toLowerCase() === 'a') return;
       evt.preventDefault();
@@ -934,19 +920,28 @@ export const Message = as<'div', MessageProps>(
       <MessageBase
         className={classNames(css.MessageBase, className, {
           [css.MessageBaseBubbleCollapsed]: messageLayout === MessageLayout.Bubble && collapse,
+          [css.MessageBaseSelecting]: selectionMode,
         })}
         tabIndex={0}
         space={messageSpacing}
         collapse={collapse}
         highlight={highlight}
         mentionHighlight={mentionHighlight}
-        selected={!!menuAnchor || !!emojiBoardAnchor}
+        selected={!!menuAnchor || !!emojiBoardAnchor || isSelected}
+        onClick={selectionMode && canDelete ? toggleSelection : undefined}
+        onContextMenu={handleContextMenu}
+        style={selectionMode ? { cursor: 'pointer' } : undefined}
         {...props}
         {...hoverProps}
         {...focusWithinProps}
         ref={ref}
       >
-        {!edit && (hover || !!menuAnchor || !!emojiBoardAnchor) && (
+        {selectionMode && canDelete && (
+          <Box className={css.SelectionCheckbox} alignItems="Center" justifyContent="Center">
+            <Checkbox variant="Primary" size="300" checked={!!isSelected} />
+          </Box>
+        )}
+        {!selectionMode && !edit && (hover || !!menuAnchor || !!emojiBoardAnchor) && (
           <div className={css.MessageOptionsBase}>
             <Menu className={css.MessageOptionsBar} variant="SurfaceVariant">
               <Box gap="100">
@@ -963,11 +958,9 @@ export const Message = as<'div', MessageProps>(
                         allowTextCustomEmoji
                         onEmojiSelect={(key) => {
                           onReactionToggle(mEvent.getId()!, key);
-                          setEmojiBoardAnchor(undefined);
                         }}
                         onCustomEmojiSelect={(mxc, shortcode) => {
                           onReactionToggle(mEvent.getId()!, mxc, shortcode);
-                          setEmojiBoardAnchor(undefined);
                         }}
                         requestClose={() => {
                           setEmojiBoardAnchor(undefined);
@@ -988,8 +981,7 @@ export const Message = as<'div', MessageProps>(
                 )}
                 {relations && (
                   <MessageAllReactionButton
-                    room={room}
-                    relations={relations}
+                    onOpen={() => openReactionViewer(room, relations)}
                   />
                 )}
                 <IconButton
@@ -1056,9 +1048,10 @@ export const Message = as<'div', MessageProps>(
                           )}
                           {relations && (
                             <MessageAllReactionItem
-                              room={room}
-                              relations={relations}
-                              onClose={closeMenu}
+                              onOpen={() => {
+                                openReactionViewer(room, relations);
+                                closeMenu();
+                              }}
                             />
                           )}
                           <MenuItem
@@ -1181,17 +1174,17 @@ export const Message = as<'div', MessageProps>(
           </div>
         )}
         {messageLayout === MessageLayout.Compact && (
-          <CompactLayout before={headerJSX} onContextMenu={handleContextMenu}>
+          <CompactLayout before={headerJSX}>
             {msgContentJSX}
           </CompactLayout>
         )}
         {messageLayout === MessageLayout.Bubble && (
-          <BubbleLayout before={avatarJSX} header={headerJSX} onContextMenu={handleContextMenu}>
+          <BubbleLayout before={avatarJSX} header={headerJSX}>
             {msgContentJSX}
           </BubbleLayout>
         )}
         {messageLayout !== MessageLayout.Compact && messageLayout !== MessageLayout.Bubble && (
-          <ModernLayout before={avatarJSX} onContextMenu={handleContextMenu}>
+          <ModernLayout before={avatarJSX}>
             {headerJSX}
             {msgContentJSX}
           </ModernLayout>

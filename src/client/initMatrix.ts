@@ -38,6 +38,7 @@ export const initClient = async (session: Session): Promise<MatrixClient> => {
   await mx.initRustCrypto();
 
   mx.setMaxListeners(50);
+  (mx.logger as unknown as { setLevel: (level: string) => void }).setLevel('warn');
 
   return mx;
 };

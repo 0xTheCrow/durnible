@@ -1,1 +1,1 @@
-npm test
+# Tests now run on pre-commit instead
