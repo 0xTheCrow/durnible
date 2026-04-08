@@ -367,7 +367,7 @@ export const decryptAllTimelineEvent = async (mx: MatrixClient, timeline: EventT
   if (!crypto) return;
   const decryptionPromises = timeline
     .getEvents()
-    .filter((event) => event.isEncrypted())
+    .filter((event) => event.isEncrypted() && !event.isRedacted())
     .reverse()
     .map((event) => event.attemptDecryption(crypto as CryptoBackend, { isRetry: true }));
   await Promise.allSettled(decryptionPromises);
