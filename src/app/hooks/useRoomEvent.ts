@@ -1,5 +1,5 @@
-import { IEvent, MatrixEvent, Room } from 'matrix-js-sdk';
-import { useCallback, useMemo } from 'react';
+import { IEvent, MatrixEvent, MatrixEventEvent, Room } from 'matrix-js-sdk';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import to from 'await-to-js';
 import { CryptoBackend } from 'matrix-js-sdk/lib/common-crypto/CryptoBackend';
 import { useQuery } from '@tanstack/react-query';
@@ -60,9 +60,19 @@ export const useRoomEvent = (
     [error, isFetching]
   );
 
-  if (event) return event;
-  if (data) return data;
-  if (fallback !== undefined) return fallback;
+  const result = event ?? data ?? (fallback !== undefined ? fallback : undefined);
 
-  return undefined;
+  const [, setContentReady] = useState(false);
+  useEffect(() => {
+    if (!result) return undefined;
+    const handler = () => setContentReady(true);
+    result.on(MatrixEventEvent.Replaced, handler);
+    result.on(MatrixEventEvent.Decrypted, handler);
+    return () => {
+      result.removeListener(MatrixEventEvent.Replaced, handler);
+      result.removeListener(MatrixEventEvent.Decrypted, handler);
+    };
+  }, [result]);
+
+  return result;
 };

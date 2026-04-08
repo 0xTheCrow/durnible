@@ -1,6 +1,6 @@
 import { Box, Icon, Icons, Text, as, color, toRem } from 'folds';
-import { EventTimelineSet, Room } from 'matrix-js-sdk';
-import React, { MouseEventHandler, ReactNode, useCallback, useMemo } from 'react';
+import { EventTimelineSet, MatrixEventEvent, Room } from 'matrix-js-sdk';
+import React, { MouseEventHandler, ReactNode, useCallback, useEffect, useMemo, useReducer } from 'react';
 import classNames from 'classnames';
 import { getMemberDisplayName, trimReplyFromBody } from '../../utils/room';
 import { getMxIdLocalPart } from '../../utils/matrix';
