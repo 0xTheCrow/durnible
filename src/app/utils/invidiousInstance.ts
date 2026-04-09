@@ -16,8 +16,8 @@ function parseCandidates(raw: string): string[] {
   return trimmed.split(',').map((s) => s.trim()).filter(Boolean);
 }
 
-export const NITTER_CANDIDATES: string[] = parseCandidates(
-  import.meta.env.VITE_NITTER_INSTANCES ?? 'nitter.net'
+export const INVIDIOUS_CANDIDATES: string[] = parseCandidates(
+  import.meta.env.VITE_INVIDIOUS_INSTANCES ?? 'inv.nadeko.net'
 );
 
 async function probe(host: string): Promise<boolean> {
@@ -26,7 +26,7 @@ async function probe(host: string): Promise<boolean> {
   try {
     // mode: 'no-cors' returns an opaque response — we can't read it, but a
     // successful (non-throwing) fetch means the host responded.
-    await fetch(`https://${host}/about`, {
+    await fetch(`https://${host}/`, {
       method: 'HEAD',
       mode: 'no-cors',
       signal: controller.signal,
@@ -41,30 +41,30 @@ async function probe(host: string): Promise<boolean> {
 
 let _promise: Promise<string> | undefined;
 
-export function resolveNitterInstance(): Promise<string> {
+export function resolveInvidiousInstance(): Promise<string> {
   if (!_promise) {
     _promise = (async () => {
       // Sequential probe: stop at the first reachable host. Parallelizing
       // would race them and pick a "winner" that may not be the user's
       // preferred order.
       // eslint-disable-next-line no-restricted-syntax
-      for (const host of NITTER_CANDIDATES) {
+      for (const host of INVIDIOUS_CANDIDATES) {
         // eslint-disable-next-line no-await-in-loop
         if (await probe(host)) return host;
       }
-      // None reachable — fall back to first candidate and let the iframe handle the error.
-      return NITTER_CANDIDATES[0] ?? 'nitter.net';
+      // None reachable — fall back to first candidate.
+      return INVIDIOUS_CANDIDATES[0] ?? 'inv.nadeko.net';
     })();
   }
   return _promise;
 }
 
-export function useNitterInstance(): string | null {
+export function useInvidiousInstance(): string | null {
   const [instance, setInstance] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    resolveNitterInstance().then((host) => {
+    resolveInvidiousInstance().then((host) => {
       if (!cancelled) setInstance(host);
     });
     return () => {

@@ -52,6 +52,7 @@ Cinny is a Matrix chat client built with React, TypeScript, and Vite.
 - Don't use `useReducer` as a force-update hack (e.g., `const [, forceUpdate] = useReducer(n => n + 1, 0)`). If a component needs to re-render, it should be driven by real state or props changes.
 - Don't patch matrix-js-sdk types with `as any` — find the correct type or fix the upstream typing.
 - Don't use `setTimeout` to work around race conditions in room state — use the SDK's event listeners.
+- Avoid `requestAnimationFrame` if possible — prefer CSS transitions/animations or React state-driven updates.
 
 ## Git Hooks
 

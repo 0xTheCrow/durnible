@@ -238,7 +238,6 @@ function TimelineEventComponent({
             <RenderMessageContent
               displayName={senderDisplayName}
               msgType={mEvent.getContent().msgtype ?? ''}
-              ts={mEvent.getTs()}
               edited={!!editedEvent}
               content={content}
               mediaAutoLoad={mediaAutoLoad}
@@ -308,7 +307,6 @@ function TimelineEventComponent({
                   <RenderMessageContent
                     displayName={senderDisplayName}
                     msgType={mEvent.getContent().msgtype ?? ''}
-                    ts={mEvent.getTs()}
                     edited={!!editedEvt}
                     content={content}
                     mediaAutoLoad={mediaAutoLoad}

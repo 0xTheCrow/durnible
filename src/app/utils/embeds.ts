@@ -3,11 +3,41 @@
 const YOUTUBE_URL_REG =
   /^https?:\/\/(?:(?:www\.|m\.)?youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
 
+export type YouTubeEmbedInfo = { videoId: string; start?: number };
+
 export const testYouTubeUrl = (url: string): boolean => YOUTUBE_URL_REG.test(url);
 
-export const getYouTubeVideoId = (url: string): string | undefined => {
+// Parse YouTube's `t` / `start` query parameter into seconds. Accepts:
+//   - plain integer seconds: "42"
+//   - trailing-unit seconds: "42s"
+//   - colloquial duration: "1h2m3s", "1m30s", "90s"
+function parseYouTubeStart(value: string): number | undefined {
+  if (/^\d+$/.test(value)) {
+    const n = parseInt(value, 10);
+    return n > 0 ? n : undefined;
+  }
+  const m = value.match(/^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s?)?$/);
+  if (!m) return undefined;
+  const h = parseInt(m[1] ?? '0', 10);
+  const min = parseInt(m[2] ?? '0', 10);
+  const s = parseInt(m[3] ?? '0', 10);
+  const total = h * 3600 + min * 60 + s;
+  return total > 0 ? total : undefined;
+}
+
+export const getYouTubeEmbedInfo = (url: string): YouTubeEmbedInfo | undefined => {
   const match = url.match(YOUTUBE_URL_REG);
-  return match?.[1];
+  if (!match) return undefined;
+  const videoId = match[1];
+  let start: number | undefined;
+  try {
+    const u = new URL(url);
+    const t = u.searchParams.get('t') ?? u.searchParams.get('start');
+    if (t) start = parseYouTubeStart(t);
+  } catch {
+    // malformed URL — videoId from the regex is still good, just no start time
+  }
+  return { videoId, start };
 };
 
 // ── Spotify ──────────────────────────────────────────────────────────────────
@@ -49,12 +79,6 @@ export const getSoundCloudEmbedInfo = (url: string): SoundCloudEmbedInfo | undef
 
 const TWITTER_URL_REG =
   /^https?:\/\/(?:(?:www\.|mobile\.)?twitter\.com|x\.com)\/([\w]+)\/status\/(\d+)/;
-
-// Synchronous fallback — the first candidate. Prefer useNitterInstance() in
-// components so the resolved (health-checked) instance is used instead.
-export { NITTER_CANDIDATES } from './nitterInstance';
-import { NITTER_CANDIDATES } from './nitterInstance';
-export const NITTER_INSTANCE: string = NITTER_CANDIDATES[0] ?? 'nitter.net';
 
 export type TwitterEmbedInfo = { user: string; id: string };
 
