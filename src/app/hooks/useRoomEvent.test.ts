@@ -72,11 +72,7 @@ function createWrapper(mx: Partial<ReturnType<typeof createMockMatrixClient>>) {
     return React.createElement(
       QueryClientProvider,
       { client: queryClient },
-      React.createElement(
-        MatrixClientProvider,
-        { value: mx as any },
-        children
-      )
+      React.createElement(MatrixClientProvider, { value: mx as any }, children)
     );
   };
 }
@@ -107,8 +103,8 @@ describe('useRoomEvent', () => {
       id: '$edit',
       content: {
         'm.new_content': { body: 'edited', msgtype: 'm.text' },
-        'body': '* edited',
-        'msgtype': 'm.text',
+        body: '* edited',
+        msgtype: 'm.text',
       },
     });
 
@@ -144,10 +140,9 @@ describe('useRoomEvent', () => {
     });
     const getLocally = vi.fn(() => event);
 
-    const { result } = renderHook(
-      () => useRoomEvent(room as unknown as Room, '$enc', getLocally),
-      { wrapper: createWrapper(mx) }
-    );
+    const { result } = renderHook(() => useRoomEvent(room as unknown as Room, '$enc', getLocally), {
+      wrapper: createWrapper(mx),
+    });
 
     // Initially empty content (not yet decrypted)
     expect(result.current?.getContent()).toEqual({});
@@ -192,8 +187,8 @@ describe('useRoomEvent', () => {
     // Simulate the replacing event finishing decryption
     const decryptedEditContent = {
       'm.new_content': { body: 'edited secret', msgtype: 'm.text' },
-      'body': '* edited secret',
-      'msgtype': 'm.text',
+      body: '* edited secret',
+      msgtype: 'm.text',
     };
     (replacingEvt.getContent as ReturnType<typeof vi.fn>).mockReturnValue(decryptedEditContent);
 
@@ -234,10 +229,9 @@ describe('useRoomEvent', () => {
       },
     }));
 
-    const { result } = renderHook(
-      () => useRoomEvent(room as unknown as Room, '$fetched'),
-      { wrapper: createWrapper(mx) }
-    );
+    const { result } = renderHook(() => useRoomEvent(room as unknown as Room, '$fetched'), {
+      wrapper: createWrapper(mx),
+    });
 
     await waitFor(() => {
       expect(result.current).not.toBeUndefined();

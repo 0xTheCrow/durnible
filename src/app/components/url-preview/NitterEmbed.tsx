@@ -22,9 +22,7 @@ export const NitterEmbed = as<
   const embedSrc = instance
     ? `https://${instance}/${info.user}/status/${info.id}/embed`
     : undefined;
-  const nitterUrl = instance
-    ? `https://${instance}/${info.user}/status/${info.id}`
-    : undefined;
+  const nitterUrl = instance ? `https://${instance}/${info.user}/status/${info.id}` : undefined;
   const showLinkBar = showLink && nitterUrl !== undefined && nitterUrl !== url;
 
   return (
@@ -75,4 +73,3 @@ export const NitterEmbed = as<
     </Box>
   );
 });
-

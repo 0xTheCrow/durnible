@@ -1,12 +1,5 @@
 import React, { useState } from 'react';
-import {
-  Avatar,
-  Box,
-  Icon,
-  Icons,
-  Modal,
-  Text,
-} from 'folds';
+import { Avatar, Box, Icon, Icons, Modal, Text } from 'folds';
 import classNames from 'classnames';
 import * as css from './styles.css';
 import { UserAvatar } from '../user-avatar';
@@ -68,13 +61,13 @@ export function UserHero({ userId, avatarUrl, bannerUrl, presence }: UserHeroPro
         </AvatarPresence>
         {viewAvatar && (
           <OverlayModal open requestClose={() => setViewAvatar(undefined)}>
-                <Modal size="500" onContextMenu={(evt: any) => evt.stopPropagation()}>
-                  <ImageViewer
-                    src={viewAvatar}
-                    alt={userId}
-                    requestClose={() => setViewAvatar(undefined)}
-                  />
-                </Modal>
+            <Modal size="500" onContextMenu={(evt) => evt.stopPropagation()}>
+              <ImageViewer
+                src={viewAvatar}
+                alt={userId}
+                requestClose={() => setViewAvatar(undefined)}
+              />
+            </Modal>
           </OverlayModal>
         )}
       </div>

@@ -31,11 +31,12 @@ export function TestWrapper({
   screenSize = ScreenSize.Desktop,
 }: TestWrapperProps) {
   return (
-    <MemoryRouter initialEntries={[route]} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <MemoryRouter
+      initialEntries={[route]}
+      future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+    >
       <ScreenSizeProvider value={screenSize}>
-        <ClientConfigProvider value={clientConfig}>
-          {children}
-        </ClientConfigProvider>
+        <ClientConfigProvider value={clientConfig}>{children}</ClientConfigProvider>
       </ScreenSizeProvider>
     </MemoryRouter>
   );
@@ -45,18 +46,12 @@ type MatrixTestWrapperProps = TestWrapperProps & {
   matrixClient?: Partial<MatrixClient>;
 };
 
-export function MatrixTestWrapper({
-  children,
-  matrixClient,
-  ...rest
-}: MatrixTestWrapperProps) {
+export function MatrixTestWrapper({ children, matrixClient, ...rest }: MatrixTestWrapperProps) {
   const mx = matrixClient ?? createMockMatrixClient();
   return (
     <TestWrapper {...rest}>
       <SpecVersionsProvider value={DEFAULT_SPEC_VERSIONS}>
-        <MatrixClientProvider value={mx as MatrixClient}>
-          {children}
-        </MatrixClientProvider>
+        <MatrixClientProvider value={mx as MatrixClient}>{children}</MatrixClientProvider>
       </SpecVersionsProvider>
     </TestWrapper>
   );

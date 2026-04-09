@@ -21,15 +21,12 @@ export function useStickerPackOrder(): [string[], (ids: string[]) => void] {
 
   useAccountDataCallback(
     mx,
-    useCallback(
-      (evt) => {
-        if (evt.getType() === AccountDataEvent.CinnyStickerPackOrder) {
-          const content = evt.getContent<StickerPackOrderContent>();
-          setOrderedIds(content?.order ?? []);
-        }
-      },
-      []
-    )
+    useCallback((evt) => {
+      if (evt.getType() === AccountDataEvent.CinnyStickerPackOrder) {
+        const content = evt.getContent<StickerPackOrderContent>();
+        setOrderedIds(content?.order ?? []);
+      }
+    }, [])
   );
 
   const setOrder = useCallback(

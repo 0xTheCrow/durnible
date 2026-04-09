@@ -9,7 +9,13 @@ type SwipeDrawerProps = {
   children: ReactNode;
 };
 
-export function SwipeDrawer({ open, dragOffset, drawerWidth, onClose, children }: SwipeDrawerProps) {
+export function SwipeDrawer({
+  open,
+  dragOffset,
+  drawerWidth,
+  onClose,
+  children,
+}: SwipeDrawerProps) {
   const isDragging = dragOffset !== null;
 
   // Calculate panel position
@@ -34,12 +40,25 @@ export function SwipeDrawer({ open, dragOffset, drawerWidth, onClose, children }
   return (
     <>
       <div
+        role="button"
+        aria-label="Close drawer"
+        tabIndex={-1}
         className={css.Backdrop}
         style={{
           opacity: backdropOpacity,
           transition: isDragging ? 'none' : undefined,
         }}
         onClick={onClose}
+        onKeyDown={(evt) => {
+          // The drawer is mobile-only so Escape isn't a thing here, but
+          // screen readers using a connected keyboard may activate the
+          // close action via Enter/Space — handle them so the role="button"
+          // semantic above is honored.
+          if (evt.key === 'Enter' || evt.key === ' ') {
+            evt.preventDefault();
+            onClose();
+          }
+        }}
       />
       <div
         className={css.Panel}

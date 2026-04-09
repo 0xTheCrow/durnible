@@ -1,11 +1,4 @@
-import React, {
-  ReactNode,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import React, { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Box, Icon, IconButton, Icons, Line, Text, config } from 'folds';
 import { useAtomValue } from 'jotai';
@@ -199,7 +192,7 @@ export function FavoritesList({ header, emptyState, scrollRef, isDrawerMode }: F
     setReorderMode(false);
   }, [mx, orderedIds]);
 
-  if (favorites.length === 0) return <>{emptyState}</>;
+  if (favorites.length === 0) return emptyState;
 
   const roomList = (
     <NavCategory>
@@ -244,10 +237,7 @@ export function FavoritesSection({ isDrawerMode }: { isDrawerMode?: boolean }) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   return (
-    <Box
-      direction="Column"
-      style={{ maxHeight: '40vh', overflow: 'hidden', flexShrink: 0 }}
-    >
+    <Box direction="Column" style={{ maxHeight: '40vh', overflow: 'hidden', flexShrink: 0 }}>
       <FavoritesList
         scrollRef={scrollRef}
         isDrawerMode={isDrawerMode}
@@ -375,7 +365,7 @@ export function FavoritesDrawer({ children }: FavoritesDrawerProps) {
   }, [open]);
 
   if (!isMobileOrTablet || !swipeGestures) {
-    return <>{children}</>;
+    return children;
   }
 
   return (

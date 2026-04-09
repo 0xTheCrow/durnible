@@ -248,11 +248,11 @@ function InviteCard({
                 </Text>
               )}
               <OverlayModal open={viewTopic} requestClose={closeTopic}>
-                    <RoomTopicViewer
-                      name={invite.roomName}
-                      topic={invite.roomTopic ?? ''}
-                      requestClose={closeTopic}
-                    />
+                <RoomTopicViewer
+                  name={invite.roomName}
+                  topic={invite.roomTopic ?? ''}
+                  requestClose={closeTopic}
+                />
               </OverlayModal>
             </Box>
             {joinState.status === AsyncStatus.Error && (

@@ -16,8 +16,8 @@ import {
   toRem,
 } from 'folds';
 import { JoinRule, MatrixError, Room } from 'matrix-js-sdk';
-import { OverlayModal } from '../../components/OverlayModal';
 import { IHierarchyRoom } from 'matrix-js-sdk/lib/@types/spaces';
+import { OverlayModal } from '../../components/OverlayModal';
 import { RoomAvatar, RoomIcon } from '../../components/room-avatar';
 import { SequenceCard } from '../../components/sequence-card';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
@@ -245,11 +245,11 @@ function RoomProfile({
                     {topic}
                   </Text>
                   <OverlayModal open={view} requestClose={() => setView(false)}>
-                        <RoomTopicViewer
-                          name={name}
-                          topic={topic}
-                          requestClose={() => setView(false)}
-                        />
+                    <RoomTopicViewer
+                      name={name}
+                      topic={topic}
+                      requestClose={() => setView(false)}
+                    />
                   </OverlayModal>
                 </>
               )}

@@ -1,6 +1,10 @@
 import { RelationType } from 'matrix-js-sdk';
 import { describe, it, expect, vi } from 'vitest';
-import { buildTimelineDescriptors, TimelineEventInput, TimelineItem } from './buildTimelineDescriptors';
+import {
+  buildTimelineDescriptors,
+  TimelineEventInput,
+  TimelineItem,
+} from './buildTimelineDescriptors';
 import { createMockMatrixEvent } from '../../test/mocks';
 
 const MY_USER = '@me:example.com';
@@ -94,7 +98,7 @@ describe('buildTimelineDescriptors', () => {
     const result = buildTimelineDescriptors(
       [
         makeEvent({ id: '$A' }),
-        makeEvent({ id: '$B', sender: MY_USER }),   // own — no divider yet
+        makeEvent({ id: '$B', sender: MY_USER }), // own — no divider yet
         makeEvent({ id: '$C', sender: OTHER_USER }), // other — divider fires here
       ],
       '$A',
@@ -126,10 +130,7 @@ describe('buildTimelineDescriptors', () => {
     // Sequence: $A (read) → reaction (end of range)
     // No next message → divider must NOT appear.
     const result = buildTimelineDescriptors(
-      [
-        makeEvent({ id: '$A' }),
-        makeEvent({ id: '$reaction', isReaction: true }),
-      ],
+      [makeEvent({ id: '$A' }), makeEvent({ id: '$reaction', isReaction: true })],
       '$A',
       MY_USER
     );
@@ -140,15 +141,15 @@ describe('buildTimelineDescriptors', () => {
 
   it('inserts day-divider when consecutive messages cross midnight', () => {
     const result = buildTimelineDescriptors(
-      [
-        makeEvent({ id: '$A', ts: 1000 }),
-        makeEvent({ id: '$B', ts: 1000 + ONE_DAY_MS }),
-      ],
+      [makeEvent({ id: '$A', ts: 1000 }), makeEvent({ id: '$B', ts: 1000 + ONE_DAY_MS })],
       undefined,
       MY_USER
     );
     expect(types(result)).toEqual(['event:$A', 'day-divider', 'event:$B']);
-    const divider = result.find((d) => d.type === 'day-divider') as Extract<TimelineItem, { type: 'day-divider' }>;
+    const divider = result.find((d) => d.type === 'day-divider') as Extract<
+      TimelineItem,
+      { type: 'day-divider' }
+    >;
     expect(divider.ts).toBe(1000 + ONE_DAY_MS);
   });
 
@@ -164,7 +165,10 @@ describe('buildTimelineDescriptors', () => {
       MY_USER
     );
     expect(types(result)).toContain('day-divider');
-    const divider = result.find((d) => d.type === 'day-divider') as Extract<TimelineItem, { type: 'day-divider' }>;
+    const divider = result.find((d) => d.type === 'day-divider') as Extract<
+      TimelineItem,
+      { type: 'day-divider' }
+    >;
     expect(divider.ts).toBe(laterTs);
   });
 
@@ -179,7 +183,10 @@ describe('buildTimelineDescriptors', () => {
       undefined,
       MY_USER
     );
-    const eventB = result.find((d) => d.type === 'event' && d.mEventId === '$B') as Extract<TimelineItem, { type: 'event' }>;
+    const eventB = result.find((d) => d.type === 'event' && d.mEventId === '$B') as Extract<
+      TimelineItem,
+      { type: 'event' }
+    >;
     expect(eventB?.collapsed).toBe(true);
   });
 
@@ -196,7 +203,10 @@ describe('buildTimelineDescriptors', () => {
       undefined,
       MY_USER
     );
-    const eventB = result.find((d) => d.type === 'event' && d.mEventId === '$B') as Extract<TimelineItem, { type: 'event' }>;
+    const eventB = result.find((d) => d.type === 'event' && d.mEventId === '$B') as Extract<
+      TimelineItem,
+      { type: 'event' }
+    >;
     expect(eventB?.collapsed).toBe(true);
   });
 
@@ -210,15 +220,18 @@ describe('buildTimelineDescriptors', () => {
     const result = buildTimelineDescriptors(
       [
         makeEvent({ id: '$A', ts: 1000 }),
-        makeEvent({ id: '$B', ts: laterTs }),         // suppressed (e.g. m.room.redaction)
-        makeEvent({ id: '$C', ts: laterTs + 1 }),     // visible
+        makeEvent({ id: '$B', ts: laterTs }), // suppressed (e.g. m.room.redaction)
+        makeEvent({ id: '$C', ts: laterTs + 1 }), // visible
       ],
       undefined,
       MY_USER,
       (mEvent) => !suppress.has(mEvent.getId() ?? '')
     );
     expect(types(result)).toEqual(['event:$A', 'day-divider', 'event:$C']);
-    const divider = result.find((d) => d.type === 'day-divider') as Extract<TimelineItem, { type: 'day-divider' }>;
+    const divider = result.find((d) => d.type === 'day-divider') as Extract<
+      TimelineItem,
+      { type: 'day-divider' }
+    >;
     expect(divider.ts).toBe(laterTs + 1);
   });
 
@@ -277,10 +290,7 @@ describe('buildTimelineDescriptors', () => {
     // Common scenario: user was last active on Monday; Tuesday's messages are all unread.
     // Expected insertion order: new-messages marker before day-divider (documents current behaviour).
     const result = buildTimelineDescriptors(
-      [
-        makeEvent({ id: '$A', ts: 1000 }),
-        makeEvent({ id: '$B', ts: 1000 + ONE_DAY_MS }),
-      ],
+      [makeEvent({ id: '$A', ts: 1000 }), makeEvent({ id: '$B', ts: 1000 + ONE_DAY_MS })],
       '$A',
       MY_USER
     );
@@ -297,7 +307,13 @@ describe('buildTimelineDescriptors', () => {
       undefined,
       MY_USER
     );
-    expect(types(result)).toEqual(['event:$A', 'day-divider', 'event:$B', 'day-divider', 'event:$C']);
+    expect(types(result)).toEqual([
+      'event:$A',
+      'day-divider',
+      'event:$B',
+      'day-divider',
+      'event:$C',
+    ]);
   });
 
   // ─── Collapse edge cases ──────────────────────────────────────────────────────
@@ -311,7 +327,10 @@ describe('buildTimelineDescriptors', () => {
       undefined,
       MY_USER
     );
-    const eventB = result.find((d) => d.type === 'event' && d.mEventId === '$B') as Extract<TimelineItem, { type: 'event' }>;
+    const eventB = result.find((d) => d.type === 'event' && d.mEventId === '$B') as Extract<
+      TimelineItem,
+      { type: 'event' }
+    >;
     expect(eventB?.collapsed).toBe(false);
   });
 
@@ -324,7 +343,10 @@ describe('buildTimelineDescriptors', () => {
       undefined,
       MY_USER
     );
-    const eventB = result.find((d) => d.type === 'event' && d.mEventId === '$B') as Extract<TimelineItem, { type: 'event' }>;
+    const eventB = result.find((d) => d.type === 'event' && d.mEventId === '$B') as Extract<
+      TimelineItem,
+      { type: 'event' }
+    >;
     expect(eventB?.collapsed).toBe(false);
   });
 
@@ -339,7 +361,10 @@ describe('buildTimelineDescriptors', () => {
       undefined,
       MY_USER
     );
-    const eventB = result.find((d) => d.type === 'event' && d.mEventId === '$B') as Extract<TimelineItem, { type: 'event' }>;
+    const eventB = result.find((d) => d.type === 'event' && d.mEventId === '$B') as Extract<
+      TimelineItem,
+      { type: 'event' }
+    >;
     expect(eventB?.collapsed).toBe(false);
   });
 });

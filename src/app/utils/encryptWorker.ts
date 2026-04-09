@@ -1,15 +1,17 @@
 import { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
 
 let worker: Worker | null = null;
-type PendingEntry = { resolve: (v: any) => void; reject: (e: any) => void };
+type PendingEntry = {
+  resolve: (v: { data: ArrayBuffer; info: EncryptedAttachmentInfo }) => void;
+  reject: (e: unknown) => void;
+};
 const pending = new Map<string, PendingEntry>();
 
 function getWorker(): Worker {
   if (!worker) {
-    worker = new Worker(
-      new URL('../workers/encryptAttachment.worker.ts', import.meta.url),
-      { type: 'module' }
-    );
+    worker = new Worker(new URL('../workers/encryptAttachment.worker.ts', import.meta.url), {
+      type: 'module',
+    });
     worker.onmessage = ({ data }) => {
       const entry = pending.get(data.id);
       if (!entry) return;

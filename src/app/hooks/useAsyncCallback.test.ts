@@ -1,6 +1,5 @@
-import React from 'react';
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { useAsyncCallback, AsyncStatus } from './useAsyncCallback';
 
 describe('useAsyncCallback', () => {
@@ -12,7 +11,9 @@ describe('useAsyncCallback', () => {
   it('transitions to success with returned data', async () => {
     const { result } = renderHook(() => useAsyncCallback(async () => 'hello'));
 
-    act(() => { result.current[1](); });
+    act(() => {
+      result.current[1]();
+    });
 
     await waitFor(() => {
       expect(result.current[0].status).toBe(AsyncStatus.Success);
@@ -24,7 +25,9 @@ describe('useAsyncCallback', () => {
   it('transitions to error when the callback rejects', async () => {
     const error = new Error('boom');
     const { result } = renderHook(() =>
-      useAsyncCallback(async () => { throw error; })
+      useAsyncCallback(async () => {
+        throw error;
+      })
     );
 
     act(() => {
@@ -49,8 +52,12 @@ describe('useAsyncCallback', () => {
       useAsyncCallback(async () => {
         callCount += 1;
         return callCount === 1
-          ? new Promise<string>((res) => { resolveSlow = res; })
-          : new Promise<string>((res) => { resolveFast = res; });
+          ? new Promise<string>((res) => {
+              resolveSlow = res;
+            })
+          : new Promise<string>((res) => {
+              resolveFast = res;
+            });
       })
     );
 
@@ -61,7 +68,9 @@ describe('useAsyncCallback', () => {
     });
 
     // Resolve the fast (second) call first
-    await act(async () => { resolveFast('fast'); });
+    await act(async () => {
+      resolveFast('fast');
+    });
 
     await waitFor(() => {
       expect(result.current[0].status).toBe(AsyncStatus.Success);
@@ -69,8 +78,9 @@ describe('useAsyncCallback', () => {
     expect((result.current[0] as { status: AsyncStatus.Success; data: string }).data).toBe('fast');
 
     // Resolving the slow (first) call afterwards must not overwrite the result
-    await act(async () => { resolveSlow('slow'); });
+    await act(async () => {
+      resolveSlow('slow');
+    });
     expect((result.current[0] as { status: AsyncStatus.Success; data: string }).data).toBe('fast');
   });
-
 });

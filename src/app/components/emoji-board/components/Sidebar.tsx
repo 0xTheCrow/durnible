@@ -121,13 +121,7 @@ type DraggableGroupIconProps = {
   icon: IconSrc;
   onClick: (id: string) => void;
 };
-export function DraggableGroupIcon({
-  active,
-  id,
-  label,
-  icon,
-  onClick,
-}: DraggableGroupIconProps) {
+export function DraggableGroupIcon({ active, id, label, icon, onClick }: DraggableGroupIconProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [dropState, setDropState] = useState<Instruction>();
 
@@ -175,13 +169,7 @@ export function DraggableGroupIcon({
       data-drop-above={dropState?.type === 'reorder-above' || undefined}
       data-drop-below={dropState?.type === 'reorder-below' || undefined}
     >
-      <GroupIcon
-        active={active}
-        id={id}
-        label={label}
-        icon={icon}
-        onClick={onClick}
-      />
+      <GroupIcon active={active} id={id} label={label} icon={icon} onClick={onClick} />
     </div>
   );
 }
@@ -272,13 +260,7 @@ export function DraggableImageGroupIcon({
       data-drop-above={dropState?.type === 'reorder-above' || undefined}
       data-drop-below={dropState?.type === 'reorder-below' || undefined}
     >
-      <ImageGroupIcon
-        active={active}
-        id={id}
-        label={label}
-        url={url}
-        onClick={onClick}
-      />
+      <ImageGroupIcon active={active} id={id} label={label} url={url} onClick={onClick} />
     </div>
   );
 }

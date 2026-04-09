@@ -234,7 +234,12 @@ function RoomNotificationsGroupComp({
   const getMemberPowerTag = useGetMemberPowerTag(room, creators, powerLevels);
 
   const theme = useTheme();
-  const accessibleTagColors = useAccessiblePowerTagColors(theme.kind, creatorsTag, powerLevelTags, true);
+  const accessibleTagColors = useAccessiblePowerTagColors(
+    theme.kind,
+    creatorsTag,
+    powerLevelTags,
+    true
+  );
 
   const mentionClickHandler = useMentionClickHandler(room.roomId);
   const spoilerClickHandler = useSpoilerClickHandler();

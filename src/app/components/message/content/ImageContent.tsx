@@ -1,4 +1,12 @@
-import React, { ReactNode, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, {
+  ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import {
   Badge,
   Box,
@@ -148,20 +156,23 @@ export const ImageContent = as<'div', ImageContentProps>(
             />
           </Box>
         )}
-        {!autoPlay && !markedAsSpoiler && !isForceHidden && srcState.status === AsyncStatus.Idle && (
-          <Box className={css.AbsoluteContainer} alignItems="Center" justifyContent="Center">
-            <Button
-              variant="Secondary"
-              fill="Solid"
-              radii="300"
-              size="300"
-              onClick={loadSrc}
-              before={<Icon size="Inherit" src={Icons.Photo} filled />}
-            >
-              <Text size="B300">View</Text>
-            </Button>
-          </Box>
-        )}
+        {!autoPlay &&
+          !markedAsSpoiler &&
+          !isForceHidden &&
+          srcState.status === AsyncStatus.Idle && (
+            <Box className={css.AbsoluteContainer} alignItems="Center" justifyContent="Center">
+              <Button
+                variant="Secondary"
+                fill="Solid"
+                radii="300"
+                size="300"
+                onClick={loadSrc}
+                before={<Icon size="Inherit" src={Icons.Photo} filled />}
+              >
+                <Text size="B300">View</Text>
+              </Button>
+            </Box>
+          )}
         {srcState.status === AsyncStatus.Success && (
           <Box
             className={classNames(css.AbsoluteContainer, effectiveBlurred && css.Blur)}
@@ -187,6 +198,9 @@ export const ImageContent = as<'div', ImageContentProps>(
         )}
         {shouldPauseGif && load && !effectiveBlurred && srcState.status === AsyncStatus.Success && (
           <div
+            role="button"
+            tabIndex={0}
+            aria-label={body}
             style={{
               position: 'absolute',
               top: 0,
@@ -198,6 +212,12 @@ export const ImageContent = as<'div', ImageContentProps>(
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
             onClick={() => setViewerState({ src: srcState.data, alt: body })}
+            onKeyDown={(evt) => {
+              if (evt.key === 'Enter' || evt.key === ' ') {
+                evt.preventDefault();
+                setViewerState({ src: srcState.data, alt: body });
+              }
+            }}
           >
             <canvas
               ref={canvasRef}

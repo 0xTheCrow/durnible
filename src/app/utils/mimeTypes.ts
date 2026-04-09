@@ -7,7 +7,13 @@ export const IMAGE_MIME_TYPES = [
   'image/avif',
 ];
 
-export const VIDEO_MIME_TYPES = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime', 'video/x-matroska'];
+export const VIDEO_MIME_TYPES = [
+  'video/mp4',
+  'video/webm',
+  'video/ogg',
+  'video/quicktime',
+  'video/x-matroska',
+];
 
 export const AUDIO_MIME_TYPES = [
   'audio/mp4',

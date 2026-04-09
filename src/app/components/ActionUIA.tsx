@@ -26,8 +26,9 @@ export function ActionUIA({ authData, ongoingFlow, action, onCancel }: ActionUIA
   const { getStageToComplete } = useUIAFlow(authData, ongoingFlow);
 
   const stageToComplete = getStageToComplete();
+  const userId = mx.getUserId();
 
-  if (!stageToComplete) return null;
+  if (!stageToComplete || !userId) return null;
   return (
     <UIAFlowOverlay
       currentStep={completed.length + 1}
@@ -36,7 +37,7 @@ export function ActionUIA({ authData, ongoingFlow, action, onCancel }: ActionUIA
     >
       {stageToComplete.type === AuthType.Password && (
         <PasswordStage
-          userId={mx.getUserId()!}
+          userId={userId}
           stageData={stageToComplete}
           onCancel={onCancel}
           submitAuthDict={action}

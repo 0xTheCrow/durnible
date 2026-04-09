@@ -154,129 +154,118 @@ export function InviteUserPrompt({ room, requestClose }: InviteUserProps) {
       requestClose={requestClose}
       focusTrapOptions={{ initialFocus: () => inputRef.current }}
     >
-          <Dialog>
-            <Box grow="Yes" direction="Column">
-              <Header
-                size="500"
-                style={{ padding: `0 ${config.space.S200} 0 ${config.space.S400}` }}
-              >
-                <Box grow="Yes">
-                  <Text size="H4" truncate>
-                    Invite
-                  </Text>
-                </Box>
-                <Box shrink="No">
-                  <IconButton size="300" radii="300" onClick={requestClose}>
-                    <Icon src={Icons.Cross} />
-                  </IconButton>
-                </Box>
-              </Header>
-              <Box
-                as="form"
-                onSubmit={handleSubmit}
-                shrink="No"
-                style={{ padding: config.space.S400 }}
-                direction="Column"
-                gap="400"
-              >
-                <Box direction="Column" gap="100">
-                  <Text size="L400">User ID</Text>
-                  <div>
-                    <Input
-                      size="500"
-                      ref={inputRef}
-                      onChange={handleSearchChange}
-                      onKeyDown={handleKeyDown}
-                      placeholder="@username:server"
-                      name="userIdInput"
-                      variant="Background"
-                      disabled={inviting}
-                      autoComplete="off"
-                      required
-                    />
-                    {result && result.items.length > 0 && (
-                      <FocusTrap
-                        focusTrapOptions={{
-                          initialFocus: false,
-                          onDeactivate: resetSearch,
-                          returnFocusOnDeactivate: false,
-                          clickOutsideDeactivates: true,
-                          allowOutsideClick: true,
-                          isKeyForward: (evt: KeyboardEvent) => isKeyHotkey('arrowdown', evt),
-                          isKeyBackward: (evt: KeyboardEvent) => isKeyHotkey('arrowup', evt),
-                          escapeDeactivates: stopPropagation,
-                        }}
-                      >
-                        <Box style={{ position: 'relative' }}>
-                          <Menu style={{ position: 'absolute', top: 0, zIndex: 1, width: '100%' }}>
-                            <Scroll size="300" style={{ maxHeight: toRem(100) }}>
-                              <div style={{ padding: config.space.S100 }}>
-                                {result.items.map((userId) => {
-                                  const username = `${getMxIdLocalPart(userId)}`;
-                                  const userServer = getMxIdServer(userId);
-
-                                  return (
-                                    <MenuItem
-                                      key={userId}
-                                      type="button"
-                                      size="300"
-                                      variant="Surface"
-                                      radii="300"
-                                      onClick={() => handleUserId(userId)}
-                                      after={
-                                        <Text size="T200" truncate>
-                                          {userServer}
-                                        </Text>
-                                      }
-                                      disabled={inviting}
-                                    >
-                                      <Box grow="Yes">
-                                        <Text size="T300" truncate>
-                                          <b>
-                                            {queryHighlighRegex
-                                              ? highlightText(queryHighlighRegex, [
-                                                  username ?? userId,
-                                                ])
-                                              : username}
-                                          </b>
-                                        </Text>
-                                      </Box>
-                                    </MenuItem>
-                                  );
-                                })}
-                              </div>
-                            </Scroll>
-                          </Menu>
-                        </Box>
-                      </FocusTrap>
-                    )}
-                  </div>
-                </Box>
-                <Box direction="Column" gap="100">
-                  <Text size="L400">Reason (Optional)</Text>
-                  <TextArea
-                    size="500"
-                    name="reasonInput"
-                    variant="Background"
-                    rows={4}
-                    resize="None"
-                  />
-                </Box>
-                {inviteState.status === AsyncStatus.Error && (
-                  <Text size="T200" style={{ color: color.Critical.Main }} className={BreakWord}>
-                    <b>{inviteState.error.message}</b>
-                  </Text>
-                )}
-                <Button
-                  type="submit"
-                  disabled={!validUserId || inviting}
-                  before={inviting && <Spinner size="200" variant="Primary" fill="Solid" />}
-                >
-                  <Text size="B400">Invite</Text>
-                </Button>
-              </Box>
+      <Dialog>
+        <Box grow="Yes" direction="Column">
+          <Header size="500" style={{ padding: `0 ${config.space.S200} 0 ${config.space.S400}` }}>
+            <Box grow="Yes">
+              <Text size="H4" truncate>
+                Invite
+              </Text>
             </Box>
-          </Dialog>
+            <Box shrink="No">
+              <IconButton size="300" radii="300" onClick={requestClose}>
+                <Icon src={Icons.Cross} />
+              </IconButton>
+            </Box>
+          </Header>
+          <Box
+            as="form"
+            onSubmit={handleSubmit}
+            shrink="No"
+            style={{ padding: config.space.S400 }}
+            direction="Column"
+            gap="400"
+          >
+            <Box direction="Column" gap="100">
+              <Text size="L400">User ID</Text>
+              <div>
+                <Input
+                  size="500"
+                  ref={inputRef}
+                  onChange={handleSearchChange}
+                  onKeyDown={handleKeyDown}
+                  placeholder="@username:server"
+                  name="userIdInput"
+                  variant="Background"
+                  disabled={inviting}
+                  autoComplete="off"
+                  required
+                />
+                {result && result.items.length > 0 && (
+                  <FocusTrap
+                    focusTrapOptions={{
+                      initialFocus: false,
+                      onDeactivate: resetSearch,
+                      returnFocusOnDeactivate: false,
+                      clickOutsideDeactivates: true,
+                      allowOutsideClick: true,
+                      isKeyForward: (evt: KeyboardEvent) => isKeyHotkey('arrowdown', evt),
+                      isKeyBackward: (evt: KeyboardEvent) => isKeyHotkey('arrowup', evt),
+                      escapeDeactivates: stopPropagation,
+                    }}
+                  >
+                    <Box style={{ position: 'relative' }}>
+                      <Menu style={{ position: 'absolute', top: 0, zIndex: 1, width: '100%' }}>
+                        <Scroll size="300" style={{ maxHeight: toRem(100) }}>
+                          <div style={{ padding: config.space.S100 }}>
+                            {result.items.map((userId) => {
+                              const username = `${getMxIdLocalPart(userId)}`;
+                              const userServer = getMxIdServer(userId);
+
+                              return (
+                                <MenuItem
+                                  key={userId}
+                                  type="button"
+                                  size="300"
+                                  variant="Surface"
+                                  radii="300"
+                                  onClick={() => handleUserId(userId)}
+                                  after={
+                                    <Text size="T200" truncate>
+                                      {userServer}
+                                    </Text>
+                                  }
+                                  disabled={inviting}
+                                >
+                                  <Box grow="Yes">
+                                    <Text size="T300" truncate>
+                                      <b>
+                                        {queryHighlighRegex
+                                          ? highlightText(queryHighlighRegex, [username ?? userId])
+                                          : username}
+                                      </b>
+                                    </Text>
+                                  </Box>
+                                </MenuItem>
+                              );
+                            })}
+                          </div>
+                        </Scroll>
+                      </Menu>
+                    </Box>
+                  </FocusTrap>
+                )}
+              </div>
+            </Box>
+            <Box direction="Column" gap="100">
+              <Text size="L400">Reason (Optional)</Text>
+              <TextArea size="500" name="reasonInput" variant="Background" rows={4} resize="None" />
+            </Box>
+            {inviteState.status === AsyncStatus.Error && (
+              <Text size="T200" style={{ color: color.Critical.Main }} className={BreakWord}>
+                <b>{inviteState.error.message}</b>
+              </Text>
+            )}
+            <Button
+              type="submit"
+              disabled={!validUserId || inviting}
+              before={inviting && <Spinner size="200" variant="Primary" fill="Solid" />}
+            >
+              <Text size="B400">Invite</Text>
+            </Button>
+          </Box>
+        </Box>
+      </Dialog>
     </OverlayModal>
   );
 }

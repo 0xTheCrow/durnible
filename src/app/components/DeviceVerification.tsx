@@ -6,18 +6,7 @@ import {
 } from 'matrix-js-sdk/lib/crypto-api';
 import React, { CSSProperties, useCallback, useEffect, useState } from 'react';
 import { VerificationMethod } from 'matrix-js-sdk/lib/types';
-import {
-  Box,
-  Button,
-  config,
-  Dialog,
-  Header,
-  Icon,
-  IconButton,
-  Icons,
-  Spinner,
-  Text,
-} from 'folds';
+import { Box, Button, config, Dialog, Header, Icon, IconButton, Icons, Spinner, Text } from 'folds';
 import {
   useVerificationRequestPhase,
   useVerificationRequestReceived,
@@ -284,9 +273,7 @@ export function DeviceVerification({ request, onExit }: DeviceVerificationProps)
               />
             ))}
           {phase === VerificationPhase.Done && <VerificationDone onExit={onExit} />}
-          {phase === VerificationPhase.Cancelled && (
-            <VerificationCanceled onClose={handleCancel} />
-          )}
+          {phase === VerificationPhase.Cancelled && <VerificationCanceled onClose={handleCancel} />}
         </Box>
       </Dialog>
     </OverlayModal>

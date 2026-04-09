@@ -140,21 +140,19 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
         }
       };
 
-      (editor as any).insertAlternateText = (text: string) => {
+      editor.insertAlternateText = (text: string) => {
         const el = inputRef.current;
         if (!el) return;
         el.focus();
         document.execCommand('insertText', false, text);
         const newValue = el.innerText.replace(/\n$/, '');
         setInputValue(newValue);
-        editor.children = [
-          { type: BlockType.Paragraph, children: [{ text: newValue }] },
-        ];
+        editor.children = [{ type: BlockType.Paragraph, children: [{ text: newValue }] }];
       };
 
       return () => {
         editor.onChange = origOnChange;
-        delete (editor as any).insertAlternateText;
+        delete editor.insertAlternateText;
       };
     }, [editor, alternateInput]);
 
@@ -162,9 +160,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
       (e) => {
         const text = e.currentTarget.innerText.replace(/\n$/, '');
         setInputValue(text);
-        editor.children = [
-          { type: BlockType.Paragraph, children: [{ text }] },
-        ];
+        editor.children = [{ type: BlockType.Paragraph, children: [{ text }] }];
         onChange?.(editor.children);
       },
       [editor, onChange]
@@ -239,7 +235,10 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
           e.preventDefault();
           uriItem.getAsString((raw) => {
             // uri-list format: lines starting with # are comments
-            const url = raw.split('\n').map((s) => s.trim()).find((s) => s && !s.startsWith('#'));
+            const url = raw
+              .split('\n')
+              .map((s) => s.trim())
+              .find((s) => s && !s.startsWith('#'));
             if (url) fetchUrlAsFile(url);
           });
         }
@@ -275,9 +274,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
         const [targetRange] = e.getTargetRanges();
         if (!targetRange) return;
 
-        const replacementText = e.dataTransfer
-          ? e.dataTransfer.getData('text/plain')
-          : e.data;
+        const replacementText = e.dataTransfer ? e.dataTransfer.getData('text/plain') : e.data;
         if (!replacementText) return;
 
         try {
@@ -365,7 +362,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
             // instead we use it as a proximity hint.
             const searchPath = startInfo?.path ?? anchor.path;
             const [textNode] = Editor.node(editor, searchPath);
-            const text = (textNode as { text?: string }).text;
+            const { text } = textNode as { text?: string };
             if (typeof text !== 'string') return;
 
             const hint = startInfo?.offset ?? anchor.offset;
@@ -387,7 +384,8 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
             // text, it's in a valid position (e.g. after a trailing space
             // that ended the composition). Only correct when the cursor
             // is before correctOffset (the divergence-point bug).
-            const samePath = searchPath.length === anchor.path.length &&
+            const samePath =
+              searchPath.length === anchor.path.length &&
               searchPath.every((v, i) => v === anchor.path[i]);
             if (samePath && anchor.offset >= correctOffset) {
               return;
@@ -445,7 +443,8 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
                 ref={(el) => {
                   (inputRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
                   if (alternateInputRef) {
-                    (alternateInputRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+                    (alternateInputRef as React.MutableRefObject<HTMLDivElement | null>).current =
+                      el;
                   }
                 }}
                 data-editable-name={editableName}
@@ -461,6 +460,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
                 onPaste={handleAlternatePaste}
                 autoCapitalize="sentences"
                 role="textbox"
+                tabIndex={0}
                 aria-multiline="true"
                 aria-label={placeholder}
               />
@@ -471,11 +471,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
               </Box>
             )}
           </Box>
-          {bottom && (
-            <div className={css.AlternateInputBottom}>
-              {bottom}
-            </div>
-          )}
+          {bottom && <div className={css.AlternateInputBottom}>{bottom}</div>}
         </div>
       );
     }

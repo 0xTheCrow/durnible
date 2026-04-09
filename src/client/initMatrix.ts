@@ -2,9 +2,9 @@ import { createClient, MatrixClient, IndexedDBStore, IndexedDBCryptoStore } from
 import { logger } from 'matrix-js-sdk/lib/logger';
 
 import { cryptoCallbacks } from './secretStorageKeys';
+import { clearNavToActivePathStore } from '../app/state/navToActivePath';
 
 (logger as unknown as { setLevel: (level: string) => void }).setLevel('warn');
-import { clearNavToActivePathStore } from '../app/state/navToActivePath';
 
 type Session = {
   baseUrl: string;

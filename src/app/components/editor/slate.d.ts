@@ -5,7 +5,11 @@ import { BlockType } from './types';
 
 export type HeadingLevel = 1 | 2 | 3;
 
-export type Editor = BaseEditor & HistoryEditor & ReactEditor;
+export type Editor = BaseEditor &
+  HistoryEditor &
+  ReactEditor & {
+    insertAlternateText?: (text: string) => void;
+  };
 
 export type Text = {
   text: string;

@@ -1,9 +1,5 @@
 // Prevents ReactEditor.focus() from firing asynchronously after component
 // unmount, which causes "Cannot resolve a DOM node from Slate node" errors.
-vi.mock('../../../utils/user-agent', () => ({
-  mobileOrTablet: () => true,
-}));
-
 import React from 'react';
 import { render, screen, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -17,10 +13,11 @@ import {
   createMockRoom,
 } from '../../../../test/mocks';
 import { MessageLayout } from '../../../state/settings';
-import {
-  LINKIFY_OPTS,
-  getReactCustomHtmlParser,
-} from '../../../plugins/react-custom-html-parser';
+import { LINKIFY_OPTS, getReactCustomHtmlParser } from '../../../plugins/react-custom-html-parser';
+
+vi.mock('../../../utils/user-agent', () => ({
+  mobileOrTablet: () => true,
+}));
 
 function renderMessage(opts: {
   body: string;
@@ -138,7 +135,7 @@ describe('edit mode', () => {
     await act(async () => {
       rerender(
         <MatrixTestWrapper matrixClient={mx}>
-          <Message {...baseProps} edit={true}>
+          <Message {...baseProps} edit>
             <span>Original content</span>
           </Message>
         </MatrixTestWrapper>
@@ -187,7 +184,7 @@ describe('edit mode', () => {
 
     const { rerender } = render(
       <MatrixTestWrapper matrixClient={mx}>
-        <Message {...baseProps} edit={true}>
+        <Message {...baseProps} edit>
           <span>Original content</span>
         </Message>
       </MatrixTestWrapper>
@@ -304,11 +301,9 @@ describe('Message component', () => {
         roomId: '!testroom:example.com',
       });
 
-      const htmlReactParserOptions = getReactCustomHtmlParser(
-        mx as any,
-        '!testroom:example.com',
-        { linkifyOpts: LINKIFY_OPTS }
-      );
+      const htmlReactParserOptions = getReactCustomHtmlParser(mx as any, '!testroom:example.com', {
+        linkifyOpts: LINKIFY_OPTS,
+      });
 
       const messageProps = {
         room: room as any,
@@ -329,13 +324,13 @@ describe('Message component', () => {
         dateFormatString: '',
       };
 
-      const { rerender } = render(
+      render(
         <MatrixTestWrapper matrixClient={mx}>
           <Message {...messageProps} mEvent={aliceEvent}>
             <RenderMessageContent
               displayName="Alice"
               msgType={MsgType.Text}
-                  content={aliceEvent.getContent() as any}
+              content={aliceEvent.getContent() as any}
               mediaAutoLoad={false}
               urlPreview={false}
               htmlReactParserOptions={htmlReactParserOptions}
@@ -346,7 +341,7 @@ describe('Message component', () => {
             <RenderMessageContent
               displayName="Bob"
               msgType={MsgType.Text}
-                  content={bobEvent.getContent() as any}
+              content={bobEvent.getContent() as any}
               mediaAutoLoad={false}
               urlPreview={false}
               htmlReactParserOptions={htmlReactParserOptions}

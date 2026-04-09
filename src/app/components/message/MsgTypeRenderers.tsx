@@ -187,7 +187,6 @@ type RenderImageContentProps = {
 type MImageProps = {
   content: IImageContent;
   renderImageContent: (props: RenderImageContentProps) => ReactNode;
-  outlined?: boolean;
 };
 export function MImage({ content, renderImageContent }: MImageProps) {
   const imgInfo = content?.info;

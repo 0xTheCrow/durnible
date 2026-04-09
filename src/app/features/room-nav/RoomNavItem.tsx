@@ -323,7 +323,9 @@ export function RoomNavItem({
                 as="span"
                 size="Inherit"
                 truncate
-                style={notificationMode === RoomNotificationMode.Mute ? { opacity: 0.5 } : undefined}
+                style={
+                  notificationMode === RoomNotificationMode.Mute ? { opacity: 0.5 } : undefined
+                }
               >
                 {room.name}
               </Text>

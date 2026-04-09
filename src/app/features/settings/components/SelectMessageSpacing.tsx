@@ -1,16 +1,5 @@
 import React, { MouseEventHandler, useState } from 'react';
-import {
-  Box,
-  Button,
-  config,
-  Icon,
-  Icons,
-  Menu,
-  MenuItem,
-  PopOut,
-  RectCords,
-  Text,
-} from 'folds';
+import { Box, Button, config, Icon, Icons, Menu, MenuItem, PopOut, RectCords, Text } from 'folds';
 import FocusTrap from 'focus-trap-react';
 import { useSetting } from '../../../state/hooks/settings';
 import { MessageSpacing, settingsAtom } from '../../../state/settings';

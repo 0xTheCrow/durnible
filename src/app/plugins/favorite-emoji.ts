@@ -23,9 +23,7 @@ export const getFavoriteEmojis = (mx: MatrixClient): FavoriteEmojiEntry[] => {
   return content.favorites;
 };
 
-export const getFavoriteEmojiItems = (
-  mx: MatrixClient
-): Array<IEmoji | PackImageReader> => {
+export const getFavoriteEmojiItems = (mx: MatrixClient): Array<IEmoji | PackImageReader> => {
   const entries = getFavoriteEmojis(mx);
   return entries.reduce<Array<IEmoji | PackImageReader>>((list, entry) => {
     if (entry.type === EmojiType.Emoji) {
@@ -47,11 +45,7 @@ export function addFavoriteEmoji(mx: MatrixClient, entry: FavoriteEmojiEntry) {
   });
 }
 
-export function removeFavoriteEmoji(
-  mx: MatrixClient,
-  type: string,
-  data: string
-) {
+export function removeFavoriteEmoji(mx: MatrixClient, type: string, data: string) {
   const current = getFavoriteEmojis(mx);
   mx.setAccountData(AccountDataEvent.CinnyFavoriteEmoji, {
     favorites: current.filter((e) => !(e.type === type && e.data === data)),

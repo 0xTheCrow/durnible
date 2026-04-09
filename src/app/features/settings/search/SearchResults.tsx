@@ -80,11 +80,7 @@ export function SearchResults({ query, requestClose, onNavigateTo }: SearchResul
                 </Box>
               )}
               {grouped.map((group) => (
-                <Box
-                  key={`${group.pageName}__${group.sectionName}`}
-                  direction="Column"
-                  gap="100"
-                >
+                <Box key={`${group.pageName}__${group.sectionName}`} direction="Column" gap="100">
                   <Text size="L400">
                     {group.pageName} › {group.sectionName}
                   </Text>

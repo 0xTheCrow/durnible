@@ -79,7 +79,16 @@ describe('ImageContent', () => {
 
   describe('Play GIFs on Hover (pauseGifs setting)', () => {
     // renderImage that forwards style so we can test visibility
-    const gifRenderImage = ({ alt, title, src, style, onLoad, onError, onClick, tabIndex }: any) => (
+    const gifRenderImage = ({
+      alt,
+      title,
+      src,
+      style,
+      onLoad,
+      onError,
+      onClick,
+      tabIndex,
+    }: any) => (
       <img
         alt={alt}
         title={title}

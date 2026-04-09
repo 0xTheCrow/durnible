@@ -193,9 +193,12 @@ export function UploadCardRenderer({
               <Text size="T200">{fileItem.encryptError}</Text>
             </UploadCardError>
           )}
-          {upload.status === UploadStatus.Idle && !fileSizeExceeded && !fileItem.isEncrypting && fileItem.isEncryptionSuccessful !== false && (
-            <UploadCardProgress sentBytes={0} totalBytes={file.size} />
-          )}
+          {upload.status === UploadStatus.Idle &&
+            !fileSizeExceeded &&
+            !fileItem.isEncrypting &&
+            fileItem.isEncryptionSuccessful !== false && (
+              <UploadCardProgress sentBytes={0} totalBytes={file.size} />
+            )}
           {upload.status === UploadStatus.Loading && (
             <UploadCardProgress sentBytes={upload.progress.loaded} totalBytes={file.size} />
           )}

@@ -97,20 +97,16 @@ export function ReadTextFile({ body, mimeType, url, encInfo, renderViewer }: Rea
     <>
       {textState.status === AsyncStatus.Success && (
         <OverlayModal open={textViewer} requestClose={() => setTextViewer(false)}>
-              <Modal
-                className={ModalWide}
-                size="500"
-                onContextMenu={(evt: any) => evt.stopPropagation()}
-              >
-                {renderViewer({
-                  name: body,
-                  text: textState.data,
-                  langName: READABLE_TEXT_MIME_TYPES.includes(mimeType)
-                    ? mimeTypeToExt(mimeType)
-                    : mimeTypeToExt(READABLE_EXT_TO_MIME_TYPE[getFileNameExt(body)] ?? mimeType),
-                  requestClose: () => setTextViewer(false),
-                })}
-              </Modal>
+          <Modal className={ModalWide} size="500" onContextMenu={(evt) => evt.stopPropagation()}>
+            {renderViewer({
+              name: body,
+              text: textState.data,
+              langName: READABLE_TEXT_MIME_TYPES.includes(mimeType)
+                ? mimeTypeToExt(mimeType)
+                : mimeTypeToExt(READABLE_EXT_TO_MIME_TYPE[getFileNameExt(body)] ?? mimeType),
+              requestClose: () => setTextViewer(false),
+            })}
+          </Modal>
         </OverlayModal>
       )}
       {textState.status === AsyncStatus.Error ? (
@@ -174,17 +170,13 @@ export function ReadPdfFile({ body, mimeType, url, encInfo, renderViewer }: Read
     <>
       {pdfState.status === AsyncStatus.Success && (
         <OverlayModal open={pdfViewer} requestClose={() => setPdfViewer(false)}>
-              <Modal
-                className={ModalWide}
-                size="500"
-                onContextMenu={(evt: any) => evt.stopPropagation()}
-              >
-                {renderViewer({
-                  name: body,
-                  src: pdfState.data,
-                  requestClose: () => setPdfViewer(false),
-                })}
-              </Modal>
+          <Modal className={ModalWide} size="500" onContextMenu={(evt) => evt.stopPropagation()}>
+            {renderViewer({
+              name: body,
+              src: pdfState.data,
+              requestClose: () => setPdfViewer(false),
+            })}
+          </Modal>
         </OverlayModal>
       )}
       {pdfState.status === AsyncStatus.Error ? (

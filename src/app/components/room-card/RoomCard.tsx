@@ -99,19 +99,19 @@ function ErrorDialog({
     <>
       {children(openError)}
       <OverlayModal open={viewError} requestClose={closeError}>
-            <Dialog variant="Surface">
-              <Box style={{ padding: config.space.S400 }} direction="Column" gap="400">
-                <Box direction="Column" gap="100">
-                  <Text>{title}</Text>
-                  <Text style={{ color: color.Critical.Main }} size="T300" priority="400">
-                    {message}
-                  </Text>
-                </Box>
-                <Button size="400" variant="Secondary" fill="Soft" onClick={closeError}>
-                  <Text size="B400">Cancel</Text>
-                </Button>
-              </Box>
-            </Dialog>
+        <Dialog variant="Surface">
+          <Box style={{ padding: config.space.S400 }} direction="Column" gap="400">
+            <Box direction="Column" gap="100">
+              <Text>{title}</Text>
+              <Text style={{ color: color.Critical.Main }} size="T300" priority="400">
+                {message}
+              </Text>
+            </Box>
+            <Button size="400" variant="Secondary" fill="Soft" onClick={closeError}>
+              <Text size="B400">Cancel</Text>
+            </Button>
+          </Box>
+        </Dialog>
       </OverlayModal>
     </>
   );
@@ -221,7 +221,7 @@ export const RoomCard = as<'div', RoomCardProps>(
           </RoomCardTopic>
 
           <OverlayModal open={viewTopic} requestClose={closeTopic}>
-                {renderTopicViewer(roomName, roomTopic, closeTopic)}
+            {renderTopicViewer(roomName, roomTopic, closeTopic)}
           </OverlayModal>
         </Box>
         {typeof joinedMemberCount === 'number' && (

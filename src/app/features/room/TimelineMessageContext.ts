@@ -43,8 +43,7 @@ export type TimelineMessageContextValue = {
   handleDecryptRetry: () => Promise<void>;
 };
 
-export const TimelineMessageContext =
-  React.createContext<TimelineMessageContextValue | null>(null);
+export const TimelineMessageContext = React.createContext<TimelineMessageContextValue | null>(null);
 
 export const useTimelineMessageContext = (): TimelineMessageContextValue => {
   const ctx = React.useContext(TimelineMessageContext);

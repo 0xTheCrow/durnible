@@ -203,7 +203,7 @@ export function DeviceLogoutBtn() {
       </Chip>
       {prompt && (
         <OverlayModal open requestClose={handleClose}>
-              <LogoutDialog handleClose={handleClose} />
+          <LogoutDialog handleClose={handleClose} />
         </OverlayModal>
       )}
     </>

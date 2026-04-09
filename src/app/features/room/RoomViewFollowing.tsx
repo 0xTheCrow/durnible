@@ -1,13 +1,5 @@
 import React, { useState } from 'react';
-import {
-  Box,
-  Icon,
-  Icons,
-  Modal,
-  Text,
-  as,
-  config,
-} from 'folds';
+import { Box, Icon, Icons, Modal, Text, as, config } from 'folds';
 import { Room } from 'matrix-js-sdk';
 import classNames from 'classnames';
 
@@ -45,9 +37,9 @@ export const RoomViewFollowing = as<'div', RoomViewFollowingProps>(
       <>
         {eventId && (
           <OverlayModal open={open} requestClose={() => setOpen(false)}>
-                <Modal variant="Surface" size="300">
-                  <EventReaders room={room} eventId={eventId} requestClose={() => setOpen(false)} />
-                </Modal>
+            <Modal variant="Surface" size="300">
+              <EventReaders room={room} eventId={eventId} requestClose={() => setOpen(false)} />
+            </Modal>
           </OverlayModal>
         )}
         <Box

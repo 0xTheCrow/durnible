@@ -17,7 +17,12 @@ import {
 import { MatrixClient } from 'matrix-js-sdk';
 import classNames from 'classnames';
 import { Box, Chip, config, Header, Icon, IconButton, Icons, Scroll, Text, toRem } from 'folds';
-import { find as linkifyFind, IntermediateRepresentation, Opts as LinkifyOpts, OptFn } from 'linkifyjs';
+import {
+  find as linkifyFind,
+  IntermediateRepresentation,
+  Opts as LinkifyOpts,
+  OptFn,
+} from 'linkifyjs';
 import Linkify from 'linkify-react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { ChildNode } from 'domhandler';
@@ -150,8 +155,8 @@ export const renderMatrixMention = (
 
 export const factoryRenderLinkifyWithMention = (
   mentionRender: (href: string) => JSX.Element | undefined
-): OptFn<(ir: IntermediateRepresentation) => any> => {
-  const render: OptFn<(ir: IntermediateRepresentation) => any> = ({
+): OptFn<(ir: IntermediateRepresentation) => JSX.Element> => {
+  const render: OptFn<(ir: IntermediateRepresentation) => JSX.Element> = ({
     tagName,
     attributes,
     content,

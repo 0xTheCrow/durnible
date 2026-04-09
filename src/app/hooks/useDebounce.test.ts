@@ -1,4 +1,3 @@
-import React from 'react';
 import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useDebounce } from './useDebounce';
@@ -18,7 +17,9 @@ describe('useDebounce', () => {
     const cb = vi.fn();
     const { result } = renderHook(() => useDebounce(cb, { wait: WAIT }));
 
-    act(() => { result.current('a'); });
+    act(() => {
+      result.current('a');
+    });
     expect(cb).not.toHaveBeenCalled();
   });
 
@@ -26,8 +27,12 @@ describe('useDebounce', () => {
     const cb = vi.fn();
     const { result } = renderHook(() => useDebounce(cb, { wait: WAIT }));
 
-    act(() => { result.current('a'); });
-    act(() => { vi.runAllTimers(); });
+    act(() => {
+      result.current('a');
+    });
+    act(() => {
+      vi.runAllTimers();
+    });
 
     expect(cb).toHaveBeenCalledTimes(1);
     expect(cb).toHaveBeenCalledWith('a');
@@ -42,7 +47,9 @@ describe('useDebounce', () => {
       result.current('b');
       result.current('c');
     });
-    act(() => { vi.runAllTimers(); });
+    act(() => {
+      vi.runAllTimers();
+    });
 
     expect(cb).toHaveBeenCalledTimes(1);
     expect(cb).toHaveBeenCalledWith('c');
@@ -50,11 +57,11 @@ describe('useDebounce', () => {
 
   it('with immediate=true calls the callback on the leading edge', () => {
     const cb = vi.fn();
-    const { result } = renderHook(() =>
-      useDebounce(cb, { wait: WAIT, immediate: true })
-    );
+    const { result } = renderHook(() => useDebounce(cb, { wait: WAIT, immediate: true }));
 
-    act(() => { result.current('a'); });
+    act(() => {
+      result.current('a');
+    });
 
     expect(cb).toHaveBeenCalledTimes(1);
     expect(cb).toHaveBeenCalledWith('a');
@@ -62,9 +69,7 @@ describe('useDebounce', () => {
 
   it('with immediate=true does not fire again on subsequent calls before wait', () => {
     const cb = vi.fn();
-    const { result } = renderHook(() =>
-      useDebounce(cb, { wait: WAIT, immediate: true })
-    );
+    const { result } = renderHook(() => useDebounce(cb, { wait: WAIT, immediate: true }));
 
     act(() => {
       result.current('a'); // leading edge fires
@@ -77,7 +82,9 @@ describe('useDebounce', () => {
     expect(cb).toHaveBeenCalledWith('a');
 
     // Timer fires (trailing edge)
-    act(() => { vi.runAllTimers(); });
+    act(() => {
+      vi.runAllTimers();
+    });
     expect(cb).toHaveBeenCalledTimes(2);
     expect(cb).toHaveBeenLastCalledWith('c');
   });

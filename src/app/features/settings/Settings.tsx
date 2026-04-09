@@ -127,7 +127,8 @@ export function Settings({ initialPage, requestClose }: SettingsProps) {
   return (
     <PageRoot
       nav={
-        screenSize === ScreenSize.Mobile && (activePage !== undefined || searchQuery.trim()) ? undefined : (
+        screenSize === ScreenSize.Mobile &&
+        (activePage !== undefined || searchQuery.trim()) ? undefined : (
           <PageNav size="300">
             <PageNavHeader outlined={false}>
               <Box grow="Yes" gap="200">
@@ -164,7 +165,12 @@ export function Settings({ initialPage, requestClose }: SettingsProps) {
                   onChange={handleSearchChange}
                   after={
                     searchQuery ? (
-                      <IconButton size="300" onClick={handleSearchClear} variant="Background" radii="Pill">
+                      <IconButton
+                        size="300"
+                        onClick={handleSearchClear}
+                        variant="Background"
+                        radii="Pill"
+                      >
                         <Icon src={Icons.Cross} size="100" />
                       </IconButton>
                     ) : undefined
@@ -211,7 +217,7 @@ export function Settings({ initialPage, requestClose }: SettingsProps) {
                       </Button>
                       {logout && (
                         <OverlayModal open requestClose={() => setLogout(false)}>
-                              <LogoutDialog handleClose={() => setLogout(false)} />
+                          <LogoutDialog handleClose={() => setLogout(false)} />
                         </OverlayModal>
                       )}
                     </>

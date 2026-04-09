@@ -31,14 +31,13 @@ import React, {
 import FocusTrap from 'focus-trap-react';
 import { useHover, useFocusWithin } from 'react-aria';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
-import { MsgType } from 'matrix-js-sdk';
-import { messageOptionsAtom } from './messageOptionsAtom';
-import { selectionModeAtom, selectedIdsAtom } from './selectionAtom';
-import { hiddenImagesAtom, MessageEventIdContext } from '../../../state/hiddenImages';
-import { EventStatus, MatrixEvent, Room } from 'matrix-js-sdk';
+import { MsgType, EventStatus, MatrixEvent, Room } from 'matrix-js-sdk';
 import { Relations } from 'matrix-js-sdk/lib/models/relations';
 import classNames from 'classnames';
 import { RoomPinnedEventsEventContent } from 'matrix-js-sdk/lib/types';
+import { messageOptionsAtom } from './messageOptionsAtom';
+import { selectionModeAtom, selectedIdsAtom } from './selectionAtom';
+import { hiddenImagesAtom, MessageEventIdContext } from '../../../state/hiddenImages';
 import {
   AvatarBase,
   BubbleLayout,
@@ -132,14 +131,7 @@ export const MessageAllReactionButton = as<
     onOpen: () => void;
   }
 >(({ onOpen, ...props }, ref) => (
-  <IconButton
-    variant="SurfaceVariant"
-    size="300"
-    radii="300"
-    onClick={onOpen}
-    {...props}
-    ref={ref}
-  >
+  <IconButton variant="SurfaceVariant" size="300" radii="300" onClick={onOpen} {...props} ref={ref}>
     <Icon src={Icons.Smile} size="100" />
   </IconButton>
 ));
@@ -552,8 +544,8 @@ export const MessageReportItem = as<
             gap="400"
           >
             <Text priority="400">
-              Report this message to server, which may then notify the appropriate people to
-              take action.
+              Report this message to server, which may then notify the appropriate people to take
+              action.
             </Text>
             <Box direction="Column" gap="100">
               <Text size="L400">Reason</Text>
@@ -684,7 +676,6 @@ export const Message = as<'div', MessageProps>(
     const [activeMessageOptionsId, setActiveMessageOptionsId] = useAtom(messageOptionsAtom);
     const selectionMode = useAtomValue(selectionModeAtom);
     const [selectedIds, setSelectedIds] = useAtom(selectedIdsAtom);
-    const setSelectionMode = useSetAtom(selectionModeAtom);
     const isSelected = selectionMode && selectedIds.has(eventId);
     const toggleSelection = useCallback(() => {
       setSelectedIds((prev) => {
@@ -855,7 +846,11 @@ export const Message = as<'div', MessageProps>(
       <Box
         direction="Column"
         alignSelf="Start"
-        style={{ maxWidth: '100%', opacity: isPending ? 0.6 : isFailed ? 0.4 : 1, transition: 'opacity 0.4s linear' }}
+        style={{
+          maxWidth: '100%',
+          opacity: isPending ? 0.6 : isFailed ? 0.4 : 1,
+          transition: 'opacity 0.4s linear',
+        }}
       >
         {reply}
         {edit && onEditId ? (
@@ -881,8 +876,8 @@ export const Message = as<'div', MessageProps>(
 
     const handleContextMenu: MouseEventHandler<HTMLDivElement> = (evt) => {
       if (selectionMode || evt.altKey || !window.getSelection()?.isCollapsed || edit) return;
-      const tag = (evt.target as any).tagName;
-      if (typeof tag === 'string' && tag.toLowerCase() === 'a') return;
+      const target = evt.target as Element | null;
+      if (target?.tagName.toLowerCase() === 'a') return;
       evt.preventDefault();
       setMenuAnchor({
         x: evt.clientX,
@@ -980,9 +975,7 @@ export const Message = as<'div', MessageProps>(
                   </PopOut>
                 )}
                 {relations && (
-                  <MessageAllReactionButton
-                    onOpen={() => openReactionViewer(room, relations)}
-                  />
+                  <MessageAllReactionButton onOpen={() => openReactionViewer(room, relations)} />
                 )}
                 <IconButton
                   onClick={onReplyClick}
@@ -1059,7 +1052,7 @@ export const Message = as<'div', MessageProps>(
                             after={<Icon size="100" src={Icons.ReplyArrow} />}
                             radii="300"
                             data-event-id={mEvent.getId()}
-                            onClick={(evt: any) => {
+                            onClick={(evt) => {
                               onReplyClick(evt);
                               closeMenu();
                             }}
@@ -1115,7 +1108,9 @@ export const Message = as<'div', MessageProps>(
                           {isImageMessage && (
                             <MenuItem
                               size="300"
-                              after={<Icon size="100" src={isImageHidden ? Icons.Eye : Icons.EyeBlind} />}
+                              after={
+                                <Icon size="100" src={isImageHidden ? Icons.Eye : Icons.EyeBlind} />
+                              }
                               radii="300"
                               onClick={() => {
                                 toggleImageHidden();
@@ -1174,9 +1169,7 @@ export const Message = as<'div', MessageProps>(
           </div>
         )}
         {messageLayout === MessageLayout.Compact && (
-          <CompactLayout before={headerJSX}>
-            {msgContentJSX}
-          </CompactLayout>
+          <CompactLayout before={headerJSX}>{msgContentJSX}</CompactLayout>
         )}
         {messageLayout === MessageLayout.Bubble && (
           <BubbleLayout before={avatarJSX} header={headerJSX}>
@@ -1236,8 +1229,8 @@ export const Event = as<'div', EventProps>(
 
     const handleContextMenu: MouseEventHandler<HTMLDivElement> = (evt) => {
       if (evt.altKey || !window.getSelection()?.isCollapsed) return;
-      const tag = (evt.target as any).tagName;
-      if (typeof tag === 'string' && tag.toLowerCase() === 'a') return;
+      const target = evt.target as Element | null;
+      if (target?.tagName.toLowerCase() === 'a') return;
       evt.preventDefault();
       setMenuAnchor({
         x: evt.clientX,

@@ -1,13 +1,21 @@
 /* eslint-disable jsx-a11y/media-has-caption */
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Badge, Box, Chip, Icon, IconButton, Icons, ProgressBar, Text, color, config, toRem } from 'folds';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  Badge,
+  Box,
+  Chip,
+  Icon,
+  IconButton,
+  Icons,
+  ProgressBar,
+  Text,
+  color,
+  config,
+  toRem,
+} from 'folds';
 import { Range } from 'react-range';
 import { useVoiceRecording, VoiceRecordingStatus } from '../../hooks/useVoiceRecording';
-import {
-  useMediaPlay,
-  useMediaPlayTimeCallback,
-  useMediaSeek,
-} from '../../hooks/media';
+import { useMediaPlay, useMediaPlayTimeCallback, useMediaSeek } from '../../hooks/media';
 import { useThrottle } from '../../hooks/useThrottle';
 import { secondsToMinutesAndSeconds } from '../../utils/common';
 import * as editorCss from '../../components/editor/Editor.css';
@@ -60,7 +68,12 @@ function VoicePreview({
           </IconButton>
         </Box>
 
-        <Box grow="Yes" alignItems="Center" gap="300" style={{ minWidth: 0, padding: `0 ${config.space.S100}` }}>
+        <Box
+          grow="Yes"
+          alignItems="Center"
+          gap="300"
+          style={{ minWidth: 0, padding: `0 ${config.space.S100}` }}
+        >
           <Chip
             onClick={() => setPlaying(!playing)}
             variant="Secondary"
@@ -81,7 +94,15 @@ function VoicePreview({
             values={[currentTime]}
             onChange={(values) => seek(values[0])}
             renderTrack={(params) => (
-              <div {...params.props} style={{ ...params.props.style, flexGrow: 1, display: 'flex', alignItems: 'center' }}>
+              <div
+                {...params.props}
+                style={{
+                  ...params.props.style,
+                  flexGrow: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+              >
                 {params.children}
                 <ProgressBar
                   as="div"
@@ -132,7 +153,12 @@ export function VoiceMessageRecorder({ onSend, onCancel }: VoiceMessageRecorderP
   useEffect(() => {
     if (state.status === VoiceRecordingStatus.Stopped) {
       const objectUrl = URL.createObjectURL(state.blob);
-      setPreview({ blob: state.blob, mimeType: state.mimeType, duration: state.duration, objectUrl });
+      setPreview({
+        blob: state.blob,
+        mimeType: state.mimeType,
+        duration: state.duration,
+        objectUrl,
+      });
     } else if (state.status === VoiceRecordingStatus.Error) {
       onCancel();
     }
@@ -189,9 +215,7 @@ export function VoiceMessageRecorder({ onSend, onCancel }: VoiceMessageRecorderP
               height: toRem(10),
               borderRadius: '50%',
               flexShrink: 0,
-              backgroundColor: isRecording
-                ? color.Critical.Main
-                : color.SurfaceVariant.OnContainer,
+              backgroundColor: isRecording ? color.Critical.Main : color.SurfaceVariant.OnContainer,
               animation: isRecording
                 ? 'voice-recording-pulse 1.2s ease-in-out infinite'
                 : undefined,

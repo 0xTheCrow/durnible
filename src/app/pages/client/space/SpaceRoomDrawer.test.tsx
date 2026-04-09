@@ -19,12 +19,12 @@ vi.mock('../../../components/swipe-drawer', () => ({
   ),
 }));
 
-function renderDrawer(opts: {
-  screenSize: ScreenSize;
-  route: string;
-}) {
+function renderDrawer(opts: { screenSize: ScreenSize; route: string }) {
   return render(
-    <MemoryRouter initialEntries={[opts.route]} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <MemoryRouter
+      initialEntries={[opts.route]}
+      future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+    >
       <ScreenSizeProvider value={opts.screenSize}>
         <Routes>
           <Route

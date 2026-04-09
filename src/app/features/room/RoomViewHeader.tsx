@@ -19,10 +19,10 @@ import {
   Badge,
   Spinner,
 } from 'folds';
-import { OverlayModal } from '../../components/OverlayModal';
 import { useNavigate } from 'react-router-dom';
 import { JoinRule, Room } from 'matrix-js-sdk';
-import { useAtom, useAtomValue, useSetAtom } from 'jotai';
+import { useAtom, useAtomValue } from 'jotai';
+import { OverlayModal } from '../../components/OverlayModal';
 
 import { useStateEvent } from '../../hooks/useStateEvent';
 import { PageHeader } from '../../components/page';
@@ -191,10 +191,13 @@ const RoomMenu = forwardRef<HTMLDivElement, RoomMenuProps>(({ room, requestClose
                     escapeDeactivates: stopPropagation,
                   }}
                 >
-                  <RoomPinMenu room={room} requestClose={() => {
-                    setPinMenuAnchor(undefined);
-                    requestClose();
-                  }} />
+                  <RoomPinMenu
+                    room={room}
+                    requestClose={() => {
+                      setPinMenuAnchor(undefined);
+                      requestClose();
+                    }}
+                  />
                 </FocusTrap>
               }
             />
@@ -401,11 +404,11 @@ export function RoomViewHeader() {
                 {(viewTopic, setViewTopic) => (
                   <>
                     <OverlayModal open={viewTopic} requestClose={() => setViewTopic(false)}>
-                          <RoomTopicViewer
-                            name={name}
-                            topic={topic}
-                            requestClose={() => setViewTopic(false)}
-                          />
+                      <RoomTopicViewer
+                        name={name}
+                        topic={topic}
+                        requestClose={() => setViewTopic(false)}
+                      />
                     </OverlayModal>
                     <Text
                       as="button"

@@ -14,7 +14,7 @@ import { RoomViewTyping } from './RoomViewTyping';
 import { RoomTombstone } from './RoomTombstone';
 import { RoomInput } from './RoomInput';
 import { TimelineSlider } from './TimelineSlider';
-import { /*RoomViewFollowing,*/ RoomViewFollowingPlaceholder } from './RoomViewFollowing';
+import { /* RoomViewFollowing, */ RoomViewFollowingPlaceholder } from './RoomViewFollowing';
 import { Page } from '../../components/page';
 import { RoomViewHeader } from './RoomViewHeader';
 import { useKeyDown } from '../../hooks/useKeyDown';
@@ -66,7 +66,9 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
   const alternateInputRef = useRef<HTMLDivElement>(null);
   const roomViewRef = useRef<HTMLDivElement>(null);
 
-  const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
+  // Reserved for the commented-out RoomViewFollowing toggle below; kept so
+  // re-enabling activity tracking is a one-line uncomment.
+  const [_hideActivity] = useSetting(settingsAtom, 'hideActivity');
   const [alternateInput] = useSetting(settingsAtom, 'alternateInput');
   const screenSize = useScreenSizeContext();
 
@@ -87,7 +89,10 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
         ]);
 
         if (!fwd && !bwd) {
-          throw new MatrixError({ errcode: 'M_NOT_FOUND', error: 'No events found near timestamp' });
+          throw new MatrixError({
+            errcode: 'M_NOT_FOUND',
+            error: 'No events found near timestamp',
+          });
         }
 
         if (!bwd) return fwd!.event_id;
@@ -103,13 +108,15 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
 
   const handleJumpToTimestamp = useCallback(
     (ts: number) => {
-      timestampToEvent(ts).then((evId) => {
-        if (alive()) {
-          navigateRoom(room.roomId, evId);
-        }
-      }).catch(() => {
-        // error state is handled by useAsyncCallback
-      });
+      timestampToEvent(ts)
+        .then((evId) => {
+          if (alive()) {
+            navigateRoom(room.roomId, evId);
+          }
+        })
+        .catch(() => {
+          // error state is handled by useAsyncCallback
+        });
     },
     [timestampToEvent, alive, navigateRoom, room.roomId]
   );
@@ -211,7 +218,7 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
           )}
         </div>
         {
-          <RoomViewFollowingPlaceholder/>
+          <RoomViewFollowingPlaceholder />
           /*
           hideActivity ? <RoomViewFollowingPlaceholder /> : <RoomViewFollowing room={room} />
           */

@@ -398,9 +398,7 @@ export function MembersDrawer({ room, members }: MembersDrawerProps) {
                         member={member}
                         onClick={handleMemberClick}
                         pressed={openProfileUserId === member.userId}
-                        typing={typingMembers.some(
-                          (receipt) => receipt.userId === member.userId
-                        )}
+                        typing={typingMembers.some((receipt) => receipt.userId === member.userId)}
                       />
                     </div>
                   );

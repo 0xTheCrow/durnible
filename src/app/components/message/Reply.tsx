@@ -89,9 +89,7 @@ export const Reply = as<'div', ReplyProps>(
     const powerTag = sender ? getMemberPowerTag?.(sender) : undefined;
     const tagColor = powerTag?.color ? accessibleTagColors?.get(powerTag.color) : undefined;
 
-    const usernameColor = sender
-      ? legacyUsernameColor ? colorMXID(sender) : tagColor
-      : undefined;
+    const usernameColor = sender ? (legacyUsernameColor ? colorMXID(sender) : tagColor) : undefined;
 
     const isRedacted = replyEvent?.isRedacted() ?? false;
     // Show content when we have something definitive to display:
@@ -99,11 +97,13 @@ export const Reply = as<'div', ReplyProps>(
     // - a redacted event (show "deleted")
     // - a null event (fetch permanently failed, show "failed to load")
     const showContent = body || isRedacted || replyEvent === null;
-    const bodyJSX = body
-      ? scaleSystemEmoji(trimReplyFromBody(body))
-      : isRedacted
-        ? <MessageDeletedContent />
-        : <MessageFailedContent />;
+    const bodyJSX = body ? (
+      scaleSystemEmoji(trimReplyFromBody(body))
+    ) : isRedacted ? (
+      <MessageDeletedContent />
+    ) : (
+      <MessageFailedContent />
+    );
 
     return (
       <Box direction="Row" gap="200" alignItems="Center" {...props} ref={ref}>

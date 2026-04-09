@@ -33,13 +33,7 @@ export function SelectionActionBar({
       >
         <Text size="B300">{deleting ? 'Deleting...' : 'Delete'}</Text>
       </Button>
-      <Button
-        size="300"
-        variant="Secondary"
-        radii="300"
-        onClick={onCancel}
-        disabled={deleting}
-      >
+      <Button size="300" variant="Secondary" radii="300" onClick={onCancel} disabled={deleting}>
         <Text size="B300">Cancel</Text>
       </Button>
     </Box>

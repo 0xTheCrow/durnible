@@ -62,7 +62,7 @@ export function SpaceRoomDrawer({ children }: SpaceRoomDrawerProps) {
   }, [open]);
 
   if (!isMobileOrTablet || isSpaceRoot || !swipeGestures) {
-    return <>{children}</>;
+    return children;
   }
 
   return (

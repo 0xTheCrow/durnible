@@ -89,4 +89,3 @@ export const getTwitterEmbedInfo = (url: string): TwitterEmbedInfo | undefined =
   if (!match) return undefined;
   return { user: match[1], id: match[2] };
 };
-

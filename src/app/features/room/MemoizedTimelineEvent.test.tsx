@@ -14,7 +14,10 @@ import { LINKIFY_OPTS, getReactCustomHtmlParser } from '../../plugins/react-cust
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
 
-function makeContext(mx: ReturnType<typeof createMockMatrixClient>, room: ReturnType<typeof createMockRoom>): TimelineMessageContextValue {
+function makeContext(
+  mx: ReturnType<typeof createMockMatrixClient>,
+  room: ReturnType<typeof createMockRoom>
+): TimelineMessageContextValue {
   const htmlReactParserOptions = getReactCustomHtmlParser(mx as any, '!testroom:example.com', {
     linkifyOpts: LINKIFY_OPTS,
   });
@@ -108,7 +111,7 @@ describe('MemoizedTimelineEvent edit mode', () => {
       rerender(
         <MatrixTestWrapper matrixClient={mx}>
           <TimelineMessageContext.Provider value={ctx}>
-            <MemoizedTimelineEvent {...baseProps} isEditing={true} />
+            <MemoizedTimelineEvent {...baseProps} isEditing />
           </TimelineMessageContext.Provider>
         </MatrixTestWrapper>
       );
@@ -150,7 +153,7 @@ describe('MemoizedTimelineEvent edit mode', () => {
     const { rerender } = render(
       <MatrixTestWrapper matrixClient={mx}>
         <TimelineMessageContext.Provider value={ctx}>
-          <MemoizedTimelineEvent {...baseProps} isEditing={true} />
+          <MemoizedTimelineEvent {...baseProps} isEditing />
         </TimelineMessageContext.Provider>
       </MatrixTestWrapper>
     );
@@ -238,7 +241,11 @@ describe('MemoizedTimelineEvent edit — full handleEdit chain', () => {
         <TimelineMessageContext.Provider value={ctx}>
           {/* Trigger button simulates the edit button's onClick in Message:
               onEditId(mEvent.getId()) → handleEdit(eventId) → setEditId */}
-          <button data-testid="trigger-edit" onClick={() => handleEdit('$event-chain-test')}>
+          <button
+            type="button"
+            data-testid="trigger-edit"
+            onClick={() => handleEdit('$event-chain-test')}
+          >
             Trigger Edit
           </button>
           <MemoizedTimelineEvent

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { render, screen, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MsgType } from 'matrix-js-sdk';
@@ -77,7 +77,7 @@ describe('RenderMessageContent', () => {
           <RenderMessageContent
             displayName="Alice"
             msgType={MsgType.Text}
-                edited
+            edited
             content={{ body: 'edited message', msgtype: 'm.text' } as any}
             mediaAutoLoad={false}
             urlPreview={false}
@@ -285,23 +285,23 @@ describe('RenderMessageContent memoization', () => {
 
     function WithWrapper() {
       return (
-        <React.Fragment>
+        <>
           <div data-testid="divider">New Messages</div>
           <RenderMessageContent
             displayName="Alice"
             msgType={MsgType.Image}
-              content={STABLE_IMAGE_CONTENT as any}
+            content={STABLE_IMAGE_CONTENT as any}
             mediaAutoLoad={false}
             urlPreview={false}
             htmlReactParserOptions={htmlReactParserOptions}
             linkifyOpts={LINKIFY_OPTS}
           />
-        </React.Fragment>
+        </>
       );
     }
 
     function SimulatedTimeline({ showDivider }: { showDivider: boolean }) {
-      return <>{showDivider ? <WithWrapper /> : <WithoutWrapper />}</>;
+      return showDivider ? <WithWrapper /> : <WithoutWrapper />;
     }
 
     const { rerender } = render(
@@ -315,7 +315,7 @@ describe('RenderMessageContent memoization', () => {
 
     rerender(
       <MatrixTestWrapper matrixClient={mx}>
-        <SimulatedTimeline showDivider={true} />
+        <SimulatedTimeline showDivider />
       </MatrixTestWrapper>
     );
     await act(async () => {});

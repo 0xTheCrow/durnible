@@ -12,10 +12,11 @@ export const useCloseReactionViewer = (): (() => void) => {
   return useCallback(() => set(undefined), [set]);
 };
 
-export const useOpenReactionViewer = (): ((room: Room, relations: Relations, initialKey?: string) => void) => {
+export const useOpenReactionViewer = (): ((
+  room: Room,
+  relations: Relations,
+  initialKey?: string
+) => void) => {
   const set = useSetAtom(reactionViewerAtom);
-  return useCallback(
-    (room, relations, initialKey) => set({ room, relations, initialKey }),
-    [set]
-  );
+  return useCallback((room, relations, initialKey) => set({ room, relations, initialKey }), [set]);
 };

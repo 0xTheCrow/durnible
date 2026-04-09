@@ -28,8 +28,7 @@ export function OverlayModal({
   const requestCloseRef = useRef(requestClose);
   requestCloseRef.current = requestClose;
 
-  const clickOutsideCloses =
-    focusTrapOptions?.clickOutsideDeactivates !== false;
+  const clickOutsideCloses = focusTrapOptions?.clickOutsideDeactivates !== false;
 
   useEffect(() => {
     if (!open) return undefined;
@@ -89,9 +88,7 @@ export function OverlayModal({
           }
         }}
       >
-        <FocusTrap focusTrapOptions={mergedFocusTrapOptions}>
-          {children}
-        </FocusTrap>
+        <FocusTrap focusTrapOptions={mergedFocusTrapOptions}>{children}</FocusTrap>
       </OverlayCenter>
     </Overlay>
   );

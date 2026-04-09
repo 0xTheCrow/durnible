@@ -35,14 +35,14 @@ export const usePan = (active: boolean, zoom = 1) => {
     });
   };
 
-  const handleMouseUp = (evt: MouseEvent) => {
+  const handleMouseUp = (_evt: MouseEvent) => {
     setCursor('grab');
 
     document.removeEventListener('mousemove', handleMouseMove);
     document.removeEventListener('mouseup', handleMouseUp);
   };
 
-  const handleMouseDown: MouseEventHandler<HTMLElement> = (evt) => {
+  const handleMouseDown: MouseEventHandler<HTMLElement> = (_evt) => {
     if (!active) return;
     setCursor('grabbing');
 

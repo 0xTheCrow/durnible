@@ -107,6 +107,10 @@ export const ImageViewer = as<'div', ImageViewerProps>(
           alignItems="Center"
           onWheel={onWheel}
         >
+          {/* Pointer-driven gesture surface (drag-to-pan, double-click to
+              zoom). Modal-level Escape handling closes the viewer; there is
+              no meaningful keyboard equivalent for "click on image to zoom". */}
+          {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
           <img
             className={css.ImageViewerImg}
             style={{

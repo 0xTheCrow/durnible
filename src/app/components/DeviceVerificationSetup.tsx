@@ -42,7 +42,7 @@ function makeUIAAction<T>(
   authData: IAuthData,
   performAction: PerformAction<T>,
   resolve: (data: T) => void,
-  reject: (error?: any) => void
+  reject: (error?: unknown) => void
 ): UIAAction<T> {
   const action: UIAAction<T> = {
     authData,

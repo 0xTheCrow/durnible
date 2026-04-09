@@ -47,7 +47,10 @@ function serverMatrixSdkCryptoWasm(wasmFilePath) {
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
         if (req.url === wasmFilePath) {
-          const resolvedPath = path.join(path.resolve(), "/node_modules/@matrix-org/matrix-sdk-crypto-wasm/pkg/matrix_sdk_crypto_wasm_bg.wasm");
+          const resolvedPath = path.join(
+            path.resolve(),
+            '/node_modules/@matrix-org/matrix-sdk-crypto-wasm/pkg/matrix_sdk_crypto_wasm_bg.wasm'
+          );
 
           if (fs.existsSync(resolvedPath)) {
             res.setHeader('Content-Type', 'application/wasm');
@@ -103,8 +106,8 @@ export default defineConfig({
       },
       devOptions: {
         enabled: true,
-        type: 'module'
-      }
+        type: 'module',
+      },
     }),
   ],
   optimizeDeps: {

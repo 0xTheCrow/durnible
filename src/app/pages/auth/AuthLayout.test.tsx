@@ -13,19 +13,31 @@ function getUrl(input: RequestInfo | URL): string {
 }
 
 // Mock fetch: well-known 404 (IGNORE → use defaults), valid responses for all auth endpoints
-vi.stubGlobal('fetch', vi.fn((input: RequestInfo | URL) => {
-  const url = getUrl(input);
-  if (url.includes('/_matrix/client/versions')) {
-    return Promise.resolve(new Response(JSON.stringify({ versions: ['v1.11'] }), { status: 200 }));
-  }
-  if (url.includes('/login')) {
-    return Promise.resolve(new Response(JSON.stringify({ flows: [{ type: 'm.login.password' }] }), { status: 200 }));
-  }
-  if (url.includes('/register')) {
-    return Promise.resolve(new Response(JSON.stringify({ session: 'test', flows: [{ stages: ['m.login.dummy'] }], params: {} }), { status: 401 }));
-  }
-  return Promise.resolve(new Response(JSON.stringify({}), { status: 404 }));
-}));
+vi.stubGlobal(
+  'fetch',
+  vi.fn((input: RequestInfo | URL) => {
+    const url = getUrl(input);
+    if (url.includes('/_matrix/client/versions')) {
+      return Promise.resolve(
+        new Response(JSON.stringify({ versions: ['v1.11'] }), { status: 200 })
+      );
+    }
+    if (url.includes('/login')) {
+      return Promise.resolve(
+        new Response(JSON.stringify({ flows: [{ type: 'm.login.password' }] }), { status: 200 })
+      );
+    }
+    if (url.includes('/register')) {
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({ session: 'test', flows: [{ stages: ['m.login.dummy'] }], params: {} }),
+          { status: 401 }
+        )
+      );
+    }
+    return Promise.resolve(new Response(JSON.stringify({}), { status: 404 }));
+  })
+);
 
 describe('AuthLayout', () => {
   it('renders without crashing', async () => {

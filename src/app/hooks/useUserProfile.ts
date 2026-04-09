@@ -47,13 +47,12 @@ export const useUserProfile = (userId: string): UserProfile => {
     );
 
     const cached = bannerCache.get(userId);
-    const cacheExpired = cached?.lastFetchTimestamp !== undefined
-      && Date.now() - cached.lastFetchTimestamp > 60_000;
+    const cacheExpired =
+      cached?.lastFetchTimestamp !== undefined && Date.now() - cached.lastFetchTimestamp > 60_000;
     if (!cached?.fetched || cacheExpired) {
       mx.getExtendedProfileProperty(userId, 'banner_url')
         .then((value: unknown) => {
-          const url =
-            typeof value === 'string' && value.startsWith('mxc://') ? value : undefined;
+          const url = typeof value === 'string' && value.startsWith('mxc://') ? value : undefined;
           bannerCache.set(userId, { url, fetched: true, lastFetchTimestamp: Date.now() });
           setProfile((cp) => ({ ...cp, bannerUrl: url }));
         })

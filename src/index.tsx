@@ -139,10 +139,10 @@ if ('serviceWorker' in navigator) {
   });
 
   navigator.serviceWorker.addEventListener('message', (event) => {
-    if (event.data?.type === 'token' && event.data?.responseKey) {
+    if (event.data?.type === 'token' && event.data?.responseKey && event.source) {
       // Get the token for SW.
       const token = localStorage.getItem('cinny_access_token') ?? undefined;
-      event.source!.postMessage({
+      event.source.postMessage({
         responseKey: event.data.responseKey,
         token,
       });
@@ -185,7 +185,7 @@ const setupVirtualKeyboard = () => {
   vv.addEventListener('resize', update);
   // Zero out maxSeenHeight on orientation change so the next vv resize
   // recalibrates it to the new orientation's natural height.
-  screen.orientation?.addEventListener('change', () => {
+  window.screen.orientation?.addEventListener('change', () => {
     maxSeenHeight = 0;
   });
 };

@@ -166,31 +166,31 @@ function ProfileAvatar({ profile, userId }: ProfileProps) {
       )}
 
       <OverlayModal open={alertRemove} requestClose={() => setAlertRemove(false)}>
-            <Dialog variant="Surface">
-              <Header
-                style={{
-                  padding: `0 ${config.space.S200} 0 ${config.space.S400}`,
-                  borderBottomWidth: config.borderWidth.B300,
-                }}
-                variant="Surface"
-                size="500"
-              >
-                <Box grow="Yes">
-                  <Text size="H4">Remove Avatar</Text>
-                </Box>
-                <IconButton size="300" onClick={() => setAlertRemove(false)} radii="300">
-                  <Icon src={Icons.Cross} />
-                </IconButton>
-              </Header>
-              <Box style={{ padding: config.space.S400 }} direction="Column" gap="400">
-                <Box direction="Column" gap="200">
-                  <Text priority="400">Are you sure you want to remove profile avatar?</Text>
-                </Box>
-                <Button variant="Critical" onClick={handleRemoveAvatar}>
-                  <Text size="B400">Remove</Text>
-                </Button>
-              </Box>
-            </Dialog>
+        <Dialog variant="Surface">
+          <Header
+            style={{
+              padding: `0 ${config.space.S200} 0 ${config.space.S400}`,
+              borderBottomWidth: config.borderWidth.B300,
+            }}
+            variant="Surface"
+            size="500"
+          >
+            <Box grow="Yes">
+              <Text size="H4">Remove Avatar</Text>
+            </Box>
+            <IconButton size="300" onClick={() => setAlertRemove(false)} radii="300">
+              <Icon src={Icons.Cross} />
+            </IconButton>
+          </Header>
+          <Box style={{ padding: config.space.S400 }} direction="Column" gap="400">
+            <Box direction="Column" gap="200">
+              <Text priority="400">Are you sure you want to remove profile avatar?</Text>
+            </Box>
+            <Button variant="Critical" onClick={handleRemoveAvatar}>
+              <Text size="B400">Remove</Text>
+            </Button>
+          </Box>
+        </Dialog>
       </OverlayModal>
     </SettingTile>
   );
@@ -298,31 +298,31 @@ function ProfileBanner({ profile, userId }: ProfileProps) {
       )}
 
       <OverlayModal open={alertRemove} requestClose={() => setAlertRemove(false)}>
-            <Dialog variant="Surface">
-              <Header
-                style={{
-                  padding: `0 ${config.space.S200} 0 ${config.space.S400}`,
-                  borderBottomWidth: config.borderWidth.B300,
-                }}
-                variant="Surface"
-                size="500"
-              >
-                <Box grow="Yes">
-                  <Text size="H4">Remove Banner</Text>
-                </Box>
-                <IconButton size="300" onClick={() => setAlertRemove(false)} radii="300">
-                  <Icon src={Icons.Cross} />
-                </IconButton>
-              </Header>
-              <Box style={{ padding: config.space.S400 }} direction="Column" gap="400">
-                <Box direction="Column" gap="200">
-                  <Text priority="400">Are you sure you want to remove your profile banner?</Text>
-                </Box>
-                <Button variant="Critical" onClick={handleRemoveBanner}>
-                  <Text size="B400">Remove</Text>
-                </Button>
-              </Box>
-            </Dialog>
+        <Dialog variant="Surface">
+          <Header
+            style={{
+              padding: `0 ${config.space.S200} 0 ${config.space.S400}`,
+              borderBottomWidth: config.borderWidth.B300,
+            }}
+            variant="Surface"
+            size="500"
+          >
+            <Box grow="Yes">
+              <Text size="H4">Remove Banner</Text>
+            </Box>
+            <IconButton size="300" onClick={() => setAlertRemove(false)} radii="300">
+              <Icon src={Icons.Cross} />
+            </IconButton>
+          </Header>
+          <Box style={{ padding: config.space.S400 }} direction="Column" gap="400">
+            <Box direction="Column" gap="200">
+              <Text priority="400">Are you sure you want to remove your profile banner?</Text>
+            </Box>
+            <Button variant="Critical" onClick={handleRemoveBanner}>
+              <Text size="B400">Remove</Text>
+            </Button>
+          </Box>
+        </Dialog>
       </OverlayModal>
     </SettingTile>
   );

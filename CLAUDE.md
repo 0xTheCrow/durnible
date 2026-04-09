@@ -4,15 +4,15 @@ Cinny is a Matrix chat client built with React, TypeScript, and Vite.
 
 ## Quick Reference
 
-| Command | Purpose |
-|---------|---------|
-| `npm start` | Dev server |
-| `npm run build` | Production build |
-| `npm run lint` | ESLint + Prettier check |
-| `npm run typecheck` | TypeScript type checking (`tsc --noEmit`) |
-| `npm test` | Run tests (Vitest) |
-| `npm run test:watch` | Watch mode tests |
-| `npm run fix:prettier` | Auto-format with Prettier |
+| Command                | Purpose                                   |
+| ---------------------- | ----------------------------------------- |
+| `npm start`            | Dev server                                |
+| `npm run build`        | Production build                          |
+| `npm run lint`         | ESLint + Prettier check                   |
+| `npm run typecheck`    | TypeScript type checking (`tsc --noEmit`) |
+| `npm test`             | Run tests (Vitest)                        |
+| `npm run test:watch`   | Watch mode tests                          |
+| `npm run fix:prettier` | Auto-format with Prettier                 |
 
 ## Tech Stack
 
@@ -61,6 +61,7 @@ Cinny is a Matrix chat client built with React, TypeScript, and Vite.
 ## Environment Variables
 
 Vite env vars use `VITE_` prefix, accessed via `import.meta.env.VITE_*`:
+
 - `VITE_GIF_SERVER_URL` — GIF search API endpoint
 - `VITE_GIF_API_KEY` — GIF API key
 

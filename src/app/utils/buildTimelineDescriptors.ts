@@ -10,7 +10,15 @@ export type TimelineEventInput = {
 };
 
 export type TimelineItem =
-  | { type: 'event'; key: string; item: number; mEventId: string; mEvent: MatrixEvent; timelineSet: EventTimelineSet; collapsed: boolean }
+  | {
+      type: 'event';
+      key: string;
+      item: number;
+      mEventId: string;
+      mEvent: MatrixEvent;
+      timelineSet: EventTimelineSet;
+      collapsed: boolean;
+    }
   | { type: 'new-messages'; key: string }
   | { type: 'day-divider'; key: string; ts: number };
 
@@ -36,7 +44,7 @@ export function buildTimelineDescriptors(
   events: TimelineEventInput[],
   readUptoEventId: string | undefined,
   myUserId: string,
-  willRender: (mEvent: MatrixEvent) => boolean = (mEvent) => !reactionOrEditEvent(mEvent),
+  willRender: (mEvent: MatrixEvent) => boolean = (mEvent) => !reactionOrEditEvent(mEvent)
 ): TimelineItem[] {
   const result: TimelineItem[] = [];
   // Only track the last *rendered* event. Non-rendered events (reactions,
@@ -75,7 +83,11 @@ export function buildTimelineDescriptors(
         newDividerPending = false;
       }
       if (dayDividerPending) {
-        result.push({ type: 'day-divider', key: `day-divider-before-${mEventId}`, ts: mEvent.getTs() });
+        result.push({
+          type: 'day-divider',
+          key: `day-divider-before-${mEventId}`,
+          ts: mEvent.getTs(),
+        });
         dayDividerPending = false;
       }
       result.push({ type: 'event', key: mEventId, item, mEventId, mEvent, timelineSet, collapsed });

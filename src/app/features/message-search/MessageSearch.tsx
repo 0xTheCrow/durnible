@@ -1,18 +1,10 @@
-import React, {
-  RefObject,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
-import { RoomMember } from 'matrix-js-sdk';
+import React, { RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { RoomMember, SearchOrderBy } from 'matrix-js-sdk';
 import { Text, Box, Icon, Icons, config, Spinner, IconButton, Line, toRem } from 'folds';
 import { useAtomValue } from 'jotai';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
-import { SearchOrderBy } from 'matrix-js-sdk';
 import { PageHero, PageHeroEmpty, PageHeroSection } from '../../components/page';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { _SearchPathSearchParams } from '../../pages/paths';
@@ -63,14 +55,12 @@ type MessageSearchProps = {
   defaultRoomsFilterName: string;
   allowGlobal?: boolean;
   rooms: string[];
-  senders?: string[];
   scrollRef: RefObject<HTMLDivElement>;
 };
 export function MessageSearch({
   defaultRoomsFilterName,
   allowGlobal,
   rooms,
-  senders,
   scrollRef,
 }: MessageSearchProps) {
   const mx = useMatrixClient();
@@ -124,11 +114,10 @@ export function MessageSearch({
 
   const isGlobal = searchPathSearchParams.global === 'true';
   const effectiveRooms: string[] | undefined = searchParamRooms ?? (isGlobal ? undefined : rooms);
-  const term = searchPathSearchParams.term;
+  const { term } = searchPathSearchParams;
   const order = searchPathSearchParams.order ?? SearchOrderBy.Recent;
 
-  const hasActiveSearch =
-    !!term || hasItems(searchParamsSenders) || hasItems(searchParamsHas);
+  const hasActiveSearch = !!term || hasItems(searchParamsSenders) || hasItems(searchParamsHas);
 
   // Split effective rooms into encrypted / unencrypted
   const [encryptedRoomIds, unencryptedRoomIds] = useMemo(() => {
@@ -233,8 +222,7 @@ export function MessageSearch({
     [serverSearch]
   );
 
-  const serverEnabled =
-    !!term && (unencryptedRoomIds.length > 0 || !effectiveRooms);
+  const serverEnabled = !!term && (unencryptedRoomIds.length > 0 || !effectiveRooms);
 
   const {
     status: serverStatus,
@@ -533,7 +521,13 @@ export function MessageSearch({
         >
           <Icon size="200" src={Icons.Info} />
           <Text>
-            No results found{term ? <> for <b>{`"${term}"`}</b></> : null}
+            No results found
+            {term ? (
+              <>
+                {' '}
+                for <b>{`"${term}"`}</b>
+              </>
+            ) : null}
           </Text>
         </Box>
       )}

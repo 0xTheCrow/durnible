@@ -45,4 +45,3 @@ export const JumpToLatestFloat = style({
 });
 
 export type TimelineFloatVariants = RecipeVariants<typeof TimelineFloat>;
-

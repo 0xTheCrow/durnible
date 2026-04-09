@@ -41,14 +41,17 @@ const DEFAULT_POWER_LEVELS: Required<IPowerLevels> = {
   },
 };
 
+function fillIfMissing<K extends keyof IPowerLevels>(target: IPowerLevels, key: K) {
+  if (target[key] === undefined) {
+    // eslint-disable-next-line no-param-reassign
+    target[key] = DEFAULT_POWER_LEVELS[key];
+  }
+}
+
 const fillMissingPowers = (powerLevels: IPowerLevels): IPowerLevels =>
   produce(powerLevels, (draftPl: IPowerLevels) => {
-    const keys = Object.keys(DEFAULT_POWER_LEVELS) as unknown as (keyof IPowerLevels)[];
-    keys.forEach((key) => {
-      if (draftPl[key] === undefined) {
-        // eslint-disable-next-line no-param-reassign
-        draftPl[key] = DEFAULT_POWER_LEVELS[key] as any;
-      }
+    (Object.keys(DEFAULT_POWER_LEVELS) as (keyof IPowerLevels)[]).forEach((key) => {
+      fillIfMissing(draftPl, key);
     });
     if (draftPl.notifications && typeof draftPl.notifications.room !== 'number') {
       // eslint-disable-next-line no-param-reassign

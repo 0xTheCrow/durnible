@@ -1,12 +1,5 @@
 import React, { useState } from 'react';
-import {
-  config,
-  Icon,
-  IconButton,
-  Icons,
-  Line,
-  Modal,
-} from 'folds';
+import { config, Icon, IconButton, Icons, Line, Modal } from 'folds';
 
 import { CustomEditor, useEditor } from './Editor';
 import { Toolbar } from './Toolbar';
@@ -26,45 +19,46 @@ export function EditorPreview() {
         <Icon src={Icons.BlockQuote} />
       </IconButton>
       <OverlayModal open={open} requestClose={() => setOpen(false)}>
-            <Modal size="500">
-              <div style={{ padding: config.space.S400 }}>
-                <CustomEditor
-                  editor={editor}
-                  before={
-                    <IconButton variant="SurfaceVariant" size="300" radii="300">
-                      <Icon src={Icons.PlusCircle} />
-                    </IconButton>
-                  }
-                  after={
-                    <>
-                      <IconButton
-                        variant="SurfaceVariant"
-                        size="300"
-                        radii="300"
-                        onClick={() => setToolbar(!toolbar)}
-                        aria-pressed={toolbar}
-                      >
-                        <Icon src={toolbar ? Icons.AlphabetUnderline : Icons.Alphabet} />
-                      </IconButton>
-                      <IconButton variant="SurfaceVariant" size="300" radii="300">
-                        <Icon src={Icons.Smile} />
-                      </IconButton>
-                      <IconButton variant="SurfaceVariant" size="300" radii="300">
-                        <Icon src={Icons.Send} />
-                      </IconButton>
-                    </>
-                  }
-                  bottom={
-                    !alternateInput && toolbar && (
-                      <div>
-                        <Line variant="SurfaceVariant" size="300" />
-                        <Toolbar />
-                      </div>
-                    )
-                  }
-                />
-              </div>
-            </Modal>
+        <Modal size="500">
+          <div style={{ padding: config.space.S400 }}>
+            <CustomEditor
+              editor={editor}
+              before={
+                <IconButton variant="SurfaceVariant" size="300" radii="300">
+                  <Icon src={Icons.PlusCircle} />
+                </IconButton>
+              }
+              after={
+                <>
+                  <IconButton
+                    variant="SurfaceVariant"
+                    size="300"
+                    radii="300"
+                    onClick={() => setToolbar(!toolbar)}
+                    aria-pressed={toolbar}
+                  >
+                    <Icon src={toolbar ? Icons.AlphabetUnderline : Icons.Alphabet} />
+                  </IconButton>
+                  <IconButton variant="SurfaceVariant" size="300" radii="300">
+                    <Icon src={Icons.Smile} />
+                  </IconButton>
+                  <IconButton variant="SurfaceVariant" size="300" radii="300">
+                    <Icon src={Icons.Send} />
+                  </IconButton>
+                </>
+              }
+              bottom={
+                !alternateInput &&
+                toolbar && (
+                  <div>
+                    <Line variant="SurfaceVariant" size="300" />
+                    <Toolbar />
+                  </div>
+                )
+              }
+            />
+          </div>
+        </Modal>
       </OverlayModal>
     </>
   );

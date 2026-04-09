@@ -1,4 +1,3 @@
-import React from 'react';
 import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useThrottle } from './useThrottle';
@@ -18,7 +17,9 @@ describe('useThrottle', () => {
     const cb = vi.fn();
     const { result } = renderHook(() => useThrottle(cb, { wait: WAIT }));
 
-    act(() => { result.current('a'); });
+    act(() => {
+      result.current('a');
+    });
     expect(cb).not.toHaveBeenCalled();
   });
 
@@ -31,7 +32,9 @@ describe('useThrottle', () => {
       result.current('b');
       result.current('c');
     });
-    act(() => { vi.runAllTimers(); });
+    act(() => {
+      vi.runAllTimers();
+    });
 
     expect(cb).toHaveBeenCalledTimes(1);
     expect(cb).toHaveBeenCalledWith('c');
@@ -41,11 +44,19 @@ describe('useThrottle', () => {
     const cb = vi.fn();
     const { result } = renderHook(() => useThrottle(cb, { wait: WAIT }));
 
-    act(() => { result.current('first'); });
-    act(() => { vi.runAllTimers(); }); // fires with 'first'
+    act(() => {
+      result.current('first');
+    });
+    act(() => {
+      vi.runAllTimers();
+    }); // fires with 'first'
 
-    act(() => { result.current('second'); });
-    act(() => { vi.runAllTimers(); }); // fires with 'second'
+    act(() => {
+      result.current('second');
+    });
+    act(() => {
+      vi.runAllTimers();
+    }); // fires with 'second'
 
     expect(cb).toHaveBeenCalledTimes(2);
     expect(cb).toHaveBeenNthCalledWith(1, 'first');
@@ -54,11 +65,11 @@ describe('useThrottle', () => {
 
   it('with immediate=true calls the callback on the leading edge', () => {
     const cb = vi.fn();
-    const { result } = renderHook(() =>
-      useThrottle(cb, { wait: WAIT, immediate: true })
-    );
+    const { result } = renderHook(() => useThrottle(cb, { wait: WAIT, immediate: true }));
 
-    act(() => { result.current('a'); });
+    act(() => {
+      result.current('a');
+    });
 
     expect(cb).toHaveBeenCalledTimes(1);
     expect(cb).toHaveBeenCalledWith('a');
@@ -66,9 +77,7 @@ describe('useThrottle', () => {
 
   it('with immediate=true subsequent calls during wait do not fire immediately', () => {
     const cb = vi.fn();
-    const { result } = renderHook(() =>
-      useThrottle(cb, { wait: WAIT, immediate: true })
-    );
+    const { result } = renderHook(() => useThrottle(cb, { wait: WAIT, immediate: true }));
 
     act(() => {
       result.current('a'); // leading edge fires
@@ -80,7 +89,9 @@ describe('useThrottle', () => {
     expect(cb).toHaveBeenCalledWith('a');
 
     // Timer fires with the latest args
-    act(() => { vi.runAllTimers(); });
+    act(() => {
+      vi.runAllTimers();
+    });
     expect(cb).toHaveBeenCalledTimes(2);
     expect(cb).toHaveBeenLastCalledWith('c');
   });

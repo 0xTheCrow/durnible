@@ -174,7 +174,7 @@ export function HeadingBlockButton() {
                   <IconButton
                     ref={triggerRef}
                     onMouseDown={preventFocusLoss}
-          onTouchStart={preventFocusLoss}
+                    onTouchStart={preventFocusLoss}
                     onClick={() => handleMenuSelect(1)}
                     size="400"
                     radii="300"
@@ -191,7 +191,7 @@ export function HeadingBlockButton() {
                   <IconButton
                     ref={triggerRef}
                     onMouseDown={preventFocusLoss}
-          onTouchStart={preventFocusLoss}
+                    onTouchStart={preventFocusLoss}
                     onClick={() => handleMenuSelect(2)}
                     size="400"
                     radii="300"
@@ -208,7 +208,7 @@ export function HeadingBlockButton() {
                   <IconButton
                     ref={triggerRef}
                     onMouseDown={preventFocusLoss}
-          onTouchStart={preventFocusLoss}
+                    onTouchStart={preventFocusLoss}
                     onClick={() => handleMenuSelect(3)}
                     size="400"
                     radii="300"
@@ -365,7 +365,7 @@ export function Toolbar() {
                   ref={triggerRef}
                   variant="SurfaceVariant"
                   onMouseDown={preventFocusLoss}
-          onTouchStart={preventFocusLoss}
+                  onTouchStart={preventFocusLoss}
                   onClick={() => setIsMarkdown(!isMarkdown)}
                   aria-pressed={isMarkdown}
                   size="300"

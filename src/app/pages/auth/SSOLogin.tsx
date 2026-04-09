@@ -34,7 +34,7 @@ export function SSOLogin({ providers, redirectUrl, action, saveScreenSpace }: SS
 
           const buttonTitle = `Continue with ${name}`;
 
-          if (renderAsIcons) {
+          if (renderAsIcons && iconUrl) {
             return (
               <Avatar
                 style={{ cursor: 'pointer' }}
@@ -45,7 +45,7 @@ export function SSOLogin({ providers, redirectUrl, action, saveScreenSpace }: SS
                 size="300"
                 radii="300"
               >
-                <AvatarImage src={iconUrl!} alt={name} title={buttonTitle} />
+                <AvatarImage src={iconUrl} alt={name} title={buttonTitle} />
               </Avatar>
             );
           }

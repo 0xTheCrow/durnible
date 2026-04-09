@@ -98,31 +98,31 @@ export function RoomEncryption({ permissions }: RoomEncryptionProps) {
         )}
         {prompt && (
           <OverlayModal open requestClose={() => setPrompt(false)}>
-                <Dialog variant="Surface">
-                  <Header
-                    style={{
-                      padding: `0 ${config.space.S200} 0 ${config.space.S400}`,
-                      borderBottomWidth: config.borderWidth.B300,
-                    }}
-                    variant="Surface"
-                    size="500"
-                  >
-                    <Box grow="Yes">
-                      <Text size="H4">Enable Encryption</Text>
-                    </Box>
-                    <IconButton size="300" onClick={() => setPrompt(false)} radii="300">
-                      <Icon src={Icons.Cross} />
-                    </IconButton>
-                  </Header>
-                  <Box style={{ padding: config.space.S400 }} direction="Column" gap="400">
-                    <Text priority="400">
-                      Are you sure? Once enabled, encryption cannot be disabled!
-                    </Text>
-                    <Button type="submit" variant="Primary" onClick={handleEnable}>
-                      <Text size="B400">Enable E2E Encryption</Text>
-                    </Button>
-                  </Box>
-                </Dialog>
+            <Dialog variant="Surface">
+              <Header
+                style={{
+                  padding: `0 ${config.space.S200} 0 ${config.space.S400}`,
+                  borderBottomWidth: config.borderWidth.B300,
+                }}
+                variant="Surface"
+                size="500"
+              >
+                <Box grow="Yes">
+                  <Text size="H4">Enable Encryption</Text>
+                </Box>
+                <IconButton size="300" onClick={() => setPrompt(false)} radii="300">
+                  <Icon src={Icons.Cross} />
+                </IconButton>
+              </Header>
+              <Box style={{ padding: config.space.S400 }} direction="Column" gap="400">
+                <Text priority="400">
+                  Are you sure? Once enabled, encryption cannot be disabled!
+                </Text>
+                <Button type="submit" variant="Primary" onClick={handleEnable}>
+                  <Text size="B400">Enable E2E Encryption</Text>
+                </Button>
+              </Box>
+            </Dialog>
           </OverlayModal>
         )}
       </SettingTile>

@@ -217,8 +217,8 @@ export const MessageEditor = as<'div', MessageEditorProps>(
     }, [editor, alternateInput]);
 
     const handleEmoticonSelect = (key: string, shortcode: string) => {
-      if (alternateInput && (editor as any).insertAlternateText) {
-        (editor as any).insertAlternateText(key);
+      if (alternateInput && editor.insertAlternateText) {
+        editor.insertAlternateText(key);
       } else {
         editor.insertNode(createEmoticonElement(key, shortcode));
         moveCursor(editor);
@@ -230,9 +230,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
 
       if (alternateInput) {
         const text = typeof body === 'string' ? body : '';
-        editor.children = [
-          { type: BlockType.Paragraph, children: [{ text }] },
-        ];
+        editor.children = [{ type: BlockType.Paragraph, children: [{ text }] }];
         editor.onChange();
         requestAnimationFrame(() => {
           alternateInputRef.current?.focus();

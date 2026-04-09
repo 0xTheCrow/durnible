@@ -6,7 +6,6 @@ import {
   Reply,
   MessageUnsupportedContent,
   Time,
-  MessageNotDecryptedContent,
   RedactedContent,
   MSticker,
   ImageContent,
@@ -14,11 +13,7 @@ import {
   MPoll,
   LinePlaceholder,
 } from '../../components/message';
-import {
-  getEditedEvent,
-  getMemberDisplayName,
-  isMembershipChanged,
-} from '../../utils/room';
+import { getEditedEvent, getMemberDisplayName, isMembershipChanged } from '../../utils/room';
 import { MessageEvent, StateEvent } from '../../../types/matrix/room';
 import { MessageLayout } from '../../state/settings';
 import { getMxIdLocalPart } from '../../utils/matrix';
@@ -31,13 +26,7 @@ import { useTimelineMessageContext } from './TimelineMessageContext';
 
 const warningStyle = { color: color.Warning.Main, opacity: config.opacity.P300 };
 
-function DecryptRetry({
-  retrying,
-  onRetry,
-}: {
-  retrying: boolean;
-  onRetry: () => void;
-}) {
+function DecryptRetry({ retrying, onRetry }: { retrying: boolean; onRetry: () => void }) {
   return (
     <Text>
       <Box as="span" alignItems="Center" gap="200" style={warningStyle}>
@@ -221,9 +210,8 @@ function TimelineEventComponent({
       const senderDisplayName =
         getMemberDisplayName(room, senderId) ?? getMxIdLocalPart(senderId) ?? senderId;
       const mentionedMe =
-        (mEvent.getContent()['m.mentions']?.user_ids as string[] | undefined)?.includes(
-          myUserId
-        ) ?? false;
+        (mEvent.getContent()['m.mentions']?.user_ids as string[] | undefined)?.includes(myUserId) ??
+        false;
 
       return (
         <Message
@@ -253,9 +241,8 @@ function TimelineEventComponent({
 
     if (eventType === MessageEvent.RoomMessageEncrypted) {
       const mentionedMe =
-        (mEvent.getContent()['m.mentions']?.user_ids as string[] | undefined)?.includes(
-          myUserId
-        ) ?? false;
+        (mEvent.getContent()['m.mentions']?.user_ids as string[] | undefined)?.includes(myUserId) ??
+        false;
 
       return (
         <Message
@@ -282,8 +269,7 @@ function TimelineEventComponent({
                 );
               if (mEvent.getType() === MessageEvent.RoomMessage) {
                 const editedEvt = getEditedEvent(mEventId, mEvent, timelineSet);
-                const content =
-                  editedEvt?.getContent()['m.new_content'] ?? mEvent.getContent();
+                const content = editedEvt?.getContent()['m.new_content'] ?? mEvent.getContent();
 
                 if (content.msgtype === 'm.bad.encrypted') {
                   return (
@@ -507,28 +493,25 @@ function TimelineEventComponent({
   );
 }
 
-export const MemoizedTimelineEvent = React.memo(
-  TimelineEventComponent,
-  (prev, next) => {
-    const result =
-      prev.mEventId === next.mEventId &&
-      prev.item === next.item &&
-      prev.collapsed === next.collapsed &&
-      prev.isHighlighted === next.isHighlighted &&
-      prev.isEditing === next.isEditing &&
-      // Detects the undefined→Relations transition (first reaction added/removed)
-      // so the component re-renders and mounts/unmounts the Reactions child.
-      // Subsequent reaction count changes are handled by useRelations internally.
-      prev.reactionRelations === next.reactionRelations &&
-      // Detects edits and redactions (invisible events that don't change range deps).
-      // getEditedEvent returns a new MatrixEvent ref when an edit arrives;
-      // isRedacted flips to true when a redaction arrives.
-      prev.editedEvent === next.editedEvent &&
-      prev.isRedacted === next.isRedacted &&
-      // Detects local-echo status transitions (QUEUED→SENDING→null/NOT_SENT).
-      // mEvent.status mutates in-place so the reference doesn't change;
-      // without this guard the faded opacity would persist until an unrelated event.
-      prev.eventStatus === next.eventStatus;
-    return result;
-  }
-);
+export const MemoizedTimelineEvent = React.memo(TimelineEventComponent, (prev, next) => {
+  const result =
+    prev.mEventId === next.mEventId &&
+    prev.item === next.item &&
+    prev.collapsed === next.collapsed &&
+    prev.isHighlighted === next.isHighlighted &&
+    prev.isEditing === next.isEditing &&
+    // Detects the undefined→Relations transition (first reaction added/removed)
+    // so the component re-renders and mounts/unmounts the Reactions child.
+    // Subsequent reaction count changes are handled by useRelations internally.
+    prev.reactionRelations === next.reactionRelations &&
+    // Detects edits and redactions (invisible events that don't change range deps).
+    // getEditedEvent returns a new MatrixEvent ref when an edit arrives;
+    // isRedacted flips to true when a redaction arrives.
+    prev.editedEvent === next.editedEvent &&
+    prev.isRedacted === next.isRedacted &&
+    // Detects local-echo status transitions (QUEUED→SENDING→null/NOT_SENT).
+    // mEvent.status mutates in-place so the reference doesn't change;
+    // without this guard the faded opacity would persist until an unrelated event.
+    prev.eventStatus === next.eventStatus;
+  return result;
+});

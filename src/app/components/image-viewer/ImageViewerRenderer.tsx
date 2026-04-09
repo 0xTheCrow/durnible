@@ -13,21 +13,10 @@ export function ImageViewerRenderer() {
   const requestClose = () => setViewerState(undefined);
 
   return (
-    <OverlayModal
-      open={open}
-      requestClose={requestClose}
-    >
-      <Modal
-        className={ImageViewerModal}
-        size="500"
-        onContextMenu={(evt: any) => evt.stopPropagation()}
-      >
+    <OverlayModal open={open} requestClose={requestClose}>
+      <Modal className={ImageViewerModal} size="500" onContextMenu={(evt) => evt.stopPropagation()}>
         {viewerState && (
-          <ImageViewer
-            src={viewerState.src}
-            alt={viewerState.alt}
-            requestClose={requestClose}
-          />
+          <ImageViewer src={viewerState.src} alt={viewerState.alt} requestClose={requestClose} />
         )}
       </Modal>
     </OverlayModal>

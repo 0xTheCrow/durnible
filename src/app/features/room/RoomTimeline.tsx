@@ -14,7 +14,6 @@ import React, {
 import {
   Direction,
   EventTimeline,
-  EventTimelineSet,
   EventTimelineSetHandlerMap,
   IContent,
   MatrixClient,
@@ -46,17 +45,12 @@ import {
 } from 'folds';
 import { isKeyHotkey } from 'is-hotkey';
 import { Opts as LinkifyOpts } from 'linkifyjs';
-import { useTranslation } from 'react-i18next';
 import { eventWithShortcode, factoryEventSentBy, getMxIdLocalPart } from '../../utils/matrix';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { useVirtualPaginator } from '../../hooks/useVirtualPaginator';
 import { useAlive } from '../../hooks/useAlive';
 import { editableActiveElement, scrollToBottom } from '../../utils/dom';
-import {
-  DefaultPlaceholder,
-  CompactPlaceholder,
-  MessageBase,
-} from '../../components/message';
+import { DefaultPlaceholder, CompactPlaceholder, MessageBase } from '../../components/message';
 import {
   factoryRenderLinkifyWithMention,
   getReactCustomHtmlParser,
@@ -74,8 +68,6 @@ import {
   getReactionContent,
   isMembershipChanged,
   reactionOrEditEvent,
-  getPollResponses,
-  getPollEndEvents,
 } from '../../utils/room';
 import { useSetting } from '../../state/hooks/settings';
 import { MessageLayout, settingsAtom } from '../../state/settings';
@@ -90,10 +82,9 @@ import {
 } from '../../hooks/useIntersectionObserver';
 import { markAsRead } from '../../utils/notifications';
 
-
 import { getResizeObserverEntry, useResizeObserver } from '../../hooks/useResizeObserver';
 import * as css from './RoomTimeline.css';
-import { inSameDay, minuteDifference, timeDayMonthYear, today, yesterday } from '../../utils/time';
+import { timeDayMonthYear, today, yesterday } from '../../utils/time';
 import { buildTimelineDescriptors } from '../../utils/buildTimelineDescriptors';
 import { createMentionElement, isEmptyEditor, moveCursor } from '../../components/editor';
 import { roomIdToReplyDraftAtomFamily } from '../../state/room/roomInputDrafts';
@@ -442,8 +433,13 @@ const getRoomUnreadInfo = (room: Room, scrollTo = false) => {
   };
 };
 
-
-export function RoomTimeline({ room, eventId, roomInputRef, alternateInputRef, editor }: RoomTimelineProps) {
+export function RoomTimeline({
+  room,
+  eventId,
+  roomInputRef,
+  alternateInputRef,
+  editor,
+}: RoomTimelineProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
   const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
@@ -940,7 +936,13 @@ export function RoomTimeline({ room, eventId, roomInputRef, alternateInputRef, e
     );
     observer.observe(lastEl);
     return () => observer.disconnect();
-  }, [timeline.range.newest, eventsLength, liveTimelineLinked, rangeAtNewest]);
+  }, [
+    timeline.range.newest,
+    timeline.range.oldest,
+    eventsLength,
+    liveTimelineLinked,
+    rangeAtNewest,
+  ]);
 
   useDocumentFocusChange(
     useCallback(
@@ -1066,7 +1068,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, alternateInputRef, e
 
   // clear focused message highlight after 2 s
   useEffect(() => {
-    if (!focusItem) return;
+    if (!focusItem) return undefined;
     const id = setTimeout(() => {
       if (!alive()) return;
       setFocusItem((currentItem) => {
@@ -1170,10 +1172,8 @@ export function RoomTimeline({ room, eventId, roomInputRef, alternateInputRef, e
         return;
       }
       const name = getMemberDisplayName(room, userId) ?? getMxIdLocalPart(userId) ?? userId;
-      if (alternateInput && (editor as any).insertAlternateText) {
-        (editor as any).insertAlternateText(
-          name.startsWith('@') ? name : `@${name}`
-        );
+      if (alternateInput && editor.insertAlternateText) {
+        editor.insertAlternateText(name.startsWith('@') ? name : `@${name}`);
       } else {
         editor.insertNode(
           createMentionElement(
@@ -1222,7 +1222,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, alternateInputRef, e
         }, 100);
       }
     },
-    [room, setReplyDraft, editor, alternateInput, roomInputRef]
+    [room, setReplyDraft, editor, alternateInput, alternateInputRef]
   );
 
   const handleReactionToggle = useCallback(
@@ -1279,9 +1279,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, alternateInputRef, e
     const ids = Array.from(selectedIds);
     if (ids.length === 0) return;
     setBulkDeleting(true);
-    await Promise.allSettled(
-      ids.map((evtId) => mx.redactEvent(room.roomId, evtId))
-    );
+    await Promise.allSettled(ids.map((evtId) => mx.redactEvent(room.roomId, evtId)));
     setBulkDeleting(false);
     setSelectedIds(new Set());
     setSelectionMode(false);
@@ -1306,12 +1304,13 @@ export function RoomTimeline({ room, eventId, roomInputRef, alternateInputRef, e
   );
 
   // Clear selection on room change
-  useEffect(() => {
-    return () => {
+  useEffect(
+    () => () => {
       setSelectedIds(new Set());
       setSelectionMode(false);
-    };
-  }, [room.roomId, setSelectedIds, setSelectionMode]);
+    },
+    [room.roomId, setSelectedIds, setSelectionMode]
+  );
 
   const buildTimelineItems = () => {
     const events: Parameters<typeof buildTimelineDescriptors>[0] = [];
@@ -1357,7 +1356,12 @@ export function RoomTimeline({ room, eventId, roomInputRef, alternateInputRef, e
       return true;
     };
 
-    return buildTimelineDescriptors(events, readUptoEventIdRef.current ?? undefined, mx.getSafeUserId(), willEventRender);
+    return buildTimelineDescriptors(
+      events,
+      readUptoEventIdRef.current ?? undefined,
+      mx.getSafeUserId(),
+      willEventRender
+    );
   };
 
   const timelineItems = buildTimelineItems();
@@ -1435,197 +1439,201 @@ export function RoomTimeline({ room, eventId, roomInputRef, alternateInputRef, e
 
   return (
     <TimelineMessageContext.Provider value={contextValue}>
-    <Box grow="Yes" style={{ position: 'relative' }}>
-      {unreadInfo?.readUptoEventId && !unreadInfo?.inLiveTimeline && (
-        <TimelineFloat position="Top">
-          <Chip
-            variant="Primary"
-            radii="Pill"
-            outlined
-            before={<Icon size="50" src={Icons.MessageUnread} />}
-            onClick={handleJumpToUnread}
-          >
-            <Text size="L400">Jump to Unread</Text>
-          </Chip>
-
-          <Chip
-            variant="SurfaceVariant"
-            radii="Pill"
-            outlined
-            before={<Icon size="50" src={Icons.CheckTwice} />}
-            onClick={handleMarkAsRead}
-          >
-            <Text size="L400">Mark as Read</Text>
-          </Chip>
-        </TimelineFloat>
-      )}
-      <Scroll ref={scrollRef} visibility="Hover" style={{ overscrollBehavior: 'none' }}>
-        <Box
-          ref={contentRef}
-          direction="Column"
-          justifyContent="End"
-          style={{ minHeight: '100%', padding: `${config.space.S600} ${sliderVisible ? toRem(48) : '0'} ${config.space.S600} 0` }}
-        >
-          {!canPaginateBack && rangeAtOldest && getItems().length > 0 && (
-            <div
-              style={{
-                padding: `${config.space.S700} ${config.space.S400} ${config.space.S600} ${
-                  messageLayout === MessageLayout.Compact ? config.space.S400 : toRem(64)
-                }`,
-              }}
+      <Box grow="Yes" style={{ position: 'relative' }}>
+        {unreadInfo?.readUptoEventId && !unreadInfo?.inLiveTimeline && (
+          <TimelineFloat position="Top">
+            <Chip
+              variant="Primary"
+              radii="Pill"
+              outlined
+              before={<Icon size="50" src={Icons.MessageUnread} />}
+              onClick={handleJumpToUnread}
             >
-              <RoomIntro room={room} />
-            </div>
-          )}
-          {(canPaginateBack || !rangeAtOldest) &&
-            (messageLayout === MessageLayout.Compact ? (
-              <>
-                <MessageBase>
-                  <CompactPlaceholder key={getItems().length} />
-                </MessageBase>
-                <MessageBase>
-                  <CompactPlaceholder key={getItems().length} />
-                </MessageBase>
-                <MessageBase>
-                  <CompactPlaceholder key={getItems().length} />
-                </MessageBase>
-                <MessageBase>
-                  <CompactPlaceholder key={getItems().length} />
-                </MessageBase>
-                <MessageBase ref={observeBackAnchor}>
-                  <CompactPlaceholder key={getItems().length} />
-                </MessageBase>
-              </>
-            ) : (
-              <>
-                <MessageBase>
-                  <DefaultPlaceholder key={getItems().length} />
-                </MessageBase>
-                <MessageBase>
-                  <DefaultPlaceholder key={getItems().length} />
-                </MessageBase>
-                <MessageBase ref={observeBackAnchor}>
-                  <DefaultPlaceholder key={getItems().length} />
-                </MessageBase>
-              </>
-            ))}
+              <Text size="L400">Jump to Unread</Text>
+            </Chip>
 
-          {timelineItems.map((d) => {
-            if (d.type === 'new-messages') {
+            <Chip
+              variant="SurfaceVariant"
+              radii="Pill"
+              outlined
+              before={<Icon size="50" src={Icons.CheckTwice} />}
+              onClick={handleMarkAsRead}
+            >
+              <Text size="L400">Mark as Read</Text>
+            </Chip>
+          </TimelineFloat>
+        )}
+        <Scroll ref={scrollRef} visibility="Hover" style={{ overscrollBehavior: 'none' }}>
+          <Box
+            ref={contentRef}
+            direction="Column"
+            justifyContent="End"
+            style={{
+              minHeight: '100%',
+              padding: `${config.space.S600} ${sliderVisible ? toRem(48) : '0'} ${
+                config.space.S600
+              } 0`,
+            }}
+          >
+            {!canPaginateBack && rangeAtOldest && getItems().length > 0 && (
+              <div
+                style={{
+                  padding: `${config.space.S700} ${config.space.S400} ${config.space.S600} ${
+                    messageLayout === MessageLayout.Compact ? config.space.S400 : toRem(64)
+                  }`,
+                }}
+              >
+                <RoomIntro room={room} />
+              </div>
+            )}
+            {(canPaginateBack || !rangeAtOldest) &&
+              (messageLayout === MessageLayout.Compact ? (
+                <>
+                  <MessageBase>
+                    <CompactPlaceholder key={getItems().length} />
+                  </MessageBase>
+                  <MessageBase>
+                    <CompactPlaceholder key={getItems().length} />
+                  </MessageBase>
+                  <MessageBase>
+                    <CompactPlaceholder key={getItems().length} />
+                  </MessageBase>
+                  <MessageBase>
+                    <CompactPlaceholder key={getItems().length} />
+                  </MessageBase>
+                  <MessageBase ref={observeBackAnchor}>
+                    <CompactPlaceholder key={getItems().length} />
+                  </MessageBase>
+                </>
+              ) : (
+                <>
+                  <MessageBase>
+                    <DefaultPlaceholder key={getItems().length} />
+                  </MessageBase>
+                  <MessageBase>
+                    <DefaultPlaceholder key={getItems().length} />
+                  </MessageBase>
+                  <MessageBase ref={observeBackAnchor}>
+                    <DefaultPlaceholder key={getItems().length} />
+                  </MessageBase>
+                </>
+              ))}
+
+            {timelineItems.map((d) => {
+              if (d.type === 'new-messages') {
+                return (
+                  <MessageBase key={d.key} space={messageSpacing}>
+                    <TimelineDivider style={{ color: color.Success.Main }} variant="Inherit">
+                      <Badge as="span" size="500" variant="Success" fill="Solid" radii="300">
+                        <Text size="L400">New Messages</Text>
+                      </Badge>
+                    </TimelineDivider>
+                  </MessageBase>
+                );
+              }
+              if (d.type === 'day-divider') {
+                return (
+                  <MessageBase key={d.key} space={messageSpacing}>
+                    <TimelineDivider variant="Surface">
+                      <Badge as="span" size="500" variant="Secondary" fill="None" radii="300">
+                        <Text size="L400">
+                          {(() => {
+                            if (today(d.ts)) return 'Today';
+                            if (yesterday(d.ts)) return 'Yesterday';
+                            return timeDayMonthYear(d.ts);
+                          })()}
+                        </Text>
+                      </Badge>
+                    </TimelineDivider>
+                  </MessageBase>
+                );
+              }
               return (
-                <MessageBase key={d.key} space={messageSpacing}>
-                  <TimelineDivider style={{ color: color.Success.Main }} variant="Inherit">
-                    <Badge as="span" size="500" variant="Success" fill="Solid" radii="300">
-                      <Text size="L400">New Messages</Text>
-                    </Badge>
-                  </TimelineDivider>
-                </MessageBase>
+                <MemoizedTimelineEvent
+                  key={d.mEventId}
+                  mEvent={d.mEvent}
+                  mEventId={d.mEventId}
+                  timelineSet={d.timelineSet}
+                  item={d.item}
+                  collapsed={d.collapsed}
+                  isHighlighted={focusItem?.eventId === d.mEventId && !!focusItem.highlight}
+                  isEditing={editId === d.mEventId}
+                  reactionRelations={getEventReactions(d.timelineSet, d.mEventId)}
+                  editedEvent={getEditedEvent(d.mEventId, d.mEvent, d.timelineSet)}
+                  isRedacted={d.mEvent.isRedacted()}
+                  eventStatus={d.mEvent.status}
+                />
               );
-            }
-            if (d.type === 'day-divider') {
-              return (
-                <MessageBase key={d.key} space={messageSpacing}>
-                  <TimelineDivider variant="Surface">
-                    <Badge as="span" size="500" variant="Secondary" fill="None" radii="300">
-                      <Text size="L400">
-                        {(() => {
-                          if (today(d.ts)) return 'Today';
-                          if (yesterday(d.ts)) return 'Yesterday';
-                          return timeDayMonthYear(d.ts);
-                        })()}
-                      </Text>
-                    </Badge>
-                  </TimelineDivider>
-                </MessageBase>
-              );
-            }
-            return (
-              <MemoizedTimelineEvent
-                key={d.mEventId}
-                mEvent={d.mEvent}
-                mEventId={d.mEventId}
-                timelineSet={d.timelineSet}
-                item={d.item}
-                collapsed={d.collapsed}
-                isHighlighted={focusItem?.eventId === d.mEventId && !!focusItem.highlight}
-                isEditing={editId === d.mEventId}
-                reactionRelations={getEventReactions(d.timelineSet, d.mEventId)}
-                editedEvent={getEditedEvent(d.mEventId, d.mEvent, d.timelineSet)}
-                isRedacted={d.mEvent.isRedacted()}
-                eventStatus={d.mEvent.status}
-              />
-            );
-          })}
+            })}
 
-
-          {/* Invisible anchor — triggers paginate(Forward) when scrolled into view.
+            {/* Invisible anchor — triggers paginate(Forward) when scrolled into view.
               Always rendered so IntersectionObserver fires on initial mount and
               drives recalibratePagination → scroll-to-bottom on page refresh.
               Decoupled from visual skeletons so reactions/edits never cause a
               placeholder flash. */}
-          <div ref={observeFrontAnchor} />
-          {/* Visual skeletons — only shown while the server fetch is in-flight. */}
-          {isForwardPaginating &&
-            (messageLayout === MessageLayout.Compact ? (
-              <>
-                <MessageBase>
-                  <CompactPlaceholder key={getItems().length} />
-                </MessageBase>
-                <MessageBase>
-                  <CompactPlaceholder key={getItems().length} />
-                </MessageBase>
-                <MessageBase>
-                  <CompactPlaceholder key={getItems().length} />
-                </MessageBase>
-                <MessageBase>
-                  <CompactPlaceholder key={getItems().length} />
-                </MessageBase>
-                <MessageBase>
-                  <CompactPlaceholder key={getItems().length} />
-                </MessageBase>
-              </>
-            ) : (
-              <>
-                <MessageBase>
-                  <DefaultPlaceholder key={getItems().length} />
-                </MessageBase>
-                <MessageBase>
-                  <DefaultPlaceholder key={getItems().length} />
-                </MessageBase>
-                <MessageBase>
-                  <DefaultPlaceholder key={getItems().length} />
-                </MessageBase>
-              </>
-            ))}
-          <span ref={atBottomAnchorRef} />
-        </Box>
-      </Scroll>
-      <TimelineFloat
-        className={css.JumpToLatestFloat}
-        position="Bottom"
-        data-visible={!atBottom && !lastMsgVisible}
-      >
-        <Chip
-          variant="SurfaceVariant"
-          radii="Pill"
-          outlined
-          before={<Icon size="50" src={Icons.ArrowBottom} />}
-          onClick={handleJumpToLatest}
+            <div ref={observeFrontAnchor} />
+            {/* Visual skeletons — only shown while the server fetch is in-flight. */}
+            {isForwardPaginating &&
+              (messageLayout === MessageLayout.Compact ? (
+                <>
+                  <MessageBase>
+                    <CompactPlaceholder key={getItems().length} />
+                  </MessageBase>
+                  <MessageBase>
+                    <CompactPlaceholder key={getItems().length} />
+                  </MessageBase>
+                  <MessageBase>
+                    <CompactPlaceholder key={getItems().length} />
+                  </MessageBase>
+                  <MessageBase>
+                    <CompactPlaceholder key={getItems().length} />
+                  </MessageBase>
+                  <MessageBase>
+                    <CompactPlaceholder key={getItems().length} />
+                  </MessageBase>
+                </>
+              ) : (
+                <>
+                  <MessageBase>
+                    <DefaultPlaceholder key={getItems().length} />
+                  </MessageBase>
+                  <MessageBase>
+                    <DefaultPlaceholder key={getItems().length} />
+                  </MessageBase>
+                  <MessageBase>
+                    <DefaultPlaceholder key={getItems().length} />
+                  </MessageBase>
+                </>
+              ))}
+            <span ref={atBottomAnchorRef} />
+          </Box>
+        </Scroll>
+        <TimelineFloat
+          className={css.JumpToLatestFloat}
+          position="Bottom"
+          data-visible={!atBottom && !lastMsgVisible}
         >
-          <Text size="L400">Jump to Latest</Text>
-        </Chip>
-      </TimelineFloat>
-      {selectionMode && (
-        <TimelineFloat position="Bottom">
-          <SelectionActionBar
-            selectedCount={selectedIds.size}
-            onDelete={handleBulkDelete}
-            onCancel={handleCancelSelection}
-            deleting={bulkDeleting}
-          />
+          <Chip
+            variant="SurfaceVariant"
+            radii="Pill"
+            outlined
+            before={<Icon size="50" src={Icons.ArrowBottom} />}
+            onClick={handleJumpToLatest}
+          >
+            <Text size="L400">Jump to Latest</Text>
+          </Chip>
         </TimelineFloat>
-      )}
-    </Box>
+        {selectionMode && (
+          <TimelineFloat position="Bottom">
+            <SelectionActionBar
+              selectedCount={selectedIds.size}
+              onDelete={handleBulkDelete}
+              onCancel={handleCancelSelection}
+              deleting={bulkDeleting}
+            />
+          </TimelineFloat>
+        )}
+      </Box>
     </TimelineMessageContext.Provider>
   );
 }

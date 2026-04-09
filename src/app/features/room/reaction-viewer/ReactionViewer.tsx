@@ -109,7 +109,10 @@ export const ReactionViewer = as<'div', ReactionViewerProps>(
             </IconButton>
           </Header>
 
-          <Box grow="Yes" style={{ minHeight: `calc(${maxUserCount} * 2.5rem + ${config.space.S400})` }}>
+          <Box
+            grow="Yes"
+            style={{ minHeight: `calc(${maxUserCount} * 2.5rem + ${config.space.S400})` }}
+          >
             <Scroll visibility="Hover" hideTrack size="300">
               <Box className={css.Content} direction="Column">
                 {selectedReactions.map((mEvent) => {

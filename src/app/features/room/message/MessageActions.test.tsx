@@ -1,15 +1,5 @@
 // FocusTrap throws in jsdom because there are no tabbable elements in the virtual DOM.
 // Replace it with a passthrough so modals can still render and be tested.
-vi.mock('focus-trap-react', () => ({
-  default: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-}));
-
-// Prevents ReactEditor.focus() from firing asynchronously after component
-// unmount, which causes "Cannot resolve a DOM node from Slate node" errors.
-vi.mock('../../../utils/user-agent', () => ({
-  mobileOrTablet: () => true,
-}));
-
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
@@ -27,17 +17,23 @@ import {
   createMockRoom,
 } from '../../../../test/mocks';
 
+vi.mock('focus-trap-react', () => ({
+  default: ({ children }: { children: React.ReactNode }) => children,
+}));
+
+// Prevents ReactEditor.focus() from firing asynchronously after component
+// unmount, which causes "Cannot resolve a DOM node from Slate node" errors.
+vi.mock('../../../utils/user-agent', () => ({
+  mobileOrTablet: () => true,
+}));
+
 // ─── Helpers ──────────────────────────────────────────────────────────────
 
 /**
  * Builds a mock m.reaction MatrixEvent.
  * The base createMockMatrixEvent doesn't include getRelation(), so we add it here.
  */
-function createMockReactionEvent(
-  sender: string,
-  key: string,
-  targetEventId: string
-): MatrixEvent {
+function createMockReactionEvent(sender: string, key: string, targetEventId: string): MatrixEvent {
   const event = createMockMatrixEvent({
     id: `$reaction-${key}-${sender}`,
     sender,
@@ -171,7 +167,10 @@ describe('message deletion (MessageDeleteItem)', () => {
     let resolveFn!: (v: unknown) => void;
     const mx = createMockMatrixClient();
     (mx.redactEvent as any).mockImplementationOnce(
-      () => new Promise((resolve) => { resolveFn = resolve; })
+      () =>
+        new Promise((resolve) => {
+          resolveFn = resolve;
+        })
     );
     const room = createMockRoom(ROOM_ID, mx);
     const mEvent = createMockMatrixEvent({ id: EVENT_ID });
@@ -211,12 +210,7 @@ describe('message editing (MessageEditor)', () => {
     await act(async () => {
       render(
         <MatrixTestWrapper matrixClient={mx}>
-          <MessageEditor
-            roomId={ROOM_ID}
-            room={room as any}
-            mEvent={mEvent}
-            onCancel={onCancel}
-          />
+          <MessageEditor roomId={ROOM_ID} room={room as any} mEvent={mEvent} onCancel={onCancel} />
         </MatrixTestWrapper>
       );
     });
@@ -251,7 +245,6 @@ describe('message editing (MessageEditor)', () => {
       expect(onCancel).toHaveBeenCalledTimes(1);
     });
   });
-
 });
 
 // ─── Emoji Reactions ──────────────────────────────────────────────────────
@@ -265,10 +258,12 @@ describe('emoji reactions (Reactions)', () => {
    */
   const REACTION_BTN_SELECTOR = '[data-reaction-key]';
 
-  function renderReactions(opts: {
-    canSendReaction?: boolean;
-    includeMyReaction?: boolean;
-  } = {}) {
+  function renderReactions(
+    opts: {
+      canSendReaction?: boolean;
+      includeMyReaction?: boolean;
+    } = {}
+  ) {
     const mx = createMockMatrixClient();
     const room = createMockRoom(ROOM_ID, mx);
 

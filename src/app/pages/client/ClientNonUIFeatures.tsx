@@ -40,7 +40,7 @@ function SearchCacheUpdater() {
       const body = content?.body;
       if (typeof body !== 'string' || !body) return;
 
-      const msgtype = content.msgtype;
+      const { msgtype } = content;
       const eventId = mEvent.getId();
       if (!eventId) return;
 
@@ -77,7 +77,7 @@ function SearchCacheUpdater() {
 
       // If the event is still encrypted, wait for decryption
       if (mEvent.isEncrypted() && !mEvent.isDecryptionFailure()) {
-        const roomId = room.roomId;
+        const { roomId } = room;
         const onDecrypted = () => {
           mEvent.removeListener(MatrixEventEvent.Decrypted, onDecrypted);
           pendingDecryptions.delete(mEvent);

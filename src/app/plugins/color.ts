@@ -1,7 +1,11 @@
 import chroma from 'chroma-js';
 import { ThemeKind } from '../hooks/useTheme';
 
-export const accessibleColor = (themeKind: ThemeKind, color: string, bypassLightness = false): string => {
+export const accessibleColor = (
+  themeKind: ThemeKind,
+  color: string,
+  bypassLightness = false
+): string => {
   if (!chroma.valid(color)) return color;
   if (bypassLightness) return chroma(color).hex();
 

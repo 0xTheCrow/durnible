@@ -129,7 +129,7 @@ export const useServerSearch = (params: ServerSearchParams) => {
             },
             filter: {
               limit: 20,
-              rooms: rooms,
+              rooms,
               senders,
             },
             include_state: false,

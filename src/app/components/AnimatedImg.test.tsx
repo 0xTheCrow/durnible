@@ -12,9 +12,7 @@ describe('AnimatedImg', () => {
   });
 
   it('renders img with canvas wrapper when pauseGifs is true', () => {
-    const { container } = render(
-      <AnimatedImg pauseGifs src="test.gif" alt="test" />
-    );
+    render(<AnimatedImg pauseGifs src="test.gif" alt="test" />);
     const img = screen.getByAltText('test');
     expect(img).toBeInTheDocument();
     // Should be wrapped in a span
@@ -22,9 +20,7 @@ describe('AnimatedImg', () => {
   });
 
   it('shows canvas after image loads when pauseGifs is true', () => {
-    const { container } = render(
-      <AnimatedImg pauseGifs src="test.gif" alt="test" />
-    );
+    const { container } = render(<AnimatedImg pauseGifs src="test.gif" alt="test" />);
     // No canvas before load
     expect(container.querySelector('canvas')).toBeNull();
 

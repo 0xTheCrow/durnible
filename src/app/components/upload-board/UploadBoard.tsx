@@ -52,14 +52,13 @@ export function UploadBoardHeader({
   const isError = uploads.some((upload) => upload.status === UploadStatus.Error);
   const progress = uploads.reduce(
     (acc, upload) => {
-      acc.total += upload.file.size;
-      if (upload.status === UploadStatus.Loading) {
-        acc.loaded += upload.progress.loaded;
-      }
-      if (upload.status === UploadStatus.Success) {
-        acc.loaded += upload.file.size;
-      }
-      return acc;
+      let loadedDelta = 0;
+      if (upload.status === UploadStatus.Loading) loadedDelta = upload.progress.loaded;
+      else if (upload.status === UploadStatus.Success) loadedDelta = upload.file.size;
+      return {
+        total: acc.total + upload.file.size,
+        loaded: acc.loaded + loadedDelta,
+      };
     },
     { loaded: 0, total: 0 }
   );

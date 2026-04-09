@@ -10,7 +10,13 @@ type HexColorPickerPopOutProps = {
   onChange?: (color: string) => void;
   onRemove?: () => void;
 };
-export function HexColorPickerPopOut({ picker, color, onChange, onRemove, children }: HexColorPickerPopOutProps) {
+export function HexColorPickerPopOut({
+  picker,
+  color,
+  onChange,
+  onRemove,
+  children,
+}: HexColorPickerPopOutProps) {
   const [cords, setCords] = useState<RectCords>();
   const [hexInput, setHexInput] = useState(color ?? '');
 

@@ -30,7 +30,13 @@ type TimelineSliderProps = {
   error?: string;
 };
 
-export function TimelineSlider({ room, onJumpToTimestamp, onJumpToLatest, loading, error }: TimelineSliderProps) {
+export function TimelineSlider({
+  room,
+  onJumpToTimestamp,
+  onJumpToLatest,
+  loading,
+  error,
+}: TimelineSliderProps) {
   const visible = useAtomValue(timelineSliderVisibleAtom);
 
   const createStateEvent = useStateEvent(room, StateEvent.RoomCreate);
@@ -57,16 +63,13 @@ export function TimelineSlider({ room, onJumpToTimestamp, onJumpToLatest, loadin
 
   const currentTs = positionToTs(position);
 
-  const getPositionFromPointer = useCallback(
-    (clientY: number) => {
-      const track = trackRef.current;
-      if (!track) return 1;
-      const rect = track.getBoundingClientRect();
-      const y = clientY - rect.top;
-      return Math.max(0, Math.min(1, y / rect.height));
-    },
-    []
-  );
+  const getPositionFromPointer = useCallback((clientY: number) => {
+    const track = trackRef.current;
+    if (!track) return 1;
+    const rect = track.getBoundingClientRect();
+    const y = clientY - rect.top;
+    return Math.max(0, Math.min(1, y / rect.height));
+  }, []);
 
   // Refs so the document-level onUp always reads the latest callbacks
   const onJumpRef = useRef(onJumpToTimestamp);
@@ -112,7 +115,7 @@ export function TimelineSlider({ room, onJumpToTimestamp, onJumpToLatest, loadin
       document.addEventListener('pointermove', onMove);
       document.addEventListener('pointerup', onUp);
     },
-    [getPositionFromPointer]
+    [getPositionFromPointer, setPosition]
   );
 
   if (!visible) return null;
@@ -130,27 +133,40 @@ export function TimelineSlider({ room, onJumpToTimestamp, onJumpToLatest, loadin
   return (
     <div className={css.SliderContainer}>
       <div className={css.RangeChips}>
-        {rangeLabels.map(({ key, label }) => (
-          <div
-            key={key}
-            className={css.RangeChip}
-            data-active={sliderRange === key}
-            onClick={() => {
-              const currentTimestamp = minTs + (maxTs - minTs) * position;
-              const newRangeDuration = rangeToMs[key];
-              const newMinTs = newRangeDuration !== null ? Math.max(createTs, now - newRangeDuration) : createTs;
-              const newRange = maxTs - newMinTs;
-              if (newRange > 0) {
-                setPosition(Math.max(0, Math.min(1, (currentTimestamp - newMinTs) / newRange)));
-              }
-              setSliderRange(key);
-            }}
-          >
-            <Text size="T200" style={{ color: sliderRange === key ? 'white' : undefined }}>
-              {label}
-            </Text>
-          </div>
-        ))}
+        {rangeLabels.map(({ key, label }) => {
+          const handleSelect = () => {
+            const currentTimestamp = minTs + (maxTs - minTs) * position;
+            const newRangeDuration = rangeToMs[key];
+            const newMinTs =
+              newRangeDuration !== null ? Math.max(createTs, now - newRangeDuration) : createTs;
+            const newRange = maxTs - newMinTs;
+            if (newRange > 0) {
+              setPosition(Math.max(0, Math.min(1, (currentTimestamp - newMinTs) / newRange)));
+            }
+            setSliderRange(key);
+          };
+          return (
+            <div
+              key={key}
+              role="button"
+              tabIndex={0}
+              aria-pressed={sliderRange === key}
+              className={css.RangeChip}
+              data-active={sliderRange === key}
+              onClick={handleSelect}
+              onKeyDown={(evt) => {
+                if (evt.key === 'Enter' || evt.key === ' ') {
+                  evt.preventDefault();
+                  handleSelect();
+                }
+              }}
+            >
+              <Text size="T200" style={{ color: sliderRange === key ? 'white' : undefined }}>
+                {label}
+              </Text>
+            </div>
+          );
+        })}
       </div>
       <div
         ref={trackRef}
@@ -187,7 +203,8 @@ export function TimelineSlider({ room, onJumpToTimestamp, onJumpToLatest, loadin
         {hovering && !dragging && (
           <div className={css.SliderTooltip} style={{ top: `${hoverPos * 100}%` }}>
             <Text size="T200">
-              {timeDayMonthYear(positionToTs(hoverPos))} {timeHourMinute(positionToTs(hoverPos), hour24Clock)}
+              {timeDayMonthYear(positionToTs(hoverPos))}{' '}
+              {timeHourMinute(positionToTs(hoverPos), hour24Clock)}
             </Text>
           </div>
         )}

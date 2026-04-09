@@ -51,18 +51,16 @@ function ResetPasswordComplete({ email }: { email?: string }) {
 
   return (
     <OverlayModal open requestClose={handleClick}>
-          <Dialog>
-            <Box style={{ padding: config.space.S400 }} direction="Column" gap="400">
-              <Text>
-                Password has been reset successfully. Please login with your new password.
-              </Text>
-              <Button variant="Primary" onClick={handleClick}>
-                <Text size="B400" as="span">
-                  Login
-                </Text>
-              </Button>
-            </Box>
-          </Dialog>
+      <Dialog>
+        <Box style={{ padding: config.space.S400 }} direction="Column" gap="400">
+          <Text>Password has been reset successfully. Please login with your new password.</Text>
+          <Button variant="Primary" onClick={handleClick}>
+            <Text size="B400" as="span">
+              Login
+            </Text>
+          </Button>
+        </Box>
+      </Dialog>
     </OverlayModal>
   );
 }
