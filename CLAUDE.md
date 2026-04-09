@@ -56,7 +56,10 @@ Cinny is a Matrix chat client built with React, TypeScript, and Vite.
 
 ## Git Hooks
 
-- **pre-commit** (Husky): runs `npm test` — all tests must pass before committing
+- **pre-commit** (Husky): runs `npx lint-staged && npm test`.
+  - `lint-staged` lints only staged files (eslint on `*.{ts,tsx,js,jsx,cjs,mjs}`, prettier `--check` on everything else). Config lives in the `lint-staged` section of `package.json`.
+  - Then `npm test` runs the full Vitest suite.
+  - Lint errors or failing tests block the commit; lint warnings do not.
 
 ## Environment Variables
 

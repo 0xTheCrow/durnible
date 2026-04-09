@@ -96,11 +96,6 @@ module.exports = {
     'no-empty-function': 'off',
     '@typescript-eslint/no-empty-function': ['error', { allow: ['arrowFunctions'] }],
 
-    // Function declarations are hoisted, so forward references to them are
-    // safe at runtime. The conservative default flags every forward reference
-    // including hoisted functions; relax it for functions specifically.
-    'no-use-before-define': ['error', { functions: false, classes: true, variables: true }],
-
     // TypeScript's `strict` mode already errors on forward references to
     // const/let/class via TS2448, so the eslint rule is purely redundant in
     // this codebase. The remaining categories it catches (function declarations,
