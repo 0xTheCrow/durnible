@@ -271,7 +271,6 @@ function RoomNotificationsGroupComp({
           <RenderMessageContent
             displayName={displayName}
             msgType={event.content.msgtype ?? ''}
-            ts={event.origin_server_ts}
             content={getContent()}
             mediaAutoLoad={mediaAutoLoad}
             urlPreview={urlPreview}
@@ -328,7 +327,6 @@ function RoomNotificationsGroupComp({
                   <RenderMessageContent
                     displayName={displayName}
                     msgType={mEvent.getContent().msgtype ?? ''}
-                    ts={mEvent.getTs()}
                     edited={!!editedEvent}
                     content={getContent()}
                     mediaAutoLoad={mediaAutoLoad}

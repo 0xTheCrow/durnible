@@ -31,7 +31,7 @@ import { PdfViewer } from './Pdf-viewer';
 import { TextViewer } from './text-viewer';
 import { testMatrixTo } from '../plugins/matrix-to';
 import {
-  testYouTubeUrl, getYouTubeVideoId,
+  testYouTubeUrl, getYouTubeEmbedInfo,
   testSpotifyUrl, getSpotifyEmbedInfo,
   testSoundCloudUrl, getSoundCloudEmbedInfo,
   testTwitterUrl, getTwitterEmbedInfo,
@@ -47,7 +47,7 @@ function VideoWithPersistedVolume(props: React.VideoHTMLAttributes<HTMLVideoElem
 
   useEffect(() => {
     const el = ref.current;
-    if (!el) return;
+    if (!el) return undefined;
 
     const stored = localStorage.getItem(MEDIA_VOLUME_KEY);
     el.volume = stored !== null ? Math.max(0, Math.min(1, parseFloat(stored))) : 0.5;
@@ -66,8 +66,10 @@ function VideoWithPersistedVolume(props: React.VideoHTMLAttributes<HTMLVideoElem
 type RenderMessageContentProps = {
   displayName: string;
   msgType: string;
-  ts: number;
   edited?: boolean;
+  // matrix-js-sdk's IContent is `[key: string]: any`; we keep parity so callers
+  // can pass mEvent.getContent() directly without per-call casts.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   content: Record<string, any>;
   mediaAutoLoad?: boolean;
   urlPreview?: boolean;
@@ -76,10 +78,9 @@ type RenderMessageContentProps = {
   linkifyOpts: Opts;
   outlineAttachment?: boolean;
 };
-export const RenderMessageContent = React.memo(function RenderMessageContent({
+function RenderMessageContentInner({
   displayName,
   msgType,
-  ts,
   edited,
   content,
   mediaAutoLoad,
@@ -114,13 +115,13 @@ export const RenderMessageContent = React.memo(function RenderMessageContent({
     return (
       <>
         {youtubeUrls.map((url) => {
-          const videoId = getYouTubeVideoId(url);
-          return videoId ? (
+          const info = getYouTubeEmbedInfo(url);
+          return info ? (
             <YouTubeEmbed
               key={url}
-              videoId={videoId}
+              videoId={info.videoId}
               url={url}
-              ts={ts}
+              start={info.start}
               showEmbed={showEmbed}
               showLink={showLink}
               style={{ marginTop: config.space.S200 }}
@@ -381,4 +382,6 @@ export const RenderMessageContent = React.memo(function RenderMessageContent({
   }
 
   return <UnsupportedContent />;
-});
+}
+
+export const RenderMessageContent = React.memo(RenderMessageContentInner);

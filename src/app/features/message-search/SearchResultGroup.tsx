@@ -133,7 +133,6 @@ export function SearchResultGroup({
           <RenderMessageContent
             displayName={displayName}
             msgType={event.content.msgtype ?? ''}
-            ts={event.origin_server_ts}
             content={getContent()}
             mediaAutoLoad={mediaAutoLoad}
             urlPreview={false}

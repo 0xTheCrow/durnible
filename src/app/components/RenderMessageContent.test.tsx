@@ -36,7 +36,6 @@ function renderMessageContent(
       <RenderMessageContent
         displayName="Alice"
         msgType={msgType}
-        ts={Date.now()}
         content={content as any}
         mediaAutoLoad={opts?.mediaAutoLoad ?? false}
         urlPreview={false}
@@ -78,8 +77,7 @@ describe('RenderMessageContent', () => {
           <RenderMessageContent
             displayName="Alice"
             msgType={MsgType.Text}
-            ts={Date.now()}
-            edited
+                edited
             content={{ body: 'edited message', msgtype: 'm.text' } as any}
             mediaAutoLoad={false}
             urlPreview={false}
@@ -236,7 +234,6 @@ describe('RenderMessageContent memoization', () => {
         <RenderMessageContent
           displayName="Alice"
           msgType={MsgType.Image}
-          ts={1000}
           content={STABLE_IMAGE_CONTENT as any}
           mediaAutoLoad={false}
           urlPreview={false}
@@ -277,7 +274,6 @@ describe('RenderMessageContent memoization', () => {
         <RenderMessageContent
           displayName="Alice"
           msgType={MsgType.Image}
-          ts={1000}
           content={STABLE_IMAGE_CONTENT as any}
           mediaAutoLoad={false}
           urlPreview={false}
@@ -294,8 +290,7 @@ describe('RenderMessageContent memoization', () => {
           <RenderMessageContent
             displayName="Alice"
             msgType={MsgType.Image}
-            ts={1000}
-            content={STABLE_IMAGE_CONTENT as any}
+              content={STABLE_IMAGE_CONTENT as any}
             mediaAutoLoad={false}
             urlPreview={false}
             htmlReactParserOptions={htmlReactParserOptions}

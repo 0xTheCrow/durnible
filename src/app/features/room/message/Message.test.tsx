@@ -70,7 +70,6 @@ function renderMessage(opts: {
         <RenderMessageContent
           displayName={sender.split(':')[0].slice(1)}
           msgType={opts.msgtype}
-          ts={Date.now()}
           content={content as any}
           mediaAutoLoad={false}
           urlPreview={false}
@@ -336,8 +335,7 @@ describe('Message component', () => {
             <RenderMessageContent
               displayName="Alice"
               msgType={MsgType.Text}
-              ts={Date.now()}
-              content={aliceEvent.getContent() as any}
+                  content={aliceEvent.getContent() as any}
               mediaAutoLoad={false}
               urlPreview={false}
               htmlReactParserOptions={htmlReactParserOptions}
@@ -348,8 +346,7 @@ describe('Message component', () => {
             <RenderMessageContent
               displayName="Bob"
               msgType={MsgType.Text}
-              ts={Date.now()}
-              content={bobEvent.getContent() as any}
+                  content={bobEvent.getContent() as any}
               mediaAutoLoad={false}
               urlPreview={false}
               htmlReactParserOptions={htmlReactParserOptions}

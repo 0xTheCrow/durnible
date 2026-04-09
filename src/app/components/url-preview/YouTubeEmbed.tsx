@@ -2,13 +2,18 @@ import React from 'react';
 import classNames from 'classnames';
 import { Box, Text, as, color } from 'folds';
 import * as css from './YouTubeEmbed.css';
+import { useInvidiousInstance } from '../../utils/invidiousInstance';
 
 const linkStyles = { color: color.Primary.Main };
 
-export const YouTubeEmbed = as<'div', { videoId: string; url: string; ts: number; showEmbed?: boolean; showLink?: boolean }>(
-  ({ videoId, url, ts, showEmbed = true, showLink = true, className, ...props }, ref) => {
-    const linkUrl = `https://inv.nadeko.net/watch?v=${videoId}`;
-    const showLinkBar = showLink && linkUrl !== url;
+export const YouTubeEmbed = as<'div', { videoId: string; url: string; start?: number; showEmbed?: boolean; showLink?: boolean }>(
+  ({ videoId, url, start, showEmbed = true, showLink = true, className, ...props }, ref) => {
+    const invidiousInstance = useInvidiousInstance();
+    const embedSrc = `https://www.youtube-nocookie.com/embed/${videoId}${start ? `?start=${start}` : ''}`;
+    const linkUrl = invidiousInstance
+      ? `https://${invidiousInstance}/watch?v=${videoId}${start ? `&t=${start}` : ''}`
+      : undefined;
+    const showLinkBar = showLink && linkUrl !== undefined && linkUrl !== url;
     return (
       <Box
         shrink="No"
@@ -21,7 +26,7 @@ export const YouTubeEmbed = as<'div', { videoId: string; url: string; ts: number
           <div className={css.YouTubeIframeContainer}>
             <iframe
               className={css.YouTubeIframe}
-              src={`https://www.youtube-nocookie.com/embed/${videoId}`}
+              src={embedSrc}
               title="YouTube video"
               allow="encrypted-media"
               allowFullScreen
@@ -30,18 +35,18 @@ export const YouTubeEmbed = as<'div', { videoId: string; url: string; ts: number
             />
           </div>
         )}
-        {showLinkBar && (
+        {showLinkBar && linkUrl && (
           <div className={css.YouTubeLink}>
             <Text
               style={linkStyles}
               as="a"
-              href={`https://inv.nadeko.net/watch?v=${videoId}`}
+              href={linkUrl}
               target="_blank"
               rel="noreferrer noopener"
               size="T200"
               priority="300"
             >
-              {`[Invidious] - https://inv.nadeko.net/watch?v=${videoId}`}
+              {`[Invidious] - ${linkUrl}`}
             </Text>
           </div>
         )}
