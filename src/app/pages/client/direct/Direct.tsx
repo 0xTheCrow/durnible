@@ -281,7 +281,7 @@ export function Direct() {
           </Box>
         </PageNavContent>
       )}
-      <FavoritesSection isDrawerMode />
+      <FavoritesSection isDrawerMode={!isDesktop} />
     </PageNav>
   );
 }

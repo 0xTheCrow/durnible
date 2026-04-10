@@ -495,6 +495,14 @@ export function RoomTimeline({
   const atBottomAnchorRef = useRef<HTMLElement>(null);
   const [atBottom, setAtBottom] = useState<boolean>(true);
   const atBottomRef = useRef(true);
+  // Pixel-precise companion to atBottomRef. The IntersectionObserver-driven
+  // atBottomRef has a 100px rootMargin (so a small user scroll doesn't flip
+  // it), which is the right behavior for mark-as-read leniency but the wrong
+  // behavior for the content ResizeObserver: a tiny user scroll followed by
+  // a content resize (e.g., backpagination) would yank them back to the
+  // bottom. This ref reflects the user's actual scroll position at any given
+  // moment so the resize observer can make a stricter decision.
+  const atExactBottomRef = useRef(true);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -802,6 +810,22 @@ export function RoomTimeline({
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [room]);
 
+  // Track the user's pixel-precise distance from the bottom on every scroll
+  // event. The content ResizeObserver below relies on this instead of the
+  // 100px-lenient atBottomRef so a small user scroll followed by a content
+  // resize doesn't yank them back to the bottom unexpectedly.
+  useEffect(() => {
+    const scrollEl = getScrollElement();
+    if (!scrollEl) return undefined;
+    const update = () => {
+      const max = scrollEl.scrollHeight - scrollEl.offsetHeight;
+      atExactBottomRef.current = scrollEl.scrollTop >= max - 4;
+    };
+    update();
+    scrollEl.addEventListener('scroll', update, { passive: true });
+    return () => scrollEl.removeEventListener('scroll', update);
+  }, [getScrollElement]);
+
   // Stay at bottom when message content grows (e.g. a tall image finishes loading)
   useResizeObserver(
     useMemo(() => {
@@ -813,7 +837,11 @@ export function RoomTimeline({
         }
         const scrollElement = getScrollElement();
         if (!scrollElement) return;
-        if (atBottomRef.current) {
+        // Use the pixel-precise ref here, not atBottomRef. The latter has a
+        // 100px rootMargin and would force-scroll the user back to the bottom
+        // after they manually scroll up by a tiny amount and a backpagination
+        // / image-load resize fires.
+        if (atExactBottomRef.current) {
           scrollToBottom(scrollElement);
         }
       };
