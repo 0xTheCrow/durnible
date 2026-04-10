@@ -42,7 +42,6 @@ import { useNavToActivePathMapper } from '../../../hooks/useNavToActivePathMappe
 import { useDirectRooms } from './useDirectRooms';
 import { PageNav, PageNavContent, PageNavHeader } from '../../../components/page';
 import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
-import { FavoritesSection } from '../FavoritesDrawer';
 import { useClosedNavCategoriesAtom } from '../../../state/hooks/closedNavCategories';
 import { useRoomsUnread } from '../../../state/hooks/unread';
 import { markAsRead } from '../../../utils/notifications';
@@ -171,7 +170,11 @@ function DirectEmpty() {
 }
 
 const DEFAULT_CATEGORY_ID = makeNavCategoryId('direct', 'direct');
-export function Direct() {
+type DirectProps = {
+  isDrawerMode?: boolean;
+  extra?: React.ReactNode;
+};
+export function Direct({ isDrawerMode, extra }: DirectProps = {}) {
   const mx = useMatrixClient();
   useNavToActivePathMapper('direct');
   const screenSize = useScreenSizeContext();
@@ -214,7 +217,11 @@ export function Direct() {
         <DirectEmpty />
       ) : (
         <PageNavContent scrollRef={scrollRef}>
-          <Box direction="Column" gap="300">
+          <Box
+            direction="Column"
+            gap="300"
+            style={isDrawerMode ? { minHeight: '100%', justifyContent: 'center' } : undefined}
+          >
             <NavCategory>
               <NavItem variant="Background" radii="400" aria-selected={createDirectSelected}>
                 <NavButton onClick={() => navigate(getDirectCreatePath())}>
@@ -272,6 +279,7 @@ export function Direct() {
                           room.roomId
                         )}
                         tall={isDesktop}
+                        isDrawerMode={isDrawerMode}
                       />
                     </VirtualTile>
                   );
@@ -281,7 +289,7 @@ export function Direct() {
           </Box>
         </PageNavContent>
       )}
-      <FavoritesSection isDrawerMode={!isDesktop} />
+      {extra}
     </PageNav>
   );
 }

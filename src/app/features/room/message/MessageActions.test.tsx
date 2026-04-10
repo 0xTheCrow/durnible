@@ -107,15 +107,15 @@ describe('message deletion (MessageDeleteItem)', () => {
     const { mx } = renderDeleteItem();
 
     fireEvent.click(screen.getByRole('button', { name: /delete/i }));
-    fireEvent.submit(document.querySelector('form')!);
-
-    await waitFor(() => {
-      expect(mx.redactEvent).toHaveBeenCalled();
-      const [roomId, eventId, , opts] = (mx.redactEvent as any).mock.calls[0];
-      expect(roomId).toBe(ROOM_ID);
-      expect(eventId).toBe(EVENT_ID);
-      expect(opts?.reason).toBeUndefined();
+    await act(async () => {
+      fireEvent.submit(document.querySelector('form')!);
     });
+
+    expect(mx.redactEvent).toHaveBeenCalled();
+    const [roomId, eventId, , opts] = (mx.redactEvent as any).mock.calls[0];
+    expect(roomId).toBe(ROOM_ID);
+    expect(eventId).toBe(EVENT_ID);
+    expect(opts?.reason).toBeUndefined();
   });
 
   it('passes the typed reason to redactEvent', async () => {
@@ -131,15 +131,15 @@ describe('message deletion (MessageDeleteItem)', () => {
     const reasonInput = form.querySelector('input[name="reasonInput"]') as HTMLInputElement;
     Object.defineProperty(form, 'reasonInput', { get: () => reasonInput, configurable: true });
     fireEvent.change(reasonInput, { target: { value: 'Spam' } });
-    fireEvent.submit(form);
-
-    await waitFor(() => {
-      expect(mx.redactEvent).toHaveBeenCalled();
-      const [roomId, eventId, , opts] = (mx.redactEvent as any).mock.calls[0];
-      expect(roomId).toBe(ROOM_ID);
-      expect(eventId).toBe(EVENT_ID);
-      expect(opts?.reason).toBe('Spam');
+    await act(async () => {
+      fireEvent.submit(form);
     });
+
+    expect(mx.redactEvent).toHaveBeenCalled();
+    const [roomId, eventId, , opts] = (mx.redactEvent as any).mock.calls[0];
+    expect(roomId).toBe(ROOM_ID);
+    expect(eventId).toBe(EVENT_ID);
+    expect(opts?.reason).toBe('Spam');
   });
 
   it('shows an error message when the deletion request fails', async () => {
@@ -208,13 +208,15 @@ describe('message editing (MessageEditor)', () => {
       content: { body: 'original text', msgtype: MsgType.Text },
     });
 
-    await act(async () => {
-      render(
-        <MatrixTestWrapper matrixClient={mx}>
-          <MessageEditor roomId={ROOM_ID} room={room as any} mEvent={mEvent} onCancel={onCancel} />
-        </MatrixTestWrapper>
-      );
-    });
+    render(
+      <MatrixTestWrapper matrixClient={mx}>
+        <MessageEditor roomId={ROOM_ID} room={room as any} mEvent={mEvent} onCancel={onCancel} />
+      </MatrixTestWrapper>
+    );
+
+    // Drain Slate's async state updates (queueMicrotask calls from insertFragment/Transforms.select
+    // in the useEffect) so they don't leak outside act() into subsequent tests.
+    await act(async () => {});
 
     return { mx, onCancel };
   }

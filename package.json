@@ -123,6 +123,6 @@
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx,cjs,mjs}": "eslint",
-    "*": "prettier --check --ignore-unknown"
+    "*": "prettier --write --ignore-unknown"
   }
 }

@@ -54,7 +54,6 @@ import { useCategoryHandler } from '../../../hooks/useCategoryHandler';
 import { useNavToActivePathMapper } from '../../../hooks/useNavToActivePathMapper';
 import { PageNav, PageNavHeader, PageNavContent } from '../../../components/page';
 import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
-import { FavoritesSection } from '../FavoritesDrawer';
 import { useRoomsUnread } from '../../../state/hooks/unread';
 import { markAsRead } from '../../../utils/notifications';
 import { useClosedNavCategoriesAtom } from '../../../state/hooks/closedNavCategories';
@@ -197,7 +196,11 @@ function HomeEmpty() {
 }
 
 const DEFAULT_CATEGORY_ID = makeNavCategoryId('home', 'room');
-export function Home() {
+type HomeProps = {
+  isDrawerMode?: boolean;
+  extra?: React.ReactNode;
+};
+export function Home({ isDrawerMode, extra }: HomeProps = {}) {
   const mx = useMatrixClient();
   useNavToActivePathMapper('home');
   const screenSize = useScreenSizeContext();
@@ -244,7 +247,11 @@ export function Home() {
         <HomeEmpty />
       ) : (
         <PageNavContent scrollRef={scrollRef}>
-          <Box direction="Column" gap="300">
+          <Box
+            direction="Column"
+            gap="300"
+            style={isDrawerMode ? { minHeight: '100%', justifyContent: 'center' } : undefined}
+          >
             <NavCategory>
               <NavItem variant="Background" radii="400" aria-selected={createRoomSelected}>
                 <NavButton onClick={() => navigate(getHomeCreatePath())}>
@@ -354,6 +361,7 @@ export function Home() {
                           room.roomId
                         )}
                         tall={isDesktop}
+                        isDrawerMode={isDrawerMode}
                       />
                     </VirtualTile>
                   );
@@ -363,7 +371,7 @@ export function Home() {
           </Box>
         </PageNavContent>
       )}
-      <FavoritesSection isDrawerMode />
+      {extra}
     </PageNav>
   );
 }
