@@ -104,7 +104,6 @@ describe('MemoizedTimelineEvent edit mode', () => {
       </MatrixTestWrapper>
     );
 
-    // Message content visible, no editor
     expect(screen.getByText('Hello world')).toBeInTheDocument();
     expect(screen.queryByText('Save')).not.toBeInTheDocument();
     expect(screen.queryByText('Cancel')).not.toBeInTheDocument();

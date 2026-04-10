@@ -123,7 +123,6 @@ export const useTouchGesture = (
           ) {
             // Double tap detected — prevent synthesized dblclick from also firing
             e.preventDefault();
-            // Toggle zoom
             if (zoomRef.current === 1) {
               setZoomTracked(2);
             } else {

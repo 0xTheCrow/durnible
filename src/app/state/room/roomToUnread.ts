@@ -123,8 +123,6 @@ export const roomToUnreadAtom = atom<RoomToUnread, [RoomToUnreadAction], undefin
       const { unreadInfo } = action;
       const currentUnread = get(baseRoomToUnread).get(unreadInfo.roomId);
       if (currentUnread && unreadEqual(currentUnread, unreadInfoToUnread(unreadInfo))) {
-        // Do not update if unread data has not changes
-        // like total & highlight
         return;
       }
       set(

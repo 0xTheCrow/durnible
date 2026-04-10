@@ -625,11 +625,6 @@ export function RoomTimeline({
     room,
     useCallback(
       (mEvt: MatrixEvent) => {
-        // if user is at bottom of timeline
-        // keep paginating timeline and conditionally mark as read
-        // otherwise we update timeline without paginating
-        // so timeline can be updated with evt like: edits, reactions etc
-
         // Invisible events (reactions, edits, redactions) produce no visible
         // output. Shifting the range window for them drops an item from the top
         // of the rendered list without adding anything at the bottom, causing
@@ -640,9 +635,6 @@ export function RoomTimeline({
         if (atBottomRef.current) {
           if (!isInvisible) {
             if (document.hasFocus() && (!unreadInfo || mEvt.getSender() === mx.getUserId())) {
-              // Check if the document is in focus (user is actively viewing the app),
-              // and either there are no unread messages or the latest message is from the current user.
-              // If either condition is met, trigger the markAsRead function to send a read receipt.
               const evtRoomId = mEvt.getRoomId();
               if (evtRoomId) {
                 requestAnimationFrame(() => markAsRead(mx, evtRoomId, hideActivity));
@@ -981,7 +973,6 @@ export function RoomTimeline({
     }
   }, [eventId, loadEventTimeline, room]);
 
-  // Scroll to bottom on initial timeline load
   useLayoutEffect(() => {
     const scrollEl = scrollRef.current;
     if (scrollEl) {

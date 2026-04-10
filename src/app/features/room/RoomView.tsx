@@ -36,10 +36,8 @@ const shouldFocusMessageField = (evt: KeyboardEvent): boolean => {
     return false;
   }
 
-  // do not focus on F keys
   if (FN_KEYS_REGEX.test(code)) return false;
 
-  // do not focus on numlock/scroll lock
   if (
     code.startsWith('OS') ||
     code.startsWith('Meta') ||
@@ -67,8 +65,6 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
   const alternateInputRef = useRef<HTMLDivElement>(null);
   const roomViewRef = useRef<HTMLDivElement>(null);
 
-  // Reserved for the commented-out RoomViewFollowing toggle below; kept so
-  // re-enabling activity tracking is a one-line uncomment.
   const [_hideActivity] = useSetting(settingsAtom, 'hideActivity');
   const [alternateInput] = useSetting(settingsAtom, 'alternateInput');
   const screenSize = useScreenSizeContext();

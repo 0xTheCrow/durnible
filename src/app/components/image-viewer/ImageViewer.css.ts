@@ -54,30 +54,71 @@ export const ImageViewerContent = style([
   },
 ]);
 
+// Shared base for header edge buttons (close + download). They extend to
+// the top and bottom edges of the header and to one horizontal edge (left
+// for close, right for download), giving a large square hit area in the
+// corner of the viewer. Each must be a direct child of <Header> — wrapping
+// them inside an alignItems="Center" Box collapses the Box to content
+// height and prevents alignSelf: 'stretch' from reaching the header edges.
+const headerEdgeButtonBase = {
+  alignSelf: 'stretch',
+  width: HEADER_HEIGHT,
+  flexShrink: 0,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  background: 'transparent',
+  border: 'none',
+  cursor: 'pointer',
+  color: 'inherit',
+  transition: 'background-color 120ms ease',
+  selectors: {
+    '&:hover': {
+      backgroundColor: color.SurfaceVariant.ContainerHover,
+    },
+    '&:focus-visible': {
+      outline: `${config.borderWidth.B400} solid ${color.Primary.Main}`,
+      outlineOffset: `calc(-1 * ${config.borderWidth.B400})`,
+    },
+  },
+} as const;
+
 // Header close (back arrow) button — extends to the left, top, and bottom
-// edges of the header so the entire corner is a click target. Width matches
-// the header height for a square hit area.
+// edges of the header so the entire corner is a click target.
 export const ImageViewerCloseButton = style([
   DefaultReset,
+  headerEdgeButtonBase,
   {
     // Pull past the header's left padding so the button reaches the edge.
     marginLeft: `calc(-1 * ${config.space.S300})`,
-    // Stretch to fill the header's full height (overrides default flex
-    // alignItems="Center" on the wrapping Box).
+  },
+]);
+
+// Header download button — mirrors the close button on the right side but
+// uses the Primary variant background and includes a "Download" label
+// alongside the icon, so the width is content-sized rather than square.
+export const ImageViewerDownloadButton = style([
+  DefaultReset,
+  {
     alignSelf: 'stretch',
-    width: HEADER_HEIGHT,
     flexShrink: 0,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    background: 'transparent',
+    gap: config.space.S200,
+    paddingLeft: config.space.S500,
+    paddingRight: config.space.S500,
+    // Pull past the header's right padding so the button reaches the edge.
+    marginRight: `calc(-1 * ${config.space.S300})`,
+    backgroundColor: color.Primary.Main,
+    color: color.Primary.OnMain,
     border: 'none',
     cursor: 'pointer',
-    color: 'inherit',
+    fontWeight: 600,
     transition: 'background-color 120ms ease',
     selectors: {
       '&:hover': {
-        backgroundColor: color.SurfaceVariant.ContainerHover,
+        backgroundColor: color.Primary.MainHover,
       },
       '&:focus-visible': {
         outline: `${config.borderWidth.B400} solid ${color.Primary.Main}`,

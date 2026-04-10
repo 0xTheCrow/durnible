@@ -60,7 +60,6 @@ export const ImageViewer = as<'div', ImageViewerProps>(
         const cached = resolvedSrcCacheRef.current.get(targetIndex);
         if (cached) {
           gallery.onNavigate({ src: cached, alt: target.alt, index: targetIndex });
-          // Reset zoom/pan when switching images so the new one starts fresh.
           setZoom(1);
           setPan({ translateX: 0, translateY: 0 });
           return;
@@ -90,7 +89,6 @@ export const ImageViewer = as<'div', ImageViewerProps>(
       if (gallery) navigateTo(gallery.index + 1);
     }, [gallery, navigateTo]);
 
-    // Keyboard navigation: arrow keys move through the gallery.
     useEffect(() => {
       if (!gallery) return undefined;
       const handler = (evt: KeyboardEvent) => {
@@ -195,16 +193,18 @@ export const ImageViewer = as<'div', ImageViewerProps>(
             >
               <Icon size="200" src={Icons.Plus} />
             </IconButton>
-            <Chip
-              variant="Primary"
-              size="500"
-              onClick={handleDownload}
-              radii="300"
-              before={<Icon size="200" src={Icons.Download} />}
-            >
-              <Text size="B400">Download</Text>
-            </Chip>
           </Box>
+          <button
+            type="button"
+            className={css.ImageViewerDownloadButton}
+            onClick={handleDownload}
+            aria-label="Download"
+          >
+            <Icon size="200" src={Icons.Download} />
+            <Text size="B400" as="span">
+              Download
+            </Text>
+          </button>
         </Header>
         <Box
           grow="Yes"

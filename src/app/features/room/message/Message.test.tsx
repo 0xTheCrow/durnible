@@ -124,7 +124,6 @@ describe('edit mode', () => {
       </MatrixTestWrapper>
     );
 
-    // Content is visible, editor is not
     expect(screen.getByText('Original content')).toBeInTheDocument();
     expect(screen.queryByText('Save')).not.toBeInTheDocument();
     expect(screen.queryByText('Cancel')).not.toBeInTheDocument();

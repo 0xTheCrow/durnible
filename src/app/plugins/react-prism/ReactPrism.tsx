@@ -306,7 +306,6 @@ import 'prismjs/components/prism-arduino.js';
 // import 'prismjs/components/prism-t4-cs.js';
 
 import './ReactPrism.css';
-// using classNames .prism-dark .prism-light from ReactPrism.css
 
 export default function ReactPrism({
   children,

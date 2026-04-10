@@ -9,7 +9,6 @@ const OTHER_USER = '@alice:example.com';
 
 const FAKE_TIMELINE_SET = {} as any;
 
-// One day in milliseconds, used to force day-divider insertion.
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
 function makeEvent(opts: {

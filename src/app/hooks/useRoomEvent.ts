@@ -55,7 +55,7 @@ export const useRoomEvent = (
     queryKey: [room.roomId, eventId],
     queryFn: fetchEvent,
     staleTime: Infinity,
-    gcTime: 60 * 60 * 1000, // 1hour
+    gcTime: 60 * 60 * 1000,
   });
 
   const fallback = useMemo(

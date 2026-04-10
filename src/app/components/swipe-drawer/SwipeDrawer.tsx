@@ -19,7 +19,6 @@ export function SwipeDrawer({
 }: SwipeDrawerProps) {
   const isDragging = dragOffset !== null;
 
-  // Calculate panel position
   let translateX: number;
   if (isDragging) {
     translateX = dragOffset - drawerWidth;
@@ -27,7 +26,6 @@ export function SwipeDrawer({
     translateX = open ? 0 : -drawerWidth;
   }
 
-  // Calculate backdrop opacity
   let backdropOpacity: number;
   if (isDragging) {
     backdropOpacity = dragOffset / drawerWidth;

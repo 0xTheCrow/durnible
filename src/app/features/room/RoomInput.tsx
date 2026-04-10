@@ -75,7 +75,7 @@ import { UploadBoard, UploadBoardContent, UploadBoardHeader } from '../../compon
 import type { Upload, UploadSuccess } from '../../state/upload';
 import { UploadStatus, createUploadFamilyObserverAtom } from '../../state/upload';
 import { getImageUrlBlob, loadImageElement } from '../../utils/dom';
-import { safeFile } from '../../utils/mimeTypes';
+import { handleUploadFiles } from './handleUploadFiles';
 import { fulfilledPromiseSettledResult } from '../../utils/common';
 import { useSetting } from '../../state/hooks/settings';
 import { settingsAtom } from '../../state/settings';
@@ -186,58 +186,16 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
 
     const handleFiles = useCallback(
       (files: File[]) => {
-        setUploadBoard(true);
-        const safeFiles = files.map(safeFile);
-
-        if (room.hasEncryptionStateEvent()) {
-          const placeholders: TUploadItem[] = safeFiles.map((f) => ({
-            file: f,
-            originalFile: f,
-            encInfo: undefined,
-            metadata: { markedAsSpoiler: false },
-            isEncrypting: true,
-          }));
-          setSelectedFiles({ type: 'PUT', item: placeholders });
-
-          safeFiles.forEach(async (f, i) => {
-            try {
-              const encrypted = await encryptFileInWorker(f);
-              setSelectedFiles({
-                type: 'REPLACE',
-                item: placeholders[i],
-                replacement: {
-                  ...encrypted,
-                  metadata: { markedAsSpoiler: false },
-                  isEncryptionSuccessful: true,
-                },
-              });
-            } catch (e) {
-              setSelectedFiles({
-                type: 'REPLACE',
-                item: placeholders[i],
-                replacement: {
-                  ...placeholders[i],
-                  file: new File([], f.name, { type: f.type }),
-                  isEncrypting: false,
-                  isEncryptionSuccessful: false,
-                  encryptError: e instanceof Error ? e.message : 'Encryption failed',
-                },
-              });
-            }
-          });
-        } else {
-          const fileItems: TUploadItem[] = safeFiles.map((f) => ({
-            file: f,
-            originalFile: f,
-            encInfo: undefined,
-            metadata: { markedAsSpoiler: false },
-          }));
-          setSelectedFiles({ type: 'PUT', item: fileItems });
-        }
-
-        sendBtnRef.current?.focus();
+        handleUploadFiles(files, {
+          currentItemCount: selectedFiles.length,
+          setItems: setSelectedFiles,
+          isEncrypted: room.hasEncryptionStateEvent(),
+          encrypt: encryptFileInWorker,
+          onUploadBoardOpen: () => setUploadBoard(true),
+          onAccepted: () => sendBtnRef.current?.focus(),
+        });
       },
-      [setSelectedFiles, room]
+      [setSelectedFiles, room, selectedFiles.length]
     );
     const handleVoiceSend = useCallback(
       (blob: Blob, mimeType: string, _duration: number) => {

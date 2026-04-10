@@ -278,7 +278,6 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
           Transforms.select(editor, slateRange);
           Editor.insertText(editor, replacementText);
 
-          // Return true to tell Slate the event is handled.
           // eslint-disable-next-line consistent-return
           return true;
         } catch {
