@@ -25,7 +25,7 @@ import React, {
 } from 'react';
 import { useAtomValue } from 'jotai';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { Room } from 'matrix-js-sdk';
+import { EventType, Room } from 'matrix-js-sdk';
 import { OverlayModal } from '../../components/OverlayModal';
 import { useDirects, useRooms, useSpaces } from '../../state/hooks/roomList';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
@@ -46,7 +46,6 @@ import {
 } from '../../hooks/useAsyncSearch';
 import { highlightText, makeHighlightRegex } from '../../plugins/react-custom-html-parser';
 import { AsyncStatus, useAsyncCallback } from '../../hooks/useAsyncCallback';
-import { StateEvent } from '../../../types/matrix/room';
 import { getViaServers } from '../../plugins/via-servers';
 import { rateLimitedActions } from '../../utils/matrix';
 import { useAlive } from '../../hooks/useAlive';
@@ -132,9 +131,8 @@ export function AddExistingModal({ parentId, space, requestClose }: AddExistingM
 
           await mx.sendStateEvent(
             parentId,
-            StateEvent.SpaceChild as any,
+            EventType.SpaceChild,
             {
-              auto_join: false,
               suggested: false,
               via,
             },

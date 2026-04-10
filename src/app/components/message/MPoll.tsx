@@ -130,7 +130,7 @@ export function MPoll({ mEvent, timelineSet, mx }: MPollProps) {
       timelineSet.relations.getChildEventsForEvent(
         eventId,
         RelationType.Reference,
-        'm.poll.response' as any
+        'm.poll.response'
       )
     : undefined;
 
@@ -141,11 +141,7 @@ export function MPoll({ mEvent, timelineSet, mx }: MPollProps) {
         RelationType.Reference,
         MessageEvent.PollEnd
       ) ??
-      timelineSet.relations.getChildEventsForEvent(
-        eventId,
-        RelationType.Reference,
-        'm.poll.end' as any
-      )
+      timelineSet.relations.getChildEventsForEvent(eventId, RelationType.Reference, 'm.poll.end')
     : undefined;
 
   const endEvents = endRelations?.getRelations() ?? [];
@@ -181,7 +177,7 @@ export function MPoll({ mEvent, timelineSet, mx }: MPollProps) {
   const handleVote = useCallback(
     (answerId: string) => {
       if (!eventId || isEnded) return;
-      mx.sendEvent(mEvent.getRoomId()!, MessageEvent.PollResponse as any, {
+      mx.sendEvent(mEvent.getRoomId()!, MessageEvent.PollResponse, {
         'm.relates_to': {
           rel_type: 'm.reference',
           event_id: eventId,

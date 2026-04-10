@@ -30,7 +30,7 @@ export const initClient = async (session: Session): Promise<MatrixClient> => {
     cryptoStore: legacyCryptoStore,
     deviceId: session.deviceId,
     timelineSupport: true,
-    cryptoCallbacks: cryptoCallbacks as any,
+    cryptoCallbacks,
     verificationMethods: ['m.sas.v1'],
   });
 

@@ -4,7 +4,7 @@ import { useAccountDataCallback } from './useAccountDataCallback';
 import { AccountDataEvent } from '../../types/matrix/accountData';
 import { getAccountData } from '../utils/room';
 
-type StickerPackOrderContent = {
+export type StickerPackOrderContent = {
   order: string[];
 };
 

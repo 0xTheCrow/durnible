@@ -10,6 +10,7 @@ import React, {
 import { useAtom, useAtomValue } from 'jotai';
 import { isKeyHotkey } from 'is-hotkey';
 import { EventType, IContent, MsgType, RelationType, Room } from 'matrix-js-sdk';
+import type { RoomMessageEventContent } from 'matrix-js-sdk/lib/types';
 import { ReactEditor } from 'slate-react';
 import { Transforms, Editor, BaseRange } from 'slate';
 import {
@@ -380,7 +381,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
           }
           content = { ...rawContent, 'm.relates_to': relatesTo };
         }
-        mx.sendMessage(roomId, content as any);
+        mx.sendMessage(roomId, content as RoomMessageEventContent);
       });
     };
 
@@ -494,7 +495,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
             content['m.relates_to'].is_falling_back = false;
           }
         }
-        mx.sendMessage(roomId, content as any);
+        mx.sendMessage(roomId, content as RoomMessageEventContent);
       }
 
       // Send files: if no text was sent, uploads carry the reply context

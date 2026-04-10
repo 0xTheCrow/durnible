@@ -1,6 +1,6 @@
 /* eslint-disable react/destructuring-assignment */
 import React, { forwardRef, MouseEventHandler, useCallback, useMemo, useRef } from 'react';
-import { MatrixEvent, Room } from 'matrix-js-sdk';
+import { EventType, MatrixEvent, Room } from 'matrix-js-sdk';
 import { RoomPinnedEventsEventContent } from 'matrix-js-sdk/lib/types';
 import {
   Avatar,
@@ -122,7 +122,7 @@ function PinnedMessage({
         pinned: content.pinned.filter((id) => id !== eventId),
       };
 
-      return mx.sendStateEvent(room.roomId, StateEvent.RoomPinnedEvents as any, newContent);
+      return mx.sendStateEvent(room.roomId, EventType.RoomPinnedEvents, newContent);
     }, [room, eventId, mx])
   );
 

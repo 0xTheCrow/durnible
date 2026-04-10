@@ -13,7 +13,7 @@ import {
   Text,
 } from 'folds';
 import React, { useCallback, useState } from 'react';
-import { MatrixError } from 'matrix-js-sdk';
+import { EventType, MatrixError } from 'matrix-js-sdk';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SequenceCardStyle } from '../../room-settings/styles.css';
 import { SettingTile } from '../../../components/setting-tile';
@@ -42,7 +42,7 @@ export function RoomEncryption({ permissions }: RoomEncryptionProps) {
 
   const [enableState, enable] = useAsyncCallback(
     useCallback(async () => {
-      await mx.sendStateEvent(room.roomId, StateEvent.RoomEncryption as any, {
+      await mx.sendStateEvent(room.roomId, EventType.RoomEncryption, {
         algorithm: ROOM_ENC_ALGO,
       });
     }, [mx, room.roomId])

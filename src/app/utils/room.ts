@@ -17,6 +17,8 @@ import {
   Room,
   RoomMember,
 } from 'matrix-js-sdk';
+import type { AccountDataEvents } from 'matrix-js-sdk/lib/@types/event';
+import type { ReactionEventContent } from 'matrix-js-sdk/lib/types';
 import { CryptoBackend } from 'matrix-js-sdk/lib/common-crypto/CryptoBackend';
 import { AccountDataEvent } from '../../types/matrix/accountData';
 import {
@@ -44,7 +46,7 @@ export const getStateEvents = (room: Room, eventType: StateEvent): MatrixEvent[]
 export const getAccountData = (
   mx: MatrixClient,
   eventType: AccountDataEvent
-): MatrixEvent | undefined => mx.getAccountData(eventType as any);
+): MatrixEvent | undefined => mx.getAccountData(eventType as keyof AccountDataEvents);
 
 export const getMDirects = (mDirectEvent: MatrixEvent): Set<string> => {
   const roomIds = new Set<string>();
@@ -373,11 +375,15 @@ export const decryptAllTimelineEvent = async (mx: MatrixClient, timeline: EventT
   await Promise.allSettled(decryptionPromises);
 };
 
-export const getReactionContent = (eventId: string, key: string, shortcode?: string) => ({
+export const getReactionContent = (
+  eventId: string,
+  key: string,
+  shortcode?: string
+): ReactionEventContent & { shortcode?: string } => ({
   'm.relates_to': {
     event_id: eventId,
     key,
-    rel_type: 'm.annotation',
+    rel_type: RelationType.Annotation,
   },
   shortcode,
 });
@@ -461,23 +467,14 @@ export const getPollResponses = (timelineSet: EventTimelineSet, eventId: string)
     RelationType.Reference,
     MessageEvent.PollResponse
   ) ??
-  timelineSet.relations.getChildEventsForEvent(
-    eventId,
-    RelationType.Reference,
-    'm.poll.response' as any
-  );
+  timelineSet.relations.getChildEventsForEvent(eventId, RelationType.Reference, 'm.poll.response');
 
 export const getPollEndEvents = (timelineSet: EventTimelineSet, eventId: string) =>
   timelineSet.relations.getChildEventsForEvent(
     eventId,
     RelationType.Reference,
     MessageEvent.PollEnd
-  ) ??
-  timelineSet.relations.getChildEventsForEvent(
-    eventId,
-    RelationType.Reference,
-    'm.poll.end' as any
-  );
+  ) ?? timelineSet.relations.getChildEventsForEvent(eventId, RelationType.Reference, 'm.poll.end');
 
 export const getMentionContent = (userIds: string[], room: boolean): IMentions => {
   const mMentions: IMentions = {};

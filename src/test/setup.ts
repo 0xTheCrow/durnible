@@ -31,5 +31,5 @@ vi.mock('react-i18next', () => ({
 
 // Provide a minimal import.meta.env
 if (!import.meta.env.BASE_URL) {
-  (import.meta as any).env.BASE_URL = '/';
+  (import.meta.env as Record<string, unknown>).BASE_URL = '/';
 }

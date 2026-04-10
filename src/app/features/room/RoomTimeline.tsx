@@ -15,6 +15,7 @@ import {
   Direction,
   EventTimeline,
   EventTimelineSetHandlerMap,
+  EventType,
   IContent,
   MatrixClient,
   MatrixEvent,
@@ -1242,7 +1243,7 @@ export function RoomTimeline({
         (reactions.find(eventWithShortcode)?.getContent().shortcode as string | undefined);
       mx.sendEvent(
         room.roomId,
-        MessageEvent.Reaction as any,
+        EventType.Reaction,
         getReactionContent(targetEventId, key, rShortcode)
       );
     },

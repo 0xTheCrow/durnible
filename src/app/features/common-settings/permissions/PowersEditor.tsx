@@ -335,7 +335,7 @@ export function PowersEditor({ powerLevels, requestClose }: PowersEditorProps) {
       deleted.forEach((power) => {
         delete content[power];
       });
-      await mx.sendStateEvent(room.roomId, StateEvent.PowerLevelTags as any, content);
+      await mx.sendStateEvent(room.roomId, StateEvent.PowerLevelTags, content);
     }, [mx, room, powerLevelTags, editedPowerTags, deleted])
   );
 

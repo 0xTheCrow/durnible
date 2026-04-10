@@ -14,6 +14,7 @@ import {
   Button,
 } from 'folds';
 import { MatrixError } from 'matrix-js-sdk';
+import type { StateEvents } from 'matrix-js-sdk/lib/@types/event';
 import { Page, PageHeader } from '../../../components/page';
 import { SequenceCard } from '../../../components/sequence-card';
 import { TextViewerContent } from '../../../components/text-viewer';
@@ -59,7 +60,13 @@ function StateEventEdit({ type, stateKey, content, requestClose }: StateEventEdi
 
   const [submitState, submit] = useAsyncCallback<object, MatrixError, [object]>(
     useCallback(
-      (c) => mx.sendStateEvent(room.roomId, type as any, c, stateKey),
+      (c) =>
+        mx.sendStateEvent(
+          room.roomId,
+          type as keyof StateEvents,
+          c as StateEvents[keyof StateEvents],
+          stateKey
+        ),
       [mx, room, type, stateKey]
     )
   );

@@ -1,4 +1,5 @@
 import {
+  EventType,
   ICreateRoomOpts,
   ICreateRoomStateEvent,
   JoinRule,
@@ -17,7 +18,7 @@ export const createRoomCreationContent = (
   allowFederation: boolean,
   additionalCreators: string[] | undefined
 ): object => {
-  const content: Record<string, any> = {};
+  const content: Record<string, unknown> = {};
   if (typeof type === 'string') {
     content.type = type;
   }
@@ -126,9 +127,8 @@ export const createRoom = async (mx: MatrixClient, data: CreateRoomData): Promis
   if (data.parent) {
     await mx.sendStateEvent(
       data.parent.roomId,
-      StateEvent.SpaceChild as any,
+      EventType.SpaceChild,
       {
-        auto_join: false,
         suggested: false,
         via: [getMxIdServer(mx.getUserId() ?? '') ?? ''],
       },

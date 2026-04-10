@@ -12,7 +12,7 @@ import {
   Spinner,
   Text,
 } from 'folds';
-import { HistoryVisibility, MatrixError } from 'matrix-js-sdk';
+import { EventType, HistoryVisibility, MatrixError } from 'matrix-js-sdk';
 import { RoomHistoryVisibilityEventContent } from 'matrix-js-sdk/lib/types';
 import FocusTrap from 'focus-trap-react';
 import { SequenceCard } from '../../../components/sequence-card';
@@ -76,7 +76,7 @@ export function RoomHistoryVisibility({ permissions }: RoomHistoryVisibilityProp
         const content: RoomHistoryVisibilityEventContent = {
           history_visibility: visibility,
         };
-        await mx.sendStateEvent(room.roomId, StateEvent.RoomHistoryVisibility as any, content);
+        await mx.sendStateEvent(room.roomId, EventType.RoomHistoryVisibility, content);
       },
       [mx, room.roomId]
     )
