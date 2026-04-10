@@ -58,6 +58,12 @@ export type ImageContentProps = {
   autoPlay?: boolean;
   markedAsSpoiler?: boolean;
   spoilerReason?: string;
+  /**
+   * Override the default "click opens single-image viewer" behavior. When
+   * set, called with the resolved http src and alt text. The grid renderer
+   * uses this to open the viewer with gallery context instead.
+   */
+  onView?: (src: string, alt: string) => void;
   renderImage: (props: RenderImageProps) => ReactNode;
 };
 export const ImageContent = as<'div', ImageContentProps>(
@@ -72,6 +78,7 @@ export const ImageContent = as<'div', ImageContentProps>(
       autoPlay,
       markedAsSpoiler,
       spoilerReason,
+      onView,
       renderImage,
       ...props
     },
@@ -141,6 +148,14 @@ export const ImageContent = as<'div', ImageContentProps>(
       if (autoPlay || isForceHidden) loadSrc();
     }, [autoPlay, isForceHidden, loadSrc]);
 
+    const handleView = useCallback(
+      (resolvedSrc: string) => {
+        if (onView) onView(resolvedSrc, body);
+        else setViewerState({ src: resolvedSrc, alt: body });
+      },
+      [onView, body, setViewerState]
+    );
+
     return (
       <Box className={classNames(css.RelativeBase, className)} {...props} ref={ref}>
         {typeof blurHash === 'string' && !load && (
@@ -192,7 +207,7 @@ export const ImageContent = as<'div', ImageContentProps>(
               },
               onLoad: handleLoad,
               onError: handleError,
-              onClick: () => setViewerState({ src: srcState.data, alt: body }),
+              onClick: () => handleView(srcState.data),
               tabIndex: 0,
             })}
           </Box>
@@ -212,11 +227,11 @@ export const ImageContent = as<'div', ImageContentProps>(
             }}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
-            onClick={() => setViewerState({ src: srcState.data, alt: body })}
+            onClick={() => handleView(srcState.data)}
             onKeyDown={(evt) => {
               if (evt.key === 'Enter' || evt.key === ' ') {
                 evt.preventDefault();
-                setViewerState({ src: srcState.data, alt: body });
+                handleView(srcState.data);
               }
             }}
           >

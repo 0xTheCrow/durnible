@@ -9,6 +9,7 @@ import {
   DownloadFile,
   FileContent,
   ImageContent,
+  ImageGrid,
   MAudio,
   MBadEncrypted,
   MEmote,
@@ -80,6 +81,12 @@ type RenderMessageContentProps = {
   // can pass mEvent.getContent() directly without per-call casts.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   content: Record<string, any>;
+  /**
+   * When set, this message is the anchor of an image group: the array
+   * contains every image content (including this one) and the renderer
+   * displays them as a single grid instead of a single image.
+   */
+  groupedImages?: IImageContent[];
   mediaAutoLoad?: boolean;
   urlPreview?: boolean;
   highlightRegex?: RegExp;
@@ -92,6 +99,7 @@ function RenderMessageContentInner({
   msgType,
   edited,
   content,
+  groupedImages,
   mediaAutoLoad,
   urlPreview,
   highlightRegex,
@@ -302,6 +310,14 @@ function RenderMessageContentInner({
   }
 
   if (msgType === MsgType.Image) {
+    if (groupedImages && groupedImages.length > 1) {
+      return (
+        <>
+          <ImageGrid contents={groupedImages} autoPlay={mediaAutoLoad} />
+          {renderCaption()}
+        </>
+      );
+    }
     return (
       <>
         <MImage

@@ -2,6 +2,7 @@ import React from 'react';
 import type { EventTimelineSet, MatrixEvent, Relations } from 'matrix-js-sdk';
 import { Box, Chip, Icon, Icons, Text, config, color, toRem } from 'folds';
 import { useTranslation } from 'react-i18next';
+import type { IImageContent } from '../../../types/matrix/common';
 import {
   Reply,
   MessageUnsupportedContent,
@@ -53,6 +54,12 @@ type MemoizedTimelineEventProps = {
   timelineSet: EventTimelineSet;
   item: number;
   collapsed: boolean;
+  /**
+   * When set, this event is the anchor of an image group: the array
+   * contains every image content in the group (including this event's
+   * own content) and the renderer displays them as a single grid.
+   */
+  groupedImages?: IImageContent[];
   isHighlighted: boolean;
   isEditing: boolean;
   // Passed from parent so the comparator can detect the undefined→Relations
@@ -81,6 +88,7 @@ function TimelineEventComponent({
   timelineSet,
   item,
   collapsed,
+  groupedImages,
   isHighlighted,
   isEditing: isEditingProp,
   reactionRelations,
@@ -232,6 +240,7 @@ function TimelineEventComponent({
               msgType={mEvent.getContent().msgtype ?? ''}
               edited={!!editedEvent}
               content={content}
+              groupedImages={groupedImages}
               mediaAutoLoad={mediaAutoLoad}
               urlPreview={showUrlPreview}
               htmlReactParserOptions={htmlReactParserOptions}
@@ -497,11 +506,28 @@ function TimelineEventComponent({
   );
 }
 
+// Shallow equality on the groupedImages array — detects changes to length
+// (group grew/shrunk) and per-cell content reference changes (a new event
+// arrived or an absorbed image was redacted out of the group).
+const sameGroupedImages = (
+  a: IImageContent[] | undefined,
+  b: IImageContent[] | undefined
+): boolean => {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+};
+
 export const MemoizedTimelineEvent = React.memo(TimelineEventComponent, (prev, next) => {
   const result =
     prev.mEventId === next.mEventId &&
     prev.item === next.item &&
     prev.collapsed === next.collapsed &&
+    sameGroupedImages(prev.groupedImages, next.groupedImages) &&
     prev.isHighlighted === next.isHighlighted &&
     prev.isEditing === next.isEditing &&
     // Detects the undefined→Relations transition (first reaction added/removed)

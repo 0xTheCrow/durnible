@@ -1,25 +1,113 @@
 /* eslint-disable jsx-a11y/no-noninteractive-element-interactions */
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import FileSaver from 'file-saver';
 import classNames from 'classnames';
-import { Box, Chip, Header, Icon, IconButton, Icons, Text, as } from 'folds';
+import { Box, Chip, Header, Icon, IconButton, Icons, Spinner, Text, as } from 'folds';
 import * as css from './ImageViewer.css';
 import { useZoom } from '../../hooks/useZoom';
 import { usePan } from '../../hooks/usePan';
 import { useTouchGesture } from '../../hooks/useTouchGesture';
 import { downloadMedia } from '../../utils/matrix';
+import type { ImageViewerGalleryItem } from '../../state/imageViewer';
 
 export type ImageViewerProps = {
   alt: string;
   src: string;
   requestClose: () => void;
+  /**
+   * When set, enables gallery navigation. The viewer renders prev/next
+   * controls (and binds arrow keys), and on navigation calls `resolveSrc`
+   * for items that haven't been loaded yet, then `onNavigate` with the
+   * resolved src/alt and the new index.
+   *
+   * Resolution lives outside the viewer so this component stays free of
+   * matrix-client dependencies (and existing tests don't need a provider).
+   */
+  gallery?: {
+    items: ImageViewerGalleryItem[];
+    index: number;
+    onNavigate: (next: { src: string; alt: string; index: number }) => void;
+    resolveSrc: (item: ImageViewerGalleryItem) => Promise<string>;
+  };
 };
 
 export const ImageViewer = as<'div', ImageViewerProps>(
-  ({ className, alt, src, requestClose, ...props }, ref) => {
+  ({ className, alt, src, requestClose, gallery, ...props }, ref) => {
     const { zoom, zoomIn, zoomOut, setZoom, onWheel } = useZoom(0.2);
     const { pan, setPan, cursor, onMouseDown } = usePan(zoom !== 1, zoom);
     const { onTouchStart, onTouchMove, onTouchEnd } = useTouchGesture(setZoom, setPan);
+
+    // Cache of resolved http srcs by gallery index. The first item is seeded
+    // with the src the viewer was opened on; the rest are filled in lazily as
+    // the user navigates.
+    const resolvedSrcCacheRef = useRef<Map<number, string>>(new Map());
+    if (gallery && !resolvedSrcCacheRef.current.has(gallery.index)) {
+      resolvedSrcCacheRef.current.set(gallery.index, src);
+    }
+    const [navLoading, setNavLoading] = useState(false);
+    // Used to ignore stale resolution results when the user clicks fast.
+    const navRequestIdRef = useRef(0);
+
+    const navigateTo = useCallback(
+      async (targetIndex: number) => {
+        if (!gallery) return;
+        if (targetIndex < 0 || targetIndex >= gallery.items.length) return;
+        if (targetIndex === gallery.index) return;
+        const requestId = navRequestIdRef.current + 1;
+        navRequestIdRef.current = requestId;
+
+        const target = gallery.items[targetIndex];
+        const cached = resolvedSrcCacheRef.current.get(targetIndex);
+        if (cached) {
+          gallery.onNavigate({ src: cached, alt: target.alt, index: targetIndex });
+          // Reset zoom/pan when switching images so the new one starts fresh.
+          setZoom(1);
+          setPan({ translateX: 0, translateY: 0 });
+          return;
+        }
+
+        setNavLoading(true);
+        try {
+          const resolved = await gallery.resolveSrc(target);
+          if (navRequestIdRef.current !== requestId) return;
+          resolvedSrcCacheRef.current.set(targetIndex, resolved);
+          gallery.onNavigate({ src: resolved, alt: target.alt, index: targetIndex });
+          setZoom(1);
+          setPan({ translateX: 0, translateY: 0 });
+        } finally {
+          if (navRequestIdRef.current === requestId) {
+            setNavLoading(false);
+          }
+        }
+      },
+      [gallery, setZoom, setPan]
+    );
+
+    const goPrev = useCallback(() => {
+      if (gallery) navigateTo(gallery.index - 1);
+    }, [gallery, navigateTo]);
+    const goNext = useCallback(() => {
+      if (gallery) navigateTo(gallery.index + 1);
+    }, [gallery, navigateTo]);
+
+    // Keyboard navigation: arrow keys move through the gallery.
+    useEffect(() => {
+      if (!gallery) return undefined;
+      const handler = (evt: KeyboardEvent) => {
+        if (evt.key === 'ArrowLeft') {
+          evt.preventDefault();
+          goPrev();
+        } else if (evt.key === 'ArrowRight') {
+          evt.preventDefault();
+          goNext();
+        }
+      };
+      window.addEventListener('keydown', handler);
+      return () => window.removeEventListener('keydown', handler);
+    }, [gallery, goPrev, goNext]);
+
+    const hasPrev = !!gallery && gallery.index > 0;
+    const hasNext = !!gallery && gallery.index < gallery.items.length - 1;
 
     const lastClickRef = useRef<{ time: number; x: number; y: number } | null>(null);
     const handleClick = useCallback(
@@ -50,53 +138,71 @@ export const ImageViewer = as<'div', ImageViewerProps>(
       FileSaver.saveAs(fileContent, alt);
     };
 
+    const inGallery = !!gallery && gallery.items.length > 1;
+
     return (
       <Box
-        className={classNames(css.ImageViewer, zoom > 1 && css.ImageViewerExpanded, className)}
+        className={classNames(
+          css.ImageViewer,
+          zoom > 1 && css.ImageViewerExpanded,
+          inGallery && css.ImageViewerGalleryMode,
+          className
+        )}
         direction="Column"
         {...props}
         ref={ref}
       >
-        <Header className={css.ImageViewerHeader} size="400">
-          <Box grow="Yes" alignItems="Center" gap="200">
-            <IconButton size="300" radii="300" onClick={requestClose}>
-              <Icon size="50" src={Icons.ArrowLeft} />
-            </IconButton>
-            <Text size="T300" truncate>
+        <Header className={css.ImageViewerHeader} size="500">
+          <button
+            type="button"
+            className={css.ImageViewerCloseButton}
+            onClick={requestClose}
+            aria-label="Close"
+          >
+            <Icon size="200" src={Icons.ArrowLeft} />
+          </button>
+          <Box grow="Yes" alignItems="Center" gap="300">
+            <Text size="T400" truncate>
               {alt}
             </Text>
           </Box>
-          <Box shrink="No" alignItems="Center" gap="200">
+          <Box shrink="No" alignItems="Center" gap="300">
             <IconButton
               variant={zoom < 1 ? 'Success' : 'SurfaceVariant'}
               outlined={zoom < 1}
-              size="300"
+              size="400"
               radii="Pill"
               onClick={zoomOut}
               aria-label="Zoom Out"
             >
-              <Icon size="50" src={Icons.Minus} />
+              <Icon size="200" src={Icons.Minus} />
             </IconButton>
-            <Chip variant="SurfaceVariant" radii="Pill" onClick={() => setZoom(zoom === 1 ? 2 : 1)}>
-              <Text size="B300">{Math.round(zoom * 100)}%</Text>
+            <Chip
+              variant="SurfaceVariant"
+              radii="Pill"
+              size="500"
+              onClick={() => setZoom(zoom === 1 ? 2 : 1)}
+            >
+              <Text size="B400">{Math.round(zoom * 100)}%</Text>
             </Chip>
             <IconButton
               variant={zoom > 1 ? 'Success' : 'SurfaceVariant'}
               outlined={zoom > 1}
-              size="300"
+              size="400"
               radii="Pill"
               onClick={zoomIn}
               aria-label="Zoom In"
             >
-              <Icon size="50" src={Icons.Plus} />
+              <Icon size="200" src={Icons.Plus} />
             </IconButton>
             <Chip
               variant="Primary"
+              size="500"
               onClick={handleDownload}
               radii="300"
-              before={<Icon size="50" src={Icons.Download} />}
+              before={<Icon size="200" src={Icons.Download} />}
             >
-              <Text size="B300">Download</Text>
+              <Text size="B400">Download</Text>
             </Chip>
           </Box>
         </Header>
@@ -106,13 +212,36 @@ export const ImageViewer = as<'div', ImageViewerProps>(
           justifyContent="Center"
           alignItems="Center"
           onWheel={onWheel}
+          style={{ position: 'relative' }}
         >
+          {inGallery && (
+            <>
+              <button
+                type="button"
+                className={classNames(css.ImageViewerNavButton, css.ImageViewerNavButtonPrev)}
+                onClick={goPrev}
+                disabled={!hasPrev || navLoading}
+                aria-label="Previous image"
+              >
+                <Icon size="400" src={Icons.ArrowLeft} />
+              </button>
+              <button
+                type="button"
+                className={classNames(css.ImageViewerNavButton, css.ImageViewerNavButtonNext)}
+                onClick={goNext}
+                disabled={!hasNext || navLoading}
+                aria-label="Next image"
+              >
+                <Icon size="400" src={Icons.ArrowRight} />
+              </button>
+            </>
+          )}
           {/* Pointer-driven gesture surface (drag-to-pan, double-click to
               zoom). Modal-level Escape handling closes the viewer; there is
               no meaningful keyboard equivalent for "click on image to zoom". */}
           {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
           <img
-            className={css.ImageViewerImg}
+            className={classNames(css.ImageViewerImg, inGallery && css.ImageViewerImgGallery)}
             style={{
               cursor,
               transform: `scale(${zoom}) translate(${pan.translateX}px, ${pan.translateY}px)`,
@@ -129,6 +258,19 @@ export const ImageViewer = as<'div', ImageViewerProps>(
             onTouchMove={onTouchMove}
             onTouchEnd={onTouchEnd}
           />
+          {navLoading && (
+            <Box
+              style={{
+                position: 'absolute',
+                inset: 0,
+                pointerEvents: 'none',
+              }}
+              alignItems="Center"
+              justifyContent="Center"
+            >
+              <Spinner variant="Secondary" />
+            </Box>
+          )}
         </Box>
       </Box>
     );

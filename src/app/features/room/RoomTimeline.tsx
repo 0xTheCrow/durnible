@@ -340,11 +340,7 @@ const useTimelinePagination = (
   return handleTimelinePagination;
 };
 
-const useLiveEventArrive = (
-  room: Room,
-  onArrive: (mEvent: MatrixEvent) => void,
-  onBackpaginationArrive?: () => void
-) => {
+const useLiveEventArrive = (room: Room, onArrive: (mEvent: MatrixEvent) => void) => {
   useEffect(() => {
     const handleTimelineEvent: EventTimelineSetHandlerMap[RoomEvent.Timeline] = (
       mEvent,
@@ -353,15 +349,8 @@ const useLiveEventArrive = (
       removed,
       data
     ) => {
-      if (eventRoom?.roomId !== room.roomId) return;
-      if (data.liveEvent) {
-        onArrive(mEvent);
-      } else {
-        // Backpagination arrival: an older event just landed in the SDK's
-        // timeline. Notify so descriptors that depend on findEventById (e.g.
-        // the reply-to-me highlight) can re-resolve their references.
-        onBackpaginationArrive?.();
-      }
+      if (eventRoom?.roomId !== room.roomId || !data.liveEvent) return;
+      onArrive(mEvent);
     };
     const handleRedaction: RoomEventHandlerMap[RoomEvent.Redaction] = (mEvent, eventRoom) => {
       if (eventRoom?.roomId !== room.roomId) return;
@@ -374,7 +363,7 @@ const useLiveEventArrive = (
       room.removeListener(RoomEvent.Timeline, handleTimelineEvent);
       room.removeListener(RoomEvent.Redaction, handleRedaction);
     };
-  }, [room, onArrive, onBackpaginationArrive]);
+  }, [room, onArrive]);
 };
 
 const useLiveTimelineRefresh = (room: Room, onRefresh: () => void) => {
@@ -697,14 +686,7 @@ export function RoomTimeline({
         }
       },
       [mx, room, unreadInfo, hideActivity, unfocusedAutoScroll]
-    ),
-    useCallback(() => {
-      // Backpagination just landed an older event in the SDK timeline.
-      // Force a re-render so descriptors that depend on findEventById
-      // (e.g. the reply-to-me highlight on messages whose ancestor was
-      // off-screen at first paint) re-resolve their references.
-      setTimeline((ct) => ({ ...ct }));
-    }, [])
+    )
   );
 
   // Re-render when a local echo status changes (QUEUED → SENDING → sent / NOT_SENT).
@@ -1565,6 +1547,7 @@ export function RoomTimeline({
                   timelineSet={d.timelineSet}
                   item={d.item}
                   collapsed={d.collapsed}
+                  groupedImages={d.groupedImages}
                   isHighlighted={focusItem?.eventId === d.mEventId && !!focusItem.highlight}
                   isEditing={editId === d.mEventId}
                   reactionRelations={getEventReactions(d.timelineSet, d.mEventId)}
@@ -1576,12 +1559,10 @@ export function RoomTimeline({
               );
             })}
 
-            {/* Invisible anchor — triggers paginate(Forward) when scrolled into view.
-              Always rendered so IntersectionObserver fires on initial mount and
-              drives recalibratePagination → scroll-to-bottom on page refresh.
-              Decoupled from visual skeletons so reactions/edits never cause a
-              placeholder flash. */}
-            <div ref={observeFrontAnchor} />
+            {/* Forward pagination anchor — only rendered when there's more content ahead.
+              Removed at the live end so the IntersectionObserver doesn't fire
+              continuously (which caused forward/backward pagination to fight). */}
+            {(!liveTimelineLinked || !rangeAtNewest) && <div ref={observeFrontAnchor} />}
             {/* Visual skeletons — only shown while the server fetch is in-flight. */}
             {isForwardPaginating &&
               (messageLayout === MessageLayout.Compact ? (
