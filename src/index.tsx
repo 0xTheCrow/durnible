@@ -160,6 +160,9 @@ if ('serviceWorker' in navigator) {
 
 const setupVirtualKeyboard = () => {
   if (!mobileOrTablet()) return;
+  // Brave handles keyboard resize natively via interactive-widget=resizes-content;
+  // our JS adjustment interferes and causes a black content area.
+  const isBrave = (navigator as unknown as { brave?: unknown }).brave !== undefined;
   const vv = window.visualViewport;
   if (!vv) return;
   // Tracks the natural (no-keyboard) height for the current orientation.
@@ -168,11 +171,10 @@ const setupVirtualKeyboard = () => {
     if (vv.height > maxSeenHeight) maxSeenHeight = vv.height;
     const keyboardOpen = vv.height < window.innerHeight || vv.height < maxSeenHeight;
     if (keyboardOpen) {
-      // If the layout viewport already shrank to match the visual viewport,
-      // the browser handled the keyboard resize natively (e.g. Brave, Chrome
-      // on Android with interactive-widget=resizes-content). Setting
-      // --app-height would be redundant and can cause a black content area.
-      if (vv.height === window.innerHeight) {
+      // Skip if Brave (explicit check), or if the layout viewport already shrank
+      // to match the visual viewport — both mean the browser handled the resize
+      // natively and setting --app-height would cause a black content area.
+      if (isBrave || vv.height === window.innerHeight) {
         document.documentElement.style.removeProperty('--app-height');
       } else {
         document.documentElement.style.setProperty('--app-height', `${vv.height}px`);
