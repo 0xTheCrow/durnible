@@ -138,6 +138,17 @@ if ('serviceWorker' in navigator) {
     window.location.reload();
   });
 
+  // On mobile PWAs, pages are frozen in bfcache when backgrounded. The controllerchange
+  // event fires while the page is frozen and the reload above may never execute.
+  // When the page is restored from bfcache, check if the SW controller changed and
+  // reload so the page gets fresh HTML with the correct asset hashes.
+  const initialController = navigator.serviceWorker.controller;
+  window.addEventListener('pageshow', (event) => {
+    if (event.persisted && navigator.serviceWorker.controller !== initialController) {
+      window.location.reload();
+    }
+  });
+
   navigator.serviceWorker.addEventListener('message', (event) => {
     if (event.data?.type === 'token' && event.data?.responseKey && event.source) {
       // Get the token for SW.

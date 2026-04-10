@@ -142,6 +142,10 @@ const useLogoutListener = (mx?: MatrixClient) => {
 type ClientRootProps = {
   children: ReactNode;
 };
+export const isChunkLoadError = (err: Error) =>
+  err.message.includes('Failed to fetch dynamically imported module') ||
+  err.message.includes('error loading dynamically imported module');
+
 export function ClientRoot({ children }: ClientRootProps) {
   const [loading, setLoading] = useState(true);
   const { baseUrl } = getFallbackSession() ?? {};
@@ -164,7 +168,7 @@ export function ClientRoot({ children }: ClientRootProps) {
 
   useEffect(() => {
     if (loadState.status === AsyncStatus.Idle) {
-      loadMatrix();
+      loadMatrix().catch((err) => console.error('ClientRoot: failed to load matrix client', err));
     }
   }, [loadState, loadMatrix]);
 
@@ -193,15 +197,28 @@ export function ClientRoot({ children }: ClientRootProps) {
           <Box direction="Column" grow="Yes" alignItems="Center" justifyContent="Center" gap="400">
             <Dialog>
               <Box direction="Column" gap="400" style={{ padding: config.space.S400 }}>
-                {loadState.status === AsyncStatus.Error && (
-                  <Text>{`Failed to load. ${loadState.error.message}`}</Text>
-                )}
+                {loadState.status === AsyncStatus.Error &&
+                  (isChunkLoadError(loadState.error) ? (
+                    <Text>Failed to load. The app was updated — please reload.</Text>
+                  ) : (
+                    <Text>{`Failed to load. ${loadState.error.message}`}</Text>
+                  ))}
                 {startState.status === AsyncStatus.Error && (
                   <Text>{`Failed to start. ${startState.error.message}`}</Text>
                 )}
-                <Button variant="Critical" onClick={mx ? () => startMatrix(mx) : loadMatrix}>
+                <Button
+                  variant="Critical"
+                  onClick={
+                    loadState.status === AsyncStatus.Error || !mx
+                      ? () => window.location.reload()
+                      : () =>
+                          startMatrix(mx).catch((err) =>
+                            console.error('ClientRoot: failed to start matrix client', err)
+                          )
+                  }
+                >
                   <Text as="span" size="B400">
-                    Retry
+                    {loadState.status === AsyncStatus.Error ? 'Reload' : 'Retry'}
                   </Text>
                 </Button>
               </Box>

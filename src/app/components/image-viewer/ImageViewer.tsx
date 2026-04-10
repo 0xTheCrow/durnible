@@ -176,6 +176,7 @@ export const ImageViewer = as<'div', ImageViewerProps>(
               <Icon size="200" src={Icons.Minus} />
             </IconButton>
             <Chip
+              className={css.ImageViewerZoomChip}
               variant="SurfaceVariant"
               radii="Pill"
               size="500"

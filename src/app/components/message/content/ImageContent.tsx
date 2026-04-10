@@ -1,12 +1,5 @@
 import type { ReactNode } from 'react';
-import React, {
-  useCallback,
-  useContext,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from 'react';
+import React, { useCallback, useContext, useLayoutEffect, useRef, useState } from 'react';
 import {
   Badge,
   Box,
@@ -26,7 +19,7 @@ import { useAtom, useSetAtom } from 'jotai';
 import type { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
 import type { IImageInfo } from '../../../../types/matrix/common';
 import { MATRIX_BLUR_HASH_PROPERTY_NAME } from '../../../../types/matrix/common';
-import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
+import { AsyncStatus, useAutoLoadAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
@@ -107,7 +100,7 @@ export const ImageContent = as<'div', ImageContentProps>(
     const [blurred, setBlurred] = useState(markedAsSpoiler ?? false);
     const effectiveBlurred = blurred || isForceHidden;
 
-    const [srcState, loadSrc] = useAsyncCallback(
+    const [srcState, loadSrc] = useAutoLoadAsyncCallback(
       useCallback(async () => {
         const mediaUrl = mxcUrlToHttp(mx, url, useAuthentication) ?? url;
         if (encInfo) {
@@ -117,7 +110,8 @@ export const ImageContent = as<'div', ImageContentProps>(
           return URL.createObjectURL(fileContent);
         }
         return mediaUrl;
-      }, [mx, url, useAuthentication, mimeType, encInfo])
+      }, [mx, url, useAuthentication, mimeType, encInfo]),
+      !!(autoPlay || isForceHidden)
     );
 
     const handleLoad = (evt: React.SyntheticEvent<HTMLImageElement>) => {
@@ -143,10 +137,6 @@ export const ImageContent = as<'div', ImageContentProps>(
       setError(false);
       loadSrc();
     };
-
-    useEffect(() => {
-      if (autoPlay || isForceHidden) loadSrc();
-    }, [autoPlay, isForceHidden, loadSrc]);
 
     const handleView = useCallback(
       (resolvedSrc: string) => {

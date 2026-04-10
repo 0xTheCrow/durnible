@@ -30,7 +30,8 @@ export const ImageViewerGalleryMode = style({
 // Header height — bumped from the folds default so the buttons inside have
 // more breathing room and a larger click target. Image max-height below
 // subtracts the same value so the photo still fits within the modal.
-const HEADER_HEIGHT = '4rem';
+const HEADER_HEIGHT = '3rem';
+const HEADER_HEIGHT_MOBILE = '3rem';
 
 export const ImageViewerHeader = style([
   DefaultReset,
@@ -42,8 +43,19 @@ export const ImageViewerHeader = style([
     borderBottomWidth: config.borderWidth.B300,
     flexShrink: 0,
     gap: config.space.S300,
+    '@media': {
+      'screen and (max-width: 750px)': {
+        gap: config.space.S200,
+      },
+    },
   },
 ]);
+
+export const ImageViewerZoomChip = style({
+  width: '3.5rem',
+  height: '2.25rem',
+  justifyContent: 'center',
+});
 
 export const ImageViewerContent = style([
   DefaultReset,
@@ -91,6 +103,11 @@ export const ImageViewerCloseButton = style([
   {
     // Pull past the header's left padding so the button reaches the edge.
     marginLeft: `calc(-1 * ${config.space.S300})`,
+    '@media': {
+      'screen and (max-width: 750px)': {
+        width: HEADER_HEIGHT_MOBILE,
+      },
+    },
   },
 ]);
 
@@ -110,6 +127,12 @@ export const ImageViewerDownloadButton = style([
     paddingRight: config.space.S500,
     // Pull past the header's right padding so the button reaches the edge.
     marginRight: `calc(-1 * ${config.space.S300})`,
+    '@media': {
+      'screen and (max-width: 750px)': {
+        paddingLeft: config.space.S300,
+        paddingRight: config.space.S300,
+      },
+    },
     backgroundColor: color.Primary.Main,
     color: color.Primary.OnMain,
     border: 'none',
@@ -190,6 +213,7 @@ export const ImageViewerImg = style([
     '@media': {
       'screen and (max-width: 750px)': {
         maxWidth: '100vw',
+        maxHeight: `calc(85vh - ${HEADER_HEIGHT_MOBILE})`,
       },
     },
   },

@@ -218,9 +218,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
         const text = typeof body === 'string' ? body : '';
         editor.children = [{ type: BlockType.Paragraph, children: [{ text }] }];
         editor.onChange();
-        requestAnimationFrame(() => {
-          alternateInputRef.current?.focus();
-        });
+        if (!mobileOrTablet()) alternateInputRef.current?.focus();
       } else {
         const initialValue =
           typeof customHtml === 'string'

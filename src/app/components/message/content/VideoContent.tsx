@@ -21,7 +21,7 @@ import type { IThumbnailContent, IVideoInfo } from '../../../../types/matrix/com
 import { MATRIX_BLUR_HASH_PROPERTY_NAME } from '../../../../types/matrix/common';
 import * as css from './style.css';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
-import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
+import { AsyncStatus, useAutoLoadAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { bytesToSize, millisecondsToMinutesAndSeconds } from '../../../utils/common';
 import {
   decryptFile,
@@ -84,7 +84,7 @@ export const VideoContent = as<'div', VideoContentProps>(
     const [blurred, setBlurred] = useState(markedAsSpoiler ?? false);
     const effectiveBlurred = blurred || isForceHidden;
 
-    const [srcState, loadSrc] = useAsyncCallback(
+    const [srcState, loadSrc] = useAutoLoadAsyncCallback(
       useCallback(async () => {
         const mediaUrl = mxcUrlToHttp(mx, url, useAuthentication) ?? url;
         const fileContent = encInfo
@@ -93,7 +93,8 @@ export const VideoContent = as<'div', VideoContentProps>(
             )
           : await downloadMedia(mediaUrl);
         return URL.createObjectURL(fileContent);
-      }, [mx, url, useAuthentication, mimeType, encInfo])
+      }, [mx, url, useAuthentication, mimeType, encInfo]),
+      !!autoPlay
     );
 
     const handleLoad = () => {
@@ -119,16 +120,6 @@ export const VideoContent = as<'div', VideoContentProps>(
       return setRef;
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [ref]);
-
-    // Only auto-load while still Idle. Without this gate, any re-render that
-    // changes the `loadSrc` callback identity (e.g. content.file ref churn from
-    // an upstream re-render) re-fires the effect, which dispatches Loading →
-    // unmounts the <video> → produces a fresh blob URL → remounts with a new
-    // src → playback resets. The Idle gate makes the effect a strict one-shot
-    // per load lifecycle.
-    useEffect(() => {
-      if (autoPlay && srcState.status === AsyncStatus.Idle) loadSrc();
-    }, [autoPlay, srcState.status, loadSrc]);
 
     useEffect(() => {
       const el = containerRef.current;
