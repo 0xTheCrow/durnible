@@ -14,7 +14,7 @@ type ClientInitStorageAtomProps = {
 };
 export function ClientInitStorageAtom({ children }: ClientInitStorageAtomProps) {
   const mx = useMatrixClient();
-  const userId = mx.getUserId()!;
+  const userId = mx.getSafeUserId();
 
   const closedNavCategoriesAtom = useMemo(() => makeClosedNavCategoriesAtom(userId), [userId]);
 

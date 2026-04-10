@@ -88,7 +88,7 @@ type SettingsProps = {
 export function Settings({ initialPage, requestClose }: SettingsProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
-  const userId = mx.getUserId()!;
+  const userId = mx.getSafeUserId();
   const profile = useUserProfile(userId);
   const displayName = profile.displayName ?? getMxIdLocalPart(userId) ?? userId;
   const avatarUrl = profile.avatarUrl

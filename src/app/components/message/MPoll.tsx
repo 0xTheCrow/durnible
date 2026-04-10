@@ -177,7 +177,9 @@ export function MPoll({ mEvent, timelineSet, mx }: MPollProps) {
   const handleVote = useCallback(
     (answerId: string) => {
       if (!eventId || isEnded) return;
-      mx.sendEvent(mEvent.getRoomId()!, MessageEvent.PollResponse, {
+      const roomId = mEvent.getRoomId();
+      if (!roomId) return;
+      mx.sendEvent(roomId, MessageEvent.PollResponse, {
         'm.relates_to': {
           rel_type: 'm.reference',
           event_id: eventId,

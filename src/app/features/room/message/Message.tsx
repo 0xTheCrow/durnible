@@ -214,7 +214,8 @@ export const MessageSourceCodeItem = as<
       : evt.event;
 
   const getText = (): string => {
-    const evtId = mEvent.getId()!;
+    const evtId = mEvent.getId();
+    if (!evtId) return JSON.stringify(getContent(mEvent), null, 2);
     const evtTimeline = room.getTimelineForEvent(evtId);
     const edits =
       evtTimeline &&
@@ -952,10 +953,10 @@ export const Message = as<'div', MessageProps>(
                         returnFocusOnDeactivate={false}
                         allowTextCustomEmoji
                         onEmojiSelect={(key) => {
-                          onReactionToggle(mEvent.getId()!, key);
+                          onReactionToggle(eventId, key);
                         }}
                         onCustomEmojiSelect={(mxc, shortcode) => {
-                          onReactionToggle(mEvent.getId()!, mxc, shortcode);
+                          onReactionToggle(eventId, mxc, shortcode);
                         }}
                         requestClose={() => {
                           setEmojiBoardAnchor(undefined);
@@ -1016,7 +1017,7 @@ export const Message = as<'div', MessageProps>(
                         {canSendReaction && (
                           <MessageQuickReactions
                             onReaction={(key, shortcode) => {
-                              onReactionToggle(mEvent.getId()!, key, shortcode);
+                              onReactionToggle(eventId, key, shortcode);
                               closeMenu();
                             }}
                           />

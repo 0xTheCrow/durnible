@@ -13,7 +13,7 @@ import { Modal500 } from '../../../components/Modal500';
 export function SettingsTab() {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
-  const userId = mx.getUserId()!;
+  const userId = mx.getSafeUserId();
   const profile = useUserProfile(userId);
 
   const [settings, setSettings] = useState(false);

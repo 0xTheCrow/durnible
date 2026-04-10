@@ -39,15 +39,17 @@ export function SearchResults({ query, requestClose, onNavigateTo }: SearchResul
     const groups = new Map<string, GroupedResults>();
     for (const entry of results) {
       const key = `${entry.pageName}__${entry.sectionName}`;
-      if (!groups.has(key)) {
-        groups.set(key, {
+      let group = groups.get(key);
+      if (!group) {
+        group = {
           pageName: entry.pageName,
           sectionName: entry.sectionName,
           page: entry.page,
           entries: [],
-        });
+        };
+        groups.set(key, group);
       }
-      groups.get(key)!.entries.push(entry);
+      group.entries.push(entry);
     }
     return Array.from(groups.values());
   }, [results]);

@@ -91,10 +91,12 @@ export const MessageEditor = as<'div', MessageEditorProps>(
       string | undefined,
       IMentions | undefined
     ] => {
-      const evtId = mEvent.getId()!;
-      const evtTimeline = room.getTimelineForEvent(evtId);
+      const evtId = mEvent.getId();
+      const evtTimeline = evtId ? room.getTimelineForEvent(evtId) : undefined;
       const editedEvent =
-        evtTimeline && getEditedEvent(evtId, mEvent, evtTimeline.getTimelineSet());
+        evtId && evtTimeline
+          ? getEditedEvent(evtId, mEvent, evtTimeline.getTimelineSet())
+          : undefined;
 
       const content: IContent = editedEvent?.getContent()['m.new_content'] ?? mEvent.getContent();
       const { body, formatted_body: customHtml }: Record<string, unknown> = content;

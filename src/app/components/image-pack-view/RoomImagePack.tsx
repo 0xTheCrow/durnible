@@ -17,7 +17,7 @@ type RoomImagePackProps = {
 
 export function RoomImagePack({ room, stateKey }: RoomImagePackProps) {
   const mx = useMatrixClient();
-  const userId = mx.getUserId()!;
+  const userId = mx.getSafeUserId();
   const powerLevels = usePowerLevels(room);
   const creators = useRoomCreators(room);
 

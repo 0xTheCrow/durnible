@@ -173,7 +173,7 @@ function PinnedMessage({
       </Box>
     );
 
-  const sender = pinnedEvent.getSender()!;
+  const sender = pinnedEvent.getSender() ?? '';
   const displayName = getMemberDisplayName(room, sender) ?? getMxIdLocalPart(sender) ?? sender;
   const senderAvatarMxc = getMemberAvatarMxc(room, sender);
   const getContent = (() => pinnedEvent.getContent()) as GetContentCallback;
@@ -249,7 +249,7 @@ type RoomPinMenuProps = {
 export const RoomPinMenu = forwardRef<HTMLDivElement, RoomPinMenuProps>(
   ({ room, requestClose }, ref) => {
     const mx = useMatrixClient();
-    const userId = mx.getUserId()!;
+    const userId = mx.getSafeUserId();
     const powerLevels = usePowerLevelsContext();
     const creators = useRoomCreators(room);
 
@@ -347,12 +347,12 @@ export const RoomPinMenu = forwardRef<HTMLDivElement, RoomPinMenuProps>(
           );
         },
         [MessageEvent.RoomMessageEncrypted]: (event, displayName) => {
-          const eventId = event.getId()!;
-          const evtTimeline = room.getTimelineForEvent(eventId);
+          const eventId = event.getId();
+          const evtTimeline = eventId ? room.getTimelineForEvent(eventId) : undefined;
 
           const mEvent = evtTimeline?.getEvents().find((e) => e.getId() === eventId);
 
-          if (!mEvent || !evtTimeline) {
+          if (!mEvent || !evtTimeline || !eventId) {
             return (
               <Box grow="Yes" direction="Column">
                 <Text size="T400" priority="300">

@@ -428,7 +428,7 @@ function ProfileDisplayName({ profile, userId }: ProfileProps) {
 
 export function Profile() {
   const mx = useMatrixClient();
-  const userId = mx.getUserId()!;
+  const userId = mx.getSafeUserId();
   const profile = useUserProfile(userId);
 
   return (

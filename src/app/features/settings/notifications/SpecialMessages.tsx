@@ -113,7 +113,7 @@ function MentionModeSwitcher({ ruleId, pushRules, defaultPushRuleData }: PushRul
 
 export function SpecialMessagesNotifications() {
   const mx = useMatrixClient();
-  const userId = mx.getUserId()!;
+  const userId = mx.getSafeUserId();
   const { displayName } = useUserProfile(userId);
   const pushRulesEvt = useAccountData(AccountDataEvent.PushRules);
   const pushRules = useMemo(

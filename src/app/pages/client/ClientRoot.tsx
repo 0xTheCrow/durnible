@@ -181,8 +181,10 @@ export function ClientRoot({ children }: ClientRootProps) {
     }, [])
   );
 
+  if (!baseUrl) return null;
+
   return (
-    <SpecVersions baseUrl={baseUrl!}>
+    <SpecVersions baseUrl={baseUrl}>
       {loading && <ClientRootOptions mx={mx} />}
       {(loadState.status === AsyncStatus.Error || startState.status === AsyncStatus.Error) && (
         <SplashScreen>

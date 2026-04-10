@@ -88,19 +88,18 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
           mx.timestampToEvent(room.roomId, floorTs, Direction.Backward).catch(() => undefined),
         ]);
 
-        if (!fwd && !bwd) {
-          throw new MatrixError({
-            errcode: 'M_NOT_FOUND',
-            error: 'No events found near timestamp',
-          });
+        if (fwd && bwd) {
+          const fwdDist = Math.abs(fwd.origin_server_ts - floorTs);
+          const bwdDist = Math.abs(bwd.origin_server_ts - floorTs);
+          return bwdDist <= fwdDist ? bwd.event_id : fwd.event_id;
         }
+        if (fwd) return fwd.event_id;
+        if (bwd) return bwd.event_id;
 
-        if (!bwd) return fwd!.event_id;
-        if (!fwd) return bwd.event_id;
-
-        const fwdDist = Math.abs(fwd.origin_server_ts - floorTs);
-        const bwdDist = Math.abs(bwd.origin_server_ts - floorTs);
-        return bwdDist <= fwdDist ? bwd.event_id : fwd.event_id;
+        throw new MatrixError({
+          errcode: 'M_NOT_FOUND',
+          error: 'No events found near timestamp',
+        });
       },
       [mx, room]
     )

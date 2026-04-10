@@ -668,7 +668,10 @@ export function RoomTimeline({
               // Check if the document is in focus (user is actively viewing the app),
               // and either there are no unread messages or the latest message is from the current user.
               // If either condition is met, trigger the markAsRead function to send a read receipt.
-              requestAnimationFrame(() => markAsRead(mx, mEvt.getRoomId()!, hideActivity));
+              const evtRoomId = mEvt.getRoomId();
+              if (evtRoomId) {
+                requestAnimationFrame(() => markAsRead(mx, evtRoomId, hideActivity));
+              }
             }
 
             if (!document.hasFocus() && !unreadInfo) {
@@ -1232,10 +1235,13 @@ export function RoomTimeline({
       const allReactions = relations?.getSortedAnnotationsByKey() ?? [];
       const [, reactionsSet] = allReactions.find(([k]) => k === key) ?? [];
       const reactions: MatrixEvent[] = reactionsSet ? Array.from(reactionsSet) : [];
-      const myReaction = reactions.find(factoryEventSentBy(mx.getUserId()!));
+      const myReaction = reactions.find(factoryEventSentBy(mx.getSafeUserId()));
 
       if (myReaction && !!myReaction?.isRelation()) {
-        mx.redactEvent(room.roomId, myReaction.getId()!);
+        const myReactionId = myReaction.getId();
+        if (myReactionId) {
+          mx.redactEvent(room.roomId, myReactionId);
+        }
         return;
       }
       const rShortcode =

@@ -92,7 +92,7 @@ export function UserMentionAutocomplete({
 }: UserMentionAutocompleteProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
-  const roomId: string = room.roomId!;
+  const roomId: string = room.roomId;
   const roomAliasOrId = room.getCanonicalAlias() || roomId;
   const members = useRoomMembers(mx, roomId);
 
