@@ -1,8 +1,9 @@
-import { CompactEmoji, fromUnicodeToHexcode } from 'emojibase';
+import type { CompactEmoji } from 'emojibase';
+import { fromUnicodeToHexcode } from 'emojibase';
 import emojisData from 'emojibase-data/en/compact.json';
 import joypixels from 'emojibase-data/en/shortcodes/joypixels.json';
 import emojibase from 'emojibase-data/en/shortcodes/emojibase.json';
-import { ImagePack } from './custom-emoji/ImagePack';
+import type { ImagePack } from './custom-emoji/ImagePack';
 import { ImageUsage } from './custom-emoji/types';
 
 export type IEmoji = CompactEmoji & {

@@ -4,8 +4,9 @@ import { Page, PageContent, PageHeader } from '../../../components/page';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SequenceCardStyle } from '../styles.css';
 import { SettingTile } from '../../../components/setting-tile';
-import { SettingsPages } from '../settingsPages';
-import { settingsSearchData, SearchEntry } from './searchData';
+import type { SettingsPages } from '../settingsPages';
+import type { SearchEntry } from './searchData';
+import { settingsSearchData } from './searchData';
 
 type SearchResultsProps = {
   query: string;

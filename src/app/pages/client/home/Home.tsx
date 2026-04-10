@@ -1,5 +1,7 @@
-import React, { MouseEventHandler, forwardRef, useMemo, useRef, useState } from 'react';
+import type { MouseEventHandler } from 'react';
+import React, { forwardRef, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import type { RectCords } from 'folds';
 import {
   Avatar,
   Box,
@@ -10,7 +12,6 @@ import {
   Menu,
   MenuItem,
   PopOut,
-  RectCords,
   Text,
   config,
   toRem,
@@ -66,7 +67,7 @@ import {
 } from '../../../hooks/useRoomsNotificationPreferences';
 import { UseStateProvider } from '../../../components/UseStateProvider';
 import { JoinAddressPrompt } from '../../../components/join-address-prompt';
-import { _RoomSearchParams } from '../../paths';
+import type { _RoomSearchParams } from '../../paths';
 
 type HomeMenuProps = {
   requestClose: () => void;

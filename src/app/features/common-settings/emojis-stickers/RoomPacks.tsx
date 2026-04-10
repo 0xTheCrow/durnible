@@ -1,4 +1,5 @@
-import React, { FormEventHandler, useCallback, useMemo, useState } from 'react';
+import type { FormEventHandler } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   Box,
   Text,
@@ -16,15 +17,10 @@ import {
   IconButton,
   Menu,
 } from 'folds';
-import { MatrixError } from 'matrix-js-sdk';
+import type { MatrixError } from 'matrix-js-sdk';
 import { SequenceCard } from '../../../components/sequence-card';
-import {
-  ImagePack,
-  ImageUsage,
-  PackAddress,
-  packAddressEqual,
-  PackContent,
-} from '../../../plugins/custom-emoji';
+import type { ImagePack, PackAddress, PackContent } from '../../../plugins/custom-emoji';
+import { ImageUsage, packAddressEqual } from '../../../plugins/custom-emoji';
 import { useRoom } from '../../../hooks/useRoom';
 import { useRoomImagePacks } from '../../../hooks/useImagePacks';
 import { LineClamp2 } from '../../../styles/Text.css';

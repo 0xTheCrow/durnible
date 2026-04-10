@@ -1,11 +1,6 @@
-import React, {
-  ChangeEventHandler,
-  KeyboardEventHandler,
-  MouseEventHandler,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import type { ChangeEventHandler, KeyboardEventHandler, MouseEventHandler } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import type { RectCords } from 'folds';
 import {
   Header,
   Icon,
@@ -15,7 +10,6 @@ import {
   Menu,
   MenuItem,
   PopOut,
-  RectCords,
   Text,
   config,
 } from 'folds';

@@ -1,10 +1,7 @@
-import {
-  ShowSasCallbacks,
-  VerificationPhase,
-  VerificationRequest,
-  Verifier,
-} from 'matrix-js-sdk/lib/crypto-api';
-import React, { CSSProperties, useCallback, useEffect, useState } from 'react';
+import type { ShowSasCallbacks, VerificationRequest, Verifier } from 'matrix-js-sdk/lib/crypto-api';
+import { VerificationPhase } from 'matrix-js-sdk/lib/crypto-api';
+import type { CSSProperties } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { VerificationMethod } from 'matrix-js-sdk/lib/types';
 import { Box, Button, config, Dialog, Header, Icon, IconButton, Icons, Spinner, Text } from 'folds';
 import {

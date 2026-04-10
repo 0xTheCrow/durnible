@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo } from 'react';
 import { Box, Text, color } from 'folds';
-import { EventTimelineSet, MatrixClient, MatrixEvent, RelationType } from 'matrix-js-sdk';
+import type { EventTimelineSet, MatrixClient, MatrixEvent } from 'matrix-js-sdk';
+import { RelationType } from 'matrix-js-sdk';
 import { MessageEvent } from '../../../types/matrix/room';
 import * as css from './MPoll.css';
 

@@ -13,7 +13,8 @@ import {
   Text,
 } from 'folds';
 import React, { useCallback, useState } from 'react';
-import { EventType, MatrixError } from 'matrix-js-sdk';
+import type { MatrixError } from 'matrix-js-sdk';
+import { EventType } from 'matrix-js-sdk';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SequenceCardStyle } from '../../room-settings/styles.css';
 import { SettingTile } from '../../../components/setting-tile';
@@ -22,7 +23,7 @@ import { StateEvent } from '../../../../types/matrix/room';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { useRoom } from '../../../hooks/useRoom';
 import { useStateEvent } from '../../../hooks/useStateEvent';
-import { RoomPermissionsAPI } from '../../../hooks/useRoomPermissions';
+import type { RoomPermissionsAPI } from '../../../hooks/useRoomPermissions';
 import { OverlayModal } from '../../../components/OverlayModal';
 
 const ROOM_ENC_ALGO = 'm.megolm.v1.aes-sha2';

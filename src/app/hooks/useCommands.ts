@@ -1,16 +1,6 @@
-import {
-  Direction,
-  EventTimeline,
-  EventType,
-  IContextResponse,
-  MatrixClient,
-  Method,
-  Preset,
-  Room,
-  RoomMember,
-  Visibility,
-} from 'matrix-js-sdk';
-import { RoomMemberEventContent, RoomServerAclEventContent } from 'matrix-js-sdk/lib/types';
+import type { IContextResponse, MatrixClient, Room, RoomMember } from 'matrix-js-sdk';
+import { Direction, EventTimeline, EventType, Method, Preset, Visibility } from 'matrix-js-sdk';
+import type { RoomMemberEventContent, RoomServerAclEventContent } from 'matrix-js-sdk/lib/types';
 import { useMemo } from 'react';
 import {
   addRoomIdToMDirect,

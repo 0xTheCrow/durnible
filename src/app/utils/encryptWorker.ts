@@ -1,4 +1,4 @@
-import { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
+import type { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
 
 let worker: Worker | null = null;
 type PendingEntry = {

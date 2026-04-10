@@ -1,4 +1,5 @@
-import { MouseEventHandler, useEffect, useRef, useState } from 'react';
+import type { MouseEventHandler } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export type Pan = {
   translateX: number;

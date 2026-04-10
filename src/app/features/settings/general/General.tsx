@@ -1,4 +1,6 @@
-import React, { MouseEventHandler, useState } from 'react';
+import type { MouseEventHandler } from 'react';
+import React, { useState } from 'react';
+import type { RectCords } from 'folds';
 import {
   Box,
   Button,
@@ -8,7 +10,6 @@ import {
   IconButton,
   Icons,
   PopOut,
-  RectCords,
   Scroll,
   Switch,
   Text,
@@ -21,10 +22,10 @@ import { settingsAtom } from '../../../state/settings';
 import { SettingTile } from '../../../components/setting-tile';
 import { KeySymbol } from '../../../utils/key-symbol';
 import { isMacOS } from '../../../utils/user-agent';
+import type { Theme } from '../../../hooks/useTheme';
 import {
   DarkTheme,
   LightTheme,
-  Theme,
   ThemeKind,
   useSystemThemeKind,
   useThemeNames,

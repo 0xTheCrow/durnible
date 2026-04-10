@@ -1,5 +1,6 @@
-import { MatrixClient } from 'matrix-js-sdk';
-import { DecryptedMessage, fetchUnseenMessages, streamFetchDecrypt } from './fetcher';
+import type { MatrixClient } from 'matrix-js-sdk';
+import type { DecryptedMessage } from './fetcher';
+import { fetchUnseenMessages, streamFetchDecrypt } from './fetcher';
 
 export type AttachedImage = {
   event_id: string;

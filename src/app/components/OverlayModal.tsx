@@ -1,6 +1,7 @@
-import React, { ReactNode, useEffect, useRef } from 'react';
+import type { ReactNode } from 'react';
+import React, { useEffect, useRef } from 'react';
 import FocusTrap from 'focus-trap-react';
-import { Options as FocusTrapOptions } from 'focus-trap';
+import type { Options as FocusTrapOptions } from 'focus-trap';
 import { Overlay, OverlayBackdrop, OverlayCenter } from 'folds';
 import { stopPropagation } from '../utils/keyboard';
 

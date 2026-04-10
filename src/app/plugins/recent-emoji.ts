@@ -1,6 +1,7 @@
-import { MatrixClient } from 'matrix-js-sdk';
+import type { MatrixClient } from 'matrix-js-sdk';
 import { getAccountData } from '../utils/room';
-import { IEmoji, emojis } from './emoji';
+import type { IEmoji } from './emoji';
+import { emojis } from './emoji';
 import { AccountDataEvent } from '../../types/matrix/accountData';
 
 type EmojiUnicode = string;

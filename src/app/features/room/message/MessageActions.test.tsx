@@ -3,7 +3,8 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
-import { RelationType, EventType, MsgType, MatrixEvent } from 'matrix-js-sdk';
+import type { MatrixEvent } from 'matrix-js-sdk';
+import { RelationType, EventType, MsgType } from 'matrix-js-sdk';
 import type { Relations } from 'matrix-js-sdk/lib/models/relations';
 
 import { MessageDeleteItem } from './Message';
@@ -278,7 +279,7 @@ describe('emoji reactions (Reactions)', () => {
     // Reactions reads getLiveTimeline().getEvents() to build firstReactionTimestamps.
     // COUPLING: if Reactions ever switches to a different room API for timestamp data,
     // this mock setup will silently stop feeding the right events (update it then).
-    const timeline = room.getLiveTimeline() as any;
+    const timeline = (room as any).getLiveTimeline();
     timeline.getEvents.mockReturnValue(reactionEvents);
 
     const relations = createMockRelations(reactionEvents);

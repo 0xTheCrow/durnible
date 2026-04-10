@@ -1,4 +1,4 @@
-import { Room } from 'matrix-js-sdk';
+import type { Room } from 'matrix-js-sdk';
 import { createContext, useContext } from 'react';
 
 const SpaceContext = createContext<Room | null>(null);

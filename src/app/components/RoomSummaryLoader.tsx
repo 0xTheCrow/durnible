@@ -1,10 +1,13 @@
-import { ReactNode, useCallback, useState } from 'react';
-import { MatrixClient, Room } from 'matrix-js-sdk';
+import type { ReactNode } from 'react';
+import { useCallback, useState } from 'react';
+import type { MatrixClient, Room } from 'matrix-js-sdk';
 import { useQuery } from '@tanstack/react-query';
-import { IHierarchyRoom } from 'matrix-js-sdk/lib/@types/spaces';
+import type { IHierarchyRoom } from 'matrix-js-sdk/lib/@types/spaces';
 import { useMatrixClient } from '../hooks/useMatrixClient';
-import { LocalRoomSummary, useLocalRoomSummary } from '../hooks/useLocalRoomSummary';
-import { AsyncState, AsyncStatus } from '../hooks/useAsyncCallback';
+import type { LocalRoomSummary } from '../hooks/useLocalRoomSummary';
+import { useLocalRoomSummary } from '../hooks/useLocalRoomSummary';
+import type { AsyncState } from '../hooks/useAsyncCallback';
+import { AsyncStatus } from '../hooks/useAsyncCallback';
 
 export type IRoomSummary = Awaited<ReturnType<MatrixClient['getRoomSummary']>>;
 

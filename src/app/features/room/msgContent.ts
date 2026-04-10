@@ -1,7 +1,8 @@
-import { IContent, MatrixClient, MsgType } from 'matrix-js-sdk';
+import type { IContent, MatrixClient } from 'matrix-js-sdk';
+import { MsgType } from 'matrix-js-sdk';
 import to from 'await-to-js';
+import type { IThumbnailContent } from '../../../types/matrix/common';
 import {
-  IThumbnailContent,
   MATRIX_BLUR_HASH_PROPERTY_NAME,
   MATRIX_SPOILER_PROPERTY_NAME,
 } from '../../../types/matrix/common';
@@ -14,7 +15,7 @@ import {
   loadVideoElement,
 } from '../../utils/dom';
 import { encryptFile, getImageInfo, getThumbnailContent, getVideoInfo } from '../../utils/matrix';
-import { TUploadItem } from '../../state/room/roomInputDrafts';
+import type { TUploadItem } from '../../state/room/roomInputDrafts';
 import { encodeBlurHash } from '../../utils/blurHash';
 import { scaleYDimension } from '../../utils/common';
 

@@ -1,6 +1,7 @@
 import { Box, Icon, Icons, Text, as, color, toRem } from 'folds';
-import { EventTimelineSet, Room } from 'matrix-js-sdk';
-import React, { MouseEventHandler, ReactNode, useCallback, useMemo } from 'react';
+import type { EventTimelineSet, Room } from 'matrix-js-sdk';
+import type { MouseEventHandler, ReactNode } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import classNames from 'classnames';
 import { getMemberDisplayName, trimReplyFromBody } from '../../utils/room';
 import { getMxIdLocalPart } from '../../utils/matrix';
@@ -11,7 +12,7 @@ import { MessageDeletedContent, MessageFailedContent } from './content';
 import { scaleSystemEmoji } from '../../plugins/react-custom-html-parser';
 import { useRoomEvent } from '../../hooks/useRoomEvent';
 import colorMXID from '../../../util/colorMXID';
-import { GetMemberPowerTag } from '../../hooks/useMemberPowerTag';
+import type { GetMemberPowerTag } from '../../hooks/useMemberPowerTag';
 
 type ReplyLayoutProps = {
   userColor?: string;

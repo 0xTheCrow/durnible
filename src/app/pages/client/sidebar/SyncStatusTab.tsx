@@ -1,7 +1,9 @@
 import React from 'react';
-import { Icon, IconSrc, Icons, color } from 'folds';
+import type { IconSrc } from 'folds';
+import { Icon, Icons, color } from 'folds';
 import { SidebarItemTooltip } from '../../../components/sidebar';
-import { ConnectionStatus, useConnectionStatus } from '../../../hooks/useConnectionStatus';
+import type { ConnectionStatus } from '../../../hooks/useConnectionStatus';
+import { useConnectionStatus } from '../../../hooks/useConnectionStatus';
 
 function WifiIcon() {
   return (

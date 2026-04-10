@@ -1,16 +1,19 @@
-import React, { KeyboardEvent as ReactKeyboardEvent, useCallback, useEffect, useMemo } from 'react';
-import { Editor } from 'slate';
+import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
+import type { Editor } from 'slate';
 import { Box, config, MenuItem, Text } from 'folds';
-import { Room } from 'matrix-js-sdk';
-import { Command, useCommands } from '../../hooks/useCommands';
+import type { Room } from 'matrix-js-sdk';
+import type { Command } from '../../hooks/useCommands';
+import { useCommands } from '../../hooks/useCommands';
+import type { AutocompleteQuery } from '../../components/editor';
 import {
   AutocompleteMenu,
-  AutocompleteQuery,
   createCommandElement,
   moveCursor,
   replaceWithElement,
 } from '../../components/editor';
-import { UseAsyncSearchOptions, useAsyncSearch } from '../../hooks/useAsyncSearch';
+import type { UseAsyncSearchOptions } from '../../hooks/useAsyncSearch';
+import { useAsyncSearch } from '../../hooks/useAsyncSearch';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { useKeyDown } from '../../hooks/useKeyDown';
 import { onTabPress } from '../../utils/keyboard';

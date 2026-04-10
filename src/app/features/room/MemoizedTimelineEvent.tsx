@@ -1,5 +1,5 @@
 import React from 'react';
-import { EventTimelineSet, MatrixEvent, Relations } from 'matrix-js-sdk';
+import type { EventTimelineSet, MatrixEvent, Relations } from 'matrix-js-sdk';
 import { Box, Chip, Icon, Icons, Text, config, color, toRem } from 'folds';
 import { useTranslation } from 'react-i18next';
 import {
@@ -68,6 +68,11 @@ type MemoizedTimelineEventProps = {
   // the same so without this prop the memo would bail out and Message would
   // remain faded (isPending=true) until an unrelated event arrived.
   eventStatus: MatrixEvent['status'];
+  // Computed in the parent so the memo re-renders when backpagination loads
+  // the replied-to event. Computing inline via timelineSet.findEventById()
+  // would return undefined on initial load for off-screen ancestors and then
+  // stay stale (the memo comparator can't detect the SDK-side change).
+  replyToMe: boolean;
 };
 
 function TimelineEventComponent({
@@ -81,6 +86,7 @@ function TimelineEventComponent({
   reactionRelations,
   editedEvent,
   isRedacted,
+  replyToMe,
 }: MemoizedTimelineEventProps) {
   const ctx = useTimelineMessageContext();
   const parseMemberEvent = useMemberEventParser();
@@ -148,8 +154,6 @@ function TimelineEventComponent({
     const reactions = reactionRelations && reactionRelations.getSortedAnnotationsByKey();
     const hasReactions = reactions && reactions.length > 0;
     const { replyEventId, threadRootId } = mEvent;
-    const replyToMe =
-      !!replyEventId && timelineSet.findEventById(replyEventId)?.getSender() === myUserId;
     const senderId = mEvent.getSender() ?? '';
 
     const replyJSX = replyEventId ? (
@@ -512,6 +516,10 @@ export const MemoizedTimelineEvent = React.memo(TimelineEventComponent, (prev, n
     // Detects local-echo status transitions (QUEUED→SENDING→null/NOT_SENT).
     // mEvent.status mutates in-place so the reference doesn't change;
     // without this guard the faded opacity would persist until an unrelated event.
-    prev.eventStatus === next.eventStatus;
+    prev.eventStatus === next.eventStatus &&
+    // Detects the false→true transition when backpagination loads the
+    // ancestor of a reply, so the reply highlight appears without needing
+    // a scroll to trip the comparator.
+    prev.replyToMe === next.replyToMe;
   return result;
 });

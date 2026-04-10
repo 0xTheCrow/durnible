@@ -1,5 +1,6 @@
-import { Dispatch, SetStateAction, TouchEventHandler, useRef } from 'react';
-import { Pan } from './usePan';
+import type { Dispatch, SetStateAction, TouchEventHandler } from 'react';
+import { useRef } from 'react';
+import type { Pan } from './usePan';
 
 type TouchGestureState = {
   initialDistance: number;

@@ -1,13 +1,6 @@
-import React, {
-  FormEventHandler,
-  MouseEventHandler,
-  RefObject,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import type { FormEventHandler, MouseEventHandler, RefObject } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { RectCords } from 'folds';
 import {
   Box,
   Button,
@@ -20,7 +13,6 @@ import {
   Menu,
   MenuItem,
   PopOut,
-  RectCords,
   Scroll,
   Spinner,
   Text,
@@ -31,12 +23,13 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import FocusTrap from 'focus-trap-react';
 import { useAtomValue } from 'jotai';
 import { useQuery } from '@tanstack/react-query';
-import { MatrixClient, Method, RoomType } from 'matrix-js-sdk';
+import type { MatrixClient } from 'matrix-js-sdk';
+import { Method, RoomType } from 'matrix-js-sdk';
 import { Page, PageContent, PageContentCenter, PageHeader } from '../../../components/page';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { RoomTopicViewer } from '../../../components/room-topic-viewer';
 import { RoomCard, RoomCardBase, RoomCardGrid } from '../../../components/room-card';
-import { ExploreServerPathSearchParams } from '../../paths';
+import type { ExploreServerPathSearchParams } from '../../paths';
 import { getExploreServerPath, withSearchParam } from '../../pathUtils';
 import * as css from './style.css';
 import { allRoomsAtom } from '../../../state/room-list/roomList';

@@ -1,4 +1,6 @@
-import React, { ReactNode, useEffect, useRef, useState, useCallback } from 'react';
+import type { ReactNode } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import type { IconSrc } from 'folds';
 import {
   Box,
   Scroll,
@@ -9,7 +11,6 @@ import {
   Text,
   IconButton,
   Icon,
-  IconSrc,
   Icons,
 } from 'folds';
 import classNames from 'classnames';
@@ -17,10 +18,10 @@ import {
   draggable,
   dropTargetForElements,
 } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
+import type { Instruction } from '@atlaskit/pragmatic-drag-and-drop-hitbox/tree-item';
 import {
   attachInstruction,
   extractInstruction,
-  Instruction,
 } from '@atlaskit/pragmatic-drag-and-drop-hitbox/tree-item';
 import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
 import * as css from './styles.css';

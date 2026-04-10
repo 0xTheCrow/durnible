@@ -1,35 +1,35 @@
-import { IconName, IconSrc } from 'folds';
+import type { IconName, IconSrc } from 'folds';
 
-import {
-  EventTimeline,
+import type {
   EventTimelineSet,
-  EventType,
   IMentions,
   IPowerLevelsContent,
   IPushRule,
   IPushRules,
-  JoinRule,
   MatrixClient,
   MatrixEvent,
-  MsgType,
-  NotificationCountType,
-  RelationType,
   Room,
   RoomMember,
 } from 'matrix-js-sdk';
+import {
+  EventTimeline,
+  EventType,
+  JoinRule,
+  MsgType,
+  NotificationCountType,
+  RelationType,
+} from 'matrix-js-sdk';
 import type { AccountDataEvents } from 'matrix-js-sdk/lib/@types/event';
 import type { ReactionEventContent } from 'matrix-js-sdk/lib/types';
-import { CryptoBackend } from 'matrix-js-sdk/lib/common-crypto/CryptoBackend';
-import { AccountDataEvent } from '../../types/matrix/accountData';
+import type { CryptoBackend } from 'matrix-js-sdk/lib/common-crypto/CryptoBackend';
+import type { AccountDataEvent } from '../../types/matrix/accountData';
+import type { IRoomCreateContent, RoomToParents, UnreadInfo } from '../../types/matrix/room';
 import {
-  IRoomCreateContent,
   Membership,
   MessageEvent,
   NotificationType,
-  RoomToParents,
   RoomType,
   StateEvent,
-  UnreadInfo,
 } from '../../types/matrix/room';
 
 export const getStateEvent = (

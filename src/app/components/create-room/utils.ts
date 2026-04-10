@@ -1,15 +1,9 @@
-import {
-  EventType,
-  ICreateRoomOpts,
-  ICreateRoomStateEvent,
-  JoinRule,
-  MatrixClient,
-  RestrictedAllowType,
-  Room,
-} from 'matrix-js-sdk';
-import { RoomJoinRulesEventContent } from 'matrix-js-sdk/lib/types';
+import type { ICreateRoomOpts, ICreateRoomStateEvent, MatrixClient, Room } from 'matrix-js-sdk';
+import { EventType, JoinRule, RestrictedAllowType } from 'matrix-js-sdk';
+import type { RoomJoinRulesEventContent } from 'matrix-js-sdk/lib/types';
 import { CreateRoomKind } from './CreateRoomKindSelector';
-import { RoomType, StateEvent } from '../../../types/matrix/room';
+import type { RoomType } from '../../../types/matrix/room';
+import { StateEvent } from '../../../types/matrix/room';
 import { getViaServers } from '../../plugins/via-servers';
 import { getMxIdServer } from '../../utils/matrix';
 

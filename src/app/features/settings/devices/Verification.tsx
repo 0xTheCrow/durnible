@@ -1,4 +1,6 @@
-import React, { MouseEventHandler, useCallback, useState } from 'react';
+import type { MouseEventHandler } from 'react';
+import React, { useCallback, useState } from 'react';
+import type { RectCords } from 'folds';
 import {
   Badge,
   Box,
@@ -10,18 +12,18 @@ import {
   Spinner,
   Text,
   IconButton,
-  RectCords,
   PopOut,
   Menu,
   MenuItem,
 } from 'folds';
 import FocusTrap from 'focus-trap-react';
-import { CryptoApi, VerificationRequest } from 'matrix-js-sdk/lib/crypto-api';
+import type { CryptoApi, VerificationRequest } from 'matrix-js-sdk/lib/crypto-api';
 import { VerificationStatus } from '../../../hooks/useDeviceVerificationStatus';
 import { InfoCard } from '../../../components/info-card';
 import { ManualVerificationTile } from '../../../components/ManualVerification';
-import { SecretStorageKeyContent } from '../../../../types/matrix/accountData';
-import { AsyncState, AsyncStatus, useAsync } from '../../../hooks/useAsyncCallback';
+import type { SecretStorageKeyContent } from '../../../../types/matrix/accountData';
+import type { AsyncState } from '../../../hooks/useAsyncCallback';
+import { AsyncStatus, useAsync } from '../../../hooks/useAsyncCallback';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { DeviceVerification } from '../../../components/DeviceVerification';
 import {

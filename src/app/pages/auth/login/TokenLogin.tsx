@@ -11,10 +11,11 @@ import {
   config,
 } from 'folds';
 import React, { useCallback, useEffect } from 'react';
-import { MatrixError } from 'matrix-js-sdk';
+import type { MatrixError } from 'matrix-js-sdk';
 import { useAutoDiscoveryInfo } from '../../../hooks/useAutoDiscoveryInfo';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
-import { CustomLoginResponse, LoginError, login, useLoginComplete } from './loginUtil';
+import type { CustomLoginResponse } from './loginUtil';
+import { LoginError, login, useLoginComplete } from './loginUtil';
 
 function LoginTokenError({ message }: { message: string }) {
   return (

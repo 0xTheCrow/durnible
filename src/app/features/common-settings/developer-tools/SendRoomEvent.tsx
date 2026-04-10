@@ -1,5 +1,6 @@
-import React, { useCallback, useRef, useState, FormEventHandler, useEffect } from 'react';
-import { MatrixError } from 'matrix-js-sdk';
+import type { FormEventHandler } from 'react';
+import React, { useCallback, useRef, useState, useEffect } from 'react';
+import type { MatrixError } from 'matrix-js-sdk';
 import type { StateEvents, TimelineEvents } from 'matrix-js-sdk/lib/@types/event';
 import {
   Box,

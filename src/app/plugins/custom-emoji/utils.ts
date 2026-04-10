@@ -1,11 +1,11 @@
-import { MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk';
+import type { MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk';
 import { ImagePack } from './ImagePack';
-import { EmoteRoomsContent, ImageUsage } from './types';
+import type { EmoteRoomsContent, ImageUsage } from './types';
 import { StateEvent } from '../../../types/matrix/room';
 import { getAccountData, getStateEvent, getStateEvents } from '../../utils/room';
 import { AccountDataEvent } from '../../../types/matrix/accountData';
-import { PackMetaReader } from './PackMetaReader';
-import { PackAddress } from './PackAddress';
+import type { PackMetaReader } from './PackMetaReader';
+import type { PackAddress } from './PackAddress';
 
 export function packAddressEqual(a1?: PackAddress, a2?: PackAddress): boolean {
   if (!a1 && !a2) return true;

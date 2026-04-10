@@ -1,5 +1,7 @@
-import React, { MouseEventHandler, useCallback, useMemo, useState } from 'react';
+import type { MouseEventHandler } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import FocusTrap from 'focus-trap-react';
+import type { RectCords } from 'folds';
 import {
   Dialog,
   Header,
@@ -14,9 +16,9 @@ import {
   Spinner,
   Chip,
   PopOut,
-  RectCords,
 } from 'folds';
-import { Direction, MatrixError } from 'matrix-js-sdk';
+import type { MatrixError } from 'matrix-js-sdk';
+import { Direction } from 'matrix-js-sdk';
 import { OverlayModal } from '../../../components/OverlayModal';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';

@@ -1,10 +1,7 @@
 import { RelationType } from 'matrix-js-sdk';
 import { describe, it, expect, vi } from 'vitest';
-import {
-  buildTimelineDescriptors,
-  TimelineEventInput,
-  TimelineItem,
-} from './buildTimelineDescriptors';
+import type { TimelineEventInput, TimelineItem } from './buildTimelineDescriptors';
+import { buildTimelineDescriptors } from './buildTimelineDescriptors';
 import { createMockMatrixEvent } from '../../test/mocks';
 
 const MY_USER = '@me:example.com';

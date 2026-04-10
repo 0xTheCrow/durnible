@@ -1,4 +1,4 @@
-import { MatrixClient } from 'matrix-js-sdk';
+import type { MatrixClient } from 'matrix-js-sdk';
 import { useCallback, useEffect, useRef } from 'react';
 import { TYPING_TIMEOUT_MS } from '../state/typingMembers';
 

@@ -7,7 +7,7 @@ import {
   useCloseCreateRoomModal,
   useCreateRoomModalState,
 } from '../../state/hooks/createRoomModal';
-import { CreateRoomModalState } from '../../state/createRoomModal';
+import type { CreateRoomModalState } from '../../state/createRoomModal';
 import { OverlayModal } from '../../components/OverlayModal';
 
 type CreateRoomModalProps = {

@@ -2,7 +2,7 @@ import React from 'react';
 import classNames from 'classnames';
 import { Box, Text, as, color } from 'folds';
 import * as css from './SoundCloudEmbed.css';
-import { SoundCloudEmbedInfo } from '../../utils/embeds';
+import type { SoundCloudEmbedInfo } from '../../utils/embeds';
 
 const linkStyles = { color: color.Primary.Main };
 

@@ -1,31 +1,16 @@
 /* eslint-disable jsx-a11y/alt-text */
-import React, {
-  ComponentPropsWithoutRef,
-  ReactEventHandler,
-  Suspense,
-  lazy,
-  useMemo,
-  useState,
-} from 'react';
-import {
-  Element,
-  Text as DOMText,
-  HTMLReactParserOptions,
-  attributesToProps,
-  domToReact,
-} from 'html-react-parser';
-import { MatrixClient } from 'matrix-js-sdk';
+import type { ComponentPropsWithoutRef, ReactEventHandler } from 'react';
+import React, { Suspense, lazy, useMemo, useState } from 'react';
+import type { HTMLReactParserOptions } from 'html-react-parser';
+import { Element, Text as DOMText, attributesToProps, domToReact } from 'html-react-parser';
+import type { MatrixClient } from 'matrix-js-sdk';
 import classNames from 'classnames';
 import { Box, Chip, config, Header, Icon, IconButton, Icons, Scroll, Text, toRem } from 'folds';
-import {
-  find as linkifyFind,
-  IntermediateRepresentation,
-  Opts as LinkifyOpts,
-  OptFn,
-} from 'linkifyjs';
+import type { IntermediateRepresentation, Opts as LinkifyOpts, OptFn } from 'linkifyjs';
+import { find as linkifyFind } from 'linkifyjs';
 import Linkify from 'linkify-react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { ChildNode } from 'domhandler';
+import type { ChildNode } from 'domhandler';
 import * as css from '../styles/CustomHtml.css';
 import { AnimatedImg } from '../components/AnimatedImg';
 import {

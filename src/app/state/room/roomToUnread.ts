@@ -1,23 +1,11 @@
 import produce from 'immer';
 import { atom, useSetAtom } from 'jotai';
-import {
-  IRoomTimelineData,
-  MatrixClient,
-  MatrixEvent,
-  Room,
-  RoomEvent,
-  SyncState,
-} from 'matrix-js-sdk';
-import { ReceiptContent, ReceiptType } from 'matrix-js-sdk/lib/@types/read_receipts';
+import type { IRoomTimelineData, MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk';
+import { RoomEvent, SyncState } from 'matrix-js-sdk';
+import type { ReceiptContent, ReceiptType } from 'matrix-js-sdk/lib/@types/read_receipts';
 import { useCallback, useEffect } from 'react';
-import {
-  Membership,
-  NotificationType,
-  RoomToUnread,
-  UnreadInfo,
-  Unread,
-  StateEvent,
-} from '../../../types/matrix/room';
+import type { RoomToUnread, UnreadInfo, Unread } from '../../../types/matrix/room';
+import { Membership, NotificationType, StateEvent } from '../../../types/matrix/room';
 import {
   getAllParents,
   getNotificationType,

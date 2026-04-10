@@ -1,8 +1,9 @@
-import React, { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Box, Icon, IconButton, Icons, Line, Text, config } from 'folds';
 import { useAtomValue } from 'jotai';
-import { Room } from 'matrix-js-sdk';
+import type { Room } from 'matrix-js-sdk';
 import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
 import { useSwipeDrawer } from '../../hooks/useSwipeDrawer';
 import { SwipeDrawer } from '../../components/swipe-drawer';

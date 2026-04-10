@@ -1,4 +1,5 @@
-import { MatrixClient, MatrixEvent, RoomMember, RoomMemberEvent } from 'matrix-js-sdk';
+import type { MatrixClient, MatrixEvent, RoomMember } from 'matrix-js-sdk';
+import { RoomMemberEvent } from 'matrix-js-sdk';
 import { useEffect, useState } from 'react';
 
 export const useRoomMembers = (mx: MatrixClient, roomId: string): RoomMember[] => {

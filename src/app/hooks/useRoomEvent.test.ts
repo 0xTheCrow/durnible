@@ -1,7 +1,9 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
-import React, { ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { MatrixEvent, MatrixEventEvent, Room } from 'matrix-js-sdk';
+import type { MatrixEvent, Room } from 'matrix-js-sdk';
+import { MatrixEventEvent } from 'matrix-js-sdk';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { EventEmitter } from 'events';
 import { useRoomEvent } from './useRoomEvent';

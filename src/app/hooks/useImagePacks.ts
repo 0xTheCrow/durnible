@@ -1,14 +1,13 @@
-import { Room } from 'matrix-js-sdk';
+import type { Room } from 'matrix-js-sdk';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AccountDataEvent } from '../../types/matrix/accountData';
 import { StateEvent } from '../../types/matrix/room';
+import type { ImagePack, ImageUsage } from '../plugins/custom-emoji';
 import {
   getGlobalImagePacks,
   getRoomImagePack,
   getRoomImagePacks,
   getUserImagePack,
-  ImagePack,
-  ImageUsage,
 } from '../plugins/custom-emoji';
 import { useMatrixClient } from './useMatrixClient';
 import { useAccountDataCallback } from './useAccountDataCallback';

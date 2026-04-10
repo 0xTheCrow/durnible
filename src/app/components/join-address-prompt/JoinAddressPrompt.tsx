@@ -1,4 +1,5 @@
-import React, { FormEventHandler, useState } from 'react';
+import type { FormEventHandler } from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   Header,

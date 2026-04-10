@@ -1,10 +1,11 @@
-import { ReactEventHandler, useCallback } from 'react';
+import type { ReactEventHandler } from 'react';
+import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRoomNavigate } from './useRoomNavigate';
 import { useMatrixClient } from './useMatrixClient';
 import { isRoomId, isUserId } from '../utils/matrix';
 import { getHomeRoomPath, withSearchParam } from '../pages/pathUtils';
-import { _RoomSearchParams } from '../pages/paths';
+import type { _RoomSearchParams } from '../pages/paths';
 import { useOpenUserRoomProfile } from '../state/hooks/userRoomProfile';
 import { useSpaceOptionally } from './useSpace';
 

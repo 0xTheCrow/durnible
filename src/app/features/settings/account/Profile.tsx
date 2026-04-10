@@ -1,11 +1,5 @@
-import React, {
-  ChangeEventHandler,
-  FormEventHandler,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import type { ChangeEventHandler, FormEventHandler } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Box,
   Text,
@@ -31,7 +25,8 @@ import { SequenceCard } from '../../../components/sequence-card';
 import { SequenceCardStyle } from '../styles.css';
 import { SettingTile } from '../../../components/setting-tile';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
-import { UserProfile, useUserProfile, setBannerUrlCache } from '../../../hooks/useUserProfile';
+import type { UserProfile } from '../../../hooks/useUserProfile';
+import { useUserProfile, setBannerUrlCache } from '../../../hooks/useUserProfile';
 import { getMxIdLocalPart, mxcUrlToHttp } from '../../../utils/matrix';
 import { UserAvatar } from '../../../components/user-avatar';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
@@ -42,7 +37,8 @@ import { useObjectURL } from '../../../hooks/useObjectURL';
 import { stopPropagation } from '../../../utils/keyboard';
 import { ImageEditor } from '../../../components/image-editor';
 import { ModalWide } from '../../../styles/Modal.css';
-import { createUploadAtom, UploadSuccess } from '../../../state/upload';
+import type { UploadSuccess } from '../../../state/upload';
+import { createUploadAtom } from '../../../state/upload';
 import { CompactUploadCardRenderer } from '../../../components/upload-card';
 import { useCapabilities } from '../../../hooks/useCapabilities';
 

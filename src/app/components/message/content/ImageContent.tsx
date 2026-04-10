@@ -1,5 +1,5 @@
+import type { ReactNode } from 'react';
 import React, {
-  ReactNode,
   useCallback,
   useContext,
   useEffect,
@@ -23,8 +23,9 @@ import {
 import classNames from 'classnames';
 import { BlurhashCanvas } from 'react-blurhash';
 import { useAtom, useSetAtom } from 'jotai';
-import { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
-import { IImageInfo, MATRIX_BLUR_HASH_PROPERTY_NAME } from '../../../../types/matrix/common';
+import type { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
+import type { IImageInfo } from '../../../../types/matrix/common';
+import { MATRIX_BLUR_HASH_PROPERTY_NAME } from '../../../../types/matrix/common';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { useSetting } from '../../../state/hooks/settings';

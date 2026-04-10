@@ -1,33 +1,17 @@
-import React, {
-  KeyboardEventHandler,
-  MouseEventHandler,
-  useCallback,
-  useEffect,
-  useState,
-} from 'react';
-import {
-  Box,
-  Chip,
-  Icon,
-  IconButton,
-  Icons,
-  Line,
-  PopOut,
-  RectCords,
-  Spinner,
-  Text,
-  as,
-  config,
-} from 'folds';
+import type { KeyboardEventHandler, MouseEventHandler } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+import type { RectCords } from 'folds';
+import { Box, Chip, Icon, IconButton, Icons, Line, PopOut, Spinner, Text, as, config } from 'folds';
 import { Editor, Transforms } from 'slate';
 import { ReactEditor } from 'slate-react';
-import { IContent, IMentions, MatrixEvent, RelationType, Room } from 'matrix-js-sdk';
+import type { IContent, IMentions, MatrixEvent, Room } from 'matrix-js-sdk';
+import { RelationType } from 'matrix-js-sdk';
 import type { RoomMessageEventContent } from 'matrix-js-sdk/lib/@types/events';
 import { isKeyHotkey } from 'is-hotkey';
+import type { AutocompleteQuery } from '../../../components/editor';
 import {
   AUTOCOMPLETE_PREFIXES,
   AutocompletePrefix,
-  AutocompleteQuery,
   BlockType,
   CustomEditor,
   EmoticonAutocomplete,

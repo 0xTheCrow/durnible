@@ -1,18 +1,13 @@
-import React, {
-  KeyboardEventHandler,
-  RefObject,
-  forwardRef,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import type { KeyboardEventHandler, RefObject } from 'react';
+import React, { forwardRef, useCallback, useEffect, useRef, useState } from 'react';
 import { useAtom, useAtomValue } from 'jotai';
 import { isKeyHotkey } from 'is-hotkey';
-import { EventType, IContent, MsgType, RelationType, Room } from 'matrix-js-sdk';
+import type { IContent, Room } from 'matrix-js-sdk';
+import { EventType, MsgType, RelationType } from 'matrix-js-sdk';
 import type { RoomMessageEventContent } from 'matrix-js-sdk/lib/types';
 import { ReactEditor } from 'slate-react';
-import { Transforms, Editor, BaseRange } from 'slate';
+import type { Editor, BaseRange } from 'slate';
+import { Transforms } from 'slate';
 import {
   Box,
   Dialog,
@@ -31,6 +26,7 @@ import {
 } from 'folds';
 
 import { useMatrixClient } from '../../hooks/useMatrixClient';
+import type { AutocompleteQuery } from '../../components/editor';
 import {
   CustomEditor,
   Toolbar,
@@ -38,7 +34,6 @@ import {
   toPlainText,
   AUTOCOMPLETE_PREFIXES,
   AutocompletePrefix,
-  AutocompleteQuery,
   getAutocompleteQuery,
   getPrevWorldRange,
   resetEditor,
@@ -60,33 +55,25 @@ import {
 } from '../../components/editor';
 import { EmojiBoard, EmojiBoardTab } from '../../components/emoji-board';
 import { UseStateProvider } from '../../components/UseStateProvider';
-import { TUploadContent, getImageInfo, getMxIdLocalPart, mxcUrlToHttp } from '../../utils/matrix';
+import type { TUploadContent } from '../../utils/matrix';
+import { getImageInfo, getMxIdLocalPart, mxcUrlToHttp } from '../../utils/matrix';
 import { encryptFileInWorker } from '../../utils/encryptWorker';
 import { useTypingStatusUpdater } from '../../hooks/useTypingStatusUpdater';
 import { useFilePicker } from '../../hooks/useFilePicker';
 import { useFilePasteHandler } from '../../hooks/useFilePasteHandler';
 import { useFileDropZone } from '../../hooks/useFileDrop';
+import type { TUploadItem, TUploadMetadata } from '../../state/room/roomInputDrafts';
 import {
-  TUploadItem,
-  TUploadMetadata,
   roomIdToMsgDraftAtomFamily,
   roomIdToReplyDraftAtomFamily,
   roomIdToUploadItemsAtomFamily,
   roomUploadAtomFamily,
 } from '../../state/room/roomInputDrafts';
 import { UploadCardRenderer } from '../../components/upload-card';
-import {
-  UploadBoard,
-  UploadBoardContent,
-  UploadBoardHeader,
-  UploadBoardImperativeHandlers,
-} from '../../components/upload-board';
-import {
-  Upload,
-  UploadStatus,
-  UploadSuccess,
-  createUploadFamilyObserverAtom,
-} from '../../state/upload';
+import type { UploadBoardImperativeHandlers } from '../../components/upload-board';
+import { UploadBoard, UploadBoardContent, UploadBoardHeader } from '../../components/upload-board';
+import type { Upload, UploadSuccess } from '../../state/upload';
+import { UploadStatus, createUploadFamilyObserverAtom } from '../../state/upload';
 import { getImageUrlBlob, loadImageElement } from '../../utils/dom';
 import { safeFile } from '../../utils/mimeTypes';
 import { fulfilledPromiseSettledResult } from '../../utils/common';

@@ -1,4 +1,5 @@
-import { createClient, MatrixClient, IndexedDBStore, IndexedDBCryptoStore } from 'matrix-js-sdk';
+import type { MatrixClient } from 'matrix-js-sdk';
+import { createClient, IndexedDBStore, IndexedDBCryptoStore } from 'matrix-js-sdk';
 import { logger } from 'matrix-js-sdk/lib/logger';
 
 import { cryptoCallbacks } from './secretStorageKeys';
@@ -38,7 +39,7 @@ export const initClient = async (session: Session): Promise<MatrixClient> => {
   await mx.initRustCrypto();
 
   mx.setMaxListeners(50);
-  (mx.logger as unknown as { setLevel: (level: string) => void }).setLevel('warn');
+  (mx as unknown as { logger: { setLevel: (level: string) => void } }).logger.setLevel('warn');
 
   return mx;
 };

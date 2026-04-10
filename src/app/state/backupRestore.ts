@@ -1,5 +1,6 @@
 import { atom } from 'jotai';
-import { ImportRoomKeyProgressData, ImportRoomKeyStage } from 'matrix-js-sdk/lib/crypto-api';
+import type { ImportRoomKeyProgressData } from 'matrix-js-sdk/lib/crypto-api';
+import { ImportRoomKeyStage } from 'matrix-js-sdk/lib/crypto-api';
 
 export enum BackupProgressStatus {
   Idle,

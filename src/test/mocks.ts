@@ -1,5 +1,5 @@
 import { vi } from 'vitest';
-import { MatrixClient, MatrixEvent, Room, RoomMember } from 'matrix-js-sdk';
+import type { MatrixClient, MatrixEvent, Room, RoomMember } from 'matrix-js-sdk';
 
 let eventCounter = 0;
 

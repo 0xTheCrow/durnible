@@ -1,5 +1,7 @@
-import React, { RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { RoomMember, SearchOrderBy } from 'matrix-js-sdk';
+import type { RefObject } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { RoomMember } from 'matrix-js-sdk';
+import { SearchOrderBy } from 'matrix-js-sdk';
 import { Text, Box, Icon, Icons, config, Spinner, IconButton, Line, toRem } from 'folds';
 import { useAtomValue } from 'jotai';
 import { useVirtualizer } from '@tanstack/react-virtual';
@@ -7,7 +9,7 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { PageHero, PageHeroEmpty, PageHeroSection } from '../../components/page';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
-import { _SearchPathSearchParams } from '../../pages/paths';
+import type { _SearchPathSearchParams } from '../../pages/paths';
 import { useSetting } from '../../state/hooks/settings';
 import { settingsAtom } from '../../state/settings';
 import { SequenceCard } from '../../components/sequence-card';
@@ -18,7 +20,8 @@ import { decodeSearchParamValueArray, encodeSearchParamValueArray } from '../../
 import { useRooms } from '../../state/hooks/roomList';
 import { allRoomsAtom } from '../../state/room-list/roomList';
 import { mDirectAtom } from '../../state/mDirectList';
-import { ResultGroup, localResultsToGroups, useServerSearch } from './useMessageSearch';
+import type { ResultGroup } from './useMessageSearch';
+import { localResultsToGroups, useServerSearch } from './useMessageSearch';
 import { SearchResultGroup } from './SearchResultGroup';
 import { SearchInput } from './SearchInput';
 import { SearchFilters } from './SearchFilters';

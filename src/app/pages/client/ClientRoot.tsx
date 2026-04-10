@@ -1,3 +1,4 @@
+import type { RectCords } from 'folds';
 import {
   Box,
   Button,
@@ -9,13 +10,14 @@ import {
   Menu,
   MenuItem,
   PopOut,
-  RectCords,
   Spinner,
   Text,
 } from 'folds';
-import { HttpApiEvent, HttpApiEventHandlerMap, MatrixClient } from 'matrix-js-sdk';
+import type { HttpApiEventHandlerMap, MatrixClient } from 'matrix-js-sdk';
+import { HttpApiEvent } from 'matrix-js-sdk';
 import FocusTrap from 'focus-trap-react';
-import React, { MouseEventHandler, ReactNode, useCallback, useEffect, useState } from 'react';
+import type { MouseEventHandler, ReactNode } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   clearCacheAndReload,
   clearLoginData,

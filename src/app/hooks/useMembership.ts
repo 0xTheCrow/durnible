@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Room, RoomMemberEvent, RoomMemberEventHandlerMap } from 'matrix-js-sdk';
+import type { Room, RoomMemberEventHandlerMap } from 'matrix-js-sdk';
+import { RoomMemberEvent } from 'matrix-js-sdk';
 import { Membership } from '../../types/matrix/room';
 
 export const useMembership = (room: Room, userId: string): Membership => {

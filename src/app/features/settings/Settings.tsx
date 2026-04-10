@@ -1,17 +1,7 @@
-import React, { ChangeEventHandler, useMemo, useState } from 'react';
-import {
-  Avatar,
-  Box,
-  Button,
-  config,
-  Icon,
-  IconButton,
-  Icons,
-  IconSrc,
-  Input,
-  MenuItem,
-  Text,
-} from 'folds';
+import type { ChangeEventHandler } from 'react';
+import React, { useMemo, useState } from 'react';
+import type { IconSrc } from 'folds';
+import { Avatar, Box, Button, config, Icon, IconButton, Icons, Input, MenuItem, Text } from 'folds';
 import { General } from './general';
 import { PageNav, PageNavContent, PageNavHeader, PageRoot } from '../../components/page';
 import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';

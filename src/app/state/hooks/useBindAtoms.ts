@@ -1,4 +1,4 @@
-import { MatrixClient } from 'matrix-js-sdk';
+import type { MatrixClient } from 'matrix-js-sdk';
 import { allInvitesAtom, useBindAllInvitesAtom } from '../room-list/inviteList';
 import { allRoomsAtom, useBindAllRoomsAtom } from '../room-list/roomList';
 import { mDirectAtom, useBindMDirectAtom } from '../mDirectList';

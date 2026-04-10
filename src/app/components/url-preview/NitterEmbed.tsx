@@ -2,7 +2,7 @@ import React from 'react';
 import classNames from 'classnames';
 import { Box, Text, as, color } from 'folds';
 import * as css from './NitterEmbed.css';
-import { TwitterEmbedInfo } from '../../utils/embeds';
+import type { TwitterEmbedInfo } from '../../utils/embeds';
 import { useNitterInstance } from '../../utils/nitterInstance';
 
 const linkStyles = { color: color.Primary.Main };

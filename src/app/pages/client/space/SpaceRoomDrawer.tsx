@@ -1,4 +1,5 @@
-import React, { ReactNode, useEffect, useRef } from 'react';
+import type { ReactNode } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useLocation, useMatch } from 'react-router-dom';
 import { Box } from 'folds';
 import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';

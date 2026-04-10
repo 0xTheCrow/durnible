@@ -1,5 +1,6 @@
 import { atom, useSetAtom } from 'jotai';
-import { ClientEvent, MatrixClient, MatrixEvent } from 'matrix-js-sdk';
+import type { MatrixClient, MatrixEvent } from 'matrix-js-sdk';
+import { ClientEvent } from 'matrix-js-sdk';
 import { useEffect } from 'react';
 import { AccountDataEvent } from '../../types/matrix/accountData';
 import { getAccountData, getMDirects } from '../utils/room';

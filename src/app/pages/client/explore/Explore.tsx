@@ -1,4 +1,5 @@
-import React, { FormEventHandler, useCallback, useRef, useState } from 'react';
+import type { FormEventHandler } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Avatar,

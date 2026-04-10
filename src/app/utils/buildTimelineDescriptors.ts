@@ -1,4 +1,4 @@
-import { EventTimelineSet, MatrixEvent } from 'matrix-js-sdk';
+import type { EventTimelineSet, MatrixEvent } from 'matrix-js-sdk';
 import { reactionOrEditEvent } from './room';
 import { inSameDay, minuteDifference } from './time';
 

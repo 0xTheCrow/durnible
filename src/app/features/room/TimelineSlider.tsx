@@ -1,12 +1,13 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Spinner, Text, color } from 'folds';
 import { atom, useAtom, useAtomValue } from 'jotai';
-import { Room } from 'matrix-js-sdk';
+import type { Room } from 'matrix-js-sdk';
 import { useStateEvent } from '../../hooks/useStateEvent';
 import { StateEvent } from '../../../types/matrix/room';
 import { timeDayMonthYear, timeHourMinute } from '../../utils/time';
 import { useSetting } from '../../state/hooks/settings';
-import { settingsAtom, TimelineSliderRange } from '../../state/settings';
+import type { TimelineSliderRange } from '../../state/settings';
+import { settingsAtom } from '../../state/settings';
 import * as css from './TimelineSlider.css';
 
 export const timelineSliderVisibleAtom = atom(false);

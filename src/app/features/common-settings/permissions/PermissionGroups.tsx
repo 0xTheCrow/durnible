@@ -6,13 +6,9 @@ import produce from 'immer';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SequenceCardStyle } from '../styles.css';
 import { SettingTile } from '../../../components/setting-tile';
-import {
-  applyPermissionPower,
-  getPermissionPower,
-  IPowerLevels,
-  PermissionLocation,
-} from '../../../hooks/usePowerLevels';
-import { PermissionGroup } from './types';
+import type { IPowerLevels, PermissionLocation } from '../../../hooks/usePowerLevels';
+import { applyPermissionPower, getPermissionPower } from '../../../hooks/usePowerLevels';
+import type { PermissionGroup } from './types';
 import { getPowerLevelTag, getPowers, usePowerLevelTags } from '../../../hooks/usePowerLevelTags';
 import { useRoom } from '../../../hooks/useRoom';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';

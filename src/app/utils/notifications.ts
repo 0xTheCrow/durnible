@@ -1,4 +1,5 @@
-import { MatrixClient, ReceiptType } from 'matrix-js-sdk';
+import type { MatrixClient } from 'matrix-js-sdk';
+import { ReceiptType } from 'matrix-js-sdk';
 
 export async function markAsRead(mx: MatrixClient, roomId: string, privateReceipt: boolean) {
   const room = mx.getRoom(roomId);

@@ -1,8 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { useAtomValue } from 'jotai';
 import { MsgType } from 'matrix-js-sdk';
-import { HTMLReactParserOptions } from 'html-react-parser';
-import { Opts } from 'linkifyjs';
+import type { HTMLReactParserOptions } from 'html-react-parser';
+import type { Opts } from 'linkifyjs';
 import { config } from 'folds';
 import {
   AudioContent,
@@ -41,7 +41,7 @@ import {
   getTwitterEmbedInfo,
 } from '../utils/embeds';
 import { settingsAtom } from '../state/settings';
-import {
+import type {
   IAudioContent,
   IFileContent,
   IImageContent,

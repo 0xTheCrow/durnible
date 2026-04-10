@@ -1,30 +1,20 @@
 /* eslint-disable no-param-reassign */
-import React, {
+import type {
   ClipboardEventHandler,
   FormEventHandler,
   KeyboardEventHandler,
   ReactNode,
-  forwardRef,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
 } from 'react';
+import React, { forwardRef, useCallback, useEffect, useRef, useState } from 'react';
 import { Box, Scroll, Text } from 'folds';
-import { Descendant, Editor, Transforms, createEditor } from 'slate';
-import {
-  Slate,
-  Editable,
-  ReactEditor,
-  withReact,
-  RenderLeafProps,
-  RenderElementProps,
-  RenderPlaceholderProps,
-} from 'slate-react';
+import type { Descendant } from 'slate';
+import { Editor, Transforms, createEditor } from 'slate';
+import type { RenderLeafProps, RenderElementProps, RenderPlaceholderProps } from 'slate-react';
+import { Slate, Editable, ReactEditor, withReact } from 'slate-react';
 import { withHistory } from 'slate-history';
 import { BlockType } from './types';
 import { RenderElement, RenderLeaf } from './Elements';
-import { CustomElement } from './slate';
+import type { CustomElement } from './slate';
 import * as css from './Editor.css';
 import { toggleKeyboardShortcut } from './keyboard';
 import { getImageUrlBlob } from '../../utils/dom';

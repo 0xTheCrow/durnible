@@ -12,20 +12,22 @@ import {
   Icon,
   Icons,
 } from 'folds';
-import { MatrixError, Method } from 'matrix-js-sdk';
-import { RoomTombstoneEventContent } from 'matrix-js-sdk/lib/types';
+import type { MatrixError } from 'matrix-js-sdk';
+import { Method } from 'matrix-js-sdk';
+import type { RoomTombstoneEventContent } from 'matrix-js-sdk/lib/types';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SequenceCardStyle } from '../../room-settings/styles.css';
 import { SettingTile } from '../../../components/setting-tile';
 import { useRoom } from '../../../hooks/useRoom';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
-import { IRoomCreateContent, StateEvent } from '../../../../types/matrix/room';
+import type { IRoomCreateContent } from '../../../../types/matrix/room';
+import { StateEvent } from '../../../../types/matrix/room';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { useStateEvent } from '../../../hooks/useStateEvent';
 import { useRoomNavigate } from '../../../hooks/useRoomNavigate';
 import { useCapabilities } from '../../../hooks/useCapabilities';
 import { OverlayModal } from '../../../components/OverlayModal';
-import { RoomPermissionsAPI } from '../../../hooks/useRoomPermissions';
+import type { RoomPermissionsAPI } from '../../../hooks/useRoomPermissions';
 import {
   AdditionalCreatorInput,
   RoomVersionSelector,

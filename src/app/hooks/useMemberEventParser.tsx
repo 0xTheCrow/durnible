@@ -1,7 +1,10 @@
-import React, { ReactNode } from 'react';
-import { IconSrc, Icons } from 'folds';
-import { MatrixEvent } from 'matrix-js-sdk';
-import { IMemberContent, Membership } from '../../types/matrix/room';
+import type { ReactNode } from 'react';
+import React from 'react';
+import type { IconSrc } from 'folds';
+import { Icons } from 'folds';
+import type { MatrixEvent } from 'matrix-js-sdk';
+import type { IMemberContent } from '../../types/matrix/room';
+import { Membership } from '../../types/matrix/room';
 import { getMxIdLocalPart } from '../utils/matrix';
 import { isMembershipChanged } from '../utils/room';
 

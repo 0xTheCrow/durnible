@@ -7,7 +7,7 @@ import {
   useCloseCreateSpaceModal,
   useCreateSpaceModalState,
 } from '../../state/hooks/createSpaceModal';
-import { CreateSpaceModalState } from '../../state/createSpaceModal';
+import type { CreateSpaceModalState } from '../../state/createSpaceModal';
 import { OverlayModal } from '../../components/OverlayModal';
 
 type CreateSpaceModalProps = {

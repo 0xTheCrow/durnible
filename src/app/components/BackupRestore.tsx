@@ -1,6 +1,8 @@
-import React, { MouseEventHandler, useCallback, useState } from 'react';
+import type { MouseEventHandler } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useAtom } from 'jotai';
-import { CryptoApi, KeyBackupInfo } from 'matrix-js-sdk/lib/crypto-api';
+import type { CryptoApi, KeyBackupInfo } from 'matrix-js-sdk/lib/crypto-api';
+import type { RectCords } from 'folds';
 import {
   Badge,
   Box,
@@ -14,7 +16,6 @@ import {
   percent,
   PopOut,
   ProgressBar,
-  RectCords,
   Spinner,
   Text,
 } from 'folds';

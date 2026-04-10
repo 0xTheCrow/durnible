@@ -1,4 +1,4 @@
-import { _RoomSearchParams, DirectCreateSearchParams } from './paths';
+import type { _RoomSearchParams, DirectCreateSearchParams } from './paths';
 
 type SearchParamsGetter<T> = (searchParams: URLSearchParams) => T;
 

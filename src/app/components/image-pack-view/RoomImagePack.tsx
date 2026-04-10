@@ -1,9 +1,10 @@
 import React, { useCallback, useMemo } from 'react';
-import { Room } from 'matrix-js-sdk';
+import type { Room } from 'matrix-js-sdk';
 import { usePowerLevels } from '../../hooks/usePowerLevels';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { ImagePackContent } from './ImagePackContent';
-import { ImagePack, PackContent } from '../../plugins/custom-emoji';
+import type { PackContent } from '../../plugins/custom-emoji';
+import { ImagePack } from '../../plugins/custom-emoji';
 import { StateEvent } from '../../../types/matrix/room';
 import { useRoomImagePack } from '../../hooks/useImagePacks';
 import { randomStr } from '../../utils/common';

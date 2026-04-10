@@ -1,4 +1,4 @@
-import { RoomMember } from 'matrix-js-sdk';
+import type { RoomMember } from 'matrix-js-sdk';
 import { useCallback, useMemo } from 'react';
 
 export const MemberSort = {

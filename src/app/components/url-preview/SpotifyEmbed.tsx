@@ -2,7 +2,7 @@ import React from 'react';
 import classNames from 'classnames';
 import { Box, Text, as, color } from 'folds';
 import * as css from './SpotifyEmbed.css';
-import { SpotifyEmbedInfo } from '../../utils/embeds';
+import type { SpotifyEmbedInfo } from '../../utils/embeds';
 
 const linkStyles = { color: color.Primary.Main };
 const TALL_TYPES = new Set(['album', 'playlist', 'artist', 'show']);

@@ -1,3 +1,4 @@
+import type { RectCords } from 'folds';
 import {
   Avatar,
   Box,
@@ -14,27 +15,22 @@ import {
   MenuItem,
   Modal,
   PopOut,
-  RectCords,
   Spinner,
   Text,
   as,
   color,
   config,
 } from 'folds';
-import React, {
-  FormEventHandler,
-  MouseEventHandler,
-  ReactNode,
-  useCallback,
-  useState,
-} from 'react';
+import type { FormEventHandler, MouseEventHandler, ReactNode } from 'react';
+import React, { useCallback, useState } from 'react';
 import FocusTrap from 'focus-trap-react';
 import { useHover, useFocusWithin } from 'react-aria';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
-import { MsgType, EventStatus, EventType, MatrixEvent, Room } from 'matrix-js-sdk';
-import { Relations } from 'matrix-js-sdk/lib/models/relations';
+import type { MatrixEvent, Room } from 'matrix-js-sdk';
+import { MsgType, EventStatus, EventType } from 'matrix-js-sdk';
+import type { Relations } from 'matrix-js-sdk/lib/models/relations';
 import classNames from 'classnames';
-import { RoomPinnedEventsEventContent } from 'matrix-js-sdk/lib/types';
+import type { RoomPinnedEventsEventContent } from 'matrix-js-sdk/lib/types';
 import { messageOptionsAtom } from './messageOptionsAtom';
 import { selectionModeAtom, selectedIdsAtom } from './selectionAtom';
 import { hiddenImagesAtom, MessageEventIdContext } from '../../../state/hiddenImages';
@@ -60,7 +56,8 @@ import {
   isRoomAlias,
   mxcUrlToHttp,
 } from '../../../utils/matrix';
-import { MessageLayout, MessageSpacing } from '../../../state/settings';
+import type { MessageSpacing } from '../../../state/settings';
+import { MessageLayout } from '../../../state/settings';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { useRecentEmoji } from '../../../hooks/useRecentEmoji';
 import * as css from './styles.css';
@@ -78,7 +75,7 @@ import { getMatrixToRoomEvent } from '../../../plugins/matrix-to';
 import { getViaServers } from '../../../plugins/via-servers';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
 import { useRoomPinnedEvents } from '../../../hooks/useRoomPinnedEvents';
-import { MemberPowerTag } from '../../../../types/matrix/room';
+import type { MemberPowerTag } from '../../../../types/matrix/room';
 import { PowerIcon } from '../../../components/power';
 import colorMXID from '../../../../util/colorMXID';
 import { getPowerTagIconSrc } from '../../../hooks/useMemberPowerTag';

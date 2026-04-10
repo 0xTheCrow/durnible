@@ -1,15 +1,12 @@
-import React, {
+import type {
   ChangeEventHandler,
   FocusEventHandler,
   MouseEventHandler,
   ReactNode,
   RefObject,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
 } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { RectCords } from 'folds';
 import {
   Box,
   config,
@@ -19,18 +16,19 @@ import {
   Menu,
   MenuItem,
   PopOut,
-  RectCords,
   Scroll,
   Text,
   toRem,
 } from 'folds';
 import FocusTrap from 'focus-trap-react';
 import { isKeyHotkey } from 'is-hotkey';
-import { Room } from 'matrix-js-sdk';
-import { atom, PrimitiveAtom, useAtom, useSetAtom } from 'jotai';
+import type { Room } from 'matrix-js-sdk';
+import type { PrimitiveAtom } from 'jotai';
+import { atom, useAtom, useSetAtom } from 'jotai';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { monitorForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
-import { IEmoji, emojiGroups, emojis } from '../../plugins/emoji';
+import type { IEmoji } from '../../plugins/emoji';
+import { emojiGroups, emojis } from '../../plugins/emoji';
 import { useEmojiGroupLabels } from './useEmojiGroupLabels';
 import { useEmojiGroupIcons } from './useEmojiGroupIcons';
 import { preventScrollWithArrowKey, stopPropagation } from '../../utils/keyboard';
@@ -39,12 +37,14 @@ import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { useRecentEmoji } from '../../hooks/useRecentEmoji';
 import { isUserId, mxcUrlToHttp } from '../../utils/matrix';
 import { editableActiveElement, targetFromEvent } from '../../utils/dom';
-import { useAsyncSearch, UseAsyncSearchOptions } from '../../hooks/useAsyncSearch';
+import type { UseAsyncSearchOptions } from '../../hooks/useAsyncSearch';
+import { useAsyncSearch } from '../../hooks/useAsyncSearch';
 import { useDebounce } from '../../hooks/useDebounce';
 import { useThrottle } from '../../hooks/useThrottle';
 import { addRecentEmoji } from '../../plugins/recent-emoji';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
-import { ImagePack, ImageUsage, PackImageReader } from '../../plugins/custom-emoji';
+import type { ImagePack, PackImageReader } from '../../plugins/custom-emoji';
+import { ImageUsage } from '../../plugins/custom-emoji';
 import { getEmoticonSearchStr } from '../../plugins/utils';
 import { useStickerPackOrder } from '../../hooks/useStickerPackOrder';
 import { useFavoriteEmoji, useFavoriteEntries } from '../../hooks/useFavoriteEmoji';
@@ -53,6 +53,7 @@ import {
   removeFavoriteEmoji,
   isFavoriteEmoji,
 } from '../../plugins/favorite-emoji';
+import type { PreviewData } from './components';
 import {
   SearchInput,
   EmojiBoardTabs,
@@ -62,7 +63,6 @@ import {
   NoStickerPacks,
   createPreviewDataAtom,
   Preview,
-  PreviewData,
   EmojiItem,
   StickerItem,
   CustomEmojiItem,
@@ -76,7 +76,8 @@ import {
   EmojiBoardLayout,
 } from './components';
 import { useScreenSize, ScreenSize } from '../../hooks/useScreenSize';
-import { EmojiBoardTab, EmojiItemInfo, EmojiType } from './types';
+import type { EmojiItemInfo } from './types';
+import { EmojiBoardTab, EmojiType } from './types';
 import { VirtualTile } from '../virtualizer';
 
 const RECENT_GROUP_ID = 'recent_group';

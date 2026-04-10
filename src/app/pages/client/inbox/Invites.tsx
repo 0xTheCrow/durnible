@@ -15,8 +15,8 @@ import {
   config,
 } from 'folds';
 import { useAtomValue } from 'jotai';
-import { RoomTopicEventContent } from 'matrix-js-sdk/lib/types';
-import { MatrixClient, MatrixError, Room } from 'matrix-js-sdk';
+import type { RoomTopicEventContent } from 'matrix-js-sdk/lib/types';
+import type { MatrixClient, MatrixError, Room } from 'matrix-js-sdk';
 import {
   Page,
   PageContent,

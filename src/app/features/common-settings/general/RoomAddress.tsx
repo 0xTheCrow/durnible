@@ -1,4 +1,5 @@
-import React, { FormEventHandler, useCallback, useState } from 'react';
+import type { FormEventHandler } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   Badge,
   Box,
@@ -14,7 +15,7 @@ import {
   Text,
   toRem,
 } from 'folds';
-import { MatrixError } from 'matrix-js-sdk';
+import type { MatrixError } from 'matrix-js-sdk';
 import { SettingTile } from '../../../components/setting-tile';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SequenceCardStyle } from '../../room-settings/styles.css';
@@ -31,7 +32,7 @@ import { CutoutCard } from '../../../components/cutout-card';
 import { replaceSpaceWithDash } from '../../../utils/common';
 import { useAlive } from '../../../hooks/useAlive';
 import { StateEvent } from '../../../../types/matrix/room';
-import { RoomPermissionsAPI } from '../../../hooks/useRoomPermissions';
+import type { RoomPermissionsAPI } from '../../../hooks/useRoomPermissions';
 import { getMxIdServer } from '../../../utils/matrix';
 
 type RoomPublishedAddressesProps = {

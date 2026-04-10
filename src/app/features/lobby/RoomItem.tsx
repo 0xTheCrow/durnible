@@ -1,4 +1,5 @@
-import React, { MouseEventHandler, ReactNode, useCallback, useRef } from 'react';
+import type { MouseEventHandler, ReactNode } from 'react';
+import React, { useCallback, useRef } from 'react';
 import {
   Avatar,
   Badge,
@@ -15,13 +16,14 @@ import {
   color,
   toRem,
 } from 'folds';
-import { JoinRule, MatrixError, Room } from 'matrix-js-sdk';
-import { IHierarchyRoom } from 'matrix-js-sdk/lib/@types/spaces';
+import type { MatrixError, Room } from 'matrix-js-sdk';
+import { JoinRule } from 'matrix-js-sdk';
+import type { IHierarchyRoom } from 'matrix-js-sdk/lib/@types/spaces';
 import { OverlayModal } from '../../components/OverlayModal';
 import { RoomAvatar, RoomIcon } from '../../components/room-avatar';
 import { SequenceCard } from '../../components/sequence-card';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
-import { HierarchyItem } from '../../hooks/useSpaceHierarchy';
+import type { HierarchyItem } from '../../hooks/useSpaceHierarchy';
 import { millify } from '../../plugins/millify';
 import { LocalRoomSummaryLoader } from '../../components/RoomSummaryLoader';
 import { UseStateProvider } from '../../components/UseStateProvider';

@@ -7,10 +7,8 @@ import { SettingTile } from '../../../components/setting-tile';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
-import {
-  AccountDataEditor,
-  AccountDataSubmitCallback,
-} from '../../../components/AccountDataEditor';
+import type { AccountDataSubmitCallback } from '../../../components/AccountDataEditor';
+import { AccountDataEditor } from '../../../components/AccountDataEditor';
 import { copyToClipboard } from '../../../utils/dom';
 import { AccountData } from './AccountData';
 

@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { MsgType } from 'matrix-js-sdk';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoizedTimelineEvent } from './MemoizedTimelineEvent';
-import { TimelineMessageContext, TimelineMessageContextValue } from './TimelineMessageContext';
+import type { TimelineMessageContextValue } from './TimelineMessageContext';
+import { TimelineMessageContext } from './TimelineMessageContext';
 import { MatrixTestWrapper } from '../../../test/wrapper';
 import { createMockMatrixClient, createMockMatrixEvent, createMockRoom } from '../../../test/mocks';
 import { MessageLayout } from '../../state/settings';
@@ -33,7 +35,7 @@ function makeContext(
     canSendReaction: false,
     canPinEvent: false,
     imagePackRooms: [],
-    getMemberPowerTag: vi.fn(() => undefined),
+    getMemberPowerTag: vi.fn(() => ({ name: 'Member' })),
     accessiblePowerTagColors: new Map(),
     legacyUsernameColor: false,
     direct: false,
@@ -90,6 +92,8 @@ describe('MemoizedTimelineEvent edit mode', () => {
       reactionRelations: undefined,
       editedEvent: undefined,
       isRedacted: false,
+      eventStatus: null,
+      replyToMe: false,
     };
 
     const { rerender } = render(
@@ -148,6 +152,8 @@ describe('MemoizedTimelineEvent edit mode', () => {
       reactionRelations: undefined,
       editedEvent: undefined,
       isRedacted: false,
+      eventStatus: null,
+      replyToMe: false,
     };
 
     const { rerender } = render(
@@ -170,6 +176,123 @@ describe('MemoizedTimelineEvent edit mode', () => {
 
     expect(screen.queryByText('Save')).not.toBeInTheDocument();
     expect(screen.getByText('Hello world')).toBeInTheDocument();
+  });
+});
+
+describe('MemoizedTimelineEvent reply-to-me highlight', () => {
+  // Regression test for the "no highlight on first load" bug.
+  //
+  // The bug: replyToMe used to be computed inline inside MemoizedTimelineEvent
+  // via timelineSet.findEventById(replyEventId). On page refresh, the ancestor
+  // event was often older than the loaded pagination window, so findEventById
+  // returned undefined and the highlight was missing on first paint. The user
+  // had to scroll (which tripped the memo comparator) for the highlight to
+  // appear.
+  //
+  // The fix: replyToMe is now a prop computed in the parent (RoomTimeline),
+  // so it doesn't depend on the SDK having the ancestor loaded at the moment
+  // of the child's first render — and the parent re-runs the computation
+  // whenever it re-renders (including on the new backpagination notification).
+  //
+  // This test pins the behavior: even when timelineSet.findEventById returns
+  // undefined (ancestor not loaded), passing replyToMe=true must produce a
+  // visible highlight on the FIRST render with no further interactions.
+  it('shows the highlight on first render even when findEventById returns undefined', () => {
+    const mx = createMockMatrixClient();
+    const room = createMockRoom('!testroom:example.com', mx);
+    room._addMockMember('@alice:example.com', 'alice');
+
+    const mEvent = createMockMatrixEvent({
+      id: '$reply-event',
+      sender: '@alice:example.com',
+      content: { body: 'thanks!', msgtype: MsgType.Text },
+      roomId: '!testroom:example.com',
+    });
+    // Make this a reply to an ancestor that won't be in the timelineSet — the
+    // exact bug scenario from page refresh.
+    (mEvent as any).replyEventId = '$missing-ancestor';
+
+    const ctx: TimelineMessageContextValue = {
+      ...makeContext(mx, room),
+      // The bubble is gated on the user's setting too; turn it on so the test
+      // exercises the prop path that drives mentionHighlight.
+      replyHighlight: true,
+    };
+    const timelineSet = makeTimelineSet(); // findEventById returns undefined
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+
+    const { container } = render(
+      <MatrixTestWrapper matrixClient={mx}>
+        <QueryClientProvider client={queryClient}>
+          <TimelineMessageContext.Provider value={ctx}>
+            <MemoizedTimelineEvent
+              mEvent={mEvent}
+              mEventId="$reply-event"
+              timelineSet={timelineSet}
+              item={0}
+              collapsed={false}
+              isHighlighted={false}
+              isEditing={false}
+              reactionRelations={undefined}
+              editedEvent={undefined}
+              isRedacted={false}
+              eventStatus={null}
+              replyToMe
+            />
+          </TimelineMessageContext.Provider>
+        </QueryClientProvider>
+      </MatrixTestWrapper>
+    );
+
+    // The MessageBase recipe applies a class containing
+    // "MentionHighlightVariant_true" (the vanilla-extract const name + variant
+    // key) when its mentionHighlight variant is on. If the prop didn't flow
+    // through, no element would have that class.
+    const highlighted = container.querySelector('[class*="MentionHighlightVariant_true"]');
+    expect(highlighted).not.toBeNull();
+  });
+
+  it('does not show the highlight when replyToMe is false', () => {
+    const mx = createMockMatrixClient();
+    const room = createMockRoom('!testroom:example.com', mx);
+    room._addMockMember('@alice:example.com', 'alice');
+
+    const mEvent = createMockMatrixEvent({
+      id: '$plain-event',
+      sender: '@alice:example.com',
+      content: { body: 'just a message', msgtype: MsgType.Text },
+      roomId: '!testroom:example.com',
+    });
+
+    const ctx: TimelineMessageContextValue = {
+      ...makeContext(mx, room),
+      replyHighlight: true,
+    };
+    const timelineSet = makeTimelineSet();
+
+    const { container } = render(
+      <MatrixTestWrapper matrixClient={mx}>
+        <TimelineMessageContext.Provider value={ctx}>
+          <MemoizedTimelineEvent
+            mEvent={mEvent}
+            mEventId="$plain-event"
+            timelineSet={timelineSet}
+            item={0}
+            collapsed={false}
+            isHighlighted={false}
+            isEditing={false}
+            reactionRelations={undefined}
+            editedEvent={undefined}
+            isRedacted={false}
+            eventStatus={null}
+            replyToMe={false}
+          />
+        </TimelineMessageContext.Provider>
+      </MatrixTestWrapper>
+    );
+
+    const highlighted = container.querySelector('[class*="MentionHighlightVariant_true"]');
+    expect(highlighted).toBeNull();
   });
 });
 
@@ -213,7 +336,7 @@ describe('MemoizedTimelineEvent edit — full handleEdit chain', () => {
         canSendReaction: false,
         canPinEvent: false,
         imagePackRooms: [],
-        getMemberPowerTag: vi.fn(() => undefined),
+        getMemberPowerTag: vi.fn(() => ({ name: 'Member' })),
         accessiblePowerTagColors: new Map(),
         legacyUsernameColor: false,
         direct: false,
@@ -259,6 +382,8 @@ describe('MemoizedTimelineEvent edit — full handleEdit chain', () => {
             reactionRelations={undefined}
             editedEvent={undefined}
             isRedacted={false}
+            eventStatus={null}
+            replyToMe={false}
           />
         </TimelineMessageContext.Provider>
       );

@@ -1,18 +1,12 @@
-import React, {
-  ChangeEventHandler,
-  MouseEventHandler,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import type { ChangeEventHandler, MouseEventHandler } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import type { IconSrc, RectCords } from 'folds';
 import {
   Box,
   Chip,
   Text,
   Icon,
   Icons,
-  IconSrc,
   Line,
   config,
   PopOut,
@@ -24,7 +18,6 @@ import {
   Button,
   Input,
   Badge,
-  RectCords,
 } from 'folds';
 import { SearchOrderBy } from 'matrix-js-sdk';
 import FocusTrap from 'focus-trap-react';
@@ -33,12 +26,10 @@ import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { getMemberDisplayName, joinRuleToIconSrc } from '../../utils/room';
 import { getMxIdLocalPart } from '../../utils/matrix';
 import { factoryRoomIdByAtoZ } from '../../utils/sort';
-import {
-  SearchItemStrGetter,
-  UseAsyncSearchOptions,
-  useAsyncSearch,
-} from '../../hooks/useAsyncSearch';
-import { DebounceOptions, useDebounce } from '../../hooks/useDebounce';
+import type { SearchItemStrGetter, UseAsyncSearchOptions } from '../../hooks/useAsyncSearch';
+import { useAsyncSearch } from '../../hooks/useAsyncSearch';
+import type { DebounceOptions } from '../../hooks/useDebounce';
+import { useDebounce } from '../../hooks/useDebounce';
 import { VirtualTile } from '../../components/virtualizer';
 import { stopPropagation } from '../../utils/keyboard';
 

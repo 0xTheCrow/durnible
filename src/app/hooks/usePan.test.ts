@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { renderHook, act, fireEvent } from '@testing-library/react';
 import { describe, it, expect, afterEach } from 'vitest';
 import { usePan } from './usePan';

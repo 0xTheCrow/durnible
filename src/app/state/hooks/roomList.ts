@@ -1,10 +1,11 @@
-import { Atom, useAtomValue } from 'jotai';
+import type { Atom } from 'jotai';
+import { useAtomValue } from 'jotai';
 import { selectAtom } from 'jotai/utils';
-import { MatrixClient } from 'matrix-js-sdk';
+import type { MatrixClient } from 'matrix-js-sdk';
 import { useCallback, useMemo } from 'react';
 import { getAllParents, isRoom, isSpace, isUnsupportedRoom } from '../../utils/room';
 import { compareRoomsEqual } from '../room-list/utils';
-import { RoomToParents } from '../../../types/matrix/room';
+import type { RoomToParents } from '../../../types/matrix/room';
 
 export type RoomsAtom = Atom<string[]>;
 export type RoomSelector = (roomId: string) => boolean | undefined;

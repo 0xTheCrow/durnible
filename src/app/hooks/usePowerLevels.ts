@@ -1,4 +1,4 @@
-import { MatrixEvent, Room } from 'matrix-js-sdk';
+import type { MatrixEvent, Room } from 'matrix-js-sdk';
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import produce from 'immer';
 import { useStateEvent } from './useStateEvent';

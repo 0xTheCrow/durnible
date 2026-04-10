@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Box, Icon, Icons, Modal, Text, as, config } from 'folds';
-import { Room } from 'matrix-js-sdk';
+import type { Room } from 'matrix-js-sdk';
 import classNames from 'classnames';
 
 import { getMemberDisplayName } from '../../utils/room';

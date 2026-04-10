@@ -1,9 +1,10 @@
-import React, { FormEventHandler, useCallback } from 'react';
+import type { FormEventHandler } from 'react';
+import React, { useCallback } from 'react';
 import { Box, Text, Button, Spinner, color } from 'folds';
 import { decodeRecoveryKey, deriveRecoveryKeyFromPassphrase } from 'matrix-js-sdk/lib/crypto-api';
 import type { SecretStorageKeyDescriptionAesV1 } from 'matrix-js-sdk/lib/secret-storage';
 import { PasswordInput } from './password-input';
-import {
+import type {
   SecretStorageKeyContent,
   SecretStoragePassphraseContent,
 } from '../../types/matrix/accountData';

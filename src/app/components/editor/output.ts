@@ -1,9 +1,10 @@
-import { Descendant, Editor, Text } from 'slate';
-import { MatrixClient } from 'matrix-js-sdk';
+import type { Descendant, Editor } from 'slate';
+import { Text } from 'slate';
+import type { MatrixClient } from 'matrix-js-sdk';
 import { sanitizeText } from '../../utils/sanitize';
 import { BlockType } from './types';
-import { CustomElement, EmoticonElement } from './slate';
-import { ShortcodeMapEntry } from '../../plugins/emoji';
+import type { CustomElement, EmoticonElement } from './slate';
+import type { ShortcodeMapEntry } from '../../plugins/emoji';
 import {
   parseBlockMD,
   parseInlineMD,

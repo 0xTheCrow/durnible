@@ -1,11 +1,7 @@
-import React, {
-  ChangeEventHandler,
-  FormEventHandler,
-  MouseEventHandler,
-  useEffect,
-  useState,
-} from 'react';
+import type { ChangeEventHandler, FormEventHandler, MouseEventHandler } from 'react';
+import React, { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
+import type { RectCords } from 'folds';
 import {
   Box,
   Button,
@@ -18,12 +14,12 @@ import {
   Menu,
   MenuItem,
   PopOut,
-  RectCords,
   Text,
 } from 'folds';
 import FocusTrap from 'focus-trap-react';
 import { useSetting } from '../../../state/hooks/settings';
-import { DateFormat, settingsAtom } from '../../../state/settings';
+import type { DateFormat } from '../../../state/settings';
+import { settingsAtom } from '../../../state/settings';
 import { SettingTile } from '../../../components/setting-tile';
 import { stopPropagation } from '../../../utils/keyboard';
 import { useDateFormatItems } from '../../../hooks/useDateFormat';

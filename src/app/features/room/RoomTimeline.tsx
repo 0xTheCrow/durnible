@@ -1,51 +1,26 @@
 /* eslint-disable react/destructuring-assignment */
-import React, {
-  Dispatch,
-  MouseEventHandler,
-  RefObject,
-  SetStateAction,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
-import {
-  Direction,
+import type { Dispatch, MouseEventHandler, RefObject, SetStateAction } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import type {
   EventTimeline,
   EventTimelineSetHandlerMap,
-  EventType,
   IContent,
   MatrixClient,
   MatrixEvent,
   Room,
-  RoomEvent,
   RoomEventHandlerMap,
 } from 'matrix-js-sdk';
-import { HTMLReactParserOptions } from 'html-react-parser';
+import { Direction, EventType, RoomEvent } from 'matrix-js-sdk';
+import type { HTMLReactParserOptions } from 'html-react-parser';
 import classNames from 'classnames';
 import { ReactEditor } from 'slate-react';
-import { Editor } from 'slate';
+import type { Editor } from 'slate';
 import to from 'await-to-js';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
-import {
-  Badge,
-  Box,
-  Chip,
-  ContainerColor,
-  Icon,
-  Icons,
-  Line,
-  Scroll,
-  Text,
-  as,
-  color,
-  config,
-  toRem,
-} from 'folds';
+import type { ContainerColor } from 'folds';
+import { Badge, Box, Chip, Icon, Icons, Line, Scroll, Text, as, color, config, toRem } from 'folds';
 import { isKeyHotkey } from 'is-hotkey';
-import { Opts as LinkifyOpts } from 'linkifyjs';
+import type { Opts as LinkifyOpts } from 'linkifyjs';
 import { eventWithShortcode, factoryEventSentBy, getMxIdLocalPart } from '../../utils/matrix';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { useVirtualPaginator } from '../../hooks/useVirtualPaginator';
@@ -365,7 +340,11 @@ const useTimelinePagination = (
   return handleTimelinePagination;
 };
 
-const useLiveEventArrive = (room: Room, onArrive: (mEvent: MatrixEvent) => void) => {
+const useLiveEventArrive = (
+  room: Room,
+  onArrive: (mEvent: MatrixEvent) => void,
+  onBackpaginationArrive?: () => void
+) => {
   useEffect(() => {
     const handleTimelineEvent: EventTimelineSetHandlerMap[RoomEvent.Timeline] = (
       mEvent,
@@ -374,8 +353,15 @@ const useLiveEventArrive = (room: Room, onArrive: (mEvent: MatrixEvent) => void)
       removed,
       data
     ) => {
-      if (eventRoom?.roomId !== room.roomId || !data.liveEvent) return;
-      onArrive(mEvent);
+      if (eventRoom?.roomId !== room.roomId) return;
+      if (data.liveEvent) {
+        onArrive(mEvent);
+      } else {
+        // Backpagination arrival: an older event just landed in the SDK's
+        // timeline. Notify so descriptors that depend on findEventById (e.g.
+        // the reply-to-me highlight) can re-resolve their references.
+        onBackpaginationArrive?.();
+      }
     };
     const handleRedaction: RoomEventHandlerMap[RoomEvent.Redaction] = (mEvent, eventRoom) => {
       if (eventRoom?.roomId !== room.roomId) return;
@@ -388,7 +374,7 @@ const useLiveEventArrive = (room: Room, onArrive: (mEvent: MatrixEvent) => void)
       room.removeListener(RoomEvent.Timeline, handleTimelineEvent);
       room.removeListener(RoomEvent.Redaction, handleRedaction);
     };
-  }, [room, onArrive]);
+  }, [room, onArrive, onBackpaginationArrive]);
 };
 
 const useLiveTimelineRefresh = (room: Room, onRefresh: () => void) => {
@@ -711,7 +697,14 @@ export function RoomTimeline({
         }
       },
       [mx, room, unreadInfo, hideActivity, unfocusedAutoScroll]
-    )
+    ),
+    useCallback(() => {
+      // Backpagination just landed an older event in the SDK timeline.
+      // Force a re-render so descriptors that depend on findEventById
+      // (e.g. the reply-to-me highlight on messages whose ancestor was
+      // off-screen at first paint) re-resolve their references.
+      setTimeline((ct) => ({ ...ct }));
+    }, [])
   );
 
   // Re-render when a local echo status changes (QUEUED → SENDING → sent / NOT_SENT).
@@ -1555,6 +1548,10 @@ export function RoomTimeline({
                   </MessageBase>
                 );
               }
+              const { replyEventId } = d.mEvent;
+              const replyToMe =
+                !!replyEventId &&
+                d.timelineSet.findEventById(replyEventId)?.getSender() === mx.getSafeUserId();
               return (
                 <MemoizedTimelineEvent
                   key={d.mEventId}
@@ -1569,6 +1566,7 @@ export function RoomTimeline({
                   editedEvent={getEditedEvent(d.mEventId, d.mEvent, d.timelineSet)}
                   isRedacted={d.mEvent.isRedacted()}
                   eventStatus={d.mEvent.status}
+                  replyToMe={replyToMe}
                 />
               );
             })}

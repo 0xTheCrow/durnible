@@ -1,5 +1,5 @@
-import { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
-import { MsgType } from 'matrix-js-sdk';
+import type { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
+import type { MsgType } from 'matrix-js-sdk';
 
 export const MATRIX_BLUR_HASH_PROPERTY_NAME = 'xyz.amorgan.blurhash';
 export const MATRIX_SPOILER_PROPERTY_NAME = 'page.codeberg.everypizza.msc4193.spoiler';

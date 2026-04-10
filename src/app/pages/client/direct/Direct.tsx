@@ -1,5 +1,7 @@
-import React, { MouseEventHandler, forwardRef, useMemo, useRef, useState } from 'react';
+import type { MouseEventHandler } from 'react';
+import React, { forwardRef, useMemo, useRef, useState } from 'react';
 import { useAtom, useAtomValue } from 'jotai';
+import type { RectCords } from 'folds';
 import {
   Avatar,
   Box,
@@ -10,7 +12,6 @@ import {
   Menu,
   MenuItem,
   PopOut,
-  RectCords,
   Text,
   config,
   toRem,

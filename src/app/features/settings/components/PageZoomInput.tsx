@@ -1,4 +1,5 @@
-import React, { ChangeEventHandler, KeyboardEventHandler, useState } from 'react';
+import type { ChangeEventHandler, KeyboardEventHandler } from 'react';
+import React, { useState } from 'react';
 import { Input, Text, toRem } from 'folds';
 import { isKeyHotkey } from 'is-hotkey';
 import { useSetting } from '../../../state/hooks/settings';

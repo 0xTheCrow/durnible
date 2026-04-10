@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MsgType } from 'matrix-js-sdk';
+import type * as MessageModule from './message';
 import { RenderMessageContent } from './RenderMessageContent';
 import { MatrixTestWrapper } from '../../test/wrapper';
 import { LINKIFY_OPTS, getReactCustomHtmlParser } from '../plugins/react-custom-html-parser';
@@ -10,7 +11,7 @@ import { createMockMatrixClient } from '../../test/mocks';
 let imageContentRenderCount = 0;
 
 vi.mock('./message', async (importOriginal) => {
-  const mod = await importOriginal<typeof import('./message')>();
+  const mod = await importOriginal<typeof MessageModule>();
   const Real = mod.ImageContent as React.ComponentType<any>;
   return {
     ...mod,

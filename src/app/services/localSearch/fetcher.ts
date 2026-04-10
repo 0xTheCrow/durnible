@@ -1,6 +1,7 @@
-import { MatrixClient, MatrixEvent, Direction, Method } from 'matrix-js-sdk';
-import { IRoomEvent } from 'matrix-js-sdk/lib/sync-accumulator';
-import { CryptoBackend } from 'matrix-js-sdk/lib/common-crypto/CryptoBackend';
+import type { MatrixClient } from 'matrix-js-sdk';
+import { MatrixEvent, Direction, Method } from 'matrix-js-sdk';
+import type { IRoomEvent } from 'matrix-js-sdk/lib/sync-accumulator';
+import type { CryptoBackend } from 'matrix-js-sdk/lib/common-crypto/CryptoBackend';
 
 export type DecryptedMessage = {
   event_id: string;

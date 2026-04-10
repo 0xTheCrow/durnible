@@ -1,15 +1,7 @@
-import React, {
-  MouseEventHandler,
-  ReactNode,
-  RefObject,
-  forwardRef,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import type { MouseEventHandler, ReactNode, RefObject } from 'react';
+import React, { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import type { RectCords } from 'folds';
 import {
   Box,
   Icon,
@@ -19,22 +11,21 @@ import {
   Menu,
   MenuItem,
   PopOut,
-  RectCords,
   Text,
   config,
   toRem,
 } from 'folds';
 import { useAtom, useAtomValue } from 'jotai';
-import { Room } from 'matrix-js-sdk';
+import type { Room } from 'matrix-js-sdk';
 import {
   draggable,
   dropTargetForElements,
   monitorForElements,
 } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
+import type { Instruction } from '@atlaskit/pragmatic-drag-and-drop-hitbox/tree-item';
 import {
   attachInstruction,
   extractInstruction,
-  Instruction,
 } from '@atlaskit/pragmatic-drag-and-drop-hitbox/tree-item';
 import { autoScrollForElements } from '@atlaskit/pragmatic-drag-and-drop-auto-scroll/element';
 import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
@@ -64,10 +55,8 @@ import { UnreadBadge } from '../../../components/unread-badge';
 import { getCanonicalAliasOrRoomId, isRoomAlias } from '../../../utils/matrix';
 import { RoomAvatar } from '../../../components/room-avatar';
 import { nameInitials, randomStr } from '../../../utils/common';
+import type { ISidebarFolder, SidebarItems, TSidebarItem } from '../../../hooks/useSidebarItems';
 import {
-  ISidebarFolder,
-  SidebarItems,
-  TSidebarItem,
   makeCinnySpacesContent,
   parseSidebar,
   sidebarItemWithout,

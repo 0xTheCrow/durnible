@@ -10,16 +10,10 @@ import {
   Text,
   color,
 } from 'folds';
-import React, { ChangeEventHandler, useCallback, useMemo, useState } from 'react';
-import {
-  AuthDict,
-  AuthType,
-  IAuthData,
-  MatrixError,
-  RegisterRequest,
-  UIAFlow,
-  createClient,
-} from 'matrix-js-sdk';
+import type { ChangeEventHandler } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
+import type { AuthDict, IAuthData, MatrixError, RegisterRequest, UIAFlow } from 'matrix-js-sdk';
+import { AuthType, createClient } from 'matrix-js-sdk';
 import { PasswordInput } from '../../../components/password-input';
 import {
   getLoginTermUrl,
@@ -28,9 +22,11 @@ import {
   requiredStageInFlows,
 } from '../../../utils/matrix-uia';
 import { useUIACompleted, useUIAFlow, useUIAParams } from '../../../hooks/useUIAFlows';
-import { AsyncState, AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
+import type { AsyncState } from '../../../hooks/useAsyncCallback';
+import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { useAutoDiscoveryInfo } from '../../../hooks/useAutoDiscoveryInfo';
-import { RegisterError, RegisterResult, register, useRegisterComplete } from './registerUtil';
+import type { RegisterResult } from './registerUtil';
+import { RegisterError, register, useRegisterComplete } from './registerUtil';
 import { FieldError } from '../FiledError';
 import {
   AutoDummyStageDialog,
@@ -42,7 +38,7 @@ import {
 import { useRegisterEmail } from '../../../hooks/useRegisterEmail';
 import { ConfirmPasswordMatch } from '../../../components/ConfirmPasswordMatch';
 import { UIAFlowOverlay } from '../../../components/UIAFlowOverlay';
-import { RequestEmailTokenCallback, RequestEmailTokenResponse } from '../../../hooks/types';
+import type { RequestEmailTokenCallback, RequestEmailTokenResponse } from '../../../hooks/types';
 
 export const SUPPORTED_REGISTER_STAGES = [
   AuthType.RegistrationToken,

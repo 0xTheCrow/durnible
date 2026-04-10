@@ -1,8 +1,9 @@
 import { useCallback } from 'react';
 import { useAtomValue, useSetAtom } from 'jotai';
-import { Room } from 'matrix-js-sdk';
-import { Relations } from 'matrix-js-sdk/lib/models/relations';
-import { reactionViewerAtom, ReactionViewerState } from '../reactionViewer';
+import type { Room } from 'matrix-js-sdk';
+import type { Relations } from 'matrix-js-sdk/lib/models/relations';
+import type { ReactionViewerState } from '../reactionViewer';
+import { reactionViewerAtom } from '../reactionViewer';
 
 export const useReactionViewerState = (): ReactionViewerState | undefined =>
   useAtomValue(reactionViewerAtom);

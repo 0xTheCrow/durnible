@@ -1,21 +1,16 @@
-import {
-  EncryptedAttachmentInfo,
-  decryptAttachment,
-  encryptAttachment,
-} from 'browser-encrypt-attachment';
-import {
-  EventTimeline,
-  EventType,
+import type { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
+import { decryptAttachment, encryptAttachment } from 'browser-encrypt-attachment';
+import type {
   MatrixClient,
-  MatrixError,
   MatrixEvent,
   Room,
   RoomMember,
   UploadProgress,
   UploadResponse,
 } from 'matrix-js-sdk';
+import { EventTimeline, EventType, MatrixError } from 'matrix-js-sdk';
 import to from 'await-to-js';
-import { IImageInfo, IThumbnailContent, IVideoInfo } from '../../types/matrix/common';
+import type { IImageInfo, IThumbnailContent, IVideoInfo } from '../../types/matrix/common';
 import { getStateEvent } from './room';
 import { Membership, StateEvent } from '../../types/matrix/room';
 

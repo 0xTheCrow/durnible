@@ -1,6 +1,7 @@
-import React, { CSSProperties, ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
+import React from 'react';
 import { Box, Chip, Icon, Icons, Text, toRem } from 'folds';
-import { IContent } from 'matrix-js-sdk';
+import type { IContent } from 'matrix-js-sdk';
 import { JUMBO_EMOJI_REG, URL_REG } from '../../utils/regex';
 import { trimReplyFromBody } from '../../utils/room';
 import { MessageTextBody } from './layout';
@@ -11,7 +12,7 @@ import {
   MessageEditedContent,
   MessageUnsupportedContent,
 } from './content';
-import {
+import type {
   IAudioContent,
   IAudioInfo,
   IEncryptedFile,
@@ -22,6 +23,8 @@ import {
   IThumbnailContent,
   IVideoContent,
   IVideoInfo,
+} from '../../../types/matrix/common';
+import {
   MATRIX_SPOILER_PROPERTY_NAME,
   MATRIX_SPOILER_REASON_PROPERTY_NAME,
 } from '../../../types/matrix/common';

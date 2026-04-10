@@ -1,5 +1,7 @@
-import React, { MouseEventHandler, forwardRef, useState } from 'react';
-import { Room } from 'matrix-js-sdk';
+import type { MouseEventHandler } from 'react';
+import React, { forwardRef, useState } from 'react';
+import type { Room } from 'matrix-js-sdk';
+import type { RectCords } from 'folds';
 import {
   Avatar,
   Box,
@@ -13,7 +15,6 @@ import {
   PopOut,
   toRem,
   Line,
-  RectCords,
   Badge,
   Spinner,
 } from 'folds';

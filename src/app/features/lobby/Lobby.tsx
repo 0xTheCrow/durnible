@@ -1,19 +1,18 @@
-import React, { MouseEventHandler, useCallback, useMemo, useRef, useState } from 'react';
+import type { MouseEventHandler } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Box, Chip, Icon, IconButton, Icons, Line, Scroll, Spinner, Text, config } from 'folds';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useAtom, useAtomValue } from 'jotai';
 import { useNavigate } from 'react-router-dom';
-import { EventType, JoinRule, RestrictedAllowType, Room } from 'matrix-js-sdk';
-import { RoomJoinRulesEventContent } from 'matrix-js-sdk/lib/types';
-import { IHierarchyRoom } from 'matrix-js-sdk/lib/@types/spaces';
+import type { Room } from 'matrix-js-sdk';
+import { EventType, JoinRule, RestrictedAllowType } from 'matrix-js-sdk';
+import type { RoomJoinRulesEventContent } from 'matrix-js-sdk/lib/types';
+import type { IHierarchyRoom } from 'matrix-js-sdk/lib/@types/spaces';
 import produce from 'immer';
 import { useSpace } from '../../hooks/useSpace';
 import { Page, PageContent, PageContentCenter, PageHeroSection } from '../../components/page';
-import {
-  HierarchyItem,
-  HierarchyItemSpace,
-  useSpaceHierarchy,
-} from '../../hooks/useSpaceHierarchy';
+import type { HierarchyItem, HierarchyItemSpace } from '../../hooks/useSpaceHierarchy';
+import { useSpaceHierarchy } from '../../hooks/useSpaceHierarchy';
 import { VirtualTile } from '../../components/virtualizer';
 import { spaceRoomsAtom } from '../../state/spaceRooms';
 import { MembersDrawer } from '../room/MembersDrawer';
@@ -24,8 +23,8 @@ import { LobbyHeader } from './LobbyHeader';
 import { LobbyHero } from './LobbyHero';
 import { ScrollTopContainer } from '../../components/scroll-top-container';
 import { useElementSizeObserver } from '../../hooks/useElementSizeObserver';
+import type { IPowerLevels } from '../../hooks/usePowerLevels';
 import {
-  IPowerLevels,
   PowerLevelsContextProvider,
   usePowerLevels,
   useRoomsPowerLevels,
@@ -38,7 +37,8 @@ import { allRoomsAtom } from '../../state/room-list/roomList';
 import { getCanonicalAliasOrRoomId, rateLimitedActions } from '../../utils/matrix';
 import { getSpaceRoomPath } from '../../pages/pathUtils';
 import { StateEvent } from '../../../types/matrix/room';
-import { CanDropCallback, useDnDMonitor } from './DnD';
+import type { CanDropCallback } from './DnD';
+import { useDnDMonitor } from './DnD';
 import { ASCIILexicalTable, orderKeys } from '../../utils/ASCIILexicalTable';
 import { getStateEvent } from '../../utils/room';
 import { useClosedLobbyCategoriesAtom } from '../../state/hooks/closedLobbyCategories';

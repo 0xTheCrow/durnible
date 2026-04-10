@@ -3,7 +3,7 @@ import { SpaceSettings } from './SpaceSettings';
 import { Modal500 } from '../../components/Modal500';
 import { useCloseSpaceSettings, useSpaceSettingsState } from '../../state/hooks/spaceSettings';
 import { useAllJoinedRoomsSet, useGetRoom } from '../../hooks/useGetRoom';
-import { SpaceSettingsState } from '../../state/spaceSettings';
+import type { SpaceSettingsState } from '../../state/spaceSettings';
 import { RoomProvider } from '../../hooks/useRoom';
 import { SpaceProvider } from '../../hooks/useSpace';
 

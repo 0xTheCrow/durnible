@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef } from 'react';
 import { Box, Text, config } from 'folds';
-import { Direction, EventType, MatrixError, Room } from 'matrix-js-sdk';
+import type { Room } from 'matrix-js-sdk';
+import { Direction, EventType, MatrixError } from 'matrix-js-sdk';
 import { ReactEditor } from 'slate-react';
 import { isKeyHotkey } from 'is-hotkey';
 import { useStateEvent } from '../../hooks/useStateEvent';

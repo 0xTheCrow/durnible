@@ -1,7 +1,9 @@
-import React, { ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { MatrixClient } from 'matrix-js-sdk';
-import { ClientConfig, ClientConfigProvider } from '../app/hooks/useClientConfig';
+import type { MatrixClient } from 'matrix-js-sdk';
+import type { ClientConfig } from '../app/hooks/useClientConfig';
+import { ClientConfigProvider } from '../app/hooks/useClientConfig';
 import { ScreenSize, ScreenSizeProvider } from '../app/hooks/useScreenSize';
 import { MatrixClientProvider } from '../app/hooks/useMatrixClient';
 import { SpecVersionsProvider } from '../app/hooks/useSpecVersions';
