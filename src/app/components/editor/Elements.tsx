@@ -78,7 +78,7 @@ function RenderEmoticonElement({
   const focused = useFocused();
 
   return (
-    <span className={css.EmoticonBase} {...attributes}>
+    <span {...attributes}>
       <span
         className={css.Emoticon({
           focus: selected && focused,

@@ -162,10 +162,12 @@ export const scaleSystemEmoji = (text: string): (string | JSX.Element)[] =>
     text,
     EMOJI_REG_G,
     (match, pushIndex) => (
-      <span key={`scaleSystemEmoji-${pushIndex}`} className={css.EmoticonBase}>
-        <span className={css.Emoticon()} title={getShortcodeFor(getHexcodeForEmoji(match[0]))}>
-          {match[0]}
-        </span>
+      <span
+        key={`scaleSystemEmoji-${pushIndex}`}
+        className={css.Emoticon()}
+        title={getShortcodeFor(getHexcodeForEmoji(match[0]))}
+      >
+        {match[0]}
       </span>
     ),
     (txt) => txt
@@ -519,20 +521,18 @@ export const getReactCustomHtmlParser = (
             const mimetype = params.getEmoticonMimetype?.(props.src);
             const isAnimated = isAnimatedImageMimetype(mimetype);
             return (
-              <span className={css.EmoticonBase}>
-                <span className={css.Emoticon()}>
-                  {isAnimated ? (
-                    <AnimatedEmojiOverlay
-                      {...props}
-                      className={css.EmoticonImg}
-                      src={htmlSrc}
-                      pauseGifs={params.pauseGifs ?? false}
-                    />
-                  ) : (
-                    // eslint-disable-next-line jsx-a11y/alt-text
-                    <img {...props} className={css.EmoticonImg} src={htmlSrc} />
-                  )}
-                </span>
+              <span className={css.Emoticon()}>
+                {isAnimated ? (
+                  <AnimatedEmojiOverlay
+                    {...props}
+                    className={css.EmoticonImg}
+                    src={htmlSrc}
+                    pauseGifs={params.pauseGifs ?? false}
+                  />
+                ) : (
+                  // eslint-disable-next-line jsx-a11y/alt-text
+                  <img {...props} className={css.EmoticonImg} src={htmlSrc} />
+                )}
               </span>
             );
           }
