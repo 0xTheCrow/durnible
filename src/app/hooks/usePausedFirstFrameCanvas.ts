@@ -11,64 +11,34 @@ export const usePausedFirstFrameCanvas = (
     if (!enabled || !loaded || !imgRef.current || !canvasRef.current) return undefined;
     const img = imgRef.current;
 
-    const drawFrom = (source: CanvasImageSource, w: number, h: number) => {
+    const draw = () => {
       const c = canvasRef.current;
       if (!c) return;
-      c.width = w;
-      c.height = h;
+      c.width = img.naturalWidth;
+      c.height = img.naturalHeight;
       const ctx = c.getContext('2d');
       if (!ctx) return;
       try {
-        ctx.drawImage(source, 0, 0);
-      } catch (e) {
-        console.error('[usePausedFirstFrameCanvas] drawImage threw:', e);
+        ctx.drawImage(img, 0, 0);
+      } catch {
+        /* drawImage can throw on tainted/broken sources — swallow and leave the canvas blank */
       }
     };
 
-    // Environments without createImageBitmap (e.g. jsdom in tests): fall back
-    // to direct drawImage from the img element.
-    if (typeof createImageBitmap !== 'function') {
-      drawFrom(img, img.naturalWidth, img.naturalHeight);
-      return undefined;
-    }
+    draw();
 
-    let cancelled = false;
-    let bitmap: ImageBitmap | undefined;
-    let observer: IntersectionObserver | undefined;
+    // Firefox (and others) can discard a canvas's backing store while it's
+    // off-screen; redraw when the canvas re-enters the viewport to recover.
+    if (typeof IntersectionObserver === 'undefined') return undefined;
+    const canvas = canvasRef.current;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) draw();
+      },
+      { threshold: 0 }
+    );
+    observer.observe(canvas);
 
-    createImageBitmap(img)
-      .then((bm) => {
-        if (cancelled) {
-          bm.close?.();
-          return;
-        }
-        bitmap = bm;
-        drawFrom(bm, bm.width, bm.height);
-
-        // Firefox can discard a canvas's backing store while it's off-screen;
-        // redraw from the cached bitmap on viewport re-entry to recover.
-        if (typeof IntersectionObserver !== 'undefined' && canvasRef.current) {
-          observer = new IntersectionObserver(
-            ([entry]) => {
-              if (entry.isIntersecting && bitmap) {
-                drawFrom(bitmap, bitmap.width, bitmap.height);
-              }
-            },
-            { threshold: 0 }
-          );
-          observer.observe(canvasRef.current);
-        }
-      })
-      .catch((e) => {
-        if (cancelled) return;
-        console.error('[usePausedFirstFrameCanvas] createImageBitmap rejected:', e);
-        drawFrom(img, img.naturalWidth, img.naturalHeight);
-      });
-
-    return () => {
-      cancelled = true;
-      observer?.disconnect();
-      bitmap?.close?.();
-    };
+    return () => observer.disconnect();
   }, [enabled, loaded, imgRef, canvasRef]);
 };
