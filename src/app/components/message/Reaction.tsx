@@ -6,7 +6,8 @@ import * as css from './Reaction.css';
 import { getHexcodeForEmoji, getShortcodeFor } from '../../plugins/emoji';
 import { getMemberDisplayName } from '../../utils/room';
 import { eventWithShortcode, getMxIdLocalPart, mxcUrlToHttp } from '../../utils/matrix';
-import { AnimatedImg } from '../AnimatedImg';
+import { isAnimatedImageMimetype } from '../../utils/mimeTypes';
+import { AnimatedEmojiOverlay } from '../AnimatedEmojiOverlay';
 
 export const Reaction = as<
   'button',
@@ -16,43 +17,62 @@ export const Reaction = as<
     reaction: string;
     useAuthentication?: boolean;
     pauseGifs?: boolean;
+    imagePackMimetypes?: Map<string, string>;
   }
->(({ className, mx, count, reaction, useAuthentication, pauseGifs, ...props }, ref) => {
-  const [hovered, setHovered] = useState(false);
+>(
+  (
+    { className, mx, count, reaction, useAuthentication, pauseGifs, imagePackMimetypes, ...props },
+    ref
+  ) => {
+    const [hovered, setHovered] = useState(false);
 
-  return (
-    <Box
-      as="button"
-      className={classNames(css.Reaction, className)}
-      alignItems="Center"
-      shrink="No"
-      gap="200"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      {...props}
-      ref={ref}
-    >
-      <Text className={css.ReactionText} as="span" size="T500">
-        {reaction.startsWith('mxc://') ? (
-          <AnimatedImg
-            className={css.ReactionImg}
-            src={mxcUrlToHttp(mx, reaction, useAuthentication) ?? reaction}
-            alt={reaction}
-            pauseGifs={pauseGifs ?? false}
-            hovered={hovered}
-          />
-        ) : (
-          <Text as="span" size="Inherit" truncate>
-            {reaction}
-          </Text>
-        )}
-      </Text>
-      <Text as="span" size="T300">
-        {count}
-      </Text>
-    </Box>
-  );
-});
+    const isMxc = reaction.startsWith('mxc://');
+    const isAnimated = isMxc && isAnimatedImageMimetype(imagePackMimetypes?.get(reaction));
+
+    let reactionContent: React.ReactNode;
+    if (!isMxc) {
+      reactionContent = (
+        <Text as="span" size="Inherit" truncate>
+          {reaction}
+        </Text>
+      );
+    } else {
+      const resolvedSrc = mxcUrlToHttp(mx, reaction, useAuthentication) ?? reaction;
+      reactionContent = isAnimated ? (
+        <AnimatedEmojiOverlay
+          className={css.ReactionImg}
+          src={resolvedSrc}
+          alt={reaction}
+          pauseGifs={pauseGifs ?? false}
+          hovered={hovered}
+        />
+      ) : (
+        <img className={css.ReactionImg} src={resolvedSrc} alt={reaction} />
+      );
+    }
+
+    return (
+      <Box
+        as="button"
+        className={classNames(css.Reaction, className)}
+        alignItems="Center"
+        shrink="No"
+        gap="200"
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        {...props}
+        ref={ref}
+      >
+        <Text className={css.ReactionText} as="span" size="T500">
+          {reactionContent}
+        </Text>
+        <Text as="span" size="T300">
+          {count}
+        </Text>
+      </Box>
+    );
+  }
+);
 
 type ReactionTooltipMsgProps = {
   room: Room;

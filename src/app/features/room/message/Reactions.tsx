@@ -5,12 +5,16 @@ import classNames from 'classnames';
 import type { MatrixEvent, Room } from 'matrix-js-sdk';
 import { EventType, RelationType } from 'matrix-js-sdk';
 import { type Relations } from 'matrix-js-sdk/lib/models/relations';
+import { useAtomValue } from 'jotai';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { factoryEventSentBy } from '../../../utils/matrix';
 import { Reaction, ReactionTooltipMsg } from '../../../components/message';
 import { useRelations } from '../../../hooks/useRelations';
 import * as css from './styles.css';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
+import { useImagePackRooms } from '../../../hooks/useImagePackRooms';
+import { useImagePackMimetypes } from '../../../hooks/useImagePackMimetypes';
+import { roomToParentsAtom } from '../../../state/room/roomToParents';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
 import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
@@ -31,6 +35,10 @@ export const Reactions = as<'div', ReactionsProps>(
     const [pauseGifs] = useSetting(settingsAtom, 'pauseGifs');
     const openReactionViewer = useOpenReactionViewer();
     const myUserId = mx.getUserId();
+
+    const roomToParents = useAtomValue(roomToParentsAtom);
+    const imagePackRooms = useImagePackRooms(room.roomId, roomToParents);
+    const imagePackMimetypes = useImagePackMimetypes(imagePackRooms);
 
     // Get earliest timestamp for each reaction key from timeline (including redacted events)
     // This preserves ordering even when the original reactor unreacts
@@ -132,6 +140,7 @@ export const Reactions = as<'div', ReactionsProps>(
                   aria-disabled={!canSendReaction}
                   useAuthentication={useAuthentication}
                   pauseGifs={pauseGifs}
+                  imagePackMimetypes={imagePackMimetypes}
                 />
               )}
             </TooltipProvider>

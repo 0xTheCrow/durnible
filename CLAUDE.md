@@ -42,6 +42,7 @@ Cinny is a Matrix chat client built with React, TypeScript, and Vite.
 
 ## Code Conventions
 
+- Follow the existing ESLint and Prettier configuration — don't disable rules inline, don't reformat against the configured style, and fix lint errors at the source rather than suppressing them.
 - Functional components only, with typed props via TypeScript interfaces
 - Named exports preferred over default exports for utilities
 - Prettier: 100 char line width, single quotes

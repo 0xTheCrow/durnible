@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import React, { useCallback, useContext, useLayoutEffect, useRef, useState } from 'react';
+import React, { useCallback, useContext, useState } from 'react';
 import {
   Badge,
   Box,
@@ -25,12 +25,13 @@ import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
 import * as css from './style.css';
 import { bytesToSize } from '../../../utils/common';
-import { FALLBACK_MIMETYPE } from '../../../utils/mimeTypes';
+import { FALLBACK_MIMETYPE, isAnimatedImageMimetype } from '../../../utils/mimeTypes';
 import { decryptFile, downloadEncryptedMedia, mxcUrlToHttp } from '../../../utils/matrix';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
 import { validBlurHash } from '../../../utils/blurHash';
 import { imageViewerAtom } from '../../../state/imageViewer';
 import { hiddenImagesAtom, MessageEventIdContext } from '../../../state/hiddenImages';
+import { AnimatedImageOverlay } from '../../AnimatedImageOverlay';
 
 type RenderImageProps = {
   alt: string;
@@ -82,12 +83,8 @@ export const ImageContent = as<'div', ImageContentProps>(
     const blurHash = validBlurHash(info?.[MATRIX_BLUR_HASH_PROPERTY_NAME]);
 
     const [pauseGifs] = useSetting(settingsAtom, 'pauseGifs');
-    const isGif = mimeType === 'image/gif' || mimeType === 'image/apng';
+    const isGif = isAnimatedImageMimetype(mimeType);
     const shouldPauseGif = pauseGifs && isGif;
-
-    const canvasRef = useRef<HTMLCanvasElement>(null);
-    const loadedImgRef = useRef<HTMLImageElement | null>(null);
-    const [isHovered, setIsHovered] = useState(false);
 
     const setViewerState = useSetAtom(imageViewerAtom);
 
@@ -114,20 +111,10 @@ export const ImageContent = as<'div', ImageContentProps>(
       !!(autoPlay || isForceHidden)
     );
 
-    const handleLoad = (evt: React.SyntheticEvent<HTMLImageElement>) => {
-      if (shouldPauseGif) loadedImgRef.current = evt.currentTarget;
+    const handleLoad = () => {
       setLoad(true);
     };
 
-    useLayoutEffect(() => {
-      if (!shouldPauseGif || !load || !loadedImgRef.current || !canvasRef.current) return;
-      const img = loadedImgRef.current;
-      const canvas = canvasRef.current;
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      const ctx = canvas.getContext('2d');
-      ctx?.drawImage(img, 0, 0);
-    }, [shouldPauseGif, load, effectiveBlurred]);
     const handleError = () => {
       setLoad(false);
       setError(true);
@@ -185,59 +172,40 @@ export const ImageContent = as<'div', ImageContentProps>(
             className={classNames(css.AbsoluteContainer, effectiveBlurred && css.Blur)}
             style={effectiveBlurred ? { opacity: 0.6 } : undefined}
           >
-            {renderImage({
-              alt: body,
-              title: body,
-              src: srcState.data,
-              style: {
-                width: 'auto',
-                height: 'auto',
-                maxWidth: '100%',
-                maxHeight: '100%',
-                ...(shouldPauseGif && load && !isHovered ? { visibility: 'hidden' as const } : {}),
-              },
-              onLoad: handleLoad,
-              onError: handleError,
-              onClick: () => handleView(srcState.data),
-              tabIndex: 0,
-            })}
+            {shouldPauseGif && !effectiveBlurred ? (
+              <AnimatedImageOverlay
+                src={srcState.data}
+                alt={body}
+                title={body}
+                imgStyle={{
+                  width: 'auto',
+                  height: 'auto',
+                  maxWidth: '100%',
+                  maxHeight: '100%',
+                }}
+                onLoad={handleLoad}
+                onError={handleError}
+                onView={() => handleView(srcState.data)}
+                renderImage={renderImage}
+              />
+            ) : (
+              renderImage({
+                alt: body,
+                title: body,
+                src: srcState.data,
+                style: {
+                  width: 'auto',
+                  height: 'auto',
+                  maxWidth: '100%',
+                  maxHeight: '100%',
+                },
+                onLoad: handleLoad,
+                onError: handleError,
+                onClick: () => handleView(srcState.data),
+                tabIndex: 0,
+              })
+            )}
           </Box>
-        )}
-        {shouldPauseGif && load && !effectiveBlurred && srcState.status === AsyncStatus.Success && (
-          <div
-            data-testid="image-content-paused-gif-overlay"
-            role="button"
-            tabIndex={0}
-            aria-label={body}
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              cursor: 'pointer',
-            }}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-            onClick={() => handleView(srcState.data)}
-            onKeyDown={(evt) => {
-              if (evt.key === 'Enter' || evt.key === ' ') {
-                evt.preventDefault();
-                handleView(srcState.data);
-              }
-            }}
-          >
-            <canvas
-              ref={canvasRef}
-              data-testid="image-content-paused-gif-canvas"
-              style={{
-                width: '100%',
-                height: '100%',
-                display: isHovered ? 'none' : 'block',
-                pointerEvents: 'none',
-              }}
-            />
-          </div>
         )}
         {effectiveBlurred && !error && srcState.status !== AsyncStatus.Error && (
           <Box className={css.AbsoluteContainer} alignItems="Center" justifyContent="Center">

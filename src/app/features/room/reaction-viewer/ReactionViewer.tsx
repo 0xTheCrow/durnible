@@ -16,6 +16,7 @@ import {
 } from 'folds';
 import type { MatrixEvent, Room, RoomMember } from 'matrix-js-sdk';
 import type { Relations } from 'matrix-js-sdk/lib/models/relations';
+import { useAtomValue } from 'jotai';
 import { getMemberDisplayName } from '../../../utils/room';
 import { eventWithShortcode, getMxIdLocalPart } from '../../../utils/matrix';
 import * as css from './ReactionViewer.css';
@@ -25,6 +26,9 @@ import { Reaction } from '../../../components/message';
 import { getHexcodeForEmoji, getShortcodeFor } from '../../../plugins/emoji';
 import { UserAvatar } from '../../../components/user-avatar';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
+import { useImagePackRooms } from '../../../hooks/useImagePackRooms';
+import { useImagePackMimetypes } from '../../../hooks/useImagePackMimetypes';
+import { roomToParentsAtom } from '../../../state/room/roomToParents';
 import { useOpenUserRoomProfile } from '../../../state/hooks/userRoomProfile';
 import { useSpaceOptionally } from '../../../hooks/useSpace';
 import { getMouseEventCords } from '../../../utils/dom';
@@ -39,6 +43,9 @@ export const ReactionViewer = as<'div', ReactionViewerProps>(
   ({ className, room, initialKey, relations, requestClose, ...props }, ref) => {
     const mx = useMatrixClient();
     const useAuthentication = useMediaAuthentication();
+    const roomToParents = useAtomValue(roomToParentsAtom);
+    const imagePackRooms = useImagePackRooms(room.roomId, roomToParents);
+    const imagePackMimetypes = useImagePackMimetypes(imagePackRooms);
     const reactions = useRelations(
       relations,
       useCallback((rel) => [...(rel.getSortedAnnotationsByKey() ?? [])], [])
@@ -92,6 +99,7 @@ export const ReactionViewer = as<'div', ReactionViewerProps>(
                     aria-selected={key === selectedKey}
                     onClick={() => setSelectedKey(key)}
                     useAuthentication={useAuthentication}
+                    imagePackMimetypes={imagePackMimetypes}
                   />
                 );
               })}

@@ -125,7 +125,7 @@ describe('ImageContent', () => {
       );
       await act(async () => {});
       fireEvent.load(screen.getByTestId('test-image'));
-      expect(screen.getByTestId('image-content-paused-gif-canvas')).toBeInTheDocument();
+      expect(screen.getByTestId('animated-image-overlay-canvas')).toBeInTheDocument();
     });
 
     it('does not show canvas overlay when pauseGifs is disabled', async () => {
@@ -137,7 +137,7 @@ describe('ImageContent', () => {
       );
       await act(async () => {});
       fireEvent.load(screen.getByTestId('test-image'));
-      expect(screen.queryByTestId('image-content-paused-gif-canvas')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('animated-image-overlay-canvas')).not.toBeInTheDocument();
     });
 
     it('does not show canvas overlay for non-GIF images', async () => {
@@ -148,7 +148,7 @@ describe('ImageContent', () => {
       );
       await act(async () => {});
       fireEvent.load(screen.getByTestId('test-image'));
-      expect(screen.queryByTestId('image-content-paused-gif-canvas')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('animated-image-overlay-canvas')).not.toBeInTheDocument();
     });
 
     it('hides the underlying img while paused (canvas shows frozen frame)', async () => {
@@ -183,18 +183,18 @@ describe('ImageContent', () => {
       );
       await act(async () => {});
       fireEvent.load(screen.getByTestId('test-image'));
-      const canvas = screen.getByTestId('image-content-paused-gif-canvas');
-      const overlay = screen.getByTestId('image-content-paused-gif-overlay');
+      const canvas = screen.getByTestId('animated-image-overlay-canvas');
+      const overlay = screen.getByTestId('animated-image-overlay');
 
       // Frozen frame visible before hover
-      expect(canvas).toHaveStyle({ display: 'block' });
+      expect(canvas).toHaveStyle({ visibility: 'visible' });
 
       fireEvent.mouseEnter(overlay);
-      expect(canvas).toHaveStyle({ display: 'none' });
+      expect(canvas).toHaveStyle({ visibility: 'hidden' });
 
       // Leave: frozen frame returns
       fireEvent.mouseLeave(overlay);
-      expect(canvas).toHaveStyle({ display: 'block' });
+      expect(canvas).toHaveStyle({ visibility: 'visible' });
     });
 
     it('does not show canvas overlay when the image is a spoiler (blurred)', async () => {
@@ -208,7 +208,7 @@ describe('ImageContent', () => {
       const img = screen.queryByTestId('test-image');
       if (img) fireEvent.load(img);
       // Canvas requires !effectiveBlurred — spoiler keeps it suppressed
-      expect(screen.queryByTestId('image-content-paused-gif-canvas')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('animated-image-overlay-canvas')).not.toBeInTheDocument();
     });
   });
 });

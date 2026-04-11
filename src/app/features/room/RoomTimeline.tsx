@@ -78,6 +78,7 @@ import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
 import { useIgnoredUsers } from '../../hooks/useIgnoredUsers';
 import { timelineSliderPositionAtom, timelineSliderVisibleAtom } from './TimelineSlider';
 import { useImagePackRooms } from '../../hooks/useImagePackRooms';
+import { useImagePackMimetypes } from '../../hooks/useImagePackMimetypes';
 import { useIsDirectRoom } from '../../hooks/useRoom';
 import { useOpenUserRoomProfile } from '../../state/hooks/userRoomProfile';
 import { useSpaceOptionally } from '../../hooks/useSpace';
@@ -476,6 +477,7 @@ export function RoomTimeline({
   const space = useSpaceOptionally();
 
   const imagePackRooms: Room[] = useImagePackRooms(room.roomId, roomToParents);
+  const imagePackMimetypes = useImagePackMimetypes(imagePackRooms);
 
   const [unreadInfo, setUnreadInfo] = useState(() => getRoomUnreadInfo(room, true));
   const readUptoEventIdRef = useRef<string>();
@@ -520,8 +522,18 @@ export function RoomTimeline({
         handleSpoilerClick: spoilerClickHandler,
         handleMentionClick: mentionClickHandler,
         pauseGifs,
+        getEmoticonMimetype: (mxcUrl) => imagePackMimetypes.get(mxcUrl),
       }),
-    [mx, room, linkifyOpts, spoilerClickHandler, mentionClickHandler, useAuthentication, pauseGifs]
+    [
+      mx,
+      room,
+      linkifyOpts,
+      spoilerClickHandler,
+      mentionClickHandler,
+      useAuthentication,
+      pauseGifs,
+      imagePackMimetypes,
+    ]
   );
   const [timeline, setTimeline] = useState<Timeline>(() =>
     eventId ? getEmptyTimeline() : getInitialTimeline(room)

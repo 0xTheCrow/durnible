@@ -49,13 +49,13 @@ import {
   getEventEdits,
   getMemberAvatarMxc,
   getMemberDisplayName,
+  getOrphanParents,
+  guessPerfectParent,
 } from '../../../utils/room';
-import {
-  getCanonicalAliasOrRoomId,
-  getMxIdLocalPart,
-  isRoomAlias,
-  mxcUrlToHttp,
-} from '../../../utils/matrix';
+import { getCanonicalAliasOrRoomId, getMxIdLocalPart, mxcUrlToHttp } from '../../../utils/matrix';
+import { mDirectAtom } from '../../../state/mDirectList';
+import { roomToParentsAtom } from '../../../state/room/roomToParents';
+import { getDirectRoomPath, getHomeRoomPath, getSpaceRoomPath } from '../../../pages/pathUtils';
 import type { MessageSpacing } from '../../../state/settings';
 import { MessageLayout } from '../../../state/settings';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
@@ -71,8 +71,6 @@ import { UserAvatar } from '../../../components/user-avatar';
 import { copyToClipboard } from '../../../utils/dom';
 import { stopPropagation } from '../../../utils/keyboard';
 import { OverlayModal } from '../../../components/OverlayModal';
-import { getMatrixToRoomEvent } from '../../../plugins/matrix-to';
-import { getViaServers } from '../../../plugins/via-servers';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
 import { useRoomPinnedEvents } from '../../../hooks/useRoomPinnedEvents';
 import type { MemberPowerTag } from '../../../../types/matrix/room';
@@ -274,13 +272,27 @@ export const MessageCopyLinkItem = as<
   }
 >(({ room, mEvent, onClose, ...props }, ref) => {
   const mx = useMatrixClient();
+  const mDirects = useAtomValue(mDirectAtom);
+  const roomToParents = useAtomValue(roomToParentsAtom);
 
   const handleCopy = () => {
-    const roomIdOrAlias = getCanonicalAliasOrRoomId(mx, room.roomId);
     const eventId = mEvent.getId();
-    const viaServers = isRoomAlias(roomIdOrAlias) ? undefined : getViaServers(room);
     if (!eventId) return;
-    copyToClipboard(getMatrixToRoomEvent(roomIdOrAlias, eventId, viaServers));
+    const roomIdOrAlias = getCanonicalAliasOrRoomId(mx, room.roomId);
+
+    let path: string;
+    const orphanParents = getOrphanParents(roomToParents, room.roomId);
+    if (orphanParents.length > 0) {
+      const parent = guessPerfectParent(mx, room.roomId, orphanParents) ?? orphanParents[0];
+      const pIdOrAlias = getCanonicalAliasOrRoomId(mx, parent);
+      path = getSpaceRoomPath(pIdOrAlias, roomIdOrAlias, eventId);
+    } else if (mDirects.has(room.roomId)) {
+      path = getDirectRoomPath(roomIdOrAlias, eventId);
+    } else {
+      path = getHomeRoomPath(roomIdOrAlias, eventId);
+    }
+
+    copyToClipboard(`${window.location.origin}${path}`);
     onClose?.();
   };
 

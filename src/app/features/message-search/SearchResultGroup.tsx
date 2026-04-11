@@ -6,6 +6,7 @@ import { JoinRule, RelationType } from 'matrix-js-sdk';
 import type { HTMLReactParserOptions } from 'html-react-parser';
 import { Avatar, Box, Chip, Header, Icon, Icons, Text, config, toRem } from 'folds';
 import type { Opts as LinkifyOpts } from 'linkifyjs';
+import { useAtomValue } from 'jotai';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import {
   factoryRenderLinkifyWithMention,
@@ -42,6 +43,9 @@ import { UserAvatar } from '../../components/user-avatar';
 import { useMentionClickHandler } from '../../hooks/useMentionClickHandler';
 import { useSpoilerClickHandler } from '../../hooks/useSpoilerClickHandler';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
+import { useImagePackRooms } from '../../hooks/useImagePackRooms';
+import { useImagePackMimetypes } from '../../hooks/useImagePackMimetypes';
+import { roomToParentsAtom } from '../../state/room/roomToParents';
 import { useSetting } from '../../state/hooks/settings';
 import { settingsAtom } from '../../state/settings';
 import { usePowerLevels } from '../../hooks/usePowerLevels';
@@ -100,6 +104,10 @@ export function SearchResultGroup({
   const mentionClickHandler = useMentionClickHandler(room.roomId);
   const spoilerClickHandler = useSpoilerClickHandler();
 
+  const roomToParents = useAtomValue(roomToParentsAtom);
+  const imagePackRooms = useImagePackRooms(room.roomId, roomToParents);
+  const imagePackMimetypes = useImagePackMimetypes(imagePackRooms);
+
   const linkifyOpts = useMemo<LinkifyOpts>(
     () => ({
       ...LINKIFY_OPTS,
@@ -118,6 +126,7 @@ export function SearchResultGroup({
         handleSpoilerClick: spoilerClickHandler,
         handleMentionClick: mentionClickHandler,
         pauseGifs,
+        getEmoticonMimetype: (mxcUrl) => imagePackMimetypes.get(mxcUrl),
       }),
     [
       mx,
@@ -128,6 +137,7 @@ export function SearchResultGroup({
       spoilerClickHandler,
       useAuthentication,
       pauseGifs,
+      imagePackMimetypes,
     ]
   );
 
