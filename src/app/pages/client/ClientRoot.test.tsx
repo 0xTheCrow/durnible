@@ -75,6 +75,7 @@ const GENERIC_ERROR = new Error('No session Found!');
 
 describe('ClientRoot error dialog', () => {
   let reloadSpy: ReturnType<typeof vi.fn>;
+  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     reloadSpy = vi.fn();
@@ -83,9 +84,13 @@ describe('ClientRoot error dialog', () => {
       value: { reload: reloadSpy },
     });
     mockGetFallbackSession.mockReturnValue(MOCK_SESSION as ReturnType<typeof getFallbackSession>);
+    // ClientRoot logs failed loads via console.error; these tests intentionally
+    // reject initClient, so silence the expected noise.
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {
+    consoleErrorSpy.mockRestore();
     vi.clearAllMocks();
   });
 
