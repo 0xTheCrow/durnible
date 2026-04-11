@@ -139,7 +139,10 @@ export const useAutoLoadAsyncCallback = <TData, TError>(
   const [state, load] = useAsyncCallback<TData, TError, []>(asyncCallback);
 
   useEffect(() => {
-    if (enabled && state.status === AsyncStatus.Idle) load();
+    // Swallow the rejection here — errors are still observable to callers
+    // via `state.status === AsyncStatus.Error`. Without this catch, a failed
+    // load would surface as an unhandled promise rejection.
+    if (enabled && state.status === AsyncStatus.Idle) load().catch(() => {});
   }, [enabled, state.status, load]);
 
   return [state, load];

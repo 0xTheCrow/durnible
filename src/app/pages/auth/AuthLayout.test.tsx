@@ -40,7 +40,7 @@ vi.stubGlobal(
 );
 
 describe('AuthLayout', () => {
-  it('renders without crashing', async () => {
+  it('renders the auth card with brand and homeserver field', async () => {
     render(
       <TestWrapper route="/login/matrix.org">
         <Routes>
@@ -49,8 +49,9 @@ describe('AuthLayout', () => {
       </TestWrapper>
     );
     await act(async () => {});
-    expect(screen.getByText('Cinny')).toBeInTheDocument();
-    expect(screen.getByText('Homeserver')).toBeInTheDocument();
+    expect(screen.getByTestId('auth-card')).toBeInTheDocument();
+    expect(screen.getByTestId('auth-brand')).toBeInTheDocument();
+    expect(screen.getByTestId('auth-homeserver-field')).toBeInTheDocument();
   });
 
   it('renders the auth footer', async () => {
@@ -62,6 +63,6 @@ describe('AuthLayout', () => {
       </TestWrapper>
     );
     await act(async () => {});
-    expect(screen.getByText('Powered by Matrix')).toBeInTheDocument();
+    expect(screen.getByTestId('auth-footer')).toBeInTheDocument();
   });
 });

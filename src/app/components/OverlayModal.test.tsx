@@ -12,18 +12,18 @@ describe('OverlayModal', () => {
   it('renders children when open', () => {
     render(
       <OverlayModal open requestClose={vi.fn()}>
-        <div>Modal Content</div>
+        <div data-testid="overlay-modal-child">Modal Content</div>
       </OverlayModal>
     );
-    expect(screen.getByText('Modal Content')).toBeInTheDocument();
+    expect(screen.getByTestId('overlay-modal-child')).toBeInTheDocument();
   });
 
   it('does not render children when closed', () => {
     render(
       <OverlayModal open={false} requestClose={vi.fn()}>
-        <div>Modal Content</div>
+        <div data-testid="overlay-modal-child">Modal Content</div>
       </OverlayModal>
     );
-    expect(screen.queryByText('Modal Content')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('overlay-modal-child')).not.toBeInTheDocument();
   });
 });

@@ -74,6 +74,15 @@ Vite env vars use `VITE_` prefix, accessed via `import.meta.env.VITE_*`:
 - `VITE_GIF_SERVER_URL` — GIF search API endpoint
 - `VITE_GIF_API_KEY` — GIF API key
 
+## Communication Style
+
+- Answer plainly. No hyperbole, no stylistic flourishes, no marketing voice.
+- Avoid intensifiers ("extremely", "incredibly", "massively"), superlatives ("the best", "the perfect"), and filler praise ("great question", "excellent point").
+- Don't dramatize tradeoffs or risks — state them once, flatly. No "footguns", "nightmares", "magic", etc.
+- Don't editorialize about the code or the task ("this is a clever pattern", "this is gnarly"). Describe what it does.
+- Prefer declarative sentences over rhetorical structure (no "Not X — Y", no tricolons for effect).
+- Prefer precise technical explanations. Don't dumb things down, soften jargon, or add hand-holding analogies unless asked — assume the reader knows the stack.
+
 ## Key Patterns
 
 - **Matrix client** is initialized in `src/client/` and provided via React context

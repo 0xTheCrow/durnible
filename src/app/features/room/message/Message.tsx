@@ -394,7 +394,9 @@ export const MessageDeleteItem = as<
             size="500"
           >
             <Box grow="Yes">
-              <Text size="H4">Delete Message</Text>
+              <Text size="H4" data-testid="message-delete-dialog-title">
+                Delete Message
+              </Text>
             </Box>
             <IconButton size="300" onClick={handleClose} radii="300">
               <Icon src={Icons.Cross} />
@@ -402,6 +404,7 @@ export const MessageDeleteItem = as<
           </Header>
           <Box
             as="form"
+            data-testid="message-delete-dialog"
             onSubmit={handleSubmit}
             style={{ padding: config.space.S400 }}
             direction="Column"
@@ -419,12 +422,18 @@ export const MessageDeleteItem = as<
               </Text>
               <Input name="reasonInput" variant="Background" />
               {deleteState.status === AsyncStatus.Error && (
-                <Text style={{ color: color.Critical.Main }} size="T300">
+                <Text
+                  data-testid="message-delete-error"
+                  style={{ color: color.Critical.Main }}
+                  size="T300"
+                >
                   Failed to delete message! Please try again.
                 </Text>
               )}
             </Box>
             <Button
+              data-testid="message-delete-confirm"
+              data-loading={deleteState.status === AsyncStatus.Loading ? '' : undefined}
               type="submit"
               variant="Critical"
               before={
@@ -457,6 +466,7 @@ export const MessageDeleteItem = as<
         </Dialog>
       </OverlayModal>
       <Button
+        data-testid="message-delete-btn"
         variant="Critical"
         fill="None"
         size="300"
@@ -747,6 +757,7 @@ export const Message = as<'div', MessageProps>(
             as="button"
             style={{ color: usernameColor }}
             data-user-id={senderId}
+            data-testid="message-sender-name"
             onContextMenu={onUserClick}
             onClick={onUsernameClick}
           >

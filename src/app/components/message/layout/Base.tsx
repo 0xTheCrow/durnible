@@ -9,6 +9,9 @@ export const MessageBase = as<'div', css.MessageBaseVariants>(
     ref
   ) => (
     <div
+      data-mention-highlight={mentionHighlight ? '' : undefined}
+      data-highlight={highlight ? '' : undefined}
+      data-selected={selected ? '' : undefined}
       className={classNames(
         css.MessageBase({ highlight, mentionHighlight, selected, collapse, autoCollapse, space }),
         className
@@ -37,6 +40,7 @@ export const MessageTextBody = as<'div', css.MessageTextBodyVariants & { notice?
       as={asComp}
       size="T400"
       priority={notice ? '300' : '400'}
+      data-testid="message-body"
       className={classNames(css.MessageTextBody({ preWrap, jumboEmoji, emote }), className)}
       {...props}
       ref={ref}

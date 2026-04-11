@@ -125,11 +125,19 @@ export const Reply = as<'div', ReplyProps>(
           onClick={onClick}
         >
           {showContent ? (
-            <Text size="T300" truncate>
+            <Text
+              size="T300"
+              truncate
+              data-testid={
+                // eslint-disable-next-line no-nested-ternary
+                body ? 'reply-body' : isRedacted ? 'reply-deleted' : 'reply-failed'
+              }
+            >
               {bodyJSX}
             </Text>
           ) : (
             <LinePlaceholder
+              data-testid="reply-loading"
               style={{
                 backgroundColor: color.SurfaceVariant.ContainerActive,
                 width: toRem(placeholderWidth),

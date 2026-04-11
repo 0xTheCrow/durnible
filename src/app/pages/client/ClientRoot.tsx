@@ -195,18 +195,26 @@ export function ClientRoot({ children }: ClientRootProps) {
       {(loadState.status === AsyncStatus.Error || startState.status === AsyncStatus.Error) && (
         <SplashScreen>
           <Box direction="Column" grow="Yes" alignItems="Center" justifyContent="Center" gap="400">
-            <Dialog>
+            <Dialog data-testid="client-root-error-dialog">
               <Box direction="Column" gap="400" style={{ padding: config.space.S400 }}>
                 {loadState.status === AsyncStatus.Error &&
                   (isChunkLoadError(loadState.error) ? (
-                    <Text>Failed to load. The app was updated — please reload.</Text>
+                    <Text data-testid="client-root-load-error-chunk">
+                      Failed to load. The app was updated — please reload.
+                    </Text>
                   ) : (
-                    <Text>{`Failed to load. ${loadState.error.message}`}</Text>
+                    <Text data-testid="client-root-load-error-generic">
+                      {`Failed to load. ${loadState.error.message}`}
+                    </Text>
                   ))}
                 {startState.status === AsyncStatus.Error && (
-                  <Text>{`Failed to start. ${startState.error.message}`}</Text>
+                  <Text data-testid="client-root-start-error">
+                    {`Failed to start. ${startState.error.message}`}
+                  </Text>
                 )}
                 <Button
+                  data-testid="client-root-error-action"
+                  data-variant={loadState.status === AsyncStatus.Error ? 'reload' : 'retry'}
                   variant="Critical"
                   onClick={
                     loadState.status === AsyncStatus.Error || !mx

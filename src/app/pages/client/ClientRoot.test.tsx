@@ -94,32 +94,37 @@ describe('ClientRoot error dialog', () => {
       mockInitClient.mockRejectedValue(CHUNK_ERROR);
     });
 
-    it('shows a "Reload" button instead of "Retry"', async () => {
+    it('shows a chunk-load error message with a reload action', async () => {
       render(<ClientRoot>loaded</ClientRoot>);
       await waitFor(() =>
-        expect(screen.getByRole('button', { name: 'Reload' })).toBeInTheDocument()
+        expect(screen.getByTestId('client-root-load-error-chunk')).toBeInTheDocument()
       );
-      expect(screen.queryByRole('button', { name: 'Retry' })).not.toBeInTheDocument();
+      // The generic load-error text must NOT render when the error is a chunk error.
+      expect(screen.queryByTestId('client-root-load-error-generic')).not.toBeInTheDocument();
+      expect(screen.getByTestId('client-root-error-action')).toHaveAttribute(
+        'data-variant',
+        'reload'
+      );
     });
 
-    it('shows an "app was updated" message instead of the raw error string', async () => {
+    it('keeps the raw module URL out of the user-facing error text', async () => {
       render(<ClientRoot>loaded</ClientRoot>);
       await waitFor(() =>
-        expect(
-          screen.getByText('Failed to load. The app was updated — please reload.')
-        ).toBeInTheDocument()
+        expect(screen.getByTestId('client-root-load-error-chunk')).toBeInTheDocument()
       );
-      // Raw module URL must not be visible — that would be confusing to users.
-      expect(screen.queryByText(/index-D882sB8o/)).not.toBeInTheDocument();
+      // Raw module URL must not appear anywhere in the dialog.
+      expect(screen.getByTestId('client-root-error-dialog').textContent).not.toMatch(
+        /index-D882sB8o/
+      );
     });
 
-    it('calls window.location.reload() when "Reload" is clicked', async () => {
+    it('calls window.location.reload() when the action button is clicked', async () => {
       render(<ClientRoot>loaded</ClientRoot>);
       await waitFor(() =>
-        expect(screen.getByRole('button', { name: 'Reload' })).toBeInTheDocument()
+        expect(screen.getByTestId('client-root-error-action')).toBeInTheDocument()
       );
 
-      fireEvent.click(screen.getByRole('button', { name: 'Reload' }));
+      fireEvent.click(screen.getByTestId('client-root-error-action'));
 
       expect(reloadSpy).toHaveBeenCalledOnce();
     });
@@ -130,27 +135,32 @@ describe('ClientRoot error dialog', () => {
       mockInitClient.mockRejectedValue(GENERIC_ERROR);
     });
 
-    it('shows a "Reload" button (all load failures reload)', async () => {
+    it('renders a reload action for all load failures', async () => {
       render(<ClientRoot>loaded</ClientRoot>);
       await waitFor(() =>
-        expect(screen.getByRole('button', { name: 'Reload' })).toBeInTheDocument()
+        expect(screen.getByTestId('client-root-error-action')).toHaveAttribute(
+          'data-variant',
+          'reload'
+        )
       );
     });
 
-    it('shows the original error message', async () => {
+    it('surfaces the original error message to the user', async () => {
       render(<ClientRoot>loaded</ClientRoot>);
       await waitFor(() =>
-        expect(screen.getByText('Failed to load. No session Found!')).toBeInTheDocument()
+        expect(screen.getByTestId('client-root-load-error-generic')).toHaveTextContent(
+          GENERIC_ERROR.message
+        )
       );
     });
 
-    it('calls window.location.reload() when "Reload" is clicked', async () => {
+    it('calls window.location.reload() when the action button is clicked', async () => {
       render(<ClientRoot>loaded</ClientRoot>);
       await waitFor(() =>
-        expect(screen.getByRole('button', { name: 'Reload' })).toBeInTheDocument()
+        expect(screen.getByTestId('client-root-error-action')).toBeInTheDocument()
       );
 
-      fireEvent.click(screen.getByRole('button', { name: 'Reload' }));
+      fireEvent.click(screen.getByTestId('client-root-error-action'));
 
       expect(reloadSpy).toHaveBeenCalledOnce();
     });

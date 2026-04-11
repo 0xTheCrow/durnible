@@ -153,6 +153,7 @@ export const ImageViewer = as<'div', ImageViewerProps>(
         <Header className={css.ImageViewerHeader} size="500">
           <button
             type="button"
+            data-testid="image-viewer-close-btn"
             className={css.ImageViewerCloseButton}
             onClick={requestClose}
             aria-label="Close"
@@ -160,12 +161,13 @@ export const ImageViewer = as<'div', ImageViewerProps>(
             <Icon size="200" src={Icons.ArrowLeft} />
           </button>
           <Box grow="Yes" alignItems="Center" gap="300">
-            <Text size="T400" truncate>
+            <Text size="T400" truncate data-testid="image-viewer-alt">
               {alt}
             </Text>
           </Box>
           <Box shrink="No" alignItems="Center" gap="300">
             <IconButton
+              data-testid="image-viewer-zoom-out"
               variant={zoom < 1 ? 'Success' : 'SurfaceVariant'}
               outlined={zoom < 1}
               size="400"
@@ -176,15 +178,19 @@ export const ImageViewer = as<'div', ImageViewerProps>(
               <Icon size="200" src={Icons.Minus} />
             </IconButton>
             <Chip
+              data-testid="image-viewer-zoom-chip"
               className={css.ImageViewerZoomChip}
               variant="SurfaceVariant"
               radii="Pill"
               size="500"
               onClick={() => setZoom(zoom === 1 ? 2 : 1)}
             >
-              <Text size="B400">{Math.round(zoom * 100)}%</Text>
+              <Text size="B400" data-testid="image-viewer-zoom-label">
+                {Math.round(zoom * 100)}%
+              </Text>
             </Chip>
             <IconButton
+              data-testid="image-viewer-zoom-in"
               variant={zoom > 1 ? 'Success' : 'SurfaceVariant'}
               outlined={zoom > 1}
               size="400"
@@ -197,6 +203,7 @@ export const ImageViewer = as<'div', ImageViewerProps>(
           </Box>
           <button
             type="button"
+            data-testid="image-viewer-download-btn"
             className={css.ImageViewerDownloadButton}
             onClick={handleDownload}
             aria-label="Download"
@@ -242,6 +249,7 @@ export const ImageViewer = as<'div', ImageViewerProps>(
               no meaningful keyboard equivalent for "click on image to zoom". */}
           {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
           <img
+            data-testid="image-viewer-img"
             className={classNames(css.ImageViewerImg, inGallery && css.ImageViewerImgGallery)}
             style={{
               cursor,

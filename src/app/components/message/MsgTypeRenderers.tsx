@@ -35,7 +35,7 @@ import { FileHeader, FileDownloadButton } from './FileHeader';
 
 export function MBadEncrypted() {
   return (
-    <Text>
+    <Text data-testid="message-bad-encrypted">
       <MessageBadEncryptedContent />
     </Text>
   );
@@ -46,7 +46,7 @@ type RedactedContentProps = {
 };
 export function RedactedContent({ reason }: RedactedContentProps) {
   return (
-    <Text>
+    <Text data-testid="message-redacted">
       <MessageDeletedContent reason={reason} />
     </Text>
   );
@@ -54,7 +54,7 @@ export function RedactedContent({ reason }: RedactedContentProps) {
 
 export function UnsupportedContent() {
   return (
-    <Text>
+    <Text data-testid="message-unsupported">
       <MessageUnsupportedContent />
     </Text>
   );
@@ -62,7 +62,7 @@ export function UnsupportedContent() {
 
 export function BrokenContent() {
   return (
-    <Text>
+    <Text data-testid="message-broken">
       <MessageBrokenContent />
     </Text>
   );

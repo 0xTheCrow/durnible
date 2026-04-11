@@ -73,7 +73,7 @@ export const FileHeader = as<'div', FileHeaderProps>(({ body, mimeType, after, .
       </Badge>
     </Box>
     <Box grow="Yes">
-      <Text size="T300" truncate>
+      <Text size="T300" truncate data-testid="file-name">
         {body}
       </Text>
     </Box>

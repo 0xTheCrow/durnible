@@ -124,9 +124,8 @@ describe('edit mode', () => {
       </MatrixTestWrapper>
     );
 
-    expect(screen.getByText('Original content')).toBeInTheDocument();
-    expect(screen.queryByText('Save')).not.toBeInTheDocument();
-    expect(screen.queryByText('Cancel')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('message-editor-save')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('message-editor-cancel')).not.toBeInTheDocument();
 
     // Flip edit prop — simulates MemoizedTimelineEvent receiving isEditing=true.
     // Drain Slate's deferred microtask state update with async act so it doesn't
@@ -142,10 +141,8 @@ describe('edit mode', () => {
     });
 
     // Editor must appear immediately — no additional events should be needed
-    expect(screen.getByText('Save')).toBeInTheDocument();
-    expect(screen.getByText('Cancel')).toBeInTheDocument();
-    // Note: the Slate editor is pre-populated with the original content, so the
-    // text is still present in the DOM (as a slate node) — don't assert its absence.
+    expect(screen.getByTestId('message-editor-save')).toBeInTheDocument();
+    expect(screen.getByTestId('message-editor-cancel')).toBeInTheDocument();
   });
 
   it('hides the editor and restores content when edit prop flips back to false', async () => {
@@ -184,72 +181,71 @@ describe('edit mode', () => {
     const { rerender } = render(
       <MatrixTestWrapper matrixClient={mx}>
         <Message {...baseProps} edit>
-          <span>Original content</span>
+          <span data-testid="test-message-child">Original content</span>
         </Message>
       </MatrixTestWrapper>
     );
 
-    expect(screen.getByText('Save')).toBeInTheDocument();
+    expect(screen.getByTestId('message-editor-save')).toBeInTheDocument();
 
     await act(async () => {
       rerender(
         <MatrixTestWrapper matrixClient={mx}>
           <Message {...baseProps} edit={false}>
-            <span>Original content</span>
+            <span data-testid="test-message-child">Original content</span>
           </Message>
         </MatrixTestWrapper>
       );
     });
 
-    expect(screen.queryByText('Save')).not.toBeInTheDocument();
-    expect(screen.getByText('Original content')).toBeInTheDocument();
+    expect(screen.queryByTestId('message-editor-save')).not.toBeInTheDocument();
+    expect(screen.getByTestId('test-message-child')).toBeInTheDocument();
   });
 });
 
 describe('Message component', () => {
   describe('text messages', () => {
-    it('renders a text message in modern layout', () => {
+    it('renders body and sender name in modern layout', () => {
       renderMessage({
         body: 'Hello from Alice!',
         msgtype: MsgType.Text,
         sender: '@alice:example.com',
       });
-      expect(screen.getByText('Hello from Alice!')).toBeInTheDocument();
-      expect(screen.getByText('alice')).toBeInTheDocument();
+      expect(screen.getByTestId('message-body')).toHaveTextContent('Hello from Alice!');
+      expect(screen.getByTestId('message-sender-name')).toHaveTextContent('alice');
     });
 
-    it('renders a text message in compact layout', () => {
+    it('renders body in compact layout', () => {
       renderMessage({
         body: 'Compact message',
         msgtype: MsgType.Text,
         layout: MessageLayout.Compact,
       });
-      expect(screen.getByText('Compact message')).toBeInTheDocument();
+      expect(screen.getByTestId('message-body')).toHaveTextContent('Compact message');
     });
 
-    it('renders a text message in bubble layout', () => {
+    it('renders body in bubble layout', () => {
       renderMessage({
         body: 'Bubble message',
         msgtype: MsgType.Text,
         layout: MessageLayout.Bubble,
       });
-      expect(screen.getByText('Bubble message')).toBeInTheDocument();
+      expect(screen.getByTestId('message-body')).toHaveTextContent('Bubble message');
     });
 
-    it('renders a collapsed message (same sender continuation)', () => {
+    it('hides the sender name on a collapsed continuation message', () => {
       renderMessage({
         body: 'Continuation message',
         msgtype: MsgType.Text,
         collapse: true,
       });
-      expect(screen.getByText('Continuation message')).toBeInTheDocument();
-      // Username should NOT be shown when collapsed
-      expect(screen.queryByText('alice')).not.toBeInTheDocument();
+      expect(screen.getByTestId('message-body')).toHaveTextContent('Continuation message');
+      expect(screen.queryByTestId('message-sender-name')).not.toBeInTheDocument();
     });
   });
 
   describe('image messages', () => {
-    it('renders an image message without crashing', () => {
+    it('renders an image message with sender name', () => {
       renderMessage({
         body: 'photo.png',
         msgtype: MsgType.Image,
@@ -266,18 +262,18 @@ describe('Message component', () => {
           },
         },
       });
-      expect(screen.getByText('bob')).toBeInTheDocument();
+      expect(screen.getByTestId('message-sender-name')).toHaveTextContent('bob');
     });
   });
 
   describe('emote messages', () => {
-    it('renders an emote message', () => {
+    it('renders an emote message body', () => {
       renderMessage({
         body: 'dances around',
         msgtype: MsgType.Emote,
         sender: '@charlie:example.com',
       });
-      expect(screen.getByText(/dances around/)).toBeInTheDocument();
+      expect(screen.getByTestId('message-body')).toHaveTextContent('dances around');
     });
   });
 
@@ -350,10 +346,17 @@ describe('Message component', () => {
         </MatrixTestWrapper>
       );
 
-      expect(screen.getByText('Hi Bob!')).toBeInTheDocument();
-      expect(screen.getByText('Hey Alice!')).toBeInTheDocument();
-      expect(screen.getByText('Alice')).toBeInTheDocument();
-      expect(screen.getByText('Bob')).toBeInTheDocument();
+      const bodies = screen.getAllByTestId('message-body');
+      const senderNames = screen.getAllByTestId('message-sender-name');
+      expect(bodies.map((el) => el.textContent)).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining('Hi Bob!'),
+          expect.stringContaining('Hey Alice!'),
+        ])
+      );
+      expect(senderNames.map((el) => el.textContent)).toEqual(
+        expect.arrayContaining(['Alice', 'Bob'])
+      );
     });
   });
 });

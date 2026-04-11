@@ -104,9 +104,9 @@ describe('MemoizedTimelineEvent edit mode', () => {
       </MatrixTestWrapper>
     );
 
-    expect(screen.getByText('Hello world')).toBeInTheDocument();
-    expect(screen.queryByText('Save')).not.toBeInTheDocument();
-    expect(screen.queryByText('Cancel')).not.toBeInTheDocument();
+    expect(screen.getByTestId('message-body')).toHaveTextContent('Hello world');
+    expect(screen.queryByTestId('message-editor-save')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('message-editor-cancel')).not.toBeInTheDocument();
 
     // Flip isEditing — simulates editId matching this event's ID in RoomTimeline.
     // Drain Slate's deferred microtask state update with async act.
@@ -122,8 +122,8 @@ describe('MemoizedTimelineEvent edit mode', () => {
 
     // Editor must appear immediately — the memo comparator must detect isEditing changed.
     // If this fails, the comparator is incorrectly returning true (equal) and bailing out.
-    expect(screen.getByText('Save')).toBeInTheDocument();
-    expect(screen.getByText('Cancel')).toBeInTheDocument();
+    expect(screen.getByTestId('message-editor-save')).toBeInTheDocument();
+    expect(screen.getByTestId('message-editor-cancel')).toBeInTheDocument();
   });
 
   it('removes the editor immediately when isEditing flips back to false', () => {
@@ -163,7 +163,7 @@ describe('MemoizedTimelineEvent edit mode', () => {
       </MatrixTestWrapper>
     );
 
-    expect(screen.getByText('Save')).toBeInTheDocument();
+    expect(screen.getByTestId('message-editor-save')).toBeInTheDocument();
 
     rerender(
       <MatrixTestWrapper matrixClient={mx}>
@@ -173,8 +173,8 @@ describe('MemoizedTimelineEvent edit mode', () => {
       </MatrixTestWrapper>
     );
 
-    expect(screen.queryByText('Save')).not.toBeInTheDocument();
-    expect(screen.getByText('Hello world')).toBeInTheDocument();
+    expect(screen.queryByTestId('message-editor-save')).not.toBeInTheDocument();
+    expect(screen.getByTestId('message-body')).toHaveTextContent('Hello world');
   });
 });
 
@@ -243,12 +243,10 @@ describe('MemoizedTimelineEvent reply-to-me highlight', () => {
       </MatrixTestWrapper>
     );
 
-    // The MessageBase recipe applies a class containing
-    // "MentionHighlightVariant_true" (the vanilla-extract const name + variant
-    // key) when its mentionHighlight variant is on. If the prop didn't flow
-    // through, no element would have that class.
-    const highlighted = container.querySelector('[class*="MentionHighlightVariant_true"]');
-    expect(highlighted).not.toBeNull();
+    // MessageBase exposes a `data-mention-highlight` attribute when the
+    // variant is on. If the prop didn't flow through, no element would have
+    // it.
+    expect(container.querySelector('[data-mention-highlight]')).not.toBeNull();
   });
 
   it('does not show the highlight when replyToMe is false', () => {
@@ -290,8 +288,7 @@ describe('MemoizedTimelineEvent reply-to-me highlight', () => {
       </MatrixTestWrapper>
     );
 
-    const highlighted = container.querySelector('[class*="MentionHighlightVariant_true"]');
-    expect(highlighted).toBeNull();
+    expect(container.querySelector('[data-mention-highlight]')).toBeNull();
   });
 });
 
@@ -394,8 +391,8 @@ describe('MemoizedTimelineEvent edit — full handleEdit chain', () => {
       </MatrixTestWrapper>
     );
 
-    expect(screen.getByText('Edit me')).toBeInTheDocument();
-    expect(screen.queryByText('Save')).not.toBeInTheDocument();
+    expect(screen.getByTestId('message-body')).toHaveTextContent('Edit me');
+    expect(screen.queryByTestId('message-editor-save')).not.toBeInTheDocument();
 
     // Fire the trigger — state updates, Wrapper re-renders, isEditing becomes
     // true. The editor must appear from this single state update with no
@@ -404,7 +401,7 @@ describe('MemoizedTimelineEvent edit — full handleEdit chain', () => {
       fireEvent.click(screen.getByTestId('trigger-edit'));
     });
 
-    expect(screen.getByText('Save')).toBeInTheDocument();
-    expect(screen.getByText('Cancel')).toBeInTheDocument();
+    expect(screen.getByTestId('message-editor-save')).toBeInTheDocument();
+    expect(screen.getByTestId('message-editor-cancel')).toBeInTheDocument();
   });
 });

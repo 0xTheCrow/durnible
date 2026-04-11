@@ -284,6 +284,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
               >
                 <Box gap="Inherit">
                   <Chip
+                    data-testid="message-editor-save"
                     onClick={handleSave}
                     variant="Primary"
                     radii="Pill"
@@ -297,7 +298,12 @@ export const MessageEditor = as<'div', MessageEditorProps>(
                   >
                     <Text size="B300">Save</Text>
                   </Chip>
-                  <Chip onClick={onCancel} variant="SurfaceVariant" radii="Pill">
+                  <Chip
+                    data-testid="message-editor-cancel"
+                    onClick={onCancel}
+                    variant="SurfaceVariant"
+                    radii="Pill"
+                  >
                     <Text size="B300">Cancel</Text>
                   </Chip>
                 </Box>

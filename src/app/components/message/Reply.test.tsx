@@ -62,11 +62,13 @@ describe('Reply — out-of-pagination preview', () => {
     // fetchRoomEvent never resolves — keeps the component perpetually loading.
     (mx as any).fetchRoomEvent = vi.fn(() => new Promise(() => {}));
 
-    const { queryByText } = renderReply(mx, room);
+    renderReply(mx, room);
 
-    // The message body must not appear while the fetch is in flight.
-    expect(queryByText('original message')).not.toBeInTheDocument();
-    expect(queryByText('Failed to load message')).not.toBeInTheDocument();
+    // While the fetch is in flight, the loading placeholder must be visible
+    // and none of the terminal states (body, deleted, failed) should render.
+    expect(screen.getByTestId('reply-loading')).toBeInTheDocument();
+    expect(screen.queryByTestId('reply-body')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('reply-failed')).not.toBeInTheDocument();
 
     // The SDK must have tried to fetch the missing event from the server.
     expect((mx as any).fetchRoomEvent).toHaveBeenCalledWith(
@@ -81,11 +83,11 @@ describe('Reply — out-of-pagination preview', () => {
     renderReply(mx, room);
 
     await waitFor(() => {
-      expect(screen.getByText('original message')).toBeInTheDocument();
+      expect(screen.getByTestId('reply-body')).toHaveTextContent('original message');
     });
   });
 
-  it('shows "Failed to load message" when the server fetch permanently fails', async () => {
+  it('shows the "failed" state when the server fetch permanently fails', async () => {
     (mx as any).fetchRoomEvent = vi.fn(async () => {
       throw new Error('404 Not Found');
     });
@@ -93,7 +95,7 @@ describe('Reply — out-of-pagination preview', () => {
     renderReply(mx, room);
 
     await waitFor(() => {
-      expect(screen.getByText('Failed to load message')).toBeInTheDocument();
+      expect(screen.getByTestId('reply-failed')).toBeInTheDocument();
     });
   });
 
@@ -116,12 +118,12 @@ describe('Reply — out-of-pagination preview', () => {
 
     renderReply(mx, room, timelineSet);
 
-    expect(screen.getByText('local message')).toBeInTheDocument();
+    expect(screen.getByTestId('reply-body')).toHaveTextContent('local message');
     // Event was local — the network must not have been hit.
     expect((mx as any).fetchRoomEvent).not.toHaveBeenCalled();
   });
 
-  it('shows "This message has been deleted" for a redacted out-of-range event', async () => {
+  it('shows the "deleted" state for a redacted out-of-range event', async () => {
     (mx as any).fetchRoomEvent = vi.fn(async () => ({
       event_id: '$out-of-range-event',
       type: 'm.room.message',
@@ -154,7 +156,7 @@ describe('Reply — out-of-pagination preview', () => {
     renderReply(mx, room, timelineSet);
 
     await waitFor(() => {
-      expect(screen.getByText('This message has been deleted')).toBeInTheDocument();
+      expect(screen.getByTestId('reply-deleted')).toBeInTheDocument();
     });
   });
 });

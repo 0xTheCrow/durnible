@@ -7,6 +7,7 @@ export function WelcomePage() {
   return (
     <Page>
       <Box
+        data-testid="welcome-page"
         grow="Yes"
         style={{ padding: config.space.S400, paddingBottom: config.space.S700 }}
         alignItems="Center"
@@ -33,6 +34,7 @@ export function WelcomePage() {
               <Box grow="Yes" style={{ maxWidth: toRem(300) }} direction="Column" gap="300">
                 <Button
                   as="a"
+                  data-testid="welcome-source-link"
                   href="https://github.com/cinnyapp/cinny"
                   target="_blank"
                   rel="noreferrer noopener"
@@ -44,6 +46,7 @@ export function WelcomePage() {
                 </Button>
                 <Button
                   as="a"
+                  data-testid="welcome-support-link"
                   href="https://cinny.in/#sponsor"
                   target="_blank"
                   rel="noreferrer noopener"

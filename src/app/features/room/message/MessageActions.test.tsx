@@ -91,24 +91,25 @@ describe('message deletion (MessageDeleteItem)', () => {
 
   it('renders a Delete button', () => {
     renderDeleteItem();
-    expect(screen.getByRole('button', { name: /delete/i })).toBeInTheDocument();
+    expect(screen.getByTestId('message-delete-btn')).toBeInTheDocument();
   });
 
   it('opens a confirmation dialog when the Delete button is clicked', () => {
     renderDeleteItem();
 
-    fireEvent.click(screen.getByRole('button', { name: /delete/i }));
+    fireEvent.click(screen.getByTestId('message-delete-btn'));
 
-    expect(screen.getByText('Delete Message')).toBeInTheDocument();
-    expect(screen.getByText(/are you sure.*want to delete/i)).toBeInTheDocument();
+    expect(screen.getByTestId('message-delete-dialog')).toBeInTheDocument();
+    expect(screen.getByTestId('message-delete-dialog-title')).toBeInTheDocument();
+    expect(screen.getByTestId('message-delete-confirm')).toBeInTheDocument();
   });
 
   it('calls redactEvent with the event ID when confirmed without a reason', async () => {
     const { mx } = renderDeleteItem();
 
-    fireEvent.click(screen.getByRole('button', { name: /delete/i }));
+    fireEvent.click(screen.getByTestId('message-delete-btn'));
     await act(async () => {
-      fireEvent.submit(document.querySelector('form')!);
+      fireEvent.submit(screen.getByTestId('message-delete-dialog'));
     });
 
     expect(mx.redactEvent).toHaveBeenCalled();
@@ -121,13 +122,13 @@ describe('message deletion (MessageDeleteItem)', () => {
   it('passes the typed reason to redactEvent', async () => {
     const { mx } = renderDeleteItem();
 
-    fireEvent.click(screen.getByRole('button', { name: /delete/i }));
+    fireEvent.click(screen.getByTestId('message-delete-btn'));
 
     // jsdom doesn't implement the HTML named-property access spec (form['inputName']),
     // so MessageDeleteItem's `target.reasonInput` returns undefined without this patch.
     // COUPLING: if the component changes how it reads the reason value (e.g. FormData,
     // a React ref, or onChange state), this Object.defineProperty shim can be removed.
-    const form = document.querySelector('form')!;
+    const form = screen.getByTestId('message-delete-dialog') as HTMLFormElement;
     const reasonInput = form.querySelector('input[name="reasonInput"]') as HTMLInputElement;
     Object.defineProperty(form, 'reasonInput', { get: () => reasonInput, configurable: true });
     fireEvent.change(reasonInput, { target: { value: 'Spam' } });
@@ -151,20 +152,20 @@ describe('message deletion (MessageDeleteItem)', () => {
     });
 
     renderDeleteItem({ rejectOnce: true });
-    fireEvent.click(screen.getByRole('button', { name: /delete/i }));
-    fireEvent.submit(document.querySelector('form')!);
+    fireEvent.click(screen.getByTestId('message-delete-btn'));
+    fireEvent.submit(screen.getByTestId('message-delete-dialog'));
 
     await Promise.all([
       rejectionHandled,
       waitFor(() => {
-        expect(screen.getByText(/failed to delete message/i)).toBeInTheDocument();
+        expect(screen.getByTestId('message-delete-error')).toBeInTheDocument();
       }),
     ]);
   });
 
-  it('shows Deleting… while the request is in flight', async () => {
-    // The submit button label switches to "Deleting…" during an in-flight request,
-    // giving the user visible feedback that the action is being processed.
+  it('marks the confirm button as loading while the request is in flight', async () => {
+    // During an in-flight delete, the confirm button exposes data-loading so the
+    // user gets visible feedback and the test can assert on pending/settled state.
     let resolveFn!: (v: unknown) => void;
     const mx = createMockMatrixClient();
     (mx.redactEvent as any).mockImplementationOnce(
@@ -182,17 +183,17 @@ describe('message deletion (MessageDeleteItem)', () => {
       </MatrixTestWrapper>
     );
 
-    fireEvent.click(screen.getByRole('button', { name: /delete/i }));
-    fireEvent.submit(document.querySelector('form')!);
+    fireEvent.click(screen.getByTestId('message-delete-btn'));
+    fireEvent.submit(screen.getByTestId('message-delete-dialog'));
 
     await waitFor(() => {
-      expect(screen.getByText(/deleting/i)).toBeInTheDocument();
+      expect(screen.getByTestId('message-delete-confirm')).toHaveAttribute('data-loading');
     });
 
     resolveFn({ event_id: '$redacted' });
 
     await waitFor(() => {
-      expect(screen.queryByText(/deleting/i)).not.toBeInTheDocument();
+      expect(screen.getByTestId('message-delete-confirm')).not.toHaveAttribute('data-loading');
     });
   });
 });
@@ -223,15 +224,15 @@ describe('message editing (MessageEditor)', () => {
 
   it('renders Save and Cancel buttons', async () => {
     await renderEditor();
-    expect(screen.getByRole('button', { name: /save/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
+    expect(screen.getByTestId('message-editor-save')).toBeInTheDocument();
+    expect(screen.getByTestId('message-editor-cancel')).toBeInTheDocument();
   });
 
   it('calls onCancel when the Cancel button is clicked', async () => {
     const onCancel = vi.fn();
     await renderEditor(onCancel);
 
-    fireEvent.click(screen.getByRole('button', { name: /cancel/i }));
+    fireEvent.click(screen.getByTestId('message-editor-cancel'));
 
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
@@ -242,7 +243,7 @@ describe('message editing (MessageEditor)', () => {
     // callback, which resolves the promise and triggers Success without a network call.
     const { onCancel } = await renderEditor();
 
-    fireEvent.click(screen.getByRole('button', { name: /save/i }));
+    fireEvent.click(screen.getByTestId('message-editor-save'));
 
     await waitFor(() => {
       expect(onCancel).toHaveBeenCalledTimes(1);

@@ -168,6 +168,7 @@ export const ImageContent = as<'div', ImageContentProps>(
           srcState.status === AsyncStatus.Idle && (
             <Box className={css.AbsoluteContainer} alignItems="Center" justifyContent="Center">
               <Button
+                data-testid="image-content-view-btn"
                 variant="Secondary"
                 fill="Solid"
                 radii="300"
@@ -204,6 +205,7 @@ export const ImageContent = as<'div', ImageContentProps>(
         )}
         {shouldPauseGif && load && !effectiveBlurred && srcState.status === AsyncStatus.Success && (
           <div
+            data-testid="image-content-paused-gif-overlay"
             role="button"
             tabIndex={0}
             aria-label={body}
@@ -227,6 +229,7 @@ export const ImageContent = as<'div', ImageContentProps>(
           >
             <canvas
               ref={canvasRef}
+              data-testid="image-content-paused-gif-canvas"
               style={{
                 width: '100%',
                 height: '100%',
@@ -252,6 +255,7 @@ export const ImageContent = as<'div', ImageContentProps>(
               {(triggerRef) => (
                 <Chip
                   ref={triggerRef}
+                  data-testid="image-content-spoiler-chip"
                   variant="Secondary"
                   radii="Pill"
                   size="500"
@@ -313,7 +317,7 @@ export const ImageContent = as<'div', ImageContentProps>(
         )}
         {!load && typeof info?.size === 'number' && (
           <Box className={css.AbsoluteFooter} justifyContent="End" alignContent="Center" gap="200">
-            <Badge variant="Secondary" fill="Soft">
+            <Badge variant="Secondary" fill="Soft" data-testid="image-content-size-badge">
               <Text size="L400">{bytesToSize(info.size)}</Text>
             </Badge>
           </Box>

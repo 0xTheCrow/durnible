@@ -6,70 +6,56 @@ import { AnimatedImg } from './AnimatedImg';
 describe('AnimatedImg', () => {
   it('renders a plain img when pauseGifs is false', () => {
     render(<AnimatedImg pauseGifs={false} src="test.gif" alt="test" />);
-    const img = screen.getByAltText('test');
-    expect(img).toBeInTheDocument();
-    expect(img.tagName).toBe('IMG');
+    expect(screen.getByTestId('animated-img')).toBeInTheDocument();
+    expect(screen.queryByTestId('animated-img-wrapper')).toBeNull();
   });
 
   it('renders img with canvas wrapper when pauseGifs is true', () => {
     render(<AnimatedImg pauseGifs src="test.gif" alt="test" />);
-    const img = screen.getByAltText('test');
-    expect(img).toBeInTheDocument();
-    // Should be wrapped in a span
-    expect(img.parentElement?.tagName).toBe('SPAN');
+    expect(screen.getByTestId('animated-img-wrapper')).toBeInTheDocument();
+    expect(screen.getByTestId('animated-img')).toBeInTheDocument();
   });
 
   it('shows canvas after image loads when pauseGifs is true', () => {
-    const { container } = render(<AnimatedImg pauseGifs src="test.gif" alt="test" />);
-    // No canvas before load
-    expect(container.querySelector('canvas')).toBeNull();
+    render(<AnimatedImg pauseGifs src="test.gif" alt="test" />);
+    expect(screen.queryByTestId('animated-img-canvas')).toBeNull();
 
-    // Trigger load
-    fireEvent.load(screen.getByAltText('test'));
+    fireEvent.load(screen.getByTestId('animated-img'));
 
-    // Canvas should appear
-    expect(container.querySelector('canvas')).not.toBeNull();
+    expect(screen.getByTestId('animated-img-canvas')).toBeInTheDocument();
   });
 
   it('shows the frozen-frame canvas after load when not hovered', () => {
-    const { container } = render(<AnimatedImg pauseGifs src="test.gif" alt="test" />);
-    fireEvent.load(screen.getByAltText('test'));
-    const canvas = container.querySelector('canvas')!;
-    // Canvas is the frozen frame — it should be visible, not hidden
-    expect(canvas).not.toHaveStyle({ visibility: 'hidden' });
+    render(<AnimatedImg pauseGifs src="test.gif" alt="test" />);
+    fireEvent.load(screen.getByTestId('animated-img'));
+    expect(screen.getByTestId('animated-img-canvas')).not.toHaveStyle({ visibility: 'hidden' });
   });
 
   it('hides the frozen-frame canvas on hover so the GIF can play', () => {
-    const { container } = render(<AnimatedImg pauseGifs src="test.gif" alt="test" />);
-    const img = screen.getByAltText('test');
-    const wrapper = img.parentElement!;
+    render(<AnimatedImg pauseGifs src="test.gif" alt="test" />);
+    const wrapper = screen.getByTestId('animated-img-wrapper');
 
-    fireEvent.load(img);
-    const canvas = container.querySelector('canvas')!;
+    fireEvent.load(screen.getByTestId('animated-img'));
+    const canvas = screen.getByTestId('animated-img-canvas');
 
-    // Before hover: frozen frame shown
     expect(canvas).not.toHaveStyle({ visibility: 'hidden' });
 
-    // Hover: frozen frame hidden so GIF plays underneath
     fireEvent.mouseEnter(wrapper);
     expect(canvas).toHaveStyle({ visibility: 'hidden' });
 
-    // Leave: frozen frame visible again
     fireEvent.mouseLeave(wrapper);
     expect(canvas).not.toHaveStyle({ visibility: 'hidden' });
   });
 
   it('respects an externally controlled hovered prop', () => {
-    const { container, rerender } = render(
+    const { rerender } = render(
       <AnimatedImg pauseGifs hovered={false} src="test.gif" alt="test" />
     );
-    fireEvent.load(screen.getByAltText('test'));
-    const canvas = container.querySelector('canvas')!;
+    fireEvent.load(screen.getByTestId('animated-img'));
+    const canvas = screen.getByTestId('animated-img-canvas');
 
-    // hovered=false: frozen frame shown
     expect(canvas).not.toHaveStyle({ visibility: 'hidden' });
 
-    // hovered=true: frozen frame hidden, GIF plays
     rerender(<AnimatedImg pauseGifs hovered src="test.gif" alt="test" />);
     expect(canvas).toHaveStyle({ visibility: 'hidden' });
   });
@@ -77,32 +63,28 @@ describe('AnimatedImg', () => {
   it('calls the original onLoad handler when the image loads', () => {
     const onLoad = vi.fn();
     render(<AnimatedImg pauseGifs src="test.gif" alt="test" onLoad={onLoad} />);
-    fireEvent.load(screen.getByAltText('test'));
+    fireEvent.load(screen.getByTestId('animated-img'));
     expect(onLoad).toHaveBeenCalledTimes(1);
   });
 
   it('hides the underlying img when loaded and not hovered (canvas shows frozen frame)', () => {
     render(<AnimatedImg pauseGifs src="test.gif" alt="test" />);
-    const img = screen.getByAltText('test');
+    const img = screen.getByTestId('animated-img');
 
-    // Before load: img is visible (no frozen frame to replace it yet)
     expect(img).not.toHaveStyle({ visibility: 'hidden' });
 
     fireEvent.load(img);
 
-    // After load: img is hidden behind the frozen-frame canvas
     expect(img).toHaveStyle({ visibility: 'hidden' });
   });
 
   it('reveals the underlying img when hovered so the GIF can animate', () => {
     render(<AnimatedImg pauseGifs src="test.gif" alt="test" />);
-    const img = screen.getByAltText('test');
+    const img = screen.getByTestId('animated-img');
     fireEvent.load(img);
 
-    const wrapper = img.parentElement!;
-    fireEvent.mouseEnter(wrapper);
+    fireEvent.mouseEnter(screen.getByTestId('animated-img-wrapper'));
 
-    // While hovered the img is visible (GIF plays) and the canvas is hidden
     expect(img).not.toHaveStyle({ visibility: 'hidden' });
   });
 });
