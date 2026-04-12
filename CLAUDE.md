@@ -1,6 +1,6 @@
-# Cinny — Matrix Chat Client
+# Durnible — Matrix Chat Client
 
-Cinny is a Matrix chat client built with React, TypeScript, and Vite.
+Durnible is a Matrix chat client built with React, TypeScript, and Vite. Forked from Cinny.
 
 ## Quick Reference
 

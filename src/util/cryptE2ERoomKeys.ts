@@ -16,7 +16,7 @@ const subtleCrypto: SubtleCrypto =
 /**
  * Error subclass that carries a translated, user-facing message alongside
  * the technical message. Vendored from matrix-react-sdk where the surrounding
- * UI distinguished log message vs display message; cinny currently shows
+ * UI distinguished log message vs display message; durnible currently shows
  * `.message` directly so both fields end up visible to debugging only.
  */
 class FriendlyError extends Error {
