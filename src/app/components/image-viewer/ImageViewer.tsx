@@ -214,7 +214,6 @@ export const ImageViewer = as<'div', ImageViewerProps>(
           justifyContent="Center"
           alignItems="Center"
           onWheel={onWheel}
-          style={{ position: 'relative' }}
         >
           {inGallery && (
             <>
@@ -262,17 +261,9 @@ export const ImageViewer = as<'div', ImageViewerProps>(
             onTouchEnd={onTouchEnd}
           />
           {navLoading && (
-            <Box
-              style={{
-                position: 'absolute',
-                inset: 0,
-                pointerEvents: 'none',
-              }}
-              alignItems="Center"
-              justifyContent="Center"
-            >
+            <div className={css.ImageViewerLoadingOverlay}>
               <Spinner variant="Secondary" />
-            </Box>
+            </div>
           )}
         </Box>
       </Box>

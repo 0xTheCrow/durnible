@@ -88,11 +88,21 @@ export const ImageViewerZoomChip = style([
 export const ImageViewerContent = style([
   DefaultReset,
   {
+    position: 'relative',
     backgroundColor: color.Background.Container,
     color: color.Background.OnContainer,
     overflow: 'hidden',
   },
 ]);
+
+export const ImageViewerLoadingOverlay = style({
+  position: 'absolute',
+  inset: 0,
+  pointerEvents: 'none',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+});
 
 const headerEdgeButtonBase = {
   alignSelf: 'stretch',
