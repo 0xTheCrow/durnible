@@ -2,7 +2,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import FileSaver from 'file-saver';
 import classNames from 'classnames';
-import { Box, Chip, Header, Icon, IconButton, Icons, Spinner, Text, as } from 'folds';
+import { Box, Header, Icon, Icons, Spinner, Text, as } from 'folds';
 import * as css from './ImageViewer.css';
 import { useZoom } from '../../hooks/useZoom';
 import { usePan } from '../../hooks/usePan';
@@ -165,42 +165,36 @@ export const ImageViewer = as<'div', ImageViewerProps>(
               {alt}
             </Text>
           </Box>
-          <Box shrink="No" alignItems="Center" gap="300">
-            <IconButton
+          <div className={css.ImageViewerZoomGroup}>
+            <button
+              type="button"
               data-testid="image-viewer-zoom-out"
-              variant={zoom < 1 ? 'Success' : 'SurfaceVariant'}
-              outlined={zoom < 1}
-              size="400"
-              radii="Pill"
+              className={css.ImageViewerZoomButton}
               onClick={zoomOut}
               aria-label="Zoom Out"
             >
-              <Icon size="200" src={Icons.Minus} />
-            </IconButton>
-            <Chip
+              <Icon size="100" src={Icons.Minus} />
+            </button>
+            <button
+              type="button"
               data-testid="image-viewer-zoom-chip"
               className={css.ImageViewerZoomChip}
-              variant="SurfaceVariant"
-              radii="Pill"
-              size="500"
               onClick={() => setZoom(zoom === 1 ? 2 : 1)}
             >
-              <Text size="B400" data-testid="image-viewer-zoom-label">
+              <Text size="B300" data-testid="image-viewer-zoom-label">
                 {Math.round(zoom * 100)}%
               </Text>
-            </Chip>
-            <IconButton
+            </button>
+            <button
+              type="button"
               data-testid="image-viewer-zoom-in"
-              variant={zoom > 1 ? 'Success' : 'SurfaceVariant'}
-              outlined={zoom > 1}
-              size="400"
-              radii="Pill"
+              className={css.ImageViewerZoomButton}
               onClick={zoomIn}
               aria-label="Zoom In"
             >
-              <Icon size="200" src={Icons.Plus} />
-            </IconButton>
-          </Box>
+              <Icon size="100" src={Icons.Plus} />
+            </button>
+          </div>
           <button
             type="button"
             data-testid="image-viewer-download-btn"
@@ -208,8 +202,8 @@ export const ImageViewer = as<'div', ImageViewerProps>(
             onClick={handleDownload}
             aria-label="Download"
           >
-            <Icon size="200" src={Icons.Download} />
-            <Text size="B400" as="span">
+            <Icon size="100" src={Icons.Download} />
+            <Text size="B300" as="span">
               Download
             </Text>
           </button>
@@ -231,7 +225,7 @@ export const ImageViewer = as<'div', ImageViewerProps>(
                 disabled={!hasPrev || navLoading}
                 aria-label="Previous image"
               >
-                <Icon size="400" src={Icons.ArrowLeft} />
+                <Icon size="300" src={Icons.ArrowLeft} />
               </button>
               <button
                 type="button"
@@ -240,7 +234,7 @@ export const ImageViewer = as<'div', ImageViewerProps>(
                 disabled={!hasNext || navLoading}
                 aria-label="Next image"
               >
-                <Icon size="400" src={Icons.ArrowRight} />
+                <Icon size="300" src={Icons.ArrowRight} />
               </button>
             </>
           )}
