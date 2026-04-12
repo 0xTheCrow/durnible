@@ -102,7 +102,7 @@ export default defineConfig({
       manifest: false,
       injectManifest: {
         globPatterns: ['**/*.{js,css,html}'],
-        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+        maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
       },
       devOptions: {
         enabled: true,

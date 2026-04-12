@@ -1,6 +1,6 @@
 # Durnible
 
-A Matrix client focusing primarily on providing a discord-like chat interface with an emphasis on ease-of-use and usability improvements to minimize friction for users new to e2ee chat systems. Forked from [Cinny](https://github.com/cinnyapp/cinny).
+A Matrix client focusing on providing a discord-like chat experience (without the dark patterns) with an emphasis on ease-of-use and usability improvements to minimize friction for users new to e2ee chat systems. Forked from [Cinny](https://github.com/cinnyapp/cinny).
 
 - [Contributing](./CONTRIBUTING.md)
 
