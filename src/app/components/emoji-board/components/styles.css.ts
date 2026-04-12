@@ -1,5 +1,6 @@
 import { createVar, style } from '@vanilla-extract/css';
 import { toRem, color, config, DefaultReset, FocusOutline } from 'folds';
+import { skeletonShimmer } from '../../../styles/Skeleton.css';
 
 /**
  * Layout
@@ -173,6 +174,16 @@ export const CustomEmojiImg = style([
     width: toRem(32),
     height: toRem(32),
     objectFit: 'contain',
+    color: 'transparent',
+    fontSize: 0,
+    borderRadius: config.radii.R300,
+
+    selectors: {
+      '&:not([data-image-loaded="true"])': skeletonShimmer,
+      '&[data-image-loaded="true"]': {
+        backgroundColor: 'transparent',
+      },
+    },
   },
 ]);
 
@@ -182,5 +193,15 @@ export const StickerImg = style([
     width: toRem(96),
     height: toRem(96),
     objectFit: 'contain',
+    color: 'transparent',
+    fontSize: 0,
+    borderRadius: config.radii.R400,
+
+    selectors: {
+      '&:not([data-image-loaded="true"])': skeletonShimmer,
+      '&[data-image-loaded="true"]': {
+        backgroundColor: 'transparent',
+      },
+    },
   },
 ]);

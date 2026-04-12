@@ -122,7 +122,10 @@
     "serialize-javascript": "7.0.5"
   },
   "lint-staged": {
-    "*.{ts,tsx,js,jsx,cjs,mjs}": "eslint",
-    "*": "prettier --write --ignore-unknown"
+    "*.{ts,tsx,js,jsx,cjs,mjs}": [
+      "prettier --write",
+      "eslint"
+    ],
+    "!(*.{ts,tsx,js,jsx,cjs,mjs})": "prettier --write --ignore-unknown"
   }
 }

@@ -148,9 +148,9 @@ export function AudioContent({
           <Text size="B300">{playing ? 'Pause' : 'Play'}</Text>
         </Chip>
 
-        <Text size="T200">{`${secondsToMinutesAndSeconds(
-          currentTime
-        )} / ${secondsToMinutesAndSeconds(duration)}`}</Text>
+        <Text size="T200">{`${secondsToMinutesAndSeconds(currentTime)} / ${
+          duration > 0 ? secondsToMinutesAndSeconds(duration) : '-:--'
+        }`}</Text>
       </>
     ),
     rightControl: (
