@@ -22,7 +22,7 @@ import {
   config,
 } from 'folds';
 import type { FormEventHandler, MouseEventHandler, ReactNode } from 'react';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import FocusTrap from 'focus-trap-react';
 import { useHover, useFocusWithin } from 'react-aria';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
@@ -720,6 +720,7 @@ export const Message = as<'div', MessageProps>(
     const { focusWithinProps } = useFocusWithin({ onFocusWithinChange: setHover });
     const [menuAnchor, setMenuAnchor] = useState<RectCords>();
     const [emojiBoardAnchor, setEmojiBoardAnchor] = useState<RectCords>();
+    const skipMenuReturnFocusRef = useRef(false);
     const openReactionViewer = useOpenReactionViewer();
     const [hiddenImages, setHiddenImages] = useAtom(hiddenImagesAtom);
 
@@ -1031,6 +1032,13 @@ export const Message = as<'div', MessageProps>(
                         isKeyForward: (evt: KeyboardEvent) => evt.key === 'ArrowDown',
                         isKeyBackward: (evt: KeyboardEvent) => evt.key === 'ArrowUp',
                         escapeDeactivates: stopPropagation,
+                        setReturnFocus: (previousFocusedElement) => {
+                          if (skipMenuReturnFocusRef.current) {
+                            skipMenuReturnFocusRef.current = false;
+                            return false;
+                          }
+                          return previousFocusedElement;
+                        },
                       }}
                     >
                       <Menu>
@@ -1094,6 +1102,7 @@ export const Message = as<'div', MessageProps>(
                               radii="300"
                               data-event-id={mEvent.getId()}
                               onClick={() => {
+                                skipMenuReturnFocusRef.current = true;
                                 onEditId(mEvent.getId());
                                 closeMenu();
                               }}

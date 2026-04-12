@@ -77,9 +77,6 @@ import { useSpoilerClickHandler } from '../../../hooks/useSpoilerClickHandler';
 import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
 import { BackRouteHandler } from '../../../components/BackRouteHandler';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
-import { useImagePackRooms } from '../../../hooks/useImagePackRooms';
-import { useImagePackMimetypes } from '../../../hooks/useImagePackMimetypes';
-import { roomToParentsAtom } from '../../../state/room/roomToParents';
 import { allRoomsAtom } from '../../../state/room-list/roomList';
 import { usePowerLevels } from '../../../hooks/usePowerLevels';
 import { usePowerLevelTags } from '../../../hooks/usePowerLevelTags';
@@ -242,10 +239,6 @@ function RoomNotificationsGroupComp({
   const mentionClickHandler = useMentionClickHandler(room.roomId);
   const spoilerClickHandler = useSpoilerClickHandler();
 
-  const roomToParents = useAtomValue(roomToParentsAtom);
-  const imagePackRooms = useImagePackRooms(room.roomId, roomToParents);
-  const imagePackMimetypes = useImagePackMimetypes(imagePackRooms);
-
   const linkifyOpts = useMemo<LinkifyOpts>(
     () => ({
       ...LINKIFY_OPTS,
@@ -263,18 +256,8 @@ function RoomNotificationsGroupComp({
         handleSpoilerClick: spoilerClickHandler,
         handleMentionClick: mentionClickHandler,
         pauseGifs,
-        getEmoticonMimetype: (mxcUrl) => imagePackMimetypes.get(mxcUrl),
       }),
-    [
-      mx,
-      room,
-      linkifyOpts,
-      mentionClickHandler,
-      spoilerClickHandler,
-      useAuthentication,
-      pauseGifs,
-      imagePackMimetypes,
-    ]
+    [mx, room, linkifyOpts, mentionClickHandler, spoilerClickHandler, useAuthentication, pauseGifs]
   );
 
   const renderMatrixEvent = useMatrixEventRenderer<[IRoomEvent, string, GetContentCallback]>(

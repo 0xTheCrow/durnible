@@ -218,7 +218,18 @@ export const MessageEditor = as<'div', MessageEditorProps>(
         const text = typeof body === 'string' ? body : '';
         editor.children = [{ type: BlockType.Paragraph, children: [{ text }] }];
         editor.onChange();
-        if (!mobileOrTablet()) alternateInputRef.current?.focus();
+        if (!mobileOrTablet()) {
+          const el = alternateInputRef.current;
+          if (el) {
+            el.focus();
+            const range = document.createRange();
+            range.selectNodeContents(el);
+            range.collapse(false);
+            const sel = window.getSelection();
+            sel?.removeAllRanges();
+            sel?.addRange(range);
+          }
+        }
       } else {
         const initialValue =
           typeof customHtml === 'string'

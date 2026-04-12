@@ -78,7 +78,6 @@ import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
 import { useIgnoredUsers } from '../../hooks/useIgnoredUsers';
 import { timelineSliderPositionAtom, timelineSliderVisibleAtom } from './TimelineSlider';
 import { useImagePackRooms } from '../../hooks/useImagePackRooms';
-import { useImagePackMimetypes } from '../../hooks/useImagePackMimetypes';
 import { useIsDirectRoom } from '../../hooks/useRoom';
 import { useOpenUserRoomProfile } from '../../state/hooks/userRoomProfile';
 import { useSpaceOptionally } from '../../hooks/useSpace';
@@ -477,15 +476,15 @@ export function RoomTimeline({
   const space = useSpaceOptionally();
 
   const imagePackRooms: Room[] = useImagePackRooms(room.roomId, roomToParents);
-  const imagePackMimetypes = useImagePackMimetypes(imagePackRooms);
 
   const [unreadInfo, setUnreadInfo] = useState(() => getRoomUnreadInfo(room, true));
   const readUptoEventIdRef = useRef<string>();
   readUptoEventIdRef.current = unreadInfo?.readUptoEventId;
 
   const atBottomAnchorRef = useRef<HTMLElement>(null);
-  const [atBottom, setAtBottom] = useState<boolean>(true);
-  const atBottomRef = useRef(true);
+  const willScrollToReadMarker = !!(unreadInfo?.inLiveTimeline && unreadInfo?.scrollTo);
+  const [atBottom, setAtBottom] = useState<boolean>(!willScrollToReadMarker);
+  const atBottomRef = useRef(!willScrollToReadMarker);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -522,18 +521,8 @@ export function RoomTimeline({
         handleSpoilerClick: spoilerClickHandler,
         handleMentionClick: mentionClickHandler,
         pauseGifs,
-        getEmoticonMimetype: (mxcUrl) => imagePackMimetypes.get(mxcUrl),
       }),
-    [
-      mx,
-      room,
-      linkifyOpts,
-      spoilerClickHandler,
-      mentionClickHandler,
-      useAuthentication,
-      pauseGifs,
-      imagePackMimetypes,
-    ]
+    [mx, room, linkifyOpts, spoilerClickHandler, mentionClickHandler, useAuthentication, pauseGifs]
   );
   const [timeline, setTimeline] = useState<Timeline>(() =>
     eventId ? getEmptyTimeline() : getInitialTimeline(room)

@@ -886,10 +886,10 @@ export function EmojiBoard({
   const [contextMenuEmojiInfo, setContextMenuEmojiInfo] = useState<EmojiItemInfo>();
 
   const handleGroupItemContextMenu: MouseEventHandler = (evt) => {
+    evt.preventDefault();
     const targetEl = targetFromEvent(evt.nativeEvent, 'button');
     const emojiInfo = targetEl && getEmojiItemInfo(targetEl);
     if (!emojiInfo) return;
-    evt.preventDefault();
     const rect = (targetEl as HTMLElement).getBoundingClientRect();
     setContextMenuAnchor({
       x: rect.x,

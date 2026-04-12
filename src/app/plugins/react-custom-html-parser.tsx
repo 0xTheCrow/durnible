@@ -13,7 +13,6 @@ import { ErrorBoundary } from 'react-error-boundary';
 import type { ChildNode } from 'domhandler';
 import * as css from '../styles/CustomHtml.css';
 import { AnimatedEmojiOverlay } from '../components/AnimatedEmojiOverlay';
-import { isAnimatedImageMimetype } from '../utils/mimeTypes';
 import {
   getMxIdLocalPart,
   getCanonicalAliasRoomId,
@@ -353,7 +352,6 @@ export const getReactCustomHtmlParser = (
     handleMentionClick?: ReactEventHandler<HTMLElement>;
     useAuthentication?: boolean;
     pauseGifs?: boolean;
-    getEmoticonMimetype?: (mxcUrl: string) => string | undefined;
   }
 ): HTMLReactParserOptions => {
   const opts: HTMLReactParserOptions = {
@@ -518,21 +516,14 @@ export const getReactCustomHtmlParser = (
             );
           }
           if (htmlSrc && 'data-mx-emoticon' in props) {
-            const mimetype = params.getEmoticonMimetype?.(props.src);
-            const isAnimated = isAnimatedImageMimetype(mimetype);
             return (
               <span className={css.Emoticon()}>
-                {isAnimated ? (
-                  <AnimatedEmojiOverlay
-                    {...props}
-                    className={css.EmoticonImg}
-                    src={htmlSrc}
-                    pauseGifs={params.pauseGifs ?? false}
-                  />
-                ) : (
-                  // eslint-disable-next-line jsx-a11y/alt-text
-                  <img {...props} className={css.EmoticonImg} src={htmlSrc} />
-                )}
+                <AnimatedEmojiOverlay
+                  {...props}
+                  className={css.EmoticonImg}
+                  src={htmlSrc}
+                  pauseGifs={params.pauseGifs ?? false}
+                />
               </span>
             );
           }

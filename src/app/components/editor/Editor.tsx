@@ -437,6 +437,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
                   }
                 }}
                 data-editable-name={editableName}
+                data-testid="editor-alternate-input"
                 className={css.AlternateInput}
                 contentEditable
                 suppressContentEditableWarning
@@ -485,6 +486,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
             >
               <Editable
                 data-editable-name={editableName}
+                data-testid="editor-slate"
                 className={css.EditorTextarea}
                 placeholder={placeholder}
                 renderPlaceholder={renderPlaceholder}

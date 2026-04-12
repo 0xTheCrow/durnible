@@ -54,6 +54,7 @@ Cinny is a Matrix chat client built with React, TypeScript, and Vite.
 - Don't patch matrix-js-sdk types with `as any` — find the correct type or fix the upstream typing.
 - Don't use `setTimeout` to work around race conditions in room state — use the SDK's event listeners.
 - Avoid `requestAnimationFrame` if possible — prefer CSS transitions/animations or React state-driven updates.
+- No comments by default. Aim for code that reads on its own — clear names, obvious control flow. Only add a comment when something is genuinely unclear and can't be fixed by renaming or restructuring: a non-obvious invariant, a workaround for a specific bug, or behavior that would surprise a reader. Don't narrate what the code does, don't leave JSDoc on internal helpers, don't reference the current task or PR.
 
 ## Testing
 

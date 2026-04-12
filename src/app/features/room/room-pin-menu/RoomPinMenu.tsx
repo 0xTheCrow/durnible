@@ -23,15 +23,11 @@ import {
 import type { Opts as LinkifyOpts } from 'linkifyjs';
 import type { HTMLReactParserOptions } from 'html-react-parser';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { useAtomValue } from 'jotai';
 import { useRoomPinnedEvents } from '../../../hooks/useRoomPinnedEvents';
 import * as css from './RoomPinMenu.css';
 import { SequenceCard } from '../../../components/sequence-card';
 import { useRoomEvent } from '../../../hooks/useRoomEvent';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
-import { useImagePackRooms } from '../../../hooks/useImagePackRooms';
-import { useImagePackMimetypes } from '../../../hooks/useImagePackMimetypes';
-import { roomToParentsAtom } from '../../../state/room/roomToParents';
 import {
   AvatarBase,
   DefaultPlaceholder,
@@ -302,10 +298,6 @@ export const RoomPinMenu = forwardRef<HTMLDivElement, RoomPinMenuProps>(
     const mentionClickHandler = useMentionClickHandler(room.roomId);
     const spoilerClickHandler = useSpoilerClickHandler();
 
-    const roomToParents = useAtomValue(roomToParentsAtom);
-    const imagePackRooms = useImagePackRooms(room.roomId, roomToParents);
-    const imagePackMimetypes = useImagePackMimetypes(imagePackRooms);
-
     const linkifyOpts = useMemo<LinkifyOpts>(
       () => ({
         ...LINKIFY_OPTS,
@@ -323,7 +315,6 @@ export const RoomPinMenu = forwardRef<HTMLDivElement, RoomPinMenuProps>(
           handleSpoilerClick: spoilerClickHandler,
           handleMentionClick: mentionClickHandler,
           pauseGifs,
-          getEmoticonMimetype: (mxcUrl) => imagePackMimetypes.get(mxcUrl),
         }),
       [
         mx,
@@ -333,7 +324,6 @@ export const RoomPinMenu = forwardRef<HTMLDivElement, RoomPinMenuProps>(
         spoilerClickHandler,
         useAuthentication,
         pauseGifs,
-        imagePackMimetypes,
       ]
     );
 

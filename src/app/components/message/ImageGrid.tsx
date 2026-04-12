@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import classNames from 'classnames';
 import { useSetAtom } from 'jotai';
 import { toRem } from 'folds';
@@ -13,14 +13,26 @@ import {
 import { BrokenContent } from './MsgTypeRenderers';
 import type { ImageViewerGalleryItem } from '../../state/imageViewer';
 import { imageViewerAtom } from '../../state/imageViewer';
+import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
+import { useElementSizeObserver } from '../../hooks/useElementSizeObserver';
 
-// Mirrors MImage: a single image has its rendered height capped at this many
-// pixels. Used here to derive each member's "single-image width" so the grid
-// can match the natural width a wide image would have used on its own.
+// Mirrors MImage's MAX_HEIGHT.
 const SINGLE_IMAGE_MAX_HEIGHT = 400;
-// Floor for the grid width — a group of small/portrait images shouldn't
-// shrink the whole grid below the default single-image footprint.
 const GRID_MIN_WIDTH = 400;
+// Must match `gap` in ImageGrid.css.ts.
+const GRID_GAP = 12;
+const DESKTOP_LAYOUT_INSET = 412;
+const DESKTOP_MIN_BUDGET = 200;
+const MOBILE_MAX_WIDTH = 500;
+
+const useBodyWidth = (): number => {
+  const [width, setWidth] = useState(() => document.body.clientWidth);
+  useElementSizeObserver(
+    useCallback(() => document.body, []),
+    useCallback((w) => setWidth(w), [])
+  );
+  return width;
+};
 
 const singleImageWidth = (content: IImageContent): number => {
   const w = content.info?.w || GRID_MIN_WIDTH;
@@ -28,42 +40,103 @@ const singleImageWidth = (content: IImageContent): number => {
   return h > SINGLE_IMAGE_MAX_HEIGHT ? Math.round(w * (SINGLE_IMAGE_MAX_HEIGHT / h)) : w;
 };
 
+type Count = 2 | 3 | 4 | 5 | 6;
+
+const buildDesktopStyle = (count: Count, widthBudget: number): React.CSSProperties => {
+  const gap = GRID_GAP;
+  const maxHeight = SINGLE_IMAGE_MAX_HEIGHT;
+  const rem = (n: number) => toRem(n);
+  const repeatTrack = (n: number, size: number) => Array(n).fill(rem(size)).join(' ');
+
+  switch (count) {
+    case 2: {
+      const cellSize = Math.min((widthBudget - gap) / 2, maxHeight);
+      return {
+        width: rem(2 * cellSize + gap),
+        height: rem(cellSize),
+        gridTemplateColumns: repeatTrack(2, cellSize),
+        gridTemplateRows: rem(cellSize),
+      };
+    }
+    case 3: {
+      const cellSize = Math.min((widthBudget - 2 * gap) / 3, (maxHeight - gap) / 2);
+      const heroSide = 2 * cellSize + gap;
+      return {
+        width: rem(3 * cellSize + 2 * gap),
+        height: rem(heroSide),
+        gridTemplateColumns: `${rem(heroSide)} ${rem(cellSize)}`,
+        gridTemplateRows: repeatTrack(2, cellSize),
+      };
+    }
+    case 4: {
+      const cellSize = Math.min((widthBudget - gap) / 2, (maxHeight - gap) / 2);
+      return {
+        width: rem(2 * cellSize + gap),
+        height: rem(2 * cellSize + gap),
+        gridTemplateColumns: repeatTrack(2, cellSize),
+        gridTemplateRows: repeatTrack(2, cellSize),
+      };
+    }
+    case 5: {
+      const cellSize = Math.min((widthBudget - 3 * gap) / 4, (maxHeight - gap) / 2);
+      const heroSide = 2 * cellSize + gap;
+      return {
+        width: rem(4 * cellSize + 3 * gap),
+        height: rem(heroSide),
+        gridTemplateColumns: `${rem(heroSide)} ${rem(cellSize)} ${rem(cellSize)}`,
+        gridTemplateRows: repeatTrack(2, cellSize),
+      };
+    }
+    case 6: {
+      const cellSize = Math.min((widthBudget - 2 * gap) / 3, (maxHeight - gap) / 2);
+      return {
+        width: rem(3 * cellSize + 2 * gap),
+        height: rem(2 * cellSize + gap),
+        gridTemplateColumns: repeatTrack(3, cellSize),
+        gridTemplateRows: repeatTrack(2, cellSize),
+      };
+    }
+    default:
+      throw new Error(`Unsupported image grid count: ${count}`);
+  }
+};
+
+const buildMobileStyle = (count: Count): React.CSSProperties => {
+  const rowsForCount: Record<Count, number> = { 2: 1, 3: 2, 4: 2, 5: 3, 6: 3 };
+  return {
+    width: '100vw',
+    maxWidth: `min(100%, ${toRem(MOBILE_MAX_WIDTH)})`,
+    gridTemplateColumns: '1fr 1fr',
+    gridTemplateRows: `repeat(${rowsForCount[count]}, auto)`,
+  };
+};
+
 type ImageGridProps = {
-  /** Image contents in chronological order. Must contain 2-6 entries. */
   contents: IImageContent[];
   autoPlay?: boolean;
 };
 
-/**
- * Renders 2-6 image messages as a single grid (max 3 wide x 2 tall).
- *
- * Layouts:
- * - 2 → side by side
- * - 3 → image 1 spans the left column at full height, images 2 and 3 stack on the right
- * - 4 → 2x2 tiled
- * - 5 → image 1 spans the left column at full height, images 2-5 form a 2x2 sub-grid on the right
- * - 6 → 3x2 tiled
- *
- * The grid's width matches the widest single-image width across the group
- * (with a floor of GRID_MIN_WIDTH), so a group containing a wide landscape
- * has the same horizontal footprint that landscape would have alone. Cells
- * use object-fit: cover so images fill their slot uniformly.
- */
 export function ImageGrid({ contents, autoPlay }: ImageGridProps) {
-  // Render up to the supported max in case a caller passes more.
   const cells = contents.slice(0, 6);
-  const count = cells.length as 2 | 3 | 4 | 5 | 6;
-  // Odd counts (3, 5) anchor the first image in a full-height left column;
-  // the remaining (even) images tile to its right.
-  const firstSpansFullColumn = count === 3 || count === 5;
+  const count = cells.length as Count;
+  const firstIsHero = count === 3 || count === 5;
 
-  const gridWidth = Math.max(GRID_MIN_WIDTH, ...cells.map(singleImageWidth));
+  const isMobile = useScreenSizeContext() === ScreenSize.Mobile;
+  const bodyWidth = useBodyWidth();
+  let gridStyle: React.CSSProperties;
+  if (isMobile) {
+    gridStyle = buildMobileStyle(count);
+  } else {
+    const naturalBudget = Math.max(GRID_MIN_WIDTH, ...cells.map(singleImageWidth));
+    const desktopBudget = Math.min(
+      naturalBudget,
+      Math.max(DESKTOP_MIN_BUDGET, bodyWidth - DESKTOP_LAYOUT_INSET)
+    );
+    gridStyle = buildDesktopStyle(count, desktopBudget);
+  }
 
   const setViewerState = useSetAtom(imageViewerAtom);
 
-  // Pre-build the gallery items list once. The viewer resolves http urls
-  // lazily for items the user navigates to (the clicked cell's resolved
-  // src is supplied directly via onView, so the initial display is instant).
   const galleryItems: ImageViewerGalleryItem[] = useMemo(
     () =>
       cells.map((content) => ({
@@ -87,11 +160,12 @@ export function ImageGrid({ contents, autoPlay }: ImageGridProps) {
   );
 
   return (
-    <div className={css.ImageGrid({ count })} style={{ width: toRem(gridWidth) }}>
+    <div className={css.ImageGrid} style={gridStyle}>
       {cells.map((content, idx) => {
+        const heroCell = firstIsHero && idx === 0;
         const cellClassName = classNames(
           css.ImageGridCell,
-          firstSpansFullColumn && idx === 0 && css.ImageGridCellSpanFullColumn
+          heroCell && (isMobile ? css.ImageGridCellSpanFullRow : css.ImageGridCellSpanFullColumn)
         );
         const mxcUrl = content.file?.url ?? content.url;
         if (typeof mxcUrl !== 'string') {

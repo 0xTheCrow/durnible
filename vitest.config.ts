@@ -10,5 +10,6 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.test.{ts,tsx}'],
     css: true,
+    silent: 'passed-only',
   },
 });
