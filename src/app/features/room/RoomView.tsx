@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef } from 'react';
 import { Box, Text, config } from 'folds';
-import { Direction, EventType, MatrixError, Room } from 'matrix-js-sdk';
+import type { Room } from 'matrix-js-sdk';
+import { Direction, EventType, MatrixError } from 'matrix-js-sdk';
 import { ReactEditor } from 'slate-react';
 import { isKeyHotkey } from 'is-hotkey';
 import { useStateEvent } from '../../hooks/useStateEvent';
@@ -14,7 +15,7 @@ import { RoomViewTyping } from './RoomViewTyping';
 import { RoomTombstone } from './RoomTombstone';
 import { RoomInput } from './RoomInput';
 import { TimelineSlider } from './TimelineSlider';
-import { /*RoomViewFollowing,*/ RoomViewFollowingPlaceholder } from './RoomViewFollowing';
+import { /* RoomViewFollowing, */ RoomViewFollowingPlaceholder } from './RoomViewFollowing';
 import { Page } from '../../components/page';
 import { RoomViewHeader } from './RoomViewHeader';
 import { useKeyDown } from '../../hooks/useKeyDown';
@@ -35,10 +36,8 @@ const shouldFocusMessageField = (evt: KeyboardEvent): boolean => {
     return false;
   }
 
-  // do not focus on F keys
   if (FN_KEYS_REGEX.test(code)) return false;
 
-  // do not focus on numlock/scroll lock
   if (
     code.startsWith('OS') ||
     code.startsWith('Meta') ||
@@ -66,7 +65,7 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
   const alternateInputRef = useRef<HTMLDivElement>(null);
   const roomViewRef = useRef<HTMLDivElement>(null);
 
-  const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
+  const [_hideActivity] = useSetting(settingsAtom, 'hideActivity');
   const [alternateInput] = useSetting(settingsAtom, 'alternateInput');
   const screenSize = useScreenSizeContext();
 
@@ -86,16 +85,18 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
           mx.timestampToEvent(room.roomId, floorTs, Direction.Backward).catch(() => undefined),
         ]);
 
-        if (!fwd && !bwd) {
-          throw new MatrixError({ errcode: 'M_NOT_FOUND', error: 'No events found near timestamp' });
+        if (fwd && bwd) {
+          const fwdDist = Math.abs(fwd.origin_server_ts - floorTs);
+          const bwdDist = Math.abs(bwd.origin_server_ts - floorTs);
+          return bwdDist <= fwdDist ? bwd.event_id : fwd.event_id;
         }
+        if (fwd) return fwd.event_id;
+        if (bwd) return bwd.event_id;
 
-        if (!bwd) return fwd!.event_id;
-        if (!fwd) return bwd.event_id;
-
-        const fwdDist = Math.abs(fwd.origin_server_ts - floorTs);
-        const bwdDist = Math.abs(bwd.origin_server_ts - floorTs);
-        return bwdDist <= fwdDist ? bwd.event_id : fwd.event_id;
+        throw new MatrixError({
+          errcode: 'M_NOT_FOUND',
+          error: 'No events found near timestamp',
+        });
       },
       [mx, room]
     )
@@ -103,13 +104,15 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
 
   const handleJumpToTimestamp = useCallback(
     (ts: number) => {
-      timestampToEvent(ts).then((evId) => {
-        if (alive()) {
-          navigateRoom(room.roomId, evId);
-        }
-      }).catch(() => {
-        // error state is handled by useAsyncCallback
-      });
+      timestampToEvent(ts)
+        .then((evId) => {
+          if (alive()) {
+            navigateRoom(room.roomId, evId);
+          }
+        })
+        .catch(() => {
+          // error state is handled by useAsyncCallback
+        });
     },
     [timestampToEvent, alive, navigateRoom, room.roomId]
   );
@@ -211,7 +214,7 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
           )}
         </div>
         {
-          <RoomViewFollowingPlaceholder/>
+          <RoomViewFollowingPlaceholder />
           /*
           hideActivity ? <RoomViewFollowingPlaceholder /> : <RoomViewFollowing room={room} />
           */

@@ -6,14 +6,20 @@ function parseCandidates(raw: string): string[] {
     try {
       const parsed: unknown = JSON.parse(trimmed);
       if (Array.isArray(parsed)) {
-        return parsed.map(String).map((s) => s.trim()).filter(Boolean);
+        return parsed
+          .map(String)
+          .map((s) => s.trim())
+          .filter(Boolean);
       }
     } catch {
       // malformed JSON — fall through to plain-string handling
     }
   }
   // Plain string: single host or comma-separated list (legacy / simple config)
-  return trimmed.split(',').map((s) => s.trim()).filter(Boolean);
+  return trimmed
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 export const NITTER_CANDIDATES: string[] = parseCandidates(

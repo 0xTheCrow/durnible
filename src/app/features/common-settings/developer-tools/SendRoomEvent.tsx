@@ -1,5 +1,7 @@
-import React, { useCallback, useRef, useState, FormEventHandler, useEffect } from 'react';
-import { MatrixError } from 'matrix-js-sdk';
+import type { FormEventHandler } from 'react';
+import React, { useCallback, useRef, useState, useEffect } from 'react';
+import type { MatrixError } from 'matrix-js-sdk';
+import type { StateEvents, TimelineEvents } from 'matrix-js-sdk/lib/@types/event';
 import {
   Box,
   Chip,
@@ -51,9 +53,18 @@ export function SendRoomEvent({ type, stateKey, requestClose }: SendRoomEventPro
     useCallback(
       (evtType, evtStateKey, evtContent) => {
         if (typeof evtStateKey === 'string') {
-          return mx.sendStateEvent(room.roomId, evtType as any, evtContent, evtStateKey);
+          return mx.sendStateEvent(
+            room.roomId,
+            evtType as keyof StateEvents,
+            evtContent as StateEvents[keyof StateEvents],
+            evtStateKey
+          );
         }
-        return mx.sendEvent(room.roomId, evtType as any, evtContent);
+        return mx.sendEvent(
+          room.roomId,
+          evtType as keyof TimelineEvents,
+          evtContent as TimelineEvents[keyof TimelineEvents]
+        );
       },
       [mx, room]
     )

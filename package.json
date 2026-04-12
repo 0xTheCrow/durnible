@@ -11,7 +11,7 @@
     "start": "vite",
     "build": "vite build",
     "lint": "npm run check:eslint && npm run check:prettier",
-    "check:eslint": "eslint src/*",
+    "check:eslint": "eslint src",
     "check:prettier": "prettier --check .",
     "fix:prettier": "prettier --write .",
     "typecheck": "tsc --noEmit",
@@ -105,17 +105,24 @@
     "eslint-plugin-jsx-a11y": "6.6.1",
     "eslint-plugin-react": "7.31.11",
     "eslint-plugin-react-hooks": "4.6.0",
+    "focus-trap": "7.6.4",
     "husky": "9.1.7",
     "jsdom": "29.0.1",
+    "lint-staged": "16.4.0",
     "prettier": "2.8.1",
     "typescript": "5.7.3",
     "vite": "5.4.21",
     "vite-plugin-pwa": "0.19.8",
     "vite-plugin-static-copy": "4.0.1",
     "vite-plugin-top-level-await": "1.4.4",
-    "vitest": "4.1.0"
+    "vitest": "4.1.0",
+    "workbox-precaching": "7.4.0"
   },
   "overrides": {
     "serialize-javascript": "7.0.5"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,cjs,mjs}": "eslint",
+    "*": "prettier --write --ignore-unknown"
   }
 }

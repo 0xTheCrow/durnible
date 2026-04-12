@@ -84,10 +84,8 @@ export function useSwipeDrawer() {
       if (dx < -MIN_CLOSE_DISTANCE) {
         setOpen(false);
       }
-    } else {
-      if (dx > MIN_OPEN_DISTANCE) {
-        setOpen(true);
-      }
+    } else if (dx > MIN_OPEN_DISTANCE) {
+      setOpen(true);
     }
 
     setDragOffset(null);

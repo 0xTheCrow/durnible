@@ -1,18 +1,12 @@
-import React, {
-  ChangeEventHandler,
-  MouseEventHandler,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import type { ChangeEventHandler, MouseEventHandler } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import type { IconSrc, RectCords } from 'folds';
 import {
   Box,
   Chip,
   Text,
   Icon,
   Icons,
-  IconSrc,
   Line,
   config,
   PopOut,
@@ -24,7 +18,6 @@ import {
   Button,
   Input,
   Badge,
-  RectCords,
 } from 'folds';
 import { SearchOrderBy } from 'matrix-js-sdk';
 import FocusTrap from 'focus-trap-react';
@@ -33,12 +26,10 @@ import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { getMemberDisplayName, joinRuleToIconSrc } from '../../utils/room';
 import { getMxIdLocalPart } from '../../utils/matrix';
 import { factoryRoomIdByAtoZ } from '../../utils/sort';
-import {
-  SearchItemStrGetter,
-  UseAsyncSearchOptions,
-  useAsyncSearch,
-} from '../../hooks/useAsyncSearch';
-import { DebounceOptions, useDebounce } from '../../hooks/useDebounce';
+import type { SearchItemStrGetter, UseAsyncSearchOptions } from '../../hooks/useAsyncSearch';
+import { useAsyncSearch } from '../../hooks/useAsyncSearch';
+import type { DebounceOptions } from '../../hooks/useDebounce';
+import { useDebounce } from '../../hooks/useDebounce';
 import { VirtualTile } from '../../components/virtualizer';
 import { stopPropagation } from '../../utils/keyboard';
 
@@ -467,12 +458,7 @@ function DateRangeButton({ startTs, endTs, onStartTsChange, onEndTsChange }: Dat
                     />
                   </Box>
                 </Box>
-                <Button
-                  size="300"
-                  variant="Secondary"
-                  radii="300"
-                  onClick={handleDone}
-                >
+                <Button size="300" variant="Secondary" radii="300" onClick={handleDone}>
                   <Text size="B300">Done</Text>
                 </Button>
               </Box>
@@ -489,7 +475,9 @@ function DateRangeButton({ startTs, endTs, onStartTsChange, onEndTsChange }: Dat
         >
           <Text size="T200">
             {!activePreset
-              ? `${new Date(startTs).toLocaleDateString()} to ${new Date(endTs).toLocaleDateString()}`
+              ? `${new Date(startTs).toLocaleDateString()} to ${new Date(
+                  endTs
+                ).toLocaleDateString()}`
               : 'Custom'}
           </Text>
         </Chip>
@@ -521,7 +509,10 @@ type SearchFiltersProps = {
 
 export function SearchFilters({
   defaultRoomsFilterName,
-  allowGlobal,
+  // Reserved for the commented-out global-search checkbox below; plumbed
+  // through from page → MessageSearch → here so re-enabling is a one-line
+  // uncomment.
+  allowGlobal: _allowGlobal,
   roomList,
   selectedRooms,
   onSelectedRoomsChange,
@@ -554,7 +545,7 @@ export function SearchFilters({
         >
           <Text size="T200">{defaultRoomsFilterName}</Text>
         </Chip>
-        {/*allowGlobal && (
+        {/* allowGlobal && (
           <Chip
             variant={global ? 'Primary' : 'Surface'}
             aria-pressed={global}
@@ -564,7 +555,7 @@ export function SearchFilters({
           >
             <Text size="T200">Global</Text>
           </Chip>
-        )*/}
+        ) */}
         <Line
           style={{ margin: `${config.space.S100} 0` }}
           direction="Vertical"
@@ -599,27 +590,33 @@ export function SearchFilters({
           onChange={onSelectedRoomsChange}
         />
         <Box grow="Yes" data-spacing-node />
-        {hasEncryptedRooms && startTs !== undefined && endTs !== undefined && onStartTsChange && onEndTsChange && (
-          <>
-            <DateRangeButton
-              startTs={startTs}
-              endTs={endTs}
-              onStartTsChange={onStartTsChange}
-              onEndTsChange={onEndTsChange}
-            />
-            <Line
-              style={{ margin: `${config.space.S100} 0` }}
-              direction="Vertical"
-              variant="Surface"
-              size="300"
-            />
-          </>
-        )}
+        {hasEncryptedRooms &&
+          startTs !== undefined &&
+          endTs !== undefined &&
+          onStartTsChange &&
+          onEndTsChange && (
+            <>
+              <DateRangeButton
+                startTs={startTs}
+                endTs={endTs}
+                onStartTsChange={onStartTsChange}
+                onEndTsChange={onEndTsChange}
+              />
+              <Line
+                style={{ margin: `${config.space.S100} 0` }}
+                direction="Vertical"
+                variant="Surface"
+                size="300"
+              />
+            </>
+          )}
         <OrderButton order={order} onChange={onOrderChange} />
       </Box>
       {selectedSenders && selectedSenders.length > 0 && (
         <Box gap="200" wrap="Wrap" alignItems="Center">
-          <Text size="T200" priority="300">From:</Text>
+          <Text size="T200" priority="300">
+            From:
+          </Text>
           {selectedSenders.map((userId) => {
             let displayName: string | undefined;
             for (const roomId of roomList) {
@@ -646,7 +643,9 @@ export function SearchFilters({
       )}
       {selectedHasTypes && selectedHasTypes.length > 0 && (
         <Box gap="200" wrap="Wrap" alignItems="Center">
-          <Text size="T200" priority="300">Has:</Text>
+          <Text size="T200" priority="300">
+            Has:
+          </Text>
           {selectedHasTypes.map((hasType) => {
             const iconMap: Record<string, IconSrc> = {
               image: Icons.Photo,

@@ -1,16 +1,19 @@
-import React, { KeyboardEvent as ReactKeyboardEvent, useCallback, useEffect } from 'react';
-import { Editor } from 'slate';
+import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
+import React, { useCallback, useEffect } from 'react';
+import type { Editor } from 'slate';
 import { Avatar, Icon, Icons, MenuItem, Text } from 'folds';
-import { JoinRule, MatrixClient } from 'matrix-js-sdk';
+import type { MatrixClient } from 'matrix-js-sdk';
+import { JoinRule } from 'matrix-js-sdk';
 import { useAtomValue } from 'jotai';
 
 import { createMentionElement, moveCursor, replaceWithElement } from '../utils';
 import { getDirectRoomAvatarUrl } from '../../../utils/room';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
-import { AutocompleteQuery } from './autocompleteQuery';
+import type { AutocompleteQuery } from './autocompleteQuery';
 import { AutocompleteMenu } from './AutocompleteMenu';
 import { getMxIdServer, isRoomAlias } from '../../../utils/matrix';
-import { UseAsyncSearchOptions, useAsyncSearch } from '../../../hooks/useAsyncSearch';
+import type { UseAsyncSearchOptions } from '../../../hooks/useAsyncSearch';
+import { useAsyncSearch } from '../../../hooks/useAsyncSearch';
 import { onTabPress } from '../../../utils/keyboard';
 import { useKeyDown } from '../../../hooks/useKeyDown';
 import { mDirectAtom } from '../../../state/mDirectList';

@@ -1,5 +1,7 @@
-import React, { MouseEventHandler, forwardRef, useState } from 'react';
+import type { MouseEventHandler } from 'react';
+import React, { forwardRef, useState } from 'react';
 import FocusTrap from 'focus-trap-react';
+import type { RectCords } from 'folds';
 import {
   Box,
   Avatar,
@@ -15,14 +17,14 @@ import {
   config,
   Line,
   PopOut,
-  RectCords,
   Badge,
   Spinner,
 } from 'folds';
-import { OverlayModal } from '../../components/OverlayModal';
 import { useNavigate } from 'react-router-dom';
-import { JoinRule, Room } from 'matrix-js-sdk';
-import { useAtom, useAtomValue, useSetAtom } from 'jotai';
+import type { Room } from 'matrix-js-sdk';
+import { JoinRule } from 'matrix-js-sdk';
+import { useAtom, useAtomValue } from 'jotai';
+import { OverlayModal } from '../../components/OverlayModal';
 
 import { useStateEvent } from '../../hooks/useStateEvent';
 import { PageHeader } from '../../components/page';
@@ -37,7 +39,7 @@ import { settingsAtom } from '../../state/settings';
 import { useSpaceOptionally } from '../../hooks/useSpace';
 import { getHomeSearchPath, getSpaceSearchPath, withSearchParam } from '../../pages/pathUtils';
 import { getCanonicalAliasOrRoomId, isRoomAlias, mxcUrlToHttp } from '../../utils/matrix';
-import { _SearchPathSearchParams } from '../../pages/paths';
+import type { _SearchPathSearchParams } from '../../pages/paths';
 import * as css from './RoomViewHeader.css';
 import { useRoomUnread } from '../../state/hooks/unread';
 import { usePowerLevelsContext } from '../../hooks/usePowerLevels';
@@ -191,10 +193,13 @@ const RoomMenu = forwardRef<HTMLDivElement, RoomMenuProps>(({ room, requestClose
                     escapeDeactivates: stopPropagation,
                   }}
                 >
-                  <RoomPinMenu room={room} requestClose={() => {
-                    setPinMenuAnchor(undefined);
-                    requestClose();
-                  }} />
+                  <RoomPinMenu
+                    room={room}
+                    requestClose={() => {
+                      setPinMenuAnchor(undefined);
+                      requestClose();
+                    }}
+                  />
                 </FocusTrap>
               }
             />
@@ -401,11 +406,11 @@ export function RoomViewHeader() {
                 {(viewTopic, setViewTopic) => (
                   <>
                     <OverlayModal open={viewTopic} requestClose={() => setViewTopic(false)}>
-                          <RoomTopicViewer
-                            name={name}
-                            topic={topic}
-                            requestClose={() => setViewTopic(false)}
-                          />
+                      <RoomTopicViewer
+                        name={name}
+                        topic={topic}
+                        requestClose={() => setViewTopic(false)}
+                      />
                     </OverlayModal>
                     <Text
                       as="button"

@@ -1,5 +1,7 @@
-import { Box, ContainerColor, Text } from 'folds';
-import React, { ReactNode } from 'react';
+import type { ContainerColor } from 'folds';
+import { Box, Text } from 'folds';
+import type { ReactNode } from 'react';
+import React from 'react';
 import classNames from 'classnames';
 import { BreakWord } from '../../styles/Text.css';
 import { ContainerColor as ContainerClr } from '../../styles/ContainerColor.css';

@@ -1,7 +1,9 @@
-import React, { ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { MatrixClient } from 'matrix-js-sdk';
-import { ClientConfig, ClientConfigProvider } from '../app/hooks/useClientConfig';
+import type { MatrixClient } from 'matrix-js-sdk';
+import type { ClientConfig } from '../app/hooks/useClientConfig';
+import { ClientConfigProvider } from '../app/hooks/useClientConfig';
 import { ScreenSize, ScreenSizeProvider } from '../app/hooks/useScreenSize';
 import { MatrixClientProvider } from '../app/hooks/useMatrixClient';
 import { SpecVersionsProvider } from '../app/hooks/useSpecVersions';
@@ -31,11 +33,12 @@ export function TestWrapper({
   screenSize = ScreenSize.Desktop,
 }: TestWrapperProps) {
   return (
-    <MemoryRouter initialEntries={[route]} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <MemoryRouter
+      initialEntries={[route]}
+      future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+    >
       <ScreenSizeProvider value={screenSize}>
-        <ClientConfigProvider value={clientConfig}>
-          {children}
-        </ClientConfigProvider>
+        <ClientConfigProvider value={clientConfig}>{children}</ClientConfigProvider>
       </ScreenSizeProvider>
     </MemoryRouter>
   );
@@ -45,18 +48,12 @@ type MatrixTestWrapperProps = TestWrapperProps & {
   matrixClient?: Partial<MatrixClient>;
 };
 
-export function MatrixTestWrapper({
-  children,
-  matrixClient,
-  ...rest
-}: MatrixTestWrapperProps) {
+export function MatrixTestWrapper({ children, matrixClient, ...rest }: MatrixTestWrapperProps) {
   const mx = matrixClient ?? createMockMatrixClient();
   return (
     <TestWrapper {...rest}>
       <SpecVersionsProvider value={DEFAULT_SPEC_VERSIONS}>
-        <MatrixClientProvider value={mx as MatrixClient}>
-          {children}
-        </MatrixClientProvider>
+        <MatrixClientProvider value={mx as MatrixClient}>{children}</MatrixClientProvider>
       </SpecVersionsProvider>
     </TestWrapper>
   );

@@ -1,4 +1,4 @@
-import { Position, RectCords } from 'folds';
+import type { Position, RectCords } from 'folds';
 import { atom } from 'jotai';
 
 export type UserRoomProfileState = {

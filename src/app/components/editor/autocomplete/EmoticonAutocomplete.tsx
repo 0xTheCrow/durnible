@@ -1,21 +1,25 @@
-import React, { KeyboardEvent as ReactKeyboardEvent, useEffect, useMemo } from 'react';
-import { Editor } from 'slate';
+import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
+import React, { useEffect, useMemo } from 'react';
+import type { Editor } from 'slate';
 import { Box, MenuItem, Text, toRem } from 'folds';
-import { Room } from 'matrix-js-sdk';
+import type { Room } from 'matrix-js-sdk';
 
-import { AutocompleteQuery } from './autocompleteQuery';
+import type { AutocompleteQuery } from './autocompleteQuery';
 import { AutocompleteMenu } from './AutocompleteMenu';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
-import { UseAsyncSearchOptions, useAsyncSearch } from '../../../hooks/useAsyncSearch';
+import type { UseAsyncSearchOptions } from '../../../hooks/useAsyncSearch';
+import { useAsyncSearch } from '../../../hooks/useAsyncSearch';
 import { onTabPress } from '../../../utils/keyboard';
 import { createEmoticonElement, moveCursor, replaceWithElement } from '../utils';
 import { useRecentEmoji } from '../../../hooks/useRecentEmoji';
 import { useRelevantImagePacks } from '../../../hooks/useImagePacks';
-import { IEmoji, emojis } from '../../../plugins/emoji';
+import type { IEmoji } from '../../../plugins/emoji';
+import { emojis } from '../../../plugins/emoji';
 import { useKeyDown } from '../../../hooks/useKeyDown';
 import { mxcUrlToHttp } from '../../../utils/matrix';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
-import { ImageUsage, PackImageReader } from '../../../plugins/custom-emoji';
+import type { PackImageReader } from '../../../plugins/custom-emoji';
+import { ImageUsage } from '../../../plugins/custom-emoji';
 import { getEmoticonSearchStr } from '../../../plugins/utils';
 
 type EmoticonCompleteHandler = (key: string, shortcode: string) => void;

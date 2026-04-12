@@ -1,4 +1,5 @@
-import { RecipeVariants, recipe } from '@vanilla-extract/recipes';
+import type { RecipeVariants } from '@vanilla-extract/recipes';
+import { recipe } from '@vanilla-extract/recipes';
 import { style } from '@vanilla-extract/css';
 import { DefaultReset, config } from 'folds';
 
@@ -45,4 +46,3 @@ export const JumpToLatestFloat = style({
 });
 
 export type TimelineFloatVariants = RecipeVariants<typeof TimelineFloat>;
-

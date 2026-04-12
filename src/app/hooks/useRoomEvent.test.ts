@@ -1,7 +1,9 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
-import React, { ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { MatrixEvent, MatrixEventEvent, Room } from 'matrix-js-sdk';
+import type { MatrixEvent, Room } from 'matrix-js-sdk';
+import { MatrixEventEvent } from 'matrix-js-sdk';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { EventEmitter } from 'events';
 import { useRoomEvent } from './useRoomEvent';
@@ -72,11 +74,7 @@ function createWrapper(mx: Partial<ReturnType<typeof createMockMatrixClient>>) {
     return React.createElement(
       QueryClientProvider,
       { client: queryClient },
-      React.createElement(
-        MatrixClientProvider,
-        { value: mx as any },
-        children
-      )
+      React.createElement(MatrixClientProvider, { value: mx as any }, children)
     );
   };
 }
@@ -107,8 +105,8 @@ describe('useRoomEvent', () => {
       id: '$edit',
       content: {
         'm.new_content': { body: 'edited', msgtype: 'm.text' },
-        'body': '* edited',
-        'msgtype': 'm.text',
+        body: '* edited',
+        msgtype: 'm.text',
       },
     });
 
@@ -144,10 +142,9 @@ describe('useRoomEvent', () => {
     });
     const getLocally = vi.fn(() => event);
 
-    const { result } = renderHook(
-      () => useRoomEvent(room as unknown as Room, '$enc', getLocally),
-      { wrapper: createWrapper(mx) }
-    );
+    const { result } = renderHook(() => useRoomEvent(room as unknown as Room, '$enc', getLocally), {
+      wrapper: createWrapper(mx),
+    });
 
     // Initially empty content (not yet decrypted)
     expect(result.current?.getContent()).toEqual({});
@@ -192,8 +189,8 @@ describe('useRoomEvent', () => {
     // Simulate the replacing event finishing decryption
     const decryptedEditContent = {
       'm.new_content': { body: 'edited secret', msgtype: 'm.text' },
-      'body': '* edited secret',
-      'msgtype': 'm.text',
+      body: '* edited secret',
+      msgtype: 'm.text',
     };
     (replacingEvt.getContent as ReturnType<typeof vi.fn>).mockReturnValue(decryptedEditContent);
 
@@ -234,10 +231,9 @@ describe('useRoomEvent', () => {
       },
     }));
 
-    const { result } = renderHook(
-      () => useRoomEvent(room as unknown as Room, '$fetched'),
-      { wrapper: createWrapper(mx) }
-    );
+    const { result } = renderHook(() => useRoomEvent(room as unknown as Room, '$fetched'), {
+      wrapper: createWrapper(mx),
+    });
 
     await waitFor(() => {
       expect(result.current).not.toBeUndefined();

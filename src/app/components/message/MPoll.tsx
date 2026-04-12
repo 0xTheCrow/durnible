@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo } from 'react';
 import { Box, Text, color } from 'folds';
-import { EventTimelineSet, MatrixClient, MatrixEvent, RelationType } from 'matrix-js-sdk';
+import type { EventTimelineSet, MatrixClient, MatrixEvent } from 'matrix-js-sdk';
+import { RelationType } from 'matrix-js-sdk';
 import { MessageEvent } from '../../../types/matrix/room';
 import * as css from './MPoll.css';
 
@@ -9,6 +10,8 @@ type PollAnswer = {
   'org.matrix.msc1767.text'?: string;
   'org.matrix.msc3381.v2.text'?: string;
   'm.text'?: string;
+  // legacy fallback from older poll spec versions
+  body?: string;
 };
 
 type PollContent = {
@@ -45,7 +48,7 @@ function getAnswerText(answer: PollAnswer): string {
     answer['org.matrix.msc1767.text'] ??
     answer['org.matrix.msc3381.v2.text'] ??
     answer['m.text'] ??
-    (answer as any).body ??
+    answer.body ??
     answer.id
   );
 }
@@ -85,9 +88,7 @@ function aggregateVotes(
   const counts: VoteCounts = new Map();
   for (const [userId, evt] of latestByUser) {
     const content = evt.getContent();
-    const responseData =
-      content['org.matrix.msc3381.poll.response'] ??
-      content['m.poll.response'];
+    const responseData = content['org.matrix.msc3381.poll.response'] ?? content['m.poll.response'];
     const answers: string[] = responseData?.answers ?? [];
     for (const answerId of answers) {
       if (!validAnswerIds.has(answerId)) continue;
@@ -108,9 +109,12 @@ type MPollProps = {
 
 export function MPoll({ mEvent, timelineSet, mx }: MPollProps) {
   const eventId = mEvent.getId();
-  const pollContent = getPollContent(mEvent);
+  // Memoize so the `?? []` fallback below doesn't manufacture a fresh empty
+  // array every render — that defeats the downstream useMemos that depend on
+  // `answers` (and would also break referential equality for child re-renders).
+  const pollContent = useMemo(() => getPollContent(mEvent), [mEvent]);
 
-  const answers = pollContent?.answers ?? [];
+  const answers = useMemo(() => pollContent?.answers ?? [], [pollContent]);
   const question = pollContent ? getQuestionText(pollContent) : 'Poll';
   const kind = pollContent?.kind ?? 'org.matrix.msc3381.v2.disclosed';
   const isUndisclosed = UNDISCLOSED_KINDS.includes(kind);
@@ -127,7 +131,7 @@ export function MPoll({ mEvent, timelineSet, mx }: MPollProps) {
       timelineSet.relations.getChildEventsForEvent(
         eventId,
         RelationType.Reference,
-        'm.poll.response' as any
+        'm.poll.response'
       )
     : undefined;
 
@@ -138,23 +142,16 @@ export function MPoll({ mEvent, timelineSet, mx }: MPollProps) {
         RelationType.Reference,
         MessageEvent.PollEnd
       ) ??
-      timelineSet.relations.getChildEventsForEvent(
-        eventId,
-        RelationType.Reference,
-        'm.poll.end' as any
-      )
+      timelineSet.relations.getChildEventsForEvent(eventId, RelationType.Reference, 'm.poll.end')
     : undefined;
 
   const endEvents = endRelations?.getRelations() ?? [];
   const isEnded = endEvents.length > 0;
-  const endTs = isEnded
-    ? Math.min(...endEvents.map((e) => e.getTs()))
-    : undefined;
+  const endTs = isEnded ? Math.min(...endEvents.map((e) => e.getTs())) : undefined;
 
-  const responseEvents = responseRelations?.getRelations() ?? [];
   const voteCounts = useMemo(
-    () => aggregateVotes(responseEvents, validAnswerIds, endTs),
-    [responseEvents, validAnswerIds, endTs]
+    () => aggregateVotes(responseRelations?.getRelations() ?? [], validAnswerIds, endTs),
+    [responseRelations, validAnswerIds, endTs]
   );
 
   const totalVotes = useMemo(() => {
@@ -181,7 +178,9 @@ export function MPoll({ mEvent, timelineSet, mx }: MPollProps) {
   const handleVote = useCallback(
     (answerId: string) => {
       if (!eventId || isEnded) return;
-      mx.sendEvent(mEvent.getRoomId()!, MessageEvent.PollResponse as any, {
+      const roomId = mEvent.getRoomId();
+      if (!roomId) return;
+      mx.sendEvent(roomId, MessageEvent.PollResponse, {
         'm.relates_to': {
           rel_type: 'm.reference',
           event_id: eventId,
@@ -234,9 +233,7 @@ export function MPoll({ mEvent, timelineSet, mx }: MPollProps) {
                 className={css.PollOptionBar}
                 style={{
                   width: `${pct}%`,
-                  backgroundColor: isMyVote
-                    ? color.Primary.Main
-                    : color.Secondary.Main,
+                  backgroundColor: isMyVote ? color.Primary.Main : color.Secondary.Main,
                 }}
               />
             )}

@@ -3,7 +3,7 @@ import { Box, Text, IconButton, Icon, Icons, Scroll } from 'folds';
 import { Page, PageContent, PageHeader } from '../../../components/page';
 import { GlobalPacks } from './GlobalPacks';
 import { UserPack } from './UserPack';
-import { ImagePack } from '../../../plugins/custom-emoji';
+import type { ImagePack } from '../../../plugins/custom-emoji';
 import { ImagePackView } from '../../../components/image-pack-view';
 
 type EmojisStickersProps = {

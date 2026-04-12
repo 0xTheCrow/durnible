@@ -8,7 +8,7 @@ import {
   redirect,
 } from 'react-router-dom';
 
-import { ClientConfig } from '../hooks/useClientConfig';
+import type { ClientConfig } from '../hooks/useClientConfig';
 import { AuthLayout, Login, Register, ResetPassword } from './auth';
 import {
   DIRECT_PATH,
@@ -42,8 +42,8 @@ import {
 import { ClientBindAtoms, ClientLayout, ClientRoot } from './client';
 import { Home, HomeRouteRoomProvider, HomeSearch } from './client/home';
 import { Direct, DirectCreate, DirectRouteRoomProvider } from './client/direct';
-import { RouteSpaceProvider, Space, SpaceRoomDrawer, SpaceRouteRoomProvider, SpaceSearch } from './client/space';
-import { FavoritesDrawer, FavoritesSection } from './client/FavoritesDrawer';
+import { RouteSpaceProvider, Space, SpaceRouteRoomProvider, SpaceSearch } from './client/space';
+import { RoomDrawer, FavoritesSection } from './client/RoomDrawer';
 import { Explore, FeaturedRooms, PublicRooms } from './client/explore';
 import { Notifications, Inbox, Invites } from './client/inbox';
 import { setAfterLoginRedirectPath } from './afterLoginRedirectPath';
@@ -159,13 +159,13 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
             <PageRoot
               nav={
                 <MobileFriendlyPageNav path={HOME_PATH}>
-                  <Home />
+                  <Home extra={<FavoritesSection />} />
                 </MobileFriendlyPageNav>
               }
             >
-              <FavoritesDrawer>
+              <RoomDrawer>
                 <Outlet />
-              </FavoritesDrawer>
+              </RoomDrawer>
             </PageRoot>
           }
         >
@@ -188,13 +188,13 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
             <PageRoot
               nav={
                 <MobileFriendlyPageNav path={DIRECT_PATH}>
-                  <Direct />
+                  <Direct extra={<FavoritesSection />} />
                 </MobileFriendlyPageNav>
               }
             >
-              <FavoritesDrawer>
+              <RoomDrawer>
                 <Outlet />
-              </FavoritesDrawer>
+              </RoomDrawer>
             </PageRoot>
           }
         >
@@ -220,9 +220,9 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
                   </MobileFriendlyPageNav>
                 }
               >
-                <SpaceRoomDrawer>
+                <RoomDrawer>
                   <Outlet />
-                </SpaceRoomDrawer>
+                </RoomDrawer>
               </PageRoot>
             </RouteSpaceProvider>
           }
@@ -286,9 +286,9 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
                 </MobileFriendlyPageNav>
               }
             >
-              <FavoritesDrawer>
+              <RoomDrawer>
                 <Outlet />
-              </FavoritesDrawer>
+              </RoomDrawer>
             </PageRoot>
           }
         >

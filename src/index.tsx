@@ -138,11 +138,22 @@ if ('serviceWorker' in navigator) {
     window.location.reload();
   });
 
+  // On mobile PWAs, pages are frozen in bfcache when backgrounded. The controllerchange
+  // event fires while the page is frozen and the reload above may never execute.
+  // When the page is restored from bfcache, check if the SW controller changed and
+  // reload so the page gets fresh HTML with the correct asset hashes.
+  const initialController = navigator.serviceWorker.controller;
+  window.addEventListener('pageshow', (event) => {
+    if (event.persisted && navigator.serviceWorker.controller !== initialController) {
+      window.location.reload();
+    }
+  });
+
   navigator.serviceWorker.addEventListener('message', (event) => {
-    if (event.data?.type === 'token' && event.data?.responseKey) {
+    if (event.data?.type === 'token' && event.data?.responseKey && event.source) {
       // Get the token for SW.
       const token = localStorage.getItem('cinny_access_token') ?? undefined;
-      event.source!.postMessage({
+      event.source.postMessage({
         responseKey: event.data.responseKey,
         token,
       });
@@ -160,6 +171,9 @@ if ('serviceWorker' in navigator) {
 
 const setupVirtualKeyboard = () => {
   if (!mobileOrTablet()) return;
+  // Brave handles keyboard resize natively via interactive-widget=resizes-content;
+  // our JS adjustment interferes and causes a black content area.
+  const isBrave = (navigator as unknown as { brave?: unknown }).brave !== undefined;
   const vv = window.visualViewport;
   if (!vv) return;
   // Tracks the natural (no-keyboard) height for the current orientation.
@@ -168,11 +182,10 @@ const setupVirtualKeyboard = () => {
     if (vv.height > maxSeenHeight) maxSeenHeight = vv.height;
     const keyboardOpen = vv.height < window.innerHeight || vv.height < maxSeenHeight;
     if (keyboardOpen) {
-      // If the layout viewport already shrank to match the visual viewport,
-      // the browser handled the keyboard resize natively (e.g. Brave, Chrome
-      // on Android with interactive-widget=resizes-content). Setting
-      // --app-height would be redundant and can cause a black content area.
-      if (vv.height === window.innerHeight) {
+      // Skip if Brave (explicit check), or if the layout viewport already shrank
+      // to match the visual viewport — both mean the browser handled the resize
+      // natively and setting --app-height would cause a black content area.
+      if (isBrave || vv.height === window.innerHeight) {
         document.documentElement.style.removeProperty('--app-height');
       } else {
         document.documentElement.style.setProperty('--app-height', `${vv.height}px`);
@@ -185,7 +198,7 @@ const setupVirtualKeyboard = () => {
   vv.addEventListener('resize', update);
   // Zero out maxSeenHeight on orientation change so the next vv resize
   // recalibrates it to the new orientation's natural height.
-  screen.orientation?.addEventListener('change', () => {
+  window.screen.orientation?.addEventListener('change', () => {
     maxSeenHeight = 0;
   });
 };

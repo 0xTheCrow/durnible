@@ -1,10 +1,11 @@
-import { createClient, MatrixClient, IndexedDBStore, IndexedDBCryptoStore } from 'matrix-js-sdk';
+import type { MatrixClient } from 'matrix-js-sdk';
+import { createClient, IndexedDBStore, IndexedDBCryptoStore } from 'matrix-js-sdk';
 import { logger } from 'matrix-js-sdk/lib/logger';
 
 import { cryptoCallbacks } from './secretStorageKeys';
+import { clearNavToActivePathStore } from '../app/state/navToActivePath';
 
 (logger as unknown as { setLevel: (level: string) => void }).setLevel('warn');
-import { clearNavToActivePathStore } from '../app/state/navToActivePath';
 
 type Session = {
   baseUrl: string;
@@ -30,7 +31,7 @@ export const initClient = async (session: Session): Promise<MatrixClient> => {
     cryptoStore: legacyCryptoStore,
     deviceId: session.deviceId,
     timelineSupport: true,
-    cryptoCallbacks: cryptoCallbacks as any,
+    cryptoCallbacks,
     verificationMethods: ['m.sas.v1'],
   });
 
@@ -38,7 +39,7 @@ export const initClient = async (session: Session): Promise<MatrixClient> => {
   await mx.initRustCrypto();
 
   mx.setMaxListeners(50);
-  (mx.logger as unknown as { setLevel: (level: string) => void }).setLevel('warn');
+  (mx as unknown as { logger: { setLevel: (level: string) => void } }).logger.setLevel('warn');
 
   return mx;
 };

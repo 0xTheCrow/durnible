@@ -1,3 +1,4 @@
+import type { RectCords } from 'folds';
 import {
   Avatar,
   Box,
@@ -14,31 +15,25 @@ import {
   MenuItem,
   Modal,
   PopOut,
-  RectCords,
   Spinner,
   Text,
   as,
   color,
   config,
 } from 'folds';
-import React, {
-  FormEventHandler,
-  MouseEventHandler,
-  ReactNode,
-  useCallback,
-  useState,
-} from 'react';
+import type { FormEventHandler, MouseEventHandler, ReactNode } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import FocusTrap from 'focus-trap-react';
 import { useHover, useFocusWithin } from 'react-aria';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
-import { MsgType } from 'matrix-js-sdk';
+import type { MatrixEvent, Room } from 'matrix-js-sdk';
+import { MsgType, EventStatus, EventType } from 'matrix-js-sdk';
+import type { Relations } from 'matrix-js-sdk/lib/models/relations';
+import classNames from 'classnames';
+import type { RoomPinnedEventsEventContent } from 'matrix-js-sdk/lib/types';
 import { messageOptionsAtom } from './messageOptionsAtom';
 import { selectionModeAtom, selectedIdsAtom } from './selectionAtom';
 import { hiddenImagesAtom, MessageEventIdContext } from '../../../state/hiddenImages';
-import { EventStatus, MatrixEvent, Room } from 'matrix-js-sdk';
-import { Relations } from 'matrix-js-sdk/lib/models/relations';
-import classNames from 'classnames';
-import { RoomPinnedEventsEventContent } from 'matrix-js-sdk/lib/types';
 import {
   AvatarBase,
   BubbleLayout,
@@ -54,14 +49,15 @@ import {
   getEventEdits,
   getMemberAvatarMxc,
   getMemberDisplayName,
+  getOrphanParents,
+  guessPerfectParent,
 } from '../../../utils/room';
-import {
-  getCanonicalAliasOrRoomId,
-  getMxIdLocalPart,
-  isRoomAlias,
-  mxcUrlToHttp,
-} from '../../../utils/matrix';
-import { MessageLayout, MessageSpacing } from '../../../state/settings';
+import { getCanonicalAliasOrRoomId, getMxIdLocalPart, mxcUrlToHttp } from '../../../utils/matrix';
+import { mDirectAtom } from '../../../state/mDirectList';
+import { roomToParentsAtom } from '../../../state/room/roomToParents';
+import { getDirectRoomPath, getHomeRoomPath, getSpaceRoomPath } from '../../../pages/pathUtils';
+import type { MessageSpacing } from '../../../state/settings';
+import { MessageLayout } from '../../../state/settings';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { useRecentEmoji } from '../../../hooks/useRecentEmoji';
 import * as css from './styles.css';
@@ -75,11 +71,9 @@ import { UserAvatar } from '../../../components/user-avatar';
 import { copyToClipboard } from '../../../utils/dom';
 import { stopPropagation } from '../../../utils/keyboard';
 import { OverlayModal } from '../../../components/OverlayModal';
-import { getMatrixToRoomEvent } from '../../../plugins/matrix-to';
-import { getViaServers } from '../../../plugins/via-servers';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
 import { useRoomPinnedEvents } from '../../../hooks/useRoomPinnedEvents';
-import { MemberPowerTag, StateEvent } from '../../../../types/matrix/room';
+import type { MemberPowerTag } from '../../../../types/matrix/room';
 import { PowerIcon } from '../../../components/power';
 import colorMXID from '../../../../util/colorMXID';
 import { getPowerTagIconSrc } from '../../../hooks/useMemberPowerTag';
@@ -132,14 +126,7 @@ export const MessageAllReactionButton = as<
     onOpen: () => void;
   }
 >(({ onOpen, ...props }, ref) => (
-  <IconButton
-    variant="SurfaceVariant"
-    size="300"
-    radii="300"
-    onClick={onOpen}
-    {...props}
-    ref={ref}
-  >
+  <IconButton variant="SurfaceVariant" size="300" radii="300" onClick={onOpen} {...props} ref={ref}>
     <Icon src={Icons.Smile} size="100" />
   </IconButton>
 ));
@@ -222,7 +209,8 @@ export const MessageSourceCodeItem = as<
       : evt.event;
 
   const getText = (): string => {
-    const evtId = mEvent.getId()!;
+    const evtId = mEvent.getId();
+    if (!evtId) return JSON.stringify(getContent(mEvent), null, 2);
     const evtTimeline = room.getTimelineForEvent(evtId);
     const edits =
       evtTimeline &&
@@ -284,13 +272,27 @@ export const MessageCopyLinkItem = as<
   }
 >(({ room, mEvent, onClose, ...props }, ref) => {
   const mx = useMatrixClient();
+  const mDirects = useAtomValue(mDirectAtom);
+  const roomToParents = useAtomValue(roomToParentsAtom);
 
   const handleCopy = () => {
-    const roomIdOrAlias = getCanonicalAliasOrRoomId(mx, room.roomId);
     const eventId = mEvent.getId();
-    const viaServers = isRoomAlias(roomIdOrAlias) ? undefined : getViaServers(room);
     if (!eventId) return;
-    copyToClipboard(getMatrixToRoomEvent(roomIdOrAlias, eventId, viaServers));
+    const roomIdOrAlias = getCanonicalAliasOrRoomId(mx, room.roomId);
+
+    let path: string;
+    const orphanParents = getOrphanParents(roomToParents, room.roomId);
+    if (orphanParents.length > 0) {
+      const parent = guessPerfectParent(mx, room.roomId, orphanParents) ?? orphanParents[0];
+      const pIdOrAlias = getCanonicalAliasOrRoomId(mx, parent);
+      path = getSpaceRoomPath(pIdOrAlias, roomIdOrAlias, eventId);
+    } else if (mDirects.has(room.roomId)) {
+      path = getDirectRoomPath(roomIdOrAlias, eventId);
+    } else {
+      path = getHomeRoomPath(roomIdOrAlias, eventId);
+    }
+
+    copyToClipboard(`${window.location.origin}${path}`);
     onClose?.();
   };
 
@@ -330,7 +332,7 @@ export const MessagePinItem = as<
     if (!isPinned && eventId) {
       pinContent.pinned.push(eventId);
     }
-    mx.sendStateEvent(room.roomId, StateEvent.RoomPinnedEvents as any, pinContent);
+    mx.sendStateEvent(room.roomId, EventType.RoomPinnedEvents, pinContent);
     onClose?.();
   };
 
@@ -404,7 +406,9 @@ export const MessageDeleteItem = as<
             size="500"
           >
             <Box grow="Yes">
-              <Text size="H4">Delete Message</Text>
+              <Text size="H4" data-testid="message-delete-dialog-title">
+                Delete Message
+              </Text>
             </Box>
             <IconButton size="300" onClick={handleClose} radii="300">
               <Icon src={Icons.Cross} />
@@ -412,6 +416,7 @@ export const MessageDeleteItem = as<
           </Header>
           <Box
             as="form"
+            data-testid="message-delete-dialog"
             onSubmit={handleSubmit}
             style={{ padding: config.space.S400 }}
             direction="Column"
@@ -429,12 +434,18 @@ export const MessageDeleteItem = as<
               </Text>
               <Input name="reasonInput" variant="Background" />
               {deleteState.status === AsyncStatus.Error && (
-                <Text style={{ color: color.Critical.Main }} size="T300">
+                <Text
+                  data-testid="message-delete-error"
+                  style={{ color: color.Critical.Main }}
+                  size="T300"
+                >
                   Failed to delete message! Please try again.
                 </Text>
               )}
             </Box>
             <Button
+              data-testid="message-delete-confirm"
+              data-loading={deleteState.status === AsyncStatus.Loading ? '' : undefined}
               type="submit"
               variant="Critical"
               before={
@@ -467,6 +478,7 @@ export const MessageDeleteItem = as<
         </Dialog>
       </OverlayModal>
       <Button
+        data-testid="message-delete-btn"
         variant="Critical"
         fill="None"
         size="300"
@@ -552,8 +564,8 @@ export const MessageReportItem = as<
             gap="400"
           >
             <Text priority="400">
-              Report this message to server, which may then notify the appropriate people to
-              take action.
+              Report this message to server, which may then notify the appropriate people to take
+              action.
             </Text>
             <Box direction="Column" gap="100">
               <Text size="L400">Reason</Text>
@@ -684,7 +696,6 @@ export const Message = as<'div', MessageProps>(
     const [activeMessageOptionsId, setActiveMessageOptionsId] = useAtom(messageOptionsAtom);
     const selectionMode = useAtomValue(selectionModeAtom);
     const [selectedIds, setSelectedIds] = useAtom(selectedIdsAtom);
-    const setSelectionMode = useSetAtom(selectionModeAtom);
     const isSelected = selectionMode && selectedIds.has(eventId);
     const toggleSelection = useCallback(() => {
       setSelectedIds((prev) => {
@@ -709,6 +720,7 @@ export const Message = as<'div', MessageProps>(
     const { focusWithinProps } = useFocusWithin({ onFocusWithinChange: setHover });
     const [menuAnchor, setMenuAnchor] = useState<RectCords>();
     const [emojiBoardAnchor, setEmojiBoardAnchor] = useState<RectCords>();
+    const skipMenuReturnFocusRef = useRef(false);
     const openReactionViewer = useOpenReactionViewer();
     const [hiddenImages, setHiddenImages] = useAtom(hiddenImagesAtom);
 
@@ -758,6 +770,7 @@ export const Message = as<'div', MessageProps>(
             as="button"
             style={{ color: usernameColor }}
             data-user-id={senderId}
+            data-testid="message-sender-name"
             onContextMenu={onUserClick}
             onClick={onUsernameClick}
           >
@@ -855,7 +868,11 @@ export const Message = as<'div', MessageProps>(
       <Box
         direction="Column"
         alignSelf="Start"
-        style={{ maxWidth: '100%', opacity: isPending ? 0.6 : isFailed ? 0.4 : 1, transition: 'opacity 0.4s linear' }}
+        style={{
+          maxWidth: '100%',
+          opacity: isPending ? 0.6 : isFailed ? 0.4 : 1,
+          transition: 'opacity 0.4s linear',
+        }}
       >
         {reply}
         {edit && onEditId ? (
@@ -881,8 +898,8 @@ export const Message = as<'div', MessageProps>(
 
     const handleContextMenu: MouseEventHandler<HTMLDivElement> = (evt) => {
       if (selectionMode || evt.altKey || !window.getSelection()?.isCollapsed || edit) return;
-      const tag = (evt.target as any).tagName;
-      if (typeof tag === 'string' && tag.toLowerCase() === 'a') return;
+      const target = evt.target as Element | null;
+      if (target?.tagName.toLowerCase() === 'a') return;
       evt.preventDefault();
       setMenuAnchor({
         x: evt.clientX,
@@ -957,10 +974,10 @@ export const Message = as<'div', MessageProps>(
                         returnFocusOnDeactivate={false}
                         allowTextCustomEmoji
                         onEmojiSelect={(key) => {
-                          onReactionToggle(mEvent.getId()!, key);
+                          onReactionToggle(eventId, key);
                         }}
                         onCustomEmojiSelect={(mxc, shortcode) => {
-                          onReactionToggle(mEvent.getId()!, mxc, shortcode);
+                          onReactionToggle(eventId, mxc, shortcode);
                         }}
                         requestClose={() => {
                           setEmojiBoardAnchor(undefined);
@@ -980,9 +997,7 @@ export const Message = as<'div', MessageProps>(
                   </PopOut>
                 )}
                 {relations && (
-                  <MessageAllReactionButton
-                    onOpen={() => openReactionViewer(room, relations)}
-                  />
+                  <MessageAllReactionButton onOpen={() => openReactionViewer(room, relations)} />
                 )}
                 <IconButton
                   onClick={onReplyClick}
@@ -1017,13 +1032,20 @@ export const Message = as<'div', MessageProps>(
                         isKeyForward: (evt: KeyboardEvent) => evt.key === 'ArrowDown',
                         isKeyBackward: (evt: KeyboardEvent) => evt.key === 'ArrowUp',
                         escapeDeactivates: stopPropagation,
+                        setReturnFocus: (previousFocusedElement) => {
+                          if (skipMenuReturnFocusRef.current) {
+                            skipMenuReturnFocusRef.current = false;
+                            return false;
+                          }
+                          return previousFocusedElement;
+                        },
                       }}
                     >
                       <Menu>
                         {canSendReaction && (
                           <MessageQuickReactions
                             onReaction={(key, shortcode) => {
-                              onReactionToggle(mEvent.getId()!, key, shortcode);
+                              onReactionToggle(eventId, key, shortcode);
                               closeMenu();
                             }}
                           />
@@ -1059,7 +1081,7 @@ export const Message = as<'div', MessageProps>(
                             after={<Icon size="100" src={Icons.ReplyArrow} />}
                             radii="300"
                             data-event-id={mEvent.getId()}
-                            onClick={(evt: any) => {
+                            onClick={(evt) => {
                               onReplyClick(evt);
                               closeMenu();
                             }}
@@ -1080,6 +1102,7 @@ export const Message = as<'div', MessageProps>(
                               radii="300"
                               data-event-id={mEvent.getId()}
                               onClick={() => {
+                                skipMenuReturnFocusRef.current = true;
                                 onEditId(mEvent.getId());
                                 closeMenu();
                               }}
@@ -1115,7 +1138,9 @@ export const Message = as<'div', MessageProps>(
                           {isImageMessage && (
                             <MenuItem
                               size="300"
-                              after={<Icon size="100" src={isImageHidden ? Icons.Eye : Icons.EyeBlind} />}
+                              after={
+                                <Icon size="100" src={isImageHidden ? Icons.Eye : Icons.EyeBlind} />
+                              }
                               radii="300"
                               onClick={() => {
                                 toggleImageHidden();
@@ -1174,9 +1199,7 @@ export const Message = as<'div', MessageProps>(
           </div>
         )}
         {messageLayout === MessageLayout.Compact && (
-          <CompactLayout before={headerJSX}>
-            {msgContentJSX}
-          </CompactLayout>
+          <CompactLayout before={headerJSX}>{msgContentJSX}</CompactLayout>
         )}
         {messageLayout === MessageLayout.Bubble && (
           <BubbleLayout before={avatarJSX} header={headerJSX}>
@@ -1236,8 +1259,8 @@ export const Event = as<'div', EventProps>(
 
     const handleContextMenu: MouseEventHandler<HTMLDivElement> = (evt) => {
       if (evt.altKey || !window.getSelection()?.isCollapsed) return;
-      const tag = (evt.target as any).tagName;
-      if (typeof tag === 'string' && tag.toLowerCase() === 'a') return;
+      const target = evt.target as Element | null;
+      if (target?.tagName.toLowerCase() === 'a') return;
       evt.preventDefault();
       setMenuAnchor({
         x: evt.clientX,

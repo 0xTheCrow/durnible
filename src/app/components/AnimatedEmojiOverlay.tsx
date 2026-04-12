@@ -1,42 +1,34 @@
-import React, { useLayoutEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
+import { usePausedFirstFrameCanvas } from '../hooks/usePausedFirstFrameCanvas';
 
-type AnimatedImgProps = React.ImgHTMLAttributes<HTMLImageElement> & {
+type AnimatedEmojiOverlayProps = React.ImgHTMLAttributes<HTMLImageElement> & {
   pauseGifs: boolean;
   hovered?: boolean;
 };
 
-export function AnimatedImg({ pauseGifs, hovered: hoveredProp, ...imgProps }: AnimatedImgProps) {
+export function AnimatedEmojiOverlay({
+  pauseGifs,
+  hovered: hoveredProp,
+  ...imgProps
+}: AnimatedEmojiOverlayProps) {
   const imgRef = useRef<HTMLImageElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [hoveredSelf, setHoveredSelf] = useState(false);
 
   const hovered = hoveredProp ?? hoveredSelf;
   const selfManaged = hoveredProp === undefined;
 
-  useLayoutEffect(() => {
-    if (!pauseGifs || !loaded || !imgRef.current || !canvasRef.current) return;
-    const img = imgRef.current;
-    const canvas = canvasRef.current;
-    canvas.width = img.naturalWidth;
-    canvas.height = img.naturalHeight;
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      try {
-        ctx.drawImage(img, 0, 0);
-      } catch (e) {
-        console.error('[AnimatedImg] drawImage threw:', e);
-      }
-    }
-  }, [pauseGifs, loaded]);
+  usePausedFirstFrameCanvas(imgRef, canvasRef, loaded, pauseGifs);
 
   if (!pauseGifs) {
     // eslint-disable-next-line jsx-a11y/alt-text
-    return <img {...imgProps} />;
+    return <img {...imgProps} data-testid="animated-emoji-overlay" />;
   }
 
   return (
     <span
+      data-testid="animated-emoji-overlay-wrapper"
       style={{ position: 'relative', display: 'inline-flex' }}
       onMouseEnter={selfManaged ? () => setHoveredSelf(true) : undefined}
       onMouseLeave={selfManaged ? () => setHoveredSelf(false) : undefined}
@@ -45,6 +37,7 @@ export function AnimatedImg({ pauseGifs, hovered: hoveredProp, ...imgProps }: An
       <img
         {...imgProps}
         ref={imgRef}
+        data-testid="animated-emoji-overlay"
         style={{
           ...imgProps.style,
           visibility: loaded && !hovered ? 'hidden' : 'visible',
@@ -57,6 +50,7 @@ export function AnimatedImg({ pauseGifs, hovered: hoveredProp, ...imgProps }: An
       {loaded && (
         <canvas
           ref={canvasRef}
+          data-testid="animated-emoji-overlay-canvas"
           style={{
             position: 'absolute',
             top: 0,

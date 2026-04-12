@@ -1,15 +1,10 @@
 import { Scroll, Text } from 'folds';
 import React from 'react';
-import {
-  RenderElementProps,
-  RenderLeafProps,
-  useFocused,
-  useSelected,
-  useSlate,
-} from 'slate-react';
+import type { RenderElementProps, RenderLeafProps } from 'slate-react';
+import { useFocused, useSelected, useSlate } from 'slate-react';
 
 import * as css from '../../styles/CustomHtml.css';
-import { CommandElement, EmoticonElement, LinkElement, MentionElement } from './slate';
+import type { CommandElement, EmoticonElement, LinkElement, MentionElement } from './slate';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { getBeginCommand } from './utils';
 import { BlockType } from './types';
@@ -83,7 +78,7 @@ function RenderEmoticonElement({
   const focused = useFocused();
 
   return (
-    <span className={css.EmoticonBase} {...attributes}>
+    <span {...attributes}>
       <span
         className={css.Emoticon({
           focus: selected && focused,

@@ -1,9 +1,10 @@
-import React, { MouseEventHandler } from 'react';
-import { Room, MatrixClient } from 'matrix-js-sdk';
-import { HTMLReactParserOptions } from 'html-react-parser';
-import { Opts as LinkifyOpts } from 'linkifyjs';
-import { MessageLayout, MessageSpacing } from '../../state/settings';
-import { GetMemberPowerTag } from '../../hooks/useMemberPowerTag';
+import type { MouseEventHandler } from 'react';
+import React from 'react';
+import type { Room, MatrixClient } from 'matrix-js-sdk';
+import type { HTMLReactParserOptions } from 'html-react-parser';
+import type { Opts as LinkifyOpts } from 'linkifyjs';
+import type { MessageLayout, MessageSpacing } from '../../state/settings';
+import type { GetMemberPowerTag } from '../../hooks/useMemberPowerTag';
 
 export type TimelineMessageContextValue = {
   room: Room;
@@ -43,8 +44,7 @@ export type TimelineMessageContextValue = {
   handleDecryptRetry: () => Promise<void>;
 };
 
-export const TimelineMessageContext =
-  React.createContext<TimelineMessageContextValue | null>(null);
+export const TimelineMessageContext = React.createContext<TimelineMessageContextValue | null>(null);
 
 export const useTimelineMessageContext = (): TimelineMessageContextValue => {
   const ctx = React.useContext(TimelineMessageContext);

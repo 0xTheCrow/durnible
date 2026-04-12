@@ -1,4 +1,5 @@
-import React, { FormEventHandler, useState } from 'react';
+import type { FormEventHandler } from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   Header,
@@ -58,59 +59,59 @@ export function JoinAddressPrompt({ onOpen, onCancel }: JoinAddressProps) {
 
   return (
     <OverlayModal open requestClose={onCancel}>
-          <Dialog variant="Surface">
-            <Header
-              style={{
-                padding: `0 ${config.space.S200} 0 ${config.space.S400}`,
-              }}
-              variant="Surface"
+      <Dialog variant="Surface">
+        <Header
+          style={{
+            padding: `0 ${config.space.S200} 0 ${config.space.S400}`,
+          }}
+          variant="Surface"
+          size="500"
+        >
+          <Box grow="Yes">
+            <Text size="H4">Join with Address</Text>
+          </Box>
+          <IconButton size="300" onClick={onCancel} radii="300">
+            <Icon src={Icons.Cross} />
+          </IconButton>
+        </Header>
+        <Box
+          as="form"
+          onSubmit={handleSubmit}
+          style={{ padding: config.space.S400, paddingTop: 0 }}
+          direction="Column"
+          gap="400"
+        >
+          <Box direction="Column" gap="200">
+            <Text priority="400" size="T300">
+              Enter public address to join the community. Addresses looks like:
+            </Text>
+            <Text as="ul" size="T200" priority="300" style={{ paddingLeft: config.space.S400 }}>
+              <li>#community:server</li>
+              <li>https://matrix.to/#/#community:server</li>
+              <li>https://matrix.to/#/!xYzAj?via=server</li>
+            </Text>
+          </Box>
+          <Box direction="Column" gap="100">
+            <Text size="L400">Address</Text>
+            <Input
               size="500"
-            >
-              <Box grow="Yes">
-                <Text size="H4">Join with Address</Text>
-              </Box>
-              <IconButton size="300" onClick={onCancel} radii="300">
-                <Icon src={Icons.Cross} />
-              </IconButton>
-            </Header>
-            <Box
-              as="form"
-              onSubmit={handleSubmit}
-              style={{ padding: config.space.S400, paddingTop: 0 }}
-              direction="Column"
-              gap="400"
-            >
-              <Box direction="Column" gap="200">
-                <Text priority="400" size="T300">
-                  Enter public address to join the community. Addresses looks like:
-                </Text>
-                <Text as="ul" size="T200" priority="300" style={{ paddingLeft: config.space.S400 }}>
-                  <li>#community:server</li>
-                  <li>https://matrix.to/#/#community:server</li>
-                  <li>https://matrix.to/#/!xYzAj?via=server</li>
-                </Text>
-              </Box>
-              <Box direction="Column" gap="100">
-                <Text size="L400">Address</Text>
-                <Input
-                  size="500"
-                  autoFocus
-                  name="addressInput"
-                  variant="Background"
-                  placeholder="#community:server"
-                  required
-                />
-                {invalid && (
-                  <Text size="T200" style={{ color: color.Critical.Main }}>
-                    <b>Invalid Address</b>
-                  </Text>
-                )}
-              </Box>
-              <Button type="submit" variant="Primary">
-                <Text size="B400">Open</Text>
-              </Button>
-            </Box>
-          </Dialog>
+              autoFocus
+              name="addressInput"
+              variant="Background"
+              placeholder="#community:server"
+              required
+            />
+            {invalid && (
+              <Text size="T200" style={{ color: color.Critical.Main }}>
+                <b>Invalid Address</b>
+              </Text>
+            )}
+          </Box>
+          <Button type="submit" variant="Primary">
+            <Text size="B400">Open</Text>
+          </Button>
+        </Box>
+      </Dialog>
     </OverlayModal>
   );
 }

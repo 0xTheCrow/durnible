@@ -1,6 +1,7 @@
 import { Badge, Box, Icon, IconButton, Icons, Spinner, Text, as, toRem } from 'folds';
-import React, { ReactNode, useCallback } from 'react';
-import { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
+import type { ReactNode } from 'react';
+import React, { useCallback } from 'react';
+import type { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
 import FileSaver from 'file-saver';
 import { mimeTypeToExt } from '../../utils/mimeTypes';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
@@ -72,7 +73,7 @@ export const FileHeader = as<'div', FileHeaderProps>(({ body, mimeType, after, .
       </Badge>
     </Box>
     <Box grow="Yes">
-      <Text size="T300" truncate>
+      <Text size="T300" truncate data-testid="file-name">
         {body}
       </Text>
     </Box>

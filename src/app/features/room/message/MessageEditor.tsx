@@ -1,33 +1,17 @@
-import React, {
-  KeyboardEventHandler,
-  MouseEventHandler,
-  useCallback,
-  useEffect,
-  useState,
-} from 'react';
-import {
-  Box,
-  Chip,
-  Icon,
-  IconButton,
-  Icons,
-  Line,
-  PopOut,
-  RectCords,
-  Spinner,
-  Text,
-  as,
-  config,
-} from 'folds';
+import type { KeyboardEventHandler, MouseEventHandler } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+import type { RectCords } from 'folds';
+import { Box, Chip, Icon, IconButton, Icons, Line, PopOut, Spinner, Text, as, config } from 'folds';
 import { Editor, Transforms } from 'slate';
 import { ReactEditor } from 'slate-react';
-import { IContent, IMentions, MatrixEvent, RelationType, Room } from 'matrix-js-sdk';
+import type { IContent, IMentions, MatrixEvent, Room } from 'matrix-js-sdk';
+import { RelationType } from 'matrix-js-sdk';
 import type { RoomMessageEventContent } from 'matrix-js-sdk/lib/@types/events';
 import { isKeyHotkey } from 'is-hotkey';
+import type { AutocompleteQuery } from '../../../components/editor';
 import {
   AUTOCOMPLETE_PREFIXES,
   AutocompletePrefix,
-  AutocompleteQuery,
   BlockType,
   CustomEditor,
   EmoticonAutocomplete,
@@ -91,10 +75,12 @@ export const MessageEditor = as<'div', MessageEditorProps>(
       string | undefined,
       IMentions | undefined
     ] => {
-      const evtId = mEvent.getId()!;
-      const evtTimeline = room.getTimelineForEvent(evtId);
+      const evtId = mEvent.getId();
+      const evtTimeline = evtId ? room.getTimelineForEvent(evtId) : undefined;
       const editedEvent =
-        evtTimeline && getEditedEvent(evtId, mEvent, evtTimeline.getTimelineSet());
+        evtId && evtTimeline
+          ? getEditedEvent(evtId, mEvent, evtTimeline.getTimelineSet())
+          : undefined;
 
       const content: IContent = editedEvent?.getContent()['m.new_content'] ?? mEvent.getContent();
       const { body, formatted_body: customHtml }: Record<string, unknown> = content;
@@ -217,8 +203,8 @@ export const MessageEditor = as<'div', MessageEditorProps>(
     }, [editor, alternateInput]);
 
     const handleEmoticonSelect = (key: string, shortcode: string) => {
-      if (alternateInput && (editor as any).insertAlternateText) {
-        (editor as any).insertAlternateText(key);
+      if (alternateInput && editor.insertAlternateText) {
+        editor.insertAlternateText(key);
       } else {
         editor.insertNode(createEmoticonElement(key, shortcode));
         moveCursor(editor);
@@ -230,13 +216,20 @@ export const MessageEditor = as<'div', MessageEditorProps>(
 
       if (alternateInput) {
         const text = typeof body === 'string' ? body : '';
-        editor.children = [
-          { type: BlockType.Paragraph, children: [{ text }] },
-        ];
+        editor.children = [{ type: BlockType.Paragraph, children: [{ text }] }];
         editor.onChange();
-        requestAnimationFrame(() => {
-          alternateInputRef.current?.focus();
-        });
+        if (!mobileOrTablet()) {
+          const el = alternateInputRef.current;
+          if (el) {
+            el.focus();
+            const range = document.createRange();
+            range.selectNodeContents(el);
+            range.collapse(false);
+            const sel = window.getSelection();
+            sel?.removeAllRanges();
+            sel?.addRange(range);
+          }
+        }
       } else {
         const initialValue =
           typeof customHtml === 'string'
@@ -302,6 +295,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
               >
                 <Box gap="Inherit">
                   <Chip
+                    data-testid="message-editor-save"
                     onClick={handleSave}
                     variant="Primary"
                     radii="Pill"
@@ -315,7 +309,12 @@ export const MessageEditor = as<'div', MessageEditorProps>(
                   >
                     <Text size="B300">Save</Text>
                   </Chip>
-                  <Chip onClick={onCancel} variant="SurfaceVariant" radii="Pill">
+                  <Chip
+                    data-testid="message-editor-cancel"
+                    onClick={onCancel}
+                    variant="SurfaceVariant"
+                    radii="Pill"
+                  >
                     <Text size="B300">Cancel</Text>
                   </Chip>
                 </Box>

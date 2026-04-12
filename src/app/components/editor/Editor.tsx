@@ -1,30 +1,20 @@
 /* eslint-disable no-param-reassign */
-import React, {
+import type {
   ClipboardEventHandler,
   FormEventHandler,
   KeyboardEventHandler,
   ReactNode,
-  forwardRef,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
 } from 'react';
+import React, { forwardRef, useCallback, useEffect, useRef, useState } from 'react';
 import { Box, Scroll, Text } from 'folds';
-import { Descendant, Editor, Transforms, createEditor } from 'slate';
-import {
-  Slate,
-  Editable,
-  ReactEditor,
-  withReact,
-  RenderLeafProps,
-  RenderElementProps,
-  RenderPlaceholderProps,
-} from 'slate-react';
+import type { Descendant } from 'slate';
+import { Editor, Transforms, createEditor } from 'slate';
+import type { RenderLeafProps, RenderElementProps, RenderPlaceholderProps } from 'slate-react';
+import { Slate, Editable, ReactEditor, withReact } from 'slate-react';
 import { withHistory } from 'slate-history';
 import { BlockType } from './types';
 import { RenderElement, RenderLeaf } from './Elements';
-import { CustomElement } from './slate';
+import type { CustomElement } from './slate';
 import * as css from './Editor.css';
 import { toggleKeyboardShortcut } from './keyboard';
 import { getImageUrlBlob } from '../../utils/dom';
@@ -140,21 +130,19 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
         }
       };
 
-      (editor as any).insertAlternateText = (text: string) => {
+      editor.insertAlternateText = (text: string) => {
         const el = inputRef.current;
         if (!el) return;
         el.focus();
         document.execCommand('insertText', false, text);
         const newValue = el.innerText.replace(/\n$/, '');
         setInputValue(newValue);
-        editor.children = [
-          { type: BlockType.Paragraph, children: [{ text: newValue }] },
-        ];
+        editor.children = [{ type: BlockType.Paragraph, children: [{ text: newValue }] }];
       };
 
       return () => {
         editor.onChange = origOnChange;
-        delete (editor as any).insertAlternateText;
+        delete editor.insertAlternateText;
       };
     }, [editor, alternateInput]);
 
@@ -162,9 +150,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
       (e) => {
         const text = e.currentTarget.innerText.replace(/\n$/, '');
         setInputValue(text);
-        editor.children = [
-          { type: BlockType.Paragraph, children: [{ text }] },
-        ];
+        editor.children = [{ type: BlockType.Paragraph, children: [{ text }] }];
         onChange?.(editor.children);
       },
       [editor, onChange]
@@ -239,7 +225,10 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
           e.preventDefault();
           uriItem.getAsString((raw) => {
             // uri-list format: lines starting with # are comments
-            const url = raw.split('\n').map((s) => s.trim()).find((s) => s && !s.startsWith('#'));
+            const url = raw
+              .split('\n')
+              .map((s) => s.trim())
+              .find((s) => s && !s.startsWith('#'));
             if (url) fetchUrlAsFile(url);
           });
         }
@@ -275,9 +264,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
         const [targetRange] = e.getTargetRanges();
         if (!targetRange) return;
 
-        const replacementText = e.dataTransfer
-          ? e.dataTransfer.getData('text/plain')
-          : e.data;
+        const replacementText = e.dataTransfer ? e.dataTransfer.getData('text/plain') : e.data;
         if (!replacementText) return;
 
         try {
@@ -291,7 +278,6 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
           Transforms.select(editor, slateRange);
           Editor.insertText(editor, replacementText);
 
-          // Return true to tell Slate the event is handled.
           // eslint-disable-next-line consistent-return
           return true;
         } catch {
@@ -365,7 +351,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
             // instead we use it as a proximity hint.
             const searchPath = startInfo?.path ?? anchor.path;
             const [textNode] = Editor.node(editor, searchPath);
-            const text = (textNode as { text?: string }).text;
+            const { text } = textNode as { text?: string };
             if (typeof text !== 'string') return;
 
             const hint = startInfo?.offset ?? anchor.offset;
@@ -387,7 +373,8 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
             // text, it's in a valid position (e.g. after a trailing space
             // that ended the composition). Only correct when the cursor
             // is before correctOffset (the divergence-point bug).
-            const samePath = searchPath.length === anchor.path.length &&
+            const samePath =
+              searchPath.length === anchor.path.length &&
               searchPath.every((v, i) => v === anchor.path[i]);
             if (samePath && anchor.offset >= correctOffset) {
               return;
@@ -445,10 +432,12 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
                 ref={(el) => {
                   (inputRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
                   if (alternateInputRef) {
-                    (alternateInputRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+                    (alternateInputRef as React.MutableRefObject<HTMLDivElement | null>).current =
+                      el;
                   }
                 }}
                 data-editable-name={editableName}
+                data-testid="editor-alternate-input"
                 className={css.AlternateInput}
                 contentEditable
                 suppressContentEditableWarning
@@ -461,6 +450,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
                 onPaste={handleAlternatePaste}
                 autoCapitalize="sentences"
                 role="textbox"
+                tabIndex={0}
                 aria-multiline="true"
                 aria-label={placeholder}
               />
@@ -471,11 +461,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
               </Box>
             )}
           </Box>
-          {bottom && (
-            <div className={css.AlternateInputBottom}>
-              {bottom}
-            </div>
-          )}
+          {bottom && <div className={css.AlternateInputBottom}>{bottom}</div>}
         </div>
       );
     }
@@ -500,6 +486,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
             >
               <Editable
                 data-editable-name={editableName}
+                data-testid="editor-slate"
                 className={css.EditorTextarea}
                 placeholder={placeholder}
                 renderPlaceholder={renderPlaceholder}

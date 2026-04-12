@@ -1,4 +1,5 @@
-import React, { FormEventHandler, useCallback, useEffect, useMemo, useState } from 'react';
+import type { FormEventHandler } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Box,
   Button,
@@ -13,7 +14,8 @@ import {
   config,
 } from 'folds';
 import { useNavigate } from 'react-router-dom';
-import { AuthDict, AuthType, MatrixError, createClient } from 'matrix-js-sdk';
+import type { AuthDict, MatrixError } from 'matrix-js-sdk';
+import { AuthType, createClient } from 'matrix-js-sdk';
 import { useAutoDiscoveryInfo } from '../../../hooks/useAutoDiscoveryInfo';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { useAuthServer } from '../../../hooks/useAuthServer';
@@ -23,10 +25,11 @@ import { ConfirmPasswordMatch } from '../../../components/ConfirmPasswordMatch';
 import { FieldError } from '../FiledError';
 import { UIAFlowOverlay } from '../../../components/UIAFlowOverlay';
 import { EmailStageDialog } from '../../../components/uia-stages';
-import { ResetPasswordResult, resetPassword } from './resetPasswordUtil';
+import type { ResetPasswordResult } from './resetPasswordUtil';
+import { resetPassword } from './resetPasswordUtil';
 import { OverlayModal } from '../../../components/OverlayModal';
 import { getLoginPath, withSearchParam } from '../../pathUtils';
-import { LoginPathSearchParams } from '../../paths';
+import type { LoginPathSearchParams } from '../../paths';
 import { getUIAError, getUIAErrorCode } from '../../../utils/matrix-uia';
 
 type FormData = {
@@ -51,18 +54,16 @@ function ResetPasswordComplete({ email }: { email?: string }) {
 
   return (
     <OverlayModal open requestClose={handleClick}>
-          <Dialog>
-            <Box style={{ padding: config.space.S400 }} direction="Column" gap="400">
-              <Text>
-                Password has been reset successfully. Please login with your new password.
-              </Text>
-              <Button variant="Primary" onClick={handleClick}>
-                <Text size="B400" as="span">
-                  Login
-                </Text>
-              </Button>
-            </Box>
-          </Dialog>
+      <Dialog>
+        <Box style={{ padding: config.space.S400 }} direction="Column" gap="400">
+          <Text>Password has been reset successfully. Please login with your new password.</Text>
+          <Button variant="Primary" onClick={handleClick}>
+            <Text size="B400" as="span">
+              Login
+            </Text>
+          </Button>
+        </Box>
+      </Dialog>
     </OverlayModal>
   );
 }

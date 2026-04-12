@@ -4,8 +4,9 @@ import { Page, PageContent, PageHeader } from '../../../components/page';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SequenceCardStyle } from '../styles.css';
 import { SettingTile } from '../../../components/setting-tile';
-import { SettingsPages } from '../settingsPages';
-import { settingsSearchData, SearchEntry } from './searchData';
+import type { SettingsPages } from '../settingsPages';
+import type { SearchEntry } from './searchData';
+import { settingsSearchData } from './searchData';
 
 type SearchResultsProps = {
   query: string;
@@ -39,15 +40,17 @@ export function SearchResults({ query, requestClose, onNavigateTo }: SearchResul
     const groups = new Map<string, GroupedResults>();
     for (const entry of results) {
       const key = `${entry.pageName}__${entry.sectionName}`;
-      if (!groups.has(key)) {
-        groups.set(key, {
+      let group = groups.get(key);
+      if (!group) {
+        group = {
           pageName: entry.pageName,
           sectionName: entry.sectionName,
           page: entry.page,
           entries: [],
-        });
+        };
+        groups.set(key, group);
       }
-      groups.get(key)!.entries.push(entry);
+      group.entries.push(entry);
     }
     return Array.from(groups.values());
   }, [results]);
@@ -80,11 +83,7 @@ export function SearchResults({ query, requestClose, onNavigateTo }: SearchResul
                 </Box>
               )}
               {grouped.map((group) => (
-                <Box
-                  key={`${group.pageName}__${group.sectionName}`}
-                  direction="Column"
-                  gap="100"
-                >
+                <Box key={`${group.pageName}__${group.sectionName}`} direction="Column" gap="100">
                   <Text size="L400">
                     {group.pageName} › {group.sectionName}
                   </Text>

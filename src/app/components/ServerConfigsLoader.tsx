@@ -1,8 +1,10 @@
-import { ReactNode, useCallback, useMemo } from 'react';
-import { Capabilities, validateAuthMetadata, ValidatedAuthMetadata } from 'matrix-js-sdk';
+import type { ReactNode } from 'react';
+import { useCallback, useMemo } from 'react';
+import type { Capabilities, ValidatedAuthMetadata } from 'matrix-js-sdk';
+import { validateAuthMetadata } from 'matrix-js-sdk';
 import { AsyncStatus, useAsyncCallbackValue } from '../hooks/useAsyncCallback';
 import { useMatrixClient } from '../hooks/useMatrixClient';
-import { MediaConfig } from '../hooks/useMediaConfig';
+import type { MediaConfig } from '../hooks/useMediaConfig';
 import { promiseFulfilledResult } from '../utils/common';
 
 export type ServerConfigs = {

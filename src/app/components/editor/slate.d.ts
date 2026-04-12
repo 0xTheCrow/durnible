@@ -1,11 +1,15 @@
-import { BaseEditor } from 'slate';
-import { ReactEditor } from 'slate-react';
-import { HistoryEditor } from 'slate-history';
-import { BlockType } from './types';
+import type { BaseEditor } from 'slate';
+import type { ReactEditor } from 'slate-react';
+import type { HistoryEditor } from 'slate-history';
+import type { BlockType } from './types';
 
 export type HeadingLevel = 1 | 2 | 3;
 
-export type Editor = BaseEditor & HistoryEditor & ReactEditor;
+export type Editor = BaseEditor &
+  HistoryEditor &
+  ReactEditor & {
+    insertAlternateText?: (text: string) => void;
+  };
 
 export type Text = {
   text: string;

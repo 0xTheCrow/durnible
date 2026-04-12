@@ -1,9 +1,10 @@
-import { Descendant, Editor, Text } from 'slate';
-import { MatrixClient } from 'matrix-js-sdk';
+import type { Descendant, Editor } from 'slate';
+import { Text } from 'slate';
+import type { MatrixClient } from 'matrix-js-sdk';
 import { sanitizeText } from '../../utils/sanitize';
 import { BlockType } from './types';
-import { CustomElement, EmoticonElement } from './slate';
-import { ShortcodeMapEntry } from '../../plugins/emoji';
+import type { CustomElement, EmoticonElement } from './slate';
+import type { ShortcodeMapEntry } from '../../plugins/emoji';
 import {
   parseBlockMD,
   parseInlineMD,
@@ -12,7 +13,7 @@ import {
 } from '../../plugins/markdown';
 import { findAndReplace } from '../../utils/findAndReplace';
 import { sanitizeForRegex } from '../../utils/regex';
-import { getCanonicalAliasOrRoomId, isUserId } from '../../utils/matrix';
+import { isUserId } from '../../utils/matrix';
 
 export type OutputOptions = {
   allowTextFormatting?: boolean;
@@ -282,7 +283,7 @@ export const getMentions = (mx: MatrixClient, roomId: string, editor: Editor): M
       if (node.name === '@room') {
         mentionData.room = true;
       }
-      
+
       if (isUserId(node.id) && node.id !== mx.getUserId()) {
         mentionData.users.add(node.id);
       }

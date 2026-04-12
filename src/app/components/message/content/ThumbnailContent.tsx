@@ -1,7 +1,8 @@
-import { ReactNode, useCallback, useEffect } from 'react';
-import { IThumbnailContent } from '../../../../types/matrix/common';
+import type { ReactNode } from 'react';
+import { useCallback } from 'react';
+import type { IThumbnailContent } from '../../../../types/matrix/common';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
-import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
+import { AsyncStatus, useAutoLoadAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { decryptFile, downloadEncryptedMedia, mxcUrlToHttp } from '../../../utils/matrix';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
 import { FALLBACK_MIMETYPE } from '../../../utils/mimeTypes';
@@ -14,7 +15,7 @@ export function ThumbnailContent({ info, renderImage }: ThumbnailContentProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
 
-  const [thumbSrcState, loadThumbSrc] = useAsyncCallback(
+  const [thumbSrcState] = useAutoLoadAsyncCallback(
     useCallback(async () => {
       const thumbInfo = info.thumbnail_info;
       const thumbMxcUrl = info.thumbnail_file?.url ?? info.thumbnail_url;
@@ -32,12 +33,9 @@ export function ThumbnailContent({ info, renderImage }: ThumbnailContentProps) {
       }
 
       return mediaUrl;
-    }, [mx, info, useAuthentication])
+    }, [mx, info, useAuthentication]),
+    true
   );
-
-  useEffect(() => {
-    loadThumbSrc();
-  }, [loadThumbSrc]);
 
   return thumbSrcState.status === AsyncStatus.Success ? renderImage(thumbSrcState.data) : null;
 }

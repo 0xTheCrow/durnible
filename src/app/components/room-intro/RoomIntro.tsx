@@ -1,8 +1,9 @@
 import React, { useCallback, useState } from 'react';
 import { Avatar, Box, Button, Spinner, Text, as } from 'folds';
-import { Room } from 'matrix-js-sdk';
+import type { Room } from 'matrix-js-sdk';
 import { useAtomValue } from 'jotai';
-import { IRoomCreateContent, Membership, StateEvent } from '../../../types/matrix/room';
+import type { IRoomCreateContent } from '../../../types/matrix/room';
+import { Membership, StateEvent } from '../../../types/matrix/room';
 import { getMemberDisplayName, getStateEvent } from '../../utils/room';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { getMxIdLocalPart, mxcUrlToHttp } from '../../utils/matrix';

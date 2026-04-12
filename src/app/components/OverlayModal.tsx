@@ -1,6 +1,7 @@
-import React, { ReactNode, useEffect, useRef } from 'react';
+import type { ReactNode } from 'react';
+import React, { useEffect, useRef } from 'react';
 import FocusTrap from 'focus-trap-react';
-import { Options as FocusTrapOptions } from 'focus-trap';
+import type { Options as FocusTrapOptions } from 'focus-trap';
 import { Overlay, OverlayBackdrop, OverlayCenter } from 'folds';
 import { stopPropagation } from '../utils/keyboard';
 
@@ -28,8 +29,7 @@ export function OverlayModal({
   const requestCloseRef = useRef(requestClose);
   requestCloseRef.current = requestClose;
 
-  const clickOutsideCloses =
-    focusTrapOptions?.clickOutsideDeactivates !== false;
+  const clickOutsideCloses = focusTrapOptions?.clickOutsideDeactivates !== false;
 
   useEffect(() => {
     if (!open) return undefined;
@@ -89,9 +89,7 @@ export function OverlayModal({
           }
         }}
       >
-        <FocusTrap focusTrapOptions={mergedFocusTrapOptions}>
-          {children}
-        </FocusTrap>
+        <FocusTrap focusTrapOptions={mergedFocusTrapOptions}>{children}</FocusTrap>
       </OverlayCenter>
     </Overlay>
   );

@@ -1,21 +1,17 @@
 /* eslint-disable react/no-array-index-key */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Badge, Box, Button, Chip, config, Icon, Icons, Menu, Spinner, Text } from 'folds';
+import { EventType } from 'matrix-js-sdk';
 import produce from 'immer';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SequenceCardStyle } from '../styles.css';
 import { SettingTile } from '../../../components/setting-tile';
-import {
-  applyPermissionPower,
-  getPermissionPower,
-  IPowerLevels,
-  PermissionLocation,
-} from '../../../hooks/usePowerLevels';
-import { PermissionGroup } from './types';
+import type { IPowerLevels, PermissionLocation } from '../../../hooks/usePowerLevels';
+import { applyPermissionPower, getPermissionPower } from '../../../hooks/usePowerLevels';
+import type { PermissionGroup } from './types';
 import { getPowerLevelTag, getPowers, usePowerLevelTags } from '../../../hooks/usePowerLevelTags';
 import { useRoom } from '../../../hooks/useRoom';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
-import { StateEvent } from '../../../../types/matrix/room';
 import { PowerSwitcher } from '../../../components/power';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { useAlive } from '../../../hooks/useAlive';
@@ -85,7 +81,7 @@ export function PermissionGroups({
 
         return draftPowerLevels;
       });
-      await mx.sendStateEvent(room.roomId, StateEvent.RoomPowerLevels as any, editedPowerLevels);
+      await mx.sendStateEvent(room.roomId, EventType.RoomPowerLevels, editedPowerLevels);
     }, [mx, room, powerLevels, permissionUpdate, permissionGroups])
   );
 

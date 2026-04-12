@@ -10,6 +10,19 @@ vi.mock('../../../state/hooks/settings', () => ({
   useSetSetting: vi.fn(() => vi.fn()),
 }));
 
+const renderImageWithTestId = ({ alt, title, src, onLoad, onError, onClick, tabIndex }: any) => (
+  <img
+    data-testid="test-image"
+    alt={alt}
+    title={title}
+    src={src}
+    onLoad={onLoad}
+    onError={onError}
+    onClick={onClick}
+    tabIndex={tabIndex}
+  />
+);
+
 describe('ImageContent', () => {
   beforeEach(() => {
     // Default: "Play GIFs on Hover" is off
@@ -21,17 +34,7 @@ describe('ImageContent', () => {
     mimeType: 'image/png',
     url: 'mxc://matrix.org/test',
     autoPlay: true,
-    renderImage: ({ alt, title, src, onLoad, onError, onClick, tabIndex }: any) => (
-      <img
-        alt={alt}
-        title={title}
-        src={src}
-        onLoad={onLoad}
-        onError={onError}
-        onClick={onClick}
-        tabIndex={tabIndex}
-      />
-    ),
+    renderImage: renderImageWithTestId,
   };
 
   it('renders without crashing', async () => {
@@ -54,7 +57,7 @@ describe('ImageContent', () => {
       </MatrixTestWrapper>
     );
     await act(async () => {});
-    expect(screen.getByText('1.0 KB')).toBeInTheDocument();
+    expect(screen.getByTestId('image-content-size-badge')).toBeInTheDocument();
   });
 
   it('shows a View button when autoPlay is false and image is not a spoiler', async () => {
@@ -64,7 +67,7 @@ describe('ImageContent', () => {
       </MatrixTestWrapper>
     );
     await act(async () => {});
-    expect(screen.getByText(/view/i)).toBeInTheDocument();
+    expect(screen.getByTestId('image-content-view-btn')).toBeInTheDocument();
   });
 
   it('shows a Spoiler chip when markedAsSpoiler is true', async () => {
@@ -74,13 +77,23 @@ describe('ImageContent', () => {
       </MatrixTestWrapper>
     );
     await act(async () => {});
-    expect(screen.getByText(/spoiler/i)).toBeInTheDocument();
+    expect(screen.getByTestId('image-content-spoiler-chip')).toBeInTheDocument();
   });
 
   describe('Play GIFs on Hover (pauseGifs setting)', () => {
     // renderImage that forwards style so we can test visibility
-    const gifRenderImage = ({ alt, title, src, style, onLoad, onError, onClick, tabIndex }: any) => (
+    const gifRenderImage = ({
+      alt,
+      title,
+      src,
+      style,
+      onLoad,
+      onError,
+      onClick,
+      tabIndex,
+    }: any) => (
       <img
+        data-testid="test-image"
         alt={alt}
         title={title}
         src={src}
@@ -105,37 +118,37 @@ describe('ImageContent', () => {
     });
 
     it('shows a canvas overlay after a GIF loads', async () => {
-      const { container } = render(
+      render(
         <MatrixTestWrapper>
           <ImageContent {...gifProps} />
         </MatrixTestWrapper>
       );
       await act(async () => {});
-      fireEvent.load(screen.getByAltText('test image'));
-      expect(container.querySelector('canvas')).toBeInTheDocument();
+      fireEvent.load(screen.getByTestId('test-image'));
+      expect(screen.getByTestId('animated-image-overlay-canvas')).toBeInTheDocument();
     });
 
     it('does not show canvas overlay when pauseGifs is disabled', async () => {
       vi.mocked(useSetting).mockReturnValue([false, vi.fn()] as any);
-      const { container } = render(
+      render(
         <MatrixTestWrapper>
           <ImageContent {...gifProps} />
         </MatrixTestWrapper>
       );
       await act(async () => {});
-      fireEvent.load(screen.getByAltText('test image'));
-      expect(container.querySelector('canvas')).not.toBeInTheDocument();
+      fireEvent.load(screen.getByTestId('test-image'));
+      expect(screen.queryByTestId('animated-image-overlay-canvas')).not.toBeInTheDocument();
     });
 
     it('does not show canvas overlay for non-GIF images', async () => {
-      const { container } = render(
+      render(
         <MatrixTestWrapper>
           <ImageContent {...gifProps} mimeType="image/png" />
         </MatrixTestWrapper>
       );
       await act(async () => {});
-      fireEvent.load(screen.getByAltText('test image'));
-      expect(container.querySelector('canvas')).not.toBeInTheDocument();
+      fireEvent.load(screen.getByTestId('test-image'));
+      expect(screen.queryByTestId('animated-image-overlay-canvas')).not.toBeInTheDocument();
     });
 
     it('hides the underlying img while paused (canvas shows frozen frame)', async () => {
@@ -145,7 +158,7 @@ describe('ImageContent', () => {
         </MatrixTestWrapper>
       );
       await act(async () => {});
-      const img = screen.getByAltText('test image');
+      const img = screen.getByTestId('test-image');
       fireEvent.load(img);
       expect(img).toHaveStyle({ visibility: 'hidden' });
     });
@@ -158,41 +171,44 @@ describe('ImageContent', () => {
       );
       await act(async () => {});
       // load event NOT fired — img is not yet in paused state
-      const img = screen.getByAltText('test image');
+      const img = screen.getByTestId('test-image');
       expect(img).not.toHaveStyle({ visibility: 'hidden' });
     });
 
     it('hides canvas on hover so the GIF can animate', async () => {
-      const { container } = render(
+      render(
         <MatrixTestWrapper>
           <ImageContent {...gifProps} />
         </MatrixTestWrapper>
       );
       await act(async () => {});
-      fireEvent.load(screen.getByAltText('test image'));
-      const canvas = container.querySelector('canvas')!;
+      fireEvent.load(screen.getByTestId('test-image'));
+      const canvas = screen.getByTestId('animated-image-overlay-canvas');
+      const overlay = screen.getByTestId('animated-image-overlay');
 
       // Frozen frame visible before hover
-      expect(canvas).toHaveStyle({ display: 'block' });
+      expect(canvas).toHaveStyle({ visibility: 'visible' });
 
-      fireEvent.mouseEnter(canvas.parentElement!);
-      expect(canvas).toHaveStyle({ display: 'none' });
+      fireEvent.mouseEnter(overlay);
+      expect(canvas).toHaveStyle({ visibility: 'hidden' });
 
       // Leave: frozen frame returns
-      fireEvent.mouseLeave(canvas.parentElement!);
-      expect(canvas).toHaveStyle({ display: 'block' });
+      fireEvent.mouseLeave(overlay);
+      expect(canvas).toHaveStyle({ visibility: 'visible' });
     });
 
     it('does not show canvas overlay when the image is a spoiler (blurred)', async () => {
-      const { container } = render(
+      render(
         <MatrixTestWrapper>
           <ImageContent {...gifProps} markedAsSpoiler />
         </MatrixTestWrapper>
       );
       await act(async () => {});
-      fireEvent.load(screen.getByAltText('test image'));
+      // The <img> is not rendered when blurred — try to find it defensively.
+      const img = screen.queryByTestId('test-image');
+      if (img) fireEvent.load(img);
       // Canvas requires !effectiveBlurred — spoiler keeps it suppressed
-      expect(container.querySelector('canvas')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('animated-image-overlay-canvas')).not.toBeInTheDocument();
     });
   });
 });

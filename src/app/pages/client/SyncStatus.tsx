@@ -1,4 +1,5 @@
-import { MatrixClient, SyncState } from 'matrix-js-sdk';
+import type { MatrixClient } from 'matrix-js-sdk';
+import { SyncState } from 'matrix-js-sdk';
 import React, { useCallback, useState } from 'react';
 import { Box, config, Line, Text } from 'folds';
 import { useSyncState } from '../../hooks/useSyncState';

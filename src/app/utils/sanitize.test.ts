@@ -35,7 +35,7 @@ describe('sanitizeCustomHtml', () => {
   });
 
   it('strips javascript: href links', () => {
-    const result = sanitizeCustomHtml("<a href=\"javascript:alert('xss')\">click</a>");
+    const result = sanitizeCustomHtml('<a href="javascript:alert(\'xss\')">click</a>');
     expect(result).not.toContain('javascript:');
   });
 
@@ -58,26 +58,20 @@ describe('sanitizeCustomHtml', () => {
   });
 
   it('converts non-mxc <img> tags to links', () => {
-    const result = sanitizeCustomHtml(
-      '<img src="https://external.com/img.png" alt="test image">'
-    );
+    const result = sanitizeCustomHtml('<img src="https://external.com/img.png" alt="test image">');
     expect(result).not.toContain('<img');
     expect(result).toContain('<a');
     expect(result).toContain('https://external.com/img.png');
   });
 
   it('keeps mxc:// <img> tags as images', () => {
-    const result = sanitizeCustomHtml(
-      '<img src="mxc://example.com/abc123" alt="emoji">'
-    );
+    const result = sanitizeCustomHtml('<img src="mxc://example.com/abc123" alt="emoji">');
     expect(result).toContain('<img');
     expect(result).toContain('mxc://example.com/abc123');
   });
 
   it('allows data-mx-spoiler on <span>', () => {
-    const result = sanitizeCustomHtml(
-      '<span data-mx-spoiler="secret">hidden text</span>'
-    );
+    const result = sanitizeCustomHtml('<span data-mx-spoiler="secret">hidden text</span>');
     expect(result).toContain('data-mx-spoiler');
     expect(result).toContain('hidden text');
   });
@@ -99,7 +93,7 @@ describe('sanitizeCustomHtml', () => {
     // data-mx-color is the Matrix spec attribute for text colour.
     // The value should survive sanitization regardless of how it is applied.
     const result = sanitizeCustomHtml('<font data-mx-color="#ff0000">red</font>');
-    expect(result).toContain('red');      // text content preserved
+    expect(result).toContain('red'); // text content preserved
     expect(result).toContain('#ff0000'); // colour value preserved in some form
   });
 

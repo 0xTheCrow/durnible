@@ -1,4 +1,5 @@
-import React, { ReactNode, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
+import React, { useCallback, useContext, useState } from 'react';
 import {
   Badge,
   Box,
@@ -15,20 +16,22 @@ import {
 import classNames from 'classnames';
 import { BlurhashCanvas } from 'react-blurhash';
 import { useAtom, useSetAtom } from 'jotai';
-import { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
-import { IImageInfo, MATRIX_BLUR_HASH_PROPERTY_NAME } from '../../../../types/matrix/common';
-import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
+import type { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
+import type { IImageInfo } from '../../../../types/matrix/common';
+import { MATRIX_BLUR_HASH_PROPERTY_NAME } from '../../../../types/matrix/common';
+import { AsyncStatus, useAutoLoadAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
 import * as css from './style.css';
 import { bytesToSize } from '../../../utils/common';
-import { FALLBACK_MIMETYPE } from '../../../utils/mimeTypes';
+import { FALLBACK_MIMETYPE, isAnimatedImageMimetype } from '../../../utils/mimeTypes';
 import { decryptFile, downloadEncryptedMedia, mxcUrlToHttp } from '../../../utils/matrix';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
 import { validBlurHash } from '../../../utils/blurHash';
 import { imageViewerAtom } from '../../../state/imageViewer';
 import { hiddenImagesAtom, MessageEventIdContext } from '../../../state/hiddenImages';
+import { AnimatedImageOverlay } from '../../AnimatedImageOverlay';
 
 type RenderImageProps = {
   alt: string;
@@ -49,6 +52,12 @@ export type ImageContentProps = {
   autoPlay?: boolean;
   markedAsSpoiler?: boolean;
   spoilerReason?: string;
+  /**
+   * Override the default "click opens single-image viewer" behavior. When
+   * set, called with the resolved http src and alt text. The grid renderer
+   * uses this to open the viewer with gallery context instead.
+   */
+  onView?: (src: string, alt: string) => void;
   renderImage: (props: RenderImageProps) => ReactNode;
 };
 export const ImageContent = as<'div', ImageContentProps>(
@@ -63,6 +72,7 @@ export const ImageContent = as<'div', ImageContentProps>(
       autoPlay,
       markedAsSpoiler,
       spoilerReason,
+      onView,
       renderImage,
       ...props
     },
@@ -73,12 +83,8 @@ export const ImageContent = as<'div', ImageContentProps>(
     const blurHash = validBlurHash(info?.[MATRIX_BLUR_HASH_PROPERTY_NAME]);
 
     const [pauseGifs] = useSetting(settingsAtom, 'pauseGifs');
-    const isGif = mimeType === 'image/gif' || mimeType === 'image/apng';
+    const isGif = isAnimatedImageMimetype(mimeType);
     const shouldPauseGif = pauseGifs && isGif;
-
-    const canvasRef = useRef<HTMLCanvasElement>(null);
-    const loadedImgRef = useRef<HTMLImageElement | null>(null);
-    const [isHovered, setIsHovered] = useState(false);
 
     const setViewerState = useSetAtom(imageViewerAtom);
 
@@ -91,7 +97,7 @@ export const ImageContent = as<'div', ImageContentProps>(
     const [blurred, setBlurred] = useState(markedAsSpoiler ?? false);
     const effectiveBlurred = blurred || isForceHidden;
 
-    const [srcState, loadSrc] = useAsyncCallback(
+    const [srcState, loadSrc] = useAutoLoadAsyncCallback(
       useCallback(async () => {
         const mediaUrl = mxcUrlToHttp(mx, url, useAuthentication) ?? url;
         if (encInfo) {
@@ -101,23 +107,14 @@ export const ImageContent = as<'div', ImageContentProps>(
           return URL.createObjectURL(fileContent);
         }
         return mediaUrl;
-      }, [mx, url, useAuthentication, mimeType, encInfo])
+      }, [mx, url, useAuthentication, mimeType, encInfo]),
+      !!(autoPlay || isForceHidden)
     );
 
-    const handleLoad = (evt: React.SyntheticEvent<HTMLImageElement>) => {
-      if (shouldPauseGif) loadedImgRef.current = evt.currentTarget;
+    const handleLoad = () => {
       setLoad(true);
     };
 
-    useLayoutEffect(() => {
-      if (!shouldPauseGif || !load || !loadedImgRef.current || !canvasRef.current) return;
-      const img = loadedImgRef.current;
-      const canvas = canvasRef.current;
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      const ctx = canvas.getContext('2d');
-      ctx?.drawImage(img, 0, 0);
-    }, [shouldPauseGif, load, effectiveBlurred]);
     const handleError = () => {
       setLoad(false);
       setError(true);
@@ -128,9 +125,13 @@ export const ImageContent = as<'div', ImageContentProps>(
       loadSrc();
     };
 
-    useEffect(() => {
-      if (autoPlay || isForceHidden) loadSrc();
-    }, [autoPlay, isForceHidden, loadSrc]);
+    const handleView = useCallback(
+      (resolvedSrc: string) => {
+        if (onView) onView(resolvedSrc, body);
+        else setViewerState({ src: resolvedSrc, alt: body });
+      },
+      [onView, body, setViewerState]
+    );
 
     return (
       <Box className={classNames(css.RelativeBase, className)} {...props} ref={ref}>
@@ -148,67 +149,63 @@ export const ImageContent = as<'div', ImageContentProps>(
             />
           </Box>
         )}
-        {!autoPlay && !markedAsSpoiler && !isForceHidden && srcState.status === AsyncStatus.Idle && (
-          <Box className={css.AbsoluteContainer} alignItems="Center" justifyContent="Center">
-            <Button
-              variant="Secondary"
-              fill="Solid"
-              radii="300"
-              size="300"
-              onClick={loadSrc}
-              before={<Icon size="Inherit" src={Icons.Photo} filled />}
-            >
-              <Text size="B300">View</Text>
-            </Button>
-          </Box>
-        )}
+        {!autoPlay &&
+          !markedAsSpoiler &&
+          !isForceHidden &&
+          srcState.status === AsyncStatus.Idle && (
+            <Box className={css.AbsoluteContainer} alignItems="Center" justifyContent="Center">
+              <Button
+                data-testid="image-content-view-btn"
+                variant="Secondary"
+                fill="Solid"
+                radii="300"
+                size="300"
+                onClick={loadSrc}
+                before={<Icon size="Inherit" src={Icons.Photo} filled />}
+              >
+                <Text size="B300">View</Text>
+              </Button>
+            </Box>
+          )}
         {srcState.status === AsyncStatus.Success && (
           <Box
             className={classNames(css.AbsoluteContainer, effectiveBlurred && css.Blur)}
             style={effectiveBlurred ? { opacity: 0.6 } : undefined}
           >
-            {renderImage({
-              alt: body,
-              title: body,
-              src: srcState.data,
-              style: {
-                width: 'auto',
-                height: 'auto',
-                maxWidth: '100%',
-                maxHeight: '100%',
-                ...(shouldPauseGif && load && !isHovered ? { visibility: 'hidden' as const } : {}),
-              },
-              onLoad: handleLoad,
-              onError: handleError,
-              onClick: () => setViewerState({ src: srcState.data, alt: body }),
-              tabIndex: 0,
-            })}
+            {shouldPauseGif && !effectiveBlurred ? (
+              <AnimatedImageOverlay
+                src={srcState.data}
+                alt={body}
+                title={body}
+                imgStyle={{
+                  width: 'auto',
+                  height: 'auto',
+                  maxWidth: '100%',
+                  maxHeight: '100%',
+                }}
+                onLoad={handleLoad}
+                onError={handleError}
+                onView={() => handleView(srcState.data)}
+                renderImage={renderImage}
+              />
+            ) : (
+              renderImage({
+                alt: body,
+                title: body,
+                src: srcState.data,
+                style: {
+                  width: 'auto',
+                  height: 'auto',
+                  maxWidth: '100%',
+                  maxHeight: '100%',
+                },
+                onLoad: handleLoad,
+                onError: handleError,
+                onClick: () => handleView(srcState.data),
+                tabIndex: 0,
+              })
+            )}
           </Box>
-        )}
-        {shouldPauseGif && load && !effectiveBlurred && srcState.status === AsyncStatus.Success && (
-          <div
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              cursor: 'pointer',
-            }}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-            onClick={() => setViewerState({ src: srcState.data, alt: body })}
-          >
-            <canvas
-              ref={canvasRef}
-              style={{
-                width: '100%',
-                height: '100%',
-                display: isHovered ? 'none' : 'block',
-                pointerEvents: 'none',
-              }}
-            />
-          </div>
         )}
         {effectiveBlurred && !error && srcState.status !== AsyncStatus.Error && (
           <Box className={css.AbsoluteContainer} alignItems="Center" justifyContent="Center">
@@ -226,6 +223,7 @@ export const ImageContent = as<'div', ImageContentProps>(
               {(triggerRef) => (
                 <Chip
                   ref={triggerRef}
+                  data-testid="image-content-spoiler-chip"
                   variant="Secondary"
                   radii="Pill"
                   size="500"
@@ -287,7 +285,7 @@ export const ImageContent = as<'div', ImageContentProps>(
         )}
         {!load && typeof info?.size === 'number' && (
           <Box className={css.AbsoluteFooter} justifyContent="End" alignContent="Center" gap="200">
-            <Badge variant="Secondary" fill="Soft">
+            <Badge variant="Secondary" fill="Soft" data-testid="image-content-size-badge">
               <Text size="L400">{bytesToSize(info.size)}</Text>
             </Badge>
           </Box>

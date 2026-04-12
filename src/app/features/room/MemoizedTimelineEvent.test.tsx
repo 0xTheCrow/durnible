@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { MsgType } from 'matrix-js-sdk';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoizedTimelineEvent } from './MemoizedTimelineEvent';
-import { TimelineMessageContext, TimelineMessageContextValue } from './TimelineMessageContext';
+import type { TimelineMessageContextValue } from './TimelineMessageContext';
+import { TimelineMessageContext } from './TimelineMessageContext';
 import { MatrixTestWrapper } from '../../../test/wrapper';
 import { createMockMatrixClient, createMockMatrixEvent, createMockRoom } from '../../../test/mocks';
 import { MessageLayout } from '../../state/settings';
@@ -14,7 +16,10 @@ import { LINKIFY_OPTS, getReactCustomHtmlParser } from '../../plugins/react-cust
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
 
-function makeContext(mx: ReturnType<typeof createMockMatrixClient>, room: ReturnType<typeof createMockRoom>): TimelineMessageContextValue {
+function makeContext(
+  mx: ReturnType<typeof createMockMatrixClient>,
+  room: ReturnType<typeof createMockRoom>
+): TimelineMessageContextValue {
   const htmlReactParserOptions = getReactCustomHtmlParser(mx as any, '!testroom:example.com', {
     linkifyOpts: LINKIFY_OPTS,
   });
@@ -30,7 +35,7 @@ function makeContext(mx: ReturnType<typeof createMockMatrixClient>, room: Return
     canSendReaction: false,
     canPinEvent: false,
     imagePackRooms: [],
-    getMemberPowerTag: vi.fn(() => undefined),
+    getMemberPowerTag: vi.fn(() => ({ name: 'Member' })),
     accessiblePowerTagColors: new Map(),
     legacyUsernameColor: false,
     direct: false,
@@ -87,6 +92,8 @@ describe('MemoizedTimelineEvent edit mode', () => {
       reactionRelations: undefined,
       editedEvent: undefined,
       isRedacted: false,
+      eventStatus: null,
+      replyToMe: false,
     };
 
     const { rerender } = render(
@@ -97,10 +104,9 @@ describe('MemoizedTimelineEvent edit mode', () => {
       </MatrixTestWrapper>
     );
 
-    // Message content visible, no editor
-    expect(screen.getByText('Hello world')).toBeInTheDocument();
-    expect(screen.queryByText('Save')).not.toBeInTheDocument();
-    expect(screen.queryByText('Cancel')).not.toBeInTheDocument();
+    expect(screen.getByTestId('message-body')).toHaveTextContent('Hello world');
+    expect(screen.queryByTestId('message-editor-save')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('message-editor-cancel')).not.toBeInTheDocument();
 
     // Flip isEditing — simulates editId matching this event's ID in RoomTimeline.
     // Drain Slate's deferred microtask state update with async act.
@@ -108,7 +114,7 @@ describe('MemoizedTimelineEvent edit mode', () => {
       rerender(
         <MatrixTestWrapper matrixClient={mx}>
           <TimelineMessageContext.Provider value={ctx}>
-            <MemoizedTimelineEvent {...baseProps} isEditing={true} />
+            <MemoizedTimelineEvent {...baseProps} isEditing />
           </TimelineMessageContext.Provider>
         </MatrixTestWrapper>
       );
@@ -116,8 +122,8 @@ describe('MemoizedTimelineEvent edit mode', () => {
 
     // Editor must appear immediately — the memo comparator must detect isEditing changed.
     // If this fails, the comparator is incorrectly returning true (equal) and bailing out.
-    expect(screen.getByText('Save')).toBeInTheDocument();
-    expect(screen.getByText('Cancel')).toBeInTheDocument();
+    expect(screen.getByTestId('message-editor-save')).toBeInTheDocument();
+    expect(screen.getByTestId('message-editor-cancel')).toBeInTheDocument();
   });
 
   it('removes the editor immediately when isEditing flips back to false', () => {
@@ -145,17 +151,19 @@ describe('MemoizedTimelineEvent edit mode', () => {
       reactionRelations: undefined,
       editedEvent: undefined,
       isRedacted: false,
+      eventStatus: null,
+      replyToMe: false,
     };
 
     const { rerender } = render(
       <MatrixTestWrapper matrixClient={mx}>
         <TimelineMessageContext.Provider value={ctx}>
-          <MemoizedTimelineEvent {...baseProps} isEditing={true} />
+          <MemoizedTimelineEvent {...baseProps} isEditing />
         </TimelineMessageContext.Provider>
       </MatrixTestWrapper>
     );
 
-    expect(screen.getByText('Save')).toBeInTheDocument();
+    expect(screen.getByTestId('message-editor-save')).toBeInTheDocument();
 
     rerender(
       <MatrixTestWrapper matrixClient={mx}>
@@ -165,8 +173,122 @@ describe('MemoizedTimelineEvent edit mode', () => {
       </MatrixTestWrapper>
     );
 
-    expect(screen.queryByText('Save')).not.toBeInTheDocument();
-    expect(screen.getByText('Hello world')).toBeInTheDocument();
+    expect(screen.queryByTestId('message-editor-save')).not.toBeInTheDocument();
+    expect(screen.getByTestId('message-body')).toHaveTextContent('Hello world');
+  });
+});
+
+describe('MemoizedTimelineEvent reply-to-me highlight', () => {
+  // Regression test for the "no highlight on first load" bug.
+  //
+  // The bug: replyToMe used to be computed inline inside MemoizedTimelineEvent
+  // via timelineSet.findEventById(replyEventId). On page refresh, the ancestor
+  // event was often older than the loaded pagination window, so findEventById
+  // returned undefined and the highlight was missing on first paint. The user
+  // had to scroll (which tripped the memo comparator) for the highlight to
+  // appear.
+  //
+  // The fix: replyToMe is now a prop computed in the parent (RoomTimeline),
+  // so it doesn't depend on the SDK having the ancestor loaded at the moment
+  // of the child's first render — and the parent re-runs the computation
+  // whenever it re-renders (including on the new backpagination notification).
+  //
+  // This test pins the behavior: even when timelineSet.findEventById returns
+  // undefined (ancestor not loaded), passing replyToMe=true must produce a
+  // visible highlight on the FIRST render with no further interactions.
+  it('shows the highlight on first render even when findEventById returns undefined', () => {
+    const mx = createMockMatrixClient();
+    const room = createMockRoom('!testroom:example.com', mx);
+    room._addMockMember('@alice:example.com', 'alice');
+
+    const mEvent = createMockMatrixEvent({
+      id: '$reply-event',
+      sender: '@alice:example.com',
+      content: { body: 'thanks!', msgtype: MsgType.Text },
+      roomId: '!testroom:example.com',
+    });
+    // Make this a reply to an ancestor that won't be in the timelineSet — the
+    // exact bug scenario from page refresh.
+    (mEvent as any).replyEventId = '$missing-ancestor';
+
+    const ctx: TimelineMessageContextValue = {
+      ...makeContext(mx, room),
+      // The bubble is gated on the user's setting too; turn it on so the test
+      // exercises the prop path that drives mentionHighlight.
+      replyHighlight: true,
+    };
+    const timelineSet = makeTimelineSet(); // findEventById returns undefined
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+
+    const { container } = render(
+      <MatrixTestWrapper matrixClient={mx}>
+        <QueryClientProvider client={queryClient}>
+          <TimelineMessageContext.Provider value={ctx}>
+            <MemoizedTimelineEvent
+              mEvent={mEvent}
+              mEventId="$reply-event"
+              timelineSet={timelineSet}
+              item={0}
+              collapsed={false}
+              isHighlighted={false}
+              isEditing={false}
+              reactionRelations={undefined}
+              editedEvent={undefined}
+              isRedacted={false}
+              eventStatus={null}
+              replyToMe
+            />
+          </TimelineMessageContext.Provider>
+        </QueryClientProvider>
+      </MatrixTestWrapper>
+    );
+
+    // MessageBase exposes a `data-mention-highlight` attribute when the
+    // variant is on. If the prop didn't flow through, no element would have
+    // it.
+    expect(container.querySelector('[data-mention-highlight]')).not.toBeNull();
+  });
+
+  it('does not show the highlight when replyToMe is false', () => {
+    const mx = createMockMatrixClient();
+    const room = createMockRoom('!testroom:example.com', mx);
+    room._addMockMember('@alice:example.com', 'alice');
+
+    const mEvent = createMockMatrixEvent({
+      id: '$plain-event',
+      sender: '@alice:example.com',
+      content: { body: 'just a message', msgtype: MsgType.Text },
+      roomId: '!testroom:example.com',
+    });
+
+    const ctx: TimelineMessageContextValue = {
+      ...makeContext(mx, room),
+      replyHighlight: true,
+    };
+    const timelineSet = makeTimelineSet();
+
+    const { container } = render(
+      <MatrixTestWrapper matrixClient={mx}>
+        <TimelineMessageContext.Provider value={ctx}>
+          <MemoizedTimelineEvent
+            mEvent={mEvent}
+            mEventId="$plain-event"
+            timelineSet={timelineSet}
+            item={0}
+            collapsed={false}
+            isHighlighted={false}
+            isEditing={false}
+            reactionRelations={undefined}
+            editedEvent={undefined}
+            isRedacted={false}
+            eventStatus={null}
+            replyToMe={false}
+          />
+        </TimelineMessageContext.Provider>
+      </MatrixTestWrapper>
+    );
+
+    expect(container.querySelector('[data-mention-highlight]')).toBeNull();
   });
 });
 
@@ -210,7 +332,7 @@ describe('MemoizedTimelineEvent edit — full handleEdit chain', () => {
         canSendReaction: false,
         canPinEvent: false,
         imagePackRooms: [],
-        getMemberPowerTag: vi.fn(() => undefined),
+        getMemberPowerTag: vi.fn(() => ({ name: 'Member' })),
         accessiblePowerTagColors: new Map(),
         legacyUsernameColor: false,
         direct: false,
@@ -238,7 +360,11 @@ describe('MemoizedTimelineEvent edit — full handleEdit chain', () => {
         <TimelineMessageContext.Provider value={ctx}>
           {/* Trigger button simulates the edit button's onClick in Message:
               onEditId(mEvent.getId()) → handleEdit(eventId) → setEditId */}
-          <button data-testid="trigger-edit" onClick={() => handleEdit('$event-chain-test')}>
+          <button
+            type="button"
+            data-testid="trigger-edit"
+            onClick={() => handleEdit('$event-chain-test')}
+          >
             Trigger Edit
           </button>
           <MemoizedTimelineEvent
@@ -252,6 +378,8 @@ describe('MemoizedTimelineEvent edit — full handleEdit chain', () => {
             reactionRelations={undefined}
             editedEvent={undefined}
             isRedacted={false}
+            eventStatus={null}
+            replyToMe={false}
           />
         </TimelineMessageContext.Provider>
       );
@@ -263,8 +391,8 @@ describe('MemoizedTimelineEvent edit — full handleEdit chain', () => {
       </MatrixTestWrapper>
     );
 
-    expect(screen.getByText('Edit me')).toBeInTheDocument();
-    expect(screen.queryByText('Save')).not.toBeInTheDocument();
+    expect(screen.getByTestId('message-body')).toHaveTextContent('Edit me');
+    expect(screen.queryByTestId('message-editor-save')).not.toBeInTheDocument();
 
     // Fire the trigger — state updates, Wrapper re-renders, isEditing becomes
     // true. The editor must appear from this single state update with no
@@ -273,7 +401,7 @@ describe('MemoizedTimelineEvent edit — full handleEdit chain', () => {
       fireEvent.click(screen.getByTestId('trigger-edit'));
     });
 
-    expect(screen.getByText('Save')).toBeInTheDocument();
-    expect(screen.getByText('Cancel')).toBeInTheDocument();
+    expect(screen.getByTestId('message-editor-save')).toBeInTheDocument();
+    expect(screen.getByTestId('message-editor-cancel')).toBeInTheDocument();
   });
 });

@@ -281,117 +281,117 @@ export function UserModeration({ userId, canKick, canBan, canInvite }: UserModer
       </Button>
       {modalOpen && (
         <OverlayModal open requestClose={() => setModalOpen(false)}>
-              <Dialog variant="Surface">
-                <Header
-                  style={{
-                    padding: `0 ${config.space.S200} 0 ${config.space.S400}`,
-                    borderBottomWidth: config.borderWidth.B300,
-                  }}
-                  variant="Surface"
-                  size="500"
-                >
-                  <Box grow="Yes">
-                    <Text size="H4">Moderation</Text>
-                  </Box>
-                  <IconButton
+          <Dialog variant="Surface">
+            <Header
+              style={{
+                padding: `0 ${config.space.S200} 0 ${config.space.S400}`,
+                borderBottomWidth: config.borderWidth.B300,
+              }}
+              variant="Surface"
+              size="500"
+            >
+              <Box grow="Yes">
+                <Text size="H4">Moderation</Text>
+              </Box>
+              <IconButton
+                size="300"
+                onClick={() => setModalOpen(false)}
+                radii="300"
+                disabled={disabled}
+              >
+                <Icon src={Icons.Cross} />
+              </IconButton>
+            </Header>
+            <Box style={{ padding: config.space.S400 }} direction="Column" gap="400">
+              <Box direction="Column" gap="200">
+                <Input
+                  ref={reasonInputRef}
+                  placeholder="Reason"
+                  size="300"
+                  variant="Background"
+                  radii="300"
+                  disabled={disabled}
+                />
+                {kickState.status === AsyncStatus.Error && (
+                  <Text style={{ color: color.Critical.Main }} className={BreakWord} size="T200">
+                    <b>{kickState.error.message}</b>
+                  </Text>
+                )}
+                {banState.status === AsyncStatus.Error && (
+                  <Text style={{ color: color.Critical.Main }} className={BreakWord} size="T200">
+                    <b>{banState.error.message}</b>
+                  </Text>
+                )}
+                {inviteState.status === AsyncStatus.Error && (
+                  <Text style={{ color: color.Critical.Main }} className={BreakWord} size="T200">
+                    <b>{inviteState.error.message}</b>
+                  </Text>
+                )}
+              </Box>
+              <Box gap="200">
+                {canInvite && (
+                  <Button
+                    style={{ flexGrow: 1 }}
                     size="300"
-                    onClick={() => setModalOpen(false)}
+                    variant="Secondary"
+                    fill="Soft"
                     radii="300"
+                    before={
+                      inviteState.status === AsyncStatus.Loading ? (
+                        <Spinner size="50" variant="Secondary" fill="Soft" />
+                      ) : (
+                        <Icon size="50" src={Icons.ArrowRight} />
+                      )
+                    }
+                    onClick={invite}
                     disabled={disabled}
                   >
-                    <Icon src={Icons.Cross} />
-                  </IconButton>
-                </Header>
-                <Box style={{ padding: config.space.S400 }} direction="Column" gap="400">
-                  <Box direction="Column" gap="200">
-                    <Input
-                      ref={reasonInputRef}
-                      placeholder="Reason"
-                      size="300"
-                      variant="Background"
-                      radii="300"
-                      disabled={disabled}
-                    />
-                    {kickState.status === AsyncStatus.Error && (
-                      <Text style={{ color: color.Critical.Main }} className={BreakWord} size="T200">
-                        <b>{kickState.error.message}</b>
-                      </Text>
-                    )}
-                    {banState.status === AsyncStatus.Error && (
-                      <Text style={{ color: color.Critical.Main }} className={BreakWord} size="T200">
-                        <b>{banState.error.message}</b>
-                      </Text>
-                    )}
-                    {inviteState.status === AsyncStatus.Error && (
-                      <Text style={{ color: color.Critical.Main }} className={BreakWord} size="T200">
-                        <b>{inviteState.error.message}</b>
-                      </Text>
-                    )}
-                  </Box>
-                  <Box gap="200">
-                    {canInvite && (
-                      <Button
-                        style={{ flexGrow: 1 }}
-                        size="300"
-                        variant="Secondary"
-                        fill="Soft"
-                        radii="300"
-                        before={
-                          inviteState.status === AsyncStatus.Loading ? (
-                            <Spinner size="50" variant="Secondary" fill="Soft" />
-                          ) : (
-                            <Icon size="50" src={Icons.ArrowRight} />
-                          )
-                        }
-                        onClick={invite}
-                        disabled={disabled}
-                      >
-                        <Text size="B300">Invite</Text>
-                      </Button>
-                    )}
-                    {canKick && (
-                      <Button
-                        style={{ flexGrow: 1 }}
-                        size="300"
-                        variant="Critical"
-                        fill="Soft"
-                        radii="300"
-                        before={
-                          kickState.status === AsyncStatus.Loading ? (
-                            <Spinner size="50" variant="Critical" fill="Soft" />
-                          ) : (
-                            <Icon size="50" src={Icons.ArrowLeft} />
-                          )
-                        }
-                        onClick={kick}
-                        disabled={disabled}
-                      >
-                        <Text size="B300">Kick</Text>
-                      </Button>
-                    )}
-                    {canBan && (
-                      <Button
-                        style={{ flexGrow: 1 }}
-                        size="300"
-                        variant="Critical"
-                        fill="Solid"
-                        radii="300"
-                        before={
-                          banState.status === AsyncStatus.Loading ? (
-                            <Spinner size="50" variant="Critical" fill="Solid" />
-                          ) : (
-                            <Icon size="50" src={Icons.Prohibited} />
-                          )
-                        }
-                        onClick={ban}
-                        disabled={disabled}
-                      >
-                        <Text size="B300">Ban</Text>
-                      </Button>
-                    )}
-                  </Box>
-                </Box>
-              </Dialog>
+                    <Text size="B300">Invite</Text>
+                  </Button>
+                )}
+                {canKick && (
+                  <Button
+                    style={{ flexGrow: 1 }}
+                    size="300"
+                    variant="Critical"
+                    fill="Soft"
+                    radii="300"
+                    before={
+                      kickState.status === AsyncStatus.Loading ? (
+                        <Spinner size="50" variant="Critical" fill="Soft" />
+                      ) : (
+                        <Icon size="50" src={Icons.ArrowLeft} />
+                      )
+                    }
+                    onClick={kick}
+                    disabled={disabled}
+                  >
+                    <Text size="B300">Kick</Text>
+                  </Button>
+                )}
+                {canBan && (
+                  <Button
+                    style={{ flexGrow: 1 }}
+                    size="300"
+                    variant="Critical"
+                    fill="Solid"
+                    radii="300"
+                    before={
+                      banState.status === AsyncStatus.Loading ? (
+                        <Spinner size="50" variant="Critical" fill="Solid" />
+                      ) : (
+                        <Icon size="50" src={Icons.Prohibited} />
+                      )
+                    }
+                    onClick={ban}
+                    disabled={disabled}
+                  >
+                    <Text size="B300">Ban</Text>
+                  </Button>
+                )}
+              </Box>
+            </Box>
+          </Dialog>
         </OverlayModal>
       )}
     </>

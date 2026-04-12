@@ -11,11 +11,13 @@ import {
   Text,
   TextArea,
 } from 'folds';
-import React, { FormEventHandler, useCallback, useMemo, useState } from 'react';
+import type { FormEventHandler } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useAtomValue } from 'jotai';
 import Linkify from 'linkify-react';
 import classNames from 'classnames';
-import { JoinRule, MatrixError } from 'matrix-js-sdk';
+import type { MatrixError } from 'matrix-js-sdk';
+import { EventType, JoinRule } from 'matrix-js-sdk';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SequenceCardStyle } from '../../room-settings/styles.css';
 import { useRoom } from '../../../hooks/useRoom';
@@ -35,11 +37,12 @@ import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
 import { StateEvent } from '../../../../types/matrix/room';
 import { CompactUploadCardRenderer } from '../../../components/upload-card';
 import { useObjectURL } from '../../../hooks/useObjectURL';
-import { createUploadAtom, UploadSuccess } from '../../../state/upload';
+import type { UploadSuccess } from '../../../state/upload';
+import { createUploadAtom } from '../../../state/upload';
 import { useFilePicker } from '../../../hooks/useFilePicker';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { useAlive } from '../../../hooks/useAlive';
-import { RoomPermissionsAPI } from '../../../hooks/useRoomPermissions';
+import type { RoomPermissionsAPI } from '../../../hooks/useRoomPermissions';
 
 type RoomProfileEditProps = {
   canEditAvatar: boolean;
@@ -93,15 +96,17 @@ export function RoomProfileEdit({
     useCallback(
       async (roomAvatarMxc?: string | null, roomName?: string, roomTopic?: string) => {
         if (roomAvatarMxc !== undefined) {
-          await mx.sendStateEvent(room.roomId, StateEvent.RoomAvatar as any, {
-            url: roomAvatarMxc,
-          });
+          await mx.sendStateEvent(
+            room.roomId,
+            EventType.RoomAvatar,
+            roomAvatarMxc === null ? {} : { url: roomAvatarMxc }
+          );
         }
         if (roomName !== undefined) {
-          await mx.sendStateEvent(room.roomId, StateEvent.RoomName as any, { name: roomName });
+          await mx.sendStateEvent(room.roomId, EventType.RoomName, { name: roomName });
         }
         if (roomTopic !== undefined) {
-          await mx.sendStateEvent(room.roomId, StateEvent.RoomTopic as any, { topic: roomTopic });
+          await mx.sendStateEvent(room.roomId, EventType.RoomTopic, { topic: roomTopic });
         }
       },
       [mx, room.roomId]

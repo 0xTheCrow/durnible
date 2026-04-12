@@ -1,16 +1,7 @@
-import {
-  as,
-  Badge,
-  Box,
-  color,
-  ContainerColor,
-  MainColor,
-  Text,
-  Tooltip,
-  TooltipProvider,
-  toRem,
-} from 'folds';
-import React, { ReactNode, useId } from 'react';
+import type { ContainerColor, MainColor } from 'folds';
+import { as, Badge, Box, color, Text, Tooltip, TooltipProvider, toRem } from 'folds';
+import type { ReactNode } from 'react';
+import React, { useId } from 'react';
 import * as css from './styles.css';
 import { Presence, usePresenceLabel } from '../../hooks/useUserPresence';
 

@@ -1,4 +1,6 @@
-import React, { MouseEventHandler, useState } from 'react';
+import type { MouseEventHandler } from 'react';
+import React, { useState } from 'react';
+import type { RectCords } from 'folds';
 import {
   Box,
   Button,
@@ -8,7 +10,6 @@ import {
   IconButton,
   Icons,
   PopOut,
-  RectCords,
   Scroll,
   Switch,
   Text,
@@ -21,10 +22,10 @@ import { settingsAtom } from '../../../state/settings';
 import { SettingTile } from '../../../components/setting-tile';
 import { KeySymbol } from '../../../utils/key-symbol';
 import { isMacOS } from '../../../utils/user-agent';
+import type { Theme } from '../../../hooks/useTheme';
 import {
   DarkTheme,
   LightTheme,
-  Theme,
   ThemeKind,
   useSystemThemeKind,
   useThemeNames,
@@ -268,9 +269,7 @@ function Editor() {
         <SettingTile
           title="Alternate Message Input (very experimental)"
           description="Use a simple text input instead of the rich text editor."
-          after={
-            <Switch variant="Primary" value={alternateInput} onChange={setAlternateInput} />
-          }
+          after={<Switch variant="Primary" value={alternateInput} onChange={setAlternateInput} />}
         />
       </SequenceCard>
     </Box>
@@ -411,15 +410,11 @@ function Messages() {
           <Box direction="Column" gap="100" style={{ paddingTop: config.space.S100 }}>
             <SettingTile
               title="YouTube"
-              after={
-                <Switch variant="Primary" value={embedYouTube} onChange={setEmbedYouTube} />
-              }
+              after={<Switch variant="Primary" value={embedYouTube} onChange={setEmbedYouTube} />}
             />
             <SettingTile
               title="Spotify"
-              after={
-                <Switch variant="Primary" value={embedSpotify} onChange={setEmbedSpotify} />
-              }
+              after={<Switch variant="Primary" value={embedSpotify} onChange={setEmbedSpotify} />}
             />
             <SettingTile
               title="SoundCloud"
@@ -429,9 +424,7 @@ function Messages() {
             />
             <SettingTile
               title="Twitter / X (Nitter)"
-              after={
-                <Switch variant="Primary" value={embedNitter} onChange={setEmbedNitter} />
-              }
+              after={<Switch variant="Primary" value={embedNitter} onChange={setEmbedNitter} />}
             />
           </Box>
         )}
@@ -468,9 +461,7 @@ function Messages() {
         <SettingTile
           title="Reply & Mention Highlighting"
           description="Highlight messages that reply to you or mention you by @username."
-          after={
-            <Switch variant="Primary" value={replyHighlight} onChange={setReplyHighlight} />
-          }
+          after={<Switch variant="Primary" value={replyHighlight} onChange={setReplyHighlight} />}
         />
       </SequenceCard>
     </Box>
@@ -488,9 +479,7 @@ function Advanced() {
         <SettingTile
           title="Swipe Gestures"
           description="Enable swipe gestures on mobile and tablet, such as swiping to open the room drawer."
-          after={
-            <Switch variant="Primary" value={swipeGestures} onChange={setSwipeGestures} />
-          }
+          after={<Switch variant="Primary" value={swipeGestures} onChange={setSwipeGestures} />}
         />
       </SequenceCard>
       <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">

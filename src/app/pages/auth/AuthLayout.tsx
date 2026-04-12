@@ -131,15 +131,17 @@ export function AuthLayout() {
         justifyContent="SpaceBetween"
         gap="400"
       >
-        <Box direction="Column" className={css.AuthCard}>
+        <Box direction="Column" className={css.AuthCard} data-testid="auth-card">
           <Header className={css.AuthHeader} size="600" variant="Surface">
             <Box grow="Yes" direction="Row" gap="300" alignItems="Center">
               <img className={css.AuthLogo} src={CinnySVG} alt="Cinny Logo" />
-              <Text size="H3">Cinny</Text>
+              <Text size="H3" data-testid="auth-brand">
+                Cinny
+              </Text>
             </Box>
           </Header>
           <Box className={css.AuthCardContent} direction="Column">
-            <Box direction="Column" gap="100">
+            <Box direction="Column" gap="100" data-testid="auth-homeserver-field">
               <Text as="label" size="L400" priority="300">
                 Homeserver
               </Text>

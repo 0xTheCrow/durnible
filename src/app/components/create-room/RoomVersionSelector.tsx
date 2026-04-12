@@ -1,17 +1,7 @@
-import React, { MouseEventHandler, useState } from 'react';
-import {
-  Box,
-  Button,
-  Chip,
-  config,
-  Icon,
-  Icons,
-  Menu,
-  PopOut,
-  RectCords,
-  Text,
-  toRem,
-} from 'folds';
+import type { MouseEventHandler } from 'react';
+import React, { useState } from 'react';
+import type { RectCords } from 'folds';
+import { Box, Button, Chip, config, Icon, Icons, Menu, PopOut, Text, toRem } from 'folds';
 import FocusTrap from 'focus-trap-react';
 import { SettingTile } from '../setting-tile';
 import { SequenceCard } from '../sequence-card';

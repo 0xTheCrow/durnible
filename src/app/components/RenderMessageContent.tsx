@@ -1,14 +1,15 @@
 import React, { useEffect, useRef } from 'react';
 import { useAtomValue } from 'jotai';
 import { MsgType } from 'matrix-js-sdk';
-import { HTMLReactParserOptions } from 'html-react-parser';
-import { Opts } from 'linkifyjs';
+import type { HTMLReactParserOptions } from 'html-react-parser';
+import type { Opts } from 'linkifyjs';
 import { config } from 'folds';
 import {
   AudioContent,
   DownloadFile,
   FileContent,
   ImageContent,
+  ImageGrid,
   MAudio,
   MBadEncrypted,
   MEmote,
@@ -31,13 +32,22 @@ import { PdfViewer } from './Pdf-viewer';
 import { TextViewer } from './text-viewer';
 import { testMatrixTo } from '../plugins/matrix-to';
 import {
-  testYouTubeUrl, getYouTubeEmbedInfo,
-  testSpotifyUrl, getSpotifyEmbedInfo,
-  testSoundCloudUrl, getSoundCloudEmbedInfo,
-  testTwitterUrl, getTwitterEmbedInfo,
+  testYouTubeUrl,
+  getYouTubeEmbedInfo,
+  testSpotifyUrl,
+  getSpotifyEmbedInfo,
+  testSoundCloudUrl,
+  getSoundCloudEmbedInfo,
+  testTwitterUrl,
+  getTwitterEmbedInfo,
 } from '../utils/embeds';
 import { settingsAtom } from '../state/settings';
-import { IAudioContent, IFileContent, IImageContent, IVideoContent } from '../../types/matrix/common';
+import type {
+  IAudioContent,
+  IFileContent,
+  IImageContent,
+  IVideoContent,
+} from '../../types/matrix/common';
 import { getBlobSafeMimeType } from '../utils/mimeTypes';
 
 const MEDIA_VOLUME_KEY = 'cinny_media_volume';
@@ -71,6 +81,12 @@ type RenderMessageContentProps = {
   // can pass mEvent.getContent() directly without per-call casts.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   content: Record<string, any>;
+  /**
+   * When set, this message is the anchor of an image group: the array
+   * contains every image content (including this one) and the renderer
+   * displays them as a single grid instead of a single image.
+   */
+  groupedImages?: IImageContent[];
   mediaAutoLoad?: boolean;
   urlPreview?: boolean;
   highlightRegex?: RegExp;
@@ -83,6 +99,7 @@ function RenderMessageContentInner({
   msgType,
   edited,
   content,
+  groupedImages,
   mediaAutoLoad,
   urlPreview,
   highlightRegex,
@@ -96,10 +113,18 @@ function RenderMessageContentInner({
     const filteredUrls = urls.filter((url) => !testMatrixTo(url));
     if (filteredUrls.length === 0) return undefined;
 
-    const youtubeUrls = settings.embedYouTube ? filteredUrls.filter((url) => testYouTubeUrl(url)) : [];
-    const spotifyUrls = settings.embedSpotify ? filteredUrls.filter((url) => testSpotifyUrl(url)) : [];
-    const soundcloudUrls = settings.embedSoundCloud ? filteredUrls.filter((url) => testSoundCloudUrl(url)) : [];
-    const twitterUrls = settings.embedNitter ? filteredUrls.filter((url) => testTwitterUrl(url)) : [];
+    const youtubeUrls = settings.embedYouTube
+      ? filteredUrls.filter((url) => testYouTubeUrl(url))
+      : [];
+    const spotifyUrls = settings.embedSpotify
+      ? filteredUrls.filter((url) => testSpotifyUrl(url))
+      : [];
+    const soundcloudUrls = settings.embedSoundCloud
+      ? filteredUrls.filter((url) => testSoundCloudUrl(url))
+      : [];
+    const twitterUrls = settings.embedNitter
+      ? filteredUrls.filter((url) => testTwitterUrl(url))
+      : [];
 
     if (
       youtubeUrls.length === 0 &&
@@ -186,7 +211,7 @@ function RenderMessageContentInner({
               linkifyOpts={linkifyOpts}
             />
           )}
-          renderUrlsPreview={(urlPreview || settings.embedLinks) ? renderUrlsPreview : undefined}
+          renderUrlsPreview={urlPreview || settings.embedLinks ? renderUrlsPreview : undefined}
         />
       );
     }
@@ -242,7 +267,7 @@ function RenderMessageContentInner({
             linkifyOpts={linkifyOpts}
           />
         )}
-        renderUrlsPreview={(urlPreview || settings.embedLinks) ? renderUrlsPreview : undefined}
+        renderUrlsPreview={urlPreview || settings.embedLinks ? renderUrlsPreview : undefined}
       />
     );
   }
@@ -261,7 +286,7 @@ function RenderMessageContentInner({
             linkifyOpts={linkifyOpts}
           />
         )}
-        renderUrlsPreview={(urlPreview || settings.embedLinks) ? renderUrlsPreview : undefined}
+        renderUrlsPreview={urlPreview || settings.embedLinks ? renderUrlsPreview : undefined}
       />
     );
   }
@@ -279,12 +304,20 @@ function RenderMessageContentInner({
             linkifyOpts={linkifyOpts}
           />
         )}
-        renderUrlsPreview={(urlPreview || settings.embedLinks) ? renderUrlsPreview : undefined}
+        renderUrlsPreview={urlPreview || settings.embedLinks ? renderUrlsPreview : undefined}
       />
     );
   }
 
   if (msgType === MsgType.Image) {
+    if (groupedImages && groupedImages.length > 1) {
+      return (
+        <>
+          <ImageGrid contents={groupedImages} autoPlay={mediaAutoLoad} />
+          {renderCaption()}
+        </>
+      );
+    }
     return (
       <>
         <MImage
@@ -296,7 +329,6 @@ function RenderMessageContentInner({
               renderImage={(p) => <Image {...p} loading="lazy" />}
             />
           )}
-          outlined={outlineAttachment}
         />
         {renderCaption()}
       </>

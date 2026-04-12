@@ -1,21 +1,11 @@
-import React, { MouseEventHandler, ReactNode, useCallback, useState } from 'react';
-import {
-  Box,
-  Text,
-  Chip,
-  Icon,
-  Icons,
-  RectCords,
-  PopOut,
-  Menu,
-  config,
-  MenuItem,
-  color,
-} from 'folds';
+import type { MouseEventHandler, ReactNode } from 'react';
+import React, { useCallback, useState } from 'react';
+import type { RectCords } from 'folds';
+import { Box, Text, Chip, Icon, Icons, PopOut, Menu, config, MenuItem, color } from 'folds';
 import FocusTrap from 'focus-trap-react';
 import { stopPropagation } from '../utils/keyboard';
 import { SettingTile } from './setting-tile';
-import { SecretStorageKeyContent } from '../../types/matrix/accountData';
+import type { SecretStorageKeyContent } from '../../types/matrix/accountData';
 import { SecretStorageRecoveryKey, SecretStorageRecoveryPassphrase } from './SecretStorage';
 import { useMatrixClient } from '../hooks/useMatrixClient';
 import { AsyncStatus, useAsyncCallback } from '../hooks/useAsyncCallback';

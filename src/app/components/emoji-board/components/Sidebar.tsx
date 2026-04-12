@@ -1,4 +1,6 @@
-import React, { ReactNode, useEffect, useRef, useState, useCallback } from 'react';
+import type { ReactNode } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import type { IconSrc } from 'folds';
 import {
   Box,
   Scroll,
@@ -9,7 +11,6 @@ import {
   Text,
   IconButton,
   Icon,
-  IconSrc,
   Icons,
 } from 'folds';
 import classNames from 'classnames';
@@ -17,10 +18,10 @@ import {
   draggable,
   dropTargetForElements,
 } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
+import type { Instruction } from '@atlaskit/pragmatic-drag-and-drop-hitbox/tree-item';
 import {
   attachInstruction,
   extractInstruction,
-  Instruction,
 } from '@atlaskit/pragmatic-drag-and-drop-hitbox/tree-item';
 import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
 import * as css from './styles.css';
@@ -121,13 +122,7 @@ type DraggableGroupIconProps = {
   icon: IconSrc;
   onClick: (id: string) => void;
 };
-export function DraggableGroupIcon({
-  active,
-  id,
-  label,
-  icon,
-  onClick,
-}: DraggableGroupIconProps) {
+export function DraggableGroupIcon({ active, id, label, icon, onClick }: DraggableGroupIconProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [dropState, setDropState] = useState<Instruction>();
 
@@ -175,13 +170,7 @@ export function DraggableGroupIcon({
       data-drop-above={dropState?.type === 'reorder-above' || undefined}
       data-drop-below={dropState?.type === 'reorder-below' || undefined}
     >
-      <GroupIcon
-        active={active}
-        id={id}
-        label={label}
-        icon={icon}
-        onClick={onClick}
-      />
+      <GroupIcon active={active} id={id} label={label} icon={icon} onClick={onClick} />
     </div>
   );
 }
@@ -272,13 +261,7 @@ export function DraggableImageGroupIcon({
       data-drop-above={dropState?.type === 'reorder-above' || undefined}
       data-drop-below={dropState?.type === 'reorder-below' || undefined}
     >
-      <ImageGroupIcon
-        active={active}
-        id={id}
-        label={label}
-        url={url}
-        onClick={onClick}
-      />
+      <ImageGroupIcon active={active} id={id} label={label} url={url} onClick={onClick} />
     </div>
   );
 }

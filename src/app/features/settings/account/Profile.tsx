@@ -1,11 +1,5 @@
-import React, {
-  ChangeEventHandler,
-  FormEventHandler,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import type { ChangeEventHandler, FormEventHandler } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Box,
   Text,
@@ -31,7 +25,8 @@ import { SequenceCard } from '../../../components/sequence-card';
 import { SequenceCardStyle } from '../styles.css';
 import { SettingTile } from '../../../components/setting-tile';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
-import { UserProfile, useUserProfile, setBannerUrlCache } from '../../../hooks/useUserProfile';
+import type { UserProfile } from '../../../hooks/useUserProfile';
+import { useUserProfile, setBannerUrlCache } from '../../../hooks/useUserProfile';
 import { getMxIdLocalPart, mxcUrlToHttp } from '../../../utils/matrix';
 import { UserAvatar } from '../../../components/user-avatar';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
@@ -42,7 +37,8 @@ import { useObjectURL } from '../../../hooks/useObjectURL';
 import { stopPropagation } from '../../../utils/keyboard';
 import { ImageEditor } from '../../../components/image-editor';
 import { ModalWide } from '../../../styles/Modal.css';
-import { createUploadAtom, UploadSuccess } from '../../../state/upload';
+import type { UploadSuccess } from '../../../state/upload';
+import { createUploadAtom } from '../../../state/upload';
 import { CompactUploadCardRenderer } from '../../../components/upload-card';
 import { useCapabilities } from '../../../hooks/useCapabilities';
 
@@ -166,31 +162,31 @@ function ProfileAvatar({ profile, userId }: ProfileProps) {
       )}
 
       <OverlayModal open={alertRemove} requestClose={() => setAlertRemove(false)}>
-            <Dialog variant="Surface">
-              <Header
-                style={{
-                  padding: `0 ${config.space.S200} 0 ${config.space.S400}`,
-                  borderBottomWidth: config.borderWidth.B300,
-                }}
-                variant="Surface"
-                size="500"
-              >
-                <Box grow="Yes">
-                  <Text size="H4">Remove Avatar</Text>
-                </Box>
-                <IconButton size="300" onClick={() => setAlertRemove(false)} radii="300">
-                  <Icon src={Icons.Cross} />
-                </IconButton>
-              </Header>
-              <Box style={{ padding: config.space.S400 }} direction="Column" gap="400">
-                <Box direction="Column" gap="200">
-                  <Text priority="400">Are you sure you want to remove profile avatar?</Text>
-                </Box>
-                <Button variant="Critical" onClick={handleRemoveAvatar}>
-                  <Text size="B400">Remove</Text>
-                </Button>
-              </Box>
-            </Dialog>
+        <Dialog variant="Surface">
+          <Header
+            style={{
+              padding: `0 ${config.space.S200} 0 ${config.space.S400}`,
+              borderBottomWidth: config.borderWidth.B300,
+            }}
+            variant="Surface"
+            size="500"
+          >
+            <Box grow="Yes">
+              <Text size="H4">Remove Avatar</Text>
+            </Box>
+            <IconButton size="300" onClick={() => setAlertRemove(false)} radii="300">
+              <Icon src={Icons.Cross} />
+            </IconButton>
+          </Header>
+          <Box style={{ padding: config.space.S400 }} direction="Column" gap="400">
+            <Box direction="Column" gap="200">
+              <Text priority="400">Are you sure you want to remove profile avatar?</Text>
+            </Box>
+            <Button variant="Critical" onClick={handleRemoveAvatar}>
+              <Text size="B400">Remove</Text>
+            </Button>
+          </Box>
+        </Dialog>
       </OverlayModal>
     </SettingTile>
   );
@@ -298,31 +294,31 @@ function ProfileBanner({ profile, userId }: ProfileProps) {
       )}
 
       <OverlayModal open={alertRemove} requestClose={() => setAlertRemove(false)}>
-            <Dialog variant="Surface">
-              <Header
-                style={{
-                  padding: `0 ${config.space.S200} 0 ${config.space.S400}`,
-                  borderBottomWidth: config.borderWidth.B300,
-                }}
-                variant="Surface"
-                size="500"
-              >
-                <Box grow="Yes">
-                  <Text size="H4">Remove Banner</Text>
-                </Box>
-                <IconButton size="300" onClick={() => setAlertRemove(false)} radii="300">
-                  <Icon src={Icons.Cross} />
-                </IconButton>
-              </Header>
-              <Box style={{ padding: config.space.S400 }} direction="Column" gap="400">
-                <Box direction="Column" gap="200">
-                  <Text priority="400">Are you sure you want to remove your profile banner?</Text>
-                </Box>
-                <Button variant="Critical" onClick={handleRemoveBanner}>
-                  <Text size="B400">Remove</Text>
-                </Button>
-              </Box>
-            </Dialog>
+        <Dialog variant="Surface">
+          <Header
+            style={{
+              padding: `0 ${config.space.S200} 0 ${config.space.S400}`,
+              borderBottomWidth: config.borderWidth.B300,
+            }}
+            variant="Surface"
+            size="500"
+          >
+            <Box grow="Yes">
+              <Text size="H4">Remove Banner</Text>
+            </Box>
+            <IconButton size="300" onClick={() => setAlertRemove(false)} radii="300">
+              <Icon src={Icons.Cross} />
+            </IconButton>
+          </Header>
+          <Box style={{ padding: config.space.S400 }} direction="Column" gap="400">
+            <Box direction="Column" gap="200">
+              <Text priority="400">Are you sure you want to remove your profile banner?</Text>
+            </Box>
+            <Button variant="Critical" onClick={handleRemoveBanner}>
+              <Text size="B400">Remove</Text>
+            </Button>
+          </Box>
+        </Dialog>
       </OverlayModal>
     </SettingTile>
   );
@@ -428,7 +424,7 @@ function ProfileDisplayName({ profile, userId }: ProfileProps) {
 
 export function Profile() {
   const mx = useMatrixClient();
-  const userId = mx.getUserId()!;
+  const userId = mx.getSafeUserId();
   const profile = useUserProfile(userId);
 
   return (

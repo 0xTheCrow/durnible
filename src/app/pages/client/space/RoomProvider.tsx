@@ -1,4 +1,5 @@
-import React, { ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import React from 'react';
 import { useParams } from 'react-router-dom';
 import { useAtom, useAtomValue } from 'jotai';
 import { useSelectedRoom } from '../../../hooks/router/useSelectedRoom';
@@ -27,14 +28,11 @@ export function SpaceRouteRoomProvider({ children }: { children: ReactNode }) {
   const roomId = useSelectedRoom();
   const room = mx.getRoom(roomId);
 
+  if (!roomIdOrAlias) return null;
+
   if (!room || !allRooms.includes(room.roomId)) {
-    // room is not joined
     return (
-      <JoinBeforeNavigate
-        roomIdOrAlias={roomIdOrAlias!}
-        eventId={eventId}
-        viaServers={viaServers}
-      />
+      <JoinBeforeNavigate roomIdOrAlias={roomIdOrAlias} eventId={eventId} viaServers={viaServers} />
     );
   }
 
@@ -58,11 +56,7 @@ export function SpaceRouteRoomProvider({ children }: { children: ReactNode }) {
     }
 
     return (
-      <JoinBeforeNavigate
-        roomIdOrAlias={roomIdOrAlias!}
-        eventId={eventId}
-        viaServers={viaServers}
-      />
+      <JoinBeforeNavigate roomIdOrAlias={roomIdOrAlias} eventId={eventId} viaServers={viaServers} />
     );
   }
 

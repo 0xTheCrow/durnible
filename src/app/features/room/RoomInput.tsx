@@ -1,17 +1,13 @@
-import React, {
-  KeyboardEventHandler,
-  RefObject,
-  forwardRef,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import type { KeyboardEventHandler, RefObject } from 'react';
+import React, { forwardRef, useCallback, useEffect, useRef, useState } from 'react';
 import { useAtom, useAtomValue } from 'jotai';
 import { isKeyHotkey } from 'is-hotkey';
-import { EventType, IContent, MsgType, RelationType, Room } from 'matrix-js-sdk';
+import type { IContent, Room } from 'matrix-js-sdk';
+import { EventType, MsgType, RelationType } from 'matrix-js-sdk';
+import type { RoomMessageEventContent } from 'matrix-js-sdk/lib/types';
 import { ReactEditor } from 'slate-react';
-import { Transforms, Editor, BaseRange } from 'slate';
+import type { Editor, BaseRange } from 'slate';
+import { Transforms } from 'slate';
 import {
   Box,
   Dialog,
@@ -30,6 +26,7 @@ import {
 } from 'folds';
 
 import { useMatrixClient } from '../../hooks/useMatrixClient';
+import type { AutocompleteQuery } from '../../components/editor';
 import {
   CustomEditor,
   Toolbar,
@@ -37,7 +34,6 @@ import {
   toPlainText,
   AUTOCOMPLETE_PREFIXES,
   AutocompletePrefix,
-  AutocompleteQuery,
   getAutocompleteQuery,
   getPrevWorldRange,
   resetEditor,
@@ -59,40 +55,27 @@ import {
 } from '../../components/editor';
 import { EmojiBoard, EmojiBoardTab } from '../../components/emoji-board';
 import { UseStateProvider } from '../../components/UseStateProvider';
-import {
-  TUploadContent,
-  getImageInfo,
-  getMxIdLocalPart,
-  mxcUrlToHttp,
-} from '../../utils/matrix';
+import type { TUploadContent } from '../../utils/matrix';
+import { getImageInfo, getMxIdLocalPart, mxcUrlToHttp } from '../../utils/matrix';
 import { encryptFileInWorker } from '../../utils/encryptWorker';
 import { useTypingStatusUpdater } from '../../hooks/useTypingStatusUpdater';
 import { useFilePicker } from '../../hooks/useFilePicker';
 import { useFilePasteHandler } from '../../hooks/useFilePasteHandler';
 import { useFileDropZone } from '../../hooks/useFileDrop';
+import type { TUploadItem, TUploadMetadata } from '../../state/room/roomInputDrafts';
 import {
-  TUploadItem,
-  TUploadMetadata,
   roomIdToMsgDraftAtomFamily,
   roomIdToReplyDraftAtomFamily,
   roomIdToUploadItemsAtomFamily,
   roomUploadAtomFamily,
 } from '../../state/room/roomInputDrafts';
 import { UploadCardRenderer } from '../../components/upload-card';
-import {
-  UploadBoard,
-  UploadBoardContent,
-  UploadBoardHeader,
-  UploadBoardImperativeHandlers,
-} from '../../components/upload-board';
-import {
-  Upload,
-  UploadStatus,
-  UploadSuccess,
-  createUploadFamilyObserverAtom,
-} from '../../state/upload';
+import type { UploadBoardImperativeHandlers } from '../../components/upload-board';
+import { UploadBoard, UploadBoardContent, UploadBoardHeader } from '../../components/upload-board';
+import type { Upload, UploadSuccess } from '../../state/upload';
+import { UploadStatus, createUploadFamilyObserverAtom } from '../../state/upload';
 import { getImageUrlBlob, loadImageElement } from '../../utils/dom';
-import { safeFile } from '../../utils/mimeTypes';
+import { handleUploadFiles } from './handleUploadFiles';
 import { fulfilledPromiseSettledResult } from '../../utils/common';
 import { useSetting } from '../../state/hooks/settings';
 import { settingsAtom } from '../../state/settings';
@@ -150,7 +133,10 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     const sendBtnRef = useRef<HTMLButtonElement>(null);
     const alternateMentionsRef = useRef<Array<{ userId: string; displayName: string }>>([]);
     const alternateRoomMentionsRef = useRef<Array<{ roomAliasOrId: string; name: string }>>([]);
-    const alternateAutocompleteRangeRef = useRef<{ start: number; end: number }>({ start: 0, end: 0 });
+    const alternateAutocompleteRangeRef = useRef<{ start: number; end: number }>({
+      start: 0,
+      end: 0,
+    });
     const [hasEditorContent, setHasEditorContent] = useState(false);
     const roomToParents = useAtomValue(roomToParentsAtom);
     const powerLevels = usePowerLevelsContext();
@@ -200,63 +186,25 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
 
     const handleFiles = useCallback(
       (files: File[]) => {
-        setUploadBoard(true);
-        const safeFiles = files.map(safeFile);
-
-        if (room.hasEncryptionStateEvent()) {
-          const placeholders: TUploadItem[] = safeFiles.map((f) => ({
-            file: f,
-            originalFile: f,
-            encInfo: undefined,
-            metadata: { markedAsSpoiler: false },
-            isEncrypting: true,
-          }));
-          setSelectedFiles({ type: 'PUT', item: placeholders });
-
-          safeFiles.forEach(async (f, i) => {
-            try {
-              const encrypted = await encryptFileInWorker(f);
-              setSelectedFiles({
-                type: 'REPLACE',
-                item: placeholders[i],
-                replacement: {
-                  ...encrypted,
-                  metadata: { markedAsSpoiler: false },
-                  isEncryptionSuccessful: true,
-                },
-              });
-            } catch (e) {
-              setSelectedFiles({
-                type: 'REPLACE',
-                item: placeholders[i],
-                replacement: {
-                  ...placeholders[i],
-                  file: new File([], f.name, { type: f.type }),
-                  isEncrypting: false,
-                  isEncryptionSuccessful: false,
-                  encryptError: e instanceof Error ? e.message : 'Encryption failed',
-                },
-              });
-            }
-          });
-        } else {
-          const fileItems: TUploadItem[] = safeFiles.map((f) => ({
-            file: f,
-            originalFile: f,
-            encInfo: undefined,
-            metadata: { markedAsSpoiler: false },
-          }));
-          setSelectedFiles({ type: 'PUT', item: fileItems });
-        }
-
-        sendBtnRef.current?.focus();
+        handleUploadFiles(files, {
+          currentItemCount: selectedFiles.length,
+          setItems: setSelectedFiles,
+          isEncrypted: room.hasEncryptionStateEvent(),
+          encrypt: encryptFileInWorker,
+          onUploadBoardOpen: () => setUploadBoard(true),
+          onAccepted: () => sendBtnRef.current?.focus(),
+        });
       },
-      [setSelectedFiles, room]
+      [setSelectedFiles, room, selectedFiles.length]
     );
     const handleVoiceSend = useCallback(
       (blob: Blob, mimeType: string, _duration: number) => {
         setIsVoiceRecording(false);
-        const ext = mimeType.startsWith('audio/ogg') ? 'ogg' : mimeType.startsWith('audio/mp4') ? 'm4a' : 'webm';
+        const ext = mimeType.startsWith('audio/ogg')
+          ? 'ogg'
+          : mimeType.startsWith('audio/mp4')
+          ? 'm4a'
+          : 'webm';
         const file = new File([blob], `voice-message.${ext}`, { type: mimeType });
         handleFiles([file]);
       },
@@ -289,8 +237,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     useEffect(
       () => () => {
         if (alternateInput) {
-          const text = (editor.children[0] as any)?.children?.[0]?.text ?? '';
-          if (text) {
+          if (!isEmptyEditor(editor)) {
             setMsgDraft(JSON.parse(JSON.stringify(editor.children)));
           } else {
             setMsgDraft([]);
@@ -364,20 +311,22 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       const uploadReplyDraft = uploadsReplyDraftRef.current;
       uploadsReplyDraftRef.current = undefined;
       const contents = fulfilledPromiseSettledResult(await Promise.allSettled(contentsPromises));
-      contents.forEach((content) => {
+      contents.forEach((rawContent) => {
+        let content = rawContent;
         if (uploadReplyDraft) {
-          content['m.relates_to'] = {
+          const relatesTo: Record<string, unknown> = {
             'm.in_reply_to': {
               event_id: uploadReplyDraft.eventId,
             },
           };
           if (uploadReplyDraft.relation?.rel_type === RelationType.Thread) {
-            content['m.relates_to'].event_id = uploadReplyDraft.relation.event_id;
-            content['m.relates_to'].rel_type = RelationType.Thread;
-            content['m.relates_to'].is_falling_back = false;
+            relatesTo.event_id = uploadReplyDraft.relation.event_id;
+            relatesTo.rel_type = RelationType.Thread;
+            relatesTo.is_falling_back = false;
           }
+          content = { ...rawContent, 'm.relates_to': relatesTo };
         }
-        mx.sendMessage(roomId, content as any);
+        mx.sendMessage(roomId, content as RoomMessageEventContent);
       });
     };
 
@@ -439,17 +388,24 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       if (plainText !== '') {
         const body = plainText;
         const mentionData = getMentions(mx, roomId, editor);
-        if (alternateInput && (alternateMentionsRef.current.length > 0 || alternateRoomMentionsRef.current.length > 0)) {
+        if (
+          alternateInput &&
+          (alternateMentionsRef.current.length > 0 || alternateRoomMentionsRef.current.length > 0)
+        ) {
           let html = customHtml;
           alternateMentionsRef.current.forEach(({ userId, displayName }) => {
             mentionData.users.add(userId);
             const escapedName = sanitizeText(`@${displayName}`);
-            const mentionLink = `<a href="${encodeURI(`https://matrix.to/#/${userId}`)}">${escapedName}</a>`;
+            const mentionLink = `<a href="${encodeURI(
+              `https://matrix.to/#/${userId}`
+            )}">${escapedName}</a>`;
             html = html.split(escapedName).join(mentionLink);
           });
           alternateRoomMentionsRef.current.forEach(({ roomAliasOrId, name }) => {
             const escapedName = sanitizeText(`#${name}`);
-            const mentionLink = `<a href="${encodeURI(`https://matrix.to/#/${roomAliasOrId}`)}">${escapedName}</a>`;
+            const mentionLink = `<a href="${encodeURI(
+              `https://matrix.to/#/${roomAliasOrId}`
+            )}">${escapedName}</a>`;
             html = html.split(escapedName).join(mentionLink);
           });
           customHtml = html;
@@ -484,7 +440,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
             content['m.relates_to'].is_falling_back = false;
           }
         }
-        mx.sendMessage(roomId, content as any);
+        mx.sendMessage(roomId, content as RoomMessageEventContent);
       }
 
       // Send files: if no text was sent, uploads carry the reply context
@@ -502,12 +458,25 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       setHasEditorContent(false);
       setReplyDraft(undefined);
       sendTypingStatus(false);
-    }, [mx, roomId, editor, replyDraft, sendTypingStatus, setReplyDraft, isMarkdown, commands, imagePacks, selectedFiles, alternateInput]);
+    }, [
+      mx,
+      roomId,
+      editor,
+      replyDraft,
+      sendTypingStatus,
+      setReplyDraft,
+      isMarkdown,
+      commands,
+      imagePacks,
+      selectedFiles,
+      alternateInput,
+    ]);
 
     const handleKeyDown: KeyboardEventHandler = useCallback(
       (evt) => {
         if (
-          (isKeyHotkey('mod+enter', evt) || (!enterForNewline && !mobileOrTablet() && isKeyHotkey('enter', evt))) &&
+          (isKeyHotkey('mod+enter', evt) ||
+            (!enterForNewline && !mobileOrTablet() && isKeyHotkey('enter', evt))) &&
           !isComposing(evt)
         ) {
           evt.preventDefault();
@@ -570,7 +539,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
                 alternateAutocompleteRangeRef.current = { start, end: offset };
                 const dummyRange: BaseRange = {
                   anchor: { path: [0, 0], offset: start },
-                  focus: { path: [0, 0], offset: offset },
+                  focus: { path: [0, 0], offset },
                 };
                 query = {
                   range: dummyRange,
@@ -611,7 +580,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
         const newText = currentText.slice(0, start) + insertText + currentText.slice(end);
 
         el.textContent = newText;
-        editor.children = [{ type: BlockType.Paragraph, children: [{ text: newText }] }] as any;
+        editor.children = [{ type: BlockType.Paragraph, children: [{ text: newText }] }];
         setHasEditorContent(newText.length > 0);
 
         alternateMentionsRef.current.push({ userId, displayName });
@@ -632,7 +601,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
           }
         }
       },
-      [editor, mx]
+      [editor, alternateInputRef]
     );
 
     const handleAlternateRoomMentionSelect = useCallback(
@@ -647,7 +616,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
         const newText = currentText.slice(0, start) + insertText + currentText.slice(end);
 
         el.textContent = newText;
-        editor.children = [{ type: BlockType.Paragraph, children: [{ text: newText }] }] as any;
+        editor.children = [{ type: BlockType.Paragraph, children: [{ text: newText }] }];
         setHasEditorContent(newText.length > 0);
 
         alternateRoomMentionsRef.current.push({ roomAliasOrId, name: displayName });
@@ -667,7 +636,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
           }
         }
       },
-      [editor]
+      [editor, alternateInputRef]
     );
 
     const handleAlternateEmoticonSelect = useCallback(
@@ -681,7 +650,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
         const newText = currentText.slice(0, start) + insertText + currentText.slice(end);
 
         el.textContent = newText;
-        editor.children = [{ type: BlockType.Paragraph, children: [{ text: newText }] }] as any;
+        editor.children = [{ type: BlockType.Paragraph, children: [{ text: newText }] }];
         setHasEditorContent(newText.length > 0);
 
         const newPos = start + insertText.length;
@@ -699,7 +668,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
           }
         }
       },
-      [editor]
+      [editor, alternateInputRef]
     );
 
     const handleAlternateCommandSelect = useCallback(
@@ -713,7 +682,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
         const newText = currentText.slice(0, start) + insertText + currentText.slice(end);
 
         el.textContent = newText;
-        editor.children = [{ type: BlockType.Paragraph, children: [{ text: newText }] }] as any;
+        editor.children = [{ type: BlockType.Paragraph, children: [{ text: newText }] }];
         setHasEditorContent(newText.length > 0);
 
         const newPos = start + insertText.length;
@@ -731,13 +700,13 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
           }
         }
       },
-      [editor]
+      [editor, alternateInputRef]
     );
 
     const handleEmoticonSelect = (key: string, shortcode: string) => {
-      if (alternateInput && (editor as any).insertAlternateText) {
+      if (alternateInput && editor.insertAlternateText) {
         const emojiText = key.startsWith('mxc://') ? `:${shortcode}:` : key;
-        (editor as any).insertAlternateText(emojiText);
+        editor.insertAlternateText(emojiText);
         return;
       }
       editor.insertNode(createEmoticonElement(key, shortcode));
@@ -884,162 +853,163 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
             onCancel={() => setIsVoiceRecording(false)}
           />
         ) : (
-        <CustomEditor
-          editableName={ROOM_INPUT_EDITABLE_NAME}
-          editor={editor}
-          alternateInputRef={alternateInputRef}
-          onKeyDown={handleKeyDown}
-          onKeyUp={handleKeyUp}
-          onChange={handleEditorChange}
-          onPaste={handlePaste}
-          onFiles={handleFiles}
-          top={
-            replyDraft && (
-              <div>
-                <Box
-                  alignItems="Center"
-                  gap="300"
-                  style={{ padding: `${config.space.S200} ${config.space.S300} 0` }}
-                >
-                  <IconButton
-                    onClick={() => setReplyDraft(undefined)}
-                    variant="SurfaceVariant"
-                    size="300"
-                    radii="300"
-                  >
-                    <Icon src={Icons.Cross} size="50" />
-                  </IconButton>
-                  <Box direction="Row" gap="200" alignItems="Center">
-                    {replyDraft.relation?.rel_type === RelationType.Thread && <ThreadIndicator />}
-                    <ReplyLayout
-                      userColor={replyUsernameColor}
-                      username={
-                        <Text size="T300" truncate>
-                          <b>
-                            {getMemberDisplayName(room, replyDraft.userId) ??
-                              getMxIdLocalPart(replyDraft.userId) ??
-                              replyDraft.userId}
-                          </b>
-                        </Text>
-                      }
-                    >
-                      <Text size="T300" truncate>
-                        {trimReplyFromBody(replyDraft.body)}
-                      </Text>
-                    </ReplyLayout>
-                  </Box>
-                </Box>
-              </div>
-            )
-          }
-          before={
-            <IconButton
-              onClick={() => pickFile('*')}
-              variant="SurfaceVariant"
-              size="300"
-              radii="300"
-            >
-              <Icon src={Icons.PlusCircle} />
-            </IconButton>
-          }
-          after={
-            <>
-              {!alternateInput && (
-                <IconButton
-                  variant="SurfaceVariant"
-                  size="300"
-                  radii="300"
-                  onMouseDown={(e: React.MouseEvent) => e.preventDefault()}
-                  onTouchStart={(e: React.TouchEvent) => e.preventDefault()}
-                  onClick={() => setToolbar(!toolbar)}
-                >
-                  <Icon src={toolbar ? Icons.AlphabetUnderline : Icons.Alphabet} />
-                </IconButton>
-              )}
-              <UseStateProvider initial={undefined}>
-                {(emojiBoardTab: EmojiBoardTab | undefined, setEmojiBoardTab) => (
-                  <PopOut
-                    offset={16}
-                    alignOffset={-44}
-                    position="Top"
-                    align="End"
-                    anchor={
-                      emojiBoardTab === undefined
-                        ? undefined
-                        : emojiBtnRef.current?.getBoundingClientRect() ?? undefined
-                    }
-                    content={
-                      <EmojiBoard
-                        tab={emojiBoardTab}
-                        onTabChange={setEmojiBoardTab}
-                        imagePackRooms={imagePackRooms}
-                        returnFocusOnDeactivate={false}
-                        onEmojiSelect={handleEmoticonSelect}
-                        onCustomEmojiSelect={handleEmoticonSelect}
-                        onStickerSelect={handleStickerSelect}
-                        requestClose={() => {
-                          setEmojiBoardTab((t) => {
-                            if (t) {
-                              if (!mobileOrTablet() && !alternateInput) ReactEditor.focus(editor);
-                              return undefined;
-                            }
-                            return t;
-                          });
-                        }}
-                      />
-                    }
+          <CustomEditor
+            editableName={ROOM_INPUT_EDITABLE_NAME}
+            editor={editor}
+            alternateInputRef={alternateInputRef}
+            onKeyDown={handleKeyDown}
+            onKeyUp={handleKeyUp}
+            onChange={handleEditorChange}
+            onPaste={handlePaste}
+            onFiles={handleFiles}
+            top={
+              replyDraft && (
+                <div>
+                  <Box
+                    alignItems="Center"
+                    gap="300"
+                    style={{ padding: `${config.space.S200} ${config.space.S300} 0` }}
                   >
                     <IconButton
-                      ref={emojiBtnRef}
-                      aria-pressed={
-                        hideStickerBtn ? !!emojiBoardTab : emojiBoardTab === EmojiBoardTab.Emoji
-                      }
-                      onClick={() => setEmojiBoardTab(EmojiBoardTab.Emoji)}
+                      onClick={() => setReplyDraft(undefined)}
                       variant="SurfaceVariant"
                       size="300"
                       radii="300"
                     >
-                      <Icon
-                        src={Icons.Smile}
-                        filled={
+                      <Icon src={Icons.Cross} size="50" />
+                    </IconButton>
+                    <Box direction="Row" gap="200" alignItems="Center">
+                      {replyDraft.relation?.rel_type === RelationType.Thread && <ThreadIndicator />}
+                      <ReplyLayout
+                        userColor={replyUsernameColor}
+                        username={
+                          <Text size="T300" truncate>
+                            <b>
+                              {getMemberDisplayName(room, replyDraft.userId) ??
+                                getMxIdLocalPart(replyDraft.userId) ??
+                                replyDraft.userId}
+                            </b>
+                          </Text>
+                        }
+                      >
+                        <Text size="T300" truncate>
+                          {trimReplyFromBody(replyDraft.body)}
+                        </Text>
+                      </ReplyLayout>
+                    </Box>
+                  </Box>
+                </div>
+              )
+            }
+            before={
+              <IconButton
+                onClick={() => pickFile('*')}
+                variant="SurfaceVariant"
+                size="300"
+                radii="300"
+              >
+                <Icon src={Icons.PlusCircle} />
+              </IconButton>
+            }
+            after={
+              <>
+                {!alternateInput && (
+                  <IconButton
+                    variant="SurfaceVariant"
+                    size="300"
+                    radii="300"
+                    onMouseDown={(e: React.MouseEvent) => e.preventDefault()}
+                    onTouchStart={(e: React.TouchEvent) => e.preventDefault()}
+                    onClick={() => setToolbar(!toolbar)}
+                  >
+                    <Icon src={toolbar ? Icons.AlphabetUnderline : Icons.Alphabet} />
+                  </IconButton>
+                )}
+                <UseStateProvider initial={undefined}>
+                  {(emojiBoardTab: EmojiBoardTab | undefined, setEmojiBoardTab) => (
+                    <PopOut
+                      offset={16}
+                      alignOffset={-44}
+                      position="Top"
+                      align="End"
+                      anchor={
+                        emojiBoardTab === undefined
+                          ? undefined
+                          : emojiBtnRef.current?.getBoundingClientRect() ?? undefined
+                      }
+                      content={
+                        <EmojiBoard
+                          tab={emojiBoardTab}
+                          onTabChange={setEmojiBoardTab}
+                          imagePackRooms={imagePackRooms}
+                          returnFocusOnDeactivate={false}
+                          onEmojiSelect={handleEmoticonSelect}
+                          onCustomEmojiSelect={handleEmoticonSelect}
+                          onStickerSelect={handleStickerSelect}
+                          requestClose={() => {
+                            setEmojiBoardTab((t) => {
+                              if (t) {
+                                if (!mobileOrTablet() && !alternateInput) ReactEditor.focus(editor);
+                                return undefined;
+                              }
+                              return t;
+                            });
+                          }}
+                        />
+                      }
+                    >
+                      <IconButton
+                        ref={emojiBtnRef}
+                        aria-pressed={
                           hideStickerBtn ? !!emojiBoardTab : emojiBoardTab === EmojiBoardTab.Emoji
                         }
-                      />
-                    </IconButton>
-                  </PopOut>
+                        onClick={() => setEmojiBoardTab(EmojiBoardTab.Emoji)}
+                        variant="SurfaceVariant"
+                        size="300"
+                        radii="300"
+                      >
+                        <Icon
+                          src={Icons.Smile}
+                          filled={
+                            hideStickerBtn ? !!emojiBoardTab : emojiBoardTab === EmojiBoardTab.Emoji
+                          }
+                        />
+                      </IconButton>
+                    </PopOut>
+                  )}
+                </UseStateProvider>
+                {hasEditorContent || !!replyDraft || selectedFiles.length > 0 ? (
+                  <IconButton
+                    ref={sendBtnRef}
+                    onClick={submit}
+                    variant="SurfaceVariant"
+                    size="300"
+                    radii="300"
+                  >
+                    <Icon src={Icons.Send} />
+                  </IconButton>
+                ) : (
+                  <IconButton
+                    onClick={() => setIsVoiceRecording(true)}
+                    variant="SurfaceVariant"
+                    size="300"
+                    radii="300"
+                  >
+                    <Icon src={Icons.Mic} />
+                  </IconButton>
                 )}
-              </UseStateProvider>
-              {hasEditorContent || !!replyDraft || selectedFiles.length > 0 ? (
-                <IconButton
-                  ref={sendBtnRef}
-                  onClick={submit}
-                  variant="SurfaceVariant"
-                  size="300"
-                  radii="300"
-                >
-                  <Icon src={Icons.Send} />
-                </IconButton>
-              ) : (
-                <IconButton
-                  onClick={() => setIsVoiceRecording(true)}
-                  variant="SurfaceVariant"
-                  size="300"
-                  radii="300"
-                >
-                  <Icon src={Icons.Mic} />
-                </IconButton>
-              )}
-            </>
-          }
-          bottom={
-            !alternateInput && toolbar && (
-              <div>
-                <Line variant="SurfaceVariant" size="300" />
-                <Toolbar />
-              </div>
-            )
-          }
-        />
+              </>
+            }
+            bottom={
+              !alternateInput &&
+              toolbar && (
+                <div>
+                  <Line variant="SurfaceVariant" size="300" />
+                  <Toolbar />
+                </div>
+              )
+            }
+          />
         )}
       </div>
     );

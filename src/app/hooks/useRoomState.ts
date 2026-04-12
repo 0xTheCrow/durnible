@@ -1,10 +1,5 @@
-import {
-  Direction,
-  MatrixEvent,
-  Room,
-  RoomStateEvent,
-  RoomStateEventHandlerMap,
-} from 'matrix-js-sdk';
+import type { MatrixEvent, Room, RoomStateEventHandlerMap } from 'matrix-js-sdk';
+import { Direction, RoomStateEvent } from 'matrix-js-sdk';
 import { useCallback, useEffect, useState } from 'react';
 import { StateEvent } from '../../types/matrix/room';
 

@@ -1,7 +1,9 @@
 /* eslint-disable no-param-reassign */
 /* eslint-disable jsx-a11y/no-noninteractive-element-interactions */
-import React, { FormEventHandler, MouseEventHandler, useEffect, useRef, useState } from 'react';
+import type { FormEventHandler, MouseEventHandler } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import classNames from 'classnames';
+import type { RectCords } from 'folds';
 import {
   Box,
   Button,
@@ -13,7 +15,6 @@ import {
   Input,
   Menu,
   PopOut,
-  RectCords,
   Scroll,
   Spinner,
   Text,

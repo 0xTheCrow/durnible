@@ -1,7 +1,9 @@
 import { useAtomValue } from 'jotai';
-import React, { ReactNode, useCallback, useEffect, useRef } from 'react';
+import type { ReactNode } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MatrixEvent, MatrixEventEvent, RoomEvent, RoomEventHandlerMap } from 'matrix-js-sdk';
+import type { MatrixEvent, RoomEventHandlerMap } from 'matrix-js-sdk';
+import { MatrixEventEvent, RoomEvent } from 'matrix-js-sdk';
 import { roomToUnreadAtom, unreadEqual, unreadInfoToUnread } from '../../state/room/roomToUnread';
 import LogoSVG from '../../../../public/res/svg/cinny.svg';
 import LogoUnreadSVG from '../../../../public/res/svg/cinny-unread.svg';
@@ -21,7 +23,8 @@ import {
   getUnreadInfo,
   isNotificationEvent,
 } from '../../utils/room';
-import { NotificationType, UnreadInfo } from '../../../types/matrix/room';
+import type { UnreadInfo } from '../../../types/matrix/room';
+import { NotificationType } from '../../../types/matrix/room';
 import { getMxIdLocalPart, mxcUrlToHttp } from '../../utils/matrix';
 import { useSelectedRoom } from '../../hooks/router/useSelectedRoom';
 import { useInboxNotificationsSelected } from '../../hooks/router/useInbox';
@@ -40,7 +43,7 @@ function SearchCacheUpdater() {
       const body = content?.body;
       if (typeof body !== 'string' || !body) return;
 
-      const msgtype = content.msgtype;
+      const { msgtype } = content;
       const eventId = mEvent.getId();
       if (!eventId) return;
 
@@ -77,7 +80,7 @@ function SearchCacheUpdater() {
 
       // If the event is still encrypted, wait for decryption
       if (mEvent.isEncrypted() && !mEvent.isDecryptionFailure()) {
-        const roomId = room.roomId;
+        const { roomId } = room;
         const onDecrypted = () => {
           mEvent.removeListener(MatrixEventEvent.Decrypted, onDecrypted);
           pendingDecryptions.delete(mEvent);

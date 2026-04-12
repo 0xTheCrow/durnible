@@ -1,5 +1,6 @@
 /* eslint-disable react/destructuring-assignment */
-import React, { MouseEventHandler, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { MouseEventHandler } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Avatar,
   Box,
@@ -14,23 +15,16 @@ import {
   toRem,
 } from 'folds';
 import { useSearchParams } from 'react-router-dom';
-import {
-  INotification,
-  INotificationsResponse,
-  IRoomEvent,
-  JoinRule,
-  Method,
-  RelationType,
-  Room,
-} from 'matrix-js-sdk';
+import type { INotification, INotificationsResponse, IRoomEvent, Room } from 'matrix-js-sdk';
+import { JoinRule, Method, RelationType } from 'matrix-js-sdk';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { HTMLReactParserOptions } from 'html-react-parser';
-import { Opts as LinkifyOpts } from 'linkifyjs';
+import type { HTMLReactParserOptions } from 'html-react-parser';
+import type { Opts as LinkifyOpts } from 'linkifyjs';
 import { useAtomValue } from 'jotai';
 import { Page, PageContent, PageContentCenter, PageHeader } from '../../../components/page';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { getMxIdLocalPart, mxcUrlToHttp } from '../../../utils/matrix';
-import { InboxNotificationsPathSearchParams } from '../../paths';
+import type { InboxNotificationsPathSearchParams } from '../../paths';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { SequenceCard } from '../../../components/sequence-card';
 import { RoomAvatar, RoomIcon } from '../../../components/room-avatar';
@@ -66,7 +60,8 @@ import { RenderMessageContent } from '../../../components/RenderMessageContent';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
 import { Image } from '../../../components/media';
-import { GetContentCallback, MessageEvent, StateEvent } from '../../../../types/matrix/room';
+import type { GetContentCallback } from '../../../../types/matrix/room';
+import { MessageEvent, StateEvent } from '../../../../types/matrix/room';
 import { useMatrixEventRenderer } from '../../../hooks/useMatrixEventRenderer';
 import * as customHtmlCss from '../../../styles/CustomHtml.css';
 import { useRoomNavigate } from '../../../hooks/useRoomNavigate';
@@ -234,7 +229,12 @@ function RoomNotificationsGroupComp({
   const getMemberPowerTag = useGetMemberPowerTag(room, creators, powerLevels);
 
   const theme = useTheme();
-  const accessibleTagColors = useAccessiblePowerTagColors(theme.kind, creatorsTag, powerLevelTags, true);
+  const accessibleTagColors = useAccessiblePowerTagColors(
+    theme.kind,
+    creatorsTag,
+    powerLevelTags,
+    true
+  );
 
   const mentionClickHandler = useMentionClickHandler(room.roomId);
   const spoilerClickHandler = useSpoilerClickHandler();

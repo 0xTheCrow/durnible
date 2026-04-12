@@ -1,4 +1,6 @@
-import React, { FormEventHandler, MouseEventHandler, useCallback, useState } from 'react';
+import type { FormEventHandler, MouseEventHandler } from 'react';
+import React, { useCallback, useState } from 'react';
+import type { RectCords } from 'folds';
 import {
   Box,
   Button,
@@ -12,27 +14,21 @@ import {
   OverlayBackdrop,
   OverlayCenter,
   PopOut,
-  RectCords,
   Spinner,
   Text,
   config,
 } from 'folds';
 import FocusTrap from 'focus-trap-react';
 import { Link } from 'react-router-dom';
-import { MatrixError } from 'matrix-js-sdk';
+import type { MatrixError } from 'matrix-js-sdk';
 import { getMxIdLocalPart, getMxIdServer, isUserId } from '../../../utils/matrix';
 import { EMAIL_REGEX } from '../../../utils/regex';
 import { useAutoDiscoveryInfo } from '../../../hooks/useAutoDiscoveryInfo';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { useAuthServer } from '../../../hooks/useAuthServer';
 import { useClientConfig } from '../../../hooks/useClientConfig';
-import {
-  CustomLoginResponse,
-  LoginError,
-  factoryGetBaseUrl,
-  login,
-  useLoginComplete,
-} from './loginUtil';
+import type { CustomLoginResponse } from './loginUtil';
+import { LoginError, factoryGetBaseUrl, login, useLoginComplete } from './loginUtil';
 import { PasswordInput } from '../../../components/password-input';
 import { FieldError } from '../FiledError';
 import { getResetPasswordPath } from '../../pathUtils';

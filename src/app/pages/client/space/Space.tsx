@@ -1,12 +1,7 @@
-import React, {
-  MouseEventHandler,
-  forwardRef,
-  useCallback,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import type { MouseEventHandler } from 'react';
+import React, { forwardRef, useCallback, useMemo, useRef, useState } from 'react';
 import { useAtom, useAtomValue } from 'jotai';
+import type { RectCords } from 'folds';
 import {
   Avatar,
   Box,
@@ -18,7 +13,6 @@ import {
   Menu,
   MenuItem,
   PopOut,
-  RectCords,
   Spinner,
   Text,
   color,
@@ -26,8 +20,9 @@ import {
   toRem,
 } from 'folds';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { JoinRule, Room } from 'matrix-js-sdk';
-import { RoomJoinRulesEventContent } from 'matrix-js-sdk/lib/types';
+import type { Room } from 'matrix-js-sdk';
+import { JoinRule } from 'matrix-js-sdk';
+import type { RoomJoinRulesEventContent } from 'matrix-js-sdk/lib/types';
 import FocusTrap from 'focus-trap-react';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { mDirectAtom } from '../../../state/mDirectList';
@@ -342,7 +337,9 @@ export function SpaceTombstone({ roomId, replacementRoomId }: SpaceTombstoneProp
         <Text size="T200">This space has been replaced and is no longer active.</Text>
         {joinState.status === AsyncStatus.Error && (
           <Text className={BreakWord} style={{ color: color.Critical.Main }} size="T200">
-            {(joinState.error as any)?.message ?? 'Failed to join replacement space!'}
+            {joinState.error instanceof Error
+              ? joinState.error.message
+              : 'Failed to join replacement space!'}
           </Text>
         )}
       </Box>

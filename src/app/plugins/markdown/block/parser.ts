@@ -8,7 +8,7 @@ import {
   UnorderedListRule,
 } from './rules';
 import { runBlockRule } from './runner';
-import { BlockMDParser } from './type';
+import type { BlockMDParser } from './type';
 
 /**
  * Parses block-level markdown text into HTML using defined block rules.

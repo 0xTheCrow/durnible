@@ -1,21 +1,16 @@
-import {
-  EncryptedAttachmentInfo,
-  decryptAttachment,
-  encryptAttachment,
-} from 'browser-encrypt-attachment';
-import {
-  EventTimeline,
+import type { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
+import { decryptAttachment, encryptAttachment } from 'browser-encrypt-attachment';
+import type {
   MatrixClient,
-  MatrixError,
   MatrixEvent,
   Room,
   RoomMember,
   UploadProgress,
   UploadResponse,
 } from 'matrix-js-sdk';
+import { EventTimeline, EventType, MatrixError } from 'matrix-js-sdk';
 import to from 'await-to-js';
-import { IImageInfo, IThumbnailContent, IVideoInfo } from '../../types/matrix/common';
-import { AccountDataEvent } from '../../types/matrix/accountData';
+import type { IImageInfo, IThumbnailContent, IVideoInfo } from '../../types/matrix/common';
 import { getStateEvent } from './room';
 import { Membership, StateEvent } from '../../types/matrix/room';
 
@@ -164,9 +159,10 @@ export const uploadContent = async (
     const mxc = data.content_uri;
     if (mxc) onSuccess(mxc);
     else onError(new MatrixError(data));
-  } catch (e: any) {
-    const error = typeof e?.message === 'string' ? e.message : undefined;
-    const errcode = typeof e?.name === 'string' ? e.message : undefined;
+  } catch (e) {
+    const isObj = typeof e === 'object' && e !== null;
+    const error = isObj && 'message' in e && typeof e.message === 'string' ? e.message : undefined;
+    const errcode = isObj && 'name' in e && typeof e.name === 'string' ? e.name : undefined;
     onError(new MatrixError({ error, errcode }));
   }
 };
@@ -230,7 +226,7 @@ export const addRoomIdToMDirect = async (
   roomId: string,
   userId: string
 ): Promise<void> => {
-  const mDirectsEvent = mx.getAccountData(AccountDataEvent.Direct as any);
+  const mDirectsEvent = mx.getAccountData(EventType.Direct);
   let userIdToRoomIds: Record<string, string[]> = {};
 
   if (typeof mDirectsEvent !== 'undefined')
@@ -255,11 +251,11 @@ export const addRoomIdToMDirect = async (
   }
   userIdToRoomIds[userId] = roomIds;
 
-  await mx.setAccountData(AccountDataEvent.Direct as any, userIdToRoomIds as any);
+  await mx.setAccountData(EventType.Direct, userIdToRoomIds);
 };
 
 export const removeRoomIdFromMDirect = async (mx: MatrixClient, roomId: string): Promise<void> => {
-  const mDirectsEvent = mx.getAccountData(AccountDataEvent.Direct as any);
+  const mDirectsEvent = mx.getAccountData(EventType.Direct);
   let userIdToRoomIds: Record<string, string[]> = {};
 
   if (typeof mDirectsEvent !== 'undefined')
@@ -273,7 +269,7 @@ export const removeRoomIdFromMDirect = async (mx: MatrixClient, roomId: string):
     }
   });
 
-  await mx.setAccountData(AccountDataEvent.Direct as any, userIdToRoomIds as any);
+  await mx.setAccountData(EventType.Direct, userIdToRoomIds);
 };
 
 export const mxcUrlToHttp = (

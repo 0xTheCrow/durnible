@@ -12,7 +12,7 @@ import {
   Button,
   Spinner,
 } from 'folds';
-import { MatrixError } from 'matrix-js-sdk';
+import type { MatrixError } from 'matrix-js-sdk';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { AsyncStatus, useAsyncCallback } from '../../hooks/useAsyncCallback';
 import { OverlayModal } from '../OverlayModal';
@@ -43,51 +43,50 @@ export function LeaveRoomPrompt({ roomId, onDone, onCancel }: LeaveRoomPromptPro
 
   return (
     <OverlayModal open requestClose={onCancel}>
-          <Dialog variant="Surface">
-            <Header
-              style={{
-                padding: `0 ${config.space.S200} 0 ${config.space.S400}`,
-                borderBottomWidth: config.borderWidth.B300,
-              }}
-              variant="Surface"
-              size="500"
-            >
-              <Box grow="Yes">
-                <Text size="H4">Leave Room</Text>
-              </Box>
-              <IconButton size="300" onClick={onCancel} radii="300">
-                <Icon src={Icons.Cross} />
-              </IconButton>
-            </Header>
-            <Box style={{ padding: config.space.S400 }} direction="Column" gap="400">
-              <Box direction="Column" gap="200">
-                <Text priority="400">Are you sure you want to leave this room?</Text>
-                {leaveState.status === AsyncStatus.Error && (
-                  <Text style={{ color: color.Critical.Main }} size="T300">
-                    Failed to leave room! {leaveState.error.message}
-                  </Text>
-                )}
-              </Box>
-              <Button
-                type="submit"
-                variant="Critical"
-                onClick={handleLeave}
-                before={
-                  leaveState.status === AsyncStatus.Loading ? (
-                    <Spinner fill="Solid" variant="Critical" size="200" />
-                  ) : undefined
-                }
-                aria-disabled={
-                  leaveState.status === AsyncStatus.Loading ||
-                  leaveState.status === AsyncStatus.Success
-                }
-              >
-                <Text size="B400">
-                  {leaveState.status === AsyncStatus.Loading ? 'Leaving...' : 'Leave'}
-                </Text>
-              </Button>
-            </Box>
-          </Dialog>
+      <Dialog variant="Surface">
+        <Header
+          style={{
+            padding: `0 ${config.space.S200} 0 ${config.space.S400}`,
+            borderBottomWidth: config.borderWidth.B300,
+          }}
+          variant="Surface"
+          size="500"
+        >
+          <Box grow="Yes">
+            <Text size="H4">Leave Room</Text>
+          </Box>
+          <IconButton size="300" onClick={onCancel} radii="300">
+            <Icon src={Icons.Cross} />
+          </IconButton>
+        </Header>
+        <Box style={{ padding: config.space.S400 }} direction="Column" gap="400">
+          <Box direction="Column" gap="200">
+            <Text priority="400">Are you sure you want to leave this room?</Text>
+            {leaveState.status === AsyncStatus.Error && (
+              <Text style={{ color: color.Critical.Main }} size="T300">
+                Failed to leave room! {leaveState.error.message}
+              </Text>
+            )}
+          </Box>
+          <Button
+            type="submit"
+            variant="Critical"
+            onClick={handleLeave}
+            before={
+              leaveState.status === AsyncStatus.Loading ? (
+                <Spinner fill="Solid" variant="Critical" size="200" />
+              ) : undefined
+            }
+            aria-disabled={
+              leaveState.status === AsyncStatus.Loading || leaveState.status === AsyncStatus.Success
+            }
+          >
+            <Text size="B400">
+              {leaveState.status === AsyncStatus.Loading ? 'Leaving...' : 'Leave'}
+            </Text>
+          </Button>
+        </Box>
+      </Dialog>
     </OverlayModal>
   );
 }

@@ -1,14 +1,11 @@
 import { useState, useCallback } from 'react';
-import { MatrixClient } from 'matrix-js-sdk';
-import {
-  FavoriteEmojiEntry,
-  getFavoriteEmojis,
-  getFavoriteEmojiItems,
-} from '../plugins/favorite-emoji';
+import type { MatrixClient } from 'matrix-js-sdk';
+import type { FavoriteEmojiEntry } from '../plugins/favorite-emoji';
+import { getFavoriteEmojis, getFavoriteEmojiItems } from '../plugins/favorite-emoji';
 import { AccountDataEvent } from '../../types/matrix/accountData';
 import { useAccountDataCallback } from './useAccountDataCallback';
-import { IEmoji } from '../plugins/emoji';
-import { PackImageReader } from '../plugins/custom-emoji';
+import type { IEmoji } from '../plugins/emoji';
+import type { PackImageReader } from '../plugins/custom-emoji';
 
 export const useFavoriteEmoji = (mx: MatrixClient): Array<IEmoji | PackImageReader> => {
   const [items, setItems] = useState(() => getFavoriteEmojiItems(mx));

@@ -1,15 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
-import {
-  CryptoEvent,
+import type {
   CryptoEventHandlerMap,
   VerificationPhase,
   VerificationRequest,
-  VerificationRequestEvent,
   VerificationRequestEventHandlerMap,
   Verifier,
-  VerifierEvent,
   VerifierEventHandlerMap,
 } from 'matrix-js-sdk/lib/crypto-api';
+import { CryptoEvent, VerificationRequestEvent, VerifierEvent } from 'matrix-js-sdk/lib/crypto-api';
 import { useMatrixClient } from './useMatrixClient';
 
 export const useVerificationRequestReceived = (

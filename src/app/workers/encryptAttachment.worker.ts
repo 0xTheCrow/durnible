@@ -7,11 +7,10 @@ self.onmessage = async (e: MessageEvent<{ id: string; buffer: ArrayBuffer }>) =>
     const ivArray = new Uint8Array(16);
     self.crypto.getRandomValues(ivArray.subarray(0, 8));
 
-    const cryptoKey = await self.crypto.subtle.generateKey(
-      { name: 'AES-CTR', length: 256 },
-      true,
-      ['encrypt', 'decrypt']
-    );
+    const cryptoKey = await self.crypto.subtle.generateKey({ name: 'AES-CTR', length: 256 }, true, [
+      'encrypt',
+      'decrypt',
+    ]);
     const exportedKey = await self.crypto.subtle.exportKey('jwk', cryptoKey);
     const ciphertextBuffer = await self.crypto.subtle.encrypt(
       { name: 'AES-CTR', counter: ivArray, length: 64 },

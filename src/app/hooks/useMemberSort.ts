@@ -1,4 +1,4 @@
-import { RoomMember } from 'matrix-js-sdk';
+import type { RoomMember } from 'matrix-js-sdk';
 import { useCallback, useMemo } from 'react';
 
 export const MemberSort = {
@@ -61,7 +61,7 @@ export const useMemberPowerSort = (
 
       return getPowerLevel(b.userId) - getPowerLevel(a.userId);
     },
-    [creators]
+    [creators, getPowerLevel]
   );
 
   return sort;

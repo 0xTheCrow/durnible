@@ -1,5 +1,5 @@
 import to from 'await-to-js';
-import { AuthDict, IAuthData, MatrixClient, MatrixError } from 'matrix-js-sdk';
+import type { AuthDict, IAuthData, MatrixClient, MatrixError } from 'matrix-js-sdk';
 
 export type ResetPasswordResponse = Record<string, never>;
 export type ResetPasswordResult = [IAuthData, undefined] | [undefined, ResetPasswordResponse];

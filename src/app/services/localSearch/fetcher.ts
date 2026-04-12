@@ -1,6 +1,7 @@
-import { MatrixClient, MatrixEvent, Direction, Method } from 'matrix-js-sdk';
-import { IRoomEvent } from 'matrix-js-sdk/lib/sync-accumulator';
-import { CryptoBackend } from 'matrix-js-sdk/lib/common-crypto/CryptoBackend';
+import type { MatrixClient } from 'matrix-js-sdk';
+import { MatrixEvent, Direction, Method } from 'matrix-js-sdk';
+import type { IRoomEvent } from 'matrix-js-sdk/lib/sync-accumulator';
+import type { CryptoBackend } from 'matrix-js-sdk/lib/common-crypto/CryptoBackend';
 
 export type DecryptedMessage = {
   event_id: string;
@@ -24,12 +25,12 @@ const getStartToken = async (
 ): Promise<string | undefined> => {
   try {
     const result = await mx.timestampToEvent(roomId, endTs, Direction.Backward);
-    const path = `/rooms/${encodeURIComponent(roomId)}/context/${encodeURIComponent(result.event_id)}`;
-    const context = await mx.http.authedRequest<{ start: string; end: string }>(
-      Method.Get,
-      path,
-      { limit: 0 }
-    );
+    const path = `/rooms/${encodeURIComponent(roomId)}/context/${encodeURIComponent(
+      result.event_id
+    )}`;
+    const context = await mx.http.authedRequest<{ start: string; end: string }>(Method.Get, path, {
+      limit: 0,
+    });
     return context.end;
   } catch {
     const room = mx.getRoom(roomId);
@@ -38,14 +39,17 @@ const getStartToken = async (
   }
 };
 
-const extractDecryptedMessages = (matrixEvents: MatrixEvent[], roomId: string): DecryptedMessage[] => {
+const extractDecryptedMessages = (
+  matrixEvents: MatrixEvent[],
+  roomId: string
+): DecryptedMessage[] => {
   const messages: DecryptedMessage[] = [];
   for (const mEvt of matrixEvents) {
     const content = mEvt.getContent();
     const body = content?.body;
     if (typeof body !== 'string' || !body) continue;
     if (mEvt.isDecryptionFailure()) continue;
-    const msgtype = content.msgtype;
+    const { msgtype } = content;
     const isText = msgtype === 'm.text' || msgtype === 'm.notice' || msgtype === 'm.emote';
     const isMedia =
       msgtype === 'm.image' ||

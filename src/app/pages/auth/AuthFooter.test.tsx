@@ -4,9 +4,10 @@ import { describe, it, expect } from 'vitest';
 import { AuthFooter } from './AuthFooter';
 
 describe('AuthFooter', () => {
-  it('renders without crashing', () => {
+  it('renders the footer and its canonical links', () => {
     render(<AuthFooter />);
-    expect(screen.getByText('About')).toBeInTheDocument();
-    expect(screen.getByText('Powered by Matrix')).toBeInTheDocument();
+    expect(screen.getByTestId('auth-footer')).toBeInTheDocument();
+    expect(screen.getByTestId('auth-footer-about-link')).toBeInTheDocument();
+    expect(screen.getByTestId('auth-footer-matrix-link')).toBeInTheDocument();
   });
 });

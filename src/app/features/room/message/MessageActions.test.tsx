@@ -1,19 +1,10 @@
 // FocusTrap throws in jsdom because there are no tabbable elements in the virtual DOM.
 // Replace it with a passthrough so modals can still render and be tested.
-vi.mock('focus-trap-react', () => ({
-  default: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-}));
-
-// Prevents ReactEditor.focus() from firing asynchronously after component
-// unmount, which causes "Cannot resolve a DOM node from Slate node" errors.
-vi.mock('../../../utils/user-agent', () => ({
-  mobileOrTablet: () => true,
-}));
-
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
-import { RelationType, EventType, MsgType, MatrixEvent } from 'matrix-js-sdk';
+import type { MatrixEvent } from 'matrix-js-sdk';
+import { RelationType, EventType, MsgType } from 'matrix-js-sdk';
 import type { Relations } from 'matrix-js-sdk/lib/models/relations';
 
 import { MessageDeleteItem } from './Message';
@@ -27,17 +18,23 @@ import {
   createMockRoom,
 } from '../../../../test/mocks';
 
+vi.mock('focus-trap-react', () => ({
+  default: ({ children }: { children: React.ReactNode }) => children,
+}));
+
+// Prevents ReactEditor.focus() from firing asynchronously after component
+// unmount, which causes "Cannot resolve a DOM node from Slate node" errors.
+vi.mock('../../../utils/user-agent', () => ({
+  mobileOrTablet: () => true,
+}));
+
 // ─── Helpers ──────────────────────────────────────────────────────────────
 
 /**
  * Builds a mock m.reaction MatrixEvent.
  * The base createMockMatrixEvent doesn't include getRelation(), so we add it here.
  */
-function createMockReactionEvent(
-  sender: string,
-  key: string,
-  targetEventId: string
-): MatrixEvent {
+function createMockReactionEvent(sender: string, key: string, targetEventId: string): MatrixEvent {
   const event = createMockMatrixEvent({
     id: `$reaction-${key}-${sender}`,
     sender,
@@ -94,55 +91,56 @@ describe('message deletion (MessageDeleteItem)', () => {
 
   it('renders a Delete button', () => {
     renderDeleteItem();
-    expect(screen.getByRole('button', { name: /delete/i })).toBeInTheDocument();
+    expect(screen.getByTestId('message-delete-btn')).toBeInTheDocument();
   });
 
   it('opens a confirmation dialog when the Delete button is clicked', () => {
     renderDeleteItem();
 
-    fireEvent.click(screen.getByRole('button', { name: /delete/i }));
+    fireEvent.click(screen.getByTestId('message-delete-btn'));
 
-    expect(screen.getByText('Delete Message')).toBeInTheDocument();
-    expect(screen.getByText(/are you sure.*want to delete/i)).toBeInTheDocument();
+    expect(screen.getByTestId('message-delete-dialog')).toBeInTheDocument();
+    expect(screen.getByTestId('message-delete-dialog-title')).toBeInTheDocument();
+    expect(screen.getByTestId('message-delete-confirm')).toBeInTheDocument();
   });
 
   it('calls redactEvent with the event ID when confirmed without a reason', async () => {
     const { mx } = renderDeleteItem();
 
-    fireEvent.click(screen.getByRole('button', { name: /delete/i }));
-    fireEvent.submit(document.querySelector('form')!);
-
-    await waitFor(() => {
-      expect(mx.redactEvent).toHaveBeenCalled();
-      const [roomId, eventId, , opts] = (mx.redactEvent as any).mock.calls[0];
-      expect(roomId).toBe(ROOM_ID);
-      expect(eventId).toBe(EVENT_ID);
-      expect(opts?.reason).toBeUndefined();
+    fireEvent.click(screen.getByTestId('message-delete-btn'));
+    await act(async () => {
+      fireEvent.submit(screen.getByTestId('message-delete-dialog'));
     });
+
+    expect(mx.redactEvent).toHaveBeenCalled();
+    const [roomId, eventId, , opts] = (mx.redactEvent as any).mock.calls[0];
+    expect(roomId).toBe(ROOM_ID);
+    expect(eventId).toBe(EVENT_ID);
+    expect(opts?.reason).toBeUndefined();
   });
 
   it('passes the typed reason to redactEvent', async () => {
     const { mx } = renderDeleteItem();
 
-    fireEvent.click(screen.getByRole('button', { name: /delete/i }));
+    fireEvent.click(screen.getByTestId('message-delete-btn'));
 
     // jsdom doesn't implement the HTML named-property access spec (form['inputName']),
     // so MessageDeleteItem's `target.reasonInput` returns undefined without this patch.
     // COUPLING: if the component changes how it reads the reason value (e.g. FormData,
     // a React ref, or onChange state), this Object.defineProperty shim can be removed.
-    const form = document.querySelector('form')!;
+    const form = screen.getByTestId('message-delete-dialog') as HTMLFormElement;
     const reasonInput = form.querySelector('input[name="reasonInput"]') as HTMLInputElement;
     Object.defineProperty(form, 'reasonInput', { get: () => reasonInput, configurable: true });
     fireEvent.change(reasonInput, { target: { value: 'Spam' } });
-    fireEvent.submit(form);
-
-    await waitFor(() => {
-      expect(mx.redactEvent).toHaveBeenCalled();
-      const [roomId, eventId, , opts] = (mx.redactEvent as any).mock.calls[0];
-      expect(roomId).toBe(ROOM_ID);
-      expect(eventId).toBe(EVENT_ID);
-      expect(opts?.reason).toBe('Spam');
+    await act(async () => {
+      fireEvent.submit(form);
     });
+
+    expect(mx.redactEvent).toHaveBeenCalled();
+    const [roomId, eventId, , opts] = (mx.redactEvent as any).mock.calls[0];
+    expect(roomId).toBe(ROOM_ID);
+    expect(eventId).toBe(EVENT_ID);
+    expect(opts?.reason).toBe('Spam');
   });
 
   it('shows an error message when the deletion request fails', async () => {
@@ -154,24 +152,27 @@ describe('message deletion (MessageDeleteItem)', () => {
     });
 
     renderDeleteItem({ rejectOnce: true });
-    fireEvent.click(screen.getByRole('button', { name: /delete/i }));
-    fireEvent.submit(document.querySelector('form')!);
+    fireEvent.click(screen.getByTestId('message-delete-btn'));
+    fireEvent.submit(screen.getByTestId('message-delete-dialog'));
 
     await Promise.all([
       rejectionHandled,
       waitFor(() => {
-        expect(screen.getByText(/failed to delete message/i)).toBeInTheDocument();
+        expect(screen.getByTestId('message-delete-error')).toBeInTheDocument();
       }),
     ]);
   });
 
-  it('shows Deleting… while the request is in flight', async () => {
-    // The submit button label switches to "Deleting…" during an in-flight request,
-    // giving the user visible feedback that the action is being processed.
+  it('marks the confirm button as loading while the request is in flight', async () => {
+    // During an in-flight delete, the confirm button exposes data-loading so the
+    // user gets visible feedback and the test can assert on pending/settled state.
     let resolveFn!: (v: unknown) => void;
     const mx = createMockMatrixClient();
     (mx.redactEvent as any).mockImplementationOnce(
-      () => new Promise((resolve) => { resolveFn = resolve; })
+      () =>
+        new Promise((resolve) => {
+          resolveFn = resolve;
+        })
     );
     const room = createMockRoom(ROOM_ID, mx);
     const mEvent = createMockMatrixEvent({ id: EVENT_ID });
@@ -182,17 +183,17 @@ describe('message deletion (MessageDeleteItem)', () => {
       </MatrixTestWrapper>
     );
 
-    fireEvent.click(screen.getByRole('button', { name: /delete/i }));
-    fireEvent.submit(document.querySelector('form')!);
+    fireEvent.click(screen.getByTestId('message-delete-btn'));
+    fireEvent.submit(screen.getByTestId('message-delete-dialog'));
 
     await waitFor(() => {
-      expect(screen.getByText(/deleting/i)).toBeInTheDocument();
+      expect(screen.getByTestId('message-delete-confirm')).toHaveAttribute('data-loading');
     });
 
     resolveFn({ event_id: '$redacted' });
 
     await waitFor(() => {
-      expect(screen.queryByText(/deleting/i)).not.toBeInTheDocument();
+      expect(screen.getByTestId('message-delete-confirm')).not.toHaveAttribute('data-loading');
     });
   });
 });
@@ -208,33 +209,30 @@ describe('message editing (MessageEditor)', () => {
       content: { body: 'original text', msgtype: MsgType.Text },
     });
 
-    await act(async () => {
-      render(
-        <MatrixTestWrapper matrixClient={mx}>
-          <MessageEditor
-            roomId={ROOM_ID}
-            room={room as any}
-            mEvent={mEvent}
-            onCancel={onCancel}
-          />
-        </MatrixTestWrapper>
-      );
-    });
+    render(
+      <MatrixTestWrapper matrixClient={mx}>
+        <MessageEditor roomId={ROOM_ID} room={room as any} mEvent={mEvent} onCancel={onCancel} />
+      </MatrixTestWrapper>
+    );
+
+    // Drain Slate's async state updates (queueMicrotask calls from insertFragment/Transforms.select
+    // in the useEffect) so they don't leak outside act() into subsequent tests.
+    await act(async () => {});
 
     return { mx, onCancel };
   }
 
   it('renders Save and Cancel buttons', async () => {
     await renderEditor();
-    expect(screen.getByRole('button', { name: /save/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
+    expect(screen.getByTestId('message-editor-save')).toBeInTheDocument();
+    expect(screen.getByTestId('message-editor-cancel')).toBeInTheDocument();
   });
 
   it('calls onCancel when the Cancel button is clicked', async () => {
     const onCancel = vi.fn();
     await renderEditor(onCancel);
 
-    fireEvent.click(screen.getByRole('button', { name: /cancel/i }));
+    fireEvent.click(screen.getByTestId('message-editor-cancel'));
 
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
@@ -245,13 +243,12 @@ describe('message editing (MessageEditor)', () => {
     // callback, which resolves the promise and triggers Success without a network call.
     const { onCancel } = await renderEditor();
 
-    fireEvent.click(screen.getByRole('button', { name: /save/i }));
+    fireEvent.click(screen.getByTestId('message-editor-save'));
 
     await waitFor(() => {
       expect(onCancel).toHaveBeenCalledTimes(1);
     });
   });
-
 });
 
 // ─── Emoji Reactions ──────────────────────────────────────────────────────
@@ -265,10 +262,12 @@ describe('emoji reactions (Reactions)', () => {
    */
   const REACTION_BTN_SELECTOR = '[data-reaction-key]';
 
-  function renderReactions(opts: {
-    canSendReaction?: boolean;
-    includeMyReaction?: boolean;
-  } = {}) {
+  function renderReactions(
+    opts: {
+      canSendReaction?: boolean;
+      includeMyReaction?: boolean;
+    } = {}
+  ) {
     const mx = createMockMatrixClient();
     const room = createMockRoom(ROOM_ID, mx);
 
@@ -283,7 +282,7 @@ describe('emoji reactions (Reactions)', () => {
     // Reactions reads getLiveTimeline().getEvents() to build firstReactionTimestamps.
     // COUPLING: if Reactions ever switches to a different room API for timestamp data,
     // this mock setup will silently stop feeding the right events (update it then).
-    const timeline = room.getLiveTimeline() as any;
+    const timeline = (room as any).getLiveTimeline();
     timeline.getEvents.mockReturnValue(reactionEvents);
 
     const relations = createMockRelations(reactionEvents);

@@ -1,7 +1,8 @@
-import { Room } from 'matrix-js-sdk';
-import { IPowerLevels } from '../hooks/usePowerLevels';
+import type { Room } from 'matrix-js-sdk';
+import type { IPowerLevels } from '../hooks/usePowerLevels';
 import { creatorsSupported, getMxIdServer } from '../utils/matrix';
-import { IRoomCreateContent, StateEvent } from '../../types/matrix/room';
+import type { IRoomCreateContent } from '../../types/matrix/room';
+import { StateEvent } from '../../types/matrix/room';
 import { getStateEvent } from '../utils/room';
 
 export const getViaServers = (room: Room): string[] => {

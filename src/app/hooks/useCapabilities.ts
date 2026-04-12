@@ -1,4 +1,4 @@
-import { Capabilities } from 'matrix-js-sdk';
+import type { Capabilities } from 'matrix-js-sdk';
 import { createContext, useContext } from 'react';
 
 const CapabilitiesContext = createContext<Capabilities | null>(null);

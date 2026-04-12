@@ -1,19 +1,12 @@
 import React, { useState } from 'react';
-import {
-  Avatar,
-  Box,
-  Icon,
-  Icons,
-  Modal,
-  Text,
-} from 'folds';
+import { Avatar, Box, Icon, Icons, Modal, Text } from 'folds';
 import classNames from 'classnames';
 import * as css from './styles.css';
 import { UserAvatar } from '../user-avatar';
 import colorMXID from '../../../util/colorMXID';
 import { getMxIdLocalPart } from '../../utils/matrix';
 import { BreakWord, LineClamp3 } from '../../styles/Text.css';
-import { UserPresence } from '../../hooks/useUserPresence';
+import type { UserPresence } from '../../hooks/useUserPresence';
 import { AvatarPresence, PresenceBadge } from '../presence';
 import { ImageViewer } from '../image-viewer';
 import { OverlayModal } from '../OverlayModal';
@@ -68,13 +61,13 @@ export function UserHero({ userId, avatarUrl, bannerUrl, presence }: UserHeroPro
         </AvatarPresence>
         {viewAvatar && (
           <OverlayModal open requestClose={() => setViewAvatar(undefined)}>
-                <Modal size="500" onContextMenu={(evt: any) => evt.stopPropagation()}>
-                  <ImageViewer
-                    src={viewAvatar}
-                    alt={userId}
-                    requestClose={() => setViewAvatar(undefined)}
-                  />
-                </Modal>
+            <Modal size="500" onContextMenu={(evt) => evt.stopPropagation()}>
+              <ImageViewer
+                src={viewAvatar}
+                alt={userId}
+                requestClose={() => setViewAvatar(undefined)}
+              />
+            </Modal>
           </OverlayModal>
         )}
       </div>

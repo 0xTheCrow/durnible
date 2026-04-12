@@ -1,3 +1,4 @@
+import type { RectCords } from 'folds';
 import {
   Box,
   Button,
@@ -12,12 +13,12 @@ import {
   Menu,
   MenuItem,
   PopOut,
-  RectCords,
   Spinner,
   Text,
   toRem,
 } from 'folds';
-import React, { MouseEventHandler, useCallback, useState } from 'react';
+import type { MouseEventHandler } from 'react';
+import React, { useCallback, useState } from 'react';
 import FocusTrap from 'focus-trap-react';
 import { isKeyHotkey } from 'is-hotkey';
 import { OverlayModal } from '../OverlayModal';
@@ -50,33 +51,33 @@ type SelfDemoteAlertProps = {
 function SelfDemoteAlert({ power, onCancel, onChange }: SelfDemoteAlertProps) {
   return (
     <OverlayModal open requestClose={onCancel}>
-          <Dialog variant="Surface">
-            <Header
-              style={{ padding: `0 ${config.space.S200} 0 ${config.space.S400}` }}
-              variant="Surface"
-              size="500"
-            >
-              <Box grow="Yes">
-                <Text size="H4">Self Demotion</Text>
-              </Box>
-              <IconButton size="300" onClick={onCancel} radii="300">
-                <Icon src={Icons.Cross} />
-              </IconButton>
-            </Header>
-            <Box style={{ padding: config.space.S400, paddingTop: 0 }} direction="Column" gap="500">
-              <Box direction="Column" gap="200">
-                <Text priority="400">
-                  You are about to demote yourself! You will not be able to regain this power
-                  yourself. Are you sure?
-                </Text>
-              </Box>
-              <Box direction="Column" gap="200">
-                <Button type="submit" variant="Warning" onClick={() => onChange(power)}>
-                  <Text size="B400">Demote</Text>
-                </Button>
-              </Box>
-            </Box>
-          </Dialog>
+      <Dialog variant="Surface">
+        <Header
+          style={{ padding: `0 ${config.space.S200} 0 ${config.space.S400}` }}
+          variant="Surface"
+          size="500"
+        >
+          <Box grow="Yes">
+            <Text size="H4">Self Demotion</Text>
+          </Box>
+          <IconButton size="300" onClick={onCancel} radii="300">
+            <Icon src={Icons.Cross} />
+          </IconButton>
+        </Header>
+        <Box style={{ padding: config.space.S400, paddingTop: 0 }} direction="Column" gap="500">
+          <Box direction="Column" gap="200">
+            <Text priority="400">
+              You are about to demote yourself! You will not be able to regain this power yourself.
+              Are you sure?
+            </Text>
+          </Box>
+          <Box direction="Column" gap="200">
+            <Button type="submit" variant="Warning" onClick={() => onChange(power)}>
+              <Text size="B400">Demote</Text>
+            </Button>
+          </Box>
+        </Box>
+      </Dialog>
     </OverlayModal>
   );
 }
@@ -89,33 +90,33 @@ type SharedPowerAlertProps = {
 function SharedPowerAlert({ power, onCancel, onChange }: SharedPowerAlertProps) {
   return (
     <OverlayModal open requestClose={onCancel}>
-          <Dialog variant="Surface">
-            <Header
-              style={{ padding: `0 ${config.space.S200} 0 ${config.space.S400}` }}
-              variant="Surface"
-              size="500"
-            >
-              <Box grow="Yes">
-                <Text size="H4">Shared Power</Text>
-              </Box>
-              <IconButton size="300" onClick={onCancel} radii="300">
-                <Icon src={Icons.Cross} />
-              </IconButton>
-            </Header>
-            <Box style={{ padding: config.space.S400, paddingTop: 0 }} direction="Column" gap="500">
-              <Box direction="Column" gap="200">
-                <Text priority="400">
-                  You are promoting the user to have the same power as yourself! You will not be
-                  able to change their power afterward. Are you sure?
-                </Text>
-              </Box>
-              <Box direction="Column" gap="200">
-                <Button type="submit" variant="Warning" onClick={() => onChange(power)}>
-                  <Text size="B400">Promote</Text>
-                </Button>
-              </Box>
-            </Box>
-          </Dialog>
+      <Dialog variant="Surface">
+        <Header
+          style={{ padding: `0 ${config.space.S200} 0 ${config.space.S400}` }}
+          variant="Surface"
+          size="500"
+        >
+          <Box grow="Yes">
+            <Text size="H4">Shared Power</Text>
+          </Box>
+          <IconButton size="300" onClick={onCancel} radii="300">
+            <Icon src={Icons.Cross} />
+          </IconButton>
+        </Header>
+        <Box style={{ padding: config.space.S400, paddingTop: 0 }} direction="Column" gap="500">
+          <Box direction="Column" gap="200">
+            <Text priority="400">
+              You are promoting the user to have the same power as yourself! You will not be able to
+              change their power afterward. Are you sure?
+            </Text>
+          </Box>
+          <Box direction="Column" gap="200">
+            <Button type="submit" variant="Warning" onClick={() => onChange(power)}>
+              <Text size="B400">Promote</Text>
+            </Button>
+          </Box>
+        </Box>
+      </Dialog>
     </OverlayModal>
   );
 }

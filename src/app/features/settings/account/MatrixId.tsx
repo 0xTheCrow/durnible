@@ -8,7 +8,7 @@ import { copyToClipboard } from '../../../utils/dom';
 
 export function MatrixId() {
   const mx = useMatrixClient();
-  const userId = mx.getUserId()!;
+  const userId = mx.getSafeUserId();
 
   return (
     <Box direction="Column" gap="100">

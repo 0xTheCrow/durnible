@@ -33,13 +33,7 @@ describe('findAndReplace', () => {
 
   it('handles multiple matches with text between them', () => {
     const result = findAndReplace('a 1 b 2 c', /\d/g, toSpan, toText);
-    expect(result).toEqual([
-      'a ',
-      '<match>1</match>',
-      ' b ',
-      '<match>2</match>',
-      ' c',
-    ]);
+    expect(result).toEqual(['a ', '<match>1</match>', ' b ', '<match>2</match>', ' c']);
   });
 
   it('handles consecutive matches', () => {
@@ -52,8 +46,14 @@ describe('findAndReplace', () => {
     const result = findAndReplace(
       'a 1 b',
       /\d/g,
-      (_, idx) => { indices.push(idx); return `[${idx}]`; },
-      (_, idx) => { indices.push(idx); return `(${idx})`; }
+      (_, idx) => {
+        indices.push(idx);
+        return `[${idx}]`;
+      },
+      (_, idx) => {
+        indices.push(idx);
+        return `(${idx})`;
+      }
     );
     // Callbacks alternate: convertPart('a ', 0), replace('1', 1), convertPart(' b', 2)
     expect(result).toEqual(['(0)', '[1]', '(2)']);

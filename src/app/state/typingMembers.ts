@@ -1,6 +1,7 @@
 import produce from 'immer';
 import { atom, useSetAtom } from 'jotai';
-import { MatrixClient, RoomMemberEvent, RoomMemberEventHandlerMap } from 'matrix-js-sdk';
+import type { MatrixClient, RoomMemberEventHandlerMap } from 'matrix-js-sdk';
+import { RoomMemberEvent } from 'matrix-js-sdk';
 import { useEffect } from 'react';
 import { useSetting } from './hooks/settings';
 import { settingsAtom } from './settings';

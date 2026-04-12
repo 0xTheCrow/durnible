@@ -1,4 +1,5 @@
-import React, { MutableRefObject, ReactNode, useEffect, useRef } from 'react';
+import type { MutableRefObject, ReactNode } from 'react';
+import React, { useEffect, useRef } from 'react';
 
 import Prism from 'prismjs';
 
@@ -305,7 +306,6 @@ import 'prismjs/components/prism-arduino.js';
 // import 'prismjs/components/prism-t4-cs.js';
 
 import './ReactPrism.css';
-// using classNames .prism-dark .prism-light from ReactPrism.css
 
 export default function ReactPrism({
   children,

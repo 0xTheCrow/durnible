@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo } from 'react';
 import { ImagePackContent } from './ImagePackContent';
-import { ImagePack, PackContent } from '../../plugins/custom-emoji';
+import type { PackContent } from '../../plugins/custom-emoji';
+import { ImagePack } from '../../plugins/custom-emoji';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { AccountDataEvent } from '../../../types/matrix/accountData';
 import { useUserImagePack } from '../../hooks/useImagePacks';

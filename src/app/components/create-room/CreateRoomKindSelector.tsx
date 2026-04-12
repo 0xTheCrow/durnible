@@ -1,5 +1,6 @@
 import React from 'react';
-import { Box, Text, Icon, Icons, config, IconSrc } from 'folds';
+import type { IconSrc } from 'folds';
+import { Box, Text, Icon, Icons, config } from 'folds';
 import { SequenceCard } from '../sequence-card';
 import { SettingTile } from '../setting-tile';
 

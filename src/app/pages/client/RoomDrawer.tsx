@@ -1,15 +1,9 @@
-import React, {
-  ReactNode,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
-import { useLocation } from 'react-router-dom';
+import type { ReactNode } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useMatch } from 'react-router-dom';
 import { Box, Icon, IconButton, Icons, Line, Text, config } from 'folds';
 import { useAtomValue } from 'jotai';
-import { Room } from 'matrix-js-sdk';
+import type { Room } from 'matrix-js-sdk';
 import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
 import { useSwipeDrawer } from '../../hooks/useSwipeDrawer';
 import { SwipeDrawer } from '../../components/swipe-drawer';
@@ -24,13 +18,18 @@ import { getOrphanParents, guessPerfectParent } from '../../utils/room';
 import { getCanonicalAliasOrRoomId } from '../../utils/matrix';
 import { getDirectRoomPath, getHomeRoomPath, getSpaceRoomPath } from '../pathUtils';
 import { NavCategory, NavCategoryHeader, NavItem, NavItemContent } from '../../components/nav';
-import { PageNav, PageNavContent, PageNavHeader } from '../../components/page';
+import { PageNavContent } from '../../components/page';
 import { useSelectedRoom } from '../../hooks/router/useSelectedRoom';
 import {
   getRoomNotificationMode,
   useRoomsNotificationPreferencesContext,
 } from '../../hooks/useRoomsNotificationPreferences';
 import { RoomNavItem } from '../../features/room-nav';
+import { useSpaceOptionally } from '../../hooks/useSpace';
+import { DIRECT_PATH, HOME_PATH, SPACE_PATH } from '../paths';
+import { Space } from './space';
+import { Direct } from './direct/Direct';
+import { Home } from './home/Home';
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
 
@@ -199,7 +198,7 @@ export function FavoritesList({ header, emptyState, scrollRef, isDrawerMode }: F
     setReorderMode(false);
   }, [mx, orderedIds]);
 
-  if (favorites.length === 0) return <>{emptyState}</>;
+  if (favorites.length === 0) return emptyState;
 
   const roomList = (
     <NavCategory>
@@ -238,16 +237,13 @@ export function FavoritesList({ header, emptyState, scrollRef, isDrawerMode }: F
   );
 }
 
-// ── FavoritesSection — appended inside the Space nav scroll area ──────────────
+// ── FavoritesSection — appended at the bottom of a nav panel ─────────────────
 
 export function FavoritesSection({ isDrawerMode }: { isDrawerMode?: boolean }) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   return (
-    <Box
-      direction="Column"
-      style={{ maxHeight: '40vh', overflow: 'hidden', flexShrink: 0 }}
-    >
+    <Box direction="Column" style={{ maxHeight: '40vh', overflow: 'hidden', flexShrink: 0 }}>
       <FavoritesList
         scrollRef={scrollRef}
         isDrawerMode={isDrawerMode}
@@ -279,64 +275,19 @@ export function FavoritesSection({ isDrawerMode }: { isDrawerMode?: boolean }) {
   );
 }
 
-// ── FavoritesNav — standalone PageNav for the favorites-only drawer ───────────
+// ── RoomDrawer — swipe drawer for all routes ──────────────────────────────────
 
-function FavoritesNav() {
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  return (
-    <PageNav>
-      <FavoritesList
-        scrollRef={scrollRef}
-        isDrawerMode
-        header={(reorderMode, onDone) => (
-          <PageNavHeader>
-            <Box grow="Yes" alignItems="Center" gap="200">
-              <Text size="H4" style={{ flexGrow: 1, paddingLeft: config.space.S400 }} truncate>
-                Favorites
-              </Text>
-              {reorderMode && (
-                <IconButton
-                  size="300"
-                  radii="300"
-                  variant="Background"
-                  onClick={onDone}
-                  aria-label="Done reordering"
-                >
-                  <Icon size="100" src={Icons.Check} />
-                </IconButton>
-              )}
-            </Box>
-          </PageNavHeader>
-        )}
-        emptyState={
-          <PageNavContent scrollRef={scrollRef}>
-            <Box
-              direction="Column"
-              alignItems="Center"
-              justifyContent="Center"
-              gap="200"
-              style={{ padding: config.space.S400, flexGrow: 1 }}
-            >
-              <Icon size="400" src={Icons.Star} />
-              <Text align="Center" priority="400" size="T300">
-                No favorites yet. Right-click a room to add one.
-              </Text>
-            </Box>
-          </PageNavContent>
-        }
-      />
-    </PageNav>
-  );
-}
-
-// ── FavoritesDrawer — swipe drawer for non-space pages ───────────────────────
-
-type FavoritesDrawerProps = {
+type RoomDrawerProps = {
   children: ReactNode;
 };
 
-export function FavoritesDrawer({ children }: FavoritesDrawerProps) {
+export function RoomDrawer({ children }: RoomDrawerProps) {
+  const space = useSpaceOptionally();
+  const isSpaceRoot = useMatch({ path: SPACE_PATH, caseSensitive: true, end: true });
+  const isDirectRoot = useMatch({ path: DIRECT_PATH, caseSensitive: true, end: true });
+  const isDirectRoute = useMatch({ path: DIRECT_PATH, caseSensitive: true, end: false });
+  const isHomeRoot = useMatch({ path: HOME_PATH, caseSensitive: true, end: true });
+  const isHomeRoute = useMatch({ path: HOME_PATH, caseSensitive: true, end: false });
   const screenSize = useScreenSizeContext();
   const isMobileOrTablet = screenSize !== ScreenSize.Desktop;
   const [swipeGestures] = useSetting(settingsAtom, 'swipeGestures');
@@ -374,8 +325,23 @@ export function FavoritesDrawer({ children }: FavoritesDrawerProps) {
     };
   }, [open]);
 
-  if (!isMobileOrTablet || !swipeGestures) {
-    return <>{children}</>;
+  if (!isMobileOrTablet || !swipeGestures || (space && isSpaceRoot) || isDirectRoot || isHomeRoot) {
+    return children;
+  }
+
+  const extra = <FavoritesSection isDrawerMode />;
+  let drawerNav: React.ReactNode;
+  let isFullNav = true;
+
+  if (space) {
+    drawerNav = <Space isDrawerMode extra={extra} />;
+  } else if (isDirectRoute) {
+    drawerNav = <Direct isDrawerMode extra={extra} />;
+  } else if (isHomeRoute) {
+    drawerNav = <Home isDrawerMode extra={extra} />;
+  } else {
+    drawerNav = extra;
+    isFullNav = false;
   }
 
   return (
@@ -390,10 +356,11 @@ export function FavoritesDrawer({ children }: FavoritesDrawerProps) {
         <Box
           grow="Yes"
           direction="Column"
+          justifyContent={isFullNav ? undefined : 'End'}
           className={ContainerColor({ variant: 'Background' })}
           style={{ height: '100%' }}
         >
-          <FavoritesNav />
+          {drawerNav}
         </Box>
       </SwipeDrawer>
     </>

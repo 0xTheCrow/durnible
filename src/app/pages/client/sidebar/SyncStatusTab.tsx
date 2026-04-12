@@ -1,14 +1,18 @@
 import React from 'react';
-import { Icon, IconSrc, Icons, color } from 'folds';
+import type { IconSrc } from 'folds';
+import { Icon, Icons, color } from 'folds';
 import { SidebarItemTooltip } from '../../../components/sidebar';
-import { ConnectionStatus, useConnectionStatus } from '../../../hooks/useConnectionStatus';
+import type { ConnectionStatus } from '../../../hooks/useConnectionStatus';
+import { useConnectionStatus } from '../../../hooks/useConnectionStatus';
 
-const WifiIcon: IconSrc = () => (
-  <path
-    d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"
-    fill="currentColor"
-  />
-);
+function WifiIcon() {
+  return (
+    <path
+      d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"
+      fill="currentColor"
+    />
+  );
+}
 
 export const getConnectionStatusProps = (
   status: ConnectionStatus
@@ -25,22 +29,22 @@ export const getConnectionStatusProps = (
 
 export function SyncStatusTab() {
   const status = useConnectionStatus();
-  const props = getConnectionStatusProps(status);
+  const statusProps = getConnectionStatusProps(status);
 
-  if (!props) return null;
+  if (!statusProps) return null;
 
   return (
-    <SidebarItemTooltip tooltip={props.tooltip}>
+    <SidebarItemTooltip tooltip={statusProps.tooltip}>
       {(triggerRef) => (
         <span
           ref={triggerRef}
           style={{
-            color: props.iconColor,
+            color: statusProps.iconColor,
             lineHeight: 0,
             animation: status === 'connecting' ? 'sync-pulse 2.5s ease-in-out infinite' : undefined,
           }}
         >
-          <Icon size="200" src={props.iconSrc} filled />
+          <Icon size="200" src={statusProps.iconSrc} filled />
         </span>
       )}
     </SidebarItemTooltip>

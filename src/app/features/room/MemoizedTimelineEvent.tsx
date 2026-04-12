@@ -1,12 +1,12 @@
 import React from 'react';
-import { EventTimelineSet, MatrixEvent, Relations } from 'matrix-js-sdk';
+import type { EventTimelineSet, MatrixEvent, Relations } from 'matrix-js-sdk';
 import { Box, Chip, Icon, Icons, Text, config, color, toRem } from 'folds';
 import { useTranslation } from 'react-i18next';
+import type { IImageContent } from '../../../types/matrix/common';
 import {
   Reply,
   MessageUnsupportedContent,
   Time,
-  MessageNotDecryptedContent,
   RedactedContent,
   MSticker,
   ImageContent,
@@ -14,11 +14,7 @@ import {
   MPoll,
   LinePlaceholder,
 } from '../../components/message';
-import {
-  getEditedEvent,
-  getMemberDisplayName,
-  isMembershipChanged,
-} from '../../utils/room';
+import { getEditedEvent, getMemberDisplayName, isMembershipChanged } from '../../utils/room';
 import { MessageEvent, StateEvent } from '../../../types/matrix/room';
 import { MessageLayout } from '../../state/settings';
 import { getMxIdLocalPart } from '../../utils/matrix';
@@ -31,13 +27,7 @@ import { useTimelineMessageContext } from './TimelineMessageContext';
 
 const warningStyle = { color: color.Warning.Main, opacity: config.opacity.P300 };
 
-function DecryptRetry({
-  retrying,
-  onRetry,
-}: {
-  retrying: boolean;
-  onRetry: () => void;
-}) {
+function DecryptRetry({ retrying, onRetry }: { retrying: boolean; onRetry: () => void }) {
   return (
     <Text>
       <Box as="span" alignItems="Center" gap="200" style={warningStyle}>
@@ -64,6 +54,12 @@ type MemoizedTimelineEventProps = {
   timelineSet: EventTimelineSet;
   item: number;
   collapsed: boolean;
+  /**
+   * When set, this event is the anchor of an image group: the array
+   * contains every image content in the group (including this event's
+   * own content) and the renderer displays them as a single grid.
+   */
+  groupedImages?: IImageContent[];
   isHighlighted: boolean;
   isEditing: boolean;
   // Passed from parent so the comparator can detect the undefined→Relations
@@ -79,6 +75,11 @@ type MemoizedTimelineEventProps = {
   // the same so without this prop the memo would bail out and Message would
   // remain faded (isPending=true) until an unrelated event arrived.
   eventStatus: MatrixEvent['status'];
+  // Computed in the parent so the memo re-renders when backpagination loads
+  // the replied-to event. Computing inline via timelineSet.findEventById()
+  // would return undefined on initial load for off-screen ancestors and then
+  // stay stale (the memo comparator can't detect the SDK-side change).
+  replyToMe: boolean;
 };
 
 function TimelineEventComponent({
@@ -87,11 +88,13 @@ function TimelineEventComponent({
   timelineSet,
   item,
   collapsed,
+  groupedImages,
   isHighlighted,
   isEditing: isEditingProp,
   reactionRelations,
   editedEvent,
   isRedacted,
+  replyToMe,
 }: MemoizedTimelineEventProps) {
   const ctx = useTimelineMessageContext();
   const parseMemberEvent = useMemberEventParser();
@@ -159,8 +162,6 @@ function TimelineEventComponent({
     const reactions = reactionRelations && reactionRelations.getSortedAnnotationsByKey();
     const hasReactions = reactions && reactions.length > 0;
     const { replyEventId, threadRootId } = mEvent;
-    const replyToMe =
-      !!replyEventId && timelineSet.findEventById(replyEventId)?.getSender() === myUserId;
     const senderId = mEvent.getSender() ?? '';
 
     const replyJSX = replyEventId ? (
@@ -221,9 +222,8 @@ function TimelineEventComponent({
       const senderDisplayName =
         getMemberDisplayName(room, senderId) ?? getMxIdLocalPart(senderId) ?? senderId;
       const mentionedMe =
-        (mEvent.getContent()['m.mentions']?.user_ids as string[] | undefined)?.includes(
-          myUserId
-        ) ?? false;
+        (mEvent.getContent()['m.mentions']?.user_ids as string[] | undefined)?.includes(myUserId) ??
+        false;
 
       return (
         <Message
@@ -240,6 +240,7 @@ function TimelineEventComponent({
               msgType={mEvent.getContent().msgtype ?? ''}
               edited={!!editedEvent}
               content={content}
+              groupedImages={groupedImages}
               mediaAutoLoad={mediaAutoLoad}
               urlPreview={showUrlPreview}
               htmlReactParserOptions={htmlReactParserOptions}
@@ -253,9 +254,8 @@ function TimelineEventComponent({
 
     if (eventType === MessageEvent.RoomMessageEncrypted) {
       const mentionedMe =
-        (mEvent.getContent()['m.mentions']?.user_ids as string[] | undefined)?.includes(
-          myUserId
-        ) ?? false;
+        (mEvent.getContent()['m.mentions']?.user_ids as string[] | undefined)?.includes(myUserId) ??
+        false;
 
       return (
         <Message
@@ -282,8 +282,7 @@ function TimelineEventComponent({
                 );
               if (mEvent.getType() === MessageEvent.RoomMessage) {
                 const editedEvt = getEditedEvent(mEventId, mEvent, timelineSet);
-                const content =
-                  editedEvt?.getContent()['m.new_content'] ?? mEvent.getContent();
+                const content = editedEvt?.getContent()['m.new_content'] ?? mEvent.getContent();
 
                 if (content.msgtype === 'm.bad.encrypted') {
                   return (
@@ -507,28 +506,46 @@ function TimelineEventComponent({
   );
 }
 
-export const MemoizedTimelineEvent = React.memo(
-  TimelineEventComponent,
-  (prev, next) => {
-    const result =
-      prev.mEventId === next.mEventId &&
-      prev.item === next.item &&
-      prev.collapsed === next.collapsed &&
-      prev.isHighlighted === next.isHighlighted &&
-      prev.isEditing === next.isEditing &&
-      // Detects the undefined→Relations transition (first reaction added/removed)
-      // so the component re-renders and mounts/unmounts the Reactions child.
-      // Subsequent reaction count changes are handled by useRelations internally.
-      prev.reactionRelations === next.reactionRelations &&
-      // Detects edits and redactions (invisible events that don't change range deps).
-      // getEditedEvent returns a new MatrixEvent ref when an edit arrives;
-      // isRedacted flips to true when a redaction arrives.
-      prev.editedEvent === next.editedEvent &&
-      prev.isRedacted === next.isRedacted &&
-      // Detects local-echo status transitions (QUEUED→SENDING→null/NOT_SENT).
-      // mEvent.status mutates in-place so the reference doesn't change;
-      // without this guard the faded opacity would persist until an unrelated event.
-      prev.eventStatus === next.eventStatus;
-    return result;
+// Shallow equality on the groupedImages array — detects changes to length
+// (group grew/shrunk) and per-cell content reference changes (a new event
+// arrived or an absorbed image was redacted out of the group).
+const sameGroupedImages = (
+  a: IImageContent[] | undefined,
+  b: IImageContent[] | undefined
+): boolean => {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    if (a[i] !== b[i]) return false;
   }
-);
+  return true;
+};
+
+export const MemoizedTimelineEvent = React.memo(TimelineEventComponent, (prev, next) => {
+  const result =
+    prev.mEventId === next.mEventId &&
+    prev.item === next.item &&
+    prev.collapsed === next.collapsed &&
+    sameGroupedImages(prev.groupedImages, next.groupedImages) &&
+    prev.isHighlighted === next.isHighlighted &&
+    prev.isEditing === next.isEditing &&
+    // Detects the undefined→Relations transition (first reaction added/removed)
+    // so the component re-renders and mounts/unmounts the Reactions child.
+    // Subsequent reaction count changes are handled by useRelations internally.
+    prev.reactionRelations === next.reactionRelations &&
+    // Detects edits and redactions (invisible events that don't change range deps).
+    // getEditedEvent returns a new MatrixEvent ref when an edit arrives;
+    // isRedacted flips to true when a redaction arrives.
+    prev.editedEvent === next.editedEvent &&
+    prev.isRedacted === next.isRedacted &&
+    // Detects local-echo status transitions (QUEUED→SENDING→null/NOT_SENT).
+    // mEvent.status mutates in-place so the reference doesn't change;
+    // without this guard the faded opacity would persist until an unrelated event.
+    prev.eventStatus === next.eventStatus &&
+    // Detects the false→true transition when backpagination loads the
+    // ancestor of a reply, so the reply highlight appears without needing
+    // a scroll to trip the comparator.
+    prev.replyToMe === next.replyToMe;
+  return result;
+});

@@ -119,3 +119,31 @@ export const useAsyncCallbackValue = <TData, TError>(
 
   return [state, load];
 };
+
+// Like useAsyncCallback, but auto-invokes the loader once while `enabled` is
+// true and state is Idle. The Idle gate makes the auto-load strictly one-shot
+// per load lifecycle: once state has transitioned past Idle, subsequent
+// re-renders that change the loader's identity (e.g. content.file ref churn
+// from an upstream render when a newer message arrives) will NOT re-fire the
+// effect. Without the gate, the re-fire dispatches Loading → unmounts any
+// <img>/<video> rendered on Success → produces a fresh blob URL → remounts
+// with a new src → visible unload/reload flash.
+//
+// Use `useAsyncCallbackValue` instead when the load SHOULD re-fire on dep
+// changes (e.g. userId → reload mutual rooms). Retrying a failed load must
+// still be done by calling `load` directly (bypasses the effect's gate).
+export const useAutoLoadAsyncCallback = <TData, TError>(
+  asyncCallback: AsyncCallback<[], TData>,
+  enabled: boolean
+): [AsyncState<TData, TError>, AsyncCallback<[], TData>] => {
+  const [state, load] = useAsyncCallback<TData, TError, []>(asyncCallback);
+
+  useEffect(() => {
+    // Swallow the rejection here — errors are still observable to callers
+    // via `state.status === AsyncStatus.Error`. Without this catch, a failed
+    // load would surface as an unhandled promise rejection.
+    if (enabled && state.status === AsyncStatus.Idle) load().catch(() => {});
+  }, [enabled, state.status, load]);
+
+  return [state, load];
+};

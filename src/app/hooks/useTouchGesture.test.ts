@@ -30,11 +30,7 @@ const renderGesture = () =>
   });
 
 // Simulate a complete tap: touchstart → touchend
-const tap = (
-  result: ReturnType<typeof renderGesture>['result'],
-  x = 100,
-  y = 100
-) => {
+const tap = (result: ReturnType<typeof renderGesture>['result'], x = 100, y = 100) => {
   result.current.onTouchStart(mockTouchEvent([{ clientX: x, clientY: y }]));
   const endEvent = mockTouchEvent([], [{ clientX: x, clientY: y }]);
   result.current.onTouchEnd(endEvent);

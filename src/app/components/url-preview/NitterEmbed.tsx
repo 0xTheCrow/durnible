@@ -2,7 +2,7 @@ import React from 'react';
 import classNames from 'classnames';
 import { Box, Text, as, color } from 'folds';
 import * as css from './NitterEmbed.css';
-import { TwitterEmbedInfo } from '../../utils/embeds';
+import type { TwitterEmbedInfo } from '../../utils/embeds';
 import { useNitterInstance } from '../../utils/nitterInstance';
 
 const linkStyles = { color: color.Primary.Main };
@@ -22,9 +22,7 @@ export const NitterEmbed = as<
   const embedSrc = instance
     ? `https://${instance}/${info.user}/status/${info.id}/embed`
     : undefined;
-  const nitterUrl = instance
-    ? `https://${instance}/${info.user}/status/${info.id}`
-    : undefined;
+  const nitterUrl = instance ? `https://${instance}/${info.user}/status/${info.id}` : undefined;
   const showLinkBar = showLink && nitterUrl !== undefined && nitterUrl !== url;
 
   return (
@@ -75,4 +73,3 @@ export const NitterEmbed = as<
     </Box>
   );
 });
-

@@ -1,5 +1,6 @@
-import { MatrixClient } from 'matrix-js-sdk';
-import { DecryptedMessage, fetchUnseenMessages, streamFetchDecrypt } from './fetcher';
+import type { MatrixClient } from 'matrix-js-sdk';
+import type { DecryptedMessage } from './fetcher';
+import { fetchUnseenMessages, streamFetchDecrypt } from './fetcher';
 
 export type AttachedImage = {
   event_id: string;
@@ -142,9 +143,7 @@ const filterAndBuild = (
         const passesTextWithTerms = mediaTypeSet.size > 0 && terms.length > 0;
         if (!passesLink && !passesTextWithTerms) return false;
       }
-    } else {
-      if (!isText) return false;
-    }
+    } else if (!isText) return false;
 
     if (terms.length === 0) return true;
     const bodyLower = msg.body.toLowerCase();
@@ -153,19 +152,20 @@ const filterAndBuild = (
 
   return matched.map((msg) => {
     if (!TEXT_TYPES.has(msg.type)) return { ...msg, content: msg.content };
-    const adjacentImages = allMessages.filter(
-      (m) =>
-        m.type === 'm.image' &&
-        m.sender === msg.sender &&
-        m.content &&
-        Math.abs(m.origin_server_ts - msg.origin_server_ts) <= ADJACENCY_MS
-    );
+    const attachedImages = allMessages.flatMap((m) => {
+      if (
+        m.type !== 'm.image' ||
+        m.sender !== msg.sender ||
+        !m.content ||
+        Math.abs(m.origin_server_ts - msg.origin_server_ts) > ADJACENCY_MS
+      ) {
+        return [];
+      }
+      return [{ event_id: m.event_id, content: m.content }];
+    });
     return {
       ...msg,
-      attachedImages:
-        adjacentImages.length > 0
-          ? adjacentImages.map((img) => ({ event_id: img.event_id, content: img.content! }))
-          : undefined,
+      attachedImages: attachedImages.length > 0 ? attachedImages : undefined,
     };
   });
 };

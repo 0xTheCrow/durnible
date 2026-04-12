@@ -165,9 +165,7 @@ describe('fulfilledPromiseSettledResult', () => {
   });
 
   it('returns empty array when all are rejected', () => {
-    const results: PromiseSettledResult<number>[] = [
-      { status: 'rejected', reason: 'err' },
-    ];
+    const results: PromiseSettledResult<number>[] = [{ status: 'rejected', reason: 'err' }];
     expect(fulfilledPromiseSettledResult(results)).toEqual([]);
   });
 });

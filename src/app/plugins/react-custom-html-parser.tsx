@@ -1,28 +1,18 @@
 /* eslint-disable jsx-a11y/alt-text */
-import React, {
-  ComponentPropsWithoutRef,
-  ReactEventHandler,
-  Suspense,
-  lazy,
-  useMemo,
-  useState,
-} from 'react';
-import {
-  Element,
-  Text as DOMText,
-  HTMLReactParserOptions,
-  attributesToProps,
-  domToReact,
-} from 'html-react-parser';
-import { MatrixClient } from 'matrix-js-sdk';
+import type { ComponentPropsWithoutRef, ReactEventHandler } from 'react';
+import React, { Suspense, lazy, useMemo, useState } from 'react';
+import type { HTMLReactParserOptions } from 'html-react-parser';
+import { Element, Text as DOMText, attributesToProps, domToReact } from 'html-react-parser';
+import type { MatrixClient } from 'matrix-js-sdk';
 import classNames from 'classnames';
 import { Box, Chip, config, Header, Icon, IconButton, Icons, Scroll, Text, toRem } from 'folds';
-import { find as linkifyFind, IntermediateRepresentation, Opts as LinkifyOpts, OptFn } from 'linkifyjs';
+import type { IntermediateRepresentation, Opts as LinkifyOpts, OptFn } from 'linkifyjs';
+import { find as linkifyFind } from 'linkifyjs';
 import Linkify from 'linkify-react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { ChildNode } from 'domhandler';
+import type { ChildNode } from 'domhandler';
 import * as css from '../styles/CustomHtml.css';
-import { AnimatedImg } from '../components/AnimatedImg';
+import { AnimatedEmojiOverlay } from '../components/AnimatedEmojiOverlay';
 import {
   getMxIdLocalPart,
   getCanonicalAliasRoomId,
@@ -150,8 +140,8 @@ export const renderMatrixMention = (
 
 export const factoryRenderLinkifyWithMention = (
   mentionRender: (href: string) => JSX.Element | undefined
-): OptFn<(ir: IntermediateRepresentation) => any> => {
-  const render: OptFn<(ir: IntermediateRepresentation) => any> = ({
+): OptFn<(ir: IntermediateRepresentation) => JSX.Element> => {
+  const render: OptFn<(ir: IntermediateRepresentation) => JSX.Element> = ({
     tagName,
     attributes,
     content,
@@ -171,10 +161,12 @@ export const scaleSystemEmoji = (text: string): (string | JSX.Element)[] =>
     text,
     EMOJI_REG_G,
     (match, pushIndex) => (
-      <span key={`scaleSystemEmoji-${pushIndex}`} className={css.EmoticonBase}>
-        <span className={css.Emoticon()} title={getShortcodeFor(getHexcodeForEmoji(match[0]))}>
-          {match[0]}
-        </span>
+      <span
+        key={`scaleSystemEmoji-${pushIndex}`}
+        className={css.Emoticon()}
+        title={getShortcodeFor(getHexcodeForEmoji(match[0]))}
+      >
+        {match[0]}
       </span>
     ),
     (txt) => txt
@@ -525,15 +517,13 @@ export const getReactCustomHtmlParser = (
           }
           if (htmlSrc && 'data-mx-emoticon' in props) {
             return (
-              <span className={css.EmoticonBase}>
-                <span className={css.Emoticon()}>
-                  <AnimatedImg
-                    {...props}
-                    className={css.EmoticonImg}
-                    src={htmlSrc}
-                    pauseGifs={params.pauseGifs ?? false}
-                  />
-                </span>
+              <span className={css.Emoticon()}>
+                <AnimatedEmojiOverlay
+                  {...props}
+                  className={css.EmoticonImg}
+                  src={htmlSrc}
+                  pauseGifs={params.pauseGifs ?? false}
+                />
               </span>
             );
           }

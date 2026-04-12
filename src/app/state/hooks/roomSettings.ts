@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useAtomValue, useSetAtom } from 'jotai';
-import { roomSettingsAtom, RoomSettingsPage, RoomSettingsState } from '../roomSettings';
+import type { RoomSettingsPage, RoomSettingsState } from '../roomSettings';
+import { roomSettingsAtom } from '../roomSettings';
 
 export const useRoomSettingsState = (): RoomSettingsState | undefined => {
   const data = useAtomValue(roomSettingsAtom);

@@ -1,17 +1,7 @@
-import React, { ChangeEventHandler, useMemo, useState } from 'react';
-import {
-  Avatar,
-  Box,
-  Button,
-  config,
-  Icon,
-  IconButton,
-  Icons,
-  IconSrc,
-  Input,
-  MenuItem,
-  Text,
-} from 'folds';
+import type { ChangeEventHandler } from 'react';
+import React, { useMemo, useState } from 'react';
+import type { IconSrc } from 'folds';
+import { Avatar, Box, Button, config, Icon, IconButton, Icons, Input, MenuItem, Text } from 'folds';
 import { General } from './general';
 import { PageNav, PageNavContent, PageNavHeader, PageRoot } from '../../components/page';
 import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
@@ -88,7 +78,7 @@ type SettingsProps = {
 export function Settings({ initialPage, requestClose }: SettingsProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
-  const userId = mx.getUserId()!;
+  const userId = mx.getSafeUserId();
   const profile = useUserProfile(userId);
   const displayName = profile.displayName ?? getMxIdLocalPart(userId) ?? userId;
   const avatarUrl = profile.avatarUrl
@@ -127,7 +117,8 @@ export function Settings({ initialPage, requestClose }: SettingsProps) {
   return (
     <PageRoot
       nav={
-        screenSize === ScreenSize.Mobile && (activePage !== undefined || searchQuery.trim()) ? undefined : (
+        screenSize === ScreenSize.Mobile &&
+        (activePage !== undefined || searchQuery.trim()) ? undefined : (
           <PageNav size="300">
             <PageNavHeader outlined={false}>
               <Box grow="Yes" gap="200">
@@ -164,7 +155,12 @@ export function Settings({ initialPage, requestClose }: SettingsProps) {
                   onChange={handleSearchChange}
                   after={
                     searchQuery ? (
-                      <IconButton size="300" onClick={handleSearchClear} variant="Background" radii="Pill">
+                      <IconButton
+                        size="300"
+                        onClick={handleSearchClear}
+                        variant="Background"
+                        radii="Pill"
+                      >
                         <Icon src={Icons.Cross} size="100" />
                       </IconButton>
                     ) : undefined
@@ -211,7 +207,7 @@ export function Settings({ initialPage, requestClose }: SettingsProps) {
                       </Button>
                       {logout && (
                         <OverlayModal open requestClose={() => setLogout(false)}>
-                              <LogoutDialog handleClose={() => setLogout(false)} />
+                          <LogoutDialog handleClose={() => setLogout(false)} />
                         </OverlayModal>
                       )}
                     </>

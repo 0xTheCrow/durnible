@@ -1,11 +1,6 @@
-import React, {
-  ChangeEventHandler,
-  MouseEventHandler,
-  useCallback,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import type { ChangeEventHandler, MouseEventHandler } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import type { RectCords } from 'folds';
 import {
   Avatar,
   Badge,
@@ -18,7 +13,6 @@ import {
   Input,
   MenuItem,
   PopOut,
-  RectCords,
   Scroll,
   Spinner,
   Text,
@@ -26,18 +20,15 @@ import {
   TooltipProvider,
   config,
 } from 'folds';
-import { MatrixClient, Room, RoomMember } from 'matrix-js-sdk';
+import type { MatrixClient, Room, RoomMember } from 'matrix-js-sdk';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import classNames from 'classnames';
 
 import * as css from './MembersDrawer.css';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { UseStateProvider } from '../../components/UseStateProvider';
-import {
-  SearchItemStrGetter,
-  UseAsyncSearchOptions,
-  useAsyncSearch,
-} from '../../hooks/useAsyncSearch';
+import type { SearchItemStrGetter, UseAsyncSearchOptions } from '../../hooks/useAsyncSearch';
+import { useAsyncSearch } from '../../hooks/useAsyncSearch';
 import { useDebounce } from '../../hooks/useDebounce';
 import { TypingIndicator } from '../../components/typing-indicator';
 import { getMemberDisplayName, getMemberSearchStr } from '../../utils/room';
@@ -398,9 +389,7 @@ export function MembersDrawer({ room, members }: MembersDrawerProps) {
                         member={member}
                         onClick={handleMemberClick}
                         pressed={openProfileUserId === member.userId}
-                        typing={typingMembers.some(
-                          (receipt) => receipt.userId === member.userId
-                        )}
+                        typing={typingMembers.some((receipt) => receipt.userId === member.userId)}
                       />
                     </div>
                   );

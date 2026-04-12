@@ -1,15 +1,14 @@
-import React, { ReactNode, useEffect } from 'react';
+import type { ReactNode } from 'react';
+import React, { useEffect } from 'react';
 import { Box, Chip, Icon, IconButton, Icons, Text, color, config, toRem } from 'folds';
 import { UploadCard, UploadCardError, UploadCardProgress } from './UploadCard';
-import { UploadStatus, UploadSuccess, useBindUploadAtom } from '../../state/upload';
+import type { UploadSuccess } from '../../state/upload';
+import { UploadStatus, useBindUploadAtom } from '../../state/upload';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
-import { TUploadContent } from '../../utils/matrix';
+import type { TUploadContent } from '../../utils/matrix';
 import { bytesToSize, getFileTypeIcon } from '../../utils/common';
-import {
-  roomUploadAtomFamily,
-  TUploadItem,
-  TUploadMetadata,
-} from '../../state/room/roomInputDrafts';
+import type { TUploadItem, TUploadMetadata } from '../../state/room/roomInputDrafts';
+import { roomUploadAtomFamily } from '../../state/room/roomInputDrafts';
 import { useObjectURL } from '../../hooks/useObjectURL';
 import { useMediaConfig } from '../../hooks/useMediaConfig';
 
@@ -193,9 +192,12 @@ export function UploadCardRenderer({
               <Text size="T200">{fileItem.encryptError}</Text>
             </UploadCardError>
           )}
-          {upload.status === UploadStatus.Idle && !fileSizeExceeded && !fileItem.isEncrypting && fileItem.isEncryptionSuccessful !== false && (
-            <UploadCardProgress sentBytes={0} totalBytes={file.size} />
-          )}
+          {upload.status === UploadStatus.Idle &&
+            !fileSizeExceeded &&
+            !fileItem.isEncrypting &&
+            fileItem.isEncryptionSuccessful !== false && (
+              <UploadCardProgress sentBytes={0} totalBytes={file.size} />
+            )}
           {upload.status === UploadStatus.Loading && (
             <UploadCardProgress sentBytes={upload.progress.loaded} totalBytes={file.size} />
           )}

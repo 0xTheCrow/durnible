@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { MatrixClient, Room, RoomEvent } from 'matrix-js-sdk';
+import type { MatrixClient, Room } from 'matrix-js-sdk';
+import { RoomEvent } from 'matrix-js-sdk';
 
 const FAVORITE_TAG = 'm.favourite';
 

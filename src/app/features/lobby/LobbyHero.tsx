@@ -22,7 +22,9 @@ export function LobbyHero() {
   const name = useRoomName(space);
   const topic = useRoomTopic(space);
   const avatarMxc = useRoomAvatar(space);
-  const avatarUrl = avatarMxc ? mxcUrlToHttp(mx, avatarMxc, useAuthentication, 96, 96, 'crop') ?? undefined : undefined;
+  const avatarUrl = avatarMxc
+    ? mxcUrlToHttp(mx, avatarMxc, useAuthentication, 96, 96, 'crop') ?? undefined
+    : undefined;
 
   return (
     <PageHero
@@ -43,11 +45,11 @@ export function LobbyHero() {
             {(viewTopic, setViewTopic) => (
               <>
                 <OverlayModal open={viewTopic} requestClose={() => setViewTopic(false)}>
-                      <RoomTopicViewer
-                        name={name}
-                        topic={topic}
-                        requestClose={() => setViewTopic(false)}
-                      />
+                  <RoomTopicViewer
+                    name={name}
+                    topic={topic}
+                    requestClose={() => setViewTopic(false)}
+                  />
                 </OverlayModal>
                 <Text
                   as="span"

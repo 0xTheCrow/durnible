@@ -1,8 +1,10 @@
-import React, { FormEventHandler, useCallback } from 'react';
+import type { FormEventHandler } from 'react';
+import React, { useCallback } from 'react';
 import { Box, Text, Button, Spinner, color } from 'folds';
 import { decodeRecoveryKey, deriveRecoveryKeyFromPassphrase } from 'matrix-js-sdk/lib/crypto-api';
+import type { SecretStorageKeyDescriptionAesV1 } from 'matrix-js-sdk/lib/secret-storage';
 import { PasswordInput } from './password-input';
-import {
+import type {
   SecretStorageKeyContent,
   SecretStoragePassphraseContent,
 } from '../../types/matrix/accountData';
@@ -39,7 +41,10 @@ export function SecretStorageRecoveryPassphrase({
           bits
         );
 
-        const match = await mx.secretStorage.checkKey(decodedRecoveryKey, keyContent as any);
+        const match = await mx.secretStorage.checkKey(
+          decodedRecoveryKey,
+          keyContent as SecretStorageKeyDescriptionAesV1
+        );
 
         if (!match) {
           throw new Error('Invalid recovery passphrase.');
@@ -131,7 +136,10 @@ export function SecretStorageRecoveryKey({
       async (recoveryKey) => {
         const decodedRecoveryKey = decodeRecoveryKey(recoveryKey);
 
-        const match = await mx.secretStorage.checkKey(decodedRecoveryKey, keyContent as any);
+        const match = await mx.secretStorage.checkKey(
+          decodedRecoveryKey,
+          keyContent as SecretStorageKeyDescriptionAesV1
+        );
 
         if (!match) {
           throw new Error('Invalid recovery key.');

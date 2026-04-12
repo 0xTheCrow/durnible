@@ -1,6 +1,7 @@
-import React, { CSSProperties, ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
+import React from 'react';
 import { Box, Chip, Icon, Icons, Text, toRem } from 'folds';
-import { IContent } from 'matrix-js-sdk';
+import type { IContent } from 'matrix-js-sdk';
 import { JUMBO_EMOJI_REG, URL_REG } from '../../utils/regex';
 import { trimReplyFromBody } from '../../utils/room';
 import { MessageTextBody } from './layout';
@@ -11,7 +12,7 @@ import {
   MessageEditedContent,
   MessageUnsupportedContent,
 } from './content';
-import {
+import type {
   IAudioContent,
   IAudioInfo,
   IEncryptedFile,
@@ -22,6 +23,8 @@ import {
   IThumbnailContent,
   IVideoContent,
   IVideoInfo,
+} from '../../../types/matrix/common';
+import {
   MATRIX_SPOILER_PROPERTY_NAME,
   MATRIX_SPOILER_REASON_PROPERTY_NAME,
 } from '../../../types/matrix/common';
@@ -32,7 +35,7 @@ import { FileHeader, FileDownloadButton } from './FileHeader';
 
 export function MBadEncrypted() {
   return (
-    <Text>
+    <Text data-testid="message-bad-encrypted">
       <MessageBadEncryptedContent />
     </Text>
   );
@@ -43,7 +46,7 @@ type RedactedContentProps = {
 };
 export function RedactedContent({ reason }: RedactedContentProps) {
   return (
-    <Text>
+    <Text data-testid="message-redacted">
       <MessageDeletedContent reason={reason} />
     </Text>
   );
@@ -51,7 +54,7 @@ export function RedactedContent({ reason }: RedactedContentProps) {
 
 export function UnsupportedContent() {
   return (
-    <Text>
+    <Text data-testid="message-unsupported">
       <MessageUnsupportedContent />
     </Text>
   );
@@ -59,7 +62,7 @@ export function UnsupportedContent() {
 
 export function BrokenContent() {
   return (
-    <Text>
+    <Text data-testid="message-broken">
       <MessageBrokenContent />
     </Text>
   );
@@ -187,7 +190,6 @@ type RenderImageContentProps = {
 type MImageProps = {
   content: IImageContent;
   renderImageContent: (props: RenderImageContentProps) => ReactNode;
-  outlined?: boolean;
 };
 export function MImage({ content, renderImageContent }: MImageProps) {
   const imgInfo = content?.info;
