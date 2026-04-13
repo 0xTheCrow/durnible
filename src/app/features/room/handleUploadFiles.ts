@@ -1,6 +1,6 @@
 import type { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
 import type { ListAction } from '../../state/list';
-import type { TUploadItem } from '../../state/room/roomInputDrafts';
+import type { UploadItem } from '../../state/room/roomInputDrafts';
 import { safeFile } from '../../utils/mimeTypes';
 import { applyUploadQueueCap } from '../../utils/uploadQueueCap';
 
@@ -20,7 +20,7 @@ export type HandleUploadFilesContext = {
   /** Number of items currently in the upload queue. Read once at call time. */
   currentItemCount: number;
   /** Reducer-style setter for the upload queue. */
-  setItems: (action: ListAction<TUploadItem>) => void;
+  setItems: (action: ListAction<UploadItem>) => void;
   /** True iff the destination room has an encryption state event. */
   isEncrypted: boolean;
   /** Encrypts a single file (rejects on failure). */
@@ -71,7 +71,7 @@ export function handleUploadFiles(
   const safeFiles = accepted.map(safeFile);
 
   if (ctx.isEncrypted) {
-    const placeholders: TUploadItem[] = safeFiles.map((f) => ({
+    const placeholders: UploadItem[] = safeFiles.map((f) => ({
       file: f,
       originalFile: f,
       encInfo: undefined,
@@ -114,7 +114,7 @@ export function handleUploadFiles(
     };
   }
 
-  const fileItems: TUploadItem[] = safeFiles.map((f) => ({
+  const fileItems: UploadItem[] = safeFiles.map((f) => ({
     file: f,
     originalFile: f,
     encInfo: undefined,

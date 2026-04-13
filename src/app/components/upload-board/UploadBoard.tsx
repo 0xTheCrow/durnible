@@ -5,7 +5,7 @@ import classNames from 'classnames';
 import { useAtomValue } from 'jotai';
 
 import * as css from './UploadBoard.css';
-import type { TUploadFamilyObserverAtom, Upload, UploadSuccess } from '../../state/upload';
+import type { UploadFamilyObserverAtom, Upload, UploadSuccess } from '../../state/upload';
 import { UploadStatus } from '../../state/upload';
 
 type UploadBoardProps = {
@@ -31,7 +31,7 @@ export type UploadBoardImperativeHandlers = { handleSend: () => Promise<void> };
 type UploadBoardHeaderProps = {
   open: boolean;
   onToggle: () => void;
-  uploadFamilyObserverAtom: TUploadFamilyObserverAtom;
+  uploadFamilyObserverAtom: UploadFamilyObserverAtom;
   onCancel: (uploads: Upload[]) => void;
   onSend: (uploads: UploadSuccess[]) => Promise<void>;
   onSubmit?: () => void;

@@ -10,7 +10,7 @@ import type {
   HierarchyItemSpace,
 } from '../../hooks/useSpaceHierarchy';
 import { useFetchSpaceHierarchyLevel } from '../../hooks/useSpaceHierarchy';
-import type { IPowerLevels } from '../../hooks/usePowerLevels';
+import type { PowerLevels } from '../../hooks/usePowerLevels';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { SpaceItemCard } from './SpaceItem';
 import type { CanDropCallback } from './DnD';
@@ -28,7 +28,7 @@ type SpaceHierarchyProps = {
   roomItems?: HierarchyItemRoom[];
   allJoinedRooms: Set<string>;
   mDirects: Set<string>;
-  roomsPowerLevels: Map<string, IPowerLevels>;
+  roomsPowerLevels: Map<string, PowerLevels>;
   categoryId: string;
   closed: boolean;
   handleClose: MouseEventHandler<HTMLButtonElement>;

@@ -55,14 +55,14 @@ import {
 } from '../../components/editor';
 import { EmojiBoard, EmojiBoardTab } from '../../components/emoji-board';
 import { UseStateProvider } from '../../components/UseStateProvider';
-import type { TUploadContent } from '../../utils/matrix';
+import type { UploadContent } from '../../utils/matrix';
 import { getImageInfo, getMxIdLocalPart, mxcUrlToHttp } from '../../utils/matrix';
 import { encryptFileInWorker } from '../../utils/encryptWorker';
 import { useTypingStatusUpdater } from '../../hooks/useTypingStatusUpdater';
 import { useFilePicker } from '../../hooks/useFilePicker';
 import { useFilePasteHandler } from '../../hooks/useFilePasteHandler';
 import { useFileDropZone } from '../../hooks/useFileDrop';
-import type { TUploadItem, TUploadMetadata } from '../../state/room/roomInputDrafts';
+import type { UploadItem, UploadMetadata } from '../../state/room/roomInputDrafts';
 import {
   roomIdToMsgDraftAtomFamily,
   roomIdToReplyDraftAtomFamily,
@@ -260,7 +260,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     );
 
     const handleFileMetadata = useCallback(
-      (fileItem: TUploadItem, metadata: TUploadMetadata) => {
+      (fileItem: UploadItem, metadata: UploadMetadata) => {
         setSelectedFiles({
           type: 'REPLACE',
           item: fileItem,
@@ -271,7 +271,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     );
 
     const handleRemoveUpload = useCallback(
-      (upload: TUploadContent | TUploadContent[]) => {
+      (upload: UploadContent | UploadContent[]) => {
         const uploads = Array.isArray(upload) ? upload : [upload];
         setSelectedFiles({
           type: 'DELETE',

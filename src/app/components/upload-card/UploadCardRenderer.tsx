@@ -5,15 +5,15 @@ import { UploadCard, UploadCardError, UploadCardProgress } from './UploadCard';
 import type { UploadSuccess } from '../../state/upload';
 import { UploadStatus, useBindUploadAtom } from '../../state/upload';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
-import type { TUploadContent } from '../../utils/matrix';
+import type { UploadContent } from '../../utils/matrix';
 import { bytesToSize, getFileTypeIcon } from '../../utils/common';
-import type { TUploadItem, TUploadMetadata } from '../../state/room/roomInputDrafts';
+import type { UploadItem, UploadMetadata } from '../../state/room/roomInputDrafts';
 import { roomUploadAtomFamily } from '../../state/room/roomInputDrafts';
 import { useObjectURL } from '../../hooks/useObjectURL';
 import { useMediaConfig } from '../../hooks/useMediaConfig';
 
 type PreviewImageProps = {
-  fileItem: TUploadItem;
+  fileItem: UploadItem;
 };
 function PreviewImage({ fileItem }: PreviewImageProps) {
   const { originalFile, metadata } = fileItem;
@@ -34,7 +34,7 @@ function PreviewImage({ fileItem }: PreviewImageProps) {
 }
 
 type PreviewVideoProps = {
-  fileItem: TUploadItem;
+  fileItem: UploadItem;
 };
 function PreviewVideo({ fileItem }: PreviewVideoProps) {
   const { originalFile, metadata } = fileItem;
@@ -55,7 +55,7 @@ function PreviewVideo({ fileItem }: PreviewVideoProps) {
 }
 
 type MediaPreviewProps = {
-  fileItem: TUploadItem;
+  fileItem: UploadItem;
   onSpoiler: (marked: boolean) => void;
   children: ReactNode;
 };
@@ -99,9 +99,9 @@ function MediaPreview({ fileItem, onSpoiler, children }: MediaPreviewProps) {
 
 type UploadCardRendererProps = {
   isEncrypted?: boolean;
-  fileItem: TUploadItem;
-  setMetadata: (fileItem: TUploadItem, metadata: TUploadMetadata) => void;
-  onRemove: (file: TUploadContent) => void;
+  fileItem: UploadItem;
+  setMetadata: (fileItem: UploadItem, metadata: UploadMetadata) => void;
+  onRemove: (file: UploadContent) => void;
   onComplete?: (upload: UploadSuccess) => void;
 };
 export function UploadCardRenderer({

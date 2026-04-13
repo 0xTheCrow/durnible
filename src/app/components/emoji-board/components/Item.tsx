@@ -5,7 +5,7 @@ import type { EmojiItemInfo } from '../types';
 import { EmojiType } from '../types';
 import * as css from './styles.css';
 import type { PackImageReader } from '../../../plugins/custom-emoji';
-import type { IEmoji } from '../../../plugins/emoji';
+import type { Emoji } from '../../../plugins/emoji';
 import { mxcUrlToHttp } from '../../../utils/matrix';
 
 const handleImgLoad: ReactEventHandler<HTMLImageElement> = (evt) => {
@@ -29,7 +29,7 @@ export const getEmojiItemInfo = (element: Element): EmojiItemInfo | undefined =>
 };
 
 type EmojiItemProps = {
-  emoji: IEmoji;
+  emoji: Emoji;
 };
 export function EmojiItem({ emoji }: EmojiItemProps) {
   return (

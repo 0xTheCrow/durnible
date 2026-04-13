@@ -14,7 +14,7 @@ export type ProgressData = {
   failures: number;
   total: number;
 };
-export type IBackupProgress =
+export type BackupProgress =
   | {
       status: BackupProgressStatus.Idle;
     }
@@ -29,12 +29,12 @@ export type IBackupProgress =
       status: BackupProgressStatus.Done;
     };
 
-const baseBackupRestoreProgressAtom = atom<IBackupProgress>({
+const baseBackupRestoreProgressAtom = atom<BackupProgress>({
   status: BackupProgressStatus.Idle,
 });
 
 export const backupRestoreProgressAtom = atom<
-  IBackupProgress,
+  BackupProgress,
   [ImportRoomKeyProgressData],
   undefined
 >(

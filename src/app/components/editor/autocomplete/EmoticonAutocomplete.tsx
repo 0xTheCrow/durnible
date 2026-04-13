@@ -13,7 +13,7 @@ import { onTabPress } from '../../../utils/keyboard';
 import { createEmoticonElement, moveCursor, replaceWithElement } from '../utils';
 import { useRecentEmoji } from '../../../hooks/useRecentEmoji';
 import { useRelevantImagePacks } from '../../../hooks/useImagePacks';
-import type { IEmoji } from '../../../plugins/emoji';
+import type { Emoji } from '../../../plugins/emoji';
 import { emojis } from '../../../plugins/emoji';
 import { useKeyDown } from '../../../hooks/useKeyDown';
 import { mxcUrlToHttp } from '../../../utils/matrix';
@@ -24,7 +24,7 @@ import { getEmoticonSearchStr } from '../../../plugins/utils';
 
 type EmoticonCompleteHandler = (key: string, shortcode: string) => void;
 
-type EmoticonSearchItem = PackImageReader | IEmoji;
+type EmoticonSearchItem = PackImageReader | Emoji;
 
 type EmoticonAutocompleteProps = {
   imagePackRooms: Room[];

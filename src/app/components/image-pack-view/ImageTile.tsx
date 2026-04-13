@@ -9,7 +9,7 @@ import { imageUsageEqual, PackImageReader } from '../../plugins/custom-emoji';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { SettingTile } from '../setting-tile';
 import { useObjectURL } from '../../hooks/useObjectURL';
-import type { TUploadAtom } from '../../state/upload';
+import type { UploadAtom } from '../../state/upload';
 import { createUploadAtom } from '../../state/upload';
 import { replaceSpaceWithDash } from '../../utils/common';
 
@@ -94,7 +94,7 @@ export function ImageTile({
 
 type ImageTileUploadProps = {
   file: File;
-  children: (uploadAtom: TUploadAtom) => ReactNode;
+  children: (uploadAtom: UploadAtom) => ReactNode;
 };
 export function ImageTileUpload({ file, children }: ImageTileUploadProps) {
   const url = useObjectURL(file);

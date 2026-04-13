@@ -55,7 +55,11 @@ import { UnreadBadge } from '../../../components/unread-badge';
 import { getCanonicalAliasOrRoomId, isRoomAlias } from '../../../utils/matrix';
 import { RoomAvatar } from '../../../components/room-avatar';
 import { nameInitials, randomStr } from '../../../utils/common';
-import type { ISidebarFolder, SidebarItems, TSidebarItem } from '../../../hooks/useSidebarItems';
+import type {
+  SidebarFolder as SidebarFolderData,
+  SidebarItems,
+  SidebarItem as SidebarItemData,
+} from '../../../hooks/useSidebarItems';
 import {
   makeCinnySpacesContent,
   parseSidebar,
@@ -215,7 +219,7 @@ const SpaceMenu = forwardRef<HTMLDivElement, SpaceMenuProps>(
 
 type InstructionType = Instruction['type'];
 type FolderDraggable = {
-  folder: ISidebarFolder;
+  folder: SidebarFolderData;
   spaceId?: string;
   open?: boolean;
 };
@@ -375,7 +379,7 @@ type SpaceTabProps = {
   space: Room;
   selected: boolean;
   onClick: MouseEventHandler<HTMLButtonElement>;
-  folder?: ISidebarFolder;
+  folder?: SidebarFolderData;
   onDragging: (dragItem?: SidebarDraggable) => void;
   disabled?: boolean;
   onUnpin?: (roomId: string) => void;
@@ -490,7 +494,7 @@ function SpaceTab({
 }
 
 type OpenedSpaceFolderProps = {
-  folder: ISidebarFolder;
+  folder: SidebarFolderData;
   onClose: MouseEventHandler<HTMLButtonElement>;
   children?: ReactNode;
 };
@@ -522,7 +526,7 @@ function OpenedSpaceFolder({ folder, onClose, children }: OpenedSpaceFolderProps
 }
 
 type ClosedSpaceFolderProps = {
-  folder: ISidebarFolder;
+  folder: SidebarFolderData;
   selected: boolean;
   onOpen: MouseEventHandler<HTMLButtonElement>;
   onDragging: (dragItem?: SidebarDraggable) => void;
@@ -615,7 +619,7 @@ export function SpaceTabs({ scrollRef }: SpaceTabsProps) {
       (item, containerItem, instructionType) => {
         const newItems: SidebarItems = [];
 
-        const matchDest = (sI: TSidebarItem, dI: SidebarDraggable): boolean => {
+        const matchDest = (sI: SidebarItemData, dI: SidebarDraggable): boolean => {
           if (typeof sI === 'string' && typeof dI === 'string') {
             return sI === dI;
           }
@@ -662,7 +666,7 @@ export function SpaceTabs({ scrollRef }: SpaceTabsProps) {
             if (instructionType === 'make-child') {
               const child: string[] = itemAsFolderContent(item);
               if (typeof containerItem === 'string') {
-                const folder: ISidebarFolder = {
+                const folder: SidebarFolderData = {
                   id: randomStr(),
                   content: [containerItem].concat(child),
                 };

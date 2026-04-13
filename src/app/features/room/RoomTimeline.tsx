@@ -1,30 +1,30 @@
 /* eslint-disable react/destructuring-assignment */
-import type { Dispatch, MouseEventHandler, RefObject, SetStateAction } from 'react';
+import type { MouseEventHandler, RefObject } from 'react';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import type {
-  EventTimeline,
-  EventTimelineSetHandlerMap,
-  IContent,
-  MatrixClient,
-  MatrixEvent,
-  Room,
-  RoomEventHandlerMap,
-} from 'matrix-js-sdk';
-import { Direction, EventType, RoomEvent } from 'matrix-js-sdk';
+import type { MatrixEvent, Room, RoomEventHandlerMap } from 'matrix-js-sdk';
+import { Direction, RoomEvent } from 'matrix-js-sdk';
 import type { HTMLReactParserOptions } from 'html-react-parser';
 import classNames from 'classnames';
 import { ReactEditor } from 'slate-react';
 import type { Editor } from 'slate';
-import to from 'await-to-js';
-import { useAtom, useAtomValue, useSetAtom } from 'jotai';
+import { useAtomValue, useSetAtom } from 'jotai';
 import type { ContainerColor } from 'folds';
 import { Badge, Box, Chip, Icon, Icons, Line, Scroll, Text, as, color, config, toRem } from 'folds';
 import { isKeyHotkey } from 'is-hotkey';
 import type { Opts as LinkifyOpts } from 'linkifyjs';
-import { eventWithShortcode, factoryEventSentBy, getMxIdLocalPart } from '../../utils/matrix';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { useVirtualPaginator } from '../../hooks/useVirtualPaginator';
 import { useAlive } from '../../hooks/useAlive';
+import {
+  PAGINATION_LIMIT,
+  getEmptyTimeline,
+  getInitialTimeline,
+  useEventTimelineLoader,
+  useLiveEventArrive,
+  useLiveTimelineRefresh,
+  useTimelinePagination,
+} from './timelineState';
+import type { Timeline } from './timelineState';
 import { editableActiveElement, scrollToBottom } from '../../utils/dom';
 import { DefaultPlaceholder, CompactPlaceholder, MessageBase } from '../../components/message';
 import {
@@ -40,25 +40,35 @@ import {
   getEditedEvent,
   getEventReactions,
   getLatestEditableEvt,
-  getMemberDisplayName,
-  getReactionContent,
-  isMembershipChanged,
   reactionOrEditEvent,
 } from '../../utils/room';
+import { willEventRender } from './willEventRender';
+import { getRoomUnreadInfo, useTimelineReadMarker } from './useTimelineReadMarker';
+import { useTimelineClickHandlers } from './useTimelineClickHandlers';
+import {
+  getEventIdAbsoluteIndex,
+  getEventTimeline,
+  getLinkedTimelines,
+  getLiveTimeline,
+  getTimelineAndBaseIndex,
+  getTimelineEvent,
+  getTimelineRelativeIndex,
+  getTimelinesEventsCount,
+} from './timelineUtils';
 import { useSetting } from '../../state/hooks/settings';
 import { MessageLayout, settingsAtom } from '../../state/settings';
 import { RoomIntro } from '../../components/room-intro';
 import { TimelineMessageContext } from './TimelineMessageContext';
 import { MemoizedTimelineEvent } from './MemoizedTimelineEvent';
 import { SelectionActionBar } from './SelectionActionBar';
-import { selectionModeAtom, selectedIdsAtom } from './message/selectionAtom';
+import { useBulkSelection } from './useBulkSelection';
 import { markAsRead } from '../../utils/notifications';
 
 import { getResizeObserverEntry, useResizeObserver } from '../../hooks/useResizeObserver';
 import * as css from './RoomTimeline.css';
 import { timeDayMonthYear, today, yesterday } from '../../utils/time';
 import { buildTimelineDescriptors } from '../../utils/buildTimelineDescriptors';
-import { createMentionElement, isEmptyEditor, moveCursor } from '../../components/editor';
+import { isEmptyEditor } from '../../components/editor';
 import { roomIdToReplyDraftAtomFamily } from '../../state/room/roomInputDrafts';
 import { usePowerLevelsContext } from '../../hooks/usePowerLevels';
 import { MessageEvent, StateEvent } from '../../../types/matrix/room';
@@ -109,301 +119,12 @@ const TimelineDivider = as<'div', { variant?: ContainerColor | 'Inherit' }>(
   )
 );
 
-export const getLiveTimeline = (room: Room): EventTimeline =>
-  room.getUnfilteredTimelineSet().getLiveTimeline();
-
-export const getEventTimeline = (room: Room, eventId: string): EventTimeline | undefined => {
-  const timelineSet = room.getUnfilteredTimelineSet();
-  return timelineSet.getTimelineForEvent(eventId) ?? undefined;
-};
-
-export const getFirstLinkedTimeline = (
-  timeline: EventTimeline,
-  direction: Direction
-): EventTimeline => {
-  const linkedTm = timeline.getNeighbouringTimeline(direction);
-  if (!linkedTm) return timeline;
-  return getFirstLinkedTimeline(linkedTm, direction);
-};
-
-export const getLinkedTimelines = (timeline: EventTimeline): EventTimeline[] => {
-  const firstTimeline = getFirstLinkedTimeline(timeline, Direction.Backward);
-  const timelines: EventTimeline[] = [];
-
-  for (
-    let nextTimeline: EventTimeline | null = firstTimeline;
-    nextTimeline;
-    nextTimeline = nextTimeline.getNeighbouringTimeline(Direction.Forward)
-  ) {
-    timelines.push(nextTimeline);
-  }
-  return timelines;
-};
-
-export const timelineToEventsCount = (t: EventTimeline) => t.getEvents().length;
-export const getTimelinesEventsCount = (timelines: EventTimeline[]): number => {
-  const timelineEventCountReducer = (count: number, tm: EventTimeline) =>
-    count + timelineToEventsCount(tm);
-  return timelines.reduce(timelineEventCountReducer, 0);
-};
-
-export const getTimelineAndBaseIndex = (
-  timelines: EventTimeline[],
-  index: number
-): [EventTimeline | undefined, number] => {
-  let uptoTimelineLen = 0;
-  const timeline = timelines.find((t) => {
-    uptoTimelineLen += t.getEvents().length;
-    if (index < uptoTimelineLen) return true;
-    return false;
-  });
-  if (!timeline) return [undefined, 0];
-  return [timeline, uptoTimelineLen - timeline.getEvents().length];
-};
-
-export const getTimelineRelativeIndex = (absoluteIndex: number, timelineBaseIndex: number) =>
-  absoluteIndex - timelineBaseIndex;
-
-export const getTimelineEvent = (timeline: EventTimeline, index: number): MatrixEvent | undefined =>
-  timeline.getEvents()[index];
-
-export const getEventIdAbsoluteIndex = (
-  timelines: EventTimeline[],
-  eventTimeline: EventTimeline,
-  eventId: string
-): number | undefined => {
-  const timelineIndex = timelines.findIndex((t) => t === eventTimeline);
-  if (timelineIndex === -1) return undefined;
-  const eventIndex = eventTimeline.getEvents().findIndex((evt) => evt.getId() === eventId);
-  if (eventIndex === -1) return undefined;
-  const baseIndex = timelines
-    .slice(0, timelineIndex)
-    .reduce((accValue, timeline) => timeline.getEvents().length + accValue, 0);
-  return baseIndex + eventIndex;
-};
-
 type RoomTimelineProps = {
   room: Room;
   eventId?: string;
   roomInputRef: RefObject<HTMLElement>;
   alternateInputRef: RefObject<HTMLDivElement>;
   editor: Editor;
-};
-
-const PAGINATION_LIMIT = 80;
-
-type TimelineRange = {
-  oldest: number;
-  newest: number;
-};
-
-type Timeline = {
-  linkedTimelines: EventTimeline[];
-  range: TimelineRange;
-};
-
-const useEventTimelineLoader = (
-  mx: MatrixClient,
-  room: Room,
-  onLoad: (eventId: string, linkedTimelines: EventTimeline[], evtAbsIndex: number) => void,
-  onError: (err: Error | null) => void
-) => {
-  const loadEventTimeline = useCallback(
-    async (eventId: string) => {
-      const [err, replyEvtTimeline] = await to(
-        mx.getEventTimeline(room.getUnfilteredTimelineSet(), eventId)
-      );
-      if (!replyEvtTimeline) {
-        onError(err ?? null);
-        return;
-      }
-      const linkedTimelines = getLinkedTimelines(replyEvtTimeline);
-      const absIndex = getEventIdAbsoluteIndex(linkedTimelines, replyEvtTimeline, eventId);
-
-      if (absIndex === undefined) {
-        onError(err ?? null);
-        return;
-      }
-
-      if (room.hasEncryptionStateEvent()) {
-        await to(decryptAllTimelineEvent(mx, replyEvtTimeline));
-      }
-
-      onLoad(eventId, linkedTimelines, absIndex);
-    },
-    [mx, room, onLoad, onError]
-  );
-
-  return loadEventTimeline;
-};
-
-const useTimelinePagination = (
-  mx: MatrixClient,
-  timeline: Timeline,
-  setTimeline: Dispatch<SetStateAction<Timeline>>,
-  limit: number,
-  onFetchStateChange?: (backwards: boolean, fetching: boolean) => void
-) => {
-  const timelineRef = useRef(timeline);
-  timelineRef.current = timeline;
-  const onFetchStateChangeRef = useRef(onFetchStateChange);
-  onFetchStateChangeRef.current = onFetchStateChange;
-  const alive = useAlive();
-
-  const handleTimelinePagination = useMemo(() => {
-    let fetching = false;
-
-    const recalibratePagination = (
-      linkedTimelines: EventTimeline[],
-      timelinesEventsCount: number[],
-      backwards: boolean
-    ) => {
-      const topTimeline = linkedTimelines[0];
-      const timelineMatch = (mt: EventTimeline) => (t: EventTimeline) => t === mt;
-
-      const newLTimelines = getLinkedTimelines(topTimeline);
-      const topTmIndex = newLTimelines.findIndex(timelineMatch(topTimeline));
-      const topAddedTm = topTmIndex === -1 ? [] : newLTimelines.slice(0, topTmIndex);
-
-      const topTmAddedEvt =
-        timelineToEventsCount(newLTimelines[topTmIndex]) - timelinesEventsCount[0];
-      const offsetRange = getTimelinesEventsCount(topAddedTm) + (backwards ? topTmAddedEvt : 0);
-
-      setTimeline((currentTimeline) => ({
-        linkedTimelines: newLTimelines,
-        range:
-          offsetRange > 0
-            ? {
-                oldest: currentTimeline.range.oldest + offsetRange,
-                newest: currentTimeline.range.newest + offsetRange,
-              }
-            : { ...currentTimeline.range },
-      }));
-    };
-
-    return async (backwards: boolean) => {
-      if (fetching) return;
-      const { linkedTimelines: lTimelines } = timelineRef.current;
-      const timelinesEventsCount = lTimelines.map(timelineToEventsCount);
-
-      const timelineToPaginate = backwards ? lTimelines[0] : lTimelines[lTimelines.length - 1];
-      if (!timelineToPaginate) return;
-
-      const paginationToken = timelineToPaginate.getPaginationToken(
-        backwards ? Direction.Backward : Direction.Forward
-      );
-      if (
-        !paginationToken &&
-        getTimelinesEventsCount(lTimelines) !==
-          getTimelinesEventsCount(getLinkedTimelines(timelineToPaginate))
-      ) {
-        recalibratePagination(lTimelines, timelinesEventsCount, backwards);
-        return;
-      }
-      if (!paginationToken) return;
-
-      fetching = true;
-      onFetchStateChangeRef.current?.(backwards, true);
-      const [err] = await to(
-        mx.paginateEventTimeline(timelineToPaginate, {
-          backwards,
-          limit,
-        })
-      );
-      if (err) {
-        fetching = false;
-        onFetchStateChangeRef.current?.(backwards, false);
-        return;
-      }
-      const fetchedTimeline =
-        timelineToPaginate.getNeighbouringTimeline(
-          backwards ? Direction.Backward : Direction.Forward
-        ) ?? timelineToPaginate;
-      // Decrypt all event ahead of render cycle
-      const roomId = fetchedTimeline.getRoomId();
-      const room = roomId ? mx.getRoom(roomId) : null;
-
-      if (room?.hasEncryptionStateEvent()) {
-        await to(decryptAllTimelineEvent(mx, fetchedTimeline));
-      }
-
-      fetching = false;
-      onFetchStateChangeRef.current?.(backwards, false);
-      if (alive()) {
-        recalibratePagination(lTimelines, timelinesEventsCount, backwards);
-      }
-    };
-  }, [mx, alive, setTimeline, limit]);
-  return handleTimelinePagination;
-};
-
-const useLiveEventArrive = (room: Room, onArrive: (mEvent: MatrixEvent) => void) => {
-  useEffect(() => {
-    const handleTimelineEvent: EventTimelineSetHandlerMap[RoomEvent.Timeline] = (
-      mEvent,
-      eventRoom,
-      toStartOfTimeline,
-      removed,
-      data
-    ) => {
-      if (eventRoom?.roomId !== room.roomId || !data.liveEvent) return;
-      onArrive(mEvent);
-    };
-    const handleRedaction: RoomEventHandlerMap[RoomEvent.Redaction] = (mEvent, eventRoom) => {
-      if (eventRoom?.roomId !== room.roomId) return;
-      onArrive(mEvent);
-    };
-
-    room.on(RoomEvent.Timeline, handleTimelineEvent);
-    room.on(RoomEvent.Redaction, handleRedaction);
-    return () => {
-      room.removeListener(RoomEvent.Timeline, handleTimelineEvent);
-      room.removeListener(RoomEvent.Redaction, handleRedaction);
-    };
-  }, [room, onArrive]);
-};
-
-const useLiveTimelineRefresh = (room: Room, onRefresh: () => void) => {
-  useEffect(() => {
-    const handleTimelineRefresh: RoomEventHandlerMap[RoomEvent.TimelineRefresh] = (r) => {
-      if (r.roomId !== room.roomId) return;
-      onRefresh();
-    };
-
-    room.on(RoomEvent.TimelineRefresh, handleTimelineRefresh);
-    return () => {
-      room.removeListener(RoomEvent.TimelineRefresh, handleTimelineRefresh);
-    };
-  }, [room, onRefresh]);
-};
-
-const getInitialTimeline = (room: Room) => {
-  const linkedTimelines = getLinkedTimelines(getLiveTimeline(room));
-  const evLength = getTimelinesEventsCount(linkedTimelines);
-  return {
-    linkedTimelines,
-    range: {
-      oldest: Math.max(evLength - PAGINATION_LIMIT, 0),
-      newest: evLength,
-    },
-  };
-};
-
-const getEmptyTimeline = () => ({
-  range: { oldest: 0, newest: 0 },
-  linkedTimelines: [],
-});
-
-const getRoomUnreadInfo = (room: Room, scrollTo = false) => {
-  const readUptoEventId = room.getEventReadUpTo(room.client.getUserId() ?? '');
-  if (!readUptoEventId) return undefined;
-  const evtTimeline = getEventTimeline(room, readUptoEventId);
-  const latestTimeline = evtTimeline && getFirstLinkedTimeline(evtTimeline, Direction.Forward);
-  return {
-    readUptoEventId,
-    inLiveTimeline: latestTimeline === room.getLiveTimeline(),
-    scrollTo,
-  };
 };
 
 export function RoomTimeline({
@@ -439,7 +160,6 @@ export function RoomTimeline({
   const ignoredUsersList = useIgnoredUsers();
   const ignoredUsersSet = useMemo(() => new Set(ignoredUsersList), [ignoredUsersList]);
 
-  const setReplyDraft = useSetAtom(roomIdToReplyDraftAtomFamily(room.roomId));
   const setSliderPosition = useSetAtom(timelineSliderPositionAtom);
   const sliderVisible = useAtomValue(timelineSliderVisibleAtom);
   const powerLevels = usePowerLevelsContext();
@@ -474,11 +194,13 @@ export function RoomTimeline({
 
   const imagePackRooms: Room[] = useImagePackRooms(room.roomId, roomToParents);
 
-  const [unreadInfo, setUnreadInfo] = useState(() => getRoomUnreadInfo(room, true));
-  const readUptoEventIdRef = useRef<string>();
-  readUptoEventIdRef.current = unreadInfo?.readUptoEventId;
-
-  const willScrollToReadMarker = !!(unreadInfo?.inLiveTimeline && unreadInfo?.scrollTo);
+  const {
+    unreadInfo,
+    setUnreadInfo,
+    readUptoEventIdRef,
+    willScrollToReadMarker,
+    tryAutoMarkAsRead,
+  } = useTimelineReadMarker(mx, room, hideActivity, !!unread);
   const contentRef = useRef<HTMLDivElement>(null);
 
   const [docFocused, setDocFocused] = useState(() =>
@@ -618,7 +340,7 @@ export function RoomTimeline({
           highlight: evtId !== readUptoEventIdRef.current,
         });
       },
-      [alive]
+      [alive, readUptoEventIdRef]
     ),
     useCallback(() => {
       if (!alive()) return;
@@ -681,7 +403,7 @@ export function RoomTimeline({
           setUnreadInfo(getRoomUnreadInfo(room));
         }
       },
-      [mx, room, unreadInfo, hideActivity, unfocusedAutoScroll, atBottomRef]
+      [mx, room, unreadInfo, hideActivity, unfocusedAutoScroll, atBottomRef, setUnreadInfo]
     )
   );
 
@@ -838,19 +560,6 @@ export function RoomTimeline({
     }, [getScrollElement, atBottomRef]),
     useCallback(() => scrollRef.current, [scrollRef])
   );
-
-  const tryAutoMarkAsRead = useCallback(() => {
-    const readUptoEventId = readUptoEventIdRef.current;
-    if (!readUptoEventId) {
-      requestAnimationFrame(() => markAsRead(mx, room.roomId, hideActivity));
-      return;
-    }
-    const evtTimeline = getEventTimeline(room, readUptoEventId);
-    const latestTimeline = evtTimeline && getFirstLinkedTimeline(evtTimeline, Direction.Forward);
-    if (latestTimeline === room.getLiveTimeline()) {
-      requestAnimationFrame(() => markAsRead(mx, room.roomId, hideActivity));
-    }
-  }, [mx, room, hideActivity]);
 
   useEffect(() => {
     if (atBottom && document.hasFocus()) {
@@ -1026,13 +735,6 @@ export function RoomTimeline({
     return () => clearTimeout(id);
   }, [alive, focusItem]);
 
-  // Remove unreadInfo on mark as read
-  useEffect(() => {
-    if (!unread) {
-      setUnreadInfo(undefined);
-    }
-  }, [unread]);
-
   // scroll out of view msg editor in view.
   useEffect(() => {
     if (editId) {
@@ -1080,112 +782,17 @@ export function RoomTimeline({
     [handleOpenEvent]
   );
 
-  const handleUserClick: MouseEventHandler<HTMLButtonElement> = useCallback(
-    (evt) => {
-      evt.preventDefault();
-      evt.stopPropagation();
-      const userId = evt.currentTarget.getAttribute('data-user-id');
-      if (!userId) {
-        console.warn('Button should have "data-user-id" attribute!');
-        return;
-      }
-      openUserRoomProfile(
-        room.roomId,
-        space?.roomId,
-        userId,
-        evt.currentTarget.getBoundingClientRect()
-      );
-    },
-    [room, space, openUserRoomProfile]
-  );
-  const handleUsernameClick: MouseEventHandler<HTMLButtonElement> = useCallback(
-    (evt) => {
-      evt.preventDefault();
-      const userId = evt.currentTarget.getAttribute('data-user-id');
-      if (!userId) {
-        console.warn('Button should have "data-user-id" attribute!');
-        return;
-      }
-      const name = getMemberDisplayName(room, userId) ?? getMxIdLocalPart(userId) ?? userId;
-      if (alternateInput && editor.insertAlternateText) {
-        editor.insertAlternateText(name.startsWith('@') ? name : `@${name}`);
-      } else {
-        editor.insertNode(
-          createMentionElement(
-            userId,
-            name.startsWith('@') ? name : `@${name}`,
-            userId === mx.getUserId()
-          )
-        );
-        ReactEditor.focus(editor);
-        moveCursor(editor);
-      }
-    },
-    [mx, room, editor, alternateInput]
-  );
-
-  const handleReplyClick: MouseEventHandler<HTMLButtonElement> = useCallback(
-    (evt, startThread = false) => {
-      const replyId = evt.currentTarget.getAttribute('data-event-id');
-      if (!replyId) {
-        console.warn('Button should have "data-event-id" attribute!');
-        return;
-      }
-      const replyEvt = room.findEventById(replyId);
-      if (!replyEvt) return;
-      const editedReply = getEditedEvent(replyId, replyEvt, room.getUnfilteredTimelineSet());
-      const content: IContent = editedReply?.getContent()['m.new_content'] ?? replyEvt.getContent();
-      const { body, formatted_body: formattedBody } = content;
-      const { 'm.relates_to': relation } = startThread
-        ? { 'm.relates_to': { rel_type: 'm.thread', event_id: replyId } }
-        : replyEvt.getWireContent();
-      const senderId = replyEvt.getSender();
-      if (senderId && typeof body === 'string') {
-        setReplyDraft({
-          userId: senderId,
-          eventId: replyId,
-          body,
-          formattedBody,
-          relation,
-        });
-        setTimeout(() => {
-          if (alternateInput) {
-            alternateInputRef.current?.focus();
-          } else {
-            ReactEditor.focus(editor);
-          }
-        }, 100);
-      }
-    },
-    [room, setReplyDraft, editor, alternateInput, alternateInputRef]
-  );
-
-  const handleReactionToggle = useCallback(
-    (targetEventId: string, key: string, shortcode?: string) => {
-      const relations = getEventReactions(room.getUnfilteredTimelineSet(), targetEventId);
-      const allReactions = relations?.getSortedAnnotationsByKey() ?? [];
-      const [, reactionsSet] = allReactions.find(([k]) => k === key) ?? [];
-      const reactions: MatrixEvent[] = reactionsSet ? Array.from(reactionsSet) : [];
-      const myReaction = reactions.find(factoryEventSentBy(mx.getSafeUserId()));
-
-      if (myReaction && !!myReaction?.isRelation()) {
-        const myReactionId = myReaction.getId();
-        if (myReactionId) {
-          mx.redactEvent(room.roomId, myReactionId);
-        }
-        return;
-      }
-      const rShortcode =
-        shortcode ||
-        (reactions.find(eventWithShortcode)?.getContent().shortcode as string | undefined);
-      mx.sendEvent(
-        room.roomId,
-        EventType.Reaction,
-        getReactionContent(targetEventId, key, rShortcode)
-      );
-    },
-    [mx, room]
-  );
+  const { handleUserClick, handleUsernameClick, handleReplyClick, handleReactionToggle } =
+    useTimelineClickHandlers({
+      mx,
+      room,
+      spaceRoomId: space?.roomId,
+      openUserRoomProfile,
+      editor,
+      alternateInput,
+      alternateInputRef,
+      replyDraftAtom: roomIdToReplyDraftAtomFamily(room.roomId),
+    });
   const handleEdit = useCallback(
     (editEvtId?: string) => {
       if (editEvtId) {
@@ -1208,47 +815,8 @@ export function RoomTimeline({
     );
   }, [mx]);
 
-  // ─── Bulk selection / deletion ───
-  const [selectionMode, setSelectionMode] = useAtom(selectionModeAtom);
-  const [selectedIds, setSelectedIds] = useAtom(selectedIdsAtom);
-  const [bulkDeleting, setBulkDeleting] = useState(false);
-
-  const handleBulkDelete = useCallback(async () => {
-    const ids = Array.from(selectedIds);
-    if (ids.length === 0) return;
-    setBulkDeleting(true);
-    await Promise.allSettled(ids.map((evtId) => mx.redactEvent(room.roomId, evtId)));
-    setBulkDeleting(false);
-    setSelectedIds(new Set());
-    setSelectionMode(false);
-  }, [mx, room, selectedIds, setSelectedIds, setSelectionMode]);
-
-  const handleCancelSelection = useCallback(() => {
-    setSelectedIds(new Set());
-    setSelectionMode(false);
-  }, [setSelectedIds, setSelectionMode]);
-
-  // Exit selection mode on Escape
-  useKeyDown(
-    window,
-    useCallback(
-      (evt: KeyboardEvent) => {
-        if (evt.key === 'Escape' && selectionMode) {
-          handleCancelSelection();
-        }
-      },
-      [selectionMode, handleCancelSelection]
-    )
-  );
-
-  // Clear selection on room change
-  useEffect(
-    () => () => {
-      setSelectedIds(new Set());
-      setSelectionMode(false);
-    },
-    [room.roomId, setSelectedIds, setSelectionMode]
-  );
+  const { selectionMode, selectedIds, bulkDeleting, handleBulkDelete, handleCancelSelection } =
+    useBulkSelection(mx, room);
 
   const buildTimelineItems = () => {
     const events: Parameters<typeof buildTimelineDescriptors>[0] = [];
@@ -1269,36 +837,16 @@ export function RoomTimeline({
       events.push({ mEvent, mEventId, timelineSet, item });
     }
 
-    const willEventRender = (mEvent: MatrixEvent): boolean => {
-      if (reactionOrEditEvent(mEvent)) return false;
-      if (!showHiddenEvents) {
-        if (mEvent.isRedaction()) return false;
-        const type = mEvent.getType();
-        const isRegistered =
-          type === MessageEvent.RoomMessage ||
-          type === MessageEvent.RoomMessageEncrypted ||
-          type === MessageEvent.Sticker ||
-          type === MessageEvent.PollStart ||
-          type === 'm.poll.start' ||
-          type === StateEvent.RoomMember ||
-          type === StateEvent.RoomName ||
-          type === StateEvent.RoomTopic ||
-          type === StateEvent.RoomAvatar;
-        if (!isRegistered) return false;
-      }
-      if (mEvent.getType() === StateEvent.RoomMember) {
-        const membershipChanged = isMembershipChanged(mEvent);
-        if (membershipChanged && hideMembershipEvents) return false;
-        if (!membershipChanged && hideNickAvatarEvents) return false;
-      }
-      return true;
-    };
-
     return buildTimelineDescriptors(
       events,
       readUptoEventIdRef.current ?? undefined,
       mx.getSafeUserId(),
-      willEventRender
+      (mEvent) =>
+        willEventRender(mEvent, {
+          showHiddenEvents,
+          hideMembershipEvents,
+          hideNickAvatarEvents,
+        })
     );
   };
 

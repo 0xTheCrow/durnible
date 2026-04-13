@@ -27,7 +27,7 @@ import type { PrimitiveAtom } from 'jotai';
 import { atom, useAtom, useSetAtom } from 'jotai';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { monitorForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
-import type { IEmoji } from '../../plugins/emoji';
+import type { Emoji } from '../../plugins/emoji';
 import { emojiGroups, emojis } from '../../plugins/emoji';
 import { useEmojiGroupLabels } from './useEmojiGroupLabels';
 import { useEmojiGroupIcons } from './useEmojiGroupIcons';
@@ -87,7 +87,7 @@ const SEARCH_GROUP_ID = 'search_group';
 type EmojiGroupItem = {
   id: string;
   name: string;
-  items: Array<IEmoji | PackImageReader>;
+  items: Array<Emoji | PackImageReader>;
 };
 type StickerGroupItem = {
   id: string;
@@ -99,7 +99,7 @@ const useGroups = (
   tab: EmojiBoardTab,
   imagePacks: ImagePack[],
   packOrder: string[],
-  favoriteEmojis: Array<IEmoji | PackImageReader>
+  favoriteEmojis: Array<Emoji | PackImageReader>
 ): [EmojiGroupItem[], StickerGroupItem[]] => {
   const mx = useMatrixClient();
 
@@ -207,7 +207,7 @@ const useItemRenderer = (tab: EmojiBoardTab) => {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
 
-  const renderItem = (emoji: IEmoji | PackImageReader, index: number) => {
+  const renderItem = (emoji: Emoji | PackImageReader, index: number) => {
     if ('unicode' in emoji) {
       return <EmojiItem key={emoji.unicode + index} emoji={emoji} />;
     }
@@ -846,7 +846,7 @@ export function EmojiBoard({
   const renderItem = useItemRenderer(tab);
 
   const searchList = useMemo(() => {
-    let list: Array<PackImageReader | IEmoji> = [];
+    let list: Array<PackImageReader | Emoji> = [];
     list = list.concat(imagePacks.flatMap((pack) => pack.getImages(usage)));
     if (emojiTab) list = list.concat(emojis);
     return list;

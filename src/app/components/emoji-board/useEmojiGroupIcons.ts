@@ -4,9 +4,9 @@ import { Icons } from 'folds';
 
 import { EmojiGroupId } from '../../plugins/emoji';
 
-export type IEmojiGroupIcons = Record<EmojiGroupId, IconSrc>;
+export type EmojiGroupIcons = Record<EmojiGroupId, IconSrc>;
 
-export const useEmojiGroupIcons = (): IEmojiGroupIcons =>
+export const useEmojiGroupIcons = (): EmojiGroupIcons =>
   useMemo(
     () => ({
       [EmojiGroupId.People]: Icons.Smile,

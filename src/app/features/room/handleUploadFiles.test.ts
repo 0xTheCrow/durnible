@@ -1,7 +1,7 @@
 import type { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
 import { describe, it, expect, vi } from 'vitest';
 import type { ListAction } from '../../state/list';
-import type { TUploadItem } from '../../state/room/roomInputDrafts';
+import type { UploadItem } from '../../state/room/roomInputDrafts';
 import type { EncryptedFileResult, HandleUploadFilesContext } from './handleUploadFiles';
 import { handleUploadFiles } from './handleUploadFiles';
 
@@ -53,12 +53,12 @@ const setup = (overrides: Partial<HandleUploadFilesContext> = {}): Setup => {
   };
 };
 
-const itemsFromPut = (action: ListAction<TUploadItem>): TUploadItem[] => {
+const itemsFromPut = (action: ListAction<UploadItem>): UploadItem[] => {
   if (action.type !== 'PUT') throw new Error(`expected PUT, got ${action.type}`);
   return Array.isArray(action.item) ? action.item : [action.item];
 };
 
-const replacementOf = (action: ListAction<TUploadItem>): TUploadItem => {
+const replacementOf = (action: ListAction<UploadItem>): UploadItem => {
   if (action.type !== 'REPLACE') throw new Error(`expected REPLACE, got ${action.type}`);
   return action.replacement;
 };
@@ -198,7 +198,7 @@ describe('handleUploadFiles', () => {
 
       const replacements = setItems.mock.calls
         .slice(1)
-        .map((c) => replacementOf(c[0] as ListAction<TUploadItem>));
+        .map((c) => replacementOf(c[0] as ListAction<UploadItem>));
       replacements.forEach((replacement) => {
         expect(replacement.isEncryptionSuccessful).toBe(true);
         expect(replacement.encInfo).toBe(FAKE_ENC_INFO);
@@ -215,7 +215,7 @@ describe('handleUploadFiles', () => {
       const result = handleUploadFiles(makeImages(1), ctx);
       await result.encryptionDone;
 
-      const replacement = replacementOf(setItems.mock.calls[1][0] as ListAction<TUploadItem>);
+      const replacement = replacementOf(setItems.mock.calls[1][0] as ListAction<UploadItem>);
       expect(replacement.isEncryptionSuccessful).toBe(false);
       expect(replacement.isEncrypting).toBe(false);
       expect(replacement.encryptError).toBe('boom');
@@ -230,7 +230,7 @@ describe('handleUploadFiles', () => {
       const result = handleUploadFiles(makeImages(1), ctx);
       await result.encryptionDone;
 
-      const replacement = replacementOf(setItems.mock.calls[1][0] as ListAction<TUploadItem>);
+      const replacement = replacementOf(setItems.mock.calls[1][0] as ListAction<UploadItem>);
       expect(replacement.encryptError).toBe('Encryption failed');
     });
 
@@ -253,7 +253,7 @@ describe('handleUploadFiles', () => {
       expect(setItems).toHaveBeenCalledTimes(4);
       const replacements = setItems.mock.calls
         .slice(1)
-        .map((c) => replacementOf(c[0] as ListAction<TUploadItem>));
+        .map((c) => replacementOf(c[0] as ListAction<UploadItem>));
       const successes = replacements.filter((r) => r.isEncryptionSuccessful === true);
       const failures = replacements.filter((r) => r.isEncryptionSuccessful === false);
       expect(successes).toHaveLength(2);

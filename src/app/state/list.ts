@@ -42,4 +42,4 @@ export const createListAtom = <T>() => {
     }
   );
 };
-export type TListAtom<T> = ReturnType<typeof createListAtom<T>>;
+export type ListAtom<T> = ReturnType<typeof createListAtom<T>>;

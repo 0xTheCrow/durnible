@@ -2,10 +2,10 @@ import React, { useCallback, useMemo, useState } from 'react';
 import classNames from 'classnames';
 import { useSetAtom } from 'jotai';
 import { toRem } from 'folds';
-import { ImageContent } from './content';
+import { ImageContent as ImageContentView } from './content';
 import { Image } from '../media';
 import * as css from './ImageGrid.css';
-import type { IImageContent } from '../../../types/matrix/common';
+import type { ImageContent } from '../../../types/matrix/common';
 import {
   MATRIX_SPOILER_PROPERTY_NAME,
   MATRIX_SPOILER_REASON_PROPERTY_NAME,
@@ -34,7 +34,7 @@ const useBodyWidth = (): number => {
   return width;
 };
 
-const singleImageWidth = (content: IImageContent): number => {
+const singleImageWidth = (content: ImageContent): number => {
   const w = content.info?.w || GRID_MIN_WIDTH;
   const h = content.info?.h || GRID_MIN_WIDTH;
   return h > SINGLE_IMAGE_MAX_HEIGHT ? Math.round(w * (SINGLE_IMAGE_MAX_HEIGHT / h)) : w;
@@ -112,7 +112,7 @@ const buildMobileStyle = (count: Count): React.CSSProperties => {
 };
 
 type ImageGridProps = {
-  contents: IImageContent[];
+  contents: ImageContent[];
   autoPlay?: boolean;
 };
 
@@ -179,7 +179,7 @@ export function ImageGrid({ contents, autoPlay }: ImageGridProps) {
         return (
           // eslint-disable-next-line react/no-array-index-key
           <div key={idx} className={cellClassName}>
-            <ImageContent
+            <ImageContentView
               body={content.body || 'Image'}
               info={content.info}
               mimeType={content.info?.mimetype}

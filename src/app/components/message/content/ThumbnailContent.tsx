@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { useCallback } from 'react';
-import type { IThumbnailContent } from '../../../../types/matrix/common';
+import type { ThumbnailContent as ThumbnailContentInfo } from '../../../../types/matrix/common';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { AsyncStatus, useAutoLoadAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { decryptFile, downloadEncryptedMedia, mxcUrlToHttp } from '../../../utils/matrix';
@@ -8,7 +8,7 @@ import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
 import { FALLBACK_MIMETYPE } from '../../../utils/mimeTypes';
 
 export type ThumbnailContentProps = {
-  info: IThumbnailContent;
+  info: ThumbnailContentInfo;
   renderImage: (src: string) => ReactNode;
 };
 export function ThumbnailContent({ info, renderImage }: ThumbnailContentProps) {

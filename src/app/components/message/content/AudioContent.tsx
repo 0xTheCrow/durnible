@@ -6,7 +6,7 @@ import type { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
 import { Range } from 'react-range';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
-import type { IAudioInfo } from '../../../../types/matrix/common';
+import type { AudioInfo } from '../../../../types/matrix/common';
 import type { PlayTimeCallback } from '../../../hooks/media';
 import {
   useMediaLoading,
@@ -39,7 +39,7 @@ type RenderMediaControlProps = {
 export type AudioContentProps = {
   mimeType: string;
   url: string;
-  info: IAudioInfo;
+  info: AudioInfo;
   encInfo?: EncryptedAttachmentInfo;
   renderMediaControl: (props: RenderMediaControlProps) => ReactNode;
 };

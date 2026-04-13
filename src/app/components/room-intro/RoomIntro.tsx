@@ -2,7 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { Avatar, Box, Button, Spinner, Text, as } from 'folds';
 import type { Room } from 'matrix-js-sdk';
 import { useAtomValue } from 'jotai';
-import type { IRoomCreateContent } from '../../../types/matrix/room';
+import type { RoomCreateContent } from '../../../types/matrix/room';
 import { Membership, StateEvent } from '../../../types/matrix/room';
 import { getMemberDisplayName, getStateEvent } from '../../utils/room';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
@@ -36,7 +36,7 @@ export const RoomIntro = as<'div', RoomIntroProps>(({ room, ...props }, ref) => 
   const topic = useRoomTopic(room);
   const avatarHttpUrl = avatarMxc ? mxcUrlToHttp(mx, avatarMxc, useAuthentication) : undefined;
 
-  const createContent = createEvent?.getContent<IRoomCreateContent>();
+  const createContent = createEvent?.getContent<RoomCreateContent>();
   const ts = createEvent?.getTs();
   const creatorId = createEvent?.getSender();
   const creatorName =

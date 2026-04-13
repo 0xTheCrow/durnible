@@ -1,4 +1,4 @@
-import type { IImageInfo } from '../../../types/matrix/common';
+import type { ImageInfo } from '../../../types/matrix/common';
 import type { PackImage } from './types';
 import { ImageUsage } from './types';
 
@@ -29,7 +29,7 @@ export class PackImageReader {
     return typeof body === 'string' ? body : undefined;
   }
 
-  get info(): IImageInfo | undefined {
+  get info(): ImageInfo | undefined {
     return this.image.info;
   }
 

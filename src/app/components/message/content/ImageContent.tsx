@@ -17,7 +17,7 @@ import classNames from 'classnames';
 import { BlurhashCanvas } from 'react-blurhash';
 import { useAtom, useSetAtom } from 'jotai';
 import type { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
-import type { IImageInfo } from '../../../../types/matrix/common';
+import type { ImageInfo } from '../../../../types/matrix/common';
 import { MATRIX_BLUR_HASH_PROPERTY_NAME } from '../../../../types/matrix/common';
 import { AsyncStatus, useAutoLoadAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
@@ -47,7 +47,7 @@ export type ImageContentProps = {
   body: string;
   mimeType?: string;
   url: string;
-  info?: IImageInfo;
+  info?: ImageInfo;
   encInfo?: EncryptedAttachmentInfo;
   autoPlay?: boolean;
   markedAsSpoiler?: boolean;

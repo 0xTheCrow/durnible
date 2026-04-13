@@ -20,7 +20,7 @@ import { SequenceCardStyle } from '../../room-settings/styles.css';
 import { SettingTile } from '../../../components/setting-tile';
 import { useRoom } from '../../../hooks/useRoom';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
-import type { IRoomCreateContent } from '../../../../types/matrix/room';
+import type { RoomCreateContent } from '../../../../types/matrix/room';
 import { StateEvent } from '../../../../types/matrix/room';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { useStateEvent } from '../../../hooks/useStateEvent';
@@ -153,10 +153,7 @@ export function RoomUpgrade({ permissions, requestClose }: RoomUpgradeProps) {
   const mx = useMatrixClient();
   const room = useRoom();
   const { navigateRoom, navigateSpace } = useRoomNavigate();
-  const createContent = useStateEvent(
-    room,
-    StateEvent.RoomCreate
-  )?.getContent<IRoomCreateContent>();
+  const createContent = useStateEvent(room, StateEvent.RoomCreate)?.getContent<RoomCreateContent>();
   const roomVersion = createContent?.room_version ?? '1';
   const predecessorRoomId = createContent?.predecessor?.room_id;
 

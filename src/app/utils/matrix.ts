@@ -10,7 +10,7 @@ import type {
 } from 'matrix-js-sdk';
 import { EventTimeline, EventType, MatrixError } from 'matrix-js-sdk';
 import to from 'await-to-js';
-import type { IImageInfo, IThumbnailContent, IVideoInfo } from '../../types/matrix/common';
+import type { ImageInfo, ThumbnailContent, VideoInfo } from '../../types/matrix/common';
 import { getStateEvent } from './room';
 import { Membership, StateEvent } from '../../types/matrix/room';
 
@@ -52,8 +52,8 @@ export const getCanonicalAliasOrRoomId = (mx: MatrixClient, roomId: string): str
   return roomId;
 };
 
-export const getImageInfo = (img: HTMLImageElement, fileOrBlob: File | Blob): IImageInfo => {
-  const info: IImageInfo = {};
+export const getImageInfo = (img: HTMLImageElement, fileOrBlob: File | Blob): ImageInfo => {
+  const info: ImageInfo = {};
   info.w = img.width;
   info.h = img.height;
   info.mimetype = fileOrBlob.type;
@@ -61,8 +61,8 @@ export const getImageInfo = (img: HTMLImageElement, fileOrBlob: File | Blob): II
   return info;
 };
 
-export const getVideoInfo = (video: HTMLVideoElement, fileOrBlob: File | Blob): IVideoInfo => {
-  const info: IVideoInfo = {};
+export const getVideoInfo = (video: HTMLVideoElement, fileOrBlob: File | Blob): VideoInfo => {
+  const info: VideoInfo = {};
   info.duration = Number.isNaN(video.duration) ? undefined : Math.floor(video.duration * 1000);
   info.w = video.videoWidth;
   info.h = video.videoHeight;
@@ -77,10 +77,10 @@ export const getThumbnailContent = (thumbnailInfo: {
   mxc: string;
   width: number;
   height: number;
-}): IThumbnailContent => {
+}): ThumbnailContent => {
   const { thumbnail, encInfo, mxc, width, height } = thumbnailInfo;
 
-  const content: IThumbnailContent = {
+  const content: ThumbnailContent = {
     thumbnail_info: {
       mimetype: thumbnail.type,
       size: thumbnail.size,
@@ -128,7 +128,7 @@ export const decryptFile = async (
   return blob;
 };
 
-export type TUploadContent = File | Blob;
+export type UploadContent = File | Blob;
 
 export type ContentUploadOptions = {
   name?: string;
@@ -142,7 +142,7 @@ export type ContentUploadOptions = {
 
 export const uploadContent = async (
   mx: MatrixClient,
-  file: TUploadContent,
+  file: UploadContent,
   options: ContentUploadOptions
 ) => {
   const { name, fileType, hideFilename, onProgress, onPromise, onSuccess, onError } = options;

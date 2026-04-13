@@ -28,7 +28,7 @@ import { stopPropagation } from '../../utils/keyboard';
 import { useOpenRoomSettings } from '../../state/hooks/roomSettings';
 import { useSpaceOptionally } from '../../hooks/useSpace';
 import { useOpenSpaceSettings } from '../../state/hooks/spaceSettings';
-import type { IPowerLevels } from '../../hooks/usePowerLevels';
+import type { PowerLevels } from '../../hooks/usePowerLevels';
 import { getRoomCreatorsForRoomId } from '../../hooks/useRoomCreators';
 import { getRoomPermissionsAPI } from '../../hooks/useRoomPermissions';
 import { InviteUserPrompt } from '../../components/invite-user-prompt';
@@ -200,7 +200,7 @@ type HierarchyItemMenuProps = {
     parentId: string;
   };
   joined: boolean;
-  powerLevels?: IPowerLevels;
+  powerLevels?: PowerLevels;
   canEditChild: boolean;
   pinned?: boolean;
   onTogglePin?: (roomId: string) => void;

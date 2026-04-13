@@ -1,7 +1,7 @@
 import type { IContent, MatrixClient } from 'matrix-js-sdk';
 import { MsgType } from 'matrix-js-sdk';
 import to from 'await-to-js';
-import type { IThumbnailContent } from '../../../types/matrix/common';
+import type { ThumbnailContent } from '../../../types/matrix/common';
 import {
   MATRIX_BLUR_HASH_PROPERTY_NAME,
   MATRIX_SPOILER_PROPERTY_NAME,
@@ -15,7 +15,7 @@ import {
   loadVideoElement,
 } from '../../utils/dom';
 import { encryptFile, getImageInfo, getThumbnailContent, getVideoInfo } from '../../utils/matrix';
-import type { TUploadItem } from '../../state/room/roomInputDrafts';
+import type { UploadItem } from '../../state/room/roomInputDrafts';
 import { encodeBlurHash } from '../../utils/blurHash';
 import { scaleYDimension } from '../../utils/common';
 
@@ -24,7 +24,7 @@ const generateThumbnailContent = async (
   img: HTMLImageElement | HTMLVideoElement,
   dimensions: [number, number],
   encrypt: boolean
-): Promise<IThumbnailContent> => {
+): Promise<ThumbnailContent> => {
   const thumbnail = await getThumbnail(img, ...dimensions);
   if (!thumbnail) throw new Error('Can not create thumbnail!');
   const encThumbData = encrypt ? await encryptFile(thumbnail) : undefined;
@@ -46,7 +46,7 @@ const generateThumbnailContent = async (
 
 export const getImageMsgContent = async (
   mx: MatrixClient,
-  item: TUploadItem,
+  item: UploadItem,
   mxc: string
 ): Promise<IContent> => {
   const { file, originalFile, encInfo, metadata } = item;
@@ -80,7 +80,7 @@ export const getImageMsgContent = async (
 
 export const getVideoMsgContent = async (
   mx: MatrixClient,
-  item: TUploadItem,
+  item: UploadItem,
   mxc: string
 ): Promise<IContent> => {
   const { file, originalFile, encInfo, metadata } = item;
@@ -127,7 +127,7 @@ export const getVideoMsgContent = async (
   return content;
 };
 
-export const getAudioMsgContent = (item: TUploadItem, mxc: string): IContent => {
+export const getAudioMsgContent = (item: UploadItem, mxc: string): IContent => {
   const { file, encInfo } = item;
   const content: IContent = {
     msgtype: MsgType.Audio,
@@ -149,7 +149,7 @@ export const getAudioMsgContent = (item: TUploadItem, mxc: string): IContent => 
   return content;
 };
 
-export const getFileMsgContent = (item: TUploadItem, mxc: string): IContent => {
+export const getFileMsgContent = (item: UploadItem, mxc: string): IContent => {
   const { file, encInfo } = item;
   const content: IContent = {
     msgtype: MsgType.File,

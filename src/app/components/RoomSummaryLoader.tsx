@@ -9,11 +9,11 @@ import { useLocalRoomSummary } from '../hooks/useLocalRoomSummary';
 import type { AsyncState } from '../hooks/useAsyncCallback';
 import { AsyncStatus } from '../hooks/useAsyncCallback';
 
-export type IRoomSummary = Awaited<ReturnType<MatrixClient['getRoomSummary']>>;
+export type RoomSummary = Awaited<ReturnType<MatrixClient['getRoomSummary']>>;
 
 type RoomSummaryLoaderProps = {
   roomIdOrAlias: string;
-  children: (roomSummary?: IRoomSummary) => ReactNode;
+  children: (roomSummary?: RoomSummary) => ReactNode;
 };
 
 export function RoomSummaryLoader({ roomIdOrAlias, children }: RoomSummaryLoaderProps) {

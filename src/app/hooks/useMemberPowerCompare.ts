@@ -1,8 +1,8 @@
 import { useCallback } from 'react';
-import type { IPowerLevels } from './usePowerLevels';
+import type { PowerLevels } from './usePowerLevels';
 import { readPowerLevel } from './usePowerLevels';
 
-export const useMemberPowerCompare = (creators: Set<string>, powerLevels: IPowerLevels) => {
+export const useMemberPowerCompare = (creators: Set<string>, powerLevels: PowerLevels) => {
   /**
    * returns `true` if `userIdA` has more power than `userIdB`
    * returns `false` otherwise
