@@ -3,6 +3,7 @@ import type { MatrixClient } from 'matrix-js-sdk';
 import type * as MatrixUtils from '../../utils/matrix';
 import {
   createAltEmoticonNode,
+  insertNodeAtRange,
   serializeAltInput,
   replaceTextInNode,
   replaceRangeWithNode,
@@ -215,5 +216,43 @@ describe('replaceRangeWithNode', () => {
     expect(after.data).toBe('bravo');
     expect(parent.firstChild).toBe(before);
     expect(parent.lastChild).toBe(after);
+  });
+});
+
+describe('serializeAltInput zero-width-space handling', () => {
+  it('strips zero-width spaces from text content', () => {
+    const el = document.createElement('div');
+    el.appendChild(document.createTextNode('hi\u200Bthere'));
+
+    const paragraph = paragraphFrom(serializeAltInput(el));
+    expect(paragraph.children).toEqual([{ text: 'hithere' }]);
+  });
+
+  it('treats a text node containing only zero-width spaces as empty', () => {
+    const el = document.createElement('div');
+    el.appendChild(document.createTextNode('\u200B'));
+
+    const paragraph = paragraphFrom(serializeAltInput(el));
+    expect(paragraph.children).toEqual([{ text: '' }]);
+  });
+});
+
+describe('inline void leading anchor', () => {
+  it('keeps a renderable text node before a void inserted at the start of the input', () => {
+    const el = document.createElement('div');
+    const replacement = createAltEmoticonNode({
+      mx: mockMx,
+      useAuthentication: false,
+      key: 'mxc://example/x',
+      shortcode: 'x',
+    });
+
+    insertNodeAtRange(el, null, replacement);
+
+    const first = el.firstChild;
+    expect(first).not.toBeNull();
+    expect(first?.nodeType).toBe(Node.TEXT_NODE);
+    expect((first as Text).data.length).toBeGreaterThan(0);
+    expect(first?.nextSibling).toBe(replacement);
   });
 });

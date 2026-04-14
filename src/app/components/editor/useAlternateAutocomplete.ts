@@ -18,6 +18,20 @@ type AltAutocompleteRange = {
   end: number;
 };
 
+const findAutocompleteTrigger = (
+  text: string
+): { triggerPos: number; prefix: AutocompletePrefix; query: string } | undefined => {
+  for (let i = text.length - 1; i >= 0; i -= 1) {
+    const ch = text[i];
+    if (ch === ' ') return undefined;
+    const matched = AUTOCOMPLETE_PREFIXES.find((p) => p === ch);
+    if (matched) {
+      return { triggerPos: i, prefix: matched, query: text.slice(i + 1) };
+    }
+  }
+  return undefined;
+};
+
 export type AlternateAutocompleteHandlers = {
   detectAutocompleteQuery: (el: HTMLElement) => AutocompleteQuery<AutocompletePrefix> | undefined;
   handleMentionSelect: (userId: string, name: string) => void;
@@ -51,20 +65,31 @@ export const useAlternateAutocomplete = ({
     (insertText: string) => {
       const { textNode, start, end } = rangeRef.current;
       if (!textNode || !textNode.isConnected) return;
+      alternateInputRef.current?.focus();
       replaceTextInNode(textNode, start, end, insertText);
       sync();
     },
-    [sync]
+    [alternateInputRef, sync]
   );
 
   const replaceWithNode = useCallback(
-    (node: Node) => {
+    (node: Node, trailingText = '') => {
       const { textNode, start, end } = rangeRef.current;
       if (!textNode || !textNode.isConnected) return;
-      replaceRangeWithNode(textNode, start, end, node);
+      alternateInputRef.current?.focus();
+      const result = replaceRangeWithNode(textNode, start, end, node);
+      if (trailingText) {
+        result.node.insertData(0, trailingText);
+        const range = document.createRange();
+        range.setStart(result.node, trailingText.length);
+        range.collapse(true);
+        const sel = window.getSelection();
+        sel?.removeAllRanges();
+        sel?.addRange(range);
+      }
       sync();
     },
-    [sync]
+    [alternateInputRef, sync]
   );
 
   const detectAutocompleteQuery = useCallback(
@@ -81,20 +106,19 @@ export const useAlternateAutocomplete = ({
       }
       const textNode = domRange.startContainer as Text;
       const caret = domRange.startOffset;
-      const textBefore = textNode.data.slice(0, caret);
+      const trigger = findAutocompleteTrigger(textNode.data.slice(0, caret));
+      if (!trigger) return undefined;
 
-      let start = caret;
-      while (start > 0 && textBefore[start - 1] !== ' ') start -= 1;
-      const word = textBefore.slice(start, caret);
-      const altPrefix = AUTOCOMPLETE_PREFIXES.find((p) => word.startsWith(p));
-      if (!altPrefix) return undefined;
-
-      rangeRef.current = { textNode, start, end: caret };
+      rangeRef.current = { textNode, start: trigger.triggerPos, end: caret };
       const dummyRange: BaseRange = {
-        anchor: { path: [0, 0], offset: start },
+        anchor: { path: [0, 0], offset: trigger.triggerPos },
         focus: { path: [0, 0], offset: caret },
       };
-      return { range: dummyRange, prefix: altPrefix, text: word.slice(1) };
+      return {
+        range: dummyRange,
+        prefix: trigger.prefix,
+        text: trigger.query,
+      };
     },
     []
   );
@@ -105,7 +129,7 @@ export const useAlternateAutocomplete = ({
       const roomAliasOrId = room.getCanonicalAlias() || roomId;
       const highlight = mx.getUserId() === userId || roomAliasOrId === userId;
       const node = createAltMentionNode({ id: userId, name: displayName, highlight });
-      replaceWithNode(node);
+      replaceWithNode(node, ' ');
     },
     [mx, room, roomId, replaceWithNode]
   );
@@ -122,7 +146,7 @@ export const useAlternateAutocomplete = ({
         highlight,
         viaServers,
       });
-      replaceWithNode(node);
+      replaceWithNode(node, ' ');
     },
     [mx, room, roomId, replaceWithNode]
   );
@@ -142,7 +166,7 @@ export const useAlternateAutocomplete = ({
   const handleCommandSelect = useCallback(
     (commandName: string) => {
       const node = createAltCommandNode({ command: commandName });
-      replaceWithNode(node);
+      replaceWithNode(node, ' ');
     },
     [replaceWithNode]
   );

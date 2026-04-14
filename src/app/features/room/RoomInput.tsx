@@ -754,7 +754,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
                           tab={emojiBoardTab}
                           onTabChange={setEmojiBoardTab}
                           imagePackRooms={imagePackRooms}
-                          returnFocusOnDeactivate={false}
+                          returnFocusOnDeactivate={alternateInput && !mobileOrTablet()}
                           onEmojiSelect={handleEmoticonSelect}
                           onCustomEmojiSelect={handleEmoticonSelect}
                           onStickerSelect={handleStickerSelect}
@@ -774,6 +774,14 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
                         ref={emojiBtnRef}
                         aria-pressed={
                           hideStickerBtn ? !!emojiBoardTab : emojiBoardTab === EmojiBoardTab.Emoji
+                        }
+                        onMouseDown={
+                          alternateInput
+                            ? (e: React.MouseEvent) => {
+                                e.preventDefault();
+                                alternateInputRef.current?.focus();
+                              }
+                            : undefined
                         }
                         onClick={() => setEmojiBoardTab(EmojiBoardTab.Emoji)}
                         variant="SurfaceVariant"

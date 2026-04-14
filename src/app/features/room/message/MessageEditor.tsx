@@ -368,15 +368,13 @@ export const MessageEditor = as<'div', MessageEditorProps>(
                         content={
                           <EmojiBoard
                             imagePackRooms={imagePackRooms ?? []}
-                            returnFocusOnDeactivate={false}
+                            returnFocusOnDeactivate={alternateInput && !mobileOrTablet()}
                             onEmojiSelect={handleEmoticonSelect}
                             onCustomEmojiSelect={handleEmoticonSelect}
                             requestClose={() => {
                               setAnchor((v) => {
                                 if (v) {
-                                  if (alternateInput) {
-                                    alternateInputRef.current?.focus();
-                                  } else if (!mobileOrTablet()) {
+                                  if (!alternateInput && !mobileOrTablet()) {
                                     ReactEditor.focus(editor);
                                   }
                                   return undefined;
@@ -389,6 +387,14 @@ export const MessageEditor = as<'div', MessageEditorProps>(
                       >
                         <IconButton
                           aria-pressed={anchor !== undefined}
+                          onMouseDown={
+                            alternateInput
+                              ? (e: React.MouseEvent) => {
+                                  e.preventDefault();
+                                  alternateInputRef.current?.focus();
+                                }
+                              : undefined
+                          }
                           onClick={
                             ((evt) =>
                               setAnchor(

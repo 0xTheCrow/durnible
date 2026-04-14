@@ -17,6 +17,15 @@ export const ALT_EMOTICON = 'emoticon';
 export const ALT_MENTION = 'mention';
 export const ALT_COMMAND = 'command';
 
+// Browsers won't render a caret in an empty text node adjacent to a
+// contenteditable=false sibling, so the cursor can't navigate before a void
+// at the start of the input. A zero-width space (U+200B) gives the text
+// node a renderable position; serializeAltInput strips it so it never
+// reaches the message body.
+const INLINE_VOID_CARET_ANCHOR = '\u200B';
+const stripCaretAnchors = (text: string): string =>
+  text.replace(new RegExp(INLINE_VOID_CARET_ANCHOR, 'g'), '');
+
 type CreateEmoticonNodeArgs = {
   mx: MatrixClient;
   useAuthentication: boolean;
@@ -136,7 +145,7 @@ export const serializeAltInput = (el: HTMLElement): Descendant[] => {
 
   el.childNodes.forEach((child) => {
     if (child.nodeType === Node.TEXT_NODE) {
-      const text = (child as Text).data;
+      const text = stripCaretAnchors((child as Text).data);
       if (text.length === 0) return;
       const last = children[children.length - 1];
       if (last && !('type' in last)) {
@@ -178,7 +187,7 @@ export const serializeAltInput = (el: HTMLElement): Descendant[] => {
     }
 
     // Unknown element: fall back to its text content so we don't lose data
-    const text = element.textContent ?? '';
+    const text = stripCaretAnchors(element.textContent ?? '');
     if (text.length === 0) return;
     const last = children[children.length - 1];
     if (last && !('type' in last)) {
@@ -209,6 +218,13 @@ const placeCaretAt = (node: Node, offset: number) => {
   sel?.addRange(range);
 };
 
+const ensureLeadingAnchor = (node: Node) => {
+  const before = node.previousSibling;
+  if (before && before.nodeType === Node.TEXT_NODE) return;
+  if (before && before.nodeType === Node.ELEMENT_NODE) return;
+  node.parentNode?.insertBefore(document.createTextNode(INLINE_VOID_CARET_ANCHOR), node);
+};
+
 export const insertNodeAtRange = (el: HTMLElement, savedRange: Range | null, node: Node): Range => {
   const range = savedRange ? savedRange.cloneRange() : document.createRange();
   if (!savedRange || !el.contains(range.startContainer)) {
@@ -217,6 +233,8 @@ export const insertNodeAtRange = (el: HTMLElement, savedRange: Range | null, nod
   }
   range.deleteContents();
   range.insertNode(node);
+
+  ensureLeadingAnchor(node);
 
   let after = node.nextSibling;
   if (!after || after.nodeType !== Node.TEXT_NODE) {
@@ -256,6 +274,9 @@ export const replaceRangeWithNode = (
   parent.insertBefore(replacement, textNode.nextSibling);
   const afterNode = document.createTextNode(after);
   parent.insertBefore(afterNode, replacement.nextSibling);
+  if (textNode.data.length === 0 && !textNode.previousSibling) {
+    textNode.appendData(INLINE_VOID_CARET_ANCHOR);
+  }
   placeCaretAt(afterNode, 0);
   return { node: afterNode, offset: 0 };
 };

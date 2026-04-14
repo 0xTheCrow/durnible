@@ -4,6 +4,7 @@ import {
   Box,
   Text,
   Button,
+  Chip,
   Icon,
   Icons,
   Avatar,
@@ -13,11 +14,13 @@ import {
   config,
   Input,
   Spinner,
+  Switch,
   color,
   IconButton,
   Menu,
 } from 'folds';
 import type { MatrixError } from 'matrix-js-sdk';
+import { EventType } from 'matrix-js-sdk';
 import { SequenceCard } from '../../../components/sequence-card';
 import type { ImagePack, PackAddress, PackContent } from '../../../plugins/custom-emoji';
 import { ImageUsage, packAddressEqual } from '../../../plugins/custom-emoji';
@@ -29,13 +32,113 @@ import { SequenceCardStyle } from '../styles.css';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { mxcUrlToHttp } from '../../../utils/matrix';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
-import { usePowerLevels } from '../../../hooks/usePowerLevels';
+import { usePowerLevels, readPowerLevel } from '../../../hooks/usePowerLevels';
+import type { PowerLevels } from '../../../hooks/usePowerLevels';
+import { getPowerLevelTag, usePowerLevelTags } from '../../../hooks/usePowerLevelTags';
+import { PowerSwitcher } from '../../../components/power';
 import { StateEvent } from '../../../../types/matrix/room';
 import { suffixRename } from '../../../utils/common';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { useAlive } from '../../../hooks/useAlive';
 import { useRoomCreators } from '../../../hooks/useRoomCreators';
 import { useRoomPermissions } from '../../../hooks/useRoomPermissions';
+
+type PackEditPermissionTileProps = {
+  roomId: string;
+  powerLevels: PowerLevels;
+  canEdit: boolean;
+};
+function PackEditPermissionTile({ roomId, powerLevels, canEdit }: PackEditPermissionTileProps) {
+  const mx = useMatrixClient();
+  const room = useRoom();
+  const powerLevelTags = usePowerLevelTags(room, powerLevels);
+
+  const overrideValue: number | undefined =
+    typeof powerLevels.events?.[StateEvent.PoniesRoomEmotes] === 'number'
+      ? powerLevels.events[StateEvent.PoniesRoomEmotes]
+      : undefined;
+  const overrideEnabled = overrideValue !== undefined;
+  const stateDefault = readPowerLevel.state(powerLevels, undefined);
+  const displayValue = overrideValue ?? stateDefault;
+  const tag = getPowerLevelTag(powerLevelTags, displayValue);
+
+  const [updateState, updatePowerLevels] = useAsyncCallback<void, MatrixError, [PowerLevels]>(
+    useCallback(
+      async (newPowerLevels) => {
+        await mx.sendStateEvent(roomId, EventType.RoomPowerLevels, newPowerLevels);
+      },
+      [mx, roomId]
+    )
+  );
+  const updating = updateState.status === AsyncStatus.Loading;
+
+  const setOverride = (value: number | undefined) => {
+    const nextEvents = { ...(powerLevels.events ?? {}) };
+    if (value === undefined) {
+      delete nextEvents[StateEvent.PoniesRoomEmotes];
+    } else {
+      nextEvents[StateEvent.PoniesRoomEmotes] = value;
+    }
+    updatePowerLevels({ ...powerLevels, events: nextEvents });
+  };
+
+  return (
+    <SequenceCard
+      className={SequenceCardStyle}
+      variant="SurfaceVariant"
+      direction="Column"
+      gap="400"
+    >
+      <SettingTile
+        title="Custom Pack Edit Permission"
+        description="Override the default permission required to create or edit packs in this room."
+        after={
+          <Box gap="200" alignItems="Center">
+            {updating && <Spinner variant="Secondary" />}
+            {overrideEnabled && (
+              <PowerSwitcher
+                powerLevelTags={powerLevelTags}
+                value={displayValue}
+                onChange={(v) => setOverride(v)}
+              >
+                {(handleOpen, opened) => (
+                  <Chip
+                    variant="Secondary"
+                    fill="Soft"
+                    radii="Pill"
+                    aria-selected={opened}
+                    disabled={!canEdit || updating}
+                    before={
+                      canEdit && (
+                        <Icon size="50" src={opened ? Icons.ChevronTop : Icons.ChevronBottom} />
+                      )
+                    }
+                    onClick={handleOpen}
+                  >
+                    <Text size="B300" truncate>
+                      {tag.name}
+                    </Text>
+                  </Chip>
+                )}
+              </PowerSwitcher>
+            )}
+            <Switch
+              value={overrideEnabled}
+              onChange={(on) => setOverride(on ? stateDefault : undefined)}
+              disabled={!canEdit || updating}
+            />
+          </Box>
+        }
+      >
+        {updateState.status === AsyncStatus.Error && (
+          <Text style={{ color: color.Critical.Main }} size="T200">
+            {updateState.error.message}
+          </Text>
+        )}
+      </SettingTile>
+    </SequenceCard>
+  );
+}
 
 type CreatePackTileProps = {
   packs: ImagePack[];
@@ -148,6 +251,7 @@ export function RoomPacks({ onViewPack }: RoomPacksProps) {
 
   const permissions = useRoomPermissions(creators, powerLevels);
   const canEdit = permissions.stateEvent(StateEvent.PoniesRoomEmotes, mx.getSafeUserId());
+  const canEditPowerLevels = permissions.stateEvent(StateEvent.RoomPowerLevels, mx.getSafeUserId());
 
   const unfilteredPacks = useRoomImagePacks(room);
   const packs = useMemo(() => unfilteredPacks.filter((pack) => !pack.deleted), [unfilteredPacks]);
@@ -262,6 +366,16 @@ export function RoomPacks({ onViewPack }: RoomPacksProps) {
 
   return (
     <>
+      {canEditPowerLevels && (
+        <Box direction="Column" gap="100">
+          <Text size="L400">Permissions</Text>
+          <PackEditPermissionTile
+            roomId={room.roomId}
+            powerLevels={powerLevels}
+            canEdit={canEditPowerLevels}
+          />
+        </Box>
+      )}
       <Box direction="Column" gap="100">
         <Text size="L400">Packs</Text>
         {canEdit && <CreatePackTile roomId={room.roomId} packs={packs} />}
