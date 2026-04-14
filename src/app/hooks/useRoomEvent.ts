@@ -1,6 +1,6 @@
 import type { IEvent, Room } from 'matrix-js-sdk';
 import { MatrixEvent, MatrixEventEvent } from 'matrix-js-sdk';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useSyncExternalStore } from 'react';
 import to from 'await-to-js';
 import type { CryptoBackend } from 'matrix-js-sdk/lib/common-crypto/CryptoBackend';
 import { useQuery } from '@tanstack/react-query';
@@ -66,26 +66,36 @@ export const useRoomEvent = (
 
   const result = event ?? data ?? (fallback !== undefined ? fallback : undefined);
 
-  const [, setContentReady] = useState(false);
-  useEffect(() => {
-    if (!result) return undefined;
-    const handler = () => setContentReady(true);
-    result.on(MatrixEventEvent.Replaced, handler);
-    result.on(MatrixEventEvent.Decrypted, handler);
-
-    const replacing = result.replacingEvent();
-    if (replacing) {
-      replacing.on(MatrixEventEvent.Decrypted, handler);
-    }
-
-    return () => {
-      result.removeListener(MatrixEventEvent.Replaced, handler);
-      result.removeListener(MatrixEventEvent.Decrypted, handler);
+  const subscribe = useCallback(
+    (onChange: () => void) => {
+      if (!result) return () => undefined;
+      result.on(MatrixEventEvent.Replaced, onChange);
+      result.on(MatrixEventEvent.Decrypted, onChange);
+      const replacing = result.replacingEvent();
       if (replacing) {
-        replacing.removeListener(MatrixEventEvent.Decrypted, handler);
+        replacing.on(MatrixEventEvent.Decrypted, onChange);
       }
-    };
+      return () => {
+        result.removeListener(MatrixEventEvent.Replaced, onChange);
+        result.removeListener(MatrixEventEvent.Decrypted, onChange);
+        if (replacing) {
+          replacing.removeListener(MatrixEventEvent.Decrypted, onChange);
+        }
+      };
+    },
+    [result]
+  );
+
+  const getSnapshot = useCallback(() => {
+    if (!result) return 'none';
+    const content = result.getContent() as { body?: unknown; msgtype?: unknown };
+    const bodyKey = typeof content.body === 'string' ? content.body : '';
+    const msgtypeKey = typeof content.msgtype === 'string' ? content.msgtype : '';
+    const replacingId = result.replacingEvent()?.getId() ?? '';
+    return `${bodyKey}|${msgtypeKey}|${result.isRedacted()}|${replacingId}`;
   }, [result]);
+
+  useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 
   return result;
 };

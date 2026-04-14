@@ -198,6 +198,7 @@ export const ImageContent = as<'div', ImageContentProps>(
                   height: 'auto',
                   maxWidth: '100%',
                   maxHeight: '100%',
+                  cursor: 'pointer',
                 },
                 onLoad: handleLoad,
                 onError: handleError,
