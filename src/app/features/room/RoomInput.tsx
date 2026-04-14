@@ -41,7 +41,10 @@ import {
   RoomMentionAutocomplete,
   UserMentionAutocomplete,
   EmoticonAutocomplete,
+  createAltEmoticonNode,
   createEmoticonElement,
+  replaceRangeWithNode,
+  replaceTextInNode,
   moveCursor,
   resetEditorHistory,
   customHtmlEqualsPlainText,
@@ -51,7 +54,6 @@ import {
   trimCommand,
   getMentions,
   replaceShortcodes,
-  BlockType,
 } from '../../components/editor';
 import { EmojiBoard, EmojiBoardTab } from '../../components/emoji-board';
 import { UseStateProvider } from '../../components/UseStateProvider';
@@ -133,7 +135,12 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     const sendBtnRef = useRef<HTMLButtonElement>(null);
     const alternateMentionsRef = useRef<Array<{ userId: string; displayName: string }>>([]);
     const alternateRoomMentionsRef = useRef<Array<{ roomAliasOrId: string; name: string }>>([]);
-    const alternateAutocompleteRangeRef = useRef<{ start: number; end: number }>({
+    const alternateAutocompleteRangeRef = useRef<{
+      textNode: Text | null;
+      start: number;
+      end: number;
+    }>({
+      textNode: null,
       start: 0,
       end: 0,
     });
@@ -516,30 +523,34 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
 
           if (domSel && domSel.rangeCount > 0) {
             const domRange = domSel.getRangeAt(0);
-            if (domRange.collapsed && el.contains(domRange.startContainer)) {
-              // cloneRange gives the absolute character offset from the start
-              // of el regardless of how many text nodes the browser created
-              // internally (e.g. after emoji insertion splits the content).
-              // Using domRange.startOffset directly is only correct when the
-              // cursor is in the very first text node.
-              const cloneRange = domRange.cloneRange();
-              cloneRange.selectNodeContents(el);
-              cloneRange.setEnd(domRange.startContainer, domRange.startOffset);
-              const textBefore = cloneRange.toString().replace(/\n$/, '');
-              const offset = textBefore.length;
+            if (
+              domRange.collapsed &&
+              el.contains(domRange.startContainer) &&
+              domRange.startContainer.nodeType === Node.TEXT_NODE
+            ) {
+              // Work within the caret's own text node. This keeps the
+              // replacement surgical so surrounding inline DOM (custom
+              // emojis, etc.) isn't disturbed.
+              const textNode = domRange.startContainer as Text;
+              const caret = domRange.startOffset;
+              const textBefore = textNode.data.slice(0, caret);
 
-              let start = offset;
+              let start = caret;
               while (start > 0 && textBefore[start - 1] !== ' ') {
-                start--;
+                start -= 1;
               }
 
-              const word = textBefore.slice(start, offset);
+              const word = textBefore.slice(start, caret);
               const altPrefix = AUTOCOMPLETE_PREFIXES.find((p) => word.startsWith(p));
               if (altPrefix) {
-                alternateAutocompleteRangeRef.current = { start, end: offset };
+                alternateAutocompleteRangeRef.current = {
+                  textNode,
+                  start,
+                  end: caret,
+                };
                 const dummyRange: BaseRange = {
                   anchor: { path: [0, 0], offset: start },
-                  focus: { path: [0, 0], offset },
+                  focus: { path: [0, 0], offset: caret },
                 };
                 query = {
                   range: dummyRange,
@@ -568,145 +579,78 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       if (!alternateInput) ReactEditor.focus(editor);
     }, [editor, alternateInput]);
 
+    const syncAlternateInput = useCallback(() => {
+      const el = alternateInputRef.current;
+      if (!el) return;
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      setHasEditorContent(!isEmptyEditor(editor));
+    }, [alternateInputRef, editor]);
+
+    const replaceAltAutocompleteText = useCallback(
+      (insertText: string) => {
+        const { textNode, start, end } = alternateAutocompleteRangeRef.current;
+        if (!textNode || !textNode.isConnected) return;
+        replaceTextInNode(textNode, start, end, insertText);
+        syncAlternateInput();
+      },
+      [syncAlternateInput]
+    );
+
+    const replaceAltAutocompleteWithNode = useCallback(
+      (node: Node) => {
+        const { textNode, start, end } = alternateAutocompleteRangeRef.current;
+        if (!textNode || !textNode.isConnected) return;
+        replaceRangeWithNode(textNode, start, end, node);
+        syncAlternateInput();
+      },
+      [syncAlternateInput]
+    );
+
     const handleAlternateMentionSelect = useCallback(
       (userId: string, name: string) => {
-        const el = alternateInputRef.current;
-        if (!el) return;
-
-        const { start, end } = alternateAutocompleteRangeRef.current;
-        const currentText = el.innerText.replace(/\n$/, '');
         const displayName = name.startsWith('@') ? name.slice(1) : name;
-        const insertText = `@${displayName} `;
-        const newText = currentText.slice(0, start) + insertText + currentText.slice(end);
-
-        el.textContent = newText;
-        editor.children = [{ type: BlockType.Paragraph, children: [{ text: newText }] }];
-        setHasEditorContent(newText.length > 0);
-
+        replaceAltAutocompleteText(`@${displayName} `);
         alternateMentionsRef.current.push({ userId, displayName });
-
-        // Place cursor after inserted text
-        const newPos = start + insertText.length;
-        const textNode = el.firstChild;
-        if (textNode) {
-          try {
-            const range = document.createRange();
-            range.setStart(textNode, Math.min(newPos, newText.length));
-            range.collapse(true);
-            const sel = window.getSelection();
-            sel?.removeAllRanges();
-            sel?.addRange(range);
-          } catch {
-            // ignore if cursor placement fails
-          }
-        }
       },
-      [editor, alternateInputRef]
+      [replaceAltAutocompleteText]
     );
 
     const handleAlternateRoomMentionSelect = useCallback(
       (roomAliasOrId: string, name: string) => {
-        const el = alternateInputRef.current;
-        if (!el) return;
-
-        const { start, end } = alternateAutocompleteRangeRef.current;
-        const currentText = el.innerText.replace(/\n$/, '');
         const displayName = name.startsWith('#') ? name.slice(1) : name;
-        const insertText = `#${displayName} `;
-        const newText = currentText.slice(0, start) + insertText + currentText.slice(end);
-
-        el.textContent = newText;
-        editor.children = [{ type: BlockType.Paragraph, children: [{ text: newText }] }];
-        setHasEditorContent(newText.length > 0);
-
+        replaceAltAutocompleteText(`#${displayName} `);
         alternateRoomMentionsRef.current.push({ roomAliasOrId, name: displayName });
-
-        const newPos = start + insertText.length;
-        const textNode = el.firstChild;
-        if (textNode) {
-          try {
-            const range = document.createRange();
-            range.setStart(textNode, Math.min(newPos, newText.length));
-            range.collapse(true);
-            const sel = window.getSelection();
-            sel?.removeAllRanges();
-            sel?.addRange(range);
-          } catch {
-            // ignore if cursor placement fails
-          }
-        }
       },
-      [editor, alternateInputRef]
+      [replaceAltAutocompleteText]
     );
 
     const handleAlternateEmoticonSelect = useCallback(
       (key: string, shortcode: string) => {
-        const el = alternateInputRef.current;
-        if (!el) return;
-
-        const { start, end } = alternateAutocompleteRangeRef.current;
-        const currentText = el.innerText.replace(/\n$/, '');
-        const insertText = key.startsWith('mxc://') ? `:${shortcode}: ` : `${key} `;
-        const newText = currentText.slice(0, start) + insertText + currentText.slice(end);
-
-        el.textContent = newText;
-        editor.children = [{ type: BlockType.Paragraph, children: [{ text: newText }] }];
-        setHasEditorContent(newText.length > 0);
-
-        const newPos = start + insertText.length;
-        const textNode = el.firstChild;
-        if (textNode) {
-          try {
-            const range = document.createRange();
-            range.setStart(textNode, Math.min(newPos, newText.length));
-            range.collapse(true);
-            const sel = window.getSelection();
-            sel?.removeAllRanges();
-            sel?.addRange(range);
-          } catch {
-            // ignore if cursor placement fails
-          }
+        if (key.startsWith('mxc://')) {
+          const node = createAltEmoticonNode({ mx, useAuthentication, key, shortcode });
+          replaceAltAutocompleteWithNode(node);
+          return;
         }
+        replaceAltAutocompleteText(`${key} `);
       },
-      [editor, alternateInputRef]
+      [mx, useAuthentication, replaceAltAutocompleteText, replaceAltAutocompleteWithNode]
     );
 
     const handleAlternateCommandSelect = useCallback(
       (commandName: string) => {
-        const el = alternateInputRef.current;
-        if (!el) return;
-
-        const { start, end } = alternateAutocompleteRangeRef.current;
-        const currentText = el.innerText.replace(/\n$/, '');
-        const insertText = `/${commandName} `;
-        const newText = currentText.slice(0, start) + insertText + currentText.slice(end);
-
-        el.textContent = newText;
-        editor.children = [{ type: BlockType.Paragraph, children: [{ text: newText }] }];
-        setHasEditorContent(newText.length > 0);
-
-        const newPos = start + insertText.length;
-        const textNode = el.firstChild;
-        if (textNode) {
-          try {
-            const range = document.createRange();
-            range.setStart(textNode, Math.min(newPos, newText.length));
-            range.collapse(true);
-            const sel = window.getSelection();
-            sel?.removeAllRanges();
-            sel?.addRange(range);
-          } catch {
-            // ignore if cursor placement fails
-          }
-        }
+        replaceAltAutocompleteText(`/${commandName} `);
       },
-      [editor, alternateInputRef]
+      [replaceAltAutocompleteText]
     );
 
     const handleEmoticonSelect = (key: string, shortcode: string) => {
-      if (alternateInput && editor.insertAlternateText) {
-        const emojiText = key.startsWith('mxc://') ? `:${shortcode}:` : key;
-        editor.insertAlternateText(emojiText);
+      if (alternateInput) {
+        if (key.startsWith('mxc://') && editor.insertAlternateNode) {
+          const node = createAltEmoticonNode({ mx, useAuthentication, key, shortcode });
+          editor.insertAlternateNode(node);
+          return;
+        }
+        editor.insertAlternateText?.(key);
         return;
       }
       editor.insertNode(createEmoticonElement(key, shortcode));

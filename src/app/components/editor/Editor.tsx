@@ -15,6 +15,7 @@ import { withHistory } from 'slate-history';
 import { BlockType } from './types';
 import { RenderElement, RenderLeaf } from './Elements';
 import type { CustomElement } from './slate';
+import { insertNodeAtRange, serializeAltInput } from './altInput';
 import * as css from './Editor.css';
 import { toggleKeyboardShortcut } from './keyboard';
 import { getImageUrlBlob } from '../../utils/dom';
@@ -109,8 +110,19 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
 
     const [inputValue, setInputValue] = useState(() => extractEditorText(editor.children));
     const inputRef = useRef<HTMLDivElement>(null);
+    const savedRangeRef = useRef<Range | null>(null);
     const inputValueRef = useRef(inputValue);
     inputValueRef.current = inputValue;
+
+    const syncAltInputState = useCallback(() => {
+      const el = inputRef.current;
+      if (!el) return;
+      const children = serializeAltInput(el);
+      editor.children = children;
+      const newText = extractEditorText(children);
+      setInputValue(newText);
+      onChange?.(editor.children);
+    }, [editor, onChange]);
 
     useEffect(() => {
       if (!alternateInput) return undefined;
@@ -122,39 +134,57 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
         setInputValue(newText);
         // Sync DOM when editor is cleared externally (e.g. after sending a message)
         const el = inputRef.current;
-        if (el) {
-          const domText = el.innerText.replace(/\n$/, '');
-          if (domText !== newText) {
-            el.textContent = newText;
-          }
+        if (el && newText.length === 0 && el.childNodes.length > 0) {
+          el.textContent = '';
+          savedRangeRef.current = null;
         }
       };
+
+      const handleSelectionChange = () => {
+        const el = inputRef.current;
+        if (!el) return;
+        const sel = document.getSelection();
+        if (!sel || sel.rangeCount === 0) return;
+        const range = sel.getRangeAt(0);
+        if (!el.contains(range.startContainer)) return;
+        savedRangeRef.current = range.cloneRange();
+      };
+      document.addEventListener('selectionchange', handleSelectionChange);
 
       editor.insertAlternateText = (text: string) => {
         const el = inputRef.current;
         if (!el) return;
-        el.focus();
-        document.execCommand('insertText', false, text);
-        const newValue = el.innerText.replace(/\n$/, '');
-        setInputValue(newValue);
-        editor.children = [{ type: BlockType.Paragraph, children: [{ text: newValue }] }];
+        const textNode = document.createTextNode(text);
+        savedRangeRef.current = insertNodeAtRange(el, savedRangeRef.current, textNode);
+        // Move the caret to after the inserted text (not after a trailing empty node)
+        const range = document.createRange();
+        range.setStart(textNode, text.length);
+        range.collapse(true);
+        const sel = window.getSelection();
+        sel?.removeAllRanges();
+        sel?.addRange(range);
+        savedRangeRef.current = range.cloneRange();
+        syncAltInputState();
+      };
+
+      editor.insertAlternateNode = (node: Node) => {
+        const el = inputRef.current;
+        if (!el) return;
+        savedRangeRef.current = insertNodeAtRange(el, savedRangeRef.current, node);
+        syncAltInputState();
       };
 
       return () => {
+        document.removeEventListener('selectionchange', handleSelectionChange);
         editor.onChange = origOnChange;
         delete editor.insertAlternateText;
+        delete editor.insertAlternateNode;
       };
-    }, [editor, alternateInput]);
+    }, [editor, alternateInput, syncAltInputState]);
 
-    const handleInput: FormEventHandler<HTMLDivElement> = useCallback(
-      (e) => {
-        const text = e.currentTarget.innerText.replace(/\n$/, '');
-        setInputValue(text);
-        editor.children = [{ type: BlockType.Paragraph, children: [{ text }] }];
-        onChange?.(editor.children);
-      },
-      [editor, onChange]
-    );
+    const handleInput: FormEventHandler<HTMLDivElement> = useCallback(() => {
+      syncAltInputState();
+    }, [syncAltInputState]);
 
     const fetchUrlAsFile = useCallback(
       (url: string) => {

@@ -9,6 +9,7 @@ export type Editor = BaseEditor &
   HistoryEditor &
   ReactEditor & {
     insertAlternateText?: (text: string) => void;
+    insertAlternateNode?: (node: Node) => void;
   };
 
 export type Text = {

@@ -18,6 +18,7 @@ import {
   RoomMentionAutocomplete,
   Toolbar,
   UserMentionAutocomplete,
+  createAltEmoticonNode,
   createEmoticonElement,
   customHtmlEqualsPlainText,
   getAutocompleteQuery,
@@ -41,6 +42,7 @@ import { UseStateProvider } from '../../../components/UseStateProvider';
 import { EmojiBoard } from '../../../components/emoji-board';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
+import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
 import { getEditedEvent, getMentionContent, trimReplyFromFormattedBody } from '../../../utils/room';
 import { mobileOrTablet } from '../../../utils/user-agent';
 import { useComposingCheck } from '../../../hooks/useComposingCheck';
@@ -55,6 +57,7 @@ type MessageEditorProps = {
 export const MessageEditor = as<'div', MessageEditorProps>(
   ({ room, roomId, mEvent, imagePackRooms, onCancel, ...props }, ref) => {
     const mx = useMatrixClient();
+    const useAuthentication = useMediaAuthentication();
     const editor = useEditor();
     const [enterForNewline] = useSetting(settingsAtom, 'enterForNewline');
     const [globalToolbar] = useSetting(settingsAtom, 'editorToolbar');
@@ -203,12 +206,17 @@ export const MessageEditor = as<'div', MessageEditorProps>(
     }, [editor, alternateInput]);
 
     const handleEmoticonSelect = (key: string, shortcode: string) => {
-      if (alternateInput && editor.insertAlternateText) {
-        editor.insertAlternateText(key);
-      } else {
-        editor.insertNode(createEmoticonElement(key, shortcode));
-        moveCursor(editor);
+      if (alternateInput) {
+        if (key.startsWith('mxc://') && editor.insertAlternateNode) {
+          const node = createAltEmoticonNode({ mx, useAuthentication, key, shortcode });
+          editor.insertAlternateNode(node);
+          return;
+        }
+        editor.insertAlternateText?.(key);
+        return;
       }
+      editor.insertNode(createEmoticonElement(key, shortcode));
+      moveCursor(editor);
     };
 
     useEffect(() => {
