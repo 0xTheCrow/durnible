@@ -2,9 +2,15 @@ import type { Descendant } from 'slate';
 import type { MatrixClient } from 'matrix-js-sdk';
 import * as css from '../../styles/CustomHtml.css';
 import { mxcUrlToHttp } from '../../utils/matrix';
-import type { EmoticonElement, InlineElement, ParagraphElement } from './slate';
+import type {
+  CommandElement,
+  EmoticonElement,
+  InlineElement,
+  MentionElement,
+  ParagraphElement,
+} from './slate';
 import { BlockType } from './types';
-import { createEmoticonElement } from './utils';
+import { createEmoticonElement, createMentionElement } from './utils';
 
 export const ALT_NODE_ATTR = 'data-alt-type';
 export const ALT_EMOTICON = 'emoticon';
@@ -44,11 +50,74 @@ export const createAltEmoticonNode = ({
   return wrapper;
 };
 
+type CreateMentionNodeArgs = {
+  id: string;
+  name: string;
+  highlight: boolean;
+  eventId?: string;
+  viaServers?: string[];
+};
+
+export const createAltMentionNode = ({
+  id,
+  name,
+  highlight,
+  eventId,
+  viaServers,
+}: CreateMentionNodeArgs): HTMLSpanElement => {
+  const wrapper = document.createElement('span');
+  wrapper.setAttribute(ALT_NODE_ATTR, ALT_MENTION);
+  wrapper.setAttribute('contenteditable', 'false');
+  wrapper.dataset.id = id;
+  wrapper.dataset.name = name;
+  wrapper.dataset.highlight = highlight ? 'true' : 'false';
+  if (eventId) wrapper.dataset.eventId = eventId;
+  if (viaServers && viaServers.length > 0) wrapper.dataset.via = viaServers.join(',');
+  wrapper.className = css.Mention({ highlight, focus: false });
+  wrapper.textContent = name;
+  return wrapper;
+};
+
+type CreateCommandNodeArgs = {
+  command: string;
+};
+
+export const createAltCommandNode = ({ command }: CreateCommandNodeArgs): HTMLSpanElement => {
+  const wrapper = document.createElement('span');
+  wrapper.setAttribute(ALT_NODE_ATTR, ALT_COMMAND);
+  wrapper.setAttribute('contenteditable', 'false');
+  wrapper.dataset.command = command;
+  wrapper.className = css.Command({ active: false, focus: false });
+  wrapper.textContent = `/${command}`;
+  return wrapper;
+};
+
 const readEmoticonElement = (el: HTMLElement): EmoticonElement | null => {
   const key = el.dataset.key;
   const shortcode = el.dataset.shortcode;
   if (!key || !shortcode) return null;
   return createEmoticonElement(key, shortcode);
+};
+
+const readMentionElement = (el: HTMLElement): MentionElement | null => {
+  const id = el.dataset.id;
+  const name = el.dataset.name;
+  if (!id || !name) return null;
+  const highlight = el.dataset.highlight === 'true';
+  const eventId = el.dataset.eventId;
+  const via = el.dataset.via;
+  const viaServers = via ? via.split(',').filter((s) => s.length > 0) : undefined;
+  return createMentionElement(id, name, highlight, eventId, viaServers);
+};
+
+const readCommandElement = (el: HTMLElement): CommandElement | null => {
+  const command = el.dataset.command;
+  if (!command) return null;
+  return {
+    type: BlockType.Command,
+    command,
+    children: [{ text: '' }],
+  };
 };
 
 const pushInline = (buffer: InlineElement[], node: InlineElement) => {
@@ -94,6 +163,16 @@ export const serializeAltInput = (el: HTMLElement): Descendant[] => {
     const altType = element.getAttribute(ALT_NODE_ATTR);
     if (altType === ALT_EMOTICON) {
       const node = readEmoticonElement(element);
+      if (node) pushInline(children, node);
+      return;
+    }
+    if (altType === ALT_MENTION) {
+      const node = readMentionElement(element);
+      if (node) pushInline(children, node);
+      return;
+    }
+    if (altType === ALT_COMMAND) {
+      const node = readCommandElement(element);
       if (node) pushInline(children, node);
       return;
     }

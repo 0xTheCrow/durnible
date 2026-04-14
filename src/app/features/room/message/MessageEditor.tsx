@@ -20,6 +20,7 @@ import {
   UserMentionAutocomplete,
   createAltEmoticonNode,
   createEmoticonElement,
+  useAlternateAutocomplete,
   customHtmlEqualsPlainText,
   getAutocompleteQuery,
   getPrevWorldRange,
@@ -72,6 +73,19 @@ export const MessageEditor = as<'div', MessageEditorProps>(
 
     const [autocompleteQuery, setAutocompleteQuery] =
       useState<AutocompleteQuery<AutocompletePrefix>>();
+
+    const altAutocomplete = useAlternateAutocomplete({
+      alternateInputRef,
+      mx,
+      useAuthentication,
+      room,
+      roomId,
+    });
+    const {
+      handleMentionSelect: handleAlternateMentionSelect,
+      handleRoomMentionSelect: handleAlternateRoomMentionSelect,
+      handleEmoticonSelect: handleAlternateEmoticonSelect,
+    } = altAutocomplete;
 
     const getPrevBodyAndFormattedBody = useCallback((): [
       string | undefined,
@@ -190,14 +204,18 @@ export const MessageEditor = as<'div', MessageEditorProps>(
           return;
         }
 
-        if (alternateInput) return;
+        if (alternateInput) {
+          const el = evt.currentTarget as HTMLDivElement;
+          setAutocompleteQuery(altAutocomplete.detectAutocompleteQuery(el));
+          return;
+        }
         const prevWordRange = getPrevWorldRange(editor);
         const query = prevWordRange
           ? getAutocompleteQuery<AutocompletePrefix>(editor, prevWordRange, AUTOCOMPLETE_PREFIXES)
           : undefined;
         setAutocompleteQuery(query);
       },
-      [editor, alternateInput]
+      [editor, alternateInput, altAutocomplete]
     );
 
     const handleCloseAutocomplete = useCallback(() => {
@@ -268,6 +286,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
             editor={editor}
             query={autocompleteQuery}
             requestClose={handleCloseAutocomplete}
+            onSelect={alternateInput ? handleAlternateRoomMentionSelect : undefined}
           />
         )}
         {autocompleteQuery?.prefix === AutocompletePrefix.UserMention && (
@@ -276,6 +295,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
             editor={editor}
             query={autocompleteQuery}
             requestClose={handleCloseAutocomplete}
+            onSelect={alternateInput ? handleAlternateMentionSelect : undefined}
           />
         )}
         {autocompleteQuery?.prefix === AutocompletePrefix.Emoticon && (
@@ -284,6 +304,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
             editor={editor}
             query={autocompleteQuery}
             requestClose={handleCloseAutocomplete}
+            onSelect={alternateInput ? handleAlternateEmoticonSelect : undefined}
           />
         )}
         <CustomEditor

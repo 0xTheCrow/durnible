@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { as, Box, Text, config, Button, Menu, Spinner } from 'folds';
+import { as, Box, Text, config, Button, Menu, Spinner, Switch } from 'folds';
 import type { ImagePack, ImageUsage, PackContent, PackImage } from '../../plugins/custom-emoji';
 import { PackImageReader, packMetaEqual, PackMetaReader } from '../../plugins/custom-emoji';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
@@ -98,6 +98,20 @@ export const ImagePackContent = as<'div', ImagePackContentProps>(
               ...imagePack.meta.content,
               ...m?.content,
               usage: usg,
+            })
+        );
+      },
+      [imagePack.meta]
+    );
+
+    const handlePackPortableChange = useCallback(
+      (portable: boolean) => {
+        setSavedMeta(
+          (m) =>
+            new PackMetaReader({
+              ...imagePack.meta.content,
+              ...m?.content,
+              portable,
             })
         );
       },
@@ -319,6 +333,24 @@ export const ImagePackContent = as<'div', ImagePackContentProps>(
                   usage={currentMeta.usage}
                   canEdit={canEdit}
                   onChange={handlePackUsageChange}
+                />
+              }
+            />
+          </SequenceCard>
+          <SequenceCard
+            style={{ padding: config.space.S300 }}
+            variant="SurfaceVariant"
+            direction="Column"
+            gap="400"
+          >
+            <SettingTile
+              title="Portable"
+              description="Allow members of this room to use this pack in any other room they are in."
+              after={
+                <Switch
+                  value={currentMeta.portable}
+                  onChange={handlePackPortableChange}
+                  disabled={!canEdit}
                 />
               }
             />

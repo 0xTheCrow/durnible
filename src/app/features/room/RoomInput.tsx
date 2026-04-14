@@ -6,7 +6,7 @@ import type { IContent, Room } from 'matrix-js-sdk';
 import { EventType, MsgType, RelationType } from 'matrix-js-sdk';
 import type { RoomMessageEventContent } from 'matrix-js-sdk/lib/types';
 import { ReactEditor } from 'slate-react';
-import type { Editor, BaseRange } from 'slate';
+import type { Editor } from 'slate';
 import { Transforms } from 'slate';
 import {
   Box,
@@ -43,8 +43,7 @@ import {
   EmoticonAutocomplete,
   createAltEmoticonNode,
   createEmoticonElement,
-  replaceRangeWithNode,
-  replaceTextInNode,
+  useAlternateAutocomplete,
   moveCursor,
   resetEditorHistory,
   customHtmlEqualsPlainText,
@@ -88,7 +87,6 @@ import {
   getVideoMsgContent,
 } from './msgContent';
 import { getMemberDisplayName, getMentionContent, trimReplyFromBody } from '../../utils/room';
-import { sanitizeText } from '../../utils/sanitize';
 import { CommandAutocomplete } from './CommandAutocomplete';
 import { VoiceMessageRecorder } from './VoiceMessageRecorder';
 import { Command, SHRUG, TABLEFLIP, UNFLIP, useCommands } from '../../hooks/useCommands';
@@ -133,17 +131,6 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     const commands = useCommands(mx, room);
     const emojiBtnRef = useRef<HTMLButtonElement>(null);
     const sendBtnRef = useRef<HTMLButtonElement>(null);
-    const alternateMentionsRef = useRef<Array<{ userId: string; displayName: string }>>([]);
-    const alternateRoomMentionsRef = useRef<Array<{ roomAliasOrId: string; name: string }>>([]);
-    const alternateAutocompleteRangeRef = useRef<{
-      textNode: Text | null;
-      start: number;
-      end: number;
-    }>({
-      textNode: null,
-      start: 0,
-      end: 0,
-    });
     const [hasEditorContent, setHasEditorContent] = useState(false);
     const roomToParents = useAtomValue(roomToParentsAtom);
     const powerLevels = usePowerLevelsContext();
@@ -250,8 +237,6 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
             setMsgDraft([]);
           }
           resetEditorDirect(editor);
-          alternateMentionsRef.current = [];
-          alternateRoomMentionsRef.current = [];
         } else {
           if (!isEmptyEditor(editor)) {
             const parsedDraft = JSON.parse(JSON.stringify(editor.children));
@@ -395,28 +380,6 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       if (plainText !== '') {
         const body = plainText;
         const mentionData = getMentions(mx, roomId, editor);
-        if (
-          alternateInput &&
-          (alternateMentionsRef.current.length > 0 || alternateRoomMentionsRef.current.length > 0)
-        ) {
-          let html = customHtml;
-          alternateMentionsRef.current.forEach(({ userId, displayName }) => {
-            mentionData.users.add(userId);
-            const escapedName = sanitizeText(`@${displayName}`);
-            const mentionLink = `<a href="${encodeURI(
-              `https://matrix.to/#/${userId}`
-            )}">${escapedName}</a>`;
-            html = html.split(escapedName).join(mentionLink);
-          });
-          alternateRoomMentionsRef.current.forEach(({ roomAliasOrId, name }) => {
-            const escapedName = sanitizeText(`#${name}`);
-            const mentionLink = `<a href="${encodeURI(
-              `https://matrix.to/#/${roomAliasOrId}`
-            )}">${escapedName}</a>`;
-            html = html.split(escapedName).join(mentionLink);
-          });
-          customHtml = html;
-        }
         const formattedBody = customHtml;
 
         const content: IContent = {
@@ -456,8 +419,6 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
 
       if (alternateInput) {
         resetEditorDirect(editor);
-        alternateMentionsRef.current = [];
-        alternateRoomMentionsRef.current = [];
       } else {
         resetEditor(editor);
         resetEditorHistory(editor);
@@ -505,6 +466,20 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       setHasEditorContent(!isEmptyEditor(editor));
     }, [editor]);
 
+    const altAutocomplete = useAlternateAutocomplete({
+      alternateInputRef,
+      mx,
+      useAuthentication,
+      room,
+      roomId,
+    });
+    const {
+      handleMentionSelect: handleAlternateMentionSelect,
+      handleRoomMentionSelect: handleAlternateRoomMentionSelect,
+      handleEmoticonSelect: handleAlternateEmoticonSelect,
+      handleCommandSelect: handleAlternateCommandSelect,
+    } = altAutocomplete;
+
     const handleKeyUp: KeyboardEventHandler = useCallback(
       (evt) => {
         if (isKeyHotkey('escape', evt)) {
@@ -518,50 +493,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
 
         if (alternateInput) {
           const el = evt.currentTarget as HTMLDivElement;
-          const domSel = window.getSelection();
-          let query: AutocompleteQuery<AutocompletePrefix> | undefined;
-
-          if (domSel && domSel.rangeCount > 0) {
-            const domRange = domSel.getRangeAt(0);
-            if (
-              domRange.collapsed &&
-              el.contains(domRange.startContainer) &&
-              domRange.startContainer.nodeType === Node.TEXT_NODE
-            ) {
-              // Work within the caret's own text node. This keeps the
-              // replacement surgical so surrounding inline DOM (custom
-              // emojis, etc.) isn't disturbed.
-              const textNode = domRange.startContainer as Text;
-              const caret = domRange.startOffset;
-              const textBefore = textNode.data.slice(0, caret);
-
-              let start = caret;
-              while (start > 0 && textBefore[start - 1] !== ' ') {
-                start -= 1;
-              }
-
-              const word = textBefore.slice(start, caret);
-              const altPrefix = AUTOCOMPLETE_PREFIXES.find((p) => word.startsWith(p));
-              if (altPrefix) {
-                alternateAutocompleteRangeRef.current = {
-                  textNode,
-                  start,
-                  end: caret,
-                };
-                const dummyRange: BaseRange = {
-                  anchor: { path: [0, 0], offset: start },
-                  focus: { path: [0, 0], offset: caret },
-                };
-                query = {
-                  range: dummyRange,
-                  prefix: altPrefix,
-                  text: word.slice(1),
-                };
-              }
-            }
-          }
-
-          setAutocompleteQuery(query);
+          setAutocompleteQuery(altAutocomplete.detectAutocompleteQuery(el));
           return;
         }
 
@@ -571,77 +503,13 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
           : undefined;
         setAutocompleteQuery(query);
       },
-      [editor, sendTypingStatus, hideActivity, alternateInput]
+      [editor, sendTypingStatus, hideActivity, alternateInput, altAutocomplete]
     );
 
     const handleCloseAutocomplete = useCallback(() => {
       setAutocompleteQuery(undefined);
       if (!alternateInput) ReactEditor.focus(editor);
     }, [editor, alternateInput]);
-
-    const syncAlternateInput = useCallback(() => {
-      const el = alternateInputRef.current;
-      if (!el) return;
-      el.dispatchEvent(new Event('input', { bubbles: true }));
-      setHasEditorContent(!isEmptyEditor(editor));
-    }, [alternateInputRef, editor]);
-
-    const replaceAltAutocompleteText = useCallback(
-      (insertText: string) => {
-        const { textNode, start, end } = alternateAutocompleteRangeRef.current;
-        if (!textNode || !textNode.isConnected) return;
-        replaceTextInNode(textNode, start, end, insertText);
-        syncAlternateInput();
-      },
-      [syncAlternateInput]
-    );
-
-    const replaceAltAutocompleteWithNode = useCallback(
-      (node: Node) => {
-        const { textNode, start, end } = alternateAutocompleteRangeRef.current;
-        if (!textNode || !textNode.isConnected) return;
-        replaceRangeWithNode(textNode, start, end, node);
-        syncAlternateInput();
-      },
-      [syncAlternateInput]
-    );
-
-    const handleAlternateMentionSelect = useCallback(
-      (userId: string, name: string) => {
-        const displayName = name.startsWith('@') ? name.slice(1) : name;
-        replaceAltAutocompleteText(`@${displayName} `);
-        alternateMentionsRef.current.push({ userId, displayName });
-      },
-      [replaceAltAutocompleteText]
-    );
-
-    const handleAlternateRoomMentionSelect = useCallback(
-      (roomAliasOrId: string, name: string) => {
-        const displayName = name.startsWith('#') ? name.slice(1) : name;
-        replaceAltAutocompleteText(`#${displayName} `);
-        alternateRoomMentionsRef.current.push({ roomAliasOrId, name: displayName });
-      },
-      [replaceAltAutocompleteText]
-    );
-
-    const handleAlternateEmoticonSelect = useCallback(
-      (key: string, shortcode: string) => {
-        if (key.startsWith('mxc://')) {
-          const node = createAltEmoticonNode({ mx, useAuthentication, key, shortcode });
-          replaceAltAutocompleteWithNode(node);
-          return;
-        }
-        replaceAltAutocompleteText(`${key} `);
-      },
-      [mx, useAuthentication, replaceAltAutocompleteText, replaceAltAutocompleteWithNode]
-    );
-
-    const handleAlternateCommandSelect = useCallback(
-      (commandName: string) => {
-        replaceAltAutocompleteText(`/${commandName} `);
-      },
-      [replaceAltAutocompleteText]
-    );
 
     const handleEmoticonSelect = (key: string, shortcode: string) => {
       if (alternateInput) {

@@ -8,7 +8,7 @@ Durnible is a Matrix chat client built with React, TypeScript, and Vite. Forked 
 | ---------------------- | ----------------------------------------- |
 | `npm start`            | Dev server                                |
 | `npm run build`        | Production build                          |
-| `npm run lint`         | ESLint + Prettier check                   |
+| `npm run lint`         | Prettier write, then ESLint check         |
 | `npm run typecheck`    | TypeScript type checking (`tsc --noEmit`) |
 | `npm test`             | Run tests (Vitest)                        |
 | `npm run test:watch`   | Watch mode tests                          |
@@ -55,6 +55,7 @@ Durnible is a Matrix chat client built with React, TypeScript, and Vite. Forked 
 - Don't use `setTimeout` to work around race conditions in room state — use the SDK's event listeners.
 - Avoid `requestAnimationFrame` if possible — prefer CSS transitions/animations or React state-driven updates.
 - No comments by default. Aim for code that reads on its own — clear names, obvious control flow. Only add a comment when something is genuinely unclear and can't be fixed by renaming or restructuring: a non-obvious invariant, a workaround for a specific bug, or behavior that would surprise a reader. Don't narrate what the code does, don't leave JSDoc on internal helpers, don't reference the current task or PR.
+- Watch for reuse opportunities. Before writing a new helper, check whether an existing utility in `src/app/utils/`, hook in `src/app/hooks/`, or component already does the job. If you're writing something that looks like code elsewhere in the repo, stop and consolidate — extract a shared function rather than duplicating. When editing, flag nearby duplication you notice even if it's out of scope, and ask before refactoring.
 
 ## Testing
 

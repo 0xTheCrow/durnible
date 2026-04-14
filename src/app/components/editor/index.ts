@@ -8,3 +8,4 @@ export * from './Toolbar';
 export * from './input';
 export * from './types';
 export * from './altInput';
+export * from './useAlternateAutocomplete';

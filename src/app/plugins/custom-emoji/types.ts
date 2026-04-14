@@ -33,6 +33,7 @@ export type PackMeta = {
   avatar_url?: string;
   attribution?: string;
   usage?: ImageUsage[];
+  portable?: boolean;
 };
 
 export type PackContent = {
