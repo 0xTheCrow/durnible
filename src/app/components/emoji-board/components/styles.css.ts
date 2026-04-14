@@ -1,4 +1,4 @@
-import { createVar, style } from '@vanilla-extract/css';
+import { createVar, globalStyle, style } from '@vanilla-extract/css';
 import { toRem, color, config, DefaultReset, FocusOutline } from 'folds';
 import { skeletonShimmer } from '../../../styles/Skeleton.css';
 
@@ -118,6 +118,11 @@ export const PreviewImg = style([
 export const EmojiGroup = style({
   position: 'relative',
   padding: `${config.space.S100} 0`,
+});
+
+globalStyle(`${EmojiGroup}[data-group-id="search_group"] button:first-of-type`, {
+  backgroundColor: color.Primary.Container,
+  color: color.Primary.OnContainer,
 });
 
 export const EmojiGroupLabel = style({

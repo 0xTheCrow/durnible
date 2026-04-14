@@ -1,6 +1,7 @@
 import type {
   ChangeEventHandler,
   FocusEventHandler,
+  KeyboardEventHandler,
   MouseEventHandler,
   ReactNode,
   RefObject,
@@ -917,14 +918,10 @@ export function EmojiBoard({
     setContextMenuEmojiInfo(undefined);
   };
 
-  const handleGroupItemClick: MouseEventHandler = (evt) => {
-    const targetEl = targetFromEvent(evt.nativeEvent, 'button');
-    const emojiInfo = targetEl && getEmojiItemInfo(targetEl);
-    if (!emojiInfo) return;
-
+  const selectEmojiInfo = (emojiInfo: EmojiItemInfo, altKey: boolean, shiftKey: boolean) => {
     if (emojiInfo.type === EmojiType.Emoji) {
       onEmojiSelect?.(emojiInfo.data, emojiInfo.shortcode);
-      if (!evt.altKey && !evt.shiftKey && addToRecentEmoji) {
+      if (!altKey && !shiftKey && addToRecentEmoji) {
         addRecentEmoji(mx, emojiInfo.data);
       }
     }
@@ -934,7 +931,37 @@ export function EmojiBoard({
     if (emojiInfo.type === EmojiType.Sticker) {
       onStickerSelect?.(emojiInfo.data, emojiInfo.shortcode, emojiInfo.label);
     }
-    if (!evt.altKey && !evt.shiftKey) requestClose();
+    if (!altKey && !shiftKey) requestClose();
+  };
+
+  const handleGroupItemClick: MouseEventHandler = (evt) => {
+    const targetEl = targetFromEvent(evt.nativeEvent, 'button');
+    const emojiInfo = targetEl && getEmojiItemInfo(targetEl);
+    if (!emojiInfo) return;
+    selectEmojiInfo(emojiInfo, evt.altKey, evt.shiftKey);
+  };
+
+  const handleSearchKeyDown: KeyboardEventHandler<HTMLInputElement> = (evt) => {
+    if (evt.nativeEvent.isComposing) return;
+    if (!isKeyHotkey('enter', evt)) return;
+    const firstItem = searchedItems?.[0];
+    if (!firstItem) return;
+    evt.preventDefault();
+    const emojiInfo: EmojiItemInfo =
+      'unicode' in firstItem
+        ? {
+            type: EmojiType.Emoji,
+            data: firstItem.unicode,
+            shortcode: firstItem.shortcode,
+            label: firstItem.label,
+          }
+        : {
+            type: tab === EmojiBoardTab.Sticker ? EmojiType.Sticker : EmojiType.CustomEmoji,
+            data: firstItem.url,
+            shortcode: firstItem.shortcode,
+            label: firstItem.body || firstItem.shortcode,
+          };
+    selectEmojiInfo(emojiInfo, evt.altKey, evt.shiftKey);
   };
 
   const handleTextCustomEmojiSelect = (textEmoji: string) => {
@@ -1002,6 +1029,7 @@ export function EmojiBoard({
                 key={tab}
                 query={result?.query}
                 onChange={handleOnChange}
+                onKeyDown={handleSearchKeyDown}
                 allowTextCustomEmoji={allowTextCustomEmoji}
                 onTextCustomEmojiSelect={handleTextCustomEmojiSelect}
               />

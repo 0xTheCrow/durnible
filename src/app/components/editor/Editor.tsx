@@ -15,7 +15,7 @@ import { withHistory } from 'slate-history';
 import { BlockType } from './types';
 import { RenderElement, RenderLeaf } from './Elements';
 import type { CustomElement } from './slate';
-import { insertNodeAtRange, serializeAltInput } from './altInput';
+import { handleAltInputBackspace, insertNodeAtRange, serializeAltInput } from './altInput';
 import * as css from './Editor.css';
 import { toggleKeyboardShortcut } from './keyboard';
 import { getImageUrlBlob } from '../../utils/dom';
@@ -234,6 +234,17 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
     const handleBeforeInput: React.FormEventHandler<HTMLDivElement> = useCallback(
       (e) => {
         const ie = e.nativeEvent as InputEvent;
+
+        if (ie.inputType === 'deleteContentBackward') {
+          const sel = window.getSelection();
+          const el = inputRef.current;
+          if (sel && sel.rangeCount > 0 && el && handleAltInputBackspace(el, sel.getRangeAt(0))) {
+            e.preventDefault();
+            syncAltInputState();
+          }
+          return;
+        }
+
         if (ie.inputType !== 'insertContent' || !ie.dataTransfer) return;
 
         const items = Array.from(ie.dataTransfer.items);
@@ -263,7 +274,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
           });
         }
       },
-      [onFiles, fetchUrlAsFile]
+      [onFiles, fetchUrlAsFile, syncAltInputState]
     );
 
     const handleInputKeyDown: KeyboardEventHandler<HTMLDivElement> = useCallback(

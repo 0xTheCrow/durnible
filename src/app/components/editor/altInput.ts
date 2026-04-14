@@ -225,6 +225,30 @@ const ensureLeadingAnchor = (node: Node) => {
   node.parentNode?.insertBefore(document.createTextNode(INLINE_VOID_CARET_ANCHOR), node);
 };
 
+const isAltVoidElement = (node: Node): boolean => {
+  if (node.nodeType !== Node.ELEMENT_NODE) return false;
+  return (node as HTMLElement).hasAttribute(ALT_NODE_ATTR);
+};
+
+export const handleAltInputBackspace = (el: HTMLElement, range: Range): boolean => {
+  if (!range.collapsed) return false;
+  const textNode = el.firstChild;
+  if (!textNode || textNode.nodeType !== Node.TEXT_NODE) return false;
+  if ((textNode as Text).data !== INLINE_VOID_CARET_ANCHOR) return false;
+
+  const { startContainer, startOffset } = range;
+  const atAnchor =
+    (startContainer === textNode && startOffset <= INLINE_VOID_CARET_ANCHOR.length) ||
+    (startContainer === el && startOffset === 0);
+  if (!atAnchor) return false;
+
+  const next = textNode.nextSibling;
+  if (!next || !isAltVoidElement(next)) return false;
+
+  el.removeChild(next);
+  return true;
+};
+
 export const insertNodeAtRange = (el: HTMLElement, savedRange: Range | null, node: Node): Range => {
   const range = savedRange ? savedRange.cloneRange() : document.createRange();
   if (!savedRange || !el.contains(range.startContainer)) {
