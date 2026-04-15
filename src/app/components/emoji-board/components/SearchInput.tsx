@@ -1,4 +1,4 @@
-import type { ChangeEventHandler } from 'react';
+import type { ChangeEventHandler, KeyboardEventHandler } from 'react';
 import React, { useRef } from 'react';
 import { Input, Chip, Icon, Icons, Text } from 'folds';
 import { mobileOrTablet } from '../../../utils/user-agent';
@@ -6,12 +6,14 @@ import { mobileOrTablet } from '../../../utils/user-agent';
 type SearchInputProps = {
   query?: string;
   onChange: ChangeEventHandler<HTMLInputElement>;
+  onKeyDown?: KeyboardEventHandler<HTMLInputElement>;
   allowTextCustomEmoji?: boolean;
   onTextCustomEmojiSelect?: (text: string) => void;
 };
 export function SearchInput({
   query,
   onChange,
+  onKeyDown,
   allowTextCustomEmoji,
   onTextCustomEmojiSelect,
 }: SearchInputProps) {
@@ -46,6 +48,7 @@ export function SearchInput({
         )
       }
       onChange={onChange}
+      onKeyDown={onKeyDown}
       autoFocus={!mobileOrTablet()}
     />
   );

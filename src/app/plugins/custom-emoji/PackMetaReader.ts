@@ -40,6 +40,10 @@ export class PackMetaReader {
     return knownUsage;
   }
 
+  get portable(): boolean {
+    return this.meta.portable === true;
+  }
+
   get content(): PackMeta {
     return this.meta;
   }

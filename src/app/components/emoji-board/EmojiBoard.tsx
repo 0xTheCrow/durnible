@@ -1,6 +1,7 @@
 import type {
   ChangeEventHandler,
   FocusEventHandler,
+  KeyboardEventHandler,
   MouseEventHandler,
   ReactNode,
   RefObject,
@@ -27,7 +28,7 @@ import type { PrimitiveAtom } from 'jotai';
 import { atom, useAtom, useSetAtom } from 'jotai';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { monitorForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
-import type { IEmoji } from '../../plugins/emoji';
+import type { Emoji } from '../../plugins/emoji';
 import { emojiGroups, emojis } from '../../plugins/emoji';
 import { useEmojiGroupLabels } from './useEmojiGroupLabels';
 import { useEmojiGroupIcons } from './useEmojiGroupIcons';
@@ -39,7 +40,6 @@ import { isUserId, mxcUrlToHttp } from '../../utils/matrix';
 import { editableActiveElement, targetFromEvent } from '../../utils/dom';
 import type { UseAsyncSearchOptions } from '../../hooks/useAsyncSearch';
 import { useAsyncSearch } from '../../hooks/useAsyncSearch';
-import { useDebounce } from '../../hooks/useDebounce';
 import { useThrottle } from '../../hooks/useThrottle';
 import { addRecentEmoji } from '../../plugins/recent-emoji';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
@@ -87,7 +87,7 @@ const SEARCH_GROUP_ID = 'search_group';
 type EmojiGroupItem = {
   id: string;
   name: string;
-  items: Array<IEmoji | PackImageReader>;
+  items: Array<Emoji | PackImageReader>;
 };
 type StickerGroupItem = {
   id: string;
@@ -99,7 +99,7 @@ const useGroups = (
   tab: EmojiBoardTab,
   imagePacks: ImagePack[],
   packOrder: string[],
-  favoriteEmojis: Array<IEmoji | PackImageReader>
+  favoriteEmojis: Array<Emoji | PackImageReader>
 ): [EmojiGroupItem[], StickerGroupItem[]] => {
   const mx = useMatrixClient();
 
@@ -207,7 +207,7 @@ const useItemRenderer = (tab: EmojiBoardTab) => {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
 
-  const renderItem = (emoji: IEmoji | PackImageReader, index: number) => {
+  const renderItem = (emoji: Emoji | PackImageReader, index: number) => {
     if ('unicode' in emoji) {
       return <EmojiItem key={emoji.unicode + index} emoji={emoji} />;
     }
@@ -846,7 +846,7 @@ export function EmojiBoard({
   const renderItem = useItemRenderer(tab);
 
   const searchList = useMemo(() => {
-    let list: Array<PackImageReader | IEmoji> = [];
+    let list: Array<PackImageReader | Emoji> = [];
     list = list.concat(imagePacks.flatMap((pack) => pack.getImages(usage)));
     if (emojiTab) list = list.concat(emojis);
     return list;
@@ -860,16 +860,13 @@ export function EmojiBoard({
 
   const searchedItems = result?.items.slice(0, 100);
 
-  const handleOnChange: ChangeEventHandler<HTMLInputElement> = useDebounce(
-    useCallback(
-      (evt) => {
-        const term = evt.target.value;
-        if (term) search(term);
-        else resetSearch();
-      },
-      [search, resetSearch]
-    ),
-    { wait: 200 }
+  const handleOnChange: ChangeEventHandler<HTMLInputElement> = useCallback(
+    (evt) => {
+      const term = evt.target.value;
+      if (term) search(term);
+      else resetSearch();
+    },
+    [search, resetSearch]
   );
 
   const contentScrollRef = useRef<HTMLDivElement>(null);
@@ -917,14 +914,10 @@ export function EmojiBoard({
     setContextMenuEmojiInfo(undefined);
   };
 
-  const handleGroupItemClick: MouseEventHandler = (evt) => {
-    const targetEl = targetFromEvent(evt.nativeEvent, 'button');
-    const emojiInfo = targetEl && getEmojiItemInfo(targetEl);
-    if (!emojiInfo) return;
-
+  const selectEmojiInfo = (emojiInfo: EmojiItemInfo, altKey: boolean, shiftKey: boolean) => {
     if (emojiInfo.type === EmojiType.Emoji) {
       onEmojiSelect?.(emojiInfo.data, emojiInfo.shortcode);
-      if (!evt.altKey && !evt.shiftKey && addToRecentEmoji) {
+      if (!altKey && !shiftKey && addToRecentEmoji) {
         addRecentEmoji(mx, emojiInfo.data);
       }
     }
@@ -934,7 +927,37 @@ export function EmojiBoard({
     if (emojiInfo.type === EmojiType.Sticker) {
       onStickerSelect?.(emojiInfo.data, emojiInfo.shortcode, emojiInfo.label);
     }
-    if (!evt.altKey && !evt.shiftKey) requestClose();
+    if (!altKey && !shiftKey) requestClose();
+  };
+
+  const handleGroupItemClick: MouseEventHandler = (evt) => {
+    const targetEl = targetFromEvent(evt.nativeEvent, 'button');
+    const emojiInfo = targetEl && getEmojiItemInfo(targetEl);
+    if (!emojiInfo) return;
+    selectEmojiInfo(emojiInfo, evt.altKey, evt.shiftKey);
+  };
+
+  const handleSearchKeyDown: KeyboardEventHandler<HTMLInputElement> = (evt) => {
+    if (evt.nativeEvent.isComposing) return;
+    if (!isKeyHotkey('enter', evt)) return;
+    const firstItem = searchedItems?.[0];
+    if (!firstItem) return;
+    evt.preventDefault();
+    const emojiInfo: EmojiItemInfo =
+      'unicode' in firstItem
+        ? {
+            type: EmojiType.Emoji,
+            data: firstItem.unicode,
+            shortcode: firstItem.shortcode,
+            label: firstItem.label,
+          }
+        : {
+            type: tab === EmojiBoardTab.Sticker ? EmojiType.Sticker : EmojiType.CustomEmoji,
+            data: firstItem.url,
+            shortcode: firstItem.shortcode,
+            label: firstItem.body || firstItem.shortcode,
+          };
+    selectEmojiInfo(emojiInfo, evt.altKey, evt.shiftKey);
   };
 
   const handleTextCustomEmojiSelect = (textEmoji: string) => {
@@ -1002,6 +1025,7 @@ export function EmojiBoard({
                 key={tab}
                 query={result?.query}
                 onChange={handleOnChange}
+                onKeyDown={handleSearchKeyDown}
                 allowTextCustomEmoji={allowTextCustomEmoji}
                 onTextCustomEmojiSelect={handleTextCustomEmojiSelect}
               />

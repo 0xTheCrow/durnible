@@ -2,7 +2,7 @@ import { useCallback, useMemo } from 'react';
 import type { MatrixClient, Room, RoomMember } from 'matrix-js-sdk';
 import type { PowerLevelTags } from './usePowerLevelTags';
 import { getPowerLevelTag, usePowerLevelTags } from './usePowerLevelTags';
-import type { IPowerLevels } from './usePowerLevels';
+import type { PowerLevels } from './usePowerLevels';
 import { readPowerLevel } from './usePowerLevels';
 import type { MemberPowerTag, MemberPowerTagIcon } from '../../types/matrix/room';
 import { useRoomCreatorsTag } from './useRoomCreatorsTag';
@@ -14,7 +14,7 @@ export type GetMemberPowerTag = (userId: string) => MemberPowerTag;
 export const useGetMemberPowerTag = (
   room: Room,
   creators: Set<string>,
-  powerLevels: IPowerLevels
+  powerLevels: PowerLevels
 ) => {
   const creatorsTag = useRoomCreatorsTag();
   const powerLevelTags = usePowerLevelTags(room, powerLevels);

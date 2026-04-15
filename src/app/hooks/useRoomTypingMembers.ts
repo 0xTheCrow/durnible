@@ -1,7 +1,7 @@
 import { useAtomValue } from 'jotai';
 import { selectAtom } from 'jotai/utils';
 import { useCallback } from 'react';
-import type { IRoomIdToTypingMembers, TypingReceipt } from '../state/typingMembers';
+import type { RoomIdToTypingMembers, TypingReceipt } from '../state/typingMembers';
 import { roomIdToTypingMembersAtom } from '../state/typingMembers';
 
 const typingReceiptEqual = (a: TypingReceipt, b: TypingReceipt): boolean =>
@@ -14,7 +14,7 @@ const equalTypingMembers = (x: TypingReceipt[], y: TypingReceipt[]): boolean => 
 
 export const useRoomTypingMember = (roomId: string) => {
   const selector = useCallback(
-    (roomToTyping: IRoomIdToTypingMembers) => roomToTyping.get(roomId) ?? [],
+    (roomToTyping: RoomIdToTypingMembers) => roomToTyping.get(roomId) ?? [],
     [roomId]
   );
 

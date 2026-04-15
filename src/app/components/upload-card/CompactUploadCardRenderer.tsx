@@ -1,17 +1,17 @@
 import React, { useEffect } from 'react';
 import { Chip, Icon, IconButton, Icons, Text, color } from 'folds';
 import { UploadCard, UploadCardError, CompactUploadCardProgress } from './UploadCard';
-import type { TUploadAtom, UploadSuccess } from '../../state/upload';
+import type { UploadAtom, UploadSuccess } from '../../state/upload';
 import { UploadStatus, useBindUploadAtom } from '../../state/upload';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
-import type { TUploadContent } from '../../utils/matrix';
+import type { UploadContent } from '../../utils/matrix';
 import { bytesToSize, getFileTypeIcon } from '../../utils/common';
 import { useMediaConfig } from '../../hooks/useMediaConfig';
 
 type CompactUploadCardRendererProps = {
   isEncrypted?: boolean;
-  uploadAtom: TUploadAtom;
-  onRemove: (file: TUploadContent) => void;
+  uploadAtom: UploadAtom;
+  onRemove: (file: UploadContent) => void;
   onComplete?: (upload: UploadSuccess) => void;
 };
 export function CompactUploadCardRenderer({

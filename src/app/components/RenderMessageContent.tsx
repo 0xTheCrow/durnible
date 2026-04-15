@@ -5,10 +5,10 @@ import type { HTMLReactParserOptions } from 'html-react-parser';
 import type { Opts } from 'linkifyjs';
 import { config } from 'folds';
 import {
-  AudioContent,
+  AudioContent as AudioContentView,
   DownloadFile,
-  FileContent,
-  ImageContent,
+  FileContent as FileContentView,
+  ImageContent as ImageContentView,
   ImageGrid,
   MAudio,
   MBadEncrypted,
@@ -22,9 +22,9 @@ import {
   ReadPdfFile,
   ReadTextFile,
   RenderBody,
-  ThumbnailContent,
+  ThumbnailContent as ThumbnailContentView,
   UnsupportedContent,
-  VideoContent,
+  VideoContent as VideoContentView,
 } from './message';
 import { YouTubeEmbed, SpotifyEmbed, SoundCloudEmbed, NitterEmbed } from './url-preview';
 import { Image, MediaControl, Video } from './media';
@@ -43,10 +43,10 @@ import {
 } from '../utils/embeds';
 import { settingsAtom } from '../state/settings';
 import type {
-  IAudioContent,
-  IFileContent,
-  IImageContent,
-  IVideoContent,
+  AudioContent,
+  FileContent,
+  ImageContent,
+  VideoContent,
 } from '../../types/matrix/common';
 import { getBlobSafeMimeType } from '../utils/mimeTypes';
 
@@ -86,7 +86,7 @@ type RenderMessageContentProps = {
    * contains every image content (including this one) and the renderer
    * displays them as a single grid instead of a single image.
    */
-  groupedImages?: IImageContent[];
+  groupedImages?: ImageContent[];
   mediaAutoLoad?: boolean;
   urlPreview?: boolean;
   highlightRegex?: RegExp;
@@ -196,7 +196,7 @@ function RenderMessageContentInner({
     );
   };
   const renderCaption = () => {
-    const imageContent = content as IImageContent;
+    const imageContent = content as ImageContent;
     if (imageContent.filename && imageContent.filename !== imageContent.body) {
       return (
         <MText
@@ -221,9 +221,9 @@ function RenderMessageContentInner({
   const renderFile = () => (
     <>
       <MFile
-        content={content as IFileContent}
+        content={content as FileContent}
         renderFileContent={({ body, mimeType, info, encInfo, url }) => (
-          <FileContent
+          <FileContentView
             body={body}
             mimeType={mimeType}
             renderAsPdfFile={() => (
@@ -246,7 +246,7 @@ function RenderMessageContentInner({
             )}
           >
             <DownloadFile body={body} mimeType={mimeType} url={url} encInfo={encInfo} info={info} />
-          </FileContent>
+          </FileContentView>
         )}
         outlined={outlineAttachment}
       />
@@ -321,9 +321,9 @@ function RenderMessageContentInner({
     return (
       <>
         <MImage
-          content={content as IImageContent}
+          content={content as ImageContent}
           renderImageContent={(props) => (
-            <ImageContent
+            <ImageContentView
               {...props}
               autoPlay={mediaAutoLoad}
               renderImage={(p) => <Image {...p} loading="lazy" />}
@@ -339,17 +339,17 @@ function RenderMessageContentInner({
     return (
       <>
         <MVideo
-          content={content as IVideoContent}
+          content={content as VideoContent}
           renderAsFile={renderFile}
           renderVideoContent={({ body, info, ...props }) => (
-            <VideoContent
+            <VideoContentView
               body={body}
               info={info}
               {...props}
               renderThumbnail={
                 mediaAutoLoad
                   ? () => (
-                      <ThumbnailContent
+                      <ThumbnailContentView
                         info={info}
                         renderImage={(src) => (
                           <Image alt={body} title={body} src={src} loading="lazy" />
@@ -372,10 +372,10 @@ function RenderMessageContentInner({
     return (
       <>
         <MAudio
-          content={content as IAudioContent}
+          content={content as AudioContent}
           renderAsFile={renderFile}
           renderAudioContent={(props) => (
-            <AudioContent {...props} renderMediaControl={(p) => <MediaControl {...p} />} />
+            <AudioContentView {...props} renderMediaControl={(p) => <MediaControl {...p} />} />
           )}
           outlined={outlineAttachment}
         />
@@ -385,7 +385,7 @@ function RenderMessageContentInner({
   }
 
   if (msgType === MsgType.File) {
-    const fileContent = content as IAudioContent;
+    const fileContent = content as AudioContent;
     const fileMimeType = getBlobSafeMimeType(fileContent.info?.mimetype ?? '');
     if (fileMimeType.startsWith('audio')) {
       return (
@@ -394,7 +394,7 @@ function RenderMessageContentInner({
             content={fileContent}
             renderAsFile={renderFile}
             renderAudioContent={(props) => (
-              <AudioContent {...props} renderMediaControl={(p) => <MediaControl {...p} />} />
+              <AudioContentView {...props} renderMediaControl={(p) => <MediaControl {...p} />} />
             )}
             outlined={outlineAttachment}
           />

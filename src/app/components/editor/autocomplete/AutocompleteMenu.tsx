@@ -30,7 +30,7 @@ export function AutocompleteMenu({ headerContent, requestClose, children }: Auto
           focusTrapOptions={{
             initialFocus: false,
             onPostDeactivate: handleDeactivate,
-            returnFocusOnDeactivate: false,
+            returnFocusOnDeactivate: true,
             clickOutsideDeactivates: true,
             allowOutsideClick: true,
             isKeyForward: (evt: KeyboardEvent) => isKeyHotkey('arrowdown', evt),

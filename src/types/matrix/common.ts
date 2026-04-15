@@ -6,7 +6,7 @@ export const MATRIX_SPOILER_PROPERTY_NAME = 'page.codeberg.everypizza.msc4193.sp
 export const MATRIX_SPOILER_REASON_PROPERTY_NAME =
   'page.codeberg.everypizza.msc4193.spoiler.reason';
 
-export type IImageInfo = {
+export type ImageInfo = {
   w?: number;
   h?: number;
   mimetype?: string;
@@ -14,7 +14,7 @@ export type IImageInfo = {
   [MATRIX_BLUR_HASH_PROPERTY_NAME]?: string;
 };
 
-export type IVideoInfo = {
+export type VideoInfo = {
   w?: number;
   h?: number;
   mimetype?: string;
@@ -22,70 +22,70 @@ export type IVideoInfo = {
   duration?: number;
 };
 
-export type IAudioInfo = {
+export type AudioInfo = {
   mimetype?: string;
   size?: number;
   duration?: number;
 };
 
-export type IFileInfo = {
+export type FileInfo = {
   mimetype?: string;
   size?: number;
 };
 
-export type IEncryptedFile = EncryptedAttachmentInfo & {
+export type EncryptedFile = EncryptedAttachmentInfo & {
   url: string;
 };
 
-export type IThumbnailContent = {
-  thumbnail_info?: IImageInfo;
-  thumbnail_file?: IEncryptedFile;
+export type ThumbnailContent = {
+  thumbnail_info?: ImageInfo;
+  thumbnail_file?: EncryptedFile;
   thumbnail_url?: string;
 };
 
-export type IImageContent = {
+export type ImageContent = {
   msgtype: MsgType.Image;
   body?: string;
   filename?: string;
   url?: string;
-  info?: IImageInfo & IThumbnailContent;
-  file?: IEncryptedFile;
+  info?: ImageInfo & ThumbnailContent;
+  file?: EncryptedFile;
   [MATRIX_SPOILER_PROPERTY_NAME]?: boolean;
   [MATRIX_SPOILER_REASON_PROPERTY_NAME]?: string;
 };
 
-export type IVideoContent = {
+export type VideoContent = {
   msgtype: MsgType.Video;
   body?: string;
   filename?: string;
   url?: string;
-  info?: IVideoInfo & IThumbnailContent;
-  file?: IEncryptedFile;
+  info?: VideoInfo & ThumbnailContent;
+  file?: EncryptedFile;
   [MATRIX_SPOILER_PROPERTY_NAME]?: boolean;
   [MATRIX_SPOILER_REASON_PROPERTY_NAME]?: string;
 };
 
-export type IAudioContent = {
+export type AudioContent = {
   msgtype: MsgType.Audio;
   body?: string;
   filename?: string;
   url?: string;
-  info?: IAudioInfo;
-  file?: IEncryptedFile;
+  info?: AudioInfo;
+  file?: EncryptedFile;
 };
 
-export type IFileContent = {
+export type FileContent = {
   msgtype: MsgType.File;
   body?: string;
   filename?: string;
   url?: string;
-  info?: IFileInfo & IThumbnailContent;
-  file?: IEncryptedFile;
+  info?: FileInfo & ThumbnailContent;
+  file?: EncryptedFile;
 };
 
-export type ILocationContent = {
+export type LocationContent = {
   msgtype: MsgType.Location;
   body?: string;
   geo_uri?: string;
-  info?: IThumbnailContent;
+  info?: ThumbnailContent;
 };

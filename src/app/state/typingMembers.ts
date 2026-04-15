@@ -12,7 +12,7 @@ export type TypingReceipt = {
   userId: string;
   ts: number;
 };
-export type IRoomIdToTypingMembers = Map<string, TypingReceipt[]>;
+export type RoomIdToTypingMembers = Map<string, TypingReceipt[]>;
 
 type TypingMemberPutAction = {
   type: 'PUT';
@@ -25,14 +25,14 @@ type TypingMemberDeleteAction = {
   roomId: string;
   userId: string;
 };
-export type IRoomIdToTypingMembersAction = TypingMemberPutAction | TypingMemberDeleteAction;
+export type RoomIdToTypingMembersAction = TypingMemberPutAction | TypingMemberDeleteAction;
 
-const baseRoomIdToTypingMembersAtom = atom<IRoomIdToTypingMembers>(new Map());
+const baseRoomIdToTypingMembersAtom = atom<RoomIdToTypingMembers>(new Map());
 
 const putTypingMember = (
-  roomToMembers: IRoomIdToTypingMembers,
+  roomToMembers: RoomIdToTypingMembers,
   action: TypingMemberPutAction
-): IRoomIdToTypingMembers => {
+): RoomIdToTypingMembers => {
   let typingMembers = roomToMembers.get(action.roomId) ?? [];
 
   typingMembers = typingMembers.filter((receipt) => receipt.userId !== action.userId);
@@ -45,9 +45,9 @@ const putTypingMember = (
 };
 
 const deleteTypingMember = (
-  roomToMembers: IRoomIdToTypingMembers,
+  roomToMembers: RoomIdToTypingMembers,
   action: TypingMemberDeleteAction
-): IRoomIdToTypingMembers => {
+): RoomIdToTypingMembers => {
   let typingMembers = roomToMembers.get(action.roomId) ?? [];
 
   typingMembers = typingMembers.filter((receipt) => receipt.userId !== action.userId);
@@ -60,7 +60,7 @@ const deleteTypingMember = (
 };
 
 const timeoutReceipt = (
-  roomToMembers: IRoomIdToTypingMembers,
+  roomToMembers: RoomIdToTypingMembers,
   roomId: string,
   userId: string,
   timeout: number
@@ -74,8 +74,8 @@ const timeoutReceipt = (
 };
 
 export const roomIdToTypingMembersAtom = atom<
-  IRoomIdToTypingMembers,
-  [IRoomIdToTypingMembersAction],
+  RoomIdToTypingMembers,
+  [RoomIdToTypingMembersAction],
   undefined
 >(
   (get) => get(baseRoomIdToTypingMembersAtom),

@@ -4,10 +4,10 @@ import type { FavoriteEmojiEntry } from '../plugins/favorite-emoji';
 import { getFavoriteEmojis, getFavoriteEmojiItems } from '../plugins/favorite-emoji';
 import { AccountDataEvent } from '../../types/matrix/accountData';
 import { useAccountDataCallback } from './useAccountDataCallback';
-import type { IEmoji } from '../plugins/emoji';
+import type { Emoji } from '../plugins/emoji';
 import type { PackImageReader } from '../plugins/custom-emoji';
 
-export const useFavoriteEmoji = (mx: MatrixClient): Array<IEmoji | PackImageReader> => {
+export const useFavoriteEmoji = (mx: MatrixClient): Array<Emoji | PackImageReader> => {
   const [items, setItems] = useState(() => getFavoriteEmojiItems(mx));
 
   useAccountDataCallback(

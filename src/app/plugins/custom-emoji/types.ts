@@ -1,4 +1,4 @@
-import type { IImageInfo } from '../../../types/matrix/common';
+import type { ImageInfo } from '../../../types/matrix/common';
 
 // https://github.com/Sorunome/matrix-doc/blob/soru/emotes/proposals/2545-emotes.md
 
@@ -23,7 +23,7 @@ export type PackImage = {
   url: string;
   body?: string;
   usage?: ImageUsage[];
-  info?: IImageInfo;
+  info?: ImageInfo;
 };
 
 export type PackImages = Record<string, PackImage>;
@@ -33,6 +33,7 @@ export type PackMeta = {
   avatar_url?: string;
   attribution?: string;
   usage?: ImageUsage[];
+  portable?: boolean;
 };
 
 export type PackContent = {

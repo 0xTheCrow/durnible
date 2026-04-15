@@ -14,7 +14,7 @@ import {
 } from 'folds';
 import FileSaver from 'file-saver';
 import type { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
-import type { IFileInfo } from '../../../../types/matrix/common';
+import type { FileInfo } from '../../../../types/matrix/common';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { bytesToSize } from '../../../utils/common';
@@ -211,7 +211,7 @@ export type DownloadFileProps = {
   body: string;
   mimeType: string;
   url: string;
-  info: IFileInfo;
+  info: FileInfo;
   encInfo?: EncryptedAttachmentInfo;
 };
 export function DownloadFile({ body, mimeType, url, info, encInfo }: DownloadFileProps) {

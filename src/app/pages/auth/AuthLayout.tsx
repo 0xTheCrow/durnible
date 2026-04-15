@@ -134,9 +134,9 @@ export function AuthLayout() {
         <Box direction="Column" className={css.AuthCard} data-testid="auth-card">
           <Header className={css.AuthHeader} size="600" variant="Surface">
             <Box grow="Yes" direction="Row" gap="300" alignItems="Center">
-              <img className={css.AuthLogo} src={CinnySVG} alt="Cinny Logo" />
+              <img className={css.AuthLogo} src={CinnySVG} alt="Durnible Logo" />
               <Text size="H3" data-testid="auth-brand">
-                Cinny
+                Durnible
               </Text>
             </Box>
           </Header>

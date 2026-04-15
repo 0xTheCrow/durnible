@@ -7,13 +7,13 @@ import { getAccountData, isSpace } from '../utils/room';
 import { Membership } from '../../types/matrix/room';
 import { useAccountDataCallback } from './useAccountDataCallback';
 
-export type ISidebarFolder = {
+export type SidebarFolder = {
   name?: string;
   id: string;
   content: string[];
 };
-export type TSidebarItem = string | ISidebarFolder;
-export type SidebarItems = Array<TSidebarItem>;
+export type SidebarItem = string | SidebarFolder;
+export type SidebarItems = Array<SidebarItem>;
 
 export type InCinnySpacesContent = {
   shortcut?: string[];

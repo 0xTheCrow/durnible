@@ -1,6 +1,6 @@
 import { MsgType } from 'matrix-js-sdk';
 import type { EventTimelineSet, MatrixEvent } from 'matrix-js-sdk';
-import type { IImageContent } from '../../types/matrix/common';
+import type { ImageContent } from '../../types/matrix/common';
 import { MessageEvent } from '../../types/matrix/room';
 import { reactionOrEditEvent } from './room';
 import { inSameDay, minuteDifference } from './time';
@@ -49,7 +49,7 @@ export type TimelineItem =
        * the entire grid; the other events in the group are filtered out of
        * the timeline output.
        */
-      groupedImages?: IImageContent[];
+      groupedImages?: ImageContent[];
     }
   | { type: 'new-messages'; key: string }
   | { type: 'day-divider'; key: string; ts: number };
@@ -83,7 +83,7 @@ export function buildTimelineDescriptors(
   // the same sender within IMAGE_GROUP_WINDOW_MS of each other (using the
   // previous image's timestamp as the rolling reference). Each group is keyed
   // by its anchor mEventId; the absorbed events are skipped by the main loop.
-  const imageGroups = new Map<string, IImageContent[]>();
+  const imageGroups = new Map<string, ImageContent[]>();
   const absorbedToAnchor = new Map<string, string>();
 
   for (let i = 0; i < events.length; i += 1) {
@@ -92,7 +92,7 @@ export function buildTimelineDescriptors(
     if (!willRender(anchor.mEvent)) continue;
     if (!isPlainImageEvent(anchor.mEvent)) continue;
 
-    const groupContents: IImageContent[] = [anchor.mEvent.getContent() as IImageContent];
+    const groupContents: ImageContent[] = [anchor.mEvent.getContent() as ImageContent];
     const groupIds: string[] = [];
     let lastTs = anchor.mEvent.getTs();
     const sender = anchor.mEvent.getSender();
@@ -108,7 +108,7 @@ export function buildTimelineDescriptors(
       // Don't merge images that span a day boundary — the day-divider would
       // otherwise be hidden inside the group.
       if (!inSameDay(lastTs, nextTs)) break;
-      groupContents.push(next.mEvent.getContent() as IImageContent);
+      groupContents.push(next.mEvent.getContent() as ImageContent);
       groupIds.push(next.mEventId);
       lastTs = nextTs;
     }

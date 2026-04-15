@@ -9,10 +9,14 @@ import type {
 } from '../utils/AsyncSearch';
 import { AsyncSearch, normalize, matchQuery } from '../utils/AsyncSearch';
 import { sanitizeForRegex } from '../utils/regex';
+import { useDebounce } from './useDebounce';
+
+const DEFAULT_DEBOUNCE_WAIT = 200;
 
 export type UseAsyncSearchOptions = AsyncSearchOption & {
   matchOptions?: MatchQueryOption;
   normalizeOptions?: NormalizeOption;
+  debounce?: boolean | number;
 };
 
 export type SearchItemStrGetter<TSearchItem extends object | string | number> = (
@@ -110,8 +114,6 @@ export const useAsyncSearch = <TSearchItem extends object | string | number>(
   const [result, setResult] = useState<UseAsyncSearchResult<TSearchItem>>();
 
   const [searchCallback, terminateSearch] = useMemo(() => {
-    setResult(undefined);
-
     const handleMatch: MatchHandler<TSearchItem> = (item, query) => {
       const itemStr = getItemStr(item, query);
 
@@ -136,6 +138,15 @@ export const useAsyncSearch = <TSearchItem extends object | string | number>(
     [searchCallback, options?.normalizeOptions]
   );
 
+  const debounceWait =
+    options?.debounce === true
+      ? DEFAULT_DEBOUNCE_WAIT
+      : typeof options?.debounce === 'number'
+      ? options.debounce
+      : 0;
+  const debouncedSearchHandler = useDebounce(searchHandler, { wait: debounceWait });
+  const effectiveSearchHandler = debounceWait > 0 ? debouncedSearchHandler : searchHandler;
+
   const resetHandler: SearchResetHandler = useCallback(() => {
     terminateSearch();
     setResult(undefined);
@@ -149,5 +160,5 @@ export const useAsyncSearch = <TSearchItem extends object | string | number>(
     [terminateSearch]
   );
 
-  return [result, searchHandler, resetHandler];
+  return [result, effectiveSearchHandler, resetHandler];
 };

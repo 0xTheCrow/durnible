@@ -17,7 +17,7 @@ import classNames from 'classnames';
 import { BlurhashCanvas } from 'react-blurhash';
 import type { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
 import { useAtom } from 'jotai';
-import type { IThumbnailContent, IVideoInfo } from '../../../../types/matrix/common';
+import type { ThumbnailContent, VideoInfo } from '../../../../types/matrix/common';
 import { MATRIX_BLUR_HASH_PROPERTY_NAME } from '../../../../types/matrix/common';
 import * as css from './style.css';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
@@ -45,7 +45,7 @@ type VideoContentProps = {
   body: string;
   mimeType: string;
   url: string;
-  info: IVideoInfo & IThumbnailContent;
+  info: VideoInfo & ThumbnailContent;
   encInfo?: EncryptedAttachmentInfo;
   autoPlay?: boolean;
   markedAsSpoiler?: boolean;

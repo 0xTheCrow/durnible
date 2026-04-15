@@ -19,7 +19,7 @@ import { getMxIdLocalPart, mxcUrlToHttp } from '../../utils/matrix';
 import { useMatrixEventRenderer } from '../../hooks/useMatrixEventRenderer';
 import type { GetContentCallback } from '../../../types/matrix/room';
 import { MessageEvent, StateEvent } from '../../../types/matrix/room';
-import type { IEncryptedFile, IImageInfo } from '../../../types/matrix/common';
+import type { EncryptedFile, ImageInfo } from '../../../types/matrix/common';
 import {
   AvatarBase,
   ImageContent,
@@ -339,8 +339,8 @@ export function SearchResultGroup({
                               body={(img.content.body as string) ?? 'Image'}
                               mimeType={info?.mimetype as string | undefined}
                               url={imgUrl}
-                              info={info as unknown as IImageInfo}
-                              encInfo={img.content.file as unknown as IEncryptedFile}
+                              info={info as unknown as ImageInfo}
+                              encInfo={img.content.file as unknown as EncryptedFile}
                               autoPlay={mediaAutoLoad}
                               renderImage={(p) => <Image {...p} loading="lazy" />}
                             />

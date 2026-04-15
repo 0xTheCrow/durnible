@@ -27,7 +27,6 @@ import { MemberTile } from '../../../components/member-tile';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
 import { getMxIdLocalPart, getMxIdServer } from '../../../utils/matrix';
 import { ServerBadge } from '../../../components/server-badge';
-import { useDebounce } from '../../../hooks/useDebounce';
 import type { SearchItemStrGetter, UseAsyncSearchOptions } from '../../../hooks/useAsyncSearch';
 import { useAsyncSearch } from '../../../hooks/useAsyncSearch';
 import { getMemberSearchStr } from '../../../utils/room';
@@ -115,15 +114,12 @@ export function Members({ requestClose }: MembersProps) {
     overscan: 10,
   });
 
-  const handleSearchChange: ChangeEventHandler<HTMLInputElement> = useDebounce(
-    useCallback(
-      (evt) => {
-        if (evt.target.value) search(evt.target.value);
-        else resetSearch();
-      },
-      [search, resetSearch]
-    ),
-    { wait: 200 }
+  const handleSearchChange: ChangeEventHandler<HTMLInputElement> = useCallback(
+    (evt) => {
+      if (evt.target.value) search(evt.target.value);
+      else resetSearch();
+    },
+    [search, resetSearch]
   );
 
   const handleSearchReset = () => {

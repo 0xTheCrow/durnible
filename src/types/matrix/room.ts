@@ -1,4 +1,4 @@
-import type { IImageInfo } from './common';
+import type { ImageInfo } from './common';
 
 export enum Membership {
   Invite = 'invite',
@@ -8,7 +8,7 @@ export enum Membership {
   Ban = 'ban',
 }
 
-export type IMemberContent = {
+export type MemberContent = {
   avatar_url?: string;
   displayname?: string;
   membership?: Membership;
@@ -68,7 +68,7 @@ export enum NotificationType {
   Mute = 'mute',
 }
 
-export type IRoomCreateContent = {
+export type RoomCreateContent = {
   creator?: string;
   ['m.federate']?: boolean;
   room_version: string;
@@ -102,7 +102,7 @@ export type MuteChanges = {
 
 export type MemberPowerTagIcon = {
   key?: string;
-  info?: IImageInfo;
+  info?: ImageInfo;
 };
 export type MemberPowerTag = {
   name: string;

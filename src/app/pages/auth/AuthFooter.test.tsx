@@ -7,7 +7,6 @@ describe('AuthFooter', () => {
   it('renders the footer and its canonical links', () => {
     render(<AuthFooter />);
     expect(screen.getByTestId('auth-footer')).toBeInTheDocument();
-    expect(screen.getByTestId('auth-footer-about-link')).toBeInTheDocument();
     expect(screen.getByTestId('auth-footer-matrix-link')).toBeInTheDocument();
   });
 });

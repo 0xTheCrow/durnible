@@ -22,7 +22,8 @@ export function packMetaEqual(a: PackMetaReader, b: PackMetaReader): boolean {
     a.name === b.name &&
     a.avatar === b.avatar &&
     a.attribution === b.attribution &&
-    imageUsageEqual(a.usage, b.usage)
+    imageUsageEqual(a.usage, b.usage) &&
+    a.portable === b.portable
   );
 }
 

@@ -1,5 +1,5 @@
 import { atom } from 'jotai';
-import type { IEncryptedFile } from '../../types/matrix/common';
+import type { EncryptedFile } from '../../types/matrix/common';
 
 /**
  * One image in a viewer gallery. `src` may be undefined when the viewer is
@@ -11,7 +11,7 @@ export type ImageViewerGalleryItem = {
   src?: string;
   alt: string;
   mxcUrl?: string;
-  encInfo?: IEncryptedFile;
+  encInfo?: EncryptedFile;
   mimeType?: string;
 };
 

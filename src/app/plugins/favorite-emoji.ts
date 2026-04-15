@@ -1,6 +1,6 @@
 import type { MatrixClient } from 'matrix-js-sdk';
 import { getAccountData } from '../utils/room';
-import type { IEmoji } from './emoji';
+import type { Emoji } from './emoji';
 import { emojis } from './emoji';
 import { PackImageReader } from './custom-emoji';
 import { AccountDataEvent } from '../../types/matrix/accountData';
@@ -13,20 +13,20 @@ export type FavoriteEmojiEntry = {
   label: string;
 };
 
-export type IFavoriteEmojiContent = {
+export type FavoriteEmojiContent = {
   favorites: FavoriteEmojiEntry[];
 };
 
 export const getFavoriteEmojis = (mx: MatrixClient): FavoriteEmojiEntry[] => {
   const event = getAccountData(mx, AccountDataEvent.CinnyFavoriteEmoji);
-  const content = event?.getContent<IFavoriteEmojiContent>();
+  const content = event?.getContent<FavoriteEmojiContent>();
   if (!Array.isArray(content?.favorites)) return [];
   return content.favorites;
 };
 
-export const getFavoriteEmojiItems = (mx: MatrixClient): Array<IEmoji | PackImageReader> => {
+export const getFavoriteEmojiItems = (mx: MatrixClient): Array<Emoji | PackImageReader> => {
   const entries = getFavoriteEmojis(mx);
-  return entries.reduce<Array<IEmoji | PackImageReader>>((list, entry) => {
+  return entries.reduce<Array<Emoji | PackImageReader>>((list, entry) => {
     if (entry.type === EmojiType.Emoji) {
       const emoji = emojis.find((e) => e.unicode === entry.data);
       if (emoji) list.push(emoji);

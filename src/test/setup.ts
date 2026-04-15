@@ -1,5 +1,9 @@
 /// <reference types="vitest/globals" />
 import '@testing-library/jest-dom/vitest';
+import { enableMapSet } from 'immer';
+
+// Match production (src/index.tsx) — immer's Map/Set support is opt-in.
+enableMapSet();
 
 // jsdom doesn't implement canvas — mock it to suppress the warning
 HTMLCanvasElement.prototype.getContext = vi.fn();

@@ -23,7 +23,7 @@ import { LobbyHeader } from './LobbyHeader';
 import { LobbyHero } from './LobbyHero';
 import { ScrollTopContainer } from '../../components/scroll-top-container';
 import { useElementSizeObserver } from '../../hooks/useElementSizeObserver';
-import type { IPowerLevels } from '../../hooks/usePowerLevels';
+import type { PowerLevels } from '../../hooks/usePowerLevels';
 import {
   PowerLevelsContextProvider,
   usePowerLevels,
@@ -59,7 +59,7 @@ import { getRoomCreatorsForRoomId } from '../../hooks/useRoomCreators';
 
 const useCanDropLobbyItem = (
   space: Room,
-  roomsPowerLevels: Map<string, IPowerLevels>,
+  roomsPowerLevels: Map<string, PowerLevels>,
   getRoom: (roomId: string) => Room | undefined
 ): CanDropCallback => {
   const mx = useMatrixClient();

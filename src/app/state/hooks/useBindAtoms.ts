@@ -5,6 +5,7 @@ import { mDirectAtom, useBindMDirectAtom } from '../mDirectList';
 import { roomToUnreadAtom, useBindRoomToUnreadAtom } from '../room/roomToUnread';
 import { roomToParentsAtom, useBindRoomToParentsAtom } from '../room/roomToParents';
 import { roomIdToTypingMembersAtom, useBindRoomIdToTypingMembersAtom } from '../typingMembers';
+import { portableImagePacksAtom, useBindPortableImagePacksAtom } from '../portableImagePacks';
 
 export const useBindAtoms = (mx: MatrixClient) => {
   useBindMDirectAtom(mx, mDirectAtom);
@@ -12,6 +13,7 @@ export const useBindAtoms = (mx: MatrixClient) => {
   useBindAllRoomsAtom(mx, allRoomsAtom);
   useBindRoomToParentsAtom(mx, roomToParentsAtom);
   useBindRoomToUnreadAtom(mx, roomToUnreadAtom);
+  useBindPortableImagePacksAtom(mx, portableImagePacksAtom);
 
   useBindRoomIdToTypingMembersAtom(mx, roomIdToTypingMembersAtom);
 };

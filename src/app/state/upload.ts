@@ -3,7 +3,7 @@ import { atomFamily } from 'jotai/utils';
 import type { MatrixClient, UploadResponse, UploadProgress, MatrixError } from 'matrix-js-sdk';
 import { useCallback } from 'react';
 import { useThrottle } from '../hooks/useThrottle';
-import type { TUploadContent } from '../utils/matrix';
+import type { UploadContent } from '../utils/matrix';
 import { uploadContent } from '../utils/matrix';
 
 export enum UploadStatus {
@@ -14,25 +14,25 @@ export enum UploadStatus {
 }
 
 export type UploadIdle = {
-  file: TUploadContent;
+  file: UploadContent;
   status: UploadStatus.Idle;
 };
 
 export type UploadLoading = {
-  file: TUploadContent;
+  file: UploadContent;
   status: UploadStatus.Loading;
   promise: Promise<UploadResponse>;
   progress: UploadProgress;
 };
 
 export type UploadSuccess = {
-  file: TUploadContent;
+  file: UploadContent;
   status: UploadStatus.Success;
   mxc: string;
 };
 
 export type UploadError = {
-  file: TUploadContent;
+  file: UploadContent;
   status: UploadStatus.Error;
   error: MatrixError;
 };
@@ -53,7 +53,7 @@ export type UploadAtomAction =
       error: MatrixError;
     };
 
-export const createUploadAtom = (file: TUploadContent) => {
+export const createUploadAtom = (file: UploadContent) => {
   const baseUploadAtom = atom<Upload>({
     file,
     status: UploadStatus.Idle,
@@ -96,11 +96,11 @@ export const createUploadAtom = (file: TUploadContent) => {
     }
   );
 };
-export type TUploadAtom = ReturnType<typeof createUploadAtom>;
+export type UploadAtom = ReturnType<typeof createUploadAtom>;
 
 export const useBindUploadAtom = (
   mx: MatrixClient,
-  uploadAtom: TUploadAtom,
+  uploadAtom: UploadAtom,
   hideFilename?: boolean
 ) => {
   const [upload, setUpload] = useAtom(uploadAtom);
@@ -136,12 +136,11 @@ export const useBindUploadAtom = (
   };
 };
 
-export const createUploadAtomFamily = () =>
-  atomFamily<TUploadContent, TUploadAtom>(createUploadAtom);
-export type TUploadAtomFamily = ReturnType<typeof createUploadAtomFamily>;
+export const createUploadAtomFamily = () => atomFamily<UploadContent, UploadAtom>(createUploadAtom);
+export type UploadAtomFamily = ReturnType<typeof createUploadAtomFamily>;
 
 export const createUploadFamilyObserverAtom = (
-  uploadFamily: TUploadAtomFamily,
-  uploads: TUploadContent[]
+  uploadFamily: UploadAtomFamily,
+  uploads: UploadContent[]
 ) => atom<Upload[]>((get) => uploads.map((upload) => get(uploadFamily(upload))));
-export type TUploadFamilyObserverAtom = ReturnType<typeof createUploadFamilyObserverAtom>;
+export type UploadFamilyObserverAtom = ReturnType<typeof createUploadFamilyObserverAtom>;

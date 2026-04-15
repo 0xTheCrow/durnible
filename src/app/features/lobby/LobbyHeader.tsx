@@ -27,7 +27,7 @@ import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { RoomAvatar } from '../../components/room-avatar';
 import { nameInitials } from '../../utils/common';
 import * as css from './LobbyHeader.css';
-import type { IPowerLevels } from '../../hooks/usePowerLevels';
+import type { PowerLevels } from '../../hooks/usePowerLevels';
 import { UseStateProvider } from '../../components/UseStateProvider';
 import { LeaveSpacePrompt } from '../../components/leave-space-prompt';
 import { stopPropagation } from '../../utils/keyboard';
@@ -41,7 +41,7 @@ import { useRoomPermissions } from '../../hooks/useRoomPermissions';
 import { InviteUserPrompt } from '../../components/invite-user-prompt';
 
 type LobbyMenuProps = {
-  powerLevels: IPowerLevels;
+  powerLevels: PowerLevels;
   requestClose: () => void;
 };
 const LobbyMenu = forwardRef<HTMLDivElement, LobbyMenuProps>(
@@ -138,7 +138,7 @@ const LobbyMenu = forwardRef<HTMLDivElement, LobbyMenuProps>(
 
 type LobbyHeaderProps = {
   showProfile?: boolean;
-  powerLevels: IPowerLevels;
+  powerLevels: PowerLevels;
 };
 export function LobbyHeader({ showProfile, powerLevels }: LobbyHeaderProps) {
   const mx = useMatrixClient();

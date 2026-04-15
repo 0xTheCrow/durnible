@@ -2,14 +2,14 @@ import React from 'react';
 import type { EventTimelineSet, MatrixEvent, Relations } from 'matrix-js-sdk';
 import { Box, Chip, Icon, Icons, Text, config, color, toRem } from 'folds';
 import { useTranslation } from 'react-i18next';
-import type { IImageContent } from '../../../types/matrix/common';
+import type { ImageContent } from '../../../types/matrix/common';
 import {
   Reply,
   MessageUnsupportedContent,
   Time,
   RedactedContent,
   MSticker,
-  ImageContent,
+  ImageContent as ImageContentView,
   EventContent,
   MPoll,
   LinePlaceholder,
@@ -20,7 +20,7 @@ import { MessageLayout } from '../../state/settings';
 import { getMxIdLocalPart } from '../../utils/matrix';
 import { RenderMessageContent } from '../../components/RenderMessageContent';
 import { Image } from '../../components/media';
-import { Reactions, Message, Event, EncryptedContent } from './message';
+import { Reactions, Message, TimelineSystemEvent, EncryptedContent } from './message';
 import * as customHtmlCss from '../../styles/CustomHtml.css';
 import { useMemberEventParser } from '../../hooks/useMemberEventParser';
 import { useTimelineMessageContext } from './TimelineMessageContext';
@@ -59,7 +59,7 @@ type MemoizedTimelineEventProps = {
    * contains every image content in the group (including this event's
    * own content) and the renderer displays them as a single grid.
    */
-  groupedImages?: IImageContent[];
+  groupedImages?: ImageContent[];
   isHighlighted: boolean;
   isEditing: boolean;
   // Passed from parent so the comparator can detect the undefined→Relations
@@ -272,7 +272,7 @@ function TimelineEventComponent({
                   <MSticker
                     content={mEvent.getContent()}
                     renderImageContent={(props) => (
-                      <ImageContent
+                      <ImageContentView
                         {...props}
                         autoPlay={mediaAutoLoad}
                         renderImage={(p) => <Image {...p} loading="lazy" />}
@@ -351,7 +351,7 @@ function TimelineEventComponent({
             <MSticker
               content={mEvent.getContent()}
               renderImageContent={(props) => (
-                <ImageContent
+                <ImageContentView
                   {...props}
                   autoPlay={mediaAutoLoad}
                   renderImage={(p) => <Image {...p} loading="lazy" />}
@@ -406,7 +406,7 @@ function TimelineEventComponent({
     const parsed = parseMemberEvent(mEvent);
 
     return (
-      <Event {...baseEventProps}>
+      <TimelineSystemEvent {...baseEventProps}>
         <EventContent
           messageLayout={messageLayout}
           time={timeJSX}
@@ -419,7 +419,7 @@ function TimelineEventComponent({
             </Box>
           }
         />
-      </Event>
+      </TimelineSystemEvent>
     );
   }
 
@@ -434,7 +434,7 @@ function TimelineEventComponent({
     const senderName = getMemberDisplayName(room, senderId) || getMxIdLocalPart(senderId);
 
     return (
-      <Event {...baseEventProps}>
+      <TimelineSystemEvent {...baseEventProps}>
         <EventContent
           messageLayout={messageLayout}
           time={timeJSX}
@@ -448,7 +448,7 @@ function TimelineEventComponent({
             </Box>
           }
         />
-      </Event>
+      </TimelineSystemEvent>
     );
   }
 
@@ -461,7 +461,7 @@ function TimelineEventComponent({
 
   if (isStateEvent) {
     return (
-      <Event {...baseEventProps}>
+      <TimelineSystemEvent {...baseEventProps}>
         <EventContent
           messageLayout={messageLayout}
           time={timeJSX}
@@ -477,7 +477,7 @@ function TimelineEventComponent({
             </Box>
           }
         />
-      </Event>
+      </TimelineSystemEvent>
     );
   }
 
@@ -486,7 +486,7 @@ function TimelineEventComponent({
   if (mEvent.isRedaction()) return null;
 
   return (
-    <Event {...baseEventProps}>
+    <TimelineSystemEvent {...baseEventProps}>
       <EventContent
         messageLayout={messageLayout}
         time={timeJSX}
@@ -502,7 +502,7 @@ function TimelineEventComponent({
           </Box>
         }
       />
-    </Event>
+    </TimelineSystemEvent>
   );
 }
 
@@ -510,8 +510,8 @@ function TimelineEventComponent({
 // (group grew/shrunk) and per-cell content reference changes (a new event
 // arrived or an absorbed image was redacted out of the group).
 const sameGroupedImages = (
-  a: IImageContent[] | undefined,
-  b: IImageContent[] | undefined
+  a: ImageContent[] | undefined,
+  b: ImageContent[] | undefined
 ): boolean => {
   if (a === b) return true;
   if (!a || !b) return false;

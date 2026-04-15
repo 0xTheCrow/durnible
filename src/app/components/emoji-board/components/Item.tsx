@@ -1,12 +1,16 @@
-import React from 'react';
+import React, { type ReactEventHandler } from 'react';
 import { Box } from 'folds';
 import type { MatrixClient } from 'matrix-js-sdk';
 import type { EmojiItemInfo } from '../types';
 import { EmojiType } from '../types';
 import * as css from './styles.css';
 import type { PackImageReader } from '../../../plugins/custom-emoji';
-import type { IEmoji } from '../../../plugins/emoji';
+import type { Emoji } from '../../../plugins/emoji';
 import { mxcUrlToHttp } from '../../../utils/matrix';
+
+const handleImgLoad: ReactEventHandler<HTMLImageElement> = (evt) => {
+  evt.currentTarget.setAttribute('data-image-loaded', 'true');
+};
 
 export const getEmojiItemInfo = (element: Element): EmojiItemInfo | undefined => {
   const label = element.getAttribute('title');
@@ -25,7 +29,7 @@ export const getEmojiItemInfo = (element: Element): EmojiItemInfo | undefined =>
 };
 
 type EmojiItemProps = {
-  emoji: IEmoji;
+  emoji: Emoji;
 };
 export function EmojiItem({ emoji }: EmojiItemProps) {
   return (
@@ -70,6 +74,8 @@ export function CustomEmojiItem({ mx, useAuthentication, image }: CustomEmojiIte
         className={css.CustomEmojiImg}
         alt={image.body || image.shortcode}
         src={mxcUrlToHttp(mx, image.url, useAuthentication) ?? image.url}
+        onLoad={handleImgLoad}
+        draggable={false}
       />
     </Box>
   );
@@ -100,6 +106,8 @@ export function StickerItem({ mx, useAuthentication, image }: StickerItemProps) 
         className={css.StickerImg}
         alt={image.body || image.shortcode}
         src={mxcUrlToHttp(mx, image.url, useAuthentication) ?? image.url}
+        onLoad={handleImgLoad}
+        draggable={false}
       />
     </Box>
   );

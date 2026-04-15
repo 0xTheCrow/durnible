@@ -22,7 +22,7 @@ import {
 import { HexColorPicker } from 'react-colorful';
 import { useAtomValue } from 'jotai';
 import { Page, PageContent, PageHeader } from '../../../components/page';
-import type { IPowerLevels } from '../../../hooks/usePowerLevels';
+import type { PowerLevels } from '../../../hooks/usePowerLevels';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SequenceCardStyle } from '../styles.css';
 import { SettingTile } from '../../../components/setting-tile';
@@ -286,7 +286,7 @@ function EditPower({ maxPower, power, tag, onSave, onClose }: EditPowerProps) {
 }
 
 type PowersEditorProps = {
-  powerLevels: IPowerLevels;
+  powerLevels: PowerLevels;
   requestClose: () => void;
 };
 export function PowersEditor({ powerLevels, requestClose }: PowersEditorProps) {

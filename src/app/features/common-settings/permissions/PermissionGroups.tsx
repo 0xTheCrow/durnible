@@ -6,7 +6,7 @@ import produce from 'immer';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SequenceCardStyle } from '../styles.css';
 import { SettingTile } from '../../../components/setting-tile';
-import type { IPowerLevels, PermissionLocation } from '../../../hooks/usePowerLevels';
+import type { PowerLevels, PermissionLocation } from '../../../hooks/usePowerLevels';
 import { applyPermissionPower, getPermissionPower } from '../../../hooks/usePowerLevels';
 import type { PermissionGroup } from './types';
 import { getPowerLevelTag, getPowers, usePowerLevelTags } from '../../../hooks/usePowerLevelTags';
@@ -22,7 +22,7 @@ const USER_DEFAULT_LOCATION: PermissionLocation = {
 
 type PermissionGroupsProps = {
   canEdit: boolean;
-  powerLevels: IPowerLevels;
+  powerLevels: PowerLevels;
   permissionGroups: PermissionGroup[];
 };
 export function PermissionGroups({

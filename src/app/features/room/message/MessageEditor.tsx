@@ -18,7 +18,9 @@ import {
   RoomMentionAutocomplete,
   Toolbar,
   UserMentionAutocomplete,
+  createAltEmoticonNode,
   createEmoticonElement,
+  useAlternateAutocomplete,
   customHtmlEqualsPlainText,
   getAutocompleteQuery,
   getPrevWorldRange,
@@ -41,6 +43,7 @@ import { UseStateProvider } from '../../../components/UseStateProvider';
 import { EmojiBoard } from '../../../components/emoji-board';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
+import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
 import { getEditedEvent, getMentionContent, trimReplyFromFormattedBody } from '../../../utils/room';
 import { mobileOrTablet } from '../../../utils/user-agent';
 import { useComposingCheck } from '../../../hooks/useComposingCheck';
@@ -55,6 +58,7 @@ type MessageEditorProps = {
 export const MessageEditor = as<'div', MessageEditorProps>(
   ({ room, roomId, mEvent, imagePackRooms, onCancel, ...props }, ref) => {
     const mx = useMatrixClient();
+    const useAuthentication = useMediaAuthentication();
     const editor = useEditor();
     const [enterForNewline] = useSetting(settingsAtom, 'enterForNewline');
     const [globalToolbar] = useSetting(settingsAtom, 'editorToolbar');
@@ -69,6 +73,19 @@ export const MessageEditor = as<'div', MessageEditorProps>(
 
     const [autocompleteQuery, setAutocompleteQuery] =
       useState<AutocompleteQuery<AutocompletePrefix>>();
+
+    const altAutocomplete = useAlternateAutocomplete({
+      alternateInputRef,
+      mx,
+      useAuthentication,
+      room,
+      roomId,
+    });
+    const {
+      handleMentionSelect: handleAlternateMentionSelect,
+      handleRoomMentionSelect: handleAlternateRoomMentionSelect,
+      handleEmoticonSelect: handleAlternateEmoticonSelect,
+    } = altAutocomplete;
 
     const getPrevBodyAndFormattedBody = useCallback((): [
       string | undefined,
@@ -187,14 +204,18 @@ export const MessageEditor = as<'div', MessageEditorProps>(
           return;
         }
 
-        if (alternateInput) return;
+        if (alternateInput) {
+          const el = evt.currentTarget as HTMLDivElement;
+          setAutocompleteQuery(altAutocomplete.detectAutocompleteQuery(el));
+          return;
+        }
         const prevWordRange = getPrevWorldRange(editor);
         const query = prevWordRange
           ? getAutocompleteQuery<AutocompletePrefix>(editor, prevWordRange, AUTOCOMPLETE_PREFIXES)
           : undefined;
         setAutocompleteQuery(query);
       },
-      [editor, alternateInput]
+      [editor, alternateInput, altAutocomplete]
     );
 
     const handleCloseAutocomplete = useCallback(() => {
@@ -203,12 +224,17 @@ export const MessageEditor = as<'div', MessageEditorProps>(
     }, [editor, alternateInput]);
 
     const handleEmoticonSelect = (key: string, shortcode: string) => {
-      if (alternateInput && editor.insertAlternateText) {
-        editor.insertAlternateText(key);
-      } else {
-        editor.insertNode(createEmoticonElement(key, shortcode));
-        moveCursor(editor);
+      if (alternateInput) {
+        if (key.startsWith('mxc://') && editor.insertAlternateNode) {
+          const node = createAltEmoticonNode({ mx, useAuthentication, key, shortcode });
+          editor.insertAlternateNode(node);
+          return;
+        }
+        editor.insertAlternateText?.(key);
+        return;
       }
+      editor.insertNode(createEmoticonElement(key, shortcode));
+      moveCursor(editor);
     };
 
     useEffect(() => {
@@ -260,6 +286,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
             editor={editor}
             query={autocompleteQuery}
             requestClose={handleCloseAutocomplete}
+            onSelect={alternateInput ? handleAlternateRoomMentionSelect : undefined}
           />
         )}
         {autocompleteQuery?.prefix === AutocompletePrefix.UserMention && (
@@ -268,6 +295,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
             editor={editor}
             query={autocompleteQuery}
             requestClose={handleCloseAutocomplete}
+            onSelect={alternateInput ? handleAlternateMentionSelect : undefined}
           />
         )}
         {autocompleteQuery?.prefix === AutocompletePrefix.Emoticon && (
@@ -276,6 +304,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
             editor={editor}
             query={autocompleteQuery}
             requestClose={handleCloseAutocomplete}
+            onSelect={alternateInput ? handleAlternateEmoticonSelect : undefined}
           />
         )}
         <CustomEditor
@@ -339,15 +368,13 @@ export const MessageEditor = as<'div', MessageEditorProps>(
                         content={
                           <EmojiBoard
                             imagePackRooms={imagePackRooms ?? []}
-                            returnFocusOnDeactivate={false}
+                            returnFocusOnDeactivate={alternateInput && !mobileOrTablet()}
                             onEmojiSelect={handleEmoticonSelect}
                             onCustomEmojiSelect={handleEmoticonSelect}
                             requestClose={() => {
                               setAnchor((v) => {
                                 if (v) {
-                                  if (alternateInput) {
-                                    alternateInputRef.current?.focus();
-                                  } else if (!mobileOrTablet()) {
+                                  if (!alternateInput && !mobileOrTablet()) {
                                     ReactEditor.focus(editor);
                                   }
                                   return undefined;
@@ -360,6 +387,14 @@ export const MessageEditor = as<'div', MessageEditorProps>(
                       >
                         <IconButton
                           aria-pressed={anchor !== undefined}
+                          onMouseDown={
+                            alternateInput
+                              ? (e: React.MouseEvent) => {
+                                  e.preventDefault();
+                                  alternateInputRef.current?.focus();
+                                }
+                              : undefined
+                          }
                           onClick={
                             ((evt) =>
                               setAnchor(

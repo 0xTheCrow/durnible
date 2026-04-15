@@ -8,7 +8,7 @@ import { SequenceCard } from '../../../components/sequence-card';
 import { SequenceCardStyle } from '../styles.css';
 import { getPowers, usePowerLevelTags } from '../../../hooks/usePowerLevelTags';
 import { SettingTile } from '../../../components/setting-tile';
-import type { IPowerLevels } from '../../../hooks/usePowerLevels';
+import type { PowerLevels } from '../../../hooks/usePowerLevels';
 import { getPermissionPower } from '../../../hooks/usePowerLevels';
 import { useRoom } from '../../../hooks/useRoom';
 import { PowerColorBadge, PowerIcon } from '../../../components/power';
@@ -21,7 +21,7 @@ import { useRoomCreatorsTag } from '../../../hooks/useRoomCreatorsTag';
 import { useRoomCreators } from '../../../hooks/useRoomCreators';
 
 type PeekPermissionsProps = {
-  powerLevels: IPowerLevels;
+  powerLevels: PowerLevels;
   power: number;
   permissionGroups: PermissionGroup[];
   children: (handleOpen: MouseEventHandler<HTMLButtonElement>, opened: boolean) => ReactNode;
@@ -94,7 +94,7 @@ function PeekPermissions({ powerLevels, power, permissionGroups, children }: Pee
 }
 
 type PowersProps = {
-  powerLevels: IPowerLevels;
+  powerLevels: PowerLevels;
   permissionGroups: PermissionGroup[];
   onEdit?: () => void;
 };

@@ -10,7 +10,7 @@ import { getStateEvent } from '../utils/room';
 export type PowerLevelActions = 'invite' | 'redact' | 'kick' | 'ban' | 'historical';
 export type PowerLevelNotificationsAction = 'room';
 
-export type IPowerLevels = {
+export type PowerLevels = {
   users_default?: number;
   state_default?: number;
   events_default?: number;
@@ -25,7 +25,7 @@ export type IPowerLevels = {
   notifications?: Record<string, number>;
 };
 
-const DEFAULT_POWER_LEVELS: Required<IPowerLevels> = {
+const DEFAULT_POWER_LEVELS: Required<PowerLevels> = {
   users_default: 0,
   state_default: 50,
   events_default: 0,
@@ -41,16 +41,16 @@ const DEFAULT_POWER_LEVELS: Required<IPowerLevels> = {
   },
 };
 
-function fillIfMissing<K extends keyof IPowerLevels>(target: IPowerLevels, key: K) {
+function fillIfMissing<K extends keyof PowerLevels>(target: PowerLevels, key: K) {
   if (target[key] === undefined) {
     // eslint-disable-next-line no-param-reassign
     target[key] = DEFAULT_POWER_LEVELS[key];
   }
 }
 
-const fillMissingPowers = (powerLevels: IPowerLevels): IPowerLevels =>
-  produce(powerLevels, (draftPl: IPowerLevels) => {
-    (Object.keys(DEFAULT_POWER_LEVELS) as (keyof IPowerLevels)[]).forEach((key) => {
+const fillMissingPowers = (powerLevels: PowerLevels): PowerLevels =>
+  produce(powerLevels, (draftPl: PowerLevels) => {
+    (Object.keys(DEFAULT_POWER_LEVELS) as (keyof PowerLevels)[]).forEach((key) => {
       fillIfMissing(draftPl, key);
     });
     if (draftPl.notifications && typeof draftPl.notifications.room !== 'number') {
@@ -60,17 +60,17 @@ const fillMissingPowers = (powerLevels: IPowerLevels): IPowerLevels =>
     return draftPl;
   });
 
-const getPowersLevelFromMatrixEvent = (mEvent?: MatrixEvent): IPowerLevels => {
-  const plContent = mEvent?.getContent<IPowerLevels>();
+const getPowersLevelFromMatrixEvent = (mEvent?: MatrixEvent): PowerLevels => {
+  const plContent = mEvent?.getContent<PowerLevels>();
 
   const powerLevels = !plContent ? DEFAULT_POWER_LEVELS : fillMissingPowers(plContent);
 
   return powerLevels;
 };
 
-export function usePowerLevels(room: Room): IPowerLevels {
+export function usePowerLevels(room: Room): PowerLevels {
   const powerLevelsEvent = useStateEvent(room, StateEvent.RoomPowerLevels);
-  const powerLevels: IPowerLevels = useMemo(
+  const powerLevels: PowerLevels = useMemo(
     () => getPowersLevelFromMatrixEvent(powerLevelsEvent),
     [powerLevelsEvent]
   );
@@ -78,20 +78,20 @@ export function usePowerLevels(room: Room): IPowerLevels {
   return powerLevels;
 }
 
-export const PowerLevelsContext = createContext<IPowerLevels | null>(null);
+export const PowerLevelsContext = createContext<PowerLevels | null>(null);
 
 export const PowerLevelsContextProvider = PowerLevelsContext.Provider;
 
-export const usePowerLevelsContext = (): IPowerLevels => {
+export const usePowerLevelsContext = (): PowerLevels => {
   const pl = useContext(PowerLevelsContext);
   if (!pl) throw new Error('PowerLevelContext is not initialized!');
   return pl;
 };
 
-export const useRoomsPowerLevels = (rooms: Room[]): Map<string, IPowerLevels> => {
+export const useRoomsPowerLevels = (rooms: Room[]): Map<string, PowerLevels> => {
   const mx = useMatrixClient();
   const getRoomsPowerLevels = useCallback(() => {
-    const rToPl = new Map<string, IPowerLevels>();
+    const rToPl = new Map<string, PowerLevels>();
 
     rooms.forEach((room) => {
       const mEvent = getStateEvent(room, StateEvent.RoomPowerLevels, '');
@@ -125,11 +125,11 @@ export const useRoomsPowerLevels = (rooms: Room[]): Map<string, IPowerLevels> =>
 };
 
 export type ReadPowerLevelAPI = {
-  user: (powerLevels: IPowerLevels, userId: string | undefined) => number;
-  event: (powerLevels: IPowerLevels, eventType: string | undefined) => number;
-  state: (powerLevels: IPowerLevels, eventType: string | undefined) => number;
-  action: (powerLevels: IPowerLevels, action: PowerLevelActions) => number;
-  notification: (powerLevels: IPowerLevels, action: PowerLevelNotificationsAction) => number;
+  user: (powerLevels: PowerLevels, userId: string | undefined) => number;
+  event: (powerLevels: PowerLevels, eventType: string | undefined) => number;
+  state: (powerLevels: PowerLevels, eventType: string | undefined) => number;
+  action: (powerLevels: PowerLevels, action: PowerLevelActions) => number;
+  notification: (powerLevels: PowerLevels, action: PowerLevelNotificationsAction) => number;
 };
 
 export const readPowerLevel: ReadPowerLevelAPI = {
@@ -171,7 +171,7 @@ export const readPowerLevel: ReadPowerLevelAPI = {
   },
 };
 
-export const useGetMemberPowerLevel = (powerLevels: IPowerLevels) => {
+export const useGetMemberPowerLevel = (powerLevels: PowerLevels) => {
   const callback = useCallback(
     (userId?: string): number => readPowerLevel.user(powerLevels, userId),
     [powerLevels]
@@ -211,7 +211,7 @@ export type PermissionLocation =
   | NotificationPermissionLocation;
 
 export const getPermissionPower = (
-  powerLevels: IPowerLevels,
+  powerLevels: PowerLevels,
   location: PermissionLocation
 ): number => {
   if ('user' in location) {
@@ -231,10 +231,10 @@ export const getPermissionPower = (
 };
 
 export const applyPermissionPower = (
-  powerLevels: IPowerLevels,
+  powerLevels: PowerLevels,
   location: PermissionLocation,
   power: number
-): IPowerLevels => {
+): PowerLevels => {
   if ('user' in location) {
     if (typeof location.key === 'string') {
       const users = powerLevels.users ?? {};

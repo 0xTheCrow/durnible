@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
 import { EmojiGroupId } from '../../plugins/emoji';
 
-export type IEmojiGroupLabels = Record<EmojiGroupId, string>;
+export type EmojiGroupLabels = Record<EmojiGroupId, string>;
 
-export const useEmojiGroupLabels = (): IEmojiGroupLabels =>
+export const useEmojiGroupLabels = (): EmojiGroupLabels =>
   useMemo(
     () => ({
       [EmojiGroupId.People]: 'Smileys & People',

@@ -4,26 +4,26 @@ import type { Descendant } from 'slate';
 import type { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
 import type { IEventRelation } from 'matrix-js-sdk';
 import { createUploadAtomFamily } from '../upload';
-import type { TUploadContent } from '../../utils/matrix';
+import type { UploadContent } from '../../utils/matrix';
 import { createListAtom } from '../list';
 
-export type TUploadMetadata = {
+export type UploadMetadata = {
   markedAsSpoiler: boolean;
 };
 
-export type TUploadItem = {
-  file: TUploadContent;
-  originalFile: TUploadContent;
-  metadata: TUploadMetadata;
+export type UploadItem = {
+  file: UploadContent;
+  originalFile: UploadContent;
+  metadata: UploadMetadata;
   encInfo: EncryptedAttachmentInfo | undefined;
   isEncrypting?: boolean;
   isEncryptionSuccessful?: boolean;
   encryptError?: string;
 };
 
-export type TUploadListAtom = ReturnType<typeof createListAtom<TUploadItem>>;
+export type UploadListAtom = ReturnType<typeof createListAtom<UploadItem>>;
 
-export const roomIdToUploadItemsAtomFamily = atomFamily<string, TUploadListAtom>(createListAtom);
+export const roomIdToUploadItemsAtomFamily = atomFamily<string, UploadListAtom>(createListAtom);
 
 export const roomUploadAtomFamily = createUploadAtomFamily();
 
@@ -39,20 +39,20 @@ export type RoomIdToMsgAction =
     };
 
 const createMsgDraftAtom = () => atom<Descendant[]>([]);
-export type TMsgDraftAtom = ReturnType<typeof createMsgDraftAtom>;
-export const roomIdToMsgDraftAtomFamily = atomFamily<string, TMsgDraftAtom>(() =>
+export type MsgDraftAtom = ReturnType<typeof createMsgDraftAtom>;
+export const roomIdToMsgDraftAtomFamily = atomFamily<string, MsgDraftAtom>(() =>
   createMsgDraftAtom()
 );
 
-export type IReplyDraft = {
+export type ReplyDraft = {
   userId: string;
   eventId: string;
   body: string;
   formattedBody?: string | undefined;
   relation?: IEventRelation | undefined;
 };
-const createReplyDraftAtom = () => atom<IReplyDraft | undefined>(undefined);
-export type TReplyDraftAtom = ReturnType<typeof createReplyDraftAtom>;
-export const roomIdToReplyDraftAtomFamily = atomFamily<string, TReplyDraftAtom>(() =>
+const createReplyDraftAtom = () => atom<ReplyDraft | undefined>(undefined);
+export type ReplyDraftAtom = ReturnType<typeof createReplyDraftAtom>;
+export const roomIdToReplyDraftAtomFamily = atomFamily<string, ReplyDraftAtom>(() =>
   createReplyDraftAtom()
 );

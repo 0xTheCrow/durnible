@@ -13,16 +13,16 @@ import {
   MessageUnsupportedContent,
 } from './content';
 import type {
-  IAudioContent,
-  IAudioInfo,
-  IEncryptedFile,
-  IFileContent,
-  IFileInfo,
-  IImageContent,
-  IImageInfo,
-  IThumbnailContent,
-  IVideoContent,
-  IVideoInfo,
+  AudioContent,
+  AudioInfo,
+  EncryptedFile,
+  FileContent,
+  FileInfo,
+  ImageContent,
+  ImageInfo,
+  ThumbnailContent,
+  VideoContent,
+  VideoInfo,
 } from '../../../types/matrix/common';
 import {
   MATRIX_SPOILER_PROPERTY_NAME,
@@ -180,15 +180,15 @@ export function MNotice({ edited, content, renderBody, renderUrlsPreview }: MNot
 type RenderImageContentProps = {
   body: string;
   filename?: string;
-  info?: IImageInfo & IThumbnailContent;
+  info?: ImageInfo & ThumbnailContent;
   mimeType?: string;
   url: string;
-  encInfo?: IEncryptedFile;
+  encInfo?: EncryptedFile;
   markedAsSpoiler?: boolean;
   spoilerReason?: string;
 };
 type MImageProps = {
-  content: IImageContent;
+  content: ImageContent;
   renderImageContent: (props: RenderImageContentProps) => ReactNode;
 };
 export function MImage({ content, renderImageContent }: MImageProps) {
@@ -226,15 +226,15 @@ export function MImage({ content, renderImageContent }: MImageProps) {
 
 type RenderVideoContentProps = {
   body: string;
-  info: IVideoInfo & IThumbnailContent;
+  info: VideoInfo & ThumbnailContent;
   mimeType: string;
   url: string;
-  encInfo?: IEncryptedFile;
+  encInfo?: EncryptedFile;
   markedAsSpoiler?: boolean;
   spoilerReason?: string;
 };
 type MVideoProps = {
-  content: IVideoContent;
+  content: VideoContent;
   renderAsFile: () => ReactNode;
   renderVideoContent: (props: RenderVideoContentProps) => ReactNode;
   outlined?: boolean;
@@ -291,13 +291,13 @@ export function MVideo({ content, renderAsFile, renderVideoContent, outlined }: 
 }
 
 type RenderAudioContentProps = {
-  info: IAudioInfo;
+  info: AudioInfo;
   mimeType: string;
   url: string;
-  encInfo?: IEncryptedFile;
+  encInfo?: EncryptedFile;
 };
 type MAudioProps = {
-  content: IAudioContent;
+  content: AudioContent;
   renderAsFile: () => ReactNode;
   renderAudioContent: (props: RenderAudioContentProps) => ReactNode;
   outlined?: boolean;
@@ -347,13 +347,13 @@ export function MAudio({ content, renderAsFile, renderAudioContent, outlined }: 
 
 type RenderFileContentProps = {
   body: string;
-  info: IFileInfo & IThumbnailContent;
+  info: FileInfo & ThumbnailContent;
   mimeType: string;
   url: string;
-  encInfo?: IEncryptedFile;
+  encInfo?: EncryptedFile;
 };
 type MFileProps = {
-  content: IFileContent;
+  content: FileContent;
   renderFileContent: (props: RenderFileContentProps) => ReactNode;
   outlined?: boolean;
 };
@@ -415,7 +415,7 @@ export function MLocation({ content }: MLocationProps) {
 }
 
 type MStickerProps = {
-  content: IImageContent;
+  content: ImageContent;
   renderImageContent: (props: RenderImageContentProps) => ReactNode;
 };
 export function MSticker({ content, renderImageContent }: MStickerProps) {
