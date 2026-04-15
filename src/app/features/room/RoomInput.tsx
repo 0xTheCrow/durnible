@@ -736,7 +736,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
                 )}
                 <EmojiBoardPopOut
                   offset={16}
-                  alignOffset={-44}
+                  alignOffset={mobileOrTablet() ? 0 : -44}
                   position="Top"
                   align="End"
                   imagePackRooms={imagePackRooms}
