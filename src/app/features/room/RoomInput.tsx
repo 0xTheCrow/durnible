@@ -92,6 +92,7 @@ import { VoiceMessageRecorder } from './VoiceMessageRecorder';
 import { Command, SHRUG, TABLEFLIP, UNFLIP, useCommands } from '../../hooks/useCommands';
 import { mobileOrTablet } from '../../utils/user-agent';
 import { useElementSizeObserver } from '../../hooks/useElementSizeObserver';
+import { useVisualViewportHeight } from '../../hooks/useVisualViewportHeight';
 import { ReplyLayout, ThreadIndicator } from '../../components/message';
 import { roomToParentsAtom } from '../../state/room/roomToParents';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
@@ -131,6 +132,9 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     const commands = useCommands(mx, room);
     const emojiBtnRef = useRef<HTMLButtonElement>(null);
     const sendBtnRef = useRef<HTMLButtonElement>(null);
+    // Re-render on software keyboard open/close so the emoji PopOut re-reads
+    // emojiBtnRef.getBoundingClientRect() and repositions above the keyboard.
+    useVisualViewportHeight();
     const [hasEditorContent, setHasEditorContent] = useState(false);
     const roomToParents = useAtomValue(roomToParentsAtom);
     const powerLevels = usePowerLevelsContext();
