@@ -1,7 +1,17 @@
 import type { Descendant } from 'slate';
 import type { MatrixClient } from 'matrix-js-sdk';
+import parse from 'html-dom-parser';
+import type { ChildNode, Element } from 'domhandler';
+import { isText, isTag } from 'domhandler';
 import * as css from '../../styles/CustomHtml.css';
 import { mxcUrlToHttp } from '../../utils/matrix';
+import { sanitizeCustomHtml } from '../../utils/sanitize';
+import {
+  parseMatrixToRoom,
+  parseMatrixToRoomEvent,
+  parseMatrixToUser,
+  testMatrixTo,
+} from '../../plugins/matrix-to';
 import type {
   CommandElement,
   EmoticonElement,
@@ -283,6 +293,207 @@ export const replaceTextInNode = (
   const offset = start + replacement.length;
   placeCaretAt(textNode, offset);
   return { node: textNode, offset };
+};
+
+type HtmlToAltInputCtx = {
+  mx: MatrixClient;
+  useAuthentication: boolean;
+};
+
+const BLOCK_TAGS = new Set([
+  'p',
+  'div',
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'h6',
+  'blockquote',
+  'pre',
+  'ul',
+  'ol',
+  'li',
+]);
+
+const appendVoidToFragment = (fragment: DocumentFragment, voidNode: HTMLElement) => {
+  const last = fragment.lastChild;
+  if (!last) {
+    fragment.appendChild(document.createTextNode(INLINE_VOID_CARET_ANCHOR));
+  } else if (last.nodeType !== Node.TEXT_NODE) {
+    fragment.appendChild(document.createTextNode(''));
+  }
+  fragment.appendChild(voidNode);
+  fragment.appendChild(document.createTextNode(''));
+};
+
+const WHITESPACE_ONLY = /^\s*$/;
+
+const isBrElement = (node: Node | null): boolean =>
+  node !== null && node.nodeType === Node.ELEMENT_NODE && (node as HTMLElement).tagName === 'BR';
+
+const appendTextToFragment = (fragment: DocumentFragment, text: string) => {
+  if (text.length === 0) return;
+  const last = fragment.lastChild;
+  if (WHITESPACE_ONLY.test(text) && (!last || isBrElement(last))) {
+    return;
+  }
+  if (last && last.nodeType === Node.TEXT_NODE) {
+    (last as Text).appendData(text);
+    return;
+  }
+  fragment.appendChild(document.createTextNode(text));
+};
+
+const emitBlockSeparator = (fragment: DocumentFragment) => {
+  const last = fragment.lastChild;
+  if (last && last.nodeType === Node.TEXT_NODE) {
+    const textNode = last as Text;
+    textNode.data = textNode.data.replace(/\s+$/, '');
+    if (textNode.data.length === 0) fragment.removeChild(textNode);
+  }
+  if (fragment.childNodes.length === 0) return;
+  fragment.appendChild(document.createElement('br'));
+};
+
+const collectTextContent = (nodes: ChildNode[]): string =>
+  nodes
+    .map((child) => {
+      if (isText(child)) return child.data;
+      if (isTag(child)) return collectTextContent(child.children);
+      return '';
+    })
+    .join('');
+
+const resolveMentionFromAnchor = (
+  el: Element,
+  href: string
+): {
+  id: string;
+  name: string;
+  highlight: boolean;
+  eventId?: string;
+  viaServers?: string[];
+} | null => {
+  const name = collectTextContent(el.children).trim();
+  const displayName = name.length > 0 ? name : href;
+
+  const roomEvent = parseMatrixToRoomEvent(href);
+  if (roomEvent) {
+    return {
+      id: roomEvent.roomIdOrAlias,
+      name: displayName,
+      highlight: false,
+      eventId: roomEvent.eventId,
+      viaServers: roomEvent.viaServers,
+    };
+  }
+
+  const user = parseMatrixToUser(href);
+  if (user) {
+    return { id: user, name: displayName, highlight: false };
+  }
+
+  const room = parseMatrixToRoom(href);
+  if (room) {
+    return {
+      id: room.roomIdOrAlias,
+      name: displayName,
+      highlight: false,
+      viaServers: room.viaServers,
+    };
+  }
+
+  return null;
+};
+
+const walkHtmlNodes = (
+  nodes: ChildNode[],
+  fragment: DocumentFragment,
+  ctx: HtmlToAltInputCtx,
+  initialIsFirstBlockChild: boolean
+): boolean => {
+  let isFirstBlockChild = initialIsFirstBlockChild;
+
+  nodes.forEach((node) => {
+    if (isText(node)) {
+      const before = fragment.lastChild;
+      appendTextToFragment(fragment, node.data);
+      if (fragment.lastChild !== before) isFirstBlockChild = false;
+      return;
+    }
+    if (!isTag(node)) return;
+
+    const element = node;
+    const tag = element.name.toLowerCase();
+
+    if (tag === 'br') {
+      fragment.appendChild(document.createElement('br'));
+      isFirstBlockChild = false;
+      return;
+    }
+
+    if (tag === 'img' && element.attribs['data-mx-emoticon'] !== undefined) {
+      const key = element.attribs.src;
+      const shortcode = element.attribs.alt || element.attribs.title || '';
+      if (key) {
+        const voidNode = createAltEmoticonNode({
+          mx: ctx.mx,
+          useAuthentication: ctx.useAuthentication,
+          key,
+          shortcode,
+        });
+        appendVoidToFragment(fragment, voidNode);
+        isFirstBlockChild = false;
+      }
+      return;
+    }
+
+    if (tag === 'a') {
+      const href = element.attribs.href ?? '';
+      if (testMatrixTo(href)) {
+        const mention = resolveMentionFromAnchor(element, href);
+        if (mention) {
+          const voidNode = createAltMentionNode(mention);
+          appendVoidToFragment(fragment, voidNode);
+          isFirstBlockChild = false;
+          return;
+        }
+      }
+      isFirstBlockChild = walkHtmlNodes(element.children, fragment, ctx, isFirstBlockChild);
+      return;
+    }
+
+    if (BLOCK_TAGS.has(tag)) {
+      if (!isFirstBlockChild) emitBlockSeparator(fragment);
+      walkHtmlNodes(element.children, fragment, ctx, true);
+      isFirstBlockChild = false;
+      return;
+    }
+
+    isFirstBlockChild = walkHtmlNodes(element.children, fragment, ctx, isFirstBlockChild);
+  });
+
+  return isFirstBlockChild;
+};
+
+export const isAltInputEmpty = (el: HTMLElement): boolean => {
+  if (el.childNodes.length === 0) return true;
+  if (el.childNodes.length === 1) {
+    const only = el.childNodes[0];
+    if (only.nodeType === Node.TEXT_NODE) {
+      return stripCaretAnchors((only as Text).data).length === 0;
+    }
+  }
+  return false;
+};
+
+export const htmlToAltInputDom = (html: string, ctx: HtmlToAltInputCtx): DocumentFragment => {
+  const sanitized = sanitizeCustomHtml(html);
+  const parsed = parse(sanitized) as ChildNode[];
+  const fragment = document.createDocumentFragment();
+  walkHtmlNodes(parsed, fragment, ctx, true);
+  return fragment;
 };
 
 export const replaceRangeWithNode = (

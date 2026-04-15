@@ -18,7 +18,6 @@ import {
   Overlay,
   OverlayBackdrop,
   OverlayCenter,
-  PopOut,
   Scroll,
   Text,
   config,
@@ -54,8 +53,7 @@ import {
   getMentions,
   replaceShortcodes,
 } from '../../components/editor';
-import { EmojiBoard, EmojiBoardTab } from '../../components/emoji-board';
-import { UseStateProvider } from '../../components/UseStateProvider';
+import { EmojiBoardPopOut, EmojiBoardTab } from '../../components/emoji-board';
 import type { UploadContent } from '../../utils/matrix';
 import { getImageInfo, getMxIdLocalPart, mxcUrlToHttp } from '../../utils/matrix';
 import { encryptFileInWorker } from '../../utils/encryptWorker';
@@ -92,7 +90,6 @@ import { VoiceMessageRecorder } from './VoiceMessageRecorder';
 import { Command, SHRUG, TABLEFLIP, UNFLIP, useCommands } from '../../hooks/useCommands';
 import { mobileOrTablet } from '../../utils/user-agent';
 import { useElementSizeObserver } from '../../hooks/useElementSizeObserver';
-import { useVisualViewportHeight } from '../../hooks/useVisualViewportHeight';
 import { ReplyLayout, ThreadIndicator } from '../../components/message';
 import { roomToParentsAtom } from '../../state/room/roomToParents';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
@@ -130,11 +127,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     const [alternateInput] = useSetting(settingsAtom, 'alternateInput');
     const direct = useIsDirectRoom();
     const commands = useCommands(mx, room);
-    const emojiBtnRef = useRef<HTMLButtonElement>(null);
     const sendBtnRef = useRef<HTMLButtonElement>(null);
-    // Re-render on software keyboard open/close so the emoji PopOut re-reads
-    // emojiBtnRef.getBoundingClientRect() and repositions above the keyboard.
-    useVisualViewportHeight();
     const [hasEditorContent, setHasEditorContent] = useState(false);
     const roomToParents = useAtomValue(roomToParentsAtom);
     const powerLevels = usePowerLevelsContext();
@@ -741,67 +734,44 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
                     <Icon src={toolbar ? Icons.AlphabetUnderline : Icons.Alphabet} />
                   </IconButton>
                 )}
-                <UseStateProvider initial={undefined}>
-                  {(emojiBoardTab: EmojiBoardTab | undefined, setEmojiBoardTab) => (
-                    <PopOut
-                      offset={16}
-                      alignOffset={-44}
-                      position="Top"
-                      align="End"
-                      anchor={
-                        emojiBoardTab === undefined
-                          ? undefined
-                          : emojiBtnRef.current?.getBoundingClientRect() ?? undefined
+                <EmojiBoardPopOut
+                  offset={16}
+                  alignOffset={-44}
+                  position="Top"
+                  align="End"
+                  imagePackRooms={imagePackRooms}
+                  returnFocusOnDeactivate={alternateInput && !mobileOrTablet()}
+                  onEmojiSelect={handleEmoticonSelect}
+                  onCustomEmojiSelect={handleEmoticonSelect}
+                  onStickerSelect={handleStickerSelect}
+                  onClose={() => {
+                    if (!mobileOrTablet() && !alternateInput) ReactEditor.focus(editor);
+                  }}
+                >
+                  {({ triggerRef, open, isOpen, tab: emojiBoardTab }) => (
+                    <IconButton
+                      ref={triggerRef}
+                      aria-pressed={hideStickerBtn ? isOpen : emojiBoardTab === EmojiBoardTab.Emoji}
+                      onMouseDown={
+                        alternateInput
+                          ? (e: React.MouseEvent) => {
+                              e.preventDefault();
+                              alternateInputRef.current?.focus();
+                            }
+                          : undefined
                       }
-                      content={
-                        <EmojiBoard
-                          tab={emojiBoardTab}
-                          onTabChange={setEmojiBoardTab}
-                          imagePackRooms={imagePackRooms}
-                          returnFocusOnDeactivate={alternateInput && !mobileOrTablet()}
-                          onEmojiSelect={handleEmoticonSelect}
-                          onCustomEmojiSelect={handleEmoticonSelect}
-                          onStickerSelect={handleStickerSelect}
-                          requestClose={() => {
-                            setEmojiBoardTab((t) => {
-                              if (t) {
-                                if (!mobileOrTablet() && !alternateInput) ReactEditor.focus(editor);
-                                return undefined;
-                              }
-                              return t;
-                            });
-                          }}
-                        />
-                      }
+                      onClick={open}
+                      variant="SurfaceVariant"
+                      size="300"
+                      radii="300"
                     >
-                      <IconButton
-                        ref={emojiBtnRef}
-                        aria-pressed={
-                          hideStickerBtn ? !!emojiBoardTab : emojiBoardTab === EmojiBoardTab.Emoji
-                        }
-                        onMouseDown={
-                          alternateInput
-                            ? (e: React.MouseEvent) => {
-                                e.preventDefault();
-                                alternateInputRef.current?.focus();
-                              }
-                            : undefined
-                        }
-                        onClick={() => setEmojiBoardTab(EmojiBoardTab.Emoji)}
-                        variant="SurfaceVariant"
-                        size="300"
-                        radii="300"
-                      >
-                        <Icon
-                          src={Icons.Smile}
-                          filled={
-                            hideStickerBtn ? !!emojiBoardTab : emojiBoardTab === EmojiBoardTab.Emoji
-                          }
-                        />
-                      </IconButton>
-                    </PopOut>
+                      <Icon
+                        src={Icons.Smile}
+                        filled={hideStickerBtn ? isOpen : emojiBoardTab === EmojiBoardTab.Emoji}
+                      />
+                    </IconButton>
                   )}
-                </UseStateProvider>
+                </EmojiBoardPopOut>
                 {hasEditorContent || !!replyDraft || selectedFiles.length > 0 ? (
                   <IconButton
                     ref={sendBtnRef}

@@ -1,7 +1,6 @@
-import type { KeyboardEventHandler, MouseEventHandler } from 'react';
+import type { KeyboardEventHandler } from 'react';
 import React, { useCallback, useEffect, useState } from 'react';
-import type { RectCords } from 'folds';
-import { Box, Chip, Icon, IconButton, Icons, Line, PopOut, Spinner, Text, as, config } from 'folds';
+import { Box, Chip, Icon, IconButton, Icons, Line, Spinner, Text, as, config } from 'folds';
 import { Editor, Transforms } from 'slate';
 import { ReactEditor } from 'slate-react';
 import type { IContent, IMentions, MatrixEvent, Room } from 'matrix-js-sdk';
@@ -12,7 +11,6 @@ import type { AutocompleteQuery } from '../../../components/editor';
 import {
   AUTOCOMPLETE_PREFIXES,
   AutocompletePrefix,
-  BlockType,
   CustomEditor,
   EmoticonAutocomplete,
   RoomMentionAutocomplete,
@@ -39,12 +37,12 @@ import { settingsAtom } from '../../../state/settings';
 import { useRelevantImagePacks } from '../../../hooks/useImagePacks';
 import { ImageUsage } from '../../../plugins/custom-emoji/types';
 import { buildShortcodeMap, emojis as unicodeEmojis } from '../../../plugins/emoji';
-import { UseStateProvider } from '../../../components/UseStateProvider';
-import { EmojiBoard } from '../../../components/emoji-board';
+import { EmojiBoardPopOut } from '../../../components/emoji-board';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
 import { getEditedEvent, getMentionContent, trimReplyFromFormattedBody } from '../../../utils/room';
+import { sanitizeText } from '../../../utils/sanitize';
 import { mobileOrTablet } from '../../../utils/user-agent';
 import { useComposingCheck } from '../../../hooks/useComposingCheck';
 
@@ -241,20 +239,21 @@ export const MessageEditor = as<'div', MessageEditorProps>(
       const [body, customHtml] = getPrevBodyAndFormattedBody();
 
       if (alternateInput) {
-        const text = typeof body === 'string' ? body : '';
-        editor.children = [{ type: BlockType.Paragraph, children: [{ text }] }];
-        editor.onChange();
-        if (!mobileOrTablet()) {
-          const el = alternateInputRef.current;
-          if (el) {
-            el.focus();
-            const range = document.createRange();
-            range.selectNodeContents(el);
-            range.collapse(false);
-            const sel = window.getSelection();
-            sel?.removeAllRanges();
-            sel?.addRange(range);
-          }
+        const plainBody = typeof body === 'string' ? body : '';
+        const html =
+          typeof customHtml === 'string'
+            ? customHtml
+            : sanitizeText(plainBody).replace(/\n/g, '<br>');
+        editor.setAlternateInputContent?.(html);
+        const el = alternateInputRef.current;
+        if (el) {
+          el.focus();
+          const range = document.createRange();
+          range.selectNodeContents(el);
+          range.collapse(false);
+          const sel = window.getSelection();
+          sel?.removeAllRanges();
+          sel?.addRange(range);
         }
       } else {
         const initialValue =
@@ -268,7 +267,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
         });
 
         editor.insertFragment(initialValue);
-        if (!mobileOrTablet()) ReactEditor.focus(editor);
+        ReactEditor.focus(editor);
       }
     }, [editor, getPrevBodyAndFormattedBody, isMarkdown, alternateInput]);
 
@@ -311,7 +310,6 @@ export const MessageEditor = as<'div', MessageEditorProps>(
           ref={editorRef}
           editor={editor}
           alternateInputRef={alternateInputRef}
-          placeholder="Edit message..."
           onKeyDown={handleKeyDown}
           onKeyUp={handleKeyUp}
           bottom={
@@ -358,58 +356,41 @@ export const MessageEditor = as<'div', MessageEditorProps>(
                       <Icon size="400" src={toolbar ? Icons.AlphabetUnderline : Icons.Alphabet} />
                     </IconButton>
                   )}
-                  <UseStateProvider initial={undefined}>
-                    {(anchor: RectCords | undefined, setAnchor) => (
-                      <PopOut
-                        anchor={anchor}
-                        alignOffset={-8}
-                        position="Top"
-                        align="End"
-                        content={
-                          <EmojiBoard
-                            imagePackRooms={imagePackRooms ?? []}
-                            returnFocusOnDeactivate={alternateInput && !mobileOrTablet()}
-                            onEmojiSelect={handleEmoticonSelect}
-                            onCustomEmojiSelect={handleEmoticonSelect}
-                            requestClose={() => {
-                              setAnchor((v) => {
-                                if (v) {
-                                  if (!alternateInput && !mobileOrTablet()) {
-                                    ReactEditor.focus(editor);
-                                  }
-                                  return undefined;
-                                }
-                                return v;
-                              });
-                            }}
-                          />
+                  <EmojiBoardPopOut
+                    alignOffset={-8}
+                    position="Top"
+                    align="End"
+                    imagePackRooms={imagePackRooms ?? []}
+                    returnFocusOnDeactivate={alternateInput && !mobileOrTablet()}
+                    onEmojiSelect={handleEmoticonSelect}
+                    onCustomEmojiSelect={handleEmoticonSelect}
+                    onClose={() => {
+                      if (!alternateInput && !mobileOrTablet()) {
+                        ReactEditor.focus(editor);
+                      }
+                    }}
+                  >
+                    {({ triggerRef, open, isOpen }) => (
+                      <IconButton
+                        ref={triggerRef}
+                        aria-pressed={isOpen}
+                        onMouseDown={
+                          alternateInput
+                            ? (e: React.MouseEvent) => {
+                                e.preventDefault();
+                                alternateInputRef.current?.focus();
+                              }
+                            : undefined
                         }
+                        onClick={open}
+                        variant="SurfaceVariant"
+                        size="300"
+                        radii="300"
                       >
-                        <IconButton
-                          aria-pressed={anchor !== undefined}
-                          onMouseDown={
-                            alternateInput
-                              ? (e: React.MouseEvent) => {
-                                  e.preventDefault();
-                                  alternateInputRef.current?.focus();
-                                }
-                              : undefined
-                          }
-                          onClick={
-                            ((evt) =>
-                              setAnchor(
-                                evt.currentTarget.getBoundingClientRect()
-                              )) as MouseEventHandler<HTMLButtonElement>
-                          }
-                          variant="SurfaceVariant"
-                          size="300"
-                          radii="300"
-                        >
-                          <Icon size="400" src={Icons.Smile} filled={anchor !== undefined} />
-                        </IconButton>
-                      </PopOut>
+                        <Icon size="400" src={Icons.Smile} filled={isOpen} />
+                      </IconButton>
                     )}
-                  </UseStateProvider>
+                  </EmojiBoardPopOut>
                 </Box>
               </Box>
               {!alternateInput && toolbar && (

@@ -64,13 +64,17 @@ export function LongPressWrapper({
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
   const suppressRef = useRef(false);
 
-  const start = useCallback(() => {
-    suppressRef.current = false;
-    timerRef.current = setTimeout(() => {
-      suppressRef.current = true;
-      onLongPress();
-    }, 500);
-  }, [onLongPress]);
+  const start = useCallback(
+    (e: React.PointerEvent) => {
+      if (e.button !== 0) return;
+      suppressRef.current = false;
+      timerRef.current = setTimeout(() => {
+        suppressRef.current = true;
+        onLongPress();
+      }, 500);
+    },
+    [onLongPress]
+  );
 
   const cancel = useCallback(() => clearTimeout(timerRef.current), []);
 
