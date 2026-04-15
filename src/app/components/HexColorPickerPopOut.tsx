@@ -2,7 +2,7 @@ import FocusTrap from 'focus-trap-react';
 import type { RectCords } from 'folds';
 import { Box, Button, config, Input, Menu, PopOut, Text } from 'folds';
 import type { MouseEventHandler, ReactNode } from 'react';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { stopPropagation } from '../utils/keyboard';
 
 type HexColorPickerPopOutProps = {
@@ -21,10 +21,11 @@ export function HexColorPickerPopOut({
 }: HexColorPickerPopOutProps) {
   const [cords, setCords] = useState<RectCords>();
   const [hexInput, setHexInput] = useState(color ?? '');
-
-  useEffect(() => {
+  const [prevColor, setPrevColor] = useState(color);
+  if (color !== prevColor) {
+    setPrevColor(color);
     setHexInput(color ?? '');
-  }, [color]);
+  }
 
   const handleHexInput = (evt: React.ChangeEvent<HTMLInputElement>) => {
     const val = evt.target.value;

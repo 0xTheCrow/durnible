@@ -51,6 +51,15 @@ Durnible is a Matrix chat client built with React, TypeScript, and Vite. Forked 
 - CSS is co-located as `*.css.ts` Vanilla Extract files (not CSS modules)
 - Tests live alongside source as `*.test.ts` in `src/app/utils/`
 - Don't use `useReducer` as a force-update hack (e.g., `const [, forceUpdate] = useReducer(n => n + 1, 0)`). If a component needs to re-render, it should be driven by real state or props changes.
+- Don't write `useEffect` just to mirror state. Litmus test: if the effect's `setState`/`setAtom` value depends only on values already readable during render (props, state, React context, atom/store hook returns) — no new subscription, no async, no DOM read — delete the effect. Effects that call `setState` inside an event-listener callback, after an `await`, or after measuring the DOM are legitimate; the rule targets effect bodies whose outcome is purely derived from existing inputs. Two fixes, depending on the case: (1) if the state is always derivable from props (e.g. `setFiltered(list.filter(...))` on `[list]`), delete the state and derive inline — `const filtered = list.filter(...)` — wrapping with `useMemo` only if the derivation is measurably expensive. (2) If local state must reset when a prop changes, use the setState-during-render pattern shown below, not an effect; prefer a component `key=` only if resetting the entire subtree is acceptable, since `key` remounts and loses focus, scroll, and input selection.
+  ```tsx
+  const [value, setValue] = useState(propValue);
+  const [prev, setPrev] = useState(propValue);
+  if (propValue !== prev) {
+    setPrev(propValue);
+    setValue(propValue);
+  }
+  ```
 - Don't patch matrix-js-sdk types with `as any` — find the correct type or fix the upstream typing.
 - Don't use `setTimeout` to work around race conditions in room state — use the SDK's event listeners.
 - Avoid `requestAnimationFrame` if possible — prefer CSS transitions/animations or React state-driven updates.

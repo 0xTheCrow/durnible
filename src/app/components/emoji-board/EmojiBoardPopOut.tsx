@@ -1,11 +1,15 @@
 import type { Align, Position, RectCords } from 'folds';
 import { PopOut } from 'folds';
-import type { ReactNode, Ref } from 'react';
+import type { CSSProperties, ReactNode, Ref } from 'react';
 import React, { forwardRef, useCallback, useImperativeHandle, useRef, useState } from 'react';
 import type { Room } from 'matrix-js-sdk';
 import { EmojiBoard } from './EmojiBoard';
 import { EmojiBoardTab } from './types';
 import { useVisualViewportHeight } from '../../hooks/useVisualViewportHeight';
+
+const DEFAULT_OFFSET = 10;
+const BREATHING_ROOM = 16;
+const MIN_USABLE_HEIGHT = 200;
 
 export type OpenAtRectOptions = {
   position?: Position;
@@ -70,7 +74,7 @@ export const EmojiBoardPopOut = forwardRef<EmojiBoardPopOutHandle, EmojiBoardPop
     const [tab, setTab] = useState<EmojiBoardTab | undefined>(undefined);
     const [fallbackRect, setFallbackRect] = useState<RectCords | undefined>();
     const [overrides, setOverrides] = useState<OpenAtRectOptions | undefined>();
-    useVisualViewportHeight();
+    const viewportHeight = useVisualViewportHeight();
 
     const isOpen = tab !== undefined;
 
@@ -106,26 +110,59 @@ export const EmojiBoardPopOut = forwardRef<EmojiBoardPopOutHandle, EmojiBoardPop
       ? fallbackRect ?? triggerRef.current?.getBoundingClientRect() ?? undefined
       : undefined;
 
+    const requestedPosition = overrides?.position ?? position;
+    const effectiveOffset = overrides?.offset ?? offset ?? DEFAULT_OFFSET;
+
+    let finalPosition = requestedPosition;
+    let availableHeight: number | undefined;
+
+    if (anchor && (requestedPosition === 'Top' || requestedPosition === 'Bottom')) {
+      const spaceBelow =
+        viewportHeight - (anchor.y + anchor.height) - effectiveOffset - BREATHING_ROOM;
+      const spaceAbove = anchor.y - effectiveOffset - BREATHING_ROOM;
+
+      if (requestedPosition === 'Bottom') {
+        if (spaceBelow >= MIN_USABLE_HEIGHT || spaceBelow >= spaceAbove) {
+          availableHeight = spaceBelow;
+        } else {
+          finalPosition = 'Top';
+          availableHeight = spaceAbove;
+        }
+      } else if (spaceAbove >= MIN_USABLE_HEIGHT || spaceAbove >= spaceBelow) {
+        availableHeight = spaceAbove;
+      } else {
+        finalPosition = 'Bottom';
+        availableHeight = spaceBelow;
+      }
+    }
+
+    const contentStyle: CSSProperties | undefined =
+      availableHeight != null
+        ? ({ '--emoji-board-max-height': `${Math.max(0, availableHeight)}px` } as CSSProperties)
+        : undefined;
+
     return (
       <PopOut
-        position={overrides?.position ?? position}
+        position={finalPosition}
         align={overrides?.align ?? align}
-        offset={overrides?.offset ?? offset}
+        offset={effectiveOffset}
         alignOffset={overrides?.alignOffset ?? alignOffset}
         anchor={anchor}
         content={
-          <EmojiBoard
-            tab={tab}
-            onTabChange={setTab}
-            imagePackRooms={imagePackRooms ?? []}
-            returnFocusOnDeactivate={returnFocusOnDeactivate}
-            allowTextCustomEmoji={allowTextCustomEmoji}
-            addToRecentEmoji={addToRecentEmoji}
-            onEmojiSelect={onEmojiSelect}
-            onCustomEmojiSelect={onCustomEmojiSelect}
-            onStickerSelect={onStickerSelect}
-            requestClose={close}
-          />
+          <div style={contentStyle}>
+            <EmojiBoard
+              tab={tab}
+              onTabChange={setTab}
+              imagePackRooms={imagePackRooms ?? []}
+              returnFocusOnDeactivate={returnFocusOnDeactivate}
+              allowTextCustomEmoji={allowTextCustomEmoji}
+              addToRecentEmoji={addToRecentEmoji}
+              onEmojiSelect={onEmojiSelect}
+              onCustomEmojiSelect={onCustomEmojiSelect}
+              onStickerSelect={onStickerSelect}
+              requestClose={close}
+            />
+          </div>
         }
       >
         {children({ triggerRef, open, isOpen, tab })}
