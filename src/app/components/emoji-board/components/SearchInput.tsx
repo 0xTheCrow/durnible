@@ -1,7 +1,6 @@
 import type { ChangeEventHandler, KeyboardEventHandler } from 'react';
 import React, { useRef } from 'react';
 import { Input, Chip, Icon, Icons, Text } from 'folds';
-import { mobileOrTablet } from '../../../utils/user-agent';
 
 type SearchInputProps = {
   query?: string;
@@ -49,7 +48,7 @@ export function SearchInput({
       }
       onChange={onChange}
       onKeyDown={onKeyDown}
-      autoFocus={!mobileOrTablet()}
+      autoFocus
     />
   );
 }
