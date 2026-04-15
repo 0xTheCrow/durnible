@@ -28,8 +28,6 @@ import { getMxIdLocalPart } from '../../utils/matrix';
 import { factoryRoomIdByAtoZ } from '../../utils/sort';
 import type { SearchItemStrGetter, UseAsyncSearchOptions } from '../../hooks/useAsyncSearch';
 import { useAsyncSearch } from '../../hooks/useAsyncSearch';
-import type { DebounceOptions } from '../../hooks/useDebounce';
-import { useDebounce } from '../../hooks/useDebounce';
 import { VirtualTile } from '../../components/virtualizer';
 import { stopPropagation } from '../../utils/keyboard';
 
@@ -115,9 +113,6 @@ const SEARCH_OPTS: UseAsyncSearchOptions = {
     contain: true,
   },
 };
-const SEARCH_DEBOUNCE_OPTS: DebounceOptions = {
-  wait: 200,
-};
 
 type SelectRoomButtonProps = {
   roomList: string[];
@@ -135,7 +130,7 @@ function SelectRoomButton({ roomList, selectedRooms, onChange }: SelectRoomButto
     [mx]
   );
 
-  const [searchResult, _searchRoom, resetSearch] = useAsyncSearch(
+  const [searchResult, searchRoom, resetSearch] = useAsyncSearch(
     roomList,
     getRoomNameStr,
     SEARCH_OPTS
@@ -150,7 +145,6 @@ function SelectRoomButton({ roomList, selectedRooms, onChange }: SelectRoomButto
   });
   const vItems = virtualizer.getVirtualItems();
 
-  const searchRoom = useDebounce(_searchRoom, SEARCH_DEBOUNCE_OPTS);
   const handleSearchChange: ChangeEventHandler<HTMLInputElement> = (evt) => {
     const value = evt.currentTarget.value.trim();
     if (!value) {

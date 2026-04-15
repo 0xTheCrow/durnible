@@ -29,7 +29,6 @@ import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { UseStateProvider } from '../../components/UseStateProvider';
 import type { SearchItemStrGetter, UseAsyncSearchOptions } from '../../hooks/useAsyncSearch';
 import { useAsyncSearch } from '../../hooks/useAsyncSearch';
-import { useDebounce } from '../../hooks/useDebounce';
 import { TypingIndicator } from '../../components/typing-indicator';
 import { getMemberDisplayName, getMemberSearchStr } from '../../utils/room';
 import { getMxIdLocalPart } from '../../utils/matrix';
@@ -213,15 +212,12 @@ export function MembersDrawer({ room, members }: MembersDrawerProps) {
     overscan: 10,
   });
 
-  const handleSearchChange: ChangeEventHandler<HTMLInputElement> = useDebounce(
-    useCallback(
-      (evt) => {
-        if (evt.target.value) search(evt.target.value);
-        else resetSearch();
-      },
-      [search, resetSearch]
-    ),
-    { wait: 200 }
+  const handleSearchChange: ChangeEventHandler<HTMLInputElement> = useCallback(
+    (evt) => {
+      if (evt.target.value) search(evt.target.value);
+      else resetSearch();
+    },
+    [search, resetSearch]
   );
 
   const handleMemberClick: MouseEventHandler<HTMLButtonElement> = (evt) => {
