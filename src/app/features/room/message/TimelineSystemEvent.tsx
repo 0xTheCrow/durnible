@@ -1,13 +1,11 @@
 import type { RectCords } from 'folds';
 import { Box, Icon, IconButton, Icons, Line, Menu, PopOut, as } from 'folds';
 import type { MouseEventHandler } from 'react';
-import React, { useCallback, useState } from 'react';
+import React, { useState } from 'react';
 import FocusTrap from 'focus-trap-react';
-import { useHover, useFocusWithin } from 'react-aria';
-import { useAtom } from 'jotai';
 import type { MatrixEvent, Room } from 'matrix-js-sdk';
 import classNames from 'classnames';
-import { messageOptionsAtom } from './messageOptionsAtom';
+import { useMessagePopupTrigger } from './useMessagePopupTrigger';
 import { MessageBase } from '../../../components/message';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { stopPropagation } from '../../../utils/keyboard';
@@ -48,16 +46,8 @@ export const TimelineSystemEvent = as<'div', TimelineSystemEventProps>(
   ) => {
     const mx = useMatrixClient();
     const eventId = mEvent.getId() ?? '';
-    const [activeMessageOptionsId, setActiveMessageOptionsId] = useAtom(messageOptionsAtom);
-    const hover = activeMessageOptionsId === eventId;
-    const setHover = useCallback(
-      (isHovered: boolean) => {
-        setActiveMessageOptionsId(isHovered ? eventId : (prev) => (prev === eventId ? null : prev));
-      },
-      [eventId, setActiveMessageOptionsId]
-    );
-    const { hoverProps } = useHover({ onHoverChange: setHover });
-    const { focusWithinProps } = useFocusWithin({ onFocusWithinChange: setHover });
+    const { hoverProps, focusWithinProps, handleTap, showOptions } =
+      useMessagePopupTrigger(eventId);
     const [menuAnchor, setMenuAnchor] = useState<RectCords>();
     const stateEvent = typeof mEvent.getStateKey() === 'string';
 
@@ -92,12 +82,13 @@ export const TimelineSystemEvent = as<'div', TimelineSystemEventProps>(
         autoCollapse
         highlight={highlight}
         selected={!!menuAnchor}
+        onClick={handleTap}
         {...props}
         {...hoverProps}
         {...focusWithinProps}
         ref={ref}
       >
-        {(hover || !!menuAnchor) && (
+        {(showOptions || !!menuAnchor) && (
           <div className={css.MessageOptionsBase}>
             <Menu className={css.MessageOptionsBar} variant="SurfaceVariant">
               <Box gap="100">
