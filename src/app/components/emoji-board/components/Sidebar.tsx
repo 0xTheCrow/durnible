@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import type { IconSrc } from 'folds';
 import {
   Box,
@@ -24,6 +24,7 @@ import {
   extractInstruction,
 } from '@atlaskit/pragmatic-drag-and-drop-hitbox/tree-item';
 import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
+import { LongPressWrapper } from '../../long-press';
 import * as css from './styles.css';
 
 export function Sidebar({ children }: { children: ReactNode }) {
@@ -262,45 +263,6 @@ export function DraggableImageGroupIcon({
       data-drop-below={dropState?.type === 'reorder-below' || undefined}
     >
       <ImageGroupIcon active={active} id={id} label={label} url={url} onClick={onClick} />
-    </div>
-  );
-}
-
-function LongPressWrapper({
-  onLongPress,
-  children,
-}: {
-  onLongPress: () => void;
-  children: ReactNode;
-}) {
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
-  const suppressRef = useRef(false);
-
-  const start = useCallback(() => {
-    suppressRef.current = false;
-    timerRef.current = setTimeout(() => {
-      suppressRef.current = true;
-      onLongPress();
-    }, 500);
-  }, [onLongPress]);
-
-  const cancel = useCallback(() => clearTimeout(timerRef.current), []);
-
-  return (
-    <div
-      onPointerDown={start}
-      onPointerUp={cancel}
-      onPointerLeave={cancel}
-      onPointerCancel={cancel}
-      onClickCapture={(e) => {
-        if (suppressRef.current) {
-          suppressRef.current = false;
-          e.stopPropagation();
-          e.preventDefault();
-        }
-      }}
-    >
-      {children}
     </div>
   );
 }

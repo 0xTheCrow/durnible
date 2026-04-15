@@ -88,8 +88,10 @@ export const roomIdToTypingMembersAtom = atom<
         produce(rToTyping, (draft) => putTypingMember(draft, action))
       );
 
-      // remove typing receipt after some timeout
-      // to prevent stuck typing members
+      // matrix-js-sdk only fires RoomMember.typing on m.typing EDU transitions
+      // and has no internal timeout, so if the server never sends a stop-typing
+      // EDU (network drop, missed sync) the receipt would stick forever. Expire
+      // it locally per the Matrix spec's client-side TTL expectation.
       setTimeout(() => {
         const { roomId, userId } = action;
         const timeout = timeoutReceipt(

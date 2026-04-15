@@ -366,7 +366,6 @@ export const Message = as<'div', MessageProps>(
       (evt) => {
         if (!mobileOrTablet()) return;
         if (selectionMode || edit) return;
-        if (!window.getSelection()?.isCollapsed) return;
         const target = evt.target as HTMLElement | null;
         if (target?.closest('button, a, [role="button"], input, textarea, label')) return;
         setActiveMessageOptionsId((prev) => (prev === eventId ? null : eventId));

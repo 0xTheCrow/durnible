@@ -120,13 +120,11 @@ export const useTimelineClickHandlers = ({
           formattedBody,
           relation,
         });
-        setTimeout(() => {
-          if (alternateInput) {
-            alternateInputRef.current?.focus();
-          } else {
-            ReactEditor.focus(editor);
-          }
-        }, 100);
+        if (alternateInput) {
+          alternateInputRef.current?.focus();
+        } else {
+          ReactEditor.focus(editor);
+        }
       }
     },
     [room, setReplyDraft, editor, alternateInput, alternateInputRef]

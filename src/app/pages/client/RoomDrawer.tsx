@@ -4,6 +4,7 @@ import { useLocation, useMatch } from 'react-router-dom';
 import { Box, Icon, IconButton, Icons, Line, Text, config } from 'folds';
 import { useAtomValue } from 'jotai';
 import type { Room } from 'matrix-js-sdk';
+import { LongPressWrapper } from '../../components/long-press';
 import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
 import { useSwipeDrawer } from '../../hooks/useSwipeDrawer';
 import { SwipeDrawer } from '../../components/swipe-drawer';
@@ -51,51 +52,6 @@ export function useFavoriteRoomPath() {
       return getHomeRoomPath(roomIdOrAlias);
     },
     [mx, mDirects, roomToParents]
-  );
-}
-
-export function LongPressWrapper({
-  onLongPress,
-  children,
-}: {
-  onLongPress: () => void;
-  children: ReactNode;
-}) {
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
-  const suppressRef = useRef(false);
-
-  const start = useCallback(
-    (e: React.PointerEvent) => {
-      if (e.button !== 0) return;
-      suppressRef.current = false;
-      timerRef.current = setTimeout(() => {
-        suppressRef.current = true;
-        onLongPress();
-      }, 500);
-    },
-    [onLongPress]
-  );
-
-  const cancel = useCallback(() => clearTimeout(timerRef.current), []);
-
-  return (
-    <div
-      onPointerDown={start}
-      onPointerUp={cancel}
-      onPointerLeave={cancel}
-      onPointerCancel={cancel}
-      onContextMenu={(e) => e.preventDefault()}
-      onClickCapture={(e) => {
-        if (suppressRef.current) {
-          suppressRef.current = false;
-          e.stopPropagation();
-          e.preventDefault();
-        }
-      }}
-      style={{ WebkitTouchCallout: 'none', userSelect: 'none' } as React.CSSProperties}
-    >
-      {children}
-    </div>
   );
 }
 
