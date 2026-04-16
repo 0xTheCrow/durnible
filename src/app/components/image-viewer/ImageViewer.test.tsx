@@ -1,7 +1,9 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ImageViewer } from './ImageViewer';
+import { ImageViewer, IMAGE_VIEWER_ZOOM_STEP } from './ImageViewer';
+
+const zoomLabel = (zoom: number) => `${Math.round(zoom * 100)}%`;
 
 vi.mock('../../utils/matrix', () => ({
   downloadMedia: vi.fn().mockResolvedValue(new Blob(['img'], { type: 'image/png' })),
@@ -47,13 +49,17 @@ describe('ImageViewer', () => {
     it('zoom in button increases zoom', () => {
       renderViewer();
       fireEvent.click(screen.getByTestId('image-viewer-zoom-in'));
-      expect(screen.getByTestId('image-viewer-zoom-label')).toHaveTextContent('120%');
+      expect(screen.getByTestId('image-viewer-zoom-label')).toHaveTextContent(
+        zoomLabel(1 + IMAGE_VIEWER_ZOOM_STEP)
+      );
     });
 
     it('zoom out button decreases zoom', () => {
       renderViewer();
       fireEvent.click(screen.getByTestId('image-viewer-zoom-out'));
-      expect(screen.getByTestId('image-viewer-zoom-label')).toHaveTextContent('80%');
+      expect(screen.getByTestId('image-viewer-zoom-label')).toHaveTextContent(
+        zoomLabel(1 - IMAGE_VIEWER_ZOOM_STEP)
+      );
     });
 
     it('zoom chip toggles between 100% and 200%', () => {

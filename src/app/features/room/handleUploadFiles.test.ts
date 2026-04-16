@@ -4,6 +4,8 @@ import type { ListAction } from '../../state/list';
 import type { UploadItem } from '../../state/room/roomInputDrafts';
 import type { EncryptedFileResult, HandleUploadFilesContext } from './handleUploadFiles';
 import { handleUploadFiles } from './handleUploadFiles';
+import { MAX_UPLOAD_QUEUE_SIZE } from '../../utils/uploadQueueCap';
+import { FALLBACK_MIMETYPE } from '../../utils/mimeTypes';
 
 // ─── Fixtures ────────────────────────────────────────────────────────────────
 
@@ -74,7 +76,9 @@ describe('handleUploadFiles', () => {
     });
 
     it('opens the upload board even when no files are accepted', () => {
-      const { ctx, onUploadBoardOpen, setItems, onAccepted } = setup({ currentItemCount: 6 });
+      const { ctx, onUploadBoardOpen, setItems, onAccepted } = setup({
+        currentItemCount: MAX_UPLOAD_QUEUE_SIZE,
+      });
       handleUploadFiles(makeImages(3), ctx);
       expect(onUploadBoardOpen).toHaveBeenCalledTimes(1);
       expect(setItems).not.toHaveBeenCalled();
@@ -88,7 +92,7 @@ describe('handleUploadFiles', () => {
     });
   });
 
-  describe('queue cap (max 6)', () => {
+  describe('queue cap', () => {
     it('accepts a small batch into an empty queue', () => {
       const { ctx, setItems } = setup();
       const result = handleUploadFiles(makeImages(3), ctx);
@@ -96,30 +100,30 @@ describe('handleUploadFiles', () => {
       expect(itemsFromPut(setItems.mock.calls[0][0])).toHaveLength(3);
     });
 
-    it('accepts exactly 6 when filling an empty queue in a single batch', () => {
+    it('fills an empty queue up to the cap in a single batch', () => {
       const { ctx, setItems } = setup();
-      const result = handleUploadFiles(makeImages(6), ctx);
-      expect(result.acceptedCount).toBe(6);
-      expect(itemsFromPut(setItems.mock.calls[0][0])).toHaveLength(6);
+      const result = handleUploadFiles(makeImages(MAX_UPLOAD_QUEUE_SIZE), ctx);
+      expect(result.acceptedCount).toBe(MAX_UPLOAD_QUEUE_SIZE);
+      expect(itemsFromPut(setItems.mock.calls[0][0])).toHaveLength(MAX_UPLOAD_QUEUE_SIZE);
     });
 
     it('drops the overflow when an over-capacity batch arrives', () => {
-      // 4 already queued + 5 incoming → only 2 of the new batch should fit.
-      const { ctx, setItems } = setup({ currentItemCount: 4 });
-      const result = handleUploadFiles(makeImages(5), ctx);
+      // 2 slots remaining; more incoming than remaining → only 2 fit.
+      const { ctx, setItems } = setup({ currentItemCount: MAX_UPLOAD_QUEUE_SIZE - 2 });
+      const result = handleUploadFiles(makeImages(MAX_UPLOAD_QUEUE_SIZE), ctx);
       expect(result.acceptedCount).toBe(2);
       expect(itemsFromPut(setItems.mock.calls[0][0])).toHaveLength(2);
     });
 
     it('rejects all files when the queue is already at the cap', () => {
-      const { ctx, setItems } = setup({ currentItemCount: 6 });
+      const { ctx, setItems } = setup({ currentItemCount: MAX_UPLOAD_QUEUE_SIZE });
       const result = handleUploadFiles(makeImages(3), ctx);
       expect(result.acceptedCount).toBe(0);
       expect(setItems).not.toHaveBeenCalled();
     });
 
     it('preserves the original order when truncating a batch to fit', () => {
-      const { ctx, setItems } = setup({ currentItemCount: 4 });
+      const { ctx, setItems } = setup({ currentItemCount: MAX_UPLOAD_QUEUE_SIZE - 2 });
       const incoming = [makeFile('a.png'), makeFile('b.png'), makeFile('c.png'), makeFile('d.png')];
       handleUploadFiles(incoming, ctx);
       const items = itemsFromPut(setItems.mock.calls[0][0]);
@@ -133,7 +137,7 @@ describe('handleUploadFiles', () => {
       const weird = new File(['x'], 'weird.bin', { type: 'application/x-weird' });
       handleUploadFiles([weird], ctx);
       const items = itemsFromPut(setItems.mock.calls[0][0]);
-      expect(items[0].file.type).toBe('application/octet-stream');
+      expect(items[0].file.type).toBe(FALLBACK_MIMETYPE);
       expect(items[0].file.name).toBe('weird.bin');
     });
 

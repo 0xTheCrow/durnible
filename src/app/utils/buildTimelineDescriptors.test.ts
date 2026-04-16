@@ -1,7 +1,7 @@
 import { RelationType } from 'matrix-js-sdk';
 import { describe, it, expect, vi } from 'vitest';
 import type { TimelineEventInput, TimelineItem } from './buildTimelineDescriptors';
-import { buildTimelineDescriptors } from './buildTimelineDescriptors';
+import { buildTimelineDescriptors, IMAGE_GROUP_WINDOW_MS } from './buildTimelineDescriptors';
 import { createMockMatrixEvent } from '../../test/mocks';
 
 const MY_USER = '@me:example.com';
@@ -388,11 +388,11 @@ describe('buildTimelineDescriptors', () => {
         | Extract<TimelineItem, { type: 'event' }>
         | undefined;
 
-    it('groups two consecutive images from the same sender within 10 seconds', () => {
+    it('groups two consecutive images from the same sender within the window', () => {
       const result = buildTimelineDescriptors(
         [
           makeImageEvent({ id: '$A', sender: OTHER_USER, ts: 1000 }),
-          makeImageEvent({ id: '$B', sender: OTHER_USER, ts: 1000 + 5_000 }),
+          makeImageEvent({ id: '$B', sender: OTHER_USER, ts: 1000 + IMAGE_GROUP_WINDOW_MS / 2 }),
         ],
         undefined,
         MY_USER
@@ -407,7 +407,13 @@ describe('buildTimelineDescriptors', () => {
     it('groups up to 6 images and stops at the cap', () => {
       const events: TimelineEventInput[] = [];
       for (let i = 0; i < 8; i += 1) {
-        events.push(makeImageEvent({ id: `$img${i}`, sender: OTHER_USER, ts: 1000 + i * 1_000 }));
+        events.push(
+          makeImageEvent({
+            id: `$img${i}`,
+            sender: OTHER_USER,
+            ts: 1000 + i * Math.floor(IMAGE_GROUP_WINDOW_MS / 2),
+          })
+        );
       }
       const result = buildTimelineDescriptors(events, undefined, MY_USER);
       // First 6 are merged into $img0; $img6 starts a new group with $img7.
@@ -416,11 +422,11 @@ describe('buildTimelineDescriptors', () => {
       expect(findEvent(result, '$img6')?.groupedImages?.length).toBe(2);
     });
 
-    it('does not group images more than 10 seconds apart', () => {
+    it('does not group images outside the window', () => {
       const result = buildTimelineDescriptors(
         [
           makeImageEvent({ id: '$A', sender: OTHER_USER, ts: 1000 }),
-          makeImageEvent({ id: '$B', sender: OTHER_USER, ts: 1000 + 11_000 }),
+          makeImageEvent({ id: '$B', sender: OTHER_USER, ts: 1000 + IMAGE_GROUP_WINDOW_MS + 1 }),
         ],
         undefined,
         MY_USER
@@ -430,12 +436,15 @@ describe('buildTimelineDescriptors', () => {
       expect(findEvent(result, '$B')?.groupedImages).toBeUndefined();
     });
 
-    it('window slides across consecutive images (each within 10s of previous, total > 10s)', () => {
+    it('window slides across consecutive images (each within window of previous, total > window)', () => {
+      // Each gap is below the window, but A→C exceeds it. The rolling reference
+      // (previous image's ts, not the anchor's) keeps the group together.
+      const gap = Math.floor(IMAGE_GROUP_WINDOW_MS * 0.8);
       const result = buildTimelineDescriptors(
         [
           makeImageEvent({ id: '$A', sender: OTHER_USER, ts: 1000 }),
-          makeImageEvent({ id: '$B', sender: OTHER_USER, ts: 1000 + 8_000 }),
-          makeImageEvent({ id: '$C', sender: OTHER_USER, ts: 1000 + 16_000 }),
+          makeImageEvent({ id: '$B', sender: OTHER_USER, ts: 1000 + gap }),
+          makeImageEvent({ id: '$C', sender: OTHER_USER, ts: 1000 + gap * 2 }),
         ],
         undefined,
         MY_USER
@@ -448,7 +457,11 @@ describe('buildTimelineDescriptors', () => {
       const result = buildTimelineDescriptors(
         [
           makeImageEvent({ id: '$A', sender: OTHER_USER, ts: 1000 }),
-          makeImageEvent({ id: '$B', sender: MY_USER, ts: 1000 + 1_000 }),
+          makeImageEvent({
+            id: '$B',
+            sender: MY_USER,
+            ts: 1000 + Math.floor(IMAGE_GROUP_WINDOW_MS / 2),
+          }),
         ],
         undefined,
         MY_USER
@@ -477,8 +490,16 @@ describe('buildTimelineDescriptors', () => {
       const result = buildTimelineDescriptors(
         [
           makeImageEvent({ id: '$A', sender: OTHER_USER, ts: 1000 }),
-          makeEvent({ id: '$reaction', isReaction: true, ts: 1000 + 500 }),
-          makeImageEvent({ id: '$B', sender: OTHER_USER, ts: 1000 + 1_000 }),
+          makeEvent({
+            id: '$reaction',
+            isReaction: true,
+            ts: 1000 + Math.floor(IMAGE_GROUP_WINDOW_MS / 4),
+          }),
+          makeImageEvent({
+            id: '$B',
+            sender: OTHER_USER,
+            ts: 1000 + Math.floor(IMAGE_GROUP_WINDOW_MS / 2),
+          }),
         ],
         undefined,
         MY_USER
@@ -504,11 +525,12 @@ describe('buildTimelineDescriptors', () => {
     });
 
     it('groupedImages contains the image contents in chronological order', () => {
+      const step = Math.floor(IMAGE_GROUP_WINDOW_MS / 3);
       const result = buildTimelineDescriptors(
         [
           makeImageEvent({ id: '$A', sender: OTHER_USER, ts: 1000 }),
-          makeImageEvent({ id: '$B', sender: OTHER_USER, ts: 1000 + 2_000 }),
-          makeImageEvent({ id: '$C', sender: OTHER_USER, ts: 1000 + 4_000 }),
+          makeImageEvent({ id: '$B', sender: OTHER_USER, ts: 1000 + step }),
+          makeImageEvent({ id: '$C', sender: OTHER_USER, ts: 1000 + step * 2 }),
         ],
         undefined,
         MY_USER
@@ -525,12 +547,13 @@ describe('buildTimelineDescriptors', () => {
       // The user has read up to $B, which is an absorbed image inside the
       // group anchored at $A. Reading any image in the group means the user
       // has seen the entire grid, so the divider should fire after the anchor.
+      const step = Math.floor(IMAGE_GROUP_WINDOW_MS / 3);
       const result = buildTimelineDescriptors(
         [
           makeImageEvent({ id: '$A', sender: OTHER_USER, ts: 1000 }),
-          makeImageEvent({ id: '$B', sender: OTHER_USER, ts: 1000 + 2_000 }),
-          makeImageEvent({ id: '$C', sender: OTHER_USER, ts: 1000 + 4_000 }),
-          makeEvent({ id: '$D', sender: OTHER_USER, ts: 1000 + 60_000 }),
+          makeImageEvent({ id: '$B', sender: OTHER_USER, ts: 1000 + step }),
+          makeImageEvent({ id: '$C', sender: OTHER_USER, ts: 1000 + step * 2 }),
+          makeEvent({ id: '$D', sender: OTHER_USER, ts: 1000 + step * 2 + 60_000 }),
         ],
         '$B',
         MY_USER
@@ -545,8 +568,12 @@ describe('buildTimelineDescriptors', () => {
       const result = buildTimelineDescriptors(
         [
           makeImageEvent({ id: '$A', sender: OTHER_USER, ts: 1000 }),
-          makeImageEvent({ id: '$B', sender: OTHER_USER, ts: 1000 + 2_000 }),
-          makeEvent({ id: '$txt', sender: OTHER_USER, ts: 1000 + 3_000 }),
+          makeImageEvent({
+            id: '$B',
+            sender: OTHER_USER,
+            ts: 1000 + Math.floor(IMAGE_GROUP_WINDOW_MS / 2),
+          }),
+          makeEvent({ id: '$txt', sender: OTHER_USER, ts: 1000 + 60_000 }),
         ],
         undefined,
         MY_USER
