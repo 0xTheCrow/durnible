@@ -8,6 +8,7 @@ type SearchInputProps = {
   onKeyDown?: KeyboardEventHandler<HTMLInputElement>;
   allowTextCustomEmoji?: boolean;
   onTextCustomEmojiSelect?: (text: string) => void;
+  autoFocus?: boolean;
 };
 export function SearchInput({
   query,
@@ -15,6 +16,7 @@ export function SearchInput({
   onKeyDown,
   allowTextCustomEmoji,
   onTextCustomEmojiSelect,
+  autoFocus = true,
 }: SearchInputProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -48,7 +50,7 @@ export function SearchInput({
       }
       onChange={onChange}
       onKeyDown={onKeyDown}
-      autoFocus
+      autoFocus={autoFocus}
     />
   );
 }

@@ -76,6 +76,8 @@ import {
   EmojiBoardLayout,
 } from './components';
 import { useScreenSize, ScreenSize } from '../../hooks/useScreenSize';
+import { useSetting } from '../../state/hooks/settings';
+import { settingsAtom } from '../../state/settings';
 import type { EmojiItemInfo } from './types';
 import { EmojiBoardTab, EmojiType } from './types';
 import { VirtualTile } from '../virtualizer';
@@ -812,6 +814,9 @@ export function EmojiBoard({
   addToRecentEmoji = true,
 }: EmojiBoardProps) {
   const mx = useMatrixClient();
+  const isMobile = useScreenSize() !== ScreenSize.Desktop;
+  const [emojiSearchAutoFocusMobile] = useSetting(settingsAtom, 'emojiSearchAutoFocusMobile');
+  const searchAutoFocus = !isMobile || emojiSearchAutoFocusMobile;
 
   const emojiTab = tab === EmojiBoardTab.Emoji;
   const usage = emojiTab ? ImageUsage.Emoticon : ImageUsage.Sticker;
@@ -1045,6 +1050,7 @@ export function EmojiBoard({
                 onKeyDown={handleSearchKeyDown}
                 allowTextCustomEmoji={allowTextCustomEmoji}
                 onTextCustomEmojiSelect={handleTextCustomEmojiSelect}
+                autoFocus={searchAutoFocus}
               />
             </Box>
           }

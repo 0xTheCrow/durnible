@@ -156,6 +156,10 @@ function Appearance() {
   const [systemTheme, setSystemTheme] = useSetting(settingsAtom, 'useSystemTheme');
   const [monochromeMode, setMonochromeMode] = useSetting(settingsAtom, 'monochromeMode');
   const [twitterEmoji, setTwitterEmoji] = useSetting(settingsAtom, 'twitterEmoji');
+  const [emojiSearchAutoFocusMobile, setEmojiSearchAutoFocusMobile] = useSetting(
+    settingsAtom,
+    'emojiSearchAutoFocusMobile'
+  );
 
   return (
     <Box direction="Column" gap="100">
@@ -193,6 +197,20 @@ function Appearance() {
         <SettingTile
           title="Twitter Emoji"
           after={<Switch variant="Primary" value={twitterEmoji} onChange={setTwitterEmoji} />}
+        />
+      </SequenceCard>
+
+      <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
+        <SettingTile
+          title="Emoji Search Auto Focus on Mobile"
+          description="Focus the emoji board search input when opened on mobile."
+          after={
+            <Switch
+              variant="Primary"
+              value={emojiSearchAutoFocusMobile}
+              onChange={setEmojiSearchAutoFocusMobile}
+            />
+          }
         />
       </SequenceCard>
 
