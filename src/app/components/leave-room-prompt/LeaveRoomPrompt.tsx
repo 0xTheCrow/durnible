@@ -42,7 +42,7 @@ export function LeaveRoomPrompt({ roomId, onDone, onCancel }: LeaveRoomPromptPro
   }, [leaveState, onDone]);
 
   return (
-    <OverlayModal open requestClose={onCancel}>
+    <OverlayModal open onClose={onCancel}>
       <Dialog variant="Surface">
         <Header
           style={{

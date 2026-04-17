@@ -59,9 +59,9 @@ const useSpaceSettingsMenuItems = (): SpaceSettingsMenuItem[] =>
 
 type SpaceSettingsProps = {
   initialPage?: SpaceSettingsPage;
-  requestClose: () => void;
+  onClose: () => void;
 };
-export function SpaceSettings({ initialPage, requestClose }: SpaceSettingsProps) {
+export function SpaceSettings({ initialPage, onClose }: SpaceSettingsProps) {
   const room = useRoom();
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
@@ -87,7 +87,7 @@ export function SpaceSettings({ initialPage, requestClose }: SpaceSettingsProps)
       setActivePage(undefined);
       return;
     }
-    requestClose();
+    onClose();
   };
 
   return (
@@ -118,7 +118,7 @@ export function SpaceSettings({ initialPage, requestClose }: SpaceSettingsProps)
               </Box>
               <Box shrink="No">
                 {screenSize === ScreenSize.Mobile && (
-                  <IconButton onClick={requestClose} variant="Background">
+                  <IconButton onClick={onClose} variant="Background">
                     <Icon src={Icons.Cross} />
                   </IconButton>
                 )}
@@ -154,20 +154,16 @@ export function SpaceSettings({ initialPage, requestClose }: SpaceSettingsProps)
         )
       }
     >
-      {activePage === SpaceSettingsPage.GeneralPage && (
-        <General requestClose={handlePageRequestClose} />
-      )}
-      {activePage === SpaceSettingsPage.MembersPage && (
-        <Members requestClose={handlePageRequestClose} />
-      )}
+      {activePage === SpaceSettingsPage.GeneralPage && <General onClose={handlePageRequestClose} />}
+      {activePage === SpaceSettingsPage.MembersPage && <Members onClose={handlePageRequestClose} />}
       {activePage === SpaceSettingsPage.PermissionsPage && (
-        <Permissions requestClose={handlePageRequestClose} />
+        <Permissions onClose={handlePageRequestClose} />
       )}
       {activePage === SpaceSettingsPage.EmojisStickersPage && (
-        <EmojisStickers requestClose={handlePageRequestClose} />
+        <EmojisStickers onClose={handlePageRequestClose} />
       )}
       {activePage === SpaceSettingsPage.DeveloperToolsPage && (
-        <DeveloperTools requestClose={handlePageRequestClose} />
+        <DeveloperTools onClose={handlePageRequestClose} />
       )}
     </PageRoot>
   );

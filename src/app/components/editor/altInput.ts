@@ -521,7 +521,7 @@ const walkHtmlNodes = (
     }
 
     if (PRESERVED_BLOCK_TAGS.has(tag)) {
-      if (!isFirstBlockChild) emitBlockSeparator(parent);
+      if (!isFirstBlockChild && tag !== 'li') emitBlockSeparator(parent);
       const blockEl = document.createElement(tag);
       walkHtmlNodes(element.children, blockEl, ctx, true, tag === 'pre');
       parent.appendChild(blockEl);

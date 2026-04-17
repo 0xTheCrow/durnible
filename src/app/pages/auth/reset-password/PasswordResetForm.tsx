@@ -53,7 +53,7 @@ function ResetPasswordComplete({ email }: { email?: string }) {
   };
 
   return (
-    <OverlayModal open requestClose={handleClick}>
+    <OverlayModal open onClose={handleClick}>
       <Dialog>
         <Box style={{ padding: config.space.S400 }} direction="Column" gap="400">
           <Text>Password has been reset successfully. Please login with your new password.</Text>

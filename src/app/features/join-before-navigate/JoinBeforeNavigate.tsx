@@ -59,8 +59,8 @@ export function JoinBeforeNavigate({
               roomIdOrAlias={roomIdOrAlias}
               allRooms={allRooms}
               viaServers={viaServers}
-              renderTopicViewer={(name, topic, requestClose) => (
-                <RoomTopicViewer name={name} topic={topic} requestClose={requestClose} />
+              renderTopicViewer={(name, topic, onClose) => (
+                <RoomTopicViewer name={name} topic={topic} onClose={onClose} />
               )}
               onView={handleView}
             />

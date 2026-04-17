@@ -82,9 +82,9 @@ import { InviteUserPrompt } from '../../../components/invite-user-prompt';
 
 type SpaceMenuProps = {
   room: Room;
-  requestClose: () => void;
+  onClose: () => void;
 };
-const SpaceMenu = forwardRef<HTMLDivElement, SpaceMenuProps>(({ room, requestClose }, ref) => {
+const SpaceMenu = forwardRef<HTMLDivElement, SpaceMenuProps>(({ room, onClose }, ref) => {
   const mx = useMatrixClient();
   const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
   const [developerTools] = useSetting(settingsAtom, 'developerTools');
@@ -108,14 +108,14 @@ const SpaceMenu = forwardRef<HTMLDivElement, SpaceMenuProps>(({ room, requestClo
 
   const handleMarkAsRead = () => {
     allChild.forEach((childRoomId) => markAsRead(mx, childRoomId, hideActivity));
-    requestClose();
+    onClose();
   };
 
   const handleCopyLink = () => {
     const roomIdOrAlias = getCanonicalAliasOrRoomId(mx, room.roomId);
     const viaServers = isRoomAlias(roomIdOrAlias) ? undefined : getViaServers(room);
     copyToClipboard(getMatrixToRoom(roomIdOrAlias, viaServers));
-    requestClose();
+    onClose();
   };
 
   const handleInvite = () => {
@@ -124,12 +124,12 @@ const SpaceMenu = forwardRef<HTMLDivElement, SpaceMenuProps>(({ room, requestClo
 
   const handleRoomSettings = () => {
     openSpaceSettings(room.roomId);
-    requestClose();
+    onClose();
   };
 
   const handleOpenTimeline = () => {
     navigateRoom(room.roomId);
-    requestClose();
+    onClose();
   };
 
   return (
@@ -138,9 +138,9 @@ const SpaceMenu = forwardRef<HTMLDivElement, SpaceMenuProps>(({ room, requestClo
         {invitePrompt && room && (
           <InviteUserPrompt
             room={room}
-            requestClose={() => {
+            onClose={() => {
               setInvitePrompt(false);
-              requestClose();
+              onClose();
             }}
           />
         )}
@@ -226,7 +226,7 @@ const SpaceMenu = forwardRef<HTMLDivElement, SpaceMenuProps>(({ room, requestClo
               {promptLeave && (
                 <LeaveSpacePrompt
                   roomId={room.roomId}
-                  onDone={requestClose}
+                  onDone={onClose}
                   onCancel={() => setPromptLeave(false)}
                 />
               )}
@@ -291,7 +291,7 @@ function SpaceHeader() {
                 escapeDeactivates: stopPropagation,
               }}
             >
-              <SpaceMenu room={space} requestClose={() => setMenuAnchor(undefined)} />
+              <SpaceMenu room={space} onClose={() => setMenuAnchor(undefined)} />
             </FocusTrap>
           }
         />

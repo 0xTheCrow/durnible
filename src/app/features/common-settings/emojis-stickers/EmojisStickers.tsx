@@ -6,9 +6,9 @@ import { ImagePackView } from '../../../components/image-pack-view';
 import { RoomPacks } from './RoomPacks';
 
 type EmojisStickersProps = {
-  requestClose: () => void;
+  onClose: () => void;
 };
-export function EmojisStickers({ requestClose }: EmojisStickersProps) {
+export function EmojisStickers({ onClose }: EmojisStickersProps) {
   const [imagePack, setImagePack] = useState<ImagePack>();
 
   const handleImagePackViewClose = () => {
@@ -16,7 +16,7 @@ export function EmojisStickers({ requestClose }: EmojisStickersProps) {
   };
 
   if (imagePack) {
-    return <ImagePackView address={imagePack.address} requestClose={handleImagePackViewClose} />;
+    return <ImagePackView address={imagePack.address} onClose={handleImagePackViewClose} />;
   }
 
   return (
@@ -29,7 +29,7 @@ export function EmojisStickers({ requestClose }: EmojisStickersProps) {
             </Text>
           </Box>
           <Box shrink="No">
-            <IconButton onClick={requestClose} variant="Surface">
+            <IconButton onClick={onClose} variant="Surface">
               <Icon src={Icons.Cross} />
             </IconButton>
           </Box>

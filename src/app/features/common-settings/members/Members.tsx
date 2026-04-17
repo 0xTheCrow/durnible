@@ -62,9 +62,9 @@ const getRoomMemberStr: SearchItemStrGetter<RoomMember> = (m, query) =>
   getMemberSearchStr(m, query, mxIdToName);
 
 type MembersProps = {
-  requestClose: () => void;
+  onClose: () => void;
 };
-export function Members({ requestClose }: MembersProps) {
+export function Members({ onClose }: MembersProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
   const room = useRoom();
@@ -148,7 +148,7 @@ export function Members({ requestClose }: MembersProps) {
             </Text>
           </Box>
           <Box shrink="No">
-            <IconButton onClick={requestClose} variant="Surface">
+            <IconButton onClick={onClose} variant="Surface">
               <Icon src={Icons.Cross} />
             </IconButton>
           </Box>
@@ -204,7 +204,7 @@ export function Members({ requestClose }: MembersProps) {
                         <MembershipFilterMenu
                           selected={membershipFilterIndex}
                           onSelect={setMembershipFilterIndex}
-                          requestClose={() => setAnchor(undefined)}
+                          onClose={() => setAnchor(undefined)}
                         />
                       }
                     >
@@ -236,7 +236,7 @@ export function Members({ requestClose }: MembersProps) {
                         <MemberSortMenu
                           selected={sortFilterIndex}
                           onSelect={setSortFilterIndex}
-                          requestClose={() => setAnchor(undefined)}
+                          onClose={() => setAnchor(undefined)}
                         />
                       }
                     >

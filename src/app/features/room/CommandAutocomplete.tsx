@@ -24,7 +24,7 @@ type CommandAutocompleteProps = {
   room: Room;
   editor: Editor;
   query: AutocompleteQuery<string>;
-  requestClose: () => void;
+  onClose: () => void;
   onSelect?: (commandName: string) => void;
 };
 
@@ -38,7 +38,7 @@ export function CommandAutocomplete({
   room,
   editor,
   query,
-  requestClose,
+  onClose,
   onSelect,
 }: CommandAutocompleteProps) {
   const mx = useMatrixClient();
@@ -61,13 +61,13 @@ export function CommandAutocomplete({
   const handleAutocomplete: CommandAutoCompleteHandler = (commandName) => {
     if (onSelect) {
       onSelect(commandName);
-      requestClose();
+      onClose();
       return;
     }
     const cmdEl = createCommandElement(commandName);
     replaceWithElement(editor, query.range, cmdEl);
     moveCursor(editor, true);
-    requestClose();
+    onClose();
   };
 
   useKeyDown(window, (evt: KeyboardEvent) => {
@@ -88,7 +88,7 @@ export function CommandAutocomplete({
           <Text size="L400">Commands</Text>
         </Box>
       }
-      requestClose={requestClose}
+      onClose={onClose}
     >
       {autoCompleteNames.map((commandName) => (
         <MenuItem

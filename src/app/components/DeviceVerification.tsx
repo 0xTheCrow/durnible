@@ -232,7 +232,7 @@ export function DeviceVerification({ request, onExit }: DeviceVerificationProps)
   return (
     <OverlayModal
       open
-      requestClose={handleCancel}
+      onClose={handleCancel}
       focusTrapOptions={{
         clickOutsideDeactivates: false,
         escapeDeactivates: false,

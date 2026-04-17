@@ -23,7 +23,7 @@ function CreateRoomModal({ state }: CreateRoomModalProps) {
 
   return (
     <SpaceProvider value={space ?? null}>
-      <OverlayModal open requestClose={closeDialog}>
+      <OverlayModal open onClose={closeDialog}>
         <Modal size="300" flexHeight>
           <Box direction="Column">
             <Header

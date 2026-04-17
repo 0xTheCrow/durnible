@@ -1,3 +1,3 @@
 export * from './EmojiBoard';
-export * from './EmojiBoardPopOut';
+export * from './EmojiBoardWrapper';
 export * from './types';

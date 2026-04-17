@@ -9,17 +9,17 @@ import { preventScrollWithArrowKey, stopPropagation } from '../../../utils/keybo
 import { useAlive } from '../../../hooks/useAlive';
 
 type AutocompleteMenuProps = {
-  requestClose: () => void;
+  onClose: () => void;
   headerContent: ReactNode;
   children: ReactNode;
 };
-export function AutocompleteMenu({ headerContent, requestClose, children }: AutocompleteMenuProps) {
+export function AutocompleteMenu({ headerContent, onClose, children }: AutocompleteMenuProps) {
   const alive = useAlive();
 
   const handleDeactivate = () => {
     if (alive()) {
-      // The component is unmounted so we will not call for `requestClose`
-      requestClose();
+      // The component is unmounted so we will not call for `onClose`
+      onClose();
     }
   };
 

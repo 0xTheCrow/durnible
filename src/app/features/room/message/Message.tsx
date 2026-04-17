@@ -41,8 +41,8 @@ import type { MessageSpacing } from '../../../state/settings';
 import { MessageLayout } from '../../../state/settings';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import * as css from './styles.css';
-import type { EmojiBoardPopOutHandle } from '../../../components/emoji-board';
-import { EmojiBoardPopOut } from '../../../components/emoji-board';
+import type { EmojiBoardWrapperHandle } from '../../../components/emoji-board';
+import { EmojiBoardWrapper } from '../../../components/emoji-board';
 import { MessageEditor } from './MessageEditor';
 import { useOpenReactionViewer } from '../../../state/hooks/reactionViewer';
 import { UserAvatar } from '../../../components/user-avatar';
@@ -176,7 +176,7 @@ export const Message = as<'div', MessageProps>(
     );
     const [menuAnchor, setMenuAnchor] = useState<RectCords>();
     const [emojiBoardOpen, setEmojiBoardOpen] = useState(false);
-    const emojiBoardRef = useRef<EmojiBoardPopOutHandle>(null);
+    const emojiBoardRef = useRef<EmojiBoardWrapperHandle>(null);
     const skipMenuReturnFocusRef = useRef(false);
     const openReactionViewer = useOpenReactionViewer();
     const [hiddenImages, setHiddenImages] = useAtom(hiddenImagesAtom);
@@ -407,7 +407,7 @@ export const Message = as<'div', MessageProps>(
             <Menu className={css.MessageOptionsBar} variant="SurfaceVariant">
               <Box gap="100">
                 {canSendReaction && (
-                  <EmojiBoardPopOut
+                  <EmojiBoardWrapper
                     ref={emojiBoardRef}
                     position="Bottom"
                     align="End"
@@ -434,7 +434,7 @@ export const Message = as<'div', MessageProps>(
                         <Icon src={Icons.SmilePlus} size="100" />
                       </IconButton>
                     )}
-                  </EmojiBoardPopOut>
+                  </EmojiBoardWrapper>
                 )}
                 {relations && (
                   <MessageAllReactionButton onOpen={() => openReactionViewer(room, relations)} />

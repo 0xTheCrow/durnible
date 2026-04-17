@@ -55,9 +55,9 @@ const SEARCH_OPTS: UseAsyncSearchOptions = {
 type AddExistingModalProps = {
   parentId: string;
   space?: boolean;
-  requestClose: () => void;
+  onClose: () => void;
 };
-export function AddExistingModal({ parentId, space, requestClose }: AddExistingModalProps) {
+export function AddExistingModal({ parentId, space, onClose }: AddExistingModalProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
   const alive = useAlive();
@@ -154,7 +154,7 @@ export function AddExistingModal({ parentId, space, requestClose }: AddExistingM
     applyChanges(selectedRooms).then(() => {
       if (alive()) {
         setSelected([]);
-        requestClose();
+        onClose();
       }
     });
   };
@@ -164,7 +164,7 @@ export function AddExistingModal({ parentId, space, requestClose }: AddExistingM
   };
 
   return (
-    <OverlayModal open requestClose={requestClose}>
+    <OverlayModal open onClose={onClose}>
       <Modal size="300">
         <Box grow="Yes" direction="Column">
           <Header
@@ -178,7 +178,7 @@ export function AddExistingModal({ parentId, space, requestClose }: AddExistingM
               <Text size="H4">Add Existing</Text>
             </Box>
             <Box shrink="No">
-              <IconButton size="300" radii="300" onClick={requestClose}>
+              <IconButton size="300" radii="300" onClick={onClose}>
                 <Icon src={Icons.Cross} />
               </IconButton>
             </Box>

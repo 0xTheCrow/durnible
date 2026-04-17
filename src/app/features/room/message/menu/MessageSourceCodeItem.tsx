@@ -52,14 +52,9 @@ export const MessageSourceCodeItem = as<
 
   return (
     <>
-      <OverlayModal open={open} requestClose={handleClose}>
+      <OverlayModal open={open} onClose={handleClose}>
         <Modal variant="Surface" size="500" data-testid="message-source-code-dialog">
-          <TextViewer
-            name="Source Code"
-            langName="json"
-            text={getText()}
-            requestClose={handleClose}
-          />
+          <TextViewer name="Source Code" langName="json" text={getText()} onClose={handleClose} />
         </Modal>
       </OverlayModal>
       <MenuItem

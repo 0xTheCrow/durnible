@@ -18,7 +18,7 @@ export function EditorPreview() {
       <IconButton variant="SurfaceVariant" onClick={() => setOpen(!open)}>
         <Icon src={Icons.BlockQuote} />
       </IconButton>
-      <OverlayModal open={open} requestClose={() => setOpen(false)}>
+      <OverlayModal open={open} onClose={() => setOpen(false)}>
         <Modal size="500">
           <div style={{ padding: config.space.S400 }}>
             <CustomEditor

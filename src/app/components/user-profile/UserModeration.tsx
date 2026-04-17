@@ -280,7 +280,7 @@ export function UserModeration({ userId, canKick, canBan, canInvite }: UserModer
         <Text size="B300">Moderation</Text>
       </Button>
       {modalOpen && (
-        <OverlayModal open requestClose={() => setModalOpen(false)}>
+        <OverlayModal open onClose={() => setModalOpen(false)}>
           <Dialog variant="Surface">
             <Header
               style={{

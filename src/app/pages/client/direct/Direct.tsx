@@ -55,9 +55,9 @@ import {
 import { useDirectCreateSelected } from '../../../hooks/router/useDirectSelected';
 
 type DirectMenuProps = {
-  requestClose: () => void;
+  onClose: () => void;
 };
-const DirectMenu = forwardRef<HTMLDivElement, DirectMenuProps>(({ requestClose }, ref) => {
+const DirectMenu = forwardRef<HTMLDivElement, DirectMenuProps>(({ onClose }, ref) => {
   const mx = useMatrixClient();
   const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
   const orphanRooms = useDirectRooms();
@@ -66,7 +66,7 @@ const DirectMenu = forwardRef<HTMLDivElement, DirectMenuProps>(({ requestClose }
   const handleMarkAsRead = () => {
     if (!unread) return;
     orphanRooms.forEach((rId) => markAsRead(mx, rId, hideActivity));
-    requestClose();
+    onClose();
   };
 
   return (
@@ -132,7 +132,7 @@ function DirectHeader() {
               escapeDeactivates: stopPropagation,
             }}
           >
-            <DirectMenu requestClose={() => setMenuAnchor(undefined)} />
+            <DirectMenu onClose={() => setMenuAnchor(undefined)} />
           </FocusTrap>
         }
       />

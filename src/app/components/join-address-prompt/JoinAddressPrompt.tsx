@@ -58,7 +58,7 @@ export function JoinAddressPrompt({ onOpen, onCancel }: JoinAddressProps) {
   };
 
   return (
-    <OverlayModal open requestClose={onCancel}>
+    <OverlayModal open onClose={onCancel}>
       <Dialog variant="Surface">
         <Header
           style={{

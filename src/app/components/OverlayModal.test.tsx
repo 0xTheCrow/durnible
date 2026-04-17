@@ -11,7 +11,7 @@ vi.mock('focus-trap-react', () => ({
 describe('OverlayModal', () => {
   it('renders children when open', () => {
     render(
-      <OverlayModal open requestClose={vi.fn()}>
+      <OverlayModal open onClose={vi.fn()}>
         <div data-testid="overlay-modal-child">Modal Content</div>
       </OverlayModal>
     );
@@ -20,7 +20,7 @@ describe('OverlayModal', () => {
 
   it('does not render children when closed', () => {
     render(
-      <OverlayModal open={false} requestClose={vi.fn()}>
+      <OverlayModal open={false} onClose={vi.fn()}>
         <div data-testid="overlay-modal-child">Modal Content</div>
       </OverlayModal>
     );

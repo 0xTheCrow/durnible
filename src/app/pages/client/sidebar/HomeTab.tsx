@@ -30,9 +30,9 @@ import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
 
 type HomeMenuProps = {
-  requestClose: () => void;
+  onClose: () => void;
 };
-const HomeMenu = forwardRef<HTMLDivElement, HomeMenuProps>(({ requestClose }, ref) => {
+const HomeMenu = forwardRef<HTMLDivElement, HomeMenuProps>(({ onClose }, ref) => {
   const orphanRooms = useHomeRooms();
   const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
   const unread = useRoomsUnread(orphanRooms, roomToUnreadAtom);
@@ -41,7 +41,7 @@ const HomeMenu = forwardRef<HTMLDivElement, HomeMenuProps>(({ requestClose }, re
   const handleMarkAsRead = () => {
     if (!unread) return;
     orphanRooms.forEach((rId) => markAsRead(mx, rId, hideActivity));
-    requestClose();
+    onClose();
   };
 
   return (
@@ -132,7 +132,7 @@ export function HomeTab() {
                 escapeDeactivates: stopPropagation,
               }}
             >
-              <HomeMenu requestClose={() => setMenuAnchor(undefined)} />
+              <HomeMenu onClose={() => setMenuAnchor(undefined)} />
             </FocusTrap>
           }
         />

@@ -250,7 +250,7 @@ export function MembersDrawer({ room, members }: MembersDrawerProps) {
                         <MembershipFilterMenu
                           selected={membershipFilterIndex}
                           onSelect={setMembershipFilterIndex}
-                          requestClose={() => setAnchor(undefined)}
+                          onClose={() => setAnchor(undefined)}
                         />
                       }
                     >
@@ -282,7 +282,7 @@ export function MembersDrawer({ room, members }: MembersDrawerProps) {
                         <MemberSortMenu
                           selected={sortFilterIndex}
                           onSelect={setSortFilterIndex}
-                          requestClose={() => setAnchor(undefined)}
+                          onClose={() => setAnchor(undefined)}
                         />
                       }
                     >

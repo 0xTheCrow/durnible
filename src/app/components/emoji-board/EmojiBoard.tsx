@@ -788,7 +788,8 @@ type EmojiBoardProps = {
   tab?: EmojiBoardTab;
   onTabChange?: (tab: EmojiBoardTab) => void;
   imagePackRooms: Room[];
-  requestClose: () => void;
+  onClose: () => void;
+  onBackClick?: () => void;
   returnFocusOnDeactivate?: boolean;
   onEmojiSelect?: (unicode: string, shortcode: string) => void;
   onCustomEmojiSelect?: (mxc: string, shortcode: string) => void;
@@ -801,7 +802,8 @@ export function EmojiBoard({
   tab = EmojiBoardTab.Emoji,
   onTabChange,
   imagePackRooms,
-  requestClose,
+  onClose,
+  onBackClick,
   returnFocusOnDeactivate,
   onEmojiSelect,
   onCustomEmojiSelect,
@@ -927,7 +929,7 @@ export function EmojiBoard({
     if (emojiInfo.type === EmojiType.Sticker) {
       onStickerSelect?.(emojiInfo.data, emojiInfo.shortcode, emojiInfo.label);
     }
-    if (!altKey && !shiftKey) requestClose();
+    if (!altKey && !shiftKey) onClose();
   };
 
   const handleGroupItemClick: MouseEventHandler = (evt) => {
@@ -962,7 +964,7 @@ export function EmojiBoard({
 
   const handleTextCustomEmojiSelect = (textEmoji: string) => {
     onCustomEmojiSelect?.(textEmoji, textEmoji);
-    requestClose();
+    onClose();
   };
 
   const handleScrollToGroup = (groupId: string) => {
@@ -1004,7 +1006,7 @@ export function EmojiBoard({
         focusTrapOptions={{
           returnFocusOnDeactivate,
           initialFocus: false,
-          onDeactivate: requestClose,
+          onDeactivate: onClose,
           clickOutsideDeactivates: true,
           allowOutsideClick: true,
           isKeyForward: (evt: KeyboardEvent) =>
@@ -1020,7 +1022,22 @@ export function EmojiBoard({
         <EmojiBoardLayout
           header={
             <Box direction="Column" gap="200">
-              {onTabChange && <EmojiBoardTabs tab={tab} onTabChange={onTabChange} />}
+              {(onBackClick || onTabChange) && (
+                <Box direction="Row" gap="200" alignItems="Center">
+                  {onBackClick && (
+                    <IconButton
+                      onClick={onBackClick}
+                      aria-label="Close"
+                      variant="SurfaceVariant"
+                      size="300"
+                      radii="300"
+                    >
+                      <Icon src={Icons.ArrowLeft} />
+                    </IconButton>
+                  )}
+                  {onTabChange && <EmojiBoardTabs tab={tab} onTabChange={onTabChange} />}
+                </Box>
+              )}
               <SearchInput
                 key={tab}
                 query={result?.query}

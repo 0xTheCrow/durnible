@@ -1,4 +1,4 @@
-import type { ChangeEventHandler } from 'react';
+import type { ChangeEventHandler, FormEventHandler } from 'react';
 import React, { useMemo, useState } from 'react';
 import type { IconSrc } from 'folds';
 import { Avatar, Box, Button, config, Icon, IconButton, Icons, Input, MenuItem, Text } from 'folds';
@@ -73,9 +73,9 @@ const useSettingsMenuItems = (): SettingsMenuItem[] =>
 
 type SettingsProps = {
   initialPage?: SettingsPages;
-  requestClose: () => void;
+  onClose: () => void;
 };
-export function Settings({ initialPage, requestClose }: SettingsProps) {
+export function Settings({ initialPage, onClose }: SettingsProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
   const userId = mx.getSafeUserId();
@@ -86,39 +86,61 @@ export function Settings({ initialPage, requestClose }: SettingsProps) {
     : undefined;
 
   const screenSize = useScreenSizeContext();
+  const isMobile = screenSize === ScreenSize.Mobile;
   const [activePage, setActivePage] = useState<SettingsPages | undefined>(() => {
     if (initialPage) return initialPage;
-    return screenSize === ScreenSize.Mobile ? undefined : SettingsPages.GeneralPage;
+    return isMobile ? undefined : SettingsPages.GeneralPage;
   });
+  const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchMode, setSearchMode] = useState(false);
   const menuItems = useSettingsMenuItems();
 
   const handleSearchChange: ChangeEventHandler<HTMLInputElement> = (evt) => {
-    setSearchQuery(evt.target.value);
+    const next = evt.target.value;
+    setSearchInput(next);
+    if (!isMobile) {
+      setSearchQuery(next);
+      setSearchMode(next.trim() !== '');
+    } else if (next.trim() === '') {
+      setSearchQuery(next);
+    }
+  };
+
+  const handleSearchSubmit: FormEventHandler<HTMLFormElement> = (evt) => {
+    evt.preventDefault();
+    setSearchQuery(searchInput);
+    if (searchInput.trim() !== '') {
+      setSearchMode(true);
+    }
   };
 
   const handleSearchClear = () => {
+    setSearchInput('');
     setSearchQuery('');
+    setSearchMode(false);
   };
 
   const handleNavigateTo = (page: SettingsPages) => {
     setActivePage(page);
+    setSearchInput('');
     setSearchQuery('');
+    setSearchMode(false);
   };
 
-  const handlePageRequestClose = () => {
-    if (screenSize === ScreenSize.Mobile) {
-      setActivePage(undefined);
-      return;
-    }
-    requestClose();
+  const handleBackToMenu = () => {
+    setActivePage(undefined);
+  };
+
+  const handleSearchQueryChange = (next: string) => {
+    setSearchInput(next);
+    setSearchQuery(next);
   };
 
   return (
     <PageRoot
       nav={
-        screenSize === ScreenSize.Mobile &&
-        (activePage !== undefined || searchQuery.trim()) ? undefined : (
+        screenSize === ScreenSize.Mobile && (activePage !== undefined || searchMode) ? undefined : (
           <PageNav size="300">
             <PageNavHeader outlined={false}>
               <Box grow="Yes" gap="200">
@@ -135,37 +157,53 @@ export function Settings({ initialPage, requestClose }: SettingsProps) {
               </Box>
               <Box shrink="No">
                 {screenSize === ScreenSize.Mobile && (
-                  <IconButton onClick={requestClose} variant="Background">
+                  <IconButton onClick={onClose} variant="Background">
                     <Icon src={Icons.Cross} />
                   </IconButton>
                 )}
               </Box>
             </PageNavHeader>
             <Box grow="Yes" direction="Column">
-              <Box style={{ padding: `0 ${config.space.S200} ${config.space.S200}` }} shrink="No">
-                <Input
-                  style={{ width: '100%' }}
-                  variant="Background"
-                  size="300"
-                  radii="400"
-                  autoFocus={screenSize !== ScreenSize.Mobile}
-                  placeholder="Search settings..."
-                  before={<Icon src={Icons.Search} size="100" />}
-                  value={searchQuery}
-                  onChange={handleSearchChange}
-                  after={
-                    searchQuery ? (
-                      <IconButton
-                        size="300"
-                        onClick={handleSearchClear}
-                        variant="Background"
-                        radii="Pill"
-                      >
-                        <Icon src={Icons.Cross} size="100" />
-                      </IconButton>
-                    ) : undefined
-                  }
-                />
+              <Box
+                as="form"
+                onSubmit={handleSearchSubmit}
+                gap="200"
+                alignItems="Center"
+                style={{ padding: `0 ${config.space.S200} ${config.space.S200}` }}
+                shrink="No"
+              >
+                <Box grow="Yes">
+                  <Input
+                    style={{ width: '100%' }}
+                    variant="Background"
+                    size="300"
+                    radii="400"
+                    autoFocus={!isMobile}
+                    placeholder="Search settings..."
+                    before={<Icon src={Icons.Search} size="100" />}
+                    value={searchInput}
+                    onChange={handleSearchChange}
+                    after={
+                      searchInput ? (
+                        <IconButton
+                          type="button"
+                          size="300"
+                          onClick={handleSearchClear}
+                          variant="Background"
+                          radii="Pill"
+                          aria-label="Clear search"
+                        >
+                          <Icon src={Icons.Cross} size="100" />
+                        </IconButton>
+                      ) : undefined
+                    }
+                  />
+                </Box>
+                {isMobile && searchInput && (
+                  <Button type="submit" size="300" variant="Primary" radii="400">
+                    <Text size="B300">Search</Text>
+                  </Button>
+                )}
               </Box>
               <PageNavContent>
                 <div style={{ flexGrow: 1 }}>
@@ -206,8 +244,8 @@ export function Settings({ initialPage, requestClose }: SettingsProps) {
                         <Text size="B400">Logout</Text>
                       </Button>
                       {logout && (
-                        <OverlayModal open requestClose={() => setLogout(false)}>
-                          <LogoutDialog handleClose={() => setLogout(false)} />
+                        <OverlayModal open onClose={() => setLogout(false)}>
+                          <LogoutDialog onClose={() => setLogout(false)} />
                         </OverlayModal>
                       )}
                     </>
@@ -219,34 +257,36 @@ export function Settings({ initialPage, requestClose }: SettingsProps) {
         )
       }
     >
-      {searchQuery.trim() ? (
+      {searchMode ? (
         <SearchResults
           query={searchQuery}
-          requestClose={handlePageRequestClose}
+          onQueryChange={handleSearchQueryChange}
+          onBack={handleSearchClear}
+          onClose={onClose}
           onNavigateTo={handleNavigateTo}
         />
       ) : (
         <>
           {activePage === SettingsPages.GeneralPage && (
-            <General requestClose={handlePageRequestClose} />
+            <General onBack={handleBackToMenu} onClose={onClose} />
           )}
           {activePage === SettingsPages.AccountPage && (
-            <Account requestClose={handlePageRequestClose} />
+            <Account onBack={handleBackToMenu} onClose={onClose} />
           )}
           {activePage === SettingsPages.NotificationPage && (
-            <Notifications requestClose={handlePageRequestClose} />
+            <Notifications onBack={handleBackToMenu} onClose={onClose} />
           )}
           {activePage === SettingsPages.DevicesPage && (
-            <Devices requestClose={handlePageRequestClose} />
+            <Devices onBack={handleBackToMenu} onClose={onClose} />
           )}
           {activePage === SettingsPages.EmojisStickersPage && (
-            <EmojisStickers requestClose={handlePageRequestClose} />
+            <EmojisStickers onBack={handleBackToMenu} onClose={onClose} />
           )}
           {activePage === SettingsPages.DeveloperToolsPage && (
-            <DeveloperTools requestClose={handlePageRequestClose} />
+            <DeveloperTools onBack={handleBackToMenu} onClose={onClose} />
           )}
           {activePage === SettingsPages.AboutPage && (
-            <About requestClose={handlePageRequestClose} />
+            <About onBack={handleBackToMenu} onClose={onClose} />
           )}
         </>
       )}

@@ -86,7 +86,7 @@ export function JumpToTime({ onCancel, onSubmit }: JumpToTimeProps) {
   };
 
   return (
-    <OverlayModal open requestClose={onCancel}>
+    <OverlayModal open onClose={onCancel}>
       <Dialog variant="Surface">
         <Header
           style={{

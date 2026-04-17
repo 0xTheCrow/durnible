@@ -36,13 +36,15 @@ import {
   domToPlainText,
   getMentionsFromDom,
   replaceShortcodesInDom,
+  isInsideList,
+  handleListEnter,
 } from '../../../components/editor';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
 import { useRelevantImagePacks } from '../../../hooks/useImagePacks';
 import { ImageUsage } from '../../../plugins/custom-emoji/types';
 import { buildShortcodeMap, emojis as unicodeEmojis } from '../../../plugins/emoji';
-import { EmojiBoardPopOut } from '../../../components/emoji-board';
+import { EmojiBoardWrapper } from '../../../components/emoji-board';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
@@ -218,6 +220,17 @@ export const MessageEditor = as<'div', MessageEditorProps>(
     const handleKeyDown: KeyboardEventHandler = useCallback(
       (evt) => {
         if (
+          alternateInput &&
+          isKeyHotkey('shift+enter', evt) &&
+          alternateInputRef.current &&
+          isInsideList(alternateInputRef.current)
+        ) {
+          evt.preventDefault();
+          handleListEnter(alternateInputRef.current);
+          alternateInputRef.current.dispatchEvent(new Event('input', { bubbles: true }));
+          return;
+        }
+        if (
           (isKeyHotkey('mod+enter', evt) || (!enterForNewline && isKeyHotkey('enter', evt))) &&
           !isComposing(evt)
         ) {
@@ -229,7 +242,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
           onCancel();
         }
       },
-      [onCancel, handleSave, enterForNewline, isComposing]
+      [onCancel, handleSave, enterForNewline, isComposing, alternateInput]
     );
 
     const handleKeyUp: KeyboardEventHandler = useCallback(
@@ -329,7 +342,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
             roomId={roomId}
             editor={editor}
             query={autocompleteQuery}
-            requestClose={handleCloseAutocomplete}
+            onClose={handleCloseAutocomplete}
             onSelect={alternateInput ? handleAlternateRoomMentionSelect : undefined}
           />
         )}
@@ -338,7 +351,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
             room={room}
             editor={editor}
             query={autocompleteQuery}
-            requestClose={handleCloseAutocomplete}
+            onClose={handleCloseAutocomplete}
             onSelect={alternateInput ? handleAlternateMentionSelect : undefined}
           />
         )}
@@ -347,7 +360,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
             imagePackRooms={imagePackRooms || []}
             editor={editor}
             query={autocompleteQuery}
-            requestClose={handleCloseAutocomplete}
+            onClose={handleCloseAutocomplete}
             onSelect={alternateInput ? handleAlternateEmoticonSelect : undefined}
           />
         )}
@@ -401,7 +414,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
                   >
                     <Icon size="400" src={toolbar ? Icons.AlphabetUnderline : Icons.Alphabet} />
                   </IconButton>
-                  <EmojiBoardPopOut
+                  <EmojiBoardWrapper
                     alignOffset={-8}
                     position="Top"
                     align="End"
@@ -435,7 +448,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
                         <Icon size="400" src={Icons.Smile} filled={isOpen} />
                       </IconButton>
                     )}
-                  </EmojiBoardPopOut>
+                  </EmojiBoardWrapper>
                 </Box>
               </Box>
               {toolbar && (

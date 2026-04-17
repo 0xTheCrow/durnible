@@ -15,7 +15,7 @@ export const IMAGE_VIEWER_ZOOM_STEP = 0.2;
 export type ImageViewerProps = {
   alt: string;
   src: string;
-  requestClose: () => void;
+  onClose: () => void;
   /**
    * When set, enables gallery navigation. The viewer renders prev/next
    * controls (and binds arrow keys), and on navigation calls `resolveSrc`
@@ -34,7 +34,7 @@ export type ImageViewerProps = {
 };
 
 export const ImageViewer = as<'div', ImageViewerProps>(
-  ({ className, alt, src, requestClose, gallery, ...props }, ref) => {
+  ({ className, alt, src, onClose, gallery, ...props }, ref) => {
     const { zoom, zoomIn, zoomOut, setZoom, onWheel } = useZoom(IMAGE_VIEWER_ZOOM_STEP);
     const { pan, setPan, cursor, onMouseDown } = usePan(zoom !== 1, zoom);
     const { onTouchStart, onTouchMove, onTouchEnd } = useTouchGesture(setZoom, setPan);
@@ -157,7 +157,7 @@ export const ImageViewer = as<'div', ImageViewerProps>(
             type="button"
             data-testid="image-viewer-close-btn"
             className={css.ImageViewerCloseButton}
-            onClick={requestClose}
+            onClick={onClose}
             aria-label="Close"
           >
             <Icon size="200" src={Icons.ArrowLeft} />

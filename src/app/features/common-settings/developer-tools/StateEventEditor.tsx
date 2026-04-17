@@ -40,9 +40,9 @@ type StateEventEditProps = {
   type: string;
   stateKey: string;
   content: object;
-  requestClose: () => void;
+  onClose: () => void;
 };
-function StateEventEdit({ type, stateKey, content, requestClose }: StateEventEditProps) {
+function StateEventEdit({ type, stateKey, content, onClose }: StateEventEditProps) {
   const mx = useMatrixClient();
   const room = useRoom();
   const alive = useAlive();
@@ -101,7 +101,7 @@ function StateEventEdit({ type, stateKey, content, requestClose }: StateEventEdi
 
     submit(parsedContent).then(() => {
       if (alive()) {
-        requestClose();
+        onClose();
       }
     });
   };
@@ -153,7 +153,7 @@ function StateEventEdit({ type, stateKey, content, requestClose }: StateEventEdi
                   fill="Soft"
                   size="300"
                   radii="300"
-                  onClick={requestClose}
+                  onClick={onClose}
                   disabled={submitting}
                 >
                   <Text size="B300">Cancel</Text>
@@ -245,10 +245,10 @@ export type StateEventInfo = {
   stateKey: string;
 };
 export type StateEventEditorProps = StateEventInfo & {
-  requestClose: () => void;
+  onClose: () => void;
 };
 
-export function StateEventEditor({ type, stateKey, requestClose }: StateEventEditorProps) {
+export function StateEventEditor({ type, stateKey, onClose }: StateEventEditorProps) {
   const mx = useMatrixClient();
   const room = useRoom();
   const stateEvent = useStateEvent(room, type as unknown as StateEvent, stateKey);
@@ -276,14 +276,14 @@ export function StateEventEditor({ type, stateKey, requestClose }: StateEventEdi
             <Chip
               size="500"
               radii="Pill"
-              onClick={requestClose}
+              onClick={onClose}
               before={<Icon size="100" src={Icons.ArrowLeft} />}
             >
               <Text size="T300">Developer Tools</Text>
             </Chip>
           </Box>
           <Box shrink="No">
-            <IconButton onClick={requestClose} variant="Surface">
+            <IconButton onClick={onClose} variant="Surface">
               <Icon src={Icons.Cross} />
             </IconButton>
           </Box>
@@ -295,7 +295,7 @@ export function StateEventEditor({ type, stateKey, requestClose }: StateEventEdi
             type={type}
             stateKey={stateKey}
             content={editContent}
-            requestClose={handleCloseEdit}
+            onClose={handleCloseEdit}
           />
         ) : (
           <StateEventView

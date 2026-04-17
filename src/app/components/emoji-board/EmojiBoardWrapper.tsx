@@ -6,10 +6,12 @@ import type { Room } from 'matrix-js-sdk';
 import { EmojiBoard } from './EmojiBoard';
 import { EmojiBoardTab } from './types';
 import { useVisualViewportHeight } from '../../hooks/useVisualViewportHeight';
+import { OverlayModal } from '../OverlayModal';
+import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
 
 const DEFAULT_OFFSET = 10;
 const BREATHING_ROOM = 16;
-const MIN_USABLE_HEIGHT = 200;
+const MIN_USABLE_HEIGHT = 450;
 
 export type OpenAtRectOptions = {
   position?: Position;
@@ -18,18 +20,18 @@ export type OpenAtRectOptions = {
   alignOffset?: number;
 };
 
-export type EmojiBoardPopOutHandle = {
+export type EmojiBoardWrapperHandle = {
   openAtRect: (rect: RectCords, options?: OpenAtRectOptions) => void;
 };
 
-export type EmojiBoardPopOutRenderProps = {
+export type EmojiBoardWrapperRenderProps = {
   triggerRef: Ref<HTMLButtonElement>;
   open: () => void;
   isOpen: boolean;
   tab: EmojiBoardTab | undefined;
 };
 
-export type EmojiBoardPopOutProps = {
+export type EmojiBoardWrapperProps = {
   position?: Position;
   align?: Align;
   offset?: number;
@@ -47,10 +49,10 @@ export type EmojiBoardPopOutProps = {
   onClose?: () => void;
   onOpenChange?: (isOpen: boolean) => void;
 
-  children: (props: EmojiBoardPopOutRenderProps) => ReactNode;
+  children: (props: EmojiBoardWrapperRenderProps) => ReactNode;
 };
 
-export const EmojiBoardPopOut = forwardRef<EmojiBoardPopOutHandle, EmojiBoardPopOutProps>(
+export const EmojiBoardWrapper = forwardRef<EmojiBoardWrapperHandle, EmojiBoardWrapperProps>(
   (
     {
       position,
@@ -106,6 +108,35 @@ export const EmojiBoardPopOut = forwardRef<EmojiBoardPopOutHandle, EmojiBoardPop
       [onOpenChange]
     );
 
+    const isMobile = useScreenSizeContext() === ScreenSize.Mobile;
+
+    const renderEmojiBoard = (withBackButton: boolean) => (
+      <EmojiBoard
+        tab={tab}
+        onTabChange={setTab}
+        imagePackRooms={imagePackRooms ?? []}
+        returnFocusOnDeactivate={returnFocusOnDeactivate}
+        allowTextCustomEmoji={allowTextCustomEmoji}
+        addToRecentEmoji={addToRecentEmoji}
+        onEmojiSelect={onEmojiSelect}
+        onCustomEmojiSelect={onCustomEmojiSelect}
+        onStickerSelect={onStickerSelect}
+        onClose={close}
+        onBackClick={withBackButton ? close : undefined}
+      />
+    );
+
+    if (isMobile) {
+      return (
+        <>
+          {children({ triggerRef, open, isOpen, tab })}
+          <OverlayModal open={isOpen} onClose={close}>
+            {renderEmojiBoard(true)}
+          </OverlayModal>
+        </>
+      );
+    }
+
     const anchor = isOpen
       ? fallbackRect ?? triggerRef.current?.getBoundingClientRect() ?? undefined
       : undefined;
@@ -148,22 +179,7 @@ export const EmojiBoardPopOut = forwardRef<EmojiBoardPopOutHandle, EmojiBoardPop
         offset={effectiveOffset}
         alignOffset={overrides?.alignOffset ?? alignOffset}
         anchor={anchor}
-        content={
-          <div style={contentStyle}>
-            <EmojiBoard
-              tab={tab}
-              onTabChange={setTab}
-              imagePackRooms={imagePackRooms ?? []}
-              returnFocusOnDeactivate={returnFocusOnDeactivate}
-              allowTextCustomEmoji={allowTextCustomEmoji}
-              addToRecentEmoji={addToRecentEmoji}
-              onEmojiSelect={onEmojiSelect}
-              onCustomEmojiSelect={onCustomEmojiSelect}
-              onStickerSelect={onStickerSelect}
-              requestClose={close}
-            />
-          </div>
-        }
+        content={<div style={contentStyle}>{renderEmojiBoard(false)}</div>}
       >
         {children({ triggerRef, open, isOpen, tab })}
       </PopOut>

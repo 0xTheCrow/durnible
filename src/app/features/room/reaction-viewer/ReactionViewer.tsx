@@ -33,10 +33,10 @@ export type ReactionViewerProps = {
   room: Room;
   initialKey?: string;
   relations: Relations;
-  requestClose: () => void;
+  onClose: () => void;
 };
 export const ReactionViewer = as<'div', ReactionViewerProps>(
-  ({ className, room, initialKey, relations, requestClose, ...props }, ref) => {
+  ({ className, room, initialKey, relations, onClose, ...props }, ref) => {
     const mx = useMatrixClient();
     const useAuthentication = useMediaAuthentication();
     const reactions = useRelations(
@@ -104,7 +104,7 @@ export const ReactionViewer = as<'div', ReactionViewerProps>(
             <Box grow="Yes">
               <Text size="H3" truncate>{`Reacted with :${selectedShortcode}:`}</Text>
             </Box>
-            <IconButton size="300" onClick={requestClose}>
+            <IconButton size="300" onClick={onClose}>
               <Icon src={Icons.Cross} />
             </IconButton>
           </Header>

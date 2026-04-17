@@ -63,12 +63,8 @@ export function FeaturedRooms() {
                             roomIdOrAlias={roomIdOrAlias}
                             allRooms={allRooms}
                             onView={navigateSpace}
-                            renderTopicViewer={(name, topic, requestClose) => (
-                              <RoomTopicViewer
-                                name={name}
-                                topic={topic}
-                                requestClose={requestClose}
-                              />
+                            renderTopicViewer={(name, topic, onClose) => (
+                              <RoomTopicViewer name={name} topic={topic} onClose={onClose} />
                             )}
                           />
                         ))}
@@ -85,12 +81,8 @@ export function FeaturedRooms() {
                             roomIdOrAlias={roomIdOrAlias}
                             allRooms={allRooms}
                             onView={navigateRoom}
-                            renderTopicViewer={(name, topic, requestClose) => (
-                              <RoomTopicViewer
-                                name={name}
-                                topic={topic}
-                                requestClose={requestClose}
-                              />
+                            renderTopicViewer={(name, topic, onClose) => (
+                              <RoomTopicViewer name={name} topic={topic} onClose={onClose} />
                             )}
                           />
                         ))}

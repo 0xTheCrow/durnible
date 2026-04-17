@@ -50,7 +50,7 @@ type SelfDemoteAlertProps = {
 };
 function SelfDemoteAlert({ power, onCancel, onChange }: SelfDemoteAlertProps) {
   return (
-    <OverlayModal open requestClose={onCancel}>
+    <OverlayModal open onClose={onCancel}>
       <Dialog variant="Surface">
         <Header
           style={{ padding: `0 ${config.space.S200} 0 ${config.space.S400}` }}
@@ -89,7 +89,7 @@ type SharedPowerAlertProps = {
 };
 function SharedPowerAlert({ power, onCancel, onChange }: SharedPowerAlertProps) {
   return (
-    <OverlayModal open requestClose={onCancel}>
+    <OverlayModal open onClose={onCancel}>
       <Dialog variant="Surface">
         <Header
           style={{ padding: `0 ${config.space.S200} 0 ${config.space.S400}` }}

@@ -38,7 +38,7 @@ import { creatorsSupported } from '../../../utils/matrix';
 import { useRoomCreators } from '../../../hooks/useRoomCreators';
 import { BreakWord } from '../../../styles/Text.css';
 
-function RoomUpgradeDialog({ requestClose }: { requestClose: () => void }) {
+function RoomUpgradeDialog({ onClose }: { onClose: () => void }) {
   const mx = useMatrixClient();
   const room = useRoom();
   const alive = useAlive();
@@ -75,13 +75,13 @@ function RoomUpgradeDialog({ requestClose }: { requestClose: () => void }) {
 
     upgrade(version, allowAdditionalCreators ? additionalCreators : undefined).then(() => {
       if (alive()) {
-        requestClose();
+        onClose();
       }
     });
   };
 
   return (
-    <OverlayModal open requestClose={requestClose}>
+    <OverlayModal open onClose={onClose}>
       <Dialog variant="Surface">
         <Header
           style={{
@@ -94,7 +94,7 @@ function RoomUpgradeDialog({ requestClose }: { requestClose: () => void }) {
           <Box grow="Yes">
             <Text size="H4">{room.isSpaceRoom() ? 'Space Upgrade' : 'Room Upgrade'}</Text>
           </Box>
-          <IconButton size="300" onClick={requestClose} radii="300">
+          <IconButton size="300" onClick={onClose} radii="300">
             <Icon src={Icons.Cross} />
           </IconButton>
         </Header>
@@ -147,9 +147,9 @@ function RoomUpgradeDialog({ requestClose }: { requestClose: () => void }) {
 
 type RoomUpgradeProps = {
   permissions: RoomPermissionsAPI;
-  requestClose: () => void;
+  onClose: () => void;
 };
-export function RoomUpgrade({ permissions, requestClose }: RoomUpgradeProps) {
+export function RoomUpgrade({ permissions, onClose }: RoomUpgradeProps) {
   const mx = useMatrixClient();
   const room = useRoom();
   const { navigateRoom, navigateSpace } = useRoomNavigate();
@@ -167,7 +167,7 @@ export function RoomUpgrade({ permissions, requestClose }: RoomUpgradeProps) {
 
   const handleOpenRoom = () => {
     if (replacementRoom) {
-      requestClose();
+      onClose();
       if (room.isSpaceRoom()) {
         navigateSpace(replacementRoom);
       } else {
@@ -178,7 +178,7 @@ export function RoomUpgrade({ permissions, requestClose }: RoomUpgradeProps) {
 
   const handleOpenOldRoom = () => {
     if (predecessorRoomId) {
-      requestClose();
+      onClose();
       if (room.isSpaceRoom()) {
         navigateSpace(predecessorRoomId);
       } else {
@@ -243,7 +243,7 @@ export function RoomUpgrade({ permissions, requestClose }: RoomUpgradeProps) {
           </Box>
         }
       >
-        {prompt && <RoomUpgradeDialog requestClose={() => setPrompt(false)} />}
+        {prompt && <RoomUpgradeDialog onClose={() => setPrompt(false)} />}
       </SettingTile>
     </SequenceCard>
   );

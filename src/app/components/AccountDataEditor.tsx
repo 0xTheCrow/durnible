@@ -37,14 +37,14 @@ type AccountDataInfo = {
 type AccountDataEditProps = {
   type: string;
   defaultContent: string;
-  submitChange: AccountDataSubmitCallback;
+  onSubmit: AccountDataSubmitCallback;
   onCancel: () => void;
   onSave: (info: AccountDataInfo) => void;
 };
 function AccountDataEdit({
   type,
   defaultContent,
-  submitChange,
+  onSubmit,
   onCancel,
   onSave,
 }: AccountDataEditProps) {
@@ -58,7 +58,7 @@ function AccountDataEdit({
     EDITOR_INTENT_SPACE_COUNT
   );
 
-  const [submitState, submit] = useAsyncCallback<void, MatrixError, [string, object]>(submitChange);
+  const [submitState, submit] = useAsyncCallback<void, MatrixError, [string, object]>(onSubmit);
   const submitting = submitState.status === AsyncStatus.Loading;
 
   const handleSubmit: FormEventHandler<HTMLFormElement> = (evt) => {
@@ -245,16 +245,11 @@ function AccountDataView({ type, defaultContent, onEdit }: AccountDataViewProps)
 export type AccountDataEditorProps = {
   type?: string;
   content?: object;
-  submitChange: AccountDataSubmitCallback;
-  requestClose: () => void;
+  onSubmit: AccountDataSubmitCallback;
+  onClose: () => void;
 };
 
-export function AccountDataEditor({
-  type,
-  content,
-  submitChange,
-  requestClose,
-}: AccountDataEditorProps) {
+export function AccountDataEditor({ type, content, onSubmit, onClose }: AccountDataEditorProps) {
   const [data, setData] = useState<AccountDataInfo>({
     type: type ?? '',
     content: content ?? {},
@@ -264,11 +259,11 @@ export function AccountDataEditor({
 
   const closeEdit = useCallback(() => {
     if (!type) {
-      requestClose();
+      onClose();
       return;
     }
     setEdit(false);
-  }, [type, requestClose]);
+  }, [type, onClose]);
 
   const handleSave = useCallback((info: AccountDataInfo) => {
     setData(info);
@@ -288,14 +283,14 @@ export function AccountDataEditor({
             <Chip
               size="500"
               radii="Pill"
-              onClick={requestClose}
+              onClick={onClose}
               before={<Icon size="100" src={Icons.ArrowLeft} />}
             >
               <Text size="T300">Developer Tools</Text>
             </Chip>
           </Box>
           <Box shrink="No">
-            <IconButton onClick={requestClose} variant="Surface">
+            <IconButton onClick={onClose} variant="Surface">
               <Icon src={Icons.Cross} />
             </IconButton>
           </Box>
@@ -306,7 +301,7 @@ export function AccountDataEditor({
           <AccountDataEdit
             type={data.type}
             defaultContent={contentJSONStr}
-            submitChange={submitChange}
+            onSubmit={onSubmit}
             onCancel={closeEdit}
             onSave={handleSave}
           />

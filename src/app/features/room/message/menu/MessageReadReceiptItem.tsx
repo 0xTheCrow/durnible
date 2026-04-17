@@ -22,9 +22,9 @@ export const MessageReadReceiptItem = as<
 
   return (
     <>
-      <OverlayModal open={open} requestClose={handleClose}>
+      <OverlayModal open={open} onClose={handleClose}>
         <Modal variant="Surface" size="300" data-testid="message-read-receipts-dialog">
-          <EventReaders room={room} eventId={eventId} requestClose={handleClose} />
+          <EventReaders room={room} eventId={eventId} onClose={handleClose} />
         </Modal>
       </OverlayModal>
       <MenuItem

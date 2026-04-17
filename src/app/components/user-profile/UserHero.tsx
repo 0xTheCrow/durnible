@@ -60,13 +60,9 @@ export function UserHero({ userId, avatarUrl, bannerUrl, presence }: UserHeroPro
           </Avatar>
         </AvatarPresence>
         {viewAvatar && (
-          <OverlayModal open requestClose={() => setViewAvatar(undefined)}>
+          <OverlayModal open onClose={() => setViewAvatar(undefined)}>
             <Modal size="500" onContextMenu={(evt) => evt.stopPropagation()}>
-              <ImageViewer
-                src={viewAvatar}
-                alt={userId}
-                requestClose={() => setViewAvatar(undefined)}
-              />
+              <ImageViewer src={viewAvatar} alt={userId} onClose={() => setViewAvatar(undefined)} />
             </Modal>
           </OverlayModal>
         )}

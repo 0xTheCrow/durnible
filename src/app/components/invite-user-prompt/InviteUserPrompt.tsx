@@ -45,9 +45,9 @@ const getUserIdString = (userId: string) => getMxIdLocalPart(userId) ?? userId;
 
 type InviteUserProps = {
   room: Room;
-  requestClose: () => void;
+  onClose: () => void;
 };
-export function InviteUserPrompt({ room, requestClose }: InviteUserProps) {
+export function InviteUserPrompt({ room, onClose }: InviteUserProps) {
   const mx = useMatrixClient();
   const alive = useAlive();
 
@@ -145,7 +145,7 @@ export function InviteUserPrompt({ room, requestClose }: InviteUserProps) {
   return (
     <OverlayModal
       open
-      requestClose={requestClose}
+      onClose={onClose}
       focusTrapOptions={{ initialFocus: () => inputRef.current }}
     >
       <Dialog>
@@ -157,7 +157,7 @@ export function InviteUserPrompt({ room, requestClose }: InviteUserProps) {
               </Text>
             </Box>
             <Box shrink="No">
-              <IconButton size="300" radii="300" onClick={requestClose}>
+              <IconButton size="300" radii="300" onClick={onClose}>
                 <Icon src={Icons.Cross} />
               </IconButton>
             </Box>

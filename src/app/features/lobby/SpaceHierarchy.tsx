@@ -31,7 +31,7 @@ type SpaceHierarchyProps = {
   roomsPowerLevels: Map<string, PowerLevels>;
   categoryId: string;
   closed: boolean;
-  handleClose: MouseEventHandler<HTMLButtonElement>;
+  onClose: MouseEventHandler<HTMLButtonElement>;
   draggingItem?: HierarchyItem;
   onDragging: (item?: HierarchyItem) => void;
   canDrop: CanDropCallback;
@@ -54,7 +54,7 @@ export const SpaceHierarchy = forwardRef<HTMLDivElement, SpaceHierarchyProps>(
       roomsPowerLevels,
       categoryId,
       closed,
-      handleClose,
+      onClose,
       draggingItem,
       onDragging,
       canDrop,
@@ -121,7 +121,7 @@ export const SpaceHierarchy = forwardRef<HTMLDivElement, SpaceHierarchyProps>(
           joined={allJoinedRooms.has(spaceItem.roomId)}
           categoryId={categoryId}
           closed={closed}
-          handleClose={handleClose}
+          onClose={onClose}
           getRoom={getRoom}
           canEditChild={!!spacePermissions?.stateEvent(StateEvent.SpaceChild, mx.getSafeUserId())}
           canReorder={
