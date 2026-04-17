@@ -793,6 +793,7 @@ type EmojiBoardProps = {
   onClose: () => void;
   onBackClick?: () => void;
   returnFocusOnDeactivate?: boolean;
+  handleOutsideClick?: boolean;
   onEmojiSelect?: (unicode: string, shortcode: string) => void;
   onCustomEmojiSelect?: (mxc: string, shortcode: string) => void;
   onStickerSelect?: (mxc: string, shortcode: string, label: string) => void;
@@ -807,6 +808,7 @@ export function EmojiBoard({
   onClose,
   onBackClick,
   returnFocusOnDeactivate,
+  handleOutsideClick = true,
   onEmojiSelect,
   onCustomEmojiSelect,
   onStickerSelect,
@@ -1012,7 +1014,7 @@ export function EmojiBoard({
           returnFocusOnDeactivate,
           initialFocus: false,
           onDeactivate: onClose,
-          clickOutsideDeactivates: true,
+          clickOutsideDeactivates: handleOutsideClick,
           allowOutsideClick: true,
           isKeyForward: (evt: KeyboardEvent) =>
             !editableActiveElement() && isKeyHotkey(['arrowdown', 'arrowright'], evt),
