@@ -1,4 +1,3 @@
-/* eslint-disable react/destructuring-assignment */
 import type { MouseEventHandler } from 'react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {

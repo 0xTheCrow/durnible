@@ -1,4 +1,3 @@
-/* eslint-disable react/destructuring-assignment */
 import type { MouseEventHandler } from 'react';
 import React, { useMemo } from 'react';
 import type { IEventWithRoomId, Room } from 'matrix-js-sdk';

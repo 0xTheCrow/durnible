@@ -1,4 +1,3 @@
-/* eslint-disable react/destructuring-assignment */
 import type { MouseEventHandler, RefObject } from 'react';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { MatrixEvent, Room, RoomEventHandlerMap } from 'matrix-js-sdk';

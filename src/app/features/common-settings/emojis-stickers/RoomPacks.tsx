@@ -263,7 +263,6 @@ export function RoomPacks({ onViewPack }: RoomPacksProps) {
     useCallback(async () => {
       for (let i = 0; i < removedPacks.length; i += 1) {
         const addr = removedPacks[i];
-        // eslint-disable-next-line no-await-in-loop
         await mx.sendStateEvent(room.roomId, StateEvent.PoniesRoomEmotes, {}, addr.stateKey);
       }
     }, [mx, room, removedPacks])
