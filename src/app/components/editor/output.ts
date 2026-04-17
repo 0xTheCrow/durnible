@@ -2,6 +2,7 @@ import type { Descendant, Editor } from 'slate';
 import { Text } from 'slate';
 import type { MatrixClient } from 'matrix-js-sdk';
 import { sanitizeText } from '../../utils/sanitize';
+import type { MentionsData } from './altInput';
 import { BlockType } from './types';
 import type { CustomElement, EmoticonElement } from './slate';
 import type { ShortcodeMapEntry } from '../../plugins/emoji';
@@ -265,10 +266,7 @@ export const replaceShortcodes = (
   shortcodeMap: Map<string, ShortcodeMapEntry>
 ): Descendant[] => nodes.flatMap((node) => replaceShortcodesInNode(node, shortcodeMap));
 
-export type MentionsData = {
-  room: boolean;
-  users: Set<string>;
-};
+export type { MentionsData } from './altInput';
 export const getMentions = (mx: MatrixClient, roomId: string, editor: Editor): MentionsData => {
   const mentionData: MentionsData = {
     room: false,

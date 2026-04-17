@@ -145,23 +145,44 @@ describe('mapParentWithChildren', () => {
 const mutedRule = {
   rule_id: '!room:ex',
   actions: ['dont_notify'],
-  conditions: [{ kind: 'event_match' }],
+  conditions: [{ kind: 'event_match', key: 'room_id', pattern: '!room:ex' }],
 } as unknown as IPushRule;
 
 describe('isMutedRule', () => {
-  it('returns true for a dont_notify rule with an event_match condition', () => {
+  it('returns true for a legacy dont_notify rule with a room_id event_match', () => {
     expect(isMutedRule(mutedRule)).toBe(true);
   });
 
-  it('returns false when the first action is not dont_notify', () => {
+  it('returns true when actions is empty (modern spec-compliant mute)', () => {
+    const rule = { ...mutedRule, actions: [] } as unknown as IPushRule;
+    expect(isMutedRule(rule)).toBe(true);
+  });
+
+  it('returns false when actions contains notify', () => {
     const rule = { ...mutedRule, actions: ['notify'] } as unknown as IPushRule;
     expect(isMutedRule(rule)).toBe(false);
   });
 
-  it('returns false when the first condition is not event_match', () => {
+  it('returns false when actions contains notify alongside tweaks', () => {
+    const rule = {
+      ...mutedRule,
+      actions: ['notify', { set_tweak: 'sound', value: 'default' }],
+    } as unknown as IPushRule;
+    expect(isMutedRule(rule)).toBe(false);
+  });
+
+  it('returns false when no condition matches on room_id', () => {
     const rule = {
       ...mutedRule,
       conditions: [{ kind: 'contains_display_name' }],
+    } as unknown as IPushRule;
+    expect(isMutedRule(rule)).toBe(false);
+  });
+
+  it('returns false when event_match targets a key other than room_id', () => {
+    const rule = {
+      ...mutedRule,
+      conditions: [{ kind: 'event_match', key: 'type', pattern: 'm.room.message' }],
     } as unknown as IPushRule;
     expect(isMutedRule(rule)).toBe(false);
   });

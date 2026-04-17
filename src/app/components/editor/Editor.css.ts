@@ -1,4 +1,4 @@
-import { style } from '@vanilla-extract/css';
+import { globalStyle, style } from '@vanilla-extract/css';
 import { color, config, DefaultReset, toRem } from 'folds';
 
 export const Editor = style([
@@ -65,7 +65,7 @@ export const AlternateInput = style([
   DefaultReset,
   {
     flexGrow: 1,
-    width: '100%',
+    height: '100%',
     padding: `${toRem(13)} ${toRem(1)}`,
     whiteSpace: 'pre-wrap',
     wordBreak: 'break-word',
@@ -79,7 +79,6 @@ export const AlternateInput = style([
       '&:focus': {
         outline: 'none',
       },
-      // Placeholder via data-empty + data-placeholder attributes
       '&[data-empty]::before': {
         content: 'attr(data-placeholder)',
         opacity: config.opacity.Placeholder,
@@ -90,8 +89,34 @@ export const AlternateInput = style([
   },
 ]);
 
-export const AlternateInputBottom = style({
-  paddingTop: config.space.S200,
+globalStyle(`${AlternateInput} code`, {
+  fontFamily: 'monospace',
+  padding: `0 ${config.space.S100}`,
+  background: color.SurfaceVariant.Container,
+  border: `${config.borderWidth.B300} solid ${color.SurfaceVariant.ContainerLine}`,
+  borderRadius: config.radii.R300,
+});
+
+globalStyle(`${AlternateInput} [data-mx-spoiler]`, {
+  padding: `0 ${config.space.S100}`,
+  backgroundColor: color.SurfaceVariant.ContainerActive,
+  borderRadius: config.radii.R300,
+});
+
+globalStyle(`${AlternateInput} blockquote`, {
+  paddingLeft: config.space.S200,
+  borderLeft: `${config.borderWidth.B700} solid ${color.SurfaceVariant.ContainerLine}`,
+  fontStyle: 'italic',
+  margin: `${config.space.S200} 0`,
+});
+
+globalStyle(`${AlternateInput} pre`, {
+  fontFamily: 'monospace',
+  padding: config.space.S200,
+  background: color.SurfaceVariant.Container,
+  border: `${config.borderWidth.B300} solid ${color.SurfaceVariant.ContainerLine}`,
+  borderRadius: config.radii.R300,
+  margin: `${config.space.S200} 0`,
 });
 
 export const EditorToolbarBase = style({

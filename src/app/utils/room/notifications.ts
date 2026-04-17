@@ -1,10 +1,18 @@
 import type { IPushRule, IPushRules, MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk';
-import { EventType, NotificationCountType } from 'matrix-js-sdk';
+import { EventType, NotificationCountType, PushRuleActionName } from 'matrix-js-sdk';
 import type { UnreadInfo } from '../../../types/matrix/room';
 import { NotificationType } from '../../../types/matrix/room';
 
-export const isMutedRule = (rule: IPushRule) =>
-  rule.actions[0] === 'dont_notify' && rule.conditions?.[0]?.kind === 'event_match';
+export const isMutedRule = (rule: IPushRule) => {
+  const hasRoomIdCondition = rule.conditions?.some(
+    (c) => c.kind === 'event_match' && c.key === 'room_id'
+  );
+  if (!hasRoomIdCondition) return false;
+  const hasNotifyAction = rule.actions.some(
+    (a) => typeof a === 'string' && a === PushRuleActionName.Notify
+  );
+  return !hasNotifyAction;
+};
 
 export const findMutedRule = (overrideRules: IPushRule[], roomId: string) =>
   overrideRules.find((rule) => rule.rule_id === roomId && isMutedRule(rule));

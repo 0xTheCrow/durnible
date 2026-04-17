@@ -15,6 +15,7 @@ import {
   EmoticonAutocomplete,
   RoomMentionAutocomplete,
   Toolbar,
+  AltInputToolbar,
   UserMentionAutocomplete,
   createAltEmoticonNode,
   createEmoticonElement,
@@ -31,6 +32,10 @@ import {
   useEditor,
   getMentions,
   replaceShortcodes,
+  domToMatrixCustomHTML,
+  domToPlainText,
+  getMentionsFromDom,
+  replaceShortcodesInDom,
 } from '../../../components/editor';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
@@ -109,67 +114,99 @@ export const MessageEditor = as<'div', MessageEditorProps>(
       ];
     }, [room, mEvent]);
 
-    const [saveState, save] = useAsyncCallback(
-      useCallback(async () => {
-        const shortcodeMap = buildShortcodeMap(imagePacks, unicodeEmojis);
-        const processedChildren = replaceShortcodes(editor.children, shortcodeMap);
+    const buildEditContent = useCallback((): IContent | undefined => {
+      const shortcodeMap = buildShortcodeMap(imagePacks, unicodeEmojis);
+      const el = alternateInputRef.current;
 
-        const plainText = toPlainText(processedChildren, isMarkdown).trim();
-        const customHtml = trimCustomHtml(
+      let plainText: string;
+      let customHtml: string;
+      let mentionData;
+
+      if (alternateInput && el) {
+        replaceShortcodesInDom(el, shortcodeMap, mx, useAuthentication);
+        plainText = domToPlainText(el).trim();
+        customHtml = trimCustomHtml(
+          domToMatrixCustomHTML(el, {
+            allowTextFormatting: true,
+            allowBlockMarkdown: isMarkdown,
+            allowInlineMarkdown: isMarkdown,
+          })
+        );
+        mentionData = getMentionsFromDom(el, mx);
+      } else {
+        const processedChildren = replaceShortcodes(editor.children, shortcodeMap);
+        plainText = toPlainText(processedChildren, isMarkdown).trim();
+        customHtml = trimCustomHtml(
           toMatrixCustomHTML(processedChildren, {
             allowTextFormatting: true,
             allowBlockMarkdown: isMarkdown,
             allowInlineMarkdown: isMarkdown,
           })
         );
+        mentionData = getMentions(mx, roomId, editor);
+      }
 
-        const [prevBody, prevCustomHtml, prevMentions] = getPrevBodyAndFormattedBody();
+      const [prevBody, prevCustomHtml, prevMentions] = getPrevBodyAndFormattedBody();
 
-        if (plainText === '') return undefined;
-        if (prevBody) {
-          if (prevCustomHtml && trimReplyFromFormattedBody(prevCustomHtml) === customHtml) {
-            return undefined;
-          }
-          if (
-            !prevCustomHtml &&
-            prevBody === plainText &&
-            customHtmlEqualsPlainText(customHtml, plainText)
-          ) {
-            return undefined;
-          }
+      if (plainText === '') return undefined;
+      if (prevBody) {
+        if (prevCustomHtml && trimReplyFromFormattedBody(prevCustomHtml) === customHtml) {
+          return undefined;
         }
-
-        const newContent: IContent = {
-          msgtype: mEvent.getContent().msgtype,
-          body: plainText,
-        };
-
-        const mentionData = getMentions(mx, roomId, editor);
-
-        prevMentions?.user_ids?.forEach((prevMentionId) => {
-          mentionData.users.add(prevMentionId);
-        });
-
-        const mMentions = getMentionContent(Array.from(mentionData.users), mentionData.room);
-        newContent['m.mentions'] = mMentions;
-
-        if (!customHtmlEqualsPlainText(customHtml, plainText)) {
-          newContent.format = 'org.matrix.custom.html';
-          newContent.formatted_body = customHtml;
+        if (
+          !prevCustomHtml &&
+          prevBody === plainText &&
+          customHtmlEqualsPlainText(customHtml, plainText)
+        ) {
+          return undefined;
         }
+      }
 
-        const content: IContent = {
-          ...newContent,
-          body: `* ${plainText}`,
-          'm.new_content': newContent,
-          'm.relates_to': {
-            event_id: mEvent.getId(),
-            rel_type: RelationType.Replace,
-          },
-        };
+      const newContent: IContent = {
+        msgtype: mEvent.getContent().msgtype,
+        body: plainText,
+      };
 
+      prevMentions?.user_ids?.forEach((prevMentionId) => {
+        mentionData.users.add(prevMentionId);
+      });
+
+      const mMentions = getMentionContent(Array.from(mentionData.users), mentionData.room);
+      newContent['m.mentions'] = mMentions;
+
+      if (!customHtmlEqualsPlainText(customHtml, plainText)) {
+        newContent.format = 'org.matrix.custom.html';
+        newContent.formatted_body = customHtml;
+      }
+
+      return {
+        ...newContent,
+        body: `* ${plainText}`,
+        'm.new_content': newContent,
+        'm.relates_to': {
+          event_id: mEvent.getId(),
+          rel_type: RelationType.Replace,
+        },
+      };
+    }, [
+      mx,
+      editor,
+      roomId,
+      mEvent,
+      isMarkdown,
+      getPrevBodyAndFormattedBody,
+      imagePacks,
+      alternateInput,
+      alternateInputRef,
+      useAuthentication,
+    ]);
+
+    const [saveState, save] = useAsyncCallback(
+      useCallback(async () => {
+        const content = buildEditContent();
+        if (!content) return undefined;
         return mx.sendMessage(roomId, content as RoomMessageEventContent);
-      }, [mx, editor, roomId, mEvent, isMarkdown, getPrevBodyAndFormattedBody, imagePacks])
+      }, [mx, roomId, buildEditContent])
     );
 
     const handleSave = useCallback(() => {
@@ -248,8 +285,16 @@ export const MessageEditor = as<'div', MessageEditorProps>(
         const el = alternateInputRef.current;
         if (el) {
           el.focus();
+          let target: Node = el;
+          while (target.lastChild) {
+            target = target.lastChild;
+          }
           const range = document.createRange();
-          range.selectNodeContents(el);
+          if (target.nodeType === Node.TEXT_NODE) {
+            range.setStart(target, (target as Text).data.length);
+          } else {
+            range.selectNodeContents(target);
+          }
           range.collapse(false);
           const sel = window.getSelection();
           sel?.removeAllRanges();
@@ -346,16 +391,16 @@ export const MessageEditor = as<'div', MessageEditorProps>(
                   </Chip>
                 </Box>
                 <Box gap="Inherit">
-                  {!alternateInput && (
-                    <IconButton
-                      variant="SurfaceVariant"
-                      size="300"
-                      radii="300"
-                      onClick={() => setToolbar(!toolbar)}
-                    >
-                      <Icon size="400" src={toolbar ? Icons.AlphabetUnderline : Icons.Alphabet} />
-                    </IconButton>
-                  )}
+                  <IconButton
+                    variant="SurfaceVariant"
+                    size="300"
+                    radii="300"
+                    onMouseDown={(e: React.MouseEvent) => e.preventDefault()}
+                    onTouchStart={(e: React.TouchEvent) => e.preventDefault()}
+                    onClick={() => setToolbar(!toolbar)}
+                  >
+                    <Icon size="400" src={toolbar ? Icons.AlphabetUnderline : Icons.Alphabet} />
+                  </IconButton>
                   <EmojiBoardPopOut
                     alignOffset={-8}
                     position="Top"
@@ -393,10 +438,10 @@ export const MessageEditor = as<'div', MessageEditorProps>(
                   </EmojiBoardPopOut>
                 </Box>
               </Box>
-              {!alternateInput && toolbar && (
+              {toolbar && (
                 <div>
                   <Line variant="SurfaceVariant" size="300" />
-                  <Toolbar />
+                  {alternateInput ? <AltInputToolbar inputRef={alternateInputRef} /> : <Toolbar />}
                 </div>
               )}
             </>

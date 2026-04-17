@@ -22,6 +22,11 @@ import type {
 import { BlockType } from './types';
 import { createEmoticonElement, createMentionElement } from './utils';
 
+export type MentionsData = {
+  room: boolean;
+  users: Set<string>;
+};
+
 export const ALT_NODE_ATTR = 'data-alt-type';
 export const ALT_EMOTICON = 'emoticon';
 export const ALT_MENTION = 'mention';
@@ -316,15 +321,15 @@ const BLOCK_TAGS = new Set([
   'li',
 ]);
 
-const appendVoidToFragment = (fragment: DocumentFragment, voidNode: HTMLElement) => {
-  const last = fragment.lastChild;
+const appendVoidToParent = (parent: Node, voidNode: HTMLElement) => {
+  const last = parent.lastChild;
   if (!last) {
-    fragment.appendChild(document.createTextNode(INLINE_VOID_CARET_ANCHOR));
+    parent.appendChild(document.createTextNode(INLINE_VOID_CARET_ANCHOR));
   } else if (last.nodeType !== Node.TEXT_NODE) {
-    fragment.appendChild(document.createTextNode(''));
+    parent.appendChild(document.createTextNode(''));
   }
-  fragment.appendChild(voidNode);
-  fragment.appendChild(document.createTextNode(''));
+  parent.appendChild(voidNode);
+  parent.appendChild(document.createTextNode(''));
 };
 
 const WHITESPACE_ONLY = /^\s*$/;
@@ -332,9 +337,9 @@ const WHITESPACE_ONLY = /^\s*$/;
 const isBrElement = (node: Node | null): boolean =>
   node !== null && node.nodeType === Node.ELEMENT_NODE && (node as HTMLElement).tagName === 'BR';
 
-const appendTextToFragment = (fragment: DocumentFragment, text: string) => {
+const appendTextToParent = (parent: Node, text: string) => {
   if (text.length === 0) return;
-  const last = fragment.lastChild;
+  const last = parent.lastChild;
   if (WHITESPACE_ONLY.test(text) && (!last || isBrElement(last))) {
     return;
   }
@@ -342,19 +347,45 @@ const appendTextToFragment = (fragment: DocumentFragment, text: string) => {
     (last as Text).appendData(text);
     return;
   }
-  fragment.appendChild(document.createTextNode(text));
+  parent.appendChild(document.createTextNode(text));
 };
 
-const emitBlockSeparator = (fragment: DocumentFragment) => {
-  const last = fragment.lastChild;
+const emitBlockSeparator = (parent: Node) => {
+  const last = parent.lastChild;
   if (last && last.nodeType === Node.TEXT_NODE) {
     const textNode = last as Text;
     textNode.data = textNode.data.replace(/\s+$/, '');
-    if (textNode.data.length === 0) fragment.removeChild(textNode);
+    if (textNode.data.length === 0) parent.removeChild(textNode);
   }
-  if (fragment.childNodes.length === 0) return;
-  fragment.appendChild(document.createElement('br'));
+  if (parent.childNodes.length === 0) return;
+  parent.appendChild(document.createElement('br'));
 };
+
+const INLINE_FORMAT_TAGS: Record<string, string> = {
+  b: 'b',
+  strong: 'b',
+  i: 'i',
+  em: 'i',
+  u: 'u',
+  s: 's',
+  del: 's',
+  strike: 's',
+  code: 'code',
+};
+
+const PRESERVED_BLOCK_TAGS = new Set([
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'h6',
+  'blockquote',
+  'pre',
+  'ol',
+  'ul',
+  'li',
+]);
 
 const collectTextContent = (nodes: ChildNode[]): string =>
   nodes
@@ -409,17 +440,18 @@ const resolveMentionFromAnchor = (
 
 const walkHtmlNodes = (
   nodes: ChildNode[],
-  fragment: DocumentFragment,
+  parent: Node,
   ctx: HtmlToAltInputCtx,
-  initialIsFirstBlockChild: boolean
+  initialIsFirstBlockChild: boolean,
+  insideCodeBlock = false
 ): boolean => {
   let isFirstBlockChild = initialIsFirstBlockChild;
 
   nodes.forEach((node) => {
     if (isText(node)) {
-      const before = fragment.lastChild;
-      appendTextToFragment(fragment, node.data);
-      if (fragment.lastChild !== before) isFirstBlockChild = false;
+      const before = parent.lastChild;
+      appendTextToParent(parent, node.data);
+      if (parent.lastChild !== before) isFirstBlockChild = false;
       return;
     }
     if (!isTag(node)) return;
@@ -428,7 +460,7 @@ const walkHtmlNodes = (
     const tag = element.name.toLowerCase();
 
     if (tag === 'br') {
-      fragment.appendChild(document.createElement('br'));
+      parent.appendChild(document.createElement('br'));
       isFirstBlockChild = false;
       return;
     }
@@ -443,7 +475,7 @@ const walkHtmlNodes = (
           key,
           shortcode,
         });
-        appendVoidToFragment(fragment, voidNode);
+        appendVoidToParent(parent, voidNode);
         isFirstBlockChild = false;
       }
       return;
@@ -455,37 +487,92 @@ const walkHtmlNodes = (
         const mention = resolveMentionFromAnchor(element, href);
         if (mention) {
           const voidNode = createAltMentionNode(mention);
-          appendVoidToFragment(fragment, voidNode);
+          appendVoidToParent(parent, voidNode);
           isFirstBlockChild = false;
           return;
         }
       }
-      isFirstBlockChild = walkHtmlNodes(element.children, fragment, ctx, isFirstBlockChild);
+      isFirstBlockChild = walkHtmlNodes(
+        element.children,
+        parent,
+        ctx,
+        isFirstBlockChild,
+        insideCodeBlock
+      );
       return;
     }
 
-    if (BLOCK_TAGS.has(tag)) {
-      if (!isFirstBlockChild) emitBlockSeparator(fragment);
-      walkHtmlNodes(element.children, fragment, ctx, true);
+    if (tag === 'span' && element.attribs['data-mx-spoiler'] !== undefined) {
+      const wrapper = document.createElement('span');
+      wrapper.setAttribute('data-mx-spoiler', '');
+      walkHtmlNodes(element.children, wrapper, ctx, true, insideCodeBlock);
+      parent.appendChild(wrapper);
       isFirstBlockChild = false;
       return;
     }
 
-    isFirstBlockChild = walkHtmlNodes(element.children, fragment, ctx, isFirstBlockChild);
+    const inlineTag = INLINE_FORMAT_TAGS[tag];
+    if (inlineTag && !(insideCodeBlock && tag === 'code')) {
+      const wrapper = document.createElement(inlineTag);
+      walkHtmlNodes(element.children, wrapper, ctx, true, insideCodeBlock);
+      parent.appendChild(wrapper);
+      isFirstBlockChild = false;
+      return;
+    }
+
+    if (PRESERVED_BLOCK_TAGS.has(tag)) {
+      if (!isFirstBlockChild) emitBlockSeparator(parent);
+      const blockEl = document.createElement(tag);
+      walkHtmlNodes(element.children, blockEl, ctx, true, tag === 'pre');
+      parent.appendChild(blockEl);
+      isFirstBlockChild = false;
+      return;
+    }
+
+    if (BLOCK_TAGS.has(tag)) {
+      if (!isFirstBlockChild) emitBlockSeparator(parent);
+      walkHtmlNodes(element.children, parent, ctx, true, insideCodeBlock);
+      isFirstBlockChild = false;
+      return;
+    }
+
+    isFirstBlockChild = walkHtmlNodes(
+      element.children,
+      parent,
+      ctx,
+      isFirstBlockChild,
+      insideCodeBlock
+    );
   });
 
   return isFirstBlockChild;
 };
 
+const NON_EMPTY_TAGS = new Set([
+  'OL',
+  'UL',
+  'BLOCKQUOTE',
+  'PRE',
+  'H1',
+  'H2',
+  'H3',
+  'H4',
+  'H5',
+  'H6',
+]);
+
 export const isAltInputEmpty = (el: HTMLElement): boolean => {
-  if (el.childNodes.length === 0) return true;
-  if (el.childNodes.length === 1) {
-    const only = el.childNodes[0];
-    if (only.nodeType === Node.TEXT_NODE) {
-      return stripCaretAnchors((only as Text).data).length === 0;
+  const text = el.textContent ?? '';
+  if (stripCaretAnchors(text).trim().length > 0) return false;
+  for (let i = 0; i < el.childNodes.length; i += 1) {
+    const child = el.childNodes[i];
+    if (child.nodeType === Node.ELEMENT_NODE) {
+      const tag = (child as HTMLElement).tagName;
+      if (NON_EMPTY_TAGS.has(tag)) return false;
+      if ((child as HTMLElement).hasAttribute(ALT_NODE_ATTR)) return false;
     }
   }
-  return false;
+  return true;
 };
 
 export const htmlToAltInputDom = (html: string, ctx: HtmlToAltInputCtx): DocumentFragment => {

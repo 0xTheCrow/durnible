@@ -20,7 +20,6 @@ import {
   htmlToAltInputDom,
   insertNodeAtRange,
   isAltInputEmpty,
-  serializeAltInput,
 } from './altInput';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
@@ -63,16 +62,6 @@ export const useEditor = (): Editor => {
   const [editor] = useState(() => withInline(withVoid(withReact(withHistory(createEditor())))));
   return editor;
 };
-
-const isSlateChildrenEmpty = (children: Descendant[]): boolean =>
-  children.every((node) => {
-    if ('text' in node) return node.text.length === 0;
-    if ('children' in node)
-      return (node.children as Descendant[]).every(
-        (child) => 'text' in child && child.text.length === 0
-      );
-    return false;
-  });
 
 export type EditorChangeHandler = (value: Descendant[]) => void;
 type CustomEditorProps = {
@@ -123,7 +112,6 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
     const syncAltInputState = useCallback(() => {
       const el = inputRef.current;
       if (!el) return;
-      editor.children = serializeAltInput(el);
       setIsEmpty(isAltInputEmpty(el));
       onChange?.(editor.children);
     }, [editor, onChange]);
@@ -136,11 +124,6 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
         origOnChange.apply(editor, args);
         const el = inputRef.current;
         if (!el) return;
-        // Sync DOM when editor is cleared externally (e.g. after sending a message)
-        if (isSlateChildrenEmpty(editor.children) && el.childNodes.length > 0) {
-          el.textContent = '';
-          savedRangeRef.current = null;
-        }
         setIsEmpty(isAltInputEmpty(el));
       };
 
@@ -516,7 +499,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
               </Box>
             )}
           </Box>
-          {bottom && <div className={css.AlternateInputBottom}>{bottom}</div>}
+          {bottom}
         </div>
       );
     }
