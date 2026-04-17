@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { useAtomValue } from 'jotai';
+import type { IContent } from 'matrix-js-sdk';
 import { MsgType } from 'matrix-js-sdk';
 import type { HTMLReactParserOptions } from 'html-react-parser';
 import type { Opts } from 'linkifyjs';
@@ -77,10 +78,7 @@ type RenderMessageContentProps = {
   displayName: string;
   msgType: string;
   edited?: boolean;
-  // matrix-js-sdk's IContent is `[key: string]: any`; we keep parity so callers
-  // can pass mEvent.getContent() directly without per-call casts.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  content: Record<string, any>;
+  content: IContent;
   /**
    * When set, this message is the anchor of an image group: the array
    * contains every image content (including this one) and the renderer

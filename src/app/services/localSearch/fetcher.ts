@@ -137,7 +137,6 @@ export async function* streamFetchDecrypt(
   let totalFetched = 0;
 
   while (token) {
-    // eslint-disable-next-line no-await-in-loop
     const response = await mx.createMessagesRequest(
       roomId,
       token,
@@ -164,7 +163,6 @@ export async function* streamFetchDecrypt(
     totalFetched += chunk.length;
 
     const matrixEvents = pageRaw.map((raw) => new MatrixEvent(raw));
-    // eslint-disable-next-line no-await-in-loop
     await Promise.allSettled(
       matrixEvents
         .filter((e) => e.isEncrypted())

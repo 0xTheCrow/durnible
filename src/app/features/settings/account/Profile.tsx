@@ -1,5 +1,5 @@
 import type { ChangeEventHandler, FormEventHandler } from 'react';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   Box,
   Text,
@@ -20,6 +20,7 @@ import {
   toRem,
 } from 'folds';
 import FocusTrap from 'focus-trap-react';
+import { useResettableState } from '../../../hooks/useResettableState';
 import { OverlayModal } from '../../../components/OverlayModal';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SequenceCardStyle } from '../styles.css';
@@ -196,11 +197,7 @@ function ProfileBanner({ profile, userId }: ProfileProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
   const [alertRemove, setAlertRemove] = useState(false);
-  const [localBannerMxc, setLocalBannerMxc] = useState<string | undefined>(profile.bannerUrl);
-
-  useEffect(() => {
-    setLocalBannerMxc(profile.bannerUrl);
-  }, [profile.bannerUrl]);
+  const [localBannerMxc, setLocalBannerMxc] = useResettableState(profile.bannerUrl);
 
   const bannerMxc = localBannerMxc;
   const bannerUrl = bannerMxc
@@ -227,7 +224,7 @@ function ProfileBanner({ profile, userId }: ProfileProps) {
       mx.setExtendedProfileProperty('banner_url', mxc);
       handleRemoveUpload();
     },
-    [mx, userId, handleRemoveUpload]
+    [mx, userId, handleRemoveUpload, setLocalBannerMxc]
   );
 
   const handleRemoveBanner = () => {
@@ -330,16 +327,12 @@ function ProfileDisplayName({ profile, userId }: ProfileProps) {
   const disableSetDisplayname = capabilities['m.set_displayname']?.enabled === false;
 
   const defaultDisplayName = profile.displayName ?? getMxIdLocalPart(userId) ?? userId;
-  const [displayName, setDisplayName] = useState<string>(defaultDisplayName);
+  const [displayName, setDisplayName] = useResettableState(defaultDisplayName);
 
   const [changeState, changeDisplayName] = useAsyncCallback(
     useCallback((name: string) => mx.setDisplayName(name), [mx])
   );
   const changingDisplayName = changeState.status === AsyncStatus.Loading;
-
-  useEffect(() => {
-    setDisplayName(defaultDisplayName);
-  }, [defaultDisplayName]);
 
   const handleChange: ChangeEventHandler<HTMLInputElement> = (evt) => {
     const name = evt.currentTarget.value;

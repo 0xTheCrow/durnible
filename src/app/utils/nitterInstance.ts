@@ -53,9 +53,7 @@ export function resolveNitterInstance(): Promise<string> {
       // Sequential probe: stop at the first reachable host. Parallelizing
       // would race them and pick a "winner" that may not be the user's
       // preferred order.
-      // eslint-disable-next-line no-restricted-syntax
       for (const host of NITTER_CANDIDATES) {
-        // eslint-disable-next-line no-await-in-loop
         if (await probe(host)) return host;
       }
       // None reachable — fall back to first candidate and let the iframe handle the error.

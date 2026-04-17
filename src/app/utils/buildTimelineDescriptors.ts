@@ -9,7 +9,7 @@ import { inSameDay, minuteDifference } from './time';
  * Maximum time gap (ms) between two consecutive image messages from the same
  * sender that still allows them to be merged into a single image-grid message.
  */
-export const IMAGE_GROUP_WINDOW_MS = 10 * 1000;
+export const IMAGE_GROUP_WINDOW_MS = 1000;
 
 /**
  * Maximum number of images that can be merged into a single image-grid

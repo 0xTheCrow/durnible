@@ -3,8 +3,6 @@
 // Byte packing/masking/shifting for the PBKDF2 + AES-CTR + HMAC envelope
 // requires bitwise operators that airbnb's `no-bitwise` rule outlaws. There's
 // no source-level alternative that doesn't make the code strictly worse.
-/* eslint-disable no-bitwise */
-
 // Some older Safari versions exposed `webkitSubtle` instead of `subtle`. The
 // `as { webkitSubtle: SubtleCrypto }` cast lets us reach for the prefixed
 // version without polluting the global Crypto type. If neither exists, the

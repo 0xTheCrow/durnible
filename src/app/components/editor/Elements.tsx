@@ -32,6 +32,8 @@ function RenderMentionElement({
   return (
     <span
       {...attributes}
+      data-testid="slate-mention"
+      data-mention-id={element.id}
       className={css.Mention({
         highlight: element.highlight,
         focus: selected && focused,
@@ -78,7 +80,7 @@ function RenderEmoticonElement({
   const focused = useFocused();
 
   return (
-    <span {...attributes}>
+    <span {...attributes} data-testid="slate-emoticon" data-emoticon-key={element.key}>
       <span
         className={css.Emoticon({
           focus: selected && focused,

@@ -10,6 +10,7 @@ export type Editor = BaseEditor &
   ReactEditor & {
     insertAlternateText?: (text: string) => void;
     insertAlternateNode?: (node: Node) => void;
+    setAlternateInputContent?: (html: string) => void;
   };
 
 export type Text = {

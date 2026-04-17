@@ -10,6 +10,8 @@ import { useTouchGesture } from '../../hooks/useTouchGesture';
 import { downloadMedia } from '../../utils/matrix';
 import type { ImageViewerGalleryItem } from '../../state/imageViewer';
 
+export const IMAGE_VIEWER_ZOOM_STEP = 0.2;
+
 export type ImageViewerProps = {
   alt: string;
   src: string;
@@ -33,7 +35,7 @@ export type ImageViewerProps = {
 
 export const ImageViewer = as<'div', ImageViewerProps>(
   ({ className, alt, src, requestClose, gallery, ...props }, ref) => {
-    const { zoom, zoomIn, zoomOut, setZoom, onWheel } = useZoom(0.2);
+    const { zoom, zoomIn, zoomOut, setZoom, onWheel } = useZoom(IMAGE_VIEWER_ZOOM_STEP);
     const { pan, setPan, cursor, onMouseDown } = usePan(zoom !== 1, zoom);
     const { onTouchStart, onTouchMove, onTouchEnd } = useTouchGesture(setZoom, setPan);
 

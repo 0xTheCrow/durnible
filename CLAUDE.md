@@ -44,6 +44,7 @@ Durnible is a Matrix chat client built with React, TypeScript, and Vite. Forked 
 
 - Follow the existing ESLint and Prettier configuration — don't disable rules inline, don't reformat against the configured style, and fix lint errors at the source rather than suppressing them.
 - Functional components only, with typed props via TypeScript interfaces
+- `useState` setters follow the `set[Name]` convention — e.g. `const [count, setCount]`, never `const [count, updateCount]` or `const [selected, selectItem]`. Rename violations when editing nearby code.
 - Named exports preferred over default exports for utilities
 - Prettier: 100 char line width, single quotes
 - ESLint extends airbnb + prettier + TypeScript rules
@@ -51,6 +52,15 @@ Durnible is a Matrix chat client built with React, TypeScript, and Vite. Forked 
 - CSS is co-located as `*.css.ts` Vanilla Extract files (not CSS modules)
 - Tests live alongside source as `*.test.ts` in `src/app/utils/`
 - Don't use `useReducer` as a force-update hack (e.g., `const [, forceUpdate] = useReducer(n => n + 1, 0)`). If a component needs to re-render, it should be driven by real state or props changes.
+- Don't write `useEffect` just to mirror local state. Litmus test: if the effect's `setState` value depends only on values already readable during render (props, state, React context) — no new subscription, no async, no DOM read — delete the effect. Effects that call `setState` inside an event-listener callback, after an `await`, or after measuring the DOM are legitimate; the rule targets effect bodies whose outcome is purely derived from existing inputs. Writes to shared state (Jotai atoms, context, external stores) that trigger re-renders in other components are cross-component side effects and belong in effects even when all input values are available during render. Two fixes for local state mirroring, depending on the case: (1) if the state is always derivable from props (e.g. `setFiltered(list.filter(...))` on `[list]`), delete the state and derive inline — `const filtered = list.filter(...)` — wrapping with `useMemo` only if the derivation is measurably expensive. (2) If local state must reset when a prop changes, use the setState-during-render pattern shown below, not an effect; prefer a component `key=` only if resetting the entire subtree is acceptable, since `key` remounts and loses focus, scroll, and input selection.
+  ```tsx
+  const [value, setValue] = useState(propValue);
+  const [prev, setPrev] = useState(propValue);
+  if (propValue !== prev) {
+    setPrev(propValue);
+    setValue(propValue);
+  }
+  ```
 - Don't patch matrix-js-sdk types with `as any` — find the correct type or fix the upstream typing.
 - Don't use `setTimeout` to work around race conditions in room state — use the SDK's event listeners.
 - Avoid `requestAnimationFrame` if possible — prefer CSS transitions/animations or React state-driven updates.
@@ -62,6 +72,8 @@ Durnible is a Matrix chat client built with React, TypeScript, and Vite. Forked 
 - When asked to write tests, propose the test cases first (what's being covered, at what level, with what assertions) and wait for approval before writing any code.
 - Tests target the component's **expected behavior / contract**, not a snapshot of its current implementation. A refactor that preserves behavior should not require updating tests.
 - Don't identify components in tests by matching on visible strings (button labels, body copy, translated text), ARIA roles alone, or DOM structure — those are brittle and will break on copy edits, i18n changes, or markup refactors. Add explicit `data-testid` props (or similar id props) to components and query by those. If the component you need to target lacks an id prop, add one as part of the test work.
+- Don't hardcode values in tests that are defined as constants in source. If the test needs a value that depends on a source constant — a timeout, a cap, a threshold, a mime type, an event type, a URL path — import that constant and reference it (or derive from it, e.g. `WINDOW_MS / 2`). If the value isn't currently exported but is useful in a test, make it exportable first rather than copying the literal over. Copy-pasted literals desync silently when the source constant is retuned: the test either passes with stale semantics or fails in a way that looks like a regression when it isn't.
+- Don't write tests that only verify behavior the type system already guarantees (e.g., that a function compares the correct fields on a typed object). Focus test effort on behavior types can't catch: state transitions, async sequencing, side effects, edge cases in runtime logic.
 
 ## Git Hooks
 
@@ -84,7 +96,14 @@ Vite env vars use `VITE_` prefix, accessed via `import.meta.env.VITE_*`:
 - Don't dramatize tradeoffs or risks — state them once, flatly.
 - Don't editorialize about the code or the task ("this is a clever pattern", "this is gnarly"). Describe what it does.
 - Prefer declarative sentences over rhetorical structure (no "Not X — Y", no tricolons for effect).
+- Don't write short sentences that exist only for rhythm or punctuation. "Not ideal." "Worth flagging." "That's the tradeoff." If a sentence doesn't add information beyond what the surrounding text already says, delete it.
 - Prefer precise technical explanations. Don't dumb things down, soften jargon, or add hand-holding analogies unless asked — assume the reader knows the stack.
+
+## Disagreement and judgment
+
+- Don't cave to pushback without re-examining. User disagreement, correction, or frustration is a signal to re-check the argument, not a verdict. If the user is right, update and say so. If they're wrong, explain why — don't agree to smooth things over.
+- Evaluate the real problem, not the feeling about it. "This sounds like trouble" or "this is too complicated" isn't automatically correct. Sometimes the hard path is the right path; sometimes a plan the user approved is the wrong one, and it's your job to say so.
+- Both parties are fallible. The user can misremember the codebase, be wrong about past decisions, or propose bad designs. You can hallucinate, misread code, or miss context. Disagreement is useful data — work the problem together, don't defer reflexively.
 
 ## Key Patterns
 

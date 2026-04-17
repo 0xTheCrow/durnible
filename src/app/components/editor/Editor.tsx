@@ -15,7 +15,14 @@ import { withHistory } from 'slate-history';
 import { BlockType } from './types';
 import { RenderElement, RenderLeaf } from './Elements';
 import type { CustomElement } from './slate';
-import { handleAltInputBackspace, insertNodeAtRange, serializeAltInput } from './altInput';
+import {
+  handleAltInputBackspace,
+  htmlToAltInputDom,
+  insertNodeAtRange,
+  isAltInputEmpty,
+} from './altInput';
+import { useMatrixClient } from '../../hooks/useMatrixClient';
+import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
 import * as css from './Editor.css';
 import { toggleKeyboardShortcut } from './keyboard';
 import { getImageUrlBlob } from '../../utils/dom';
@@ -56,18 +63,6 @@ export const useEditor = (): Editor => {
   return editor;
 };
 
-const extractEditorText = (children: Descendant[]): string =>
-  children
-    .map((node) => {
-      if ('text' in node) return node.text;
-      if ('children' in node)
-        return (node.children as Descendant[])
-          .map((child) => ('text' in child ? child.text : ''))
-          .join('');
-      return '';
-    })
-    .join('');
-
 export type EditorChangeHandler = (value: Descendant[]) => void;
 type CustomEditorProps = {
   editableName?: string;
@@ -107,20 +102,17 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
     ref
   ) => {
     const [alternateInput] = useSetting(settingsAtom, 'alternateInput');
+    const mx = useMatrixClient();
+    const useAuthentication = useMediaAuthentication();
 
-    const [inputValue, setInputValue] = useState(() => extractEditorText(editor.children));
+    const [isEmpty, setIsEmpty] = useState(true);
     const inputRef = useRef<HTMLDivElement>(null);
     const savedRangeRef = useRef<Range | null>(null);
-    const inputValueRef = useRef(inputValue);
-    inputValueRef.current = inputValue;
 
     const syncAltInputState = useCallback(() => {
       const el = inputRef.current;
       if (!el) return;
-      const children = serializeAltInput(el);
-      editor.children = children;
-      const newText = extractEditorText(children);
-      setInputValue(newText);
+      setIsEmpty(isAltInputEmpty(el));
       onChange?.(editor.children);
     }, [editor, onChange]);
 
@@ -130,14 +122,9 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
       const origOnChange = editor.onChange;
       editor.onChange = (...args: Parameters<typeof origOnChange>) => {
         origOnChange.apply(editor, args);
-        const newText = extractEditorText(editor.children);
-        setInputValue(newText);
-        // Sync DOM when editor is cleared externally (e.g. after sending a message)
         const el = inputRef.current;
-        if (el && newText.length === 0 && el.childNodes.length > 0) {
-          el.textContent = '';
-          savedRangeRef.current = null;
-        }
+        if (!el) return;
+        setIsEmpty(isAltInputEmpty(el));
       };
 
       const handleSelectionChange = () => {
@@ -174,13 +161,23 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
         syncAltInputState();
       };
 
+      editor.setAlternateInputContent = (html: string) => {
+        const el = inputRef.current;
+        if (!el) return;
+        const fragment = htmlToAltInputDom(html, { mx, useAuthentication });
+        el.replaceChildren(fragment);
+        savedRangeRef.current = null;
+        syncAltInputState();
+      };
+
       return () => {
         document.removeEventListener('selectionchange', handleSelectionChange);
         editor.onChange = origOnChange;
         delete editor.insertAlternateText;
         delete editor.insertAlternateNode;
+        delete editor.setAlternateInputContent;
       };
-    }, [editor, alternateInput, syncAltInputState]);
+    }, [editor, alternateInput, syncAltInputState, mx, useAuthentication]);
 
     const handleInput: FormEventHandler<HTMLDivElement> = useCallback(() => {
       syncAltInputState();
@@ -483,7 +480,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
                 contentEditable
                 suppressContentEditableWarning
                 data-placeholder={placeholder}
-                data-empty={inputValue.length === 0 ? '' : undefined}
+                data-empty={isEmpty ? '' : undefined}
                 onInput={handleInput}
                 onBeforeInput={handleBeforeInput}
                 onKeyDown={handleInputKeyDown}
@@ -502,7 +499,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
               </Box>
             )}
           </Box>
-          {bottom && <div className={css.AlternateInputBottom}>{bottom}</div>}
+          {bottom}
         </div>
       );
     }

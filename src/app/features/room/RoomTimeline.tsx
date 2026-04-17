@@ -1,4 +1,3 @@
-/* eslint-disable react/destructuring-assignment */
 import type { MouseEventHandler, RefObject } from 'react';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { MatrixEvent, Room, RoomEventHandlerMap } from 'matrix-js-sdk';
@@ -260,8 +259,8 @@ export function RoomTimeline({
     }
     return true;
   })();
-  const atLiveEndRef = useRef(liveTimelineLinked && rangeAtNewest);
-  atLiveEndRef.current = liveTimelineLinked && rangeAtNewest;
+  const viewingLatestRef = useRef(liveTimelineLinked && rangeAtNewest);
+  viewingLatestRef.current = liveTimelineLinked && rangeAtNewest;
 
   const {
     scrollRef,
@@ -272,7 +271,7 @@ export function RoomTimeline({
     requestScrollToBottom,
   } = useTimelineAutoScroll({
     room,
-    atLiveEnd: atLiveEndRef.current,
+    viewingLatest: viewingLatestRef.current,
     autoPinEnabled: docFocused || unfocusedAutoScroll,
     initiallyAtBottom: !willScrollToReadMarker,
   });
@@ -366,7 +365,7 @@ export function RoomTimeline({
             if (document.hasFocus() && (!unreadInfo || mEvt.getSender() === mx.getUserId())) {
               const evtRoomId = mEvt.getRoomId();
               if (evtRoomId) {
-                requestAnimationFrame(() => markAsRead(mx, evtRoomId, hideActivity));
+                markAsRead(mx, evtRoomId, hideActivity);
               }
             }
 
@@ -472,7 +471,7 @@ export function RoomTimeline({
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden) return;
-      if (!atLiveEndRef.current) return;
+      if (!viewingLatestRef.current) return;
 
       const freshTimelines = getLinkedTimelines(getLiveTimeline(room));
       const freshLength = getTimelinesEventsCount(freshTimelines);

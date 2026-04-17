@@ -3,10 +3,13 @@ import type { MatrixClient } from 'matrix-js-sdk';
 import type * as MatrixUtils from '../../utils/matrix';
 import {
   createAltEmoticonNode,
+  createAltMentionNode,
   insertNodeAtRange,
   serializeAltInput,
   replaceTextInNode,
   replaceRangeWithNode,
+  htmlToAltInputDom,
+  isAltInputEmpty,
   ALT_NODE_ATTR,
   ALT_EMOTICON,
 } from './altInput';
@@ -254,5 +257,142 @@ describe('inline void leading anchor', () => {
     expect(first?.nodeType).toBe(Node.TEXT_NODE);
     expect((first as Text).data.length).toBeGreaterThan(0);
     expect(first?.nextSibling).toBe(replacement);
+  });
+});
+
+const ctx = { mx: mockMx, useAuthentication: false };
+
+describe('htmlToAltInputDom formatting preservation', () => {
+  it('converts <strong> to <b>', () => {
+    const fragment = htmlToAltInputDom('<strong>bold</strong>', ctx);
+    const b = fragment.querySelector('b');
+    expect(b).not.toBeNull();
+    expect(b?.textContent).toBe('bold');
+  });
+
+  it('converts <em> to <i>', () => {
+    const fragment = htmlToAltInputDom('<em>italic</em>', ctx);
+    const i = fragment.querySelector('i');
+    expect(i).not.toBeNull();
+    expect(i?.textContent).toBe('italic');
+  });
+
+  it('preserves <u>', () => {
+    const fragment = htmlToAltInputDom('<u>underline</u>', ctx);
+    const u = fragment.querySelector('u');
+    expect(u).not.toBeNull();
+    expect(u?.textContent).toBe('underline');
+  });
+
+  it('converts <del> to <s>', () => {
+    const fragment = htmlToAltInputDom('<del>strike</del>', ctx);
+    const s = fragment.querySelector('s');
+    expect(s).not.toBeNull();
+    expect(s?.textContent).toBe('strike');
+  });
+
+  it('preserves <code> for inline code', () => {
+    const fragment = htmlToAltInputDom('<code>inline</code>', ctx);
+    const code = fragment.querySelector('code');
+    expect(code).not.toBeNull();
+    expect(code?.textContent).toBe('inline');
+  });
+
+  it('preserves <span data-mx-spoiler>', () => {
+    const fragment = htmlToAltInputDom('<span data-mx-spoiler>hidden</span>', ctx);
+    const spoiler = fragment.querySelector('[data-mx-spoiler]');
+    expect(spoiler).not.toBeNull();
+    expect(spoiler?.textContent).toBe('hidden');
+  });
+
+  it('preserves <blockquote>', () => {
+    const fragment = htmlToAltInputDom('<blockquote>quoted</blockquote>', ctx);
+    const bq = fragment.querySelector('blockquote');
+    expect(bq).not.toBeNull();
+    expect(bq?.textContent).toBe('quoted');
+  });
+
+  it('preserves <h1>', () => {
+    const fragment = htmlToAltInputDom('<h1>title</h1>', ctx);
+    const h1 = fragment.querySelector('h1');
+    expect(h1).not.toBeNull();
+    expect(h1?.textContent).toBe('title');
+  });
+
+  it('preserves <ol> and <li>', () => {
+    const fragment = htmlToAltInputDom('<ol><li>item</li></ol>', ctx);
+    const ol = fragment.querySelector('ol');
+    const li = fragment.querySelector('li');
+    expect(ol).not.toBeNull();
+    expect(li).not.toBeNull();
+    expect(li?.textContent).toBe('item');
+  });
+
+  it('preserves <pre> and skips <code> inside it', () => {
+    const fragment = htmlToAltInputDom('<pre><code>code block</code></pre>', ctx);
+    const pre = fragment.querySelector('pre');
+    expect(pre).not.toBeNull();
+    expect(pre?.textContent).toBe('code block');
+    expect(pre?.querySelector('code')).toBeNull();
+  });
+});
+
+describe('isAltInputEmpty', () => {
+  it('returns true for empty div', () => {
+    const el = document.createElement('div');
+    expect(isAltInputEmpty(el)).toBe(true);
+  });
+
+  it('returns false for text content', () => {
+    const el = document.createElement('div');
+    el.textContent = 'hello';
+    expect(isAltInputEmpty(el)).toBe(false);
+  });
+
+  it('returns true for only zero-width spaces', () => {
+    const el = document.createElement('div');
+    el.textContent = '\u200B\u200B';
+    expect(isAltInputEmpty(el)).toBe(true);
+  });
+
+  it('returns true for empty formatting tag left behind', () => {
+    const el = document.createElement('div');
+    el.appendChild(document.createElement('b'));
+    expect(isAltInputEmpty(el)).toBe(true);
+  });
+
+  it('returns false for list with no text', () => {
+    const el = document.createElement('div');
+    const ol = document.createElement('ol');
+    ol.appendChild(document.createElement('li'));
+    el.appendChild(ol);
+    expect(isAltInputEmpty(el)).toBe(false);
+  });
+
+  it('returns false for void mention element', () => {
+    const el = document.createElement('div');
+    el.appendChild(
+      createAltMentionNode({ id: '@alice:server.com', name: 'Alice', highlight: false })
+    );
+    expect(isAltInputEmpty(el)).toBe(false);
+  });
+
+  it('returns false for void emoticon element', () => {
+    const el = document.createElement('div');
+    el.appendChild(
+      createAltEmoticonNode({
+        mx: mockMx,
+        useAuthentication: false,
+        key: '😀',
+        shortcode: 'grinning',
+      })
+    );
+    expect(isAltInputEmpty(el)).toBe(false);
+  });
+
+  it('returns true for only whitespace', () => {
+    const el = document.createElement('div');
+    el.textContent = '   \n  ';
+    expect(isAltInputEmpty(el)).toBe(true);
   });
 });

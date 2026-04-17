@@ -1,32 +1,32 @@
+import { useCallback, useState } from 'react';
 import type { Room } from 'matrix-js-sdk';
-import { useCallback, useMemo } from 'react';
 import { useStateEventCallback } from './useStateEventCallback';
-import { useForceUpdate } from './useForceUpdate';
 import { getStateEvent } from '../utils/room';
 import type { StateEvent } from '../../types/matrix/room';
 
 export const useStateEvent = (room: Room, eventType: StateEvent, stateKey = '') => {
-  const [updateCount, forceUpdate] = useForceUpdate();
+  const [event, setEvent] = useState(() => getStateEvent(room, eventType, stateKey));
+  const [prev, setPrev] = useState({ room, eventType, stateKey });
+  if (prev.room !== room || prev.eventType !== eventType || prev.stateKey !== stateKey) {
+    setPrev({ room, eventType, stateKey });
+    setEvent(getStateEvent(room, eventType, stateKey));
+  }
 
   useStateEventCallback(
     room.client,
     useCallback(
-      (event) => {
+      (stateEvent) => {
         if (
-          event.getRoomId() === room.roomId &&
-          event.getType() === eventType &&
-          event.getStateKey() === stateKey
+          stateEvent.getRoomId() === room.roomId &&
+          stateEvent.getType() === eventType &&
+          stateEvent.getStateKey() === stateKey
         ) {
-          forceUpdate();
+          setEvent(getStateEvent(room, eventType, stateKey));
         }
       },
-      [room, eventType, stateKey, forceUpdate]
+      [room, eventType, stateKey]
     )
   );
 
-  return useMemo(
-    () => getStateEvent(room, eventType, stateKey),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [room, eventType, stateKey, updateCount]
-  );
+  return event;
 };

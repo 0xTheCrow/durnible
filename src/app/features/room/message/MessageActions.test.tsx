@@ -2,10 +2,11 @@
 // Replace it with a passthrough so modals can still render and be tested.
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { MatrixEvent } from 'matrix-js-sdk';
 import { RelationType, EventType, MsgType } from 'matrix-js-sdk';
 import type { Relations } from 'matrix-js-sdk/lib/models/relations';
+import { ReactEditor } from 'slate-react';
 
 import { MessageDeleteItem } from './Message';
 import { MessageEditor } from './MessageEditor';
@@ -22,8 +23,6 @@ vi.mock('focus-trap-react', () => ({
   default: ({ children }: { children: React.ReactNode }) => children,
 }));
 
-// Prevents ReactEditor.focus() from firing asynchronously after component
-// unmount, which causes "Cannot resolve a DOM node from Slate node" errors.
 vi.mock('../../../utils/user-agent', () => ({
   mobileOrTablet: () => true,
 }));
@@ -201,6 +200,16 @@ describe('message deletion (MessageDeleteItem)', () => {
 // ─── Message Editing ──────────────────────────────────────────────────────
 
 describe('message editing (MessageEditor)', () => {
+  let reactEditorFocusSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    reactEditorFocusSpy = vi.spyOn(ReactEditor, 'focus').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    reactEditorFocusSpy.mockRestore();
+  });
+
   async function renderEditor(onCancel = vi.fn()) {
     const mx = createMockMatrixClient();
     const room = createMockRoom(ROOM_ID, mx);

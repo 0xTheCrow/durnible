@@ -2,7 +2,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Badge, Box, Button, Chip, config, Icon, Icons, Menu, Spinner, Text } from 'folds';
 import { EventType } from 'matrix-js-sdk';
-import produce from 'immer';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SequenceCardStyle } from '../styles.css';
 import { SettingTile } from '../../../components/setting-tile';
@@ -68,18 +67,15 @@ export function PermissionGroups({
 
   const [applyState, applyChanges] = useAsyncCallback(
     useCallback(async () => {
-      const editedPowerLevels = produce(powerLevels, (draftPowerLevels) => {
-        permissionGroups.forEach((group) =>
-          group.items.forEach((item) => {
-            const power = getPermissionPower(powerLevels, item.location);
-            applyPermissionPower(draftPowerLevels, item.location, power);
-          })
-        );
-        permissionUpdate.forEach((power, location) =>
-          applyPermissionPower(draftPowerLevels, location, power)
-        );
-
-        return draftPowerLevels;
+      let editedPowerLevels = { ...powerLevels };
+      permissionGroups.forEach((group) =>
+        group.items.forEach((item) => {
+          const power = getPermissionPower(powerLevels, item.location);
+          editedPowerLevels = applyPermissionPower(editedPowerLevels, item.location, power);
+        })
+      );
+      permissionUpdate.forEach((power, location) => {
+        editedPowerLevels = applyPermissionPower(editedPowerLevels, location, power);
       });
       await mx.sendStateEvent(room.roomId, EventType.RoomPowerLevels, editedPowerLevels);
     }, [mx, room, powerLevels, permissionUpdate, permissionGroups])

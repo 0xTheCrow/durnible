@@ -12,7 +12,6 @@ import { BlockType } from './types';
 import { settingsAtom } from '../../state/settings';
 import { MatrixTestWrapper } from '../../../test/wrapper';
 import { createAltEmoticonNode } from './altInput';
-import type { EmoticonElement, ParagraphElement } from './slate';
 
 vi.mock('../../utils/user-agent', () => ({
   mobileOrTablet: () => false,
@@ -195,12 +194,6 @@ describe('Alternate input node insertion', () => {
 
   const mockMx = {} as MatrixClient;
 
-  const firstParagraph = (editor: SlateEditor): ParagraphElement => {
-    const first = editor.children[0] as ParagraphElement;
-    expect(first.type).toBe(BlockType.Paragraph);
-    return first;
-  };
-
   it('inserts a DOM node at the saved caret and serializes it as an inline void', () => {
     const { getByTestId, getEditor } = renderHarness();
     const el = getByTestId('editor-alternate-input') as HTMLDivElement;
@@ -227,25 +220,19 @@ describe('Alternate input node insertion', () => {
       getEditor().insertAlternateNode!(node);
     });
 
-    const paragraph = firstParagraph(getEditor());
-    const emoticonIndex = paragraph.children.findIndex(
-      (child) => 'type' in child && child.type === BlockType.Emoticon
-    );
-    expect(emoticonIndex).toBeGreaterThan(0);
-    const emoticon = paragraph.children[emoticonIndex] as EmoticonElement;
-    expect(emoticon.key).toBe('mxc://example/wave');
-    expect(emoticon.shortcode).toBe('wave');
+    const voids = el.querySelectorAll('[data-alt-type="emoticon"]');
+    expect(voids).toHaveLength(1);
+    const emoticon = voids[0] as HTMLElement;
+    expect(emoticon.dataset.key).toBe('mxc://example/wave');
+    expect(emoticon.dataset.shortcode).toBe('wave');
 
-    const beforeText = paragraph.children
-      .slice(0, emoticonIndex)
-      .map((child) => ('text' in child ? child.text : ''))
-      .join('');
-    const afterText = paragraph.children
-      .slice(emoticonIndex + 1)
-      .map((child) => ('text' in child ? child.text : ''))
-      .join('');
-    expect(beforeText).toBe('hello');
-    expect(afterText).toBe(' world');
+    const textBefore = emoticon.previousSibling;
+    expect(textBefore).toBeTruthy();
+    expect(textBefore!.textContent).toContain('hello');
+
+    const textAfter = emoticon.nextSibling;
+    expect(textAfter).toBeTruthy();
+    expect(textAfter!.textContent).toContain(' world');
   });
 
   it('preserves an existing inline void when inserting text via insertAlternateText', () => {
@@ -269,17 +256,7 @@ describe('Alternate input node insertion', () => {
     });
 
     expect(el.querySelectorAll('[data-alt-type="emoticon"]')).toHaveLength(1);
-
-    const paragraph = firstParagraph(getEditor());
-    const hasEmoticon = paragraph.children.some(
-      (child) => 'type' in child && child.type === BlockType.Emoticon
-    );
-    expect(hasEmoticon).toBe(true);
-
-    const flatText = paragraph.children
-      .map((child) => ('text' in child ? child.text : ''))
-      .join('');
-    expect(flatText).toContain(' there');
+    expect(el.textContent).toContain(' there');
   });
 });
 

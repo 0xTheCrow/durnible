@@ -17,14 +17,13 @@ import {
 import type { MouseEventHandler, ReactNode } from 'react';
 import React, { useCallback, useRef, useState } from 'react';
 import FocusTrap from 'focus-trap-react';
-import { useHover, useFocusWithin } from 'react-aria';
 import { useAtom, useAtomValue } from 'jotai';
 import type { MatrixEvent, Room } from 'matrix-js-sdk';
 import { MsgType, EventStatus } from 'matrix-js-sdk';
 import type { Relations } from 'matrix-js-sdk/lib/models/relations';
 import classNames from 'classnames';
-import { messageOptionsAtom } from './messageOptionsAtom';
 import { selectionModeAtom, selectedIdsAtom } from './selectionAtom';
+import { useMessagePopupTrigger } from './useMessagePopupTrigger';
 import { hiddenImagesAtom, MessageEventIdContext } from '../../../state/hiddenImages';
 import {
   AvatarBase,
@@ -42,7 +41,8 @@ import type { MessageSpacing } from '../../../state/settings';
 import { MessageLayout } from '../../../state/settings';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import * as css from './styles.css';
-import { EmojiBoard } from '../../../components/emoji-board';
+import type { EmojiBoardPopOutHandle } from '../../../components/emoji-board';
+import { EmojiBoardPopOut } from '../../../components/emoji-board';
 import { MessageEditor } from './MessageEditor';
 import { useOpenReactionViewer } from '../../../state/hooks/reactionViewer';
 import { UserAvatar } from '../../../components/user-avatar';
@@ -156,7 +156,6 @@ export const Message = as<'div', MessageProps>(
     const senderId = mEvent.getSender() ?? '';
 
     const eventId = mEvent.getId() ?? '';
-    const [activeMessageOptionsId, setActiveMessageOptionsId] = useAtom(messageOptionsAtom);
     const selectionMode = useAtomValue(selectionModeAtom);
     const [selectedIds, setSelectedIds] = useAtom(selectedIdsAtom);
     const isSelected = selectionMode && selectedIds.has(eventId);
@@ -171,18 +170,13 @@ export const Message = as<'div', MessageProps>(
         return next;
       });
     }, [eventId, setSelectedIds]);
-    const hover = !selectionMode && activeMessageOptionsId === eventId;
-    const setHover = useCallback(
-      (isHovered: boolean) => {
-        if (selectionMode) return;
-        setActiveMessageOptionsId(isHovered ? eventId : (prev) => (prev === eventId ? null : prev));
-      },
-      [eventId, setActiveMessageOptionsId, selectionMode]
+    const { hoverProps, focusWithinProps, handleTap, showOptions } = useMessagePopupTrigger(
+      eventId,
+      { disabled: selectionMode || !!edit }
     );
-    const { hoverProps } = useHover({ onHoverChange: setHover });
-    const { focusWithinProps } = useFocusWithin({ onFocusWithinChange: setHover });
     const [menuAnchor, setMenuAnchor] = useState<RectCords>();
-    const [emojiBoardAnchor, setEmojiBoardAnchor] = useState<RectCords>();
+    const [emojiBoardOpen, setEmojiBoardOpen] = useState(false);
+    const emojiBoardRef = useRef<EmojiBoardPopOutHandle>(null);
     const skipMenuReturnFocusRef = useRef(false);
     const openReactionViewer = useOpenReactionViewer();
     const [hiddenImages, setHiddenImages] = useAtom(hiddenImagesAtom);
@@ -248,16 +242,6 @@ export const Message = as<'div', MessageProps>(
           {tagIconSrc && <PowerIcon size="100" iconSrc={tagIconSrc} />}
         </Box>
         <Box shrink="No" gap="100" alignItems="Center">
-          {messageLayout === MessageLayout.Modern && hover && !isFailed && (
-            <>
-              <Text as="span" size="T200" priority="300">
-                {senderId}
-              </Text>
-              <Text as="span" size="T200" priority="300">
-                |
-              </Text>
-            </>
-          )}
           {isFailed && (
             <>
               <Icon size="100" src={Icons.Warning} style={{ color: color.Critical.Main }} />
@@ -381,19 +365,16 @@ export const Message = as<'div', MessageProps>(
       setMenuAnchor(undefined);
     };
 
-    const handleOpenEmojiBoard: MouseEventHandler<HTMLButtonElement> = (evt) => {
-      const target = evt.currentTarget.parentElement?.parentElement ?? evt.currentTarget;
-      setEmojiBoardAnchor(target.getBoundingClientRect());
-    };
     const handleAddReactions: MouseEventHandler<HTMLButtonElement> = () => {
       const rect = menuAnchor;
+      if (!rect) return;
+      skipMenuReturnFocusRef.current = true;
       closeMenu();
-      // open it with timeout because closeMenu
-      // FocusTrap will return focus from emojiBoard
-
-      setTimeout(() => {
-        setEmojiBoardAnchor(rect);
-      }, 100);
+      if (rect.width === 0) {
+        emojiBoardRef.current?.openAtRect(rect, { align: 'Start', offset: 0 });
+      } else {
+        emojiBoardRef.current?.openAtRect(rect);
+      }
     };
 
     return (
@@ -407,8 +388,8 @@ export const Message = as<'div', MessageProps>(
         collapse={collapse}
         highlight={highlight}
         mentionHighlight={mentionHighlight}
-        selected={!!menuAnchor || !!emojiBoardAnchor || isSelected}
-        onClick={selectionMode && canDelete ? toggleSelection : undefined}
+        selected={!!menuAnchor || emojiBoardOpen || isSelected}
+        onClick={selectionMode && canDelete ? toggleSelection : handleTap}
         onContextMenu={handleContextMenu}
         style={selectionMode ? { cursor: 'pointer' } : undefined}
         {...props}
@@ -421,43 +402,39 @@ export const Message = as<'div', MessageProps>(
             <Checkbox variant="Primary" size="300" checked={!!isSelected} />
           </Box>
         )}
-        {!selectionMode && !edit && (hover || !!menuAnchor || !!emojiBoardAnchor) && (
+        {!selectionMode && !edit && (showOptions || !!menuAnchor || emojiBoardOpen) && (
           <div className={css.MessageOptionsBase}>
             <Menu className={css.MessageOptionsBar} variant="SurfaceVariant">
               <Box gap="100">
                 {canSendReaction && (
-                  <PopOut
+                  <EmojiBoardPopOut
+                    ref={emojiBoardRef}
                     position="Bottom"
-                    align={emojiBoardAnchor?.width === 0 ? 'Start' : 'End'}
-                    offset={emojiBoardAnchor?.width === 0 ? 0 : undefined}
-                    anchor={emojiBoardAnchor}
-                    content={
-                      <EmojiBoard
-                        imagePackRooms={imagePackRooms ?? []}
-                        returnFocusOnDeactivate={false}
-                        allowTextCustomEmoji
-                        onEmojiSelect={(key) => {
-                          onReactionToggle(eventId, key);
-                        }}
-                        onCustomEmojiSelect={(mxc, shortcode) => {
-                          onReactionToggle(eventId, mxc, shortcode);
-                        }}
-                        requestClose={() => {
-                          setEmojiBoardAnchor(undefined);
-                        }}
-                      />
-                    }
+                    align="End"
+                    imagePackRooms={imagePackRooms ?? []}
+                    returnFocusOnDeactivate={false}
+                    allowTextCustomEmoji
+                    onEmojiSelect={(key) => {
+                      onReactionToggle(eventId, key);
+                    }}
+                    onCustomEmojiSelect={(mxc, shortcode) => {
+                      onReactionToggle(eventId, mxc, shortcode);
+                    }}
+                    onOpenChange={setEmojiBoardOpen}
                   >
-                    <IconButton
-                      onClick={handleOpenEmojiBoard}
-                      variant="SurfaceVariant"
-                      size="300"
-                      radii="300"
-                      aria-pressed={!!emojiBoardAnchor}
-                    >
-                      <Icon src={Icons.SmilePlus} size="100" />
-                    </IconButton>
-                  </PopOut>
+                    {({ triggerRef, open, isOpen }) => (
+                      <IconButton
+                        ref={triggerRef}
+                        onClick={open}
+                        variant="SurfaceVariant"
+                        size="300"
+                        radii="300"
+                        aria-pressed={isOpen}
+                      >
+                        <Icon src={Icons.SmilePlus} size="100" />
+                      </IconButton>
+                    )}
+                  </EmojiBoardPopOut>
                 )}
                 {relations && (
                   <MessageAllReactionButton onOpen={() => openReactionViewer(room, relations)} />

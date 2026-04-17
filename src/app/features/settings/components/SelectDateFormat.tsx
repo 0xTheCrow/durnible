@@ -1,5 +1,5 @@
 import type { ChangeEventHandler, FormEventHandler, MouseEventHandler } from 'react';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import dayjs from 'dayjs';
 import type { RectCords } from 'folds';
 import {
@@ -17,6 +17,7 @@ import {
   Text,
 } from 'folds';
 import FocusTrap from 'focus-trap-react';
+import { useResettableState } from '../../../hooks/useResettableState';
 import { useSetting } from '../../../state/hooks/settings';
 import type { DateFormat } from '../../../state/settings';
 import { settingsAtom } from '../../../state/settings';
@@ -196,11 +197,7 @@ type CustomDateFormatProps = {
   onChange: (format: string) => void;
 };
 function CustomDateFormat({ value, onChange }: CustomDateFormatProps) {
-  const [dateFormatCustom, setDateFormatCustom] = useState(value);
-
-  useEffect(() => {
-    setDateFormatCustom(value);
-  }, [value]);
+  const [dateFormatCustom, setDateFormatCustom] = useResettableState(value);
 
   const handleChange: ChangeEventHandler<HTMLInputElement> = (evt) => {
     const format = evt.currentTarget.value;

@@ -18,7 +18,6 @@ import {
   Overlay,
   OverlayBackdrop,
   OverlayCenter,
-  PopOut,
   Scroll,
   Text,
   config,
@@ -30,6 +29,7 @@ import type { AutocompleteQuery } from '../../components/editor';
 import {
   CustomEditor,
   Toolbar,
+  AltInputToolbar,
   toMatrixCustomHTML,
   toPlainText,
   AUTOCOMPLETE_PREFIXES,
@@ -37,7 +37,6 @@ import {
   getAutocompleteQuery,
   getPrevWorldRange,
   resetEditor,
-  resetEditorDirect,
   RoomMentionAutocomplete,
   UserMentionAutocomplete,
   EmoticonAutocomplete,
@@ -53,9 +52,16 @@ import {
   trimCommand,
   getMentions,
   replaceShortcodes,
+  domToMatrixCustomHTML,
+  domToPlainText,
+  getMentionsFromDom,
+  replaceShortcodesInDom,
+  getCommandFromDom,
+  isAltInputEmpty,
+  isInsideList,
+  handleListEnter,
 } from '../../components/editor';
-import { EmojiBoard, EmojiBoardTab } from '../../components/emoji-board';
-import { UseStateProvider } from '../../components/UseStateProvider';
+import { EmojiBoardPopOut, EmojiBoardTab } from '../../components/emoji-board';
 import type { UploadContent } from '../../utils/matrix';
 import { getImageInfo, getMxIdLocalPart, mxcUrlToHttp } from '../../utils/matrix';
 import { encryptFileInWorker } from '../../utils/encryptWorker';
@@ -66,6 +72,7 @@ import { useFileDropZone } from '../../hooks/useFileDrop';
 import type { UploadItem, UploadMetadata } from '../../state/room/roomInputDrafts';
 import {
   roomIdToMsgDraftAtomFamily,
+  roomIdToAltInputDraftAtomFamily,
   roomIdToReplyDraftAtomFamily,
   roomIdToUploadItemsAtomFamily,
   roomUploadAtomFamily,
@@ -129,7 +136,6 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     const [alternateInput] = useSetting(settingsAtom, 'alternateInput');
     const direct = useIsDirectRoom();
     const commands = useCommands(mx, room);
-    const emojiBtnRef = useRef<HTMLButtonElement>(null);
     const sendBtnRef = useRef<HTMLButtonElement>(null);
     const [hasEditorContent, setHasEditorContent] = useState(false);
     const roomToParents = useAtomValue(roomToParentsAtom);
@@ -137,6 +143,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     const creators = useRoomCreators(room);
 
     const [msgDraft, setMsgDraft] = useAtom(roomIdToMsgDraftAtomFamily(roomId));
+    const [altInputDraft, setAltInputDraft] = useAtom(roomIdToAltInputDraftAtomFamily(roomId));
     const [replyDraft, setReplyDraft] = useAtom(roomIdToReplyDraftAtomFamily(roomId));
     const replyUserID = replyDraft?.userId;
 
@@ -218,37 +225,45 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     );
 
     useEffect(() => {
-      if (alternateInput) {
-        if (msgDraft.length > 0) {
-          editor.children = JSON.parse(JSON.stringify(msgDraft));
-        }
-      } else {
-        Transforms.insertFragment(editor, msgDraft);
-      }
+      if (alternateInput) return;
+      Transforms.insertFragment(editor, msgDraft);
       setHasEditorContent(!isEmptyEditor(editor));
-    }, [editor, msgDraft, alternateInput]);
+    }, [alternateInput, editor, msgDraft]);
+
+    useEffect(() => {
+      if (!alternateInput) return;
+      const el = alternateInputRef.current;
+      if (el && altInputDraft) {
+        el.innerHTML = altInputDraft;
+        setHasEditorContent(!isAltInputEmpty(el));
+      }
+    }, [alternateInput, altInputDraft, alternateInputRef]);
 
     useEffect(
       () => () => {
-        if (alternateInput) {
-          if (!isEmptyEditor(editor)) {
-            setMsgDraft(JSON.parse(JSON.stringify(editor.children)));
-          } else {
-            setMsgDraft([]);
-          }
-          resetEditorDirect(editor);
+        if (alternateInput) return;
+        if (!isEmptyEditor(editor)) {
+          setMsgDraft(JSON.parse(JSON.stringify(editor.children)));
         } else {
-          if (!isEmptyEditor(editor)) {
-            const parsedDraft = JSON.parse(JSON.stringify(editor.children));
-            setMsgDraft(parsedDraft);
-          } else {
-            setMsgDraft([]);
-          }
-          resetEditor(editor);
-          resetEditorHistory(editor);
+          setMsgDraft([]);
+        }
+        resetEditor(editor);
+        resetEditorHistory(editor);
+      },
+      [roomId, alternateInput, editor, setMsgDraft]
+    );
+
+    useEffect(
+      () => () => {
+        if (!alternateInput) return;
+        const el = alternateInputRef.current;
+        if (el && !isAltInputEmpty(el)) {
+          setAltInputDraft(el.innerHTML);
+        } else {
+          setAltInputDraft('');
         }
       },
-      [roomId, editor, setMsgDraft, alternateInput]
+      [roomId, alternateInput, alternateInputRef, setAltInputDraft]
     );
 
     const handleFileMetadata = useCallback(
@@ -322,23 +337,22 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       });
     };
 
-    const submit = useCallback(() => {
-      const shortcodeMap = buildShortcodeMap(imagePacks, unicodeEmojis);
-      const processedChildren = replaceShortcodes(editor.children, shortcodeMap);
+    const submitAltInput = useCallback(() => {
+      const el = alternateInputRef.current;
+      if (!el) return;
 
-      let plainText = toPlainText(processedChildren, isMarkdown).trim();
+      const shortcodeMap = buildShortcodeMap(imagePacks, unicodeEmojis);
+      replaceShortcodesInDom(el, shortcodeMap, mx, useAuthentication);
+
+      let plainText = domToPlainText(el).trim();
       let customHtml = trimCustomHtml(
-        toMatrixCustomHTML(processedChildren, {
+        domToMatrixCustomHTML(el, {
           allowTextFormatting: true,
           allowBlockMarkdown: isMarkdown,
           allowInlineMarkdown: isMarkdown,
         })
       );
-      let commandName: string | undefined = getBeginCommand(editor);
-      if (!commandName && alternateInput) {
-        const match = plainText.match(/^\/(\S+)/);
-        if (match) commandName = match[1];
-      }
+      const commandName = getCommandFromDom(el);
       let msgType = MsgType.Text;
 
       if (commandName) {
@@ -363,12 +377,114 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
         if (commandContent) {
           commandContent.exe(plainText);
         }
-        if (alternateInput) {
-          resetEditorDirect(editor);
-        } else {
-          resetEditor(editor);
-          resetEditorHistory(editor);
+        el.textContent = '';
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        setHasEditorContent(false);
+        sendTypingStatus(false);
+        return;
+      }
+
+      const hasFiles = selectedFiles.length > 0;
+
+      if (plainText === '' && !hasFiles) return;
+
+      if (plainText !== '') {
+        const body = plainText;
+        const mentionData = getMentionsFromDom(el, mx);
+        const formattedBody = customHtml;
+
+        const content: IContent = {
+          msgtype: msgType,
+          body,
+        };
+
+        if (replyDraft && replyDraft.userId !== mx.getUserId()) {
+          mentionData.users.add(replyDraft.userId);
         }
+
+        const mMentions = getMentionContent(Array.from(mentionData.users), mentionData.room);
+        content['m.mentions'] = mMentions;
+
+        if (replyDraft || !customHtmlEqualsPlainText(formattedBody, body)) {
+          content.format = 'org.matrix.custom.html';
+          content.formatted_body = formattedBody;
+        }
+        if (replyDraft) {
+          content['m.relates_to'] = {
+            'm.in_reply_to': {
+              event_id: replyDraft.eventId,
+            },
+          };
+          if (replyDraft.relation?.rel_type === RelationType.Thread) {
+            content['m.relates_to'].event_id = replyDraft.relation.event_id;
+            content['m.relates_to'].rel_type = RelationType.Thread;
+            content['m.relates_to'].is_falling_back = false;
+          }
+        }
+        mx.sendMessage(roomId, content as RoomMessageEventContent);
+      }
+
+      uploadsReplyDraftRef.current = plainText === '' ? replyDraft : undefined;
+      uploadBoardHandlers.current?.handleSend();
+
+      el.textContent = '';
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      setHasEditorContent(false);
+      setReplyDraft(undefined);
+      sendTypingStatus(false);
+    }, [
+      mx,
+      roomId,
+      replyDraft,
+      sendTypingStatus,
+      setReplyDraft,
+      isMarkdown,
+      commands,
+      imagePacks,
+      selectedFiles,
+      alternateInputRef,
+      useAuthentication,
+    ]);
+
+    const submitSlate = useCallback(() => {
+      const shortcodeMap = buildShortcodeMap(imagePacks, unicodeEmojis);
+      const processedChildren = replaceShortcodes(editor.children, shortcodeMap);
+
+      let plainText = toPlainText(processedChildren, isMarkdown).trim();
+      let customHtml = trimCustomHtml(
+        toMatrixCustomHTML(processedChildren, {
+          allowTextFormatting: true,
+          allowBlockMarkdown: isMarkdown,
+          allowInlineMarkdown: isMarkdown,
+        })
+      );
+      const commandName: string | undefined = getBeginCommand(editor);
+      let msgType = MsgType.Text;
+
+      if (commandName) {
+        plainText = trimCommand(commandName, plainText);
+        customHtml = trimCommand(commandName, customHtml);
+      }
+      if (commandName === Command.Me) {
+        msgType = MsgType.Emote;
+      } else if (commandName === Command.Notice) {
+        msgType = MsgType.Notice;
+      } else if (commandName === Command.Shrug) {
+        plainText = `${SHRUG} ${plainText}`;
+        customHtml = `${SHRUG} ${customHtml}`;
+      } else if (commandName === Command.TableFlip) {
+        plainText = `${TABLEFLIP} ${plainText}`;
+        customHtml = `${TABLEFLIP} ${customHtml}`;
+      } else if (commandName === Command.UnFlip) {
+        plainText = `${UNFLIP} ${plainText}`;
+        customHtml = `${UNFLIP} ${customHtml}`;
+      } else if (commandName) {
+        const commandContent = commands[commandName as Command];
+        if (commandContent) {
+          commandContent.exe(plainText);
+        }
+        resetEditor(editor);
+        resetEditorHistory(editor);
         sendTypingStatus(false);
         return;
       }
@@ -413,16 +529,11 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
         mx.sendMessage(roomId, content as RoomMessageEventContent);
       }
 
-      // Send files: if no text was sent, uploads carry the reply context
       uploadsReplyDraftRef.current = plainText === '' ? replyDraft : undefined;
       uploadBoardHandlers.current?.handleSend();
 
-      if (alternateInput) {
-        resetEditorDirect(editor);
-      } else {
-        resetEditor(editor);
-        resetEditorHistory(editor);
-      }
+      resetEditor(editor);
+      resetEditorHistory(editor);
       setHasEditorContent(false);
       setReplyDraft(undefined);
       sendTypingStatus(false);
@@ -437,11 +548,23 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       commands,
       imagePacks,
       selectedFiles,
-      alternateInput,
     ]);
+
+    const submit = alternateInput ? submitAltInput : submitSlate;
 
     const handleKeyDown: KeyboardEventHandler = useCallback(
       (evt) => {
+        if (
+          alternateInput &&
+          isKeyHotkey('shift+enter', evt) &&
+          alternateInputRef.current &&
+          isInsideList(alternateInputRef.current)
+        ) {
+          evt.preventDefault();
+          handleListEnter(alternateInputRef.current);
+          alternateInputRef.current.dispatchEvent(new Event('input', { bubbles: true }));
+          return;
+        }
         if (
           (isKeyHotkey('mod+enter', evt) ||
             (!enterForNewline && !mobileOrTablet() && isKeyHotkey('enter', evt))) &&
@@ -459,12 +582,25 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
           setReplyDraft(undefined);
         }
       },
-      [submit, setReplyDraft, enterForNewline, autocompleteQuery, isComposing]
+      [
+        submit,
+        setReplyDraft,
+        enterForNewline,
+        autocompleteQuery,
+        isComposing,
+        alternateInput,
+        alternateInputRef,
+      ]
     );
 
     const handleEditorChange = useCallback(() => {
-      setHasEditorContent(!isEmptyEditor(editor));
-    }, [editor]);
+      if (alternateInput) {
+        const el = alternateInputRef.current;
+        setHasEditorContent(el ? !isAltInputEmpty(el) : false);
+      } else {
+        setHasEditorContent(!isEmptyEditor(editor));
+      }
+    }, [editor, alternateInput, alternateInputRef]);
 
     const altAutocomplete = useAlternateAutocomplete({
       alternateInputRef,
@@ -725,79 +861,54 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
             }
             after={
               <>
-                {!alternateInput && (
-                  <IconButton
-                    variant="SurfaceVariant"
-                    size="300"
-                    radii="300"
-                    onMouseDown={(e: React.MouseEvent) => e.preventDefault()}
-                    onTouchStart={(e: React.TouchEvent) => e.preventDefault()}
-                    onClick={() => setToolbar(!toolbar)}
-                  >
-                    <Icon src={toolbar ? Icons.AlphabetUnderline : Icons.Alphabet} />
-                  </IconButton>
-                )}
-                <UseStateProvider initial={undefined}>
-                  {(emojiBoardTab: EmojiBoardTab | undefined, setEmojiBoardTab) => (
-                    <PopOut
-                      offset={16}
-                      alignOffset={-44}
-                      position="Top"
-                      align="End"
-                      anchor={
-                        emojiBoardTab === undefined
-                          ? undefined
-                          : emojiBtnRef.current?.getBoundingClientRect() ?? undefined
+                <IconButton
+                  variant="SurfaceVariant"
+                  size="300"
+                  radii="300"
+                  onMouseDown={(e: React.MouseEvent) => e.preventDefault()}
+                  onTouchStart={(e: React.TouchEvent) => e.preventDefault()}
+                  onClick={() => setToolbar(!toolbar)}
+                >
+                  <Icon src={toolbar ? Icons.AlphabetUnderline : Icons.Alphabet} />
+                </IconButton>
+                <EmojiBoardPopOut
+                  offset={16}
+                  alignOffset={mobileOrTablet() ? 0 : -44}
+                  position="Top"
+                  align="End"
+                  imagePackRooms={imagePackRooms}
+                  returnFocusOnDeactivate={alternateInput && !mobileOrTablet()}
+                  onEmojiSelect={handleEmoticonSelect}
+                  onCustomEmojiSelect={handleEmoticonSelect}
+                  onStickerSelect={handleStickerSelect}
+                  onClose={() => {
+                    if (!mobileOrTablet() && !alternateInput) ReactEditor.focus(editor);
+                  }}
+                >
+                  {({ triggerRef, open, isOpen, tab: emojiBoardTab }) => (
+                    <IconButton
+                      ref={triggerRef}
+                      aria-pressed={hideStickerBtn ? isOpen : emojiBoardTab === EmojiBoardTab.Emoji}
+                      onMouseDown={
+                        alternateInput
+                          ? (e: React.MouseEvent) => {
+                              e.preventDefault();
+                              alternateInputRef.current?.focus();
+                            }
+                          : undefined
                       }
-                      content={
-                        <EmojiBoard
-                          tab={emojiBoardTab}
-                          onTabChange={setEmojiBoardTab}
-                          imagePackRooms={imagePackRooms}
-                          returnFocusOnDeactivate={alternateInput && !mobileOrTablet()}
-                          onEmojiSelect={handleEmoticonSelect}
-                          onCustomEmojiSelect={handleEmoticonSelect}
-                          onStickerSelect={handleStickerSelect}
-                          requestClose={() => {
-                            setEmojiBoardTab((t) => {
-                              if (t) {
-                                if (!mobileOrTablet() && !alternateInput) ReactEditor.focus(editor);
-                                return undefined;
-                              }
-                              return t;
-                            });
-                          }}
-                        />
-                      }
+                      onClick={open}
+                      variant="SurfaceVariant"
+                      size="300"
+                      radii="300"
                     >
-                      <IconButton
-                        ref={emojiBtnRef}
-                        aria-pressed={
-                          hideStickerBtn ? !!emojiBoardTab : emojiBoardTab === EmojiBoardTab.Emoji
-                        }
-                        onMouseDown={
-                          alternateInput
-                            ? (e: React.MouseEvent) => {
-                                e.preventDefault();
-                                alternateInputRef.current?.focus();
-                              }
-                            : undefined
-                        }
-                        onClick={() => setEmojiBoardTab(EmojiBoardTab.Emoji)}
-                        variant="SurfaceVariant"
-                        size="300"
-                        radii="300"
-                      >
-                        <Icon
-                          src={Icons.Smile}
-                          filled={
-                            hideStickerBtn ? !!emojiBoardTab : emojiBoardTab === EmojiBoardTab.Emoji
-                          }
-                        />
-                      </IconButton>
-                    </PopOut>
+                      <Icon
+                        src={Icons.Smile}
+                        filled={hideStickerBtn ? isOpen : emojiBoardTab === EmojiBoardTab.Emoji}
+                      />
+                    </IconButton>
                   )}
-                </UseStateProvider>
+                </EmojiBoardPopOut>
                 {hasEditorContent || !!replyDraft || selectedFiles.length > 0 ? (
                   <IconButton
                     ref={sendBtnRef}
@@ -821,11 +932,10 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
               </>
             }
             bottom={
-              !alternateInput &&
               toolbar && (
                 <div>
                   <Line variant="SurfaceVariant" size="300" />
-                  <Toolbar />
+                  {alternateInput ? <AltInputToolbar inputRef={alternateInputRef} /> : <Toolbar />}
                 </div>
               )
             }

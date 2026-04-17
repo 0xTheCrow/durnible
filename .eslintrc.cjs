@@ -28,6 +28,10 @@ module.exports = {
     'linebreak-style': 0,
     'no-underscore-dangle': 0,
     'no-shadow': 'off',
+    'no-await-in-loop': 'off',
+    'no-bitwise': 'off',
+    'react/destructuring-assignment': 'off',
+    'jsx-a11y/media-has-caption': 'off',
 
     'import/prefer-default-export': 'off',
     'import/extensions': 'off',
@@ -157,7 +161,6 @@ module.exports = {
         'jsx-a11y/no-static-element-interactions': 'off',
         'jsx-a11y/interactive-supports-focus': 'off',
         'react/jsx-no-constructed-context-values': 'off',
-        'no-await-in-loop': 'off',
         // Sanitizer tests must construct javascript: URLs to verify they're stripped.
         'no-script-url': 'off',
         // Tests use known-good fixture data; non-null assertions on

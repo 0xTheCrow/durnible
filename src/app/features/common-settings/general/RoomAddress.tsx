@@ -238,7 +238,6 @@ function LocalAddressesList({
       async (aliases: string[]) => {
         for (let i = 0; i < aliases.length; i += 1) {
           const alias = aliases[i];
-          // eslint-disable-next-line no-await-in-loop
           await removeLocalAlias(alias);
         }
       },

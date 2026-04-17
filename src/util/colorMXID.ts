@@ -5,8 +5,6 @@
 // Bitwise math here is intentional — `<< 5` and `| 0` give us a fast 32-bit
 // integer hash without bringing in a real hashing library for what's
 // effectively a stable color picker.
-/* eslint-disable no-bitwise */
-
 function hashCode(str: string): number {
   let hash = 0;
   if (str.length === 0) {

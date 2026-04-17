@@ -44,6 +44,12 @@ export const roomIdToMsgDraftAtomFamily = atomFamily<string, MsgDraftAtom>(() =>
   createMsgDraftAtom()
 );
 
+const createAltInputDraftAtom = () => atom<string>('');
+export type AltInputDraftAtom = ReturnType<typeof createAltInputDraftAtom>;
+export const roomIdToAltInputDraftAtomFamily = atomFamily<string, AltInputDraftAtom>(() =>
+  createAltInputDraftAtom()
+);
+
 export type ReplyDraft = {
   userId: string;
   eventId: string;

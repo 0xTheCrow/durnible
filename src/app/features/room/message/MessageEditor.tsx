@@ -1,7 +1,6 @@
-import type { KeyboardEventHandler, MouseEventHandler } from 'react';
+import type { KeyboardEventHandler } from 'react';
 import React, { useCallback, useEffect, useState } from 'react';
-import type { RectCords } from 'folds';
-import { Box, Chip, Icon, IconButton, Icons, Line, PopOut, Spinner, Text, as, config } from 'folds';
+import { Box, Chip, Icon, IconButton, Icons, Line, Spinner, Text, as, config } from 'folds';
 import { Editor, Transforms } from 'slate';
 import { ReactEditor } from 'slate-react';
 import type { IContent, IMentions, MatrixEvent, Room } from 'matrix-js-sdk';
@@ -12,11 +11,11 @@ import type { AutocompleteQuery } from '../../../components/editor';
 import {
   AUTOCOMPLETE_PREFIXES,
   AutocompletePrefix,
-  BlockType,
   CustomEditor,
   EmoticonAutocomplete,
   RoomMentionAutocomplete,
   Toolbar,
+  AltInputToolbar,
   UserMentionAutocomplete,
   createAltEmoticonNode,
   createEmoticonElement,
@@ -33,18 +32,22 @@ import {
   useEditor,
   getMentions,
   replaceShortcodes,
+  domToMatrixCustomHTML,
+  domToPlainText,
+  getMentionsFromDom,
+  replaceShortcodesInDom,
 } from '../../../components/editor';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
 import { useRelevantImagePacks } from '../../../hooks/useImagePacks';
 import { ImageUsage } from '../../../plugins/custom-emoji/types';
 import { buildShortcodeMap, emojis as unicodeEmojis } from '../../../plugins/emoji';
-import { UseStateProvider } from '../../../components/UseStateProvider';
-import { EmojiBoard } from '../../../components/emoji-board';
+import { EmojiBoardPopOut } from '../../../components/emoji-board';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
 import { getEditedEvent, getMentionContent, trimReplyFromFormattedBody } from '../../../utils/room';
+import { sanitizeText } from '../../../utils/sanitize';
 import { mobileOrTablet } from '../../../utils/user-agent';
 import { useComposingCheck } from '../../../hooks/useComposingCheck';
 
@@ -111,67 +114,99 @@ export const MessageEditor = as<'div', MessageEditorProps>(
       ];
     }, [room, mEvent]);
 
-    const [saveState, save] = useAsyncCallback(
-      useCallback(async () => {
-        const shortcodeMap = buildShortcodeMap(imagePacks, unicodeEmojis);
-        const processedChildren = replaceShortcodes(editor.children, shortcodeMap);
+    const buildEditContent = useCallback((): IContent | undefined => {
+      const shortcodeMap = buildShortcodeMap(imagePacks, unicodeEmojis);
+      const el = alternateInputRef.current;
 
-        const plainText = toPlainText(processedChildren, isMarkdown).trim();
-        const customHtml = trimCustomHtml(
+      let plainText: string;
+      let customHtml: string;
+      let mentionData;
+
+      if (alternateInput && el) {
+        replaceShortcodesInDom(el, shortcodeMap, mx, useAuthentication);
+        plainText = domToPlainText(el).trim();
+        customHtml = trimCustomHtml(
+          domToMatrixCustomHTML(el, {
+            allowTextFormatting: true,
+            allowBlockMarkdown: isMarkdown,
+            allowInlineMarkdown: isMarkdown,
+          })
+        );
+        mentionData = getMentionsFromDom(el, mx);
+      } else {
+        const processedChildren = replaceShortcodes(editor.children, shortcodeMap);
+        plainText = toPlainText(processedChildren, isMarkdown).trim();
+        customHtml = trimCustomHtml(
           toMatrixCustomHTML(processedChildren, {
             allowTextFormatting: true,
             allowBlockMarkdown: isMarkdown,
             allowInlineMarkdown: isMarkdown,
           })
         );
+        mentionData = getMentions(mx, roomId, editor);
+      }
 
-        const [prevBody, prevCustomHtml, prevMentions] = getPrevBodyAndFormattedBody();
+      const [prevBody, prevCustomHtml, prevMentions] = getPrevBodyAndFormattedBody();
 
-        if (plainText === '') return undefined;
-        if (prevBody) {
-          if (prevCustomHtml && trimReplyFromFormattedBody(prevCustomHtml) === customHtml) {
-            return undefined;
-          }
-          if (
-            !prevCustomHtml &&
-            prevBody === plainText &&
-            customHtmlEqualsPlainText(customHtml, plainText)
-          ) {
-            return undefined;
-          }
+      if (plainText === '') return undefined;
+      if (prevBody) {
+        if (prevCustomHtml && trimReplyFromFormattedBody(prevCustomHtml) === customHtml) {
+          return undefined;
         }
-
-        const newContent: IContent = {
-          msgtype: mEvent.getContent().msgtype,
-          body: plainText,
-        };
-
-        const mentionData = getMentions(mx, roomId, editor);
-
-        prevMentions?.user_ids?.forEach((prevMentionId) => {
-          mentionData.users.add(prevMentionId);
-        });
-
-        const mMentions = getMentionContent(Array.from(mentionData.users), mentionData.room);
-        newContent['m.mentions'] = mMentions;
-
-        if (!customHtmlEqualsPlainText(customHtml, plainText)) {
-          newContent.format = 'org.matrix.custom.html';
-          newContent.formatted_body = customHtml;
+        if (
+          !prevCustomHtml &&
+          prevBody === plainText &&
+          customHtmlEqualsPlainText(customHtml, plainText)
+        ) {
+          return undefined;
         }
+      }
 
-        const content: IContent = {
-          ...newContent,
-          body: `* ${plainText}`,
-          'm.new_content': newContent,
-          'm.relates_to': {
-            event_id: mEvent.getId(),
-            rel_type: RelationType.Replace,
-          },
-        };
+      const newContent: IContent = {
+        msgtype: mEvent.getContent().msgtype,
+        body: plainText,
+      };
 
+      prevMentions?.user_ids?.forEach((prevMentionId) => {
+        mentionData.users.add(prevMentionId);
+      });
+
+      const mMentions = getMentionContent(Array.from(mentionData.users), mentionData.room);
+      newContent['m.mentions'] = mMentions;
+
+      if (!customHtmlEqualsPlainText(customHtml, plainText)) {
+        newContent.format = 'org.matrix.custom.html';
+        newContent.formatted_body = customHtml;
+      }
+
+      return {
+        ...newContent,
+        body: `* ${plainText}`,
+        'm.new_content': newContent,
+        'm.relates_to': {
+          event_id: mEvent.getId(),
+          rel_type: RelationType.Replace,
+        },
+      };
+    }, [
+      mx,
+      editor,
+      roomId,
+      mEvent,
+      isMarkdown,
+      getPrevBodyAndFormattedBody,
+      imagePacks,
+      alternateInput,
+      alternateInputRef,
+      useAuthentication,
+    ]);
+
+    const [saveState, save] = useAsyncCallback(
+      useCallback(async () => {
+        const content = buildEditContent();
+        if (!content) return undefined;
         return mx.sendMessage(roomId, content as RoomMessageEventContent);
-      }, [mx, editor, roomId, mEvent, isMarkdown, getPrevBodyAndFormattedBody, imagePacks])
+      }, [mx, roomId, buildEditContent])
     );
 
     const handleSave = useCallback(() => {
@@ -241,20 +276,29 @@ export const MessageEditor = as<'div', MessageEditorProps>(
       const [body, customHtml] = getPrevBodyAndFormattedBody();
 
       if (alternateInput) {
-        const text = typeof body === 'string' ? body : '';
-        editor.children = [{ type: BlockType.Paragraph, children: [{ text }] }];
-        editor.onChange();
-        if (!mobileOrTablet()) {
-          const el = alternateInputRef.current;
-          if (el) {
-            el.focus();
-            const range = document.createRange();
-            range.selectNodeContents(el);
-            range.collapse(false);
-            const sel = window.getSelection();
-            sel?.removeAllRanges();
-            sel?.addRange(range);
+        const plainBody = typeof body === 'string' ? body : '';
+        const html =
+          typeof customHtml === 'string'
+            ? customHtml
+            : sanitizeText(plainBody).replace(/\n/g, '<br>');
+        editor.setAlternateInputContent?.(html);
+        const el = alternateInputRef.current;
+        if (el) {
+          el.focus();
+          let target: Node = el;
+          while (target.lastChild) {
+            target = target.lastChild;
           }
+          const range = document.createRange();
+          if (target.nodeType === Node.TEXT_NODE) {
+            range.setStart(target, (target as Text).data.length);
+          } else {
+            range.selectNodeContents(target);
+          }
+          range.collapse(false);
+          const sel = window.getSelection();
+          sel?.removeAllRanges();
+          sel?.addRange(range);
         }
       } else {
         const initialValue =
@@ -268,7 +312,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
         });
 
         editor.insertFragment(initialValue);
-        if (!mobileOrTablet()) ReactEditor.focus(editor);
+        ReactEditor.focus(editor);
       }
     }, [editor, getPrevBodyAndFormattedBody, isMarkdown, alternateInput]);
 
@@ -311,7 +355,6 @@ export const MessageEditor = as<'div', MessageEditorProps>(
           ref={editorRef}
           editor={editor}
           alternateInputRef={alternateInputRef}
-          placeholder="Edit message..."
           onKeyDown={handleKeyDown}
           onKeyUp={handleKeyUp}
           bottom={
@@ -348,74 +391,57 @@ export const MessageEditor = as<'div', MessageEditorProps>(
                   </Chip>
                 </Box>
                 <Box gap="Inherit">
-                  {!alternateInput && (
-                    <IconButton
-                      variant="SurfaceVariant"
-                      size="300"
-                      radii="300"
-                      onClick={() => setToolbar(!toolbar)}
-                    >
-                      <Icon size="400" src={toolbar ? Icons.AlphabetUnderline : Icons.Alphabet} />
-                    </IconButton>
-                  )}
-                  <UseStateProvider initial={undefined}>
-                    {(anchor: RectCords | undefined, setAnchor) => (
-                      <PopOut
-                        anchor={anchor}
-                        alignOffset={-8}
-                        position="Top"
-                        align="End"
-                        content={
-                          <EmojiBoard
-                            imagePackRooms={imagePackRooms ?? []}
-                            returnFocusOnDeactivate={alternateInput && !mobileOrTablet()}
-                            onEmojiSelect={handleEmoticonSelect}
-                            onCustomEmojiSelect={handleEmoticonSelect}
-                            requestClose={() => {
-                              setAnchor((v) => {
-                                if (v) {
-                                  if (!alternateInput && !mobileOrTablet()) {
-                                    ReactEditor.focus(editor);
-                                  }
-                                  return undefined;
-                                }
-                                return v;
-                              });
-                            }}
-                          />
+                  <IconButton
+                    variant="SurfaceVariant"
+                    size="300"
+                    radii="300"
+                    onMouseDown={(e: React.MouseEvent) => e.preventDefault()}
+                    onTouchStart={(e: React.TouchEvent) => e.preventDefault()}
+                    onClick={() => setToolbar(!toolbar)}
+                  >
+                    <Icon size="400" src={toolbar ? Icons.AlphabetUnderline : Icons.Alphabet} />
+                  </IconButton>
+                  <EmojiBoardPopOut
+                    alignOffset={-8}
+                    position="Top"
+                    align="End"
+                    imagePackRooms={imagePackRooms ?? []}
+                    returnFocusOnDeactivate={alternateInput && !mobileOrTablet()}
+                    onEmojiSelect={handleEmoticonSelect}
+                    onCustomEmojiSelect={handleEmoticonSelect}
+                    onClose={() => {
+                      if (!alternateInput && !mobileOrTablet()) {
+                        ReactEditor.focus(editor);
+                      }
+                    }}
+                  >
+                    {({ triggerRef, open, isOpen }) => (
+                      <IconButton
+                        ref={triggerRef}
+                        aria-pressed={isOpen}
+                        onMouseDown={
+                          alternateInput
+                            ? (e: React.MouseEvent) => {
+                                e.preventDefault();
+                                alternateInputRef.current?.focus();
+                              }
+                            : undefined
                         }
+                        onClick={open}
+                        variant="SurfaceVariant"
+                        size="300"
+                        radii="300"
                       >
-                        <IconButton
-                          aria-pressed={anchor !== undefined}
-                          onMouseDown={
-                            alternateInput
-                              ? (e: React.MouseEvent) => {
-                                  e.preventDefault();
-                                  alternateInputRef.current?.focus();
-                                }
-                              : undefined
-                          }
-                          onClick={
-                            ((evt) =>
-                              setAnchor(
-                                evt.currentTarget.getBoundingClientRect()
-                              )) as MouseEventHandler<HTMLButtonElement>
-                          }
-                          variant="SurfaceVariant"
-                          size="300"
-                          radii="300"
-                        >
-                          <Icon size="400" src={Icons.Smile} filled={anchor !== undefined} />
-                        </IconButton>
-                      </PopOut>
+                        <Icon size="400" src={Icons.Smile} filled={isOpen} />
+                      </IconButton>
                     )}
-                  </UseStateProvider>
+                  </EmojiBoardPopOut>
                 </Box>
               </Box>
-              {!alternateInput && toolbar && (
+              {toolbar && (
                 <div>
                   <Line variant="SurfaceVariant" size="300" />
-                  <Toolbar />
+                  {alternateInput ? <AltInputToolbar inputRef={alternateInputRef} /> : <Toolbar />}
                 </div>
               )}
             </>

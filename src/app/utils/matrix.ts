@@ -343,10 +343,8 @@ export const rateLimitedActions = async <T, R = void>(
   for (let i = 0; i < data.length; i += 1) {
     const dataItem = data[i];
     retryCount = 0;
-    // eslint-disable-next-line no-await-in-loop
     await performAction(dataItem, i);
     if (actionInterval > 0) {
-      // eslint-disable-next-line no-await-in-loop
       await sleepForMs(actionInterval);
     }
   }
