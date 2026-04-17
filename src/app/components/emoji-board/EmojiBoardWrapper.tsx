@@ -110,7 +110,7 @@ export const EmojiBoardWrapper = forwardRef<EmojiBoardWrapperHandle, EmojiBoardW
 
     const isMobile = useScreenSizeContext() === ScreenSize.Mobile;
 
-    const renderEmojiBoard = (withBackButton: boolean) => (
+    const renderEmojiBoard = (inModal: boolean) => (
       <EmojiBoard
         tab={tab}
         onTabChange={setTab}
@@ -122,7 +122,8 @@ export const EmojiBoardWrapper = forwardRef<EmojiBoardWrapperHandle, EmojiBoardW
         onCustomEmojiSelect={onCustomEmojiSelect}
         onStickerSelect={onStickerSelect}
         onClose={close}
-        onBackClick={withBackButton ? close : undefined}
+        onBackClick={inModal ? close : undefined}
+        handleOutsideClick={!inModal}
       />
     );
 

@@ -4,6 +4,7 @@ import { logger } from 'matrix-js-sdk/lib/logger';
 
 import { cryptoCallbacks } from './secretStorageKeys';
 import { clearNavToActivePathStore } from '../app/state/navToActivePath';
+import { startupMark } from '../app/utils/startupPerf';
 
 (logger as unknown as { setLevel: (level: string) => void }).setLevel('warn');
 
@@ -15,6 +16,7 @@ type Session = {
 };
 
 export const initClient = async (session: Session): Promise<MatrixClient> => {
+  startupMark('init-client-start');
   const indexedDBStore = new IndexedDBStore({
     indexedDB: global.indexedDB,
     localStorage: global.localStorage,
@@ -35,19 +37,27 @@ export const initClient = async (session: Session): Promise<MatrixClient> => {
     verificationMethods: ['m.sas.v1'],
   });
 
+  startupMark('store-startup-start');
   await indexedDBStore.startup();
+  startupMark('store-startup-end');
+
+  startupMark('crypto-init-start');
   await mx.initRustCrypto();
+  startupMark('crypto-init-end');
 
   mx.setMaxListeners(50);
   (mx as unknown as { logger: { setLevel: (level: string) => void } }).logger.setLevel('warn');
 
+  startupMark('init-client-end');
   return mx;
 };
 
 export const startClient = async (mx: MatrixClient) => {
+  startupMark('start-client-start');
   await mx.startClient({
     lazyLoadMembers: true,
   });
+  startupMark('start-client-end');
 };
 
 export const clearCacheAndReload = async (mx: MatrixClient) => {

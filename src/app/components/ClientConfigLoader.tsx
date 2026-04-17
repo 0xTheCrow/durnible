@@ -3,11 +3,15 @@ import { useCallback, useEffect, useState } from 'react';
 import { AsyncStatus, useAsyncCallback } from '../hooks/useAsyncCallback';
 import type { ClientConfig } from '../hooks/useClientConfig';
 import { trimTrailingSlash } from '../utils/common';
+import { startupMark } from '../utils/startupPerf';
 
 const getClientConfig = async (): Promise<ClientConfig> => {
+  startupMark('config-fetch-start');
   const url = `${trimTrailingSlash(import.meta.env.BASE_URL)}/config.json`;
   const config = await fetch(url, { method: 'GET' });
-  return config.json();
+  const json = await config.json();
+  startupMark('config-fetch-end');
+  return json;
 };
 
 type ClientConfigLoaderProps = {
