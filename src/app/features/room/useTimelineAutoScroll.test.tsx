@@ -4,6 +4,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { EventEmitter } from 'events';
 import type { MatrixEvent, Room } from 'matrix-js-sdk';
 import { RoomEvent } from 'matrix-js-sdk';
+import type { TimelineAutoScroll } from './useTimelineAutoScroll';
 import { useTimelineAutoScroll } from './useTimelineAutoScroll';
 
 type FakeIntersectionObserver = {
@@ -118,6 +119,7 @@ type ScrollGeometry = {
   setScrollHeight: (value: number) => void;
   getScrollTop: () => number;
   setScrollTop: (value: number) => void;
+  getLastScrollBehavior: () => string | undefined;
 };
 
 function stubScrollGeometry(
@@ -126,6 +128,7 @@ function stubScrollGeometry(
 ): ScrollGeometry {
   let scrollTop = 0;
   let scrollHeight = initial.scrollHeight;
+  let lastBehavior: string | undefined;
   const { offsetHeight } = initial;
 
   Object.defineProperty(el, 'scrollHeight', {
@@ -155,8 +158,9 @@ function stubScrollGeometry(
         scrollTop = y ?? 0;
         return;
       }
-      if (arg && typeof arg === 'object' && typeof arg.top === 'number') {
-        scrollTop = arg.top;
+      if (arg && typeof arg === 'object') {
+        if (typeof arg.top === 'number') scrollTop = arg.top;
+        lastBehavior = arg.behavior;
       }
     },
   });
@@ -169,22 +173,35 @@ function stubScrollGeometry(
     setScrollTop: (value) => {
       scrollTop = value;
     },
+    getLastScrollBehavior: () => lastBehavior,
   };
 }
 
 type HarnessProps = {
   room: Room;
-  atLiveEnd: boolean;
+  viewingLatest: boolean;
   renderDivider?: boolean;
+  autoPinEnabled?: boolean;
+  initiallyAtBottom?: boolean;
+  onHook?: (hook: TimelineAutoScroll) => void;
 };
 
-function Harness({ room, atLiveEnd, renderDivider }: HarnessProps) {
-  const { scrollRef, atBottomAnchorRef } = useTimelineAutoScroll({
+function Harness({
+  room,
+  viewingLatest,
+  renderDivider,
+  autoPinEnabled = true,
+  initiallyAtBottom = true,
+  onHook,
+}: HarnessProps) {
+  const hook = useTimelineAutoScroll({
     room,
-    atLiveEnd,
-    autoPinEnabled: true,
-    initiallyAtBottom: true,
+    viewingLatest,
+    autoPinEnabled,
+    initiallyAtBottom,
   });
+  onHook?.(hook);
+  const { scrollRef, atBottomAnchorRef } = hook;
 
   return (
     <div ref={scrollRef} data-testid="timeline-scroll">
@@ -216,7 +233,7 @@ describe('useTimelineAutoScroll', () => {
   it('keeps scroll pinned to the bottom when a reaction is added to the latest message', () => {
     const room = createEventEmitterRoom('!test:example.com');
 
-    const { container } = render(<Harness room={room} atLiveEnd />);
+    const { container } = render(<Harness room={room} viewingLatest />);
 
     const scrollEl = container.querySelector('[data-testid="timeline-scroll"]') as HTMLDivElement;
     expect(scrollEl).not.toBeNull();
@@ -252,7 +269,7 @@ describe('useTimelineAutoScroll', () => {
   it('keeps scroll pinned when a new live message arrives while the new-messages divider is visible', () => {
     const room = createEventEmitterRoom('!test:example.com');
 
-    const { container } = render(<Harness room={room} atLiveEnd renderDivider />);
+    const { container } = render(<Harness room={room} viewingLatest renderDivider />);
 
     const scrollEl = container.querySelector('[data-testid="timeline-scroll"]') as HTMLDivElement;
     const divider = container.querySelector('[data-testid="new-messages-divider"]');
@@ -275,5 +292,174 @@ describe('useTimelineAutoScroll', () => {
     });
 
     expect(geometry.getScrollTop()).toBe(640 - 400);
+  });
+
+  it('requestScrollToBottom scrolls with smooth behavior by default', () => {
+    const room = createEventEmitterRoom('!test:example.com');
+    const hookState: { current: TimelineAutoScroll | null } = { current: null };
+
+    const { container } = render(
+      <Harness
+        room={room}
+        viewingLatest
+        onHook={(h) => {
+          hookState.current = h;
+        }}
+      />
+    );
+
+    const scrollEl = container.querySelector('[data-testid="timeline-scroll"]') as HTMLDivElement;
+    const geometry = stubScrollGeometry(scrollEl, { scrollHeight: 500, offsetHeight: 400 });
+    geometry.setScrollTop(0);
+
+    act(() => {
+      hookState.current!.requestScrollToBottom();
+    });
+
+    expect(geometry.getLastScrollBehavior()).toBe('smooth');
+  });
+
+  it('requestScrollToBottom scrolls with instant behavior when smooth is false', () => {
+    const room = createEventEmitterRoom('!test:example.com');
+    const hookState: { current: TimelineAutoScroll | null } = { current: null };
+
+    const { container } = render(
+      <Harness
+        room={room}
+        viewingLatest
+        onHook={(h) => {
+          hookState.current = h;
+        }}
+      />
+    );
+
+    const scrollEl = container.querySelector('[data-testid="timeline-scroll"]') as HTMLDivElement;
+    const geometry = stubScrollGeometry(scrollEl, { scrollHeight: 500, offsetHeight: 400 });
+    geometry.setScrollTop(0);
+
+    act(() => {
+      hookState.current!.requestScrollToBottom(false);
+    });
+
+    expect(geometry.getLastScrollBehavior()).toBe('instant');
+  });
+
+  it('does not auto-scroll when not at bottom', () => {
+    const room = createEventEmitterRoom('!test:example.com');
+
+    const { container } = render(<Harness room={room} viewingLatest />);
+
+    const scrollEl = container.querySelector('[data-testid="timeline-scroll"]') as HTMLDivElement;
+    const geometry = stubScrollGeometry(scrollEl, { scrollHeight: 1000, offsetHeight: 400 });
+    geometry.setScrollTop(200);
+
+    act(() => {
+      ioInstances[0].trigger(false);
+    });
+
+    geometry.setScrollHeight(1040);
+    act(() => {
+      room.emit(RoomEvent.Timeline, createFakeEvent('m.room.message'), room, undefined, false, {
+        liveEvent: true,
+      });
+    });
+
+    expect(geometry.getScrollTop()).toBe(200);
+  });
+
+  it('does not auto-scroll when viewingLatest is false', () => {
+    const room = createEventEmitterRoom('!test:example.com');
+
+    const { container } = render(<Harness room={room} viewingLatest={false} />);
+
+    const scrollEl = container.querySelector('[data-testid="timeline-scroll"]') as HTMLDivElement;
+    const geometry = stubScrollGeometry(scrollEl, { scrollHeight: 500, offsetHeight: 400 });
+    geometry.setScrollTop(100);
+
+    act(() => {
+      ioInstances[0].trigger(true);
+    });
+
+    geometry.setScrollHeight(540);
+    act(() => {
+      room.emit(RoomEvent.Timeline, createFakeEvent('m.room.message'), room, undefined, false, {
+        liveEvent: true,
+      });
+    });
+
+    expect(geometry.getScrollTop()).toBe(100);
+  });
+
+  it('auto-scrolls on redaction when pinned to bottom', () => {
+    const room = createEventEmitterRoom('!test:example.com');
+
+    const { container } = render(<Harness room={room} viewingLatest />);
+
+    const scrollEl = container.querySelector('[data-testid="timeline-scroll"]') as HTMLDivElement;
+    const geometry = stubScrollGeometry(scrollEl, { scrollHeight: 500, offsetHeight: 400 });
+    geometry.setScrollTop(100);
+
+    act(() => {
+      ioInstances[0].trigger(true);
+    });
+
+    geometry.setScrollHeight(460);
+    act(() => {
+      room.emit(RoomEvent.Redaction, createFakeEvent('m.room.redaction'), room);
+    });
+
+    expect(geometry.getScrollTop()).toBe(460 - 400);
+  });
+
+  it('sets atBottom to false when anchor stops intersecting', () => {
+    const room = createEventEmitterRoom('!test:example.com');
+    const hookState: { current: TimelineAutoScroll | null } = { current: null };
+
+    const { container } = render(
+      <Harness
+        room={room}
+        viewingLatest
+        onHook={(h) => {
+          hookState.current = h;
+        }}
+      />
+    );
+
+    const scrollEl = container.querySelector('[data-testid="timeline-scroll"]') as HTMLDivElement;
+    stubScrollGeometry(scrollEl, { scrollHeight: 500, offsetHeight: 400 });
+
+    act(() => {
+      ioInstances[0].trigger(true);
+    });
+    expect(hookState.current!.atBottom).toBe(true);
+
+    act(() => {
+      ioInstances[0].trigger(false);
+    });
+    expect(hookState.current!.atBottom).toBe(false);
+  });
+
+  it('does not set atBottom to true when viewingLatest is false', () => {
+    const room = createEventEmitterRoom('!test:example.com');
+    const hookState: { current: TimelineAutoScroll | null } = { current: null };
+
+    const { container } = render(
+      <Harness
+        room={room}
+        viewingLatest={false}
+        onHook={(h) => {
+          hookState.current = h;
+        }}
+        initiallyAtBottom={false}
+      />
+    );
+
+    const scrollEl = container.querySelector('[data-testid="timeline-scroll"]') as HTMLDivElement;
+    stubScrollGeometry(scrollEl, { scrollHeight: 500, offsetHeight: 400 });
+
+    act(() => {
+      ioInstances[0].trigger(true);
+    });
+    expect(hookState.current!.atBottom).toBe(false);
   });
 });

@@ -10,7 +10,7 @@ import { scrollToBottom } from '../../utils/dom';
 
 export type TimelineAutoScrollOptions = {
   room: Room;
-  atLiveEnd: boolean;
+  viewingLatest: boolean;
   autoPinEnabled?: boolean;
   initiallyAtBottom?: boolean;
 };
@@ -26,7 +26,7 @@ export type TimelineAutoScroll = {
 
 export function useTimelineAutoScroll({
   room,
-  atLiveEnd,
+  viewingLatest,
   autoPinEnabled = true,
   initiallyAtBottom = true,
 }: TimelineAutoScrollOptions): TimelineAutoScroll {
@@ -36,14 +36,13 @@ export function useTimelineAutoScroll({
   const [atBottom, setAtBottomState] = useState<boolean>(initiallyAtBottom);
   const atBottomRef = useRef(initiallyAtBottom);
 
-  const atLiveEndRef = useRef(atLiveEnd);
-  atLiveEndRef.current = atLiveEnd;
+  const viewingLatestRef = useRef(viewingLatest);
+  viewingLatestRef.current = viewingLatest;
 
   const autoPinEnabledRef = useRef(autoPinEnabled);
   autoPinEnabledRef.current = autoPinEnabled;
 
-  const [scrollPinTick, setScrollPinTick] = useState(0);
-  const pinSmoothRef = useRef(true);
+  const [scrollRequest, setScrollRequest] = useState<{ smooth: boolean } | null>(null);
 
   const setAtBottom = useCallback((value: boolean) => {
     atBottomRef.current = value;
@@ -51,8 +50,7 @@ export function useTimelineAutoScroll({
   }, []);
 
   const requestScrollToBottom = useCallback((smooth = true) => {
-    pinSmoothRef.current = smooth;
-    setScrollPinTick((n) => n + 1);
+    setScrollRequest({ smooth });
   }, []);
 
   useIntersectionObserver(
@@ -61,7 +59,7 @@ export function useTimelineAutoScroll({
       if (!target) return;
       const entry = getIntersectionObserverEntry(target, entries);
       if (!entry) return;
-      if (entry.isIntersecting && atLiveEndRef.current) {
+      if (entry.isIntersecting && viewingLatestRef.current) {
         atBottomRef.current = true;
         setAtBottomState(true);
       } else if (!entry.isIntersecting) {
@@ -84,14 +82,14 @@ export function useTimelineAutoScroll({
       if (eventRoom?.roomId !== room.roomId || !data.liveEvent) return;
       if (!autoPinEnabledRef.current) return;
       if (!atBottomRef.current) return;
-      if (!atLiveEndRef.current) return;
+      if (!viewingLatestRef.current) return;
       requestScrollToBottom(true);
     };
     const handleRedaction: RoomEventHandlerMap[RoomEvent.Redaction] = (_mEvent, eventRoom) => {
       if (eventRoom?.roomId !== room.roomId) return;
       if (!autoPinEnabledRef.current) return;
       if (!atBottomRef.current) return;
-      if (!atLiveEndRef.current) return;
+      if (!viewingLatestRef.current) return;
       requestScrollToBottom(true);
     };
     room.on(RoomEvent.Timeline, handleTimelineEvent);
@@ -103,13 +101,13 @@ export function useTimelineAutoScroll({
   }, [room, requestScrollToBottom]);
 
   useLayoutEffect(() => {
-    if (scrollPinTick > 0) {
+    if (scrollRequest) {
       const scrollEl = scrollRef.current;
       if (scrollEl) {
-        scrollToBottom(scrollEl, pinSmoothRef.current ? 'smooth' : 'instant');
+        scrollToBottom(scrollEl, scrollRequest.smooth ? 'smooth' : 'instant');
       }
     }
-  }, [scrollPinTick]);
+  }, [scrollRequest]);
 
   return {
     scrollRef,

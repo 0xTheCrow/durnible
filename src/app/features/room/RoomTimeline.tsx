@@ -260,8 +260,8 @@ export function RoomTimeline({
     }
     return true;
   })();
-  const atLiveEndRef = useRef(liveTimelineLinked && rangeAtNewest);
-  atLiveEndRef.current = liveTimelineLinked && rangeAtNewest;
+  const viewingLatestRef = useRef(liveTimelineLinked && rangeAtNewest);
+  viewingLatestRef.current = liveTimelineLinked && rangeAtNewest;
 
   const {
     scrollRef,
@@ -272,7 +272,7 @@ export function RoomTimeline({
     requestScrollToBottom,
   } = useTimelineAutoScroll({
     room,
-    atLiveEnd: atLiveEndRef.current,
+    viewingLatest: viewingLatestRef.current,
     autoPinEnabled: docFocused || unfocusedAutoScroll,
     initiallyAtBottom: !willScrollToReadMarker,
   });
@@ -472,7 +472,7 @@ export function RoomTimeline({
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden) return;
-      if (!atLiveEndRef.current) return;
+      if (!viewingLatestRef.current) return;
 
       const freshTimelines = getLinkedTimelines(getLiveTimeline(room));
       const freshLength = getTimelinesEventsCount(freshTimelines);
