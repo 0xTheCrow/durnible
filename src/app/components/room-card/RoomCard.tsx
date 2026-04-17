@@ -99,7 +99,7 @@ function ErrorDialog({
   return (
     <>
       {children(openError)}
-      <OverlayModal open={viewError} requestClose={closeError}>
+      <OverlayModal open={viewError} onClose={closeError}>
         <Dialog variant="Surface">
           <Box style={{ padding: config.space.S400 }} direction="Column" gap="400">
             <Box direction="Column" gap="100">
@@ -128,7 +128,7 @@ type RoomCardProps = {
   roomType?: string;
   viaServers?: string[];
   onView?: (roomId: string) => void;
-  renderTopicViewer: (name: string, topic: string, requestClose: () => void) => ReactNode;
+  renderTopicViewer: (name: string, topic: string, onClose: () => void) => ReactNode;
 };
 
 export const RoomCard = as<'div', RoomCardProps>(
@@ -221,7 +221,7 @@ export const RoomCard = as<'div', RoomCardProps>(
             {roomTopic}
           </RoomCardTopic>
 
-          <OverlayModal open={viewTopic} requestClose={closeTopic}>
+          <OverlayModal open={viewTopic} onClose={closeTopic}>
             {renderTopicViewer(roomName, roomTopic, closeTopic)}
           </OverlayModal>
         </Box>

@@ -63,7 +63,7 @@ export const MessageReportItem = as<
 
   return (
     <>
-      <OverlayModal open={open} requestClose={handleClose}>
+      <OverlayModal open={open} onClose={handleClose}>
         <Dialog variant="Surface">
           <Header
             style={{

@@ -82,9 +82,7 @@ export const RoomIntro = as<'div', RoomIntroProps>(({ room, ...props }, ref) => 
             <Text size="B300">Invite Member</Text>
           </Button>
 
-          {invitePrompt && (
-            <InviteUserPrompt room={room} requestClose={() => setInvitePrompt(false)} />
-          )}
+          {invitePrompt && <InviteUserPrompt room={room} onClose={() => setInvitePrompt(false)} />}
           {typeof prevRoomId === 'string' &&
             (mx.getRoom(prevRoomId)?.getMyMembership() === Membership.Join ? (
               <Button

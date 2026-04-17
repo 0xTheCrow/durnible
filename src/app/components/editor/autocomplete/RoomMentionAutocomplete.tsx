@@ -64,7 +64,7 @@ type RoomMentionAutocompleteProps = {
   roomId: string;
   editor: Editor;
   query: AutocompleteQuery<string>;
-  requestClose: () => void;
+  onClose: () => void;
   onSelect?: (roomAliasOrId: string, name: string) => void;
 };
 
@@ -78,7 +78,7 @@ export function RoomMentionAutocomplete({
   roomId,
   editor,
   query,
-  requestClose,
+  onClose,
   onSelect,
 }: RoomMentionAutocompleteProps) {
   const mx = useMatrixClient();
@@ -111,7 +111,7 @@ export function RoomMentionAutocomplete({
   const handleAutocomplete: MentionAutoCompleteHandler = (roomAliasOrId, name) => {
     if (onSelect) {
       onSelect(roomAliasOrId, name);
-      requestClose();
+      onClose();
       return;
     }
     const mentionRoom = mx.getRoom(roomAliasOrId);
@@ -125,7 +125,7 @@ export function RoomMentionAutocomplete({
     );
     replaceWithElement(editor, query.range, mentionEl);
     moveCursor(editor, true);
-    requestClose();
+    onClose();
   };
 
   useKeyDown(window, (evt: KeyboardEvent) => {
@@ -144,7 +144,7 @@ export function RoomMentionAutocomplete({
   });
 
   return (
-    <AutocompleteMenu headerContent={<Text size="L400">Rooms</Text>} requestClose={requestClose}>
+    <AutocompleteMenu headerContent={<Text size="L400">Rooms</Text>} onClose={onClose}>
       {autoCompleteRoomIds.length === 0 ? (
         <UnknownRoomMentionItem query={query} handleAutocomplete={handleAutocomplete} />
       ) : (

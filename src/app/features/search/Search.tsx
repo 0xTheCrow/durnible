@@ -119,9 +119,9 @@ const SEARCH_OPTIONS: UseAsyncSearchOptions = {
 };
 
 type SearchProps = {
-  requestClose: () => void;
+  onClose: () => void;
 };
-export function Search({ requestClose }: SearchProps) {
+export function Search({ onClose }: SearchProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -168,7 +168,7 @@ export function Search({ requestClose }: SearchProps) {
   const openRoomId = (roomId: string, isSpace: boolean) => {
     if (isSpace) navigateSpace(roomId);
     else navigateRoom(roomId);
-    requestClose();
+    onClose();
   };
 
   const handleInputChange: ChangeEventHandler<HTMLInputElement> = (evt) => {
@@ -232,7 +232,7 @@ export function Search({ requestClose }: SearchProps) {
   return (
     <OverlayModal
       open
-      requestClose={requestClose}
+      onClose={onClose}
       backdrop={false}
       focusTrapOptions={{
         initialFocus: () => inputRef.current,
@@ -426,5 +426,5 @@ export function SearchModalRenderer() {
     )
   );
 
-  return opened && <Search requestClose={() => setOpen(false)} />;
+  return opened && <Search onClose={() => setOpen(false)} />;
 }

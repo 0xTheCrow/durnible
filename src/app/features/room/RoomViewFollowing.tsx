@@ -36,9 +36,9 @@ export const RoomViewFollowing = as<'div', RoomViewFollowingProps>(
     return (
       <>
         {eventId && (
-          <OverlayModal open={open} requestClose={() => setOpen(false)}>
+          <OverlayModal open={open} onClose={() => setOpen(false)}>
             <Modal variant="Surface" size="300">
-              <EventReaders room={room} eventId={eventId} requestClose={() => setOpen(false)} />
+              <EventReaders room={room} eventId={eventId} onClose={() => setOpen(false)} />
             </Modal>
           </OverlayModal>
         )}

@@ -40,8 +40,8 @@ export function SettingsTab() {
         )}
       </SidebarItemTooltip>
       {settings && (
-        <Modal500 requestClose={closeSettings}>
-          <Settings requestClose={closeSettings} />
+        <Modal500 onClose={closeSettings}>
+          <Settings onClose={closeSettings} />
         </Modal500>
       )}
     </SidebarItem>

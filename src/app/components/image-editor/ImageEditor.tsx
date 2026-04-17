@@ -6,11 +6,11 @@ import * as css from './ImageEditor.css';
 export type ImageEditorProps = {
   name: string;
   url: string;
-  requestClose: () => void;
+  onClose: () => void;
 };
 
 export const ImageEditor = as<'div', ImageEditorProps>(
-  ({ className, name, url, requestClose, ...props }, ref) => {
+  ({ className, name, url, onClose, ...props }, ref) => {
     const handleApply = () => {
       //
     };
@@ -24,7 +24,7 @@ export const ImageEditor = as<'div', ImageEditorProps>(
       >
         <Header className={css.ImageEditorHeader} size="400">
           <Box grow="Yes" alignItems="Center" gap="200">
-            <IconButton size="300" radii="300" onClick={requestClose}>
+            <IconButton size="300" radii="300" onClick={onClose}>
               <Icon size="50" src={Icons.ArrowLeft} />
             </IconButton>
             <Text size="T300" truncate>

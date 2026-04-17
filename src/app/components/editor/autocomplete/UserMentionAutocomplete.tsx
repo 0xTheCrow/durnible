@@ -63,7 +63,7 @@ type UserMentionAutocompleteProps = {
   room: Room;
   editor: Editor;
   query: AutocompleteQuery<string>;
-  requestClose: () => void;
+  onClose: () => void;
   onSelect?: (userId: string, name: string) => void;
 };
 
@@ -85,7 +85,7 @@ export function UserMentionAutocomplete({
   room,
   editor,
   query,
-  requestClose,
+  onClose,
   onSelect,
 }: UserMentionAutocompleteProps) {
   const mx = useMatrixClient();
@@ -107,7 +107,7 @@ export function UserMentionAutocomplete({
   const handleAutocomplete: MentionAutoCompleteHandler = (uId, name) => {
     if (onSelect) {
       onSelect(uId, name);
-      requestClose();
+      onClose();
       return;
     }
     const mentionEl = createMentionElement(
@@ -117,7 +117,7 @@ export function UserMentionAutocomplete({
     );
     replaceWithElement(editor, query.range, mentionEl);
     moveCursor(editor, true);
-    requestClose();
+    onClose();
   };
 
   useKeyDown(window, (evt: KeyboardEvent) => {
@@ -143,7 +143,7 @@ export function UserMentionAutocomplete({
     getMemberDisplayName(room, member.userId) ?? getMxIdLocalPart(member.userId) ?? member.userId;
 
   return (
-    <AutocompleteMenu headerContent={<Text size="L400">Mentions</Text>} requestClose={requestClose}>
+    <AutocompleteMenu headerContent={<Text size="L400">Mentions</Text>} onClose={onClose}>
       {query.text === 'room' && (
         <UnknownMentionItem
           userId={roomAliasOrId}

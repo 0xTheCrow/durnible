@@ -11,7 +11,7 @@ export function ReactionViewerRenderer() {
   return (
     <OverlayModal
       open={!!state}
-      requestClose={close}
+      onClose={close}
       overlayProps={{ onContextMenu: (evt) => evt.stopPropagation() }}
       focusTrapOptions={{ returnFocusOnDeactivate: false }}
     >
@@ -21,7 +21,7 @@ export function ReactionViewerRenderer() {
             room={state.room}
             initialKey={state.initialKey}
             relations={state.relations}
-            requestClose={close}
+            onClose={close}
           />
         )}
       </Modal>

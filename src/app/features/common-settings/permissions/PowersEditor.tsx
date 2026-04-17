@@ -219,7 +219,7 @@ function EditPower({ maxPower, power, tag, onSave, onClose }: EditPowerProps) {
                             setTagIcon({ key: mxc });
                             setCords(undefined);
                           }}
-                          requestClose={() => {
+                          onClose={() => {
                             setCords(undefined);
                           }}
                         />
@@ -287,9 +287,9 @@ function EditPower({ maxPower, power, tag, onSave, onClose }: EditPowerProps) {
 
 type PowersEditorProps = {
   powerLevels: PowerLevels;
-  requestClose: () => void;
+  onClose: () => void;
 };
-export function PowersEditor({ powerLevels, requestClose }: PowersEditorProps) {
+export function PowersEditor({ powerLevels, onClose }: PowersEditorProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
   const room = useRoom();
@@ -363,14 +363,14 @@ export function PowersEditor({ powerLevels, requestClose }: PowersEditorProps) {
             <Chip
               size="500"
               radii="Pill"
-              onClick={requestClose}
+              onClick={onClose}
               before={<Icon size="100" src={Icons.ArrowLeft} />}
             >
               <Text size="T300">Permissions</Text>
             </Chip>
           </Box>
           <Box shrink="No">
-            <IconButton onClick={requestClose} variant="Surface">
+            <IconButton onClick={onClose} variant="Surface">
               <Icon src={Icons.Cross} />
             </IconButton>
           </Box>

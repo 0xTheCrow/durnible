@@ -154,7 +154,7 @@ function ProfileAvatar({ profile, userId }: ProfileProps) {
                 <ImageEditor
                   name={imageFile?.name ?? 'Unnamed'}
                   url={imageFileURL}
-                  requestClose={handleRemoveUpload}
+                  onClose={handleRemoveUpload}
                 />
               </Modal>
             </FocusTrap>
@@ -162,7 +162,7 @@ function ProfileAvatar({ profile, userId }: ProfileProps) {
         </Overlay>
       )}
 
-      <OverlayModal open={alertRemove} requestClose={() => setAlertRemove(false)}>
+      <OverlayModal open={alertRemove} onClose={() => setAlertRemove(false)}>
         <Dialog variant="Surface">
           <Header
             style={{
@@ -290,7 +290,7 @@ function ProfileBanner({ profile, userId }: ProfileProps) {
         </Box>
       )}
 
-      <OverlayModal open={alertRemove} requestClose={() => setAlertRemove(false)}>
+      <OverlayModal open={alertRemove} onClose={() => setAlertRemove(false)}>
         <Dialog variant="Surface">
           <Header
             style={{

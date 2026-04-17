@@ -1,6 +1,7 @@
 import React from 'react';
-import { Box, Text, IconButton, Icon, Icons, Scroll } from 'folds';
-import { Page, PageContent, PageHeader } from '../../../components/page';
+import { Box, Text, Scroll } from 'folds';
+import { Page, PageContent } from '../../../components/page';
+import { SettingsPageHeader } from '../components';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SequenceCardStyle } from '../styles.css';
 import { SettingTile } from '../../../components/setting-tile';
@@ -37,9 +38,10 @@ function DevicesPlaceholder() {
 }
 
 type DevicesProps = {
-  requestClose: () => void;
+  onBack: () => void;
+  onClose: () => void;
 };
-export function Devices({ requestClose }: DevicesProps) {
+export function Devices({ onBack, onClose }: DevicesProps) {
   const mx = useMatrixClient();
   const crypto = mx.getCrypto();
   const crossSigningActive = useCrossSigningActive();
@@ -66,20 +68,7 @@ export function Devices({ requestClose }: DevicesProps) {
 
   return (
     <Page>
-      <PageHeader outlined={false}>
-        <Box grow="Yes" gap="200">
-          <Box grow="Yes" alignItems="Center" gap="200">
-            <Text size="H3" truncate>
-              Devices
-            </Text>
-          </Box>
-          <Box shrink="No">
-            <IconButton onClick={requestClose} variant="Surface">
-              <Icon src={Icons.Cross} />
-            </IconButton>
-          </Box>
-        </Box>
-      </PageHeader>
+      <SettingsPageHeader title="Devices" onBack={onBack} onClose={onClose} />
       <Box grow="Yes">
         <Scroll hideTrack visibility="Hover">
           <PageContent>

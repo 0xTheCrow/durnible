@@ -492,7 +492,7 @@ export function Lobby() {
                               closedCategories.has(categoryId) ||
                               (draggingItem ? 'space' in draggingItem : false)
                             }
-                            handleClose={handleCategoryClick}
+                            onClose={handleCategoryClick}
                             draggingItem={draggingItem}
                             onDragging={setDraggingItem}
                             canDrop={canDrop}

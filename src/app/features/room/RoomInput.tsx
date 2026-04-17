@@ -61,7 +61,7 @@ import {
   isInsideList,
   handleListEnter,
 } from '../../components/editor';
-import { EmojiBoardPopOut, EmojiBoardTab } from '../../components/emoji-board';
+import { EmojiBoardWrapper, EmojiBoardTab } from '../../components/emoji-board';
 import type { UploadContent } from '../../utils/matrix';
 import { getImageInfo, getMxIdLocalPart, mxcUrlToHttp } from '../../utils/matrix';
 import { encryptFileInWorker } from '../../utils/encryptWorker';
@@ -764,7 +764,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
             roomId={roomId}
             editor={editor}
             query={autocompleteQuery}
-            requestClose={handleCloseAutocomplete}
+            onClose={handleCloseAutocomplete}
             onSelect={alternateInput ? handleAlternateRoomMentionSelect : undefined}
           />
         )}
@@ -773,7 +773,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
             room={room}
             editor={editor}
             query={autocompleteQuery}
-            requestClose={handleCloseAutocomplete}
+            onClose={handleCloseAutocomplete}
             onSelect={alternateInput ? handleAlternateMentionSelect : undefined}
           />
         )}
@@ -782,7 +782,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
             imagePackRooms={imagePackRooms}
             editor={editor}
             query={autocompleteQuery}
-            requestClose={handleCloseAutocomplete}
+            onClose={handleCloseAutocomplete}
             onSelect={alternateInput ? handleAlternateEmoticonSelect : undefined}
           />
         )}
@@ -791,7 +791,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
             room={room}
             editor={editor}
             query={autocompleteQuery}
-            requestClose={handleCloseAutocomplete}
+            onClose={handleCloseAutocomplete}
             onSelect={alternateInput ? handleAlternateCommandSelect : undefined}
           />
         )}
@@ -871,7 +871,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
                 >
                   <Icon src={toolbar ? Icons.AlphabetUnderline : Icons.Alphabet} />
                 </IconButton>
-                <EmojiBoardPopOut
+                <EmojiBoardWrapper
                   offset={16}
                   alignOffset={mobileOrTablet() ? 0 : -44}
                   position="Top"
@@ -908,7 +908,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
                       />
                     </IconButton>
                   )}
-                </EmojiBoardPopOut>
+                </EmojiBoardWrapper>
                 {hasEditorContent || !!replyDraft || selectedFiles.length > 0 ? (
                   <IconButton
                     ref={sendBtnRef}

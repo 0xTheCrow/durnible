@@ -39,10 +39,10 @@ type HierarchyItemWithParent = HierarchyItem & {
 
 function SuggestMenuItem({
   item,
-  requestClose,
+  onClose,
 }: {
   item: HierarchyItemWithParent;
-  requestClose: () => void;
+  onClose: () => void;
 }) {
   const mx = useMatrixClient();
   const { roomId, parentId, content } = item;
@@ -56,9 +56,9 @@ function SuggestMenuItem({
 
   useEffect(() => {
     if (toggleState.status === AsyncStatus.Success) {
-      requestClose();
+      onClose();
     }
-  }, [requestClose, toggleState]);
+  }, [onClose, toggleState]);
 
   return (
     <MenuItem
@@ -75,13 +75,7 @@ function SuggestMenuItem({
   );
 }
 
-function RemoveMenuItem({
-  item,
-  requestClose,
-}: {
-  item: HierarchyItemWithParent;
-  requestClose: () => void;
-}) {
+function RemoveMenuItem({ item, onClose }: { item: HierarchyItemWithParent; onClose: () => void }) {
   const mx = useMatrixClient();
   const { roomId, parentId } = item;
 
@@ -94,9 +88,9 @@ function RemoveMenuItem({
 
   useEffect(() => {
     if (removeState.status === AsyncStatus.Success) {
-      requestClose();
+      onClose();
     }
-  }, [requestClose, removeState]);
+  }, [onClose, removeState]);
 
   return (
     <MenuItem
@@ -121,11 +115,11 @@ function RemoveMenuItem({
 
 function InviteMenuItem({
   item,
-  requestClose,
+  onClose,
   disabled,
 }: {
   item: HierarchyItemWithParent;
-  requestClose: () => void;
+  onClose: () => void;
   disabled?: boolean;
 }) {
   const mx = useMatrixClient();
@@ -154,9 +148,9 @@ function InviteMenuItem({
       {invitePrompt && room && (
         <InviteUserPrompt
           room={room}
-          requestClose={() => {
+          onClose={() => {
             setInvitePrompt(false);
-            requestClose();
+            onClose();
           }}
         />
       )}
@@ -166,11 +160,11 @@ function InviteMenuItem({
 
 function SettingsMenuItem({
   item,
-  requestClose,
+  onClose,
   disabled,
 }: {
   item: HierarchyItemWithParent;
-  requestClose: () => void;
+  onClose: () => void;
   disabled?: boolean;
 }) {
   const openRoomSettings = useOpenRoomSettings();
@@ -183,7 +177,7 @@ function SettingsMenuItem({
     } else {
       openRoomSettings(item.roomId, space?.roomId);
     }
-    requestClose();
+    onClose();
   };
 
   return (
@@ -282,10 +276,10 @@ export function HierarchyItemMenu({
                     )}
                     <InviteMenuItem
                       item={item}
-                      requestClose={handleRequestClose}
+                      onClose={handleRequestClose}
                       disabled={!canInvite()}
                     />
-                    <SettingsMenuItem item={item} requestClose={handleRequestClose} />
+                    <SettingsMenuItem item={item} onClose={handleRequestClose} />
                     <UseStateProvider initial={false}>
                       {(promptLeave, setPromptLeave) => (
                         <>
@@ -326,8 +320,8 @@ export function HierarchyItemMenu({
                 )}
                 {canEditChild && (
                   <Box direction="Column" gap="100" style={{ padding: config.space.S100 }}>
-                    <SuggestMenuItem item={item} requestClose={handleRequestClose} />
-                    <RemoveMenuItem item={item} requestClose={handleRequestClose} />
+                    <SuggestMenuItem item={item} onClose={handleRequestClose} />
+                    <RemoveMenuItem item={item} onClose={handleRequestClose} />
                   </Box>
                 )}
               </Menu>

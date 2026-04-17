@@ -31,9 +31,9 @@ import { AccountDataEditor } from '../../../components/AccountDataEditor';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 
 type DeveloperToolsProps = {
-  requestClose: () => void;
+  onClose: () => void;
 };
-export function DeveloperTools({ requestClose }: DeveloperToolsProps) {
+export function DeveloperTools({ onClose }: DeveloperToolsProps) {
   const [developerTools, setDeveloperTools] = useSetting(settingsAtom, 'developerTools');
   const mx = useMatrixClient();
   const room = useRoom();
@@ -67,18 +67,18 @@ export function DeveloperTools({ requestClose }: DeveloperToolsProps) {
       <AccountDataEditor
         type={accountDataType ?? undefined}
         content={accountDataType ? accountData.get(accountDataType) : undefined}
-        submitChange={submitAccountData}
-        requestClose={handleClose}
+        onSubmit={submitAccountData}
+        onClose={handleClose}
       />
     );
   }
 
   if (composeEvent) {
-    return <SendRoomEvent {...composeEvent} requestClose={handleClose} />;
+    return <SendRoomEvent {...composeEvent} onClose={handleClose} />;
   }
 
   if (openStateEvent) {
-    return <StateEventEditor {...openStateEvent} requestClose={handleClose} />;
+    return <StateEventEditor {...openStateEvent} onClose={handleClose} />;
   }
 
   return (
@@ -91,7 +91,7 @@ export function DeveloperTools({ requestClose }: DeveloperToolsProps) {
             </Text>
           </Box>
           <Box shrink="No">
-            <IconButton onClick={requestClose} variant="Surface">
+            <IconButton onClick={onClose} variant="Surface">
               <Icon src={Icons.Cross} />
             </IconButton>
           </Box>

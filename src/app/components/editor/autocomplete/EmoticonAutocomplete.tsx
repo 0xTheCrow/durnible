@@ -30,7 +30,7 @@ type EmoticonAutocompleteProps = {
   imagePackRooms: Room[];
   editor: Editor;
   query: AutocompleteQuery<string>;
-  requestClose: () => void;
+  onClose: () => void;
   onSelect?: (key: string, shortcode: string) => void;
 };
 
@@ -44,7 +44,7 @@ export function EmoticonAutocomplete({
   imagePackRooms,
   editor,
   query,
-  requestClose,
+  onClose,
   onSelect,
 }: EmoticonAutocompleteProps) {
   const mx = useMatrixClient();
@@ -76,13 +76,13 @@ export function EmoticonAutocomplete({
   const handleAutocomplete: EmoticonCompleteHandler = (key, shortcode) => {
     if (onSelect) {
       onSelect(key, shortcode);
-      requestClose();
+      onClose();
       return;
     }
     const emoticonEl = createEmoticonElement(key, shortcode);
     replaceWithElement(editor, query.range, emoticonEl);
     moveCursor(editor, true);
-    requestClose();
+    onClose();
   };
 
   useKeyDown(window, (evt: KeyboardEvent) => {
@@ -96,7 +96,7 @@ export function EmoticonAutocomplete({
   });
 
   return autoCompleteEmoticon.length === 0 ? null : (
-    <AutocompleteMenu headerContent={<Text size="L400">Emojis</Text>} requestClose={requestClose}>
+    <AutocompleteMenu headerContent={<Text size="L400">Emojis</Text>} onClose={onClose}>
       {autoCompleteEmoticon.map((emoticon) => {
         const isCustomEmoji = 'url' in emoticon;
         const key = isCustomEmoji ? emoticon.url : emoticon.unicode;

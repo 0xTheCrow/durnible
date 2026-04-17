@@ -71,7 +71,7 @@ export function AddServer() {
 
   return (
     <>
-      <OverlayModal open={dialog} requestClose={() => setDialog(false)}>
+      <OverlayModal open={dialog} onClose={() => setDialog(false)}>
         <Dialog variant="Surface">
           <Header
             style={{

@@ -1,16 +1,21 @@
+import type { ChangeEventHandler } from 'react';
 import React, { useMemo } from 'react';
-import { Box, Button, Icon, IconButton, Icons, Scroll, Text } from 'folds';
-import { Page, PageContent, PageHeader } from '../../../components/page';
+import { Box, Button, config, Icon, IconButton, Icons, Input, Scroll, Text } from 'folds';
+import { Page, PageContent } from '../../../components/page';
+import { SettingsPageHeader } from '../components';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SequenceCardStyle } from '../styles.css';
 import { SettingTile } from '../../../components/setting-tile';
 import type { SettingsPages } from '../settingsPages';
 import type { SearchEntry } from './searchData';
 import { settingsSearchData } from './searchData';
+import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
 
 type SearchResultsProps = {
   query: string;
-  requestClose: () => void;
+  onQueryChange: (query: string) => void;
+  onBack: () => void;
+  onClose: () => void;
   onNavigateTo: (page: SettingsPages) => void;
 };
 
@@ -30,7 +35,15 @@ type GroupedResults = {
   entries: SearchEntry[];
 };
 
-export function SearchResults({ query, requestClose, onNavigateTo }: SearchResultsProps) {
+export function SearchResults({
+  query,
+  onQueryChange,
+  onBack,
+  onClose,
+  onNavigateTo,
+}: SearchResultsProps) {
+  const isMobile = useScreenSizeContext() === ScreenSize.Mobile;
+
   const results = useMemo(
     () => (query.trim() ? settingsSearchData.filter((e) => matchesQuery(e, query.trim())) : []),
     [query]
@@ -55,22 +68,49 @@ export function SearchResults({ query, requestClose, onNavigateTo }: SearchResul
     return Array.from(groups.values());
   }, [results]);
 
+  const handleQueryChange: ChangeEventHandler<HTMLInputElement> = (evt) => {
+    onQueryChange(evt.target.value);
+  };
+
+  const handleQueryClear = () => {
+    onQueryChange('');
+  };
+
   return (
     <Page>
-      <PageHeader outlined={false}>
-        <Box grow="Yes" gap="200">
-          <Box grow="Yes" alignItems="Center" gap="200">
-            <Text size="H3" truncate>
-              Search Results
-            </Text>
-          </Box>
-          <Box shrink="No">
-            <IconButton onClick={requestClose} variant="Surface">
-              <Icon src={Icons.Cross} />
-            </IconButton>
-          </Box>
+      <SettingsPageHeader title="Search Results" onBack={onBack} onClose={onClose} />
+      {isMobile && (
+        <Box
+          style={{ padding: `0 ${config.space.S400} ${config.space.S200}` }}
+          shrink="No"
+          direction="Column"
+        >
+          <Input
+            style={{ width: '100%' }}
+            variant="Background"
+            size="300"
+            radii="400"
+            placeholder="Search settings..."
+            before={<Icon src={Icons.Search} size="100" />}
+            value={query}
+            onChange={handleQueryChange}
+            after={
+              query ? (
+                <IconButton
+                  type="button"
+                  size="300"
+                  onClick={handleQueryClear}
+                  variant="Background"
+                  radii="Pill"
+                  aria-label="Clear search"
+                >
+                  <Icon src={Icons.Cross} size="100" />
+                </IconButton>
+              ) : undefined
+            }
+          />
         </Box>
-      </PageHeader>
+      )}
       <Box grow="Yes">
         <Scroll hideTrack visibility="Hover">
           <PageContent>

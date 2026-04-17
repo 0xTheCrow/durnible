@@ -30,9 +30,9 @@ const EDITOR_INTENT_SPACE_COUNT = 2;
 export type SendRoomEventProps = {
   type?: string;
   stateKey?: string;
-  requestClose: () => void;
+  onClose: () => void;
 };
-export function SendRoomEvent({ type, stateKey, requestClose }: SendRoomEventProps) {
+export function SendRoomEvent({ type, stateKey, onClose }: SendRoomEventProps) {
   const mx = useMatrixClient();
   const room = useRoom();
   const alive = useAlive();
@@ -100,7 +100,7 @@ export function SendRoomEvent({ type, stateKey, requestClose }: SendRoomEventPro
 
     submit(evtType, evtStateKey, parsedContent).then(() => {
       if (alive()) {
-        requestClose();
+        onClose();
       }
     });
   };
@@ -122,14 +122,14 @@ export function SendRoomEvent({ type, stateKey, requestClose }: SendRoomEventPro
             <Chip
               size="500"
               radii="Pill"
-              onClick={requestClose}
+              onClick={onClose}
               before={<Icon size="100" src={Icons.ArrowLeft} />}
             >
               <Text size="T300">Developer Tools</Text>
             </Chip>
           </Box>
           <Box shrink="No">
-            <IconButton onClick={requestClose} variant="Surface">
+            <IconButton onClick={onClose} variant="Surface">
               <Icon src={Icons.Cross} />
             </IconButton>
           </Box>

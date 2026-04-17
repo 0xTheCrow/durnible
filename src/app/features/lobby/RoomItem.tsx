@@ -246,12 +246,8 @@ function RoomProfile({
                   >
                     {topic}
                   </Text>
-                  <OverlayModal open={view} requestClose={() => setView(false)}>
-                    <RoomTopicViewer
-                      name={name}
-                      topic={topic}
-                      requestClose={() => setView(false)}
-                    />
+                  <OverlayModal open={view} onClose={() => setView(false)}>
+                    <RoomTopicViewer name={name} topic={topic} onClose={() => setView(false)} />
                   </OverlayModal>
                 </>
               )}

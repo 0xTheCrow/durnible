@@ -247,10 +247,10 @@ function PinnedMessage({
 
 type RoomPinMenuProps = {
   room: Room;
-  requestClose: () => void;
+  onClose: () => void;
 };
 export const RoomPinMenu = forwardRef<HTMLDivElement, RoomPinMenuProps>(
-  ({ room, requestClose }, ref) => {
+  ({ room, onClose }, ref) => {
     const mx = useMatrixClient();
     const userId = mx.getSafeUserId();
     const powerLevels = usePowerLevelsContext();
@@ -455,7 +455,7 @@ export const RoomPinMenu = forwardRef<HTMLDivElement, RoomPinMenuProps>(
 
     const handleOpen = (roomId: string, eventId: string) => {
       navigateRoom(roomId, eventId);
-      requestClose();
+      onClose();
     };
 
     return (
@@ -466,7 +466,7 @@ export const RoomPinMenu = forwardRef<HTMLDivElement, RoomPinMenuProps>(
               <Text size="H5">Pinned Messages</Text>
             </Box>
             <Box shrink="No">
-              <IconButton size="300" onClick={requestClose} radii="300">
+              <IconButton size="300" onClick={onClose} radii="300">
                 <Icon src={Icons.Cross} size="400" />
               </IconButton>
             </Box>

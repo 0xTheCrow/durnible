@@ -28,10 +28,10 @@ import { getMouseEventCords } from '../../utils/dom';
 export type EventReadersProps = {
   room: Room;
   eventId: string;
-  requestClose: () => void;
+  onClose: () => void;
 };
 export const EventReaders = as<'div', EventReadersProps>(
-  ({ className, room, eventId, requestClose, ...props }, ref) => {
+  ({ className, room, eventId, onClose, ...props }, ref) => {
     const mx = useMatrixClient();
     const useAuthentication = useMediaAuthentication();
     const latestEventReaders = useRoomEventReaders(room, eventId);
@@ -52,7 +52,7 @@ export const EventReaders = as<'div', EventReadersProps>(
           <Box grow="Yes">
             <Text size="H3">Seen by</Text>
           </Box>
-          <IconButton size="300" onClick={requestClose}>
+          <IconButton size="300" onClick={onClose}>
             <Icon src={Icons.Cross} />
           </IconButton>
         </Header>

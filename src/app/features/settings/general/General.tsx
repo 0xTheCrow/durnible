@@ -1,21 +1,9 @@
 import type { MouseEventHandler } from 'react';
 import React, { useState } from 'react';
 import type { RectCords } from 'folds';
-import {
-  Box,
-  Button,
-  Chip,
-  config,
-  Icon,
-  IconButton,
-  Icons,
-  PopOut,
-  Scroll,
-  Switch,
-  Text,
-} from 'folds';
+import { Box, Button, Chip, config, Icon, Icons, PopOut, Scroll, Switch, Text } from 'folds';
 import FocusTrap from 'focus-trap-react';
-import { Page, PageContent, PageHeader } from '../../../components/page';
+import { Page, PageContent } from '../../../components/page';
 import { SequenceCard } from '../../../components/sequence-card';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
@@ -40,6 +28,7 @@ import {
   SelectDateFormat,
   SelectMessageLayout,
   SelectMessageSpacing,
+  SettingsPageHeader,
 } from '../components';
 
 function SystemThemePreferences() {
@@ -494,25 +483,13 @@ function Advanced() {
 }
 
 type GeneralProps = {
-  requestClose: () => void;
+  onBack: () => void;
+  onClose: () => void;
 };
-export function General({ requestClose }: GeneralProps) {
+export function General({ onBack, onClose }: GeneralProps) {
   return (
     <Page>
-      <PageHeader outlined={false}>
-        <Box grow="Yes" gap="200">
-          <Box grow="Yes" alignItems="Center" gap="200">
-            <Text size="H3" truncate>
-              General
-            </Text>
-          </Box>
-          <Box shrink="No">
-            <IconButton onClick={requestClose} variant="Surface">
-              <Icon src={Icons.Cross} />
-            </IconButton>
-          </Box>
-        </Box>
-      </PageHeader>
+      <SettingsPageHeader title="General" onBack={onBack} onClose={onClose} />
       <Box grow="Yes">
         <Scroll hideTrack visibility="Hover">
           <PageContent>

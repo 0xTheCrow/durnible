@@ -5,22 +5,18 @@ import { stopPropagation } from '../utils/keyboard';
 import { useMembershipFilterMenu } from '../hooks/useMemberFilter';
 
 type MembershipFilterMenuProps = {
-  requestClose: () => void;
+  onClose: () => void;
   selected: number;
   onSelect: (index: number) => void;
 };
-export function MembershipFilterMenu({
-  selected,
-  onSelect,
-  requestClose,
-}: MembershipFilterMenuProps) {
+export function MembershipFilterMenu({ selected, onSelect, onClose }: MembershipFilterMenuProps) {
   const membershipFilterMenu = useMembershipFilterMenu();
 
   return (
     <FocusTrap
       focusTrapOptions={{
         initialFocus: false,
-        onDeactivate: requestClose,
+        onDeactivate: onClose,
         clickOutsideDeactivates: true,
         isKeyForward: (evt: KeyboardEvent) => evt.key === 'ArrowDown',
         isKeyBackward: (evt: KeyboardEvent) => evt.key === 'ArrowUp',
@@ -37,7 +33,7 @@ export function MembershipFilterMenu({
             radii="300"
             onClick={() => {
               onSelect(index);
-              requestClose();
+              onClose();
             }}
           >
             <Text size="T300">{menuItem.name}</Text>

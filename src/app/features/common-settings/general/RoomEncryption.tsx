@@ -98,7 +98,7 @@ export function RoomEncryption({ permissions }: RoomEncryptionProps) {
           </Text>
         )}
         {prompt && (
-          <OverlayModal open requestClose={() => setPrompt(false)}>
+          <OverlayModal open onClose={() => setPrompt(false)}>
             <Dialog variant="Surface">
               <Header
                 style={{

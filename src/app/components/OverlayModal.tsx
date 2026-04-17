@@ -9,7 +9,7 @@ let overlayModalCounter = 0;
 
 type OverlayModalProps = {
   open: boolean;
-  requestClose: () => void;
+  onClose: () => void;
   children: ReactNode;
   focusTrapOptions?: Partial<FocusTrapOptions>;
   backdrop?: boolean;
@@ -19,15 +19,15 @@ type OverlayModalProps = {
 
 export function OverlayModal({
   open,
-  requestClose,
+  onClose,
   children,
   focusTrapOptions,
   backdrop = true,
   overlayProps,
   overlayCenterProps,
 }: OverlayModalProps) {
-  const requestCloseRef = useRef(requestClose);
-  requestCloseRef.current = requestClose;
+  const requestCloseRef = useRef(onClose);
+  requestCloseRef.current = onClose;
 
   const clickOutsideCloses = focusTrapOptions?.clickOutsideDeactivates !== false;
 
@@ -60,7 +60,7 @@ export function OverlayModal({
 
   const mergedFocusTrapOptions: FocusTrapOptions = {
     initialFocus: false,
-    onDeactivate: requestClose,
+    onDeactivate: onClose,
     escapeDeactivates: stopPropagation,
     ...focusTrapOptions,
     // Never let FocusTrap close on outside clicks — it fires on
@@ -85,7 +85,7 @@ export function OverlayModal({
           if (e.target !== e.currentTarget) return;
           e.stopPropagation();
           if (clickOutsideCloses) {
-            requestClose();
+            onClose();
           }
         }}
       >

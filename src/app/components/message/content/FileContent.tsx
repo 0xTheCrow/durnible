@@ -67,7 +67,7 @@ type RenderTextViewerProps = {
   name: string;
   text: string;
   langName: string;
-  requestClose: () => void;
+  onClose: () => void;
 };
 type ReadTextFileProps = {
   body: string;
@@ -97,7 +97,7 @@ export function ReadTextFile({ body, mimeType, url, encInfo, renderViewer }: Rea
   return (
     <>
       {textState.status === AsyncStatus.Success && (
-        <OverlayModal open={textViewer} requestClose={() => setTextViewer(false)}>
+        <OverlayModal open={textViewer} onClose={() => setTextViewer(false)}>
           <Modal className={ModalWide} size="500" onContextMenu={(evt) => evt.stopPropagation()}>
             {renderViewer({
               name: body,
@@ -105,7 +105,7 @@ export function ReadTextFile({ body, mimeType, url, encInfo, renderViewer }: Rea
               langName: READABLE_TEXT_MIME_TYPES.includes(mimeType)
                 ? mimeTypeToExt(mimeType)
                 : mimeTypeToExt(READABLE_EXT_TO_MIME_TYPE[getFileNameExt(body)] ?? mimeType),
-              requestClose: () => setTextViewer(false),
+              onClose: () => setTextViewer(false),
             })}
           </Modal>
         </OverlayModal>
@@ -142,7 +142,7 @@ export function ReadTextFile({ body, mimeType, url, encInfo, renderViewer }: Rea
 type RenderPdfViewerProps = {
   name: string;
   src: string;
-  requestClose: () => void;
+  onClose: () => void;
 };
 export type ReadPdfFileProps = {
   body: string;
@@ -170,12 +170,12 @@ export function ReadPdfFile({ body, mimeType, url, encInfo, renderViewer }: Read
   return (
     <>
       {pdfState.status === AsyncStatus.Success && (
-        <OverlayModal open={pdfViewer} requestClose={() => setPdfViewer(false)}>
+        <OverlayModal open={pdfViewer} onClose={() => setPdfViewer(false)}>
           <Modal className={ModalWide} size="500" onContextMenu={(evt) => evt.stopPropagation()}>
             {renderViewer({
               name: body,
               src: pdfState.data,
-              requestClose: () => setPdfViewer(false),
+              onClose: () => setPdfViewer(false),
             })}
           </Modal>
         </OverlayModal>

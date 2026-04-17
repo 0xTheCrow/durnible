@@ -16,7 +16,7 @@ vi.mock('file-saver', () => ({
 const defaultProps = {
   src: 'https://example.com/image.png',
   alt: 'A test image',
-  requestClose: vi.fn(),
+  onClose: vi.fn(),
 };
 
 const renderViewer = (props = defaultProps) => render(<ImageViewer {...props} />);
@@ -109,11 +109,11 @@ describe('ImageViewer', () => {
   });
 
   describe('close button', () => {
-    it('calls requestClose when the close button is clicked', () => {
-      const requestClose = vi.fn();
-      render(<ImageViewer {...defaultProps} requestClose={requestClose} />);
+    it('calls onClose when the close button is clicked', () => {
+      const onClose = vi.fn();
+      render(<ImageViewer {...defaultProps} onClose={onClose} />);
       fireEvent.click(screen.getByTestId('image-viewer-close-btn'));
-      expect(requestClose).toHaveBeenCalledOnce();
+      expect(onClose).toHaveBeenCalledOnce();
     });
   });
 });

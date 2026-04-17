@@ -247,11 +247,11 @@ function InviteCard({
                   {invite.roomTopic}
                 </Text>
               )}
-              <OverlayModal open={viewTopic} requestClose={closeTopic}>
+              <OverlayModal open={viewTopic} onClose={closeTopic}>
                 <RoomTopicViewer
                   name={invite.roomName}
                   topic={invite.roomTopic ?? ''}
-                  requestClose={closeTopic}
+                  onClose={closeTopic}
                 />
               </OverlayModal>
             </Box>

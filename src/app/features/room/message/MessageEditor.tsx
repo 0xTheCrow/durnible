@@ -42,7 +42,7 @@ import { settingsAtom } from '../../../state/settings';
 import { useRelevantImagePacks } from '../../../hooks/useImagePacks';
 import { ImageUsage } from '../../../plugins/custom-emoji/types';
 import { buildShortcodeMap, emojis as unicodeEmojis } from '../../../plugins/emoji';
-import { EmojiBoardPopOut } from '../../../components/emoji-board';
+import { EmojiBoardWrapper } from '../../../components/emoji-board';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
@@ -329,7 +329,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
             roomId={roomId}
             editor={editor}
             query={autocompleteQuery}
-            requestClose={handleCloseAutocomplete}
+            onClose={handleCloseAutocomplete}
             onSelect={alternateInput ? handleAlternateRoomMentionSelect : undefined}
           />
         )}
@@ -338,7 +338,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
             room={room}
             editor={editor}
             query={autocompleteQuery}
-            requestClose={handleCloseAutocomplete}
+            onClose={handleCloseAutocomplete}
             onSelect={alternateInput ? handleAlternateMentionSelect : undefined}
           />
         )}
@@ -347,7 +347,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
             imagePackRooms={imagePackRooms || []}
             editor={editor}
             query={autocompleteQuery}
-            requestClose={handleCloseAutocomplete}
+            onClose={handleCloseAutocomplete}
             onSelect={alternateInput ? handleAlternateEmoticonSelect : undefined}
           />
         )}
@@ -401,7 +401,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
                   >
                     <Icon size="400" src={toolbar ? Icons.AlphabetUnderline : Icons.Alphabet} />
                   </IconButton>
-                  <EmojiBoardPopOut
+                  <EmojiBoardWrapper
                     alignOffset={-8}
                     position="Top"
                     align="End"
@@ -435,7 +435,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
                         <Icon size="400" src={Icons.Smile} filled={isOpen} />
                       </IconButton>
                     )}
-                  </EmojiBoardPopOut>
+                  </EmojiBoardWrapper>
                 </Box>
               </Box>
               {toolbar && (

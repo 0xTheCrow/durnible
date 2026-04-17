@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from 'react';
-import { Box, Text, IconButton, Icon, Icons, Scroll, Switch, Button } from 'folds';
-import { Page, PageContent, PageHeader } from '../../../components/page';
+import { Box, Text, Scroll, Switch, Button } from 'folds';
+import { Page, PageContent } from '../../../components/page';
+import { SettingsPageHeader } from '../components';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SequenceCardStyle } from '../styles.css';
 import { SettingTile } from '../../../components/setting-tile';
@@ -13,9 +14,10 @@ import { copyToClipboard } from '../../../utils/dom';
 import { AccountData } from './AccountData';
 
 type DeveloperToolsProps = {
-  requestClose: () => void;
+  onBack: () => void;
+  onClose: () => void;
 };
-export function DeveloperTools({ requestClose }: DeveloperToolsProps) {
+export function DeveloperTools({ onBack, onClose }: DeveloperToolsProps) {
   const mx = useMatrixClient();
   const [developerTools, setDeveloperTools] = useSetting(settingsAtom, 'developerTools');
   const [expand, setExpend] = useState(false);
@@ -40,28 +42,15 @@ export function DeveloperTools({ requestClose }: DeveloperToolsProps) {
       <AccountDataEditor
         type={accountDataType ?? undefined}
         content={accountDataType ? mxRaw.getAccountData(accountDataType)?.getContent() : undefined}
-        submitChange={submitAccountData}
-        requestClose={() => setAccountDataType(undefined)}
+        onSubmit={submitAccountData}
+        onClose={() => setAccountDataType(undefined)}
       />
     );
   }
 
   return (
     <Page>
-      <PageHeader outlined={false}>
-        <Box grow="Yes" gap="200">
-          <Box grow="Yes" alignItems="Center" gap="200">
-            <Text size="H3" truncate>
-              Developer Tools
-            </Text>
-          </Box>
-          <Box shrink="No">
-            <IconButton onClick={requestClose} variant="Surface">
-              <Icon src={Icons.Cross} />
-            </IconButton>
-          </Box>
-        </Box>
-      </PageHeader>
+      <SettingsPageHeader title="Developer Tools" onBack={onBack} onClose={onClose} />
       <Box grow="Yes">
         <Scroll hideTrack visibility="Hover">
           <PageContent>

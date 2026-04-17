@@ -8,9 +8,9 @@ import { UserImagePack } from './UserImagePack';
 
 type ImagePackViewProps = {
   address: PackAddress | undefined;
-  requestClose: () => void;
+  onClose: () => void;
 };
-export function ImagePackView({ address, requestClose }: ImagePackViewProps) {
+export function ImagePackView({ address, onClose }: ImagePackViewProps) {
   const mx = useMatrixClient();
   const room = address && mx.getRoom(address.roomId);
 
@@ -22,14 +22,14 @@ export function ImagePackView({ address, requestClose }: ImagePackViewProps) {
             <Chip
               size="500"
               radii="Pill"
-              onClick={requestClose}
+              onClick={onClose}
               before={<Icon size="100" src={Icons.ArrowLeft} />}
             >
               <Text size="T300">Emojis & Stickers</Text>
             </Chip>
           </Box>
           <Box shrink="No">
-            <IconButton onClick={requestClose} variant="Surface">
+            <IconButton onClick={onClose} variant="Surface">
               <Icon src={Icons.Cross} />
             </IconButton>
           </Box>

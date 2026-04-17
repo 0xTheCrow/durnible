@@ -169,7 +169,7 @@ type SpaceProfileProps = {
   suggested?: boolean;
   closed: boolean;
   categoryId: string;
-  handleClose?: MouseEventHandler<HTMLButtonElement>;
+  onClose?: MouseEventHandler<HTMLButtonElement>;
 };
 function SpaceProfile({
   roomId,
@@ -178,12 +178,12 @@ function SpaceProfile({
   suggested,
   closed,
   categoryId,
-  handleClose,
+  onClose,
 }: SpaceProfileProps) {
   return (
     <Chip
       data-category-id={categoryId}
-      onClick={handleClose}
+      onClick={onClose}
       className={css.HeaderChip}
       variant="Surface"
       size="500"
@@ -220,13 +220,13 @@ function SpaceProfile({
 type RootSpaceProfileProps = {
   closed: boolean;
   categoryId: string;
-  handleClose?: MouseEventHandler<HTMLButtonElement>;
+  onClose?: MouseEventHandler<HTMLButtonElement>;
 };
-function RootSpaceProfile({ closed, categoryId, handleClose }: RootSpaceProfileProps) {
+function RootSpaceProfile({ closed, categoryId, onClose }: RootSpaceProfileProps) {
   return (
     <Chip
       data-category-id={categoryId}
-      onClick={handleClose}
+      onClick={onClose}
       className={css.HeaderChip}
       variant="Surface"
       size="500"
@@ -303,7 +303,7 @@ function AddRoomButton({ item }: { item: HierarchyItem }) {
         <Text size="B300">Add Room</Text>
       </Chip>
       {addExisting && (
-        <AddExistingModal parentId={item.roomId} requestClose={() => setAddExisting(false)} />
+        <AddExistingModal parentId={item.roomId} onClose={() => setAddExisting(false)} />
       )}
     </PopOut>
   );
@@ -370,7 +370,7 @@ function AddSpaceButton({ item }: { item: HierarchyItem }) {
         <Text size="B300">Add Space</Text>
       </Chip>
       {addExisting && (
-        <AddExistingModal space parentId={item.roomId} requestClose={() => setAddExisting(false)} />
+        <AddExistingModal space parentId={item.roomId} onClose={() => setAddExisting(false)} />
       )}
     </PopOut>
   );
@@ -383,7 +383,7 @@ type SpaceItemCardProps = {
   joined?: boolean;
   categoryId: string;
   closed: boolean;
-  handleClose?: MouseEventHandler<HTMLButtonElement>;
+  onClose?: MouseEventHandler<HTMLButtonElement>;
   options?: ReactNode;
   before?: ReactNode;
   after?: ReactNode;
@@ -402,7 +402,7 @@ export const SpaceItemCard = as<'div', SpaceItemCardProps>(
       closed,
       categoryId,
       item,
-      handleClose,
+      onClose,
       options,
       before,
       after,
@@ -444,14 +444,10 @@ export const SpaceItemCard = as<'div', SpaceItemCardProps>(
                       suggested={content.suggested}
                       closed={closed}
                       categoryId={categoryId}
-                      handleClose={handleClose}
+                      onClose={onClose}
                     />
                   ) : (
-                    <RootSpaceProfile
-                      closed={closed}
-                      categoryId={categoryId}
-                      handleClose={handleClose}
-                    />
+                    <RootSpaceProfile closed={closed} categoryId={categoryId} onClose={onClose} />
                   )
                 }
               </LocalRoomSummaryLoader>

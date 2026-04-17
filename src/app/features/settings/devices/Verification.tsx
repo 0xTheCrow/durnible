@@ -237,7 +237,7 @@ export function EnableVerification({ visible }: EnableVerificationProps) {
       {open && (
         <OverlayModal
           open
-          requestClose={handleCancel}
+          onClose={handleCancel}
           focusTrapOptions={{
             clickOutsideDeactivates: false,
             escapeDeactivates: false,
@@ -332,7 +332,7 @@ export function DeviceVerificationOptions() {
       {reset && (
         <OverlayModal
           open
-          requestClose={handleCancelReset}
+          onClose={handleCancelReset}
           focusTrapOptions={{
             clickOutsideDeactivates: false,
             escapeDeactivates: false,

@@ -21,10 +21,10 @@ function RenderSettings({ state }: RenderSettingsProps) {
   if (!room) return null;
 
   return (
-    <Modal500 requestClose={closeSettings}>
+    <Modal500 onClose={closeSettings}>
       <SpaceProvider value={space ?? null}>
         <RoomProvider value={room}>
-          <RoomSettings initialPage={page} requestClose={closeSettings} />
+          <RoomSettings initialPage={page} onClose={closeSettings} />
         </RoomProvider>
       </SpaceProvider>
     </Modal500>

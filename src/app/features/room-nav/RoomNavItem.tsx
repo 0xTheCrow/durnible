@@ -55,11 +55,11 @@ import { InviteUserPrompt } from '../../components/invite-user-prompt';
 
 type RoomNavItemMenuProps = {
   room: Room;
-  requestClose: () => void;
+  onClose: () => void;
   notificationMode?: RoomNotificationMode;
 };
 const RoomNavItemMenu = forwardRef<HTMLDivElement, RoomNavItemMenuProps>(
-  ({ room, requestClose, notificationMode }, ref) => {
+  ({ room, onClose, notificationMode }, ref) => {
     const mx = useMatrixClient();
     const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
     const unread = useRoomUnread(room.roomId, roomToUnreadAtom);
@@ -81,12 +81,12 @@ const RoomNavItemMenu = forwardRef<HTMLDivElement, RoomNavItemMenuProps>(
       } else {
         mx.setRoomTag(room.roomId, 'm.favourite', { order: 0.5 });
       }
-      requestClose();
+      onClose();
     };
 
     const handleMarkAsRead = () => {
       markAsRead(mx, room.roomId, hideActivity);
-      requestClose();
+      onClose();
     };
 
     const handleInvite = () => {
@@ -97,12 +97,12 @@ const RoomNavItemMenu = forwardRef<HTMLDivElement, RoomNavItemMenuProps>(
       const roomIdOrAlias = getCanonicalAliasOrRoomId(mx, room.roomId);
       const viaServers = isRoomAlias(roomIdOrAlias) ? undefined : getViaServers(room);
       copyToClipboard(getMatrixToRoom(roomIdOrAlias, viaServers));
-      requestClose();
+      onClose();
     };
 
     const handleRoomSettings = () => {
       openRoomSettings(room.roomId, space?.roomId);
-      requestClose();
+      onClose();
     };
 
     return (
@@ -110,9 +110,9 @@ const RoomNavItemMenu = forwardRef<HTMLDivElement, RoomNavItemMenuProps>(
         {invitePrompt && room && (
           <InviteUserPrompt
             room={room}
-            requestClose={() => {
+            onClose={() => {
               setInvitePrompt(false);
-              requestClose();
+              onClose();
             }}
           />
         )}
@@ -218,7 +218,7 @@ const RoomNavItemMenu = forwardRef<HTMLDivElement, RoomNavItemMenuProps>(
                 {promptLeave && (
                   <LeaveRoomPrompt
                     roomId={room.roomId}
-                    onDone={requestClose}
+                    onDone={onClose}
                     onCancel={() => setPromptLeave(false)}
                   />
                 )}
@@ -369,7 +369,7 @@ export function RoomNavItem({
               >
                 <RoomNavItemMenu
                   room={room}
-                  requestClose={() => setMenuAnchor(undefined)}
+                  onClose={() => setMenuAnchor(undefined)}
                   notificationMode={notificationMode}
                 />
               </FocusTrap>

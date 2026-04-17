@@ -44,12 +44,8 @@ export function LobbyHero() {
           <UseStateProvider initial={false}>
             {(viewTopic, setViewTopic) => (
               <>
-                <OverlayModal open={viewTopic} requestClose={() => setViewTopic(false)}>
-                  <RoomTopicViewer
-                    name={name}
-                    topic={topic}
-                    requestClose={() => setViewTopic(false)}
-                  />
+                <OverlayModal open={viewTopic} onClose={() => setViewTopic(false)}>
+                  <RoomTopicViewer name={name} topic={topic} onClose={() => setViewTopic(false)} />
                 </OverlayModal>
                 <Text
                   as="span"

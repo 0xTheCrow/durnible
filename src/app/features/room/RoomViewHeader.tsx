@@ -75,9 +75,9 @@ import { InviteUserPrompt } from '../../components/invite-user-prompt';
 
 type RoomMenuProps = {
   room: Room;
-  requestClose: () => void;
+  onClose: () => void;
 };
-const RoomMenu = forwardRef<HTMLDivElement, RoomMenuProps>(({ room, requestClose }, ref) => {
+const RoomMenu = forwardRef<HTMLDivElement, RoomMenuProps>(({ room, onClose }, ref) => {
   const mx = useMatrixClient();
   const screenSize = useScreenSizeContext();
   const isMobile = screenSize === ScreenSize.Mobile;
@@ -98,7 +98,7 @@ const RoomMenu = forwardRef<HTMLDivElement, RoomMenuProps>(({ room, requestClose
 
   const handleMarkAsRead = () => {
     markAsRead(mx, room.roomId, hideActivity);
-    requestClose();
+    onClose();
   };
 
   const handleInvite = () => {
@@ -109,14 +109,14 @@ const RoomMenu = forwardRef<HTMLDivElement, RoomMenuProps>(({ room, requestClose
     const roomIdOrAlias = getCanonicalAliasOrRoomId(mx, room.roomId);
     const viaServers = isRoomAlias(roomIdOrAlias) ? undefined : getViaServers(room);
     copyToClipboard(getMatrixToRoom(roomIdOrAlias, viaServers));
-    requestClose();
+    onClose();
   };
 
   const openSettings = useOpenRoomSettings();
   const parentSpace = useSpaceOptionally();
   const handleOpenSettings = () => {
     openSettings(room.roomId, parentSpace?.roomId);
-    requestClose();
+    onClose();
   };
 
   return (
@@ -124,9 +124,9 @@ const RoomMenu = forwardRef<HTMLDivElement, RoomMenuProps>(({ room, requestClose
       {invitePrompt && (
         <InviteUserPrompt
           room={room}
-          requestClose={() => {
+          onClose={() => {
             setInvitePrompt(false);
-            requestClose();
+            onClose();
           }}
         />
       )}
@@ -195,9 +195,9 @@ const RoomMenu = forwardRef<HTMLDivElement, RoomMenuProps>(({ room, requestClose
                 >
                   <RoomPinMenu
                     room={room}
-                    requestClose={() => {
+                    onClose={() => {
                       setPinMenuAnchor(undefined);
-                      requestClose();
+                      onClose();
                     }}
                   />
                 </FocusTrap>
@@ -261,7 +261,7 @@ const RoomMenu = forwardRef<HTMLDivElement, RoomMenuProps>(({ room, requestClose
                   onSubmit={(eventId) => {
                     setPromptJump(false);
                     navigateRoom(room.roomId, eventId);
-                    requestClose();
+                    onClose();
                   }}
                   onCancel={() => setPromptJump(false)}
                 />
@@ -291,7 +291,7 @@ const RoomMenu = forwardRef<HTMLDivElement, RoomMenuProps>(({ room, requestClose
               {promptLeave && (
                 <LeaveRoomPrompt
                   roomId={room.roomId}
-                  onDone={requestClose}
+                  onDone={onClose}
                   onCancel={() => setPromptLeave(false)}
                 />
               )}
@@ -405,11 +405,11 @@ export function RoomViewHeader() {
               <UseStateProvider initial={false}>
                 {(viewTopic, setViewTopic) => (
                   <>
-                    <OverlayModal open={viewTopic} requestClose={() => setViewTopic(false)}>
+                    <OverlayModal open={viewTopic} onClose={() => setViewTopic(false)}>
                       <RoomTopicViewer
                         name={name}
                         topic={topic}
-                        requestClose={() => setViewTopic(false)}
+                        onClose={() => setViewTopic(false)}
                       />
                     </OverlayModal>
                     <Text
@@ -501,7 +501,7 @@ export function RoomViewHeader() {
                       escapeDeactivates: stopPropagation,
                     }}
                   >
-                    <RoomPinMenu room={room} requestClose={() => setPinMenuAnchor(undefined)} />
+                    <RoomPinMenu room={room} onClose={() => setPinMenuAnchor(undefined)} />
                   </FocusTrap>
                 }
               />
@@ -575,7 +575,7 @@ export function RoomViewHeader() {
                   escapeDeactivates: stopPropagation,
                 }}
               >
-                <RoomMenu room={room} requestClose={() => setMenuAnchor(undefined)} />
+                <RoomMenu room={room} onClose={() => setMenuAnchor(undefined)} />
               </FocusTrap>
             }
           />

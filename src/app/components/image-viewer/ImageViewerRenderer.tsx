@@ -17,7 +17,7 @@ export function ImageViewerRenderer() {
   const useAuthentication = useMediaAuthentication();
   const open = viewerState !== undefined;
 
-  const requestClose = () => setViewerState(undefined);
+  const onClose = () => setViewerState(undefined);
 
   // Resolves a gallery item's mxc URL (and decrypts if needed) into an http
   // src the viewer can display. Lives here so ImageViewer.tsx stays free of
@@ -42,13 +42,13 @@ export function ImageViewerRenderer() {
   );
 
   return (
-    <OverlayModal open={open} requestClose={requestClose}>
+    <OverlayModal open={open} onClose={onClose}>
       <Modal className={ImageViewerModal} size="500" onContextMenu={(evt) => evt.stopPropagation()}>
         {viewerState && (
           <ImageViewer
             src={viewerState.src}
             alt={viewerState.alt}
-            requestClose={requestClose}
+            onClose={onClose}
             gallery={
               viewerState.gallery
                 ? {

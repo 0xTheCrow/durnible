@@ -89,133 +89,131 @@ import { InviteUserPrompt } from '../../../components/invite-user-prompt';
 
 type SpaceMenuProps = {
   room: Room;
-  requestClose: () => void;
+  onClose: () => void;
   onUnpin?: (roomId: string) => void;
 };
-const SpaceMenu = forwardRef<HTMLDivElement, SpaceMenuProps>(
-  ({ room, requestClose, onUnpin }, ref) => {
-    const mx = useMatrixClient();
-    const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
-    const roomToParents = useAtomValue(roomToParentsAtom);
-    const powerLevels = usePowerLevels(room);
-    const creators = useRoomCreators(room);
+const SpaceMenu = forwardRef<HTMLDivElement, SpaceMenuProps>(({ room, onClose, onUnpin }, ref) => {
+  const mx = useMatrixClient();
+  const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
+  const roomToParents = useAtomValue(roomToParentsAtom);
+  const powerLevels = usePowerLevels(room);
+  const creators = useRoomCreators(room);
 
-    const permissions = useRoomPermissions(creators, powerLevels);
-    const canInvite = permissions.action('invite', mx.getSafeUserId());
-    const openSpaceSettings = useOpenSpaceSettings();
+  const permissions = useRoomPermissions(creators, powerLevels);
+  const canInvite = permissions.action('invite', mx.getSafeUserId());
+  const openSpaceSettings = useOpenSpaceSettings();
 
-    const [invitePrompt, setInvitePrompt] = useState(false);
+  const [invitePrompt, setInvitePrompt] = useState(false);
 
-    const allChild = useSpaceChildren(
-      allRoomsAtom,
-      room.roomId,
-      useRecursiveChildScopeFactory(mx, roomToParents)
-    );
-    const unread = useRoomsUnread(allChild, roomToUnreadAtom);
+  const allChild = useSpaceChildren(
+    allRoomsAtom,
+    room.roomId,
+    useRecursiveChildScopeFactory(mx, roomToParents)
+  );
+  const unread = useRoomsUnread(allChild, roomToUnreadAtom);
 
-    const handleMarkAsRead = () => {
-      allChild.forEach((childRoomId) => markAsRead(mx, childRoomId, hideActivity));
-      requestClose();
-    };
+  const handleMarkAsRead = () => {
+    allChild.forEach((childRoomId) => markAsRead(mx, childRoomId, hideActivity));
+    onClose();
+  };
 
-    const handleUnpin = () => {
-      onUnpin?.(room.roomId);
-      requestClose();
-    };
+  const handleUnpin = () => {
+    onUnpin?.(room.roomId);
+    onClose();
+  };
 
-    const handleCopyLink = () => {
-      const roomIdOrAlias = getCanonicalAliasOrRoomId(mx, room.roomId);
-      const viaServers = isRoomAlias(roomIdOrAlias) ? undefined : getViaServers(room);
-      copyToClipboard(getMatrixToRoom(roomIdOrAlias, viaServers));
-      requestClose();
-    };
+  const handleCopyLink = () => {
+    const roomIdOrAlias = getCanonicalAliasOrRoomId(mx, room.roomId);
+    const viaServers = isRoomAlias(roomIdOrAlias) ? undefined : getViaServers(room);
+    copyToClipboard(getMatrixToRoom(roomIdOrAlias, viaServers));
+    onClose();
+  };
 
-    const handleInvite = () => {
-      setInvitePrompt(true);
-    };
+  const handleInvite = () => {
+    setInvitePrompt(true);
+  };
 
-    const handleRoomSettings = () => {
-      openSpaceSettings(room.roomId);
-      requestClose();
-    };
+  const handleRoomSettings = () => {
+    openSpaceSettings(room.roomId);
+    onClose();
+  };
 
-    return (
-      <Menu ref={ref} style={{ maxWidth: toRem(160), width: '100vw' }}>
-        {invitePrompt && room && (
-          <InviteUserPrompt
-            room={room}
-            requestClose={() => {
-              setInvitePrompt(false);
-              requestClose();
-            }}
-          />
+  return (
+    <Menu ref={ref} style={{ maxWidth: toRem(160), width: '100vw' }}>
+      {invitePrompt && room && (
+        <InviteUserPrompt
+          room={room}
+          onClose={() => {
+            setInvitePrompt(false);
+            onClose();
+          }}
+        />
+      )}
+      <Box direction="Column" gap="100" style={{ padding: config.space.S100 }}>
+        <MenuItem
+          onClick={handleMarkAsRead}
+          size="300"
+          after={<Icon size="100" src={Icons.CheckTwice} />}
+          radii="300"
+          disabled={!unread}
+        >
+          <Text style={{ flexGrow: 1 }} as="span" size="T300" truncate>
+            Mark as Read
+          </Text>
+        </MenuItem>
+        {onUnpin && (
+          <MenuItem
+            size="300"
+            radii="300"
+            onClick={handleUnpin}
+            after={<Icon size="100" src={Icons.Pin} />}
+          >
+            <Text style={{ flexGrow: 1 }} as="span" size="T300" truncate>
+              Unpin
+            </Text>
+          </MenuItem>
         )}
-        <Box direction="Column" gap="100" style={{ padding: config.space.S100 }}>
-          <MenuItem
-            onClick={handleMarkAsRead}
-            size="300"
-            after={<Icon size="100" src={Icons.CheckTwice} />}
-            radii="300"
-            disabled={!unread}
-          >
-            <Text style={{ flexGrow: 1 }} as="span" size="T300" truncate>
-              Mark as Read
-            </Text>
-          </MenuItem>
-          {onUnpin && (
-            <MenuItem
-              size="300"
-              radii="300"
-              onClick={handleUnpin}
-              after={<Icon size="100" src={Icons.Pin} />}
-            >
-              <Text style={{ flexGrow: 1 }} as="span" size="T300" truncate>
-                Unpin
-              </Text>
-            </MenuItem>
-          )}
-        </Box>
-        <Line variant="Surface" size="300" />
-        <Box direction="Column" gap="100" style={{ padding: config.space.S100 }}>
-          <MenuItem
-            onClick={handleInvite}
-            variant="Primary"
-            fill="None"
-            size="300"
-            after={<Icon size="100" src={Icons.UserPlus} />}
-            radii="300"
-            aria-pressed={invitePrompt}
-            disabled={!canInvite}
-          >
-            <Text style={{ flexGrow: 1 }} as="span" size="T300" truncate>
-              Invite
-            </Text>
-          </MenuItem>
-          <MenuItem
-            onClick={handleCopyLink}
-            size="300"
-            after={<Icon size="100" src={Icons.Link} />}
-            radii="300"
-          >
-            <Text style={{ flexGrow: 1 }} as="span" size="T300" truncate>
-              Copy Link
-            </Text>
-          </MenuItem>
-          <MenuItem
-            onClick={handleRoomSettings}
-            size="300"
-            after={<Icon size="100" src={Icons.Setting} />}
-            radii="300"
-          >
-            <Text style={{ flexGrow: 1 }} as="span" size="T300" truncate>
-              Space Settings
-            </Text>
-          </MenuItem>
-        </Box>
-      </Menu>
-    );
-  }
-);
+      </Box>
+      <Line variant="Surface" size="300" />
+      <Box direction="Column" gap="100" style={{ padding: config.space.S100 }}>
+        <MenuItem
+          onClick={handleInvite}
+          variant="Primary"
+          fill="None"
+          size="300"
+          after={<Icon size="100" src={Icons.UserPlus} />}
+          radii="300"
+          aria-pressed={invitePrompt}
+          disabled={!canInvite}
+        >
+          <Text style={{ flexGrow: 1 }} as="span" size="T300" truncate>
+            Invite
+          </Text>
+        </MenuItem>
+        <MenuItem
+          onClick={handleCopyLink}
+          size="300"
+          after={<Icon size="100" src={Icons.Link} />}
+          radii="300"
+        >
+          <Text style={{ flexGrow: 1 }} as="span" size="T300" truncate>
+            Copy Link
+          </Text>
+        </MenuItem>
+        <MenuItem
+          onClick={handleRoomSettings}
+          size="300"
+          after={<Icon size="100" src={Icons.Setting} />}
+          radii="300"
+        >
+          <Text style={{ flexGrow: 1 }} as="span" size="T300" truncate>
+            Space Settings
+          </Text>
+        </MenuItem>
+      </Box>
+    </Menu>
+  );
+});
 
 type InstructionType = Instruction['type'];
 type FolderDraggable = {
@@ -480,7 +478,7 @@ function SpaceTab({
                 >
                   <SpaceMenu
                     room={space}
-                    requestClose={() => setMenuAnchor(undefined)}
+                    onClose={() => setMenuAnchor(undefined)}
                     onUnpin={onUnpin}
                   />
                 </FocusTrap>

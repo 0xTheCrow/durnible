@@ -4,12 +4,12 @@ import { Modal } from 'folds';
 import { OverlayModal } from './OverlayModal';
 
 type Modal500Props = {
-  requestClose: () => void;
+  onClose: () => void;
   children: ReactNode;
 };
-export function Modal500({ requestClose, children }: Modal500Props) {
+export function Modal500({ onClose, children }: Modal500Props) {
   return (
-    <OverlayModal open requestClose={requestClose}>
+    <OverlayModal open onClose={onClose}>
       <Modal size="500" variant="Background">
         {children}
       </Modal>
