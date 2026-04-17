@@ -122,10 +122,11 @@ export function FavoritesList({ header, emptyState, scrollRef, isDrawerMode }: F
 
   const [reorderMode, setReorderMode] = useState(false);
   const [orderedIds, setOrderedIds] = useState<string[]>(() => favorites.map((r) => r.roomId));
-
-  useEffect(() => {
+  const [prevSyncKey, setPrevSyncKey] = useState({ favorites, reorderMode });
+  if (favorites !== prevSyncKey.favorites || reorderMode !== prevSyncKey.reorderMode) {
+    setPrevSyncKey({ favorites, reorderMode });
     if (!reorderMode) setOrderedIds(favorites.map((r) => r.roomId));
-  }, [favorites, reorderMode]);
+  }
 
   const orderedRooms = useMemo(() => {
     const map = new Map(favorites.map((r) => [r.roomId, r]));

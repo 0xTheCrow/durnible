@@ -1,5 +1,5 @@
 import type { FormEventHandler } from 'react';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import type { Room } from 'matrix-js-sdk';
 import { MatrixError } from 'matrix-js-sdk';
 import {
@@ -16,6 +16,7 @@ import {
   Text,
   TextArea,
 } from 'folds';
+import { useResettableState } from '../../hooks/useResettableState';
 import { SettingTile } from '../../components/setting-tile';
 import { SequenceCard } from '../../components/sequence-card';
 import {
@@ -59,11 +60,10 @@ export function CreateSpaceForm({ defaultKind, space, onCreate }: CreateSpaceFor
 
   const capabilities = useCapabilities();
   const roomVersions = capabilities['m.room_versions'];
-  const [selectedRoomVersion, selectRoomVersion] = useState(roomVersions?.default ?? '1');
-  useEffect(() => {
-    // capabilities load async
-    selectRoomVersion(roomVersions?.default ?? '1');
-  }, [roomVersions?.default]);
+  const [selectedRoomVersion, setSelectedRoomVersion] = useResettableState(
+    roomVersions?.default,
+    (d) => d ?? '1'
+  );
 
   const allowRestricted = space && restrictedSupported(selectedRoomVersion);
 
@@ -86,7 +86,7 @@ export function CreateSpaceForm({ defaultKind, space, onCreate }: CreateSpaceFor
     if (!restrictedSupported(version)) {
       setKind(CreateRoomKind.Private);
     }
-    selectRoomVersion(version);
+    setSelectedRoomVersion(version);
   };
 
   const [createState, create] = useAsyncCallback<string, Error | MatrixError, [CreateRoomData]>(

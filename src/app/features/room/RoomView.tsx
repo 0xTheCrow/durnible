@@ -128,7 +128,8 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
   const permissions = useRoomPermissions(creators, powerLevels);
   const canMessage = permissions.event(EventType.RoomMessage, mx.getSafeUserId());
 
-  useEffect(() => {
+  const focusEditorRef = useRef(() => {});
+  focusEditorRef.current = () => {
     if (screenSize !== ScreenSize.Desktop) return;
     if (!canMessage) return;
     if (alternateInput) {
@@ -136,7 +137,9 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
     } else {
       ReactEditor.focus(editor);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  };
+  useEffect(() => {
+    focusEditorRef.current();
   }, [roomId]);
 
   useKeyDown(

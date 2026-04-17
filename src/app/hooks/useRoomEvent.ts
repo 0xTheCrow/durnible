@@ -60,8 +60,7 @@ export const useRoomEvent = (
 
   const fallback = useMemo(
     () => (error && !isFetching ? room.findEventById(eventId) ?? null : undefined),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [error, isFetching]
+    [error, isFetching, room, eventId]
   );
 
   const result = event ?? data ?? (fallback !== undefined ? fallback : undefined);

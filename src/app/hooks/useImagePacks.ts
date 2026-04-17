@@ -1,6 +1,7 @@
 import type { Room } from 'matrix-js-sdk';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useAtomValue } from 'jotai';
+import { useResettableState } from './useResettableState';
 import { AccountDataEvent } from '../../types/matrix/accountData';
 import { StateEvent } from '../../types/matrix/room';
 import type { ImagePack, ImageUsage } from '../plugins/custom-emoji';
@@ -121,12 +122,7 @@ export const useRoomImagePacks = (room: Room): ImagePack[] => {
 
 export const useRoomsImagePacks = (rooms: Room[]) => {
   const mx = useMatrixClient();
-  const [roomPacks, setRoomPacks] = useState(() => rooms.flatMap(getRoomImagePacks));
-
-  // Re-sync when rooms change (handles room navigation without RoomInput remounting)
-  useEffect(() => {
-    setRoomPacks(rooms.flatMap(getRoomImagePacks));
-  }, [rooms]);
+  const [roomPacks, setRoomPacks] = useResettableState(rooms, (r) => r.flatMap(getRoomImagePacks));
 
   useStateEventCallback(
     mx,
@@ -139,7 +135,7 @@ export const useRoomsImagePacks = (rooms: Room[]) => {
           setRoomPacks(rooms.flatMap(getRoomImagePacks));
         }
       },
-      [rooms]
+      [rooms, setRoomPacks]
     )
   );
 

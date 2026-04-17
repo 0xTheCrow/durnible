@@ -366,7 +366,7 @@ export function RoomTimeline({
             if (document.hasFocus() && (!unreadInfo || mEvt.getSender() === mx.getUserId())) {
               const evtRoomId = mEvt.getRoomId();
               if (evtRoomId) {
-                requestAnimationFrame(() => markAsRead(mx, evtRoomId, hideActivity));
+                markAsRead(mx, evtRoomId, hideActivity);
               }
             }
 
