@@ -9,7 +9,7 @@ import { useVisualViewportHeight } from '../../hooks/useVisualViewportHeight';
 
 const DEFAULT_OFFSET = 10;
 const BREATHING_ROOM = 16;
-const MIN_USABLE_HEIGHT = 200;
+const MIN_USABLE_HEIGHT = 450;
 
 export type OpenAtRectOptions = {
   position?: Position;
