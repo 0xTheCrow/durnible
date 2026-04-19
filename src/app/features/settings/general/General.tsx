@@ -160,6 +160,10 @@ function Appearance() {
     settingsAtom,
     'emojiSearchAutoFocusMobile'
   );
+  const [emojiSearchAutoFocusDesktop, setEmojiSearchAutoFocusDesktop] = useSetting(
+    settingsAtom,
+    'emojiSearchAutoFocusDesktop'
+  );
 
   return (
     <Box direction="Column" gap="100">
@@ -200,18 +204,38 @@ function Appearance() {
         />
       </SequenceCard>
 
-      <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
+      <SequenceCard
+        className={SequenceCardStyle}
+        variant="SurfaceVariant"
+        direction="Column"
+        gap="400"
+      >
         <SettingTile
-          title="Emoji Search Auto Focus on Mobile"
-          description="Focus the emoji board search input when opened on mobile."
-          after={
-            <Switch
-              variant="Primary"
-              value={emojiSearchAutoFocusMobile}
-              onChange={setEmojiSearchAutoFocusMobile}
-            />
-          }
+          title="Emoji Search Auto Focus"
+          description="Focus the emoji board search input when opened."
         />
+        <Box direction="Column" gap="100">
+          <SettingTile
+            title="Desktop"
+            after={
+              <Switch
+                variant="Primary"
+                value={emojiSearchAutoFocusDesktop}
+                onChange={setEmojiSearchAutoFocusDesktop}
+              />
+            }
+          />
+          <SettingTile
+            title="Mobile"
+            after={
+              <Switch
+                variant="Primary"
+                value={emojiSearchAutoFocusMobile}
+                onChange={setEmojiSearchAutoFocusMobile}
+              />
+            }
+          />
+        </Box>
       </SequenceCard>
 
       <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">

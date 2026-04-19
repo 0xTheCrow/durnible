@@ -21,6 +21,7 @@ export interface Settings {
   editorToolbar: boolean;
   twitterEmoji: boolean;
   emojiSearchAutoFocusMobile: boolean;
+  emojiSearchAutoFocusDesktop: boolean;
   pageZoom: number;
   hideActivity: boolean;
 
@@ -72,6 +73,7 @@ const defaultSettings: Settings = {
   editorToolbar: false,
   twitterEmoji: false,
   emojiSearchAutoFocusMobile: false,
+  emojiSearchAutoFocusDesktop: true,
   pageZoom: 100,
   hideActivity: true,
 
