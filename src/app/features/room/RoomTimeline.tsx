@@ -7,7 +7,6 @@ import classNames from 'classnames';
 import { useAtomValue, useSetAtom } from 'jotai';
 import type { ContainerColor } from 'folds';
 import { Badge, Box, Chip, Icon, Icons, Line, Scroll, Text, as, color, config, toRem } from 'folds';
-import { isKeyHotkey } from 'is-hotkey';
 import type { Opts as LinkifyOpts } from 'linkifyjs';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { useVirtualPaginator } from '../../hooks/useVirtualPaginator';
@@ -22,7 +21,7 @@ import {
   useTimelinePagination,
 } from './timelineState';
 import type { Timeline } from './timelineState';
-import { editableActiveElement, scrollToBottom } from '../../utils/dom';
+import { scrollToBottom } from '../../utils/dom';
 import { DefaultPlaceholder, CompactPlaceholder, MessageBase } from '../../components/message';
 import {
   factoryRenderLinkifyWithMention,
@@ -32,11 +31,9 @@ import {
   renderMatrixMention,
 } from '../../plugins/react-custom-html-parser';
 import {
-  canEditEvent,
   decryptAllTimelineEvent,
   getEditedEvent,
   getEventReactions,
-  getLatestEditableEvt,
   reactionOrEditEvent,
 } from '../../utils/room';
 import { willEventRender } from './willEventRender';
@@ -66,11 +63,9 @@ import * as css from './RoomTimeline.css';
 import { timeDayMonthYear, today, yesterday } from '../../utils/time';
 import { buildTimelineDescriptors } from '../../utils/buildTimelineDescriptors';
 import type { EditorController } from '../../components/editor';
-import { isEditorEmpty } from '../../components/editor';
 import { roomIdToReplyDraftAtomFamily } from '../../state/room/roomInputDrafts';
 import { usePowerLevelsContext } from '../../hooks/usePowerLevels';
 import { MessageEvent, StateEvent } from '../../../types/matrix/room';
-import { useKeyDown } from '../../hooks/useKeyDown';
 import { useDocumentFocusChange } from '../../hooks/useDocumentFocusChange';
 import { roomToParentsAtom } from '../../state/room/roomToParents';
 import { useRoomUnread } from '../../state/hooks/unread';
@@ -91,7 +86,6 @@ import { useAccessiblePowerTagColors, useGetMemberPowerTag } from '../../hooks/u
 import { useTheme } from '../../hooks/useTheme';
 import { useRoomCreatorsTag } from '../../hooks/useRoomCreatorsTag';
 import { usePowerLevelTags } from '../../hooks/usePowerLevelTags';
-import { ROOM_INPUT_EDITABLE_NAME } from './RoomInput';
 import { useTimelineAutoScroll } from './useTimelineAutoScroll';
 
 const TimelineFloat = as<'div', css.TimelineFloatVariants>(
@@ -611,32 +605,6 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
         }
       },
       [tryAutoMarkAsRead, unreadInfo, handleOpenEvent, unfocusedAutoScroll, atBottomRef]
-    )
-  );
-
-  // Handle up arrow edit
-  useKeyDown(
-    window,
-    useCallback(
-      (evt) => {
-        const el = editorInputRef.current?.el;
-        if (
-          isKeyHotkey('arrowup', evt) &&
-          editableActiveElement() &&
-          document.activeElement?.getAttribute('data-editable-name') === ROOM_INPUT_EDITABLE_NAME &&
-          el &&
-          isEditorEmpty(el)
-        ) {
-          const editableEvt = getLatestEditableEvt(room.getLiveTimeline(), (mEvt) =>
-            canEditEvent(mx, mEvt)
-          );
-          const editableEvtId = editableEvt?.getId();
-          if (!editableEvtId) return;
-          setEditId(editableEvtId);
-          evt.preventDefault();
-        }
-      },
-      [mx, room, editorInputRef]
     )
   );
 
