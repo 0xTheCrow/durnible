@@ -3,15 +3,28 @@ import { sanitizeText } from '../../utils/sanitize';
 import { parseBlockMD, parseInlineMD } from '../../plugins/markdown';
 import { findAndReplace } from '../../utils/findAndReplace';
 import { isUserId } from '../../utils/matrix';
+import { sanitizeForRegex } from '../../utils/regex';
 import {
-  ALT_COMMAND,
-  ALT_EMOTICON,
-  ALT_MENTION,
-  ALT_NODE_ATTR,
-  createAltEmoticonNode,
-} from './altInput';
-import type { MentionsData } from './altInput';
+  COMMAND_NODE,
+  EMOTICON_NODE,
+  MENTION_NODE,
+  NODE_TYPE_ATTR,
+  createEmoticonNode,
+} from './editorInput';
+import type { MentionsData } from './editorInput';
 import type { ShortcodeMapEntry } from '../../plugins/emoji';
+
+export const customHtmlEqualsPlainText = (customHtml: string, plain: string): boolean =>
+  customHtml.replace(/<br\/>/g, '\n') === sanitizeText(plain);
+
+export const trimCustomHtml = (customHtml: string) => customHtml.replace(/<br\/>$/g, '').trim();
+
+export const trimCommand = (cmdName: string, str: string) => {
+  const cmdRegX = new RegExp(`^(\\s+)?(\\/${sanitizeForRegex(cmdName)})([^\\S\n]+)?`);
+  const match = str.match(cmdRegX);
+  if (!match) return str;
+  return str.slice(match[0].length);
+};
 
 export type DomOutputOptions = {
   allowTextFormatting?: boolean;
@@ -58,9 +71,9 @@ const ignoreHTMLParseInlineMD = (text: string): string =>
   ).join('');
 
 const voidToCustomHtml = (element: HTMLElement): string => {
-  const altType = element.getAttribute(ALT_NODE_ATTR);
+  const altType = element.getAttribute(NODE_TYPE_ATTR);
 
-  if (altType === ALT_MENTION) {
+  if (altType === MENTION_NODE) {
     const id = element.dataset.id ?? '';
     const name = element.dataset.name ?? '';
     const eventId = element.dataset.eventId;
@@ -78,7 +91,7 @@ const voidToCustomHtml = (element: HTMLElement): string => {
     return `<a href="${encodeURI(matrixTo)}">${sanitizeText(name)}</a>`;
   }
 
-  if (altType === ALT_EMOTICON) {
+  if (altType === EMOTICON_NODE) {
     const key = element.dataset.key ?? '';
     const shortcode = element.dataset.shortcode ?? '';
     if (key.startsWith('mxc://')) {
@@ -89,7 +102,7 @@ const voidToCustomHtml = (element: HTMLElement): string => {
     return sanitizeText(key);
   }
 
-  if (altType === ALT_COMMAND) {
+  if (altType === COMMAND_NODE) {
     const command = element.dataset.command ?? '';
     return `/${sanitizeText(command)}`;
   }
@@ -98,20 +111,20 @@ const voidToCustomHtml = (element: HTMLElement): string => {
 };
 
 const voidToPlainText = (element: HTMLElement): string => {
-  const altType = element.getAttribute(ALT_NODE_ATTR);
+  const altType = element.getAttribute(NODE_TYPE_ATTR);
 
-  if (altType === ALT_MENTION) {
+  if (altType === MENTION_NODE) {
     return element.dataset.id ?? '';
   }
 
-  if (altType === ALT_EMOTICON) {
+  if (altType === EMOTICON_NODE) {
     const key = element.dataset.key ?? '';
     const shortcode = element.dataset.shortcode ?? '';
     if (key.startsWith('mxc://')) return `:${shortcode}:`;
     return key;
   }
 
-  if (altType === ALT_COMMAND) {
+  if (altType === COMMAND_NODE) {
     const command = element.dataset.command ?? '';
     return `/${command}`;
   }
@@ -133,7 +146,7 @@ const nodeToCustomHtml = (node: Node, root: HTMLElement, opts: DomOutputOptions)
   if (node.nodeType !== Node.ELEMENT_NODE) return '';
   const element = node as HTMLElement;
 
-  if (element.hasAttribute(ALT_NODE_ATTR)) {
+  if (element.hasAttribute(NODE_TYPE_ATTR)) {
     return voidToCustomHtml(element);
   }
 
@@ -220,7 +233,7 @@ const nodeToPlainText = (node: Node, root: HTMLElement): string => {
   if (node.nodeType !== Node.ELEMENT_NODE) return '';
   const element = node as HTMLElement;
 
-  if (element.hasAttribute(ALT_NODE_ATTR)) {
+  if (element.hasAttribute(NODE_TYPE_ATTR)) {
     return voidToPlainText(element);
   }
 
@@ -267,7 +280,7 @@ export const domToPlainText = (el: HTMLElement): string => {
 export const getMentionsFromDom = (el: HTMLElement, mx: MatrixClient): MentionsData => {
   const data: MentionsData = { room: false, users: new Set() };
 
-  const mentions = el.querySelectorAll(`[${ALT_NODE_ATTR}="${ALT_MENTION}"]`);
+  const mentions = el.querySelectorAll(`[${NODE_TYPE_ATTR}="${MENTION_NODE}"]`);
   mentions.forEach((mention) => {
     if (isInsideTag(mention, el, 'PRE')) return;
 
@@ -327,7 +340,7 @@ export const replaceShortcodesInDom = (
       const before = text.slice(lastIndex, index);
       if (before) fragment.appendChild(document.createTextNode(before));
 
-      const emoticonNode = createAltEmoticonNode({
+      const emoticonNode = createEmoticonNode({
         mx,
         useAuthentication,
         key: entry.key,
@@ -355,7 +368,7 @@ export const getCommandFromDom = (el: HTMLElement): string | undefined => {
       if (
         second &&
         second.nodeType === Node.ELEMENT_NODE &&
-        (second as HTMLElement).getAttribute(ALT_NODE_ATTR) === ALT_COMMAND
+        (second as HTMLElement).getAttribute(NODE_TYPE_ATTR) === COMMAND_NODE
       ) {
         return (second as HTMLElement).dataset.command;
       }
@@ -366,7 +379,7 @@ export const getCommandFromDom = (el: HTMLElement): string | undefined => {
 
   if (
     firstChild.nodeType === Node.ELEMENT_NODE &&
-    (firstChild as HTMLElement).getAttribute(ALT_NODE_ATTR) === ALT_COMMAND
+    (firstChild as HTMLElement).getAttribute(NODE_TYPE_ATTR) === COMMAND_NODE
   ) {
     return (firstChild as HTMLElement).dataset.command;
   }

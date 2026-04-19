@@ -1,6 +1,5 @@
 import { atom } from 'jotai';
 import { atomFamily } from 'jotai/utils';
-import type { Descendant } from 'slate';
 import type { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
 import type { IEventRelation } from 'matrix-js-sdk';
 import { createUploadAtomFamily } from '../upload';
@@ -27,27 +26,10 @@ export const roomIdToUploadItemsAtomFamily = atomFamily<string, UploadListAtom>(
 
 export const roomUploadAtomFamily = createUploadAtomFamily();
 
-export type RoomIdToMsgAction =
-  | {
-      type: 'PUT';
-      roomId: string;
-      msg: Descendant[];
-    }
-  | {
-      type: 'DELETE';
-      roomId: string;
-    };
-
-const createMsgDraftAtom = () => atom<Descendant[]>([]);
-export type MsgDraftAtom = ReturnType<typeof createMsgDraftAtom>;
-export const roomIdToMsgDraftAtomFamily = atomFamily<string, MsgDraftAtom>(() =>
-  createMsgDraftAtom()
-);
-
-const createAltInputDraftAtom = () => atom<string>('');
-export type AltInputDraftAtom = ReturnType<typeof createAltInputDraftAtom>;
-export const roomIdToAltInputDraftAtomFamily = atomFamily<string, AltInputDraftAtom>(() =>
-  createAltInputDraftAtom()
+const createEditorDraftAtom = () => atom<string>('');
+export type EditorDraftAtom = ReturnType<typeof createEditorDraftAtom>;
+export const roomIdToEditorDraftAtomFamily = atomFamily<string, EditorDraftAtom>(() =>
+  createEditorDraftAtom()
 );
 
 export type ReplyDraft = {

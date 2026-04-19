@@ -5,6 +5,14 @@ import { enableMapSet } from 'immer';
 // Match production (src/index.tsx) — immer's Map/Set support is opt-in.
 enableMapSet();
 
+// Pin navigator.platform so is-hotkey's IS_MAC constant is deterministic
+// across hosts. Keyboard tests can then dispatch ctrlKey for `mod+X` without
+// having to detect or mirror the host platform.
+Object.defineProperty(window.navigator, 'platform', {
+  value: 'Linux x86_64',
+  configurable: true,
+});
+
 // jsdom doesn't implement canvas — mock it to suppress the warning
 HTMLCanvasElement.prototype.getContext = vi.fn();
 

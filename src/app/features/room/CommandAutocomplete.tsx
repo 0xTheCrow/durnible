@@ -1,17 +1,11 @@
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import React, { useCallback, useEffect, useMemo } from 'react';
-import type { Editor } from 'slate';
 import { Box, config, MenuItem, Text } from 'folds';
 import type { Room } from 'matrix-js-sdk';
 import type { Command } from '../../hooks/useCommands';
 import { useCommands } from '../../hooks/useCommands';
 import type { AutocompleteQuery } from '../../components/editor';
-import {
-  AutocompleteMenu,
-  createCommandElement,
-  moveCursor,
-  replaceWithElement,
-} from '../../components/editor';
+import { AutocompleteMenu } from '../../components/editor';
 import type { UseAsyncSearchOptions } from '../../hooks/useAsyncSearch';
 import { useAsyncSearch } from '../../hooks/useAsyncSearch';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
@@ -22,10 +16,9 @@ type CommandAutoCompleteHandler = (commandName: string) => void;
 
 type CommandAutocompleteProps = {
   room: Room;
-  editor: Editor;
   query: AutocompleteQuery<string>;
   onClose: () => void;
-  onSelect?: (commandName: string) => void;
+  onSelect: (commandName: string) => void;
 };
 
 const SEARCH_OPTIONS: UseAsyncSearchOptions = {
@@ -34,13 +27,7 @@ const SEARCH_OPTIONS: UseAsyncSearchOptions = {
   },
 };
 
-export function CommandAutocomplete({
-  room,
-  editor,
-  query,
-  onClose,
-  onSelect,
-}: CommandAutocompleteProps) {
+export function CommandAutocomplete({ room, query, onClose, onSelect }: CommandAutocompleteProps) {
   const mx = useMatrixClient();
   const commands = useCommands(mx, room);
   const commandNames = useMemo(() => Object.keys(commands) as Command[], [commands]);
@@ -59,14 +46,7 @@ export function CommandAutocomplete({
   }, [query.text, search, resetSearch]);
 
   const handleAutocomplete: CommandAutoCompleteHandler = (commandName) => {
-    if (onSelect) {
-      onSelect(commandName);
-      onClose();
-      return;
-    }
-    const cmdEl = createCommandElement(commandName);
-    replaceWithElement(editor, query.range, cmdEl);
-    moveCursor(editor, true);
+    onSelect(commandName);
     onClose();
   };
 

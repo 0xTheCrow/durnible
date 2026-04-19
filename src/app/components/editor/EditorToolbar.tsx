@@ -16,30 +16,28 @@ import {
   TooltipProvider,
   toRem,
 } from 'folds';
-import type { MouseEventHandler, ReactNode } from 'react';
-import React, { useState } from 'react';
-import { ReactEditor, useSlate } from 'slate-react';
-import {
-  headingLevel,
-  isAnyMarkActive,
-  isBlockActive,
-  isMarkActive,
-  removeAllMark,
-  toggleBlock,
-  toggleMark,
-} from './utils';
+import type { MouseEventHandler, ReactNode, RefObject } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import * as css from './Editor.css';
-import { BlockType, MarkType } from './types';
-import type { HeadingLevel } from './slate';
 import { isMacOS } from '../../utils/user-agent';
 import { KeySymbol } from '../../utils/key-symbol';
 import { useSetting } from '../../state/hooks/settings';
 import { settingsAtom } from '../../state/settings';
 import { stopPropagation } from '../../utils/keyboard';
+import {
+  exitBlock,
+  isExitableBlock,
+  isBlockFormatActive,
+  isCodeActive,
+  isFormatActive,
+  isSpoilerActive,
+  toggleBlockFormat,
+  toggleCodeBlock,
+  toggleExecFormat,
+  toggleInlineCode,
+  toggleSpoiler,
+} from './editorFormatting';
 
-// Prevent mousedown/touchstart from stealing focus away from the Slate
-// editor. Without this, editor.selection becomes null and toolbar
-// operations (toggleMark, toggleBlock) throw or corrupt editor state.
 const preventFocusLoss = (e: React.MouseEvent | React.TouchEvent) => e.preventDefault();
 
 function BtnTooltip({ text, shortCode }: { text: string; shortCode?: string }) {
@@ -59,20 +57,15 @@ function BtnTooltip({ text, shortCode }: { text: string; shortCode?: string }) {
   );
 }
 
-type MarkButtonProps = { format: MarkType; icon: IconSrc; tooltip: ReactNode };
-export function MarkButton({ format, icon, tooltip }: MarkButtonProps) {
-  const editor = useSlate();
-  const disableInline = isBlockActive(editor, BlockType.CodeBlock);
+type InlineButtonProps = {
+  icon: IconSrc;
+  tooltip: ReactNode;
+  active: boolean;
+  onClick: () => void;
+  disabled?: boolean;
+};
 
-  if (disableInline) {
-    removeAllMark(editor);
-  }
-
-  const handleClick = () => {
-    toggleMark(editor, format);
-    ReactEditor.focus(editor);
-  };
-
+function InlineButton({ icon, tooltip, active, onClick, disabled }: InlineButtonProps) {
   return (
     <TooltipProvider tooltip={tooltip} delay={500}>
       {(triggerRef) => (
@@ -81,11 +74,11 @@ export function MarkButton({ format, icon, tooltip }: MarkButtonProps) {
           variant="SurfaceVariant"
           onMouseDown={preventFocusLoss}
           onTouchStart={preventFocusLoss}
-          onClick={handleClick}
-          aria-pressed={isMarkActive(editor, format)}
+          onClick={onClick}
+          aria-pressed={active}
           size="400"
           radii="300"
-          disabled={disableInline}
+          disabled={disabled}
         >
           <Icon size="200" src={icon} />
         </IconButton>
@@ -95,18 +88,13 @@ export function MarkButton({ format, icon, tooltip }: MarkButtonProps) {
 }
 
 type BlockButtonProps = {
-  format: BlockType;
   icon: IconSrc;
   tooltip: ReactNode;
+  active: boolean;
+  onClick: () => void;
 };
-export function BlockButton({ format, icon, tooltip }: BlockButtonProps) {
-  const editor = useSlate();
 
-  const handleClick = () => {
-    toggleBlock(editor, format, { level: 1 });
-    ReactEditor.focus(editor);
-  };
-
+function BlockButton({ icon, tooltip, active, onClick }: BlockButtonProps) {
   return (
     <TooltipProvider tooltip={tooltip} delay={500}>
       {(triggerRef) => (
@@ -115,8 +103,8 @@ export function BlockButton({ format, icon, tooltip }: BlockButtonProps) {
           variant="SurfaceVariant"
           onMouseDown={preventFocusLoss}
           onTouchStart={preventFocusLoss}
-          onClick={handleClick}
-          aria-pressed={isBlockActive(editor, format)}
+          onClick={onClick}
+          aria-pressed={active}
           size="400"
           radii="300"
         >
@@ -127,26 +115,41 @@ export function BlockButton({ format, icon, tooltip }: BlockButtonProps) {
   );
 }
 
-export function HeadingBlockButton() {
-  const editor = useSlate();
-  const level = headingLevel(editor);
+type HeadingButtonProps = {
+  inputRef: RefObject<HTMLDivElement | null>;
+  onFormat: () => void;
+};
+
+function HeadingButton({ inputRef, onFormat }: HeadingButtonProps) {
   const [anchor, setAnchor] = useState<RectCords>();
-  const isActive = isBlockActive(editor, BlockType.Heading);
+  const el = inputRef.current;
+  const activeLevel = el
+    ? (isBlockFormatActive(el, 'h1') && 1) ||
+      (isBlockFormatActive(el, 'h2') && 2) ||
+      (isBlockFormatActive(el, 'h3') && 3) ||
+      0
+    : 0;
+  const isActive = activeLevel > 0;
   const modKey = isMacOS() ? KeySymbol.Command : 'Ctrl';
 
-  const handleMenuSelect = (selectedLevel: HeadingLevel) => {
+  const handleSelect = (tag: string) => {
     setAnchor(undefined);
-    toggleBlock(editor, BlockType.Heading, { level: selectedLevel });
-    ReactEditor.focus(editor);
+    if (el) {
+      toggleBlockFormat(el, tag);
+      onFormat();
+    }
   };
 
-  const handleMenuOpen: MouseEventHandler<HTMLButtonElement> = (evt) => {
-    if (isActive) {
-      toggleBlock(editor, BlockType.Heading);
+  const handleOpen: MouseEventHandler<HTMLButtonElement> = (evt) => {
+    if (isActive && el) {
+      el.focus();
+      document.execCommand('formatBlock', false, 'div');
+      onFormat();
       return;
     }
     setAnchor(evt.currentTarget.getBoundingClientRect());
   };
+
   return (
     <PopOut
       anchor={anchor}
@@ -175,7 +178,7 @@ export function HeadingBlockButton() {
                     ref={triggerRef}
                     onMouseDown={preventFocusLoss}
                     onTouchStart={preventFocusLoss}
-                    onClick={() => handleMenuSelect(1)}
+                    onClick={() => handleSelect('h1')}
                     size="400"
                     radii="300"
                   >
@@ -192,7 +195,7 @@ export function HeadingBlockButton() {
                     ref={triggerRef}
                     onMouseDown={preventFocusLoss}
                     onTouchStart={preventFocusLoss}
-                    onClick={() => handleMenuSelect(2)}
+                    onClick={() => handleSelect('h2')}
                     size="400"
                     radii="300"
                   >
@@ -209,7 +212,7 @@ export function HeadingBlockButton() {
                     ref={triggerRef}
                     onMouseDown={preventFocusLoss}
                     onTouchStart={preventFocusLoss}
-                    onClick={() => handleMenuSelect(3)}
+                    onClick={() => handleSelect('h3')}
                     size="400"
                     radii="300"
                   >
@@ -226,131 +229,172 @@ export function HeadingBlockButton() {
         style={{ width: 'unset' }}
         variant="SurfaceVariant"
         onMouseDown={preventFocusLoss}
-        onClick={handleMenuOpen}
+        onClick={handleOpen}
         aria-pressed={isActive}
         size="400"
         radii="300"
       >
-        <Icon size="200" src={level ? Icons[`Heading${level}`] : Icons.Heading1} />
+        {activeLevel ? (
+          <Icon size="200" src={Icons[`Heading${activeLevel}` as keyof typeof Icons]} />
+        ) : (
+          <Text size="B400">H</Text>
+        )}
         <Icon size="200" src={isActive ? Icons.Cross : Icons.ChevronBottom} />
       </IconButton>
     </PopOut>
   );
 }
 
-type ExitFormattingProps = { tooltip: ReactNode };
-export function ExitFormatting({ tooltip }: ExitFormattingProps) {
-  const editor = useSlate();
+type EditorToolbarProps = {
+  inputRef: RefObject<HTMLDivElement | null>;
+  onFormat?: () => void;
+};
 
-  const handleClick = () => {
-    if (isAnyMarkActive(editor)) {
-      removeAllMark(editor);
-    } else if (!isBlockActive(editor, BlockType.Paragraph)) {
-      toggleBlock(editor, BlockType.Paragraph);
-    }
-    ReactEditor.focus(editor);
-  };
-
-  return (
-    <TooltipProvider tooltip={tooltip} delay={500}>
-      {(triggerRef) => (
-        <IconButton
-          ref={triggerRef}
-          variant="SurfaceVariant"
-          onMouseDown={preventFocusLoss}
-          onTouchStart={preventFocusLoss}
-          onClick={handleClick}
-          size="400"
-          radii="300"
-        >
-          <Text size="B400">{`Exit ${KeySymbol.Hyper}`}</Text>
-        </IconButton>
-      )}
-    </TooltipProvider>
-  );
-}
-
-export function Toolbar() {
-  const editor = useSlate();
+export function EditorToolbar({ inputRef, onFormat }: EditorToolbarProps) {
   const modKey = isMacOS() ? KeySymbol.Command : 'Ctrl';
-  const disableInline = isBlockActive(editor, BlockType.CodeBlock);
-
-  const canEscape = isBlockActive(editor, BlockType.Paragraph)
-    ? isAnyMarkActive(editor)
-    : ReactEditor.isFocused(editor);
   const [isMarkdown, setIsMarkdown] = useSetting(settingsAtom, 'isMarkdown');
+  const [, setTick] = useState(0);
+
+  const rerender = useCallback(() => {
+    setTick((n) => n + 1);
+    onFormat?.();
+  }, [onFormat]);
+
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return undefined;
+    const sync = () => setTick((n) => n + 1);
+    el.addEventListener('input', sync);
+    el.addEventListener('keyup', sync);
+    return () => {
+      el.removeEventListener('input', sync);
+      el.removeEventListener('keyup', sync);
+    };
+  }, [inputRef]);
+
+  const el = inputRef.current;
+  const insideCode = el ? isBlockFormatActive(el, 'pre') : false;
+
+  const applyFormat = useCallback(
+    (fn: (target: HTMLElement) => void) => {
+      const target = inputRef.current;
+      if (!target) return;
+      if (document.activeElement !== target) {
+        target.focus();
+        const range = document.createRange();
+        range.selectNodeContents(target);
+        range.collapse(false);
+        const sel = window.getSelection();
+        sel?.removeAllRanges();
+        sel?.addRange(range);
+      }
+      fn(target);
+      target.dispatchEvent(new Event('input', { bubbles: true }));
+      rerender();
+    },
+    [inputRef, rerender]
+  );
 
   return (
     <Box className={css.EditorToolbarBase}>
       <Scroll direction="Horizontal" size="0">
         <Box className={css.EditorToolbar} alignItems="Center" gap="300">
-          <>
-            <Box shrink="No" gap="100">
-              <MarkButton
-                format={MarkType.Bold}
-                icon={Icons.Bold}
-                tooltip={<BtnTooltip text="Bold" shortCode={`${modKey} + B`} />}
-              />
-              <MarkButton
-                format={MarkType.Italic}
-                icon={Icons.Italic}
-                tooltip={<BtnTooltip text="Italic" shortCode={`${modKey} + I`} />}
-              />
-              <MarkButton
-                format={MarkType.Underline}
-                icon={Icons.Underline}
-                tooltip={<BtnTooltip text="Underline" shortCode={`${modKey} + U`} />}
-              />
-              <MarkButton
-                format={MarkType.StrikeThrough}
-                icon={Icons.Strike}
-                tooltip={<BtnTooltip text="Strike Through" shortCode={`${modKey} + S`} />}
-              />
-              <MarkButton
-                format={MarkType.Code}
-                icon={Icons.Code}
-                tooltip={<BtnTooltip text="Inline Code" shortCode={`${modKey} + [`} />}
-              />
-              <MarkButton
-                format={MarkType.Spoiler}
-                icon={Icons.EyeBlind}
-                tooltip={<BtnTooltip text="Spoiler" shortCode={`${modKey} + H`} />}
-              />
-            </Box>
-            <Line variant="SurfaceVariant" direction="Vertical" style={{ height: toRem(12) }} />
-          </>
+          <Box shrink="No" gap="100">
+            <InlineButton
+              icon={Icons.Bold}
+              tooltip={<BtnTooltip text="Bold" shortCode={`${modKey} + B`} />}
+              active={isFormatActive('bold')}
+              onClick={() => applyFormat(() => toggleExecFormat('bold'))}
+              disabled={insideCode}
+            />
+            <InlineButton
+              icon={Icons.Italic}
+              tooltip={<BtnTooltip text="Italic" shortCode={`${modKey} + I`} />}
+              active={isFormatActive('italic')}
+              onClick={() => applyFormat(() => toggleExecFormat('italic'))}
+              disabled={insideCode}
+            />
+            <InlineButton
+              icon={Icons.Underline}
+              tooltip={<BtnTooltip text="Underline" shortCode={`${modKey} + U`} />}
+              active={isFormatActive('underline')}
+              onClick={() => applyFormat(() => toggleExecFormat('underline'))}
+              disabled={insideCode}
+            />
+            <InlineButton
+              icon={Icons.Strike}
+              tooltip={<BtnTooltip text="Strike Through" shortCode={`${modKey} + S`} />}
+              active={isFormatActive('strikeThrough')}
+              onClick={() => applyFormat(() => toggleExecFormat('strikeThrough'))}
+              disabled={insideCode}
+            />
+            <InlineButton
+              icon={Icons.Code}
+              tooltip={<BtnTooltip text="Inline Code" shortCode={`${modKey} + [`} />}
+              active={el ? isCodeActive(el) : false}
+              onClick={() => applyFormat(toggleInlineCode)}
+              disabled={insideCode}
+            />
+            <InlineButton
+              icon={Icons.EyeBlind}
+              tooltip={<BtnTooltip text="Spoiler" shortCode={`${modKey} + H`} />}
+              active={el ? isSpoilerActive(el) : false}
+              onClick={() => applyFormat(toggleSpoiler)}
+              disabled={insideCode}
+            />
+          </Box>
+          <Line variant="SurfaceVariant" direction="Vertical" style={{ height: toRem(12) }} />
           <Box shrink="No" gap="100">
             <BlockButton
-              format={BlockType.BlockQuote}
               icon={Icons.BlockQuote}
               tooltip={<BtnTooltip text="Block Quote" shortCode={`${modKey} + '`} />}
+              active={el ? isBlockFormatActive(el, 'blockquote') : false}
+              onClick={() => applyFormat((target) => toggleBlockFormat(target, 'blockquote'))}
             />
             <BlockButton
-              format={BlockType.CodeBlock}
               icon={Icons.BlockCode}
               tooltip={<BtnTooltip text="Block Code" shortCode={`${modKey} + ;`} />}
+              active={el ? isBlockFormatActive(el, 'pre') : false}
+              onClick={() => applyFormat(toggleCodeBlock)}
             />
             <BlockButton
-              format={BlockType.OrderedList}
               icon={Icons.OrderList}
               tooltip={<BtnTooltip text="Ordered List" shortCode={`${modKey} + 7`} />}
+              active={el ? isBlockFormatActive(el, 'ol') : false}
+              onClick={() => applyFormat(() => toggleExecFormat('insertOrderedList'))}
             />
             <BlockButton
-              format={BlockType.UnorderedList}
               icon={Icons.UnorderList}
               tooltip={<BtnTooltip text="Unordered List" shortCode={`${modKey} + 8`} />}
+              active={el ? isBlockFormatActive(el, 'ul') : false}
+              onClick={() => applyFormat(() => toggleExecFormat('insertUnorderedList'))}
             />
-            <HeadingBlockButton />
+            <HeadingButton inputRef={inputRef} onFormat={rerender} />
           </Box>
-          {canEscape && (
+          {el && isExitableBlock(el) && (
             <>
               <Line variant="SurfaceVariant" direction="Vertical" style={{ height: toRem(12) }} />
               <Box shrink="No" gap="100">
-                <ExitFormatting
+                <TooltipProvider
                   tooltip={
                     <BtnTooltip text="Exit Formatting" shortCode={`Escape, ${modKey} + E`} />
                   }
-                />
+                  delay={500}
+                >
+                  {(triggerRef) => (
+                    <IconButton
+                      ref={triggerRef}
+                      variant="SurfaceVariant"
+                      onMouseDown={preventFocusLoss}
+                      onTouchStart={preventFocusLoss}
+                      onClick={() => applyFormat(exitBlock)}
+                      size="400"
+                      radii="300"
+                    >
+                      <Text size="B400">{`Exit ${KeySymbol.Hyper}`}</Text>
+                    </IconButton>
+                  )}
+                </TooltipProvider>
               </Box>
             </>
           )}
@@ -370,7 +414,6 @@ export function Toolbar() {
                   aria-pressed={isMarkdown}
                   size="300"
                   radii="300"
-                  disabled={disableInline || !!isAnyMarkActive(editor)}
                 >
                   <Icon size="200" src={Icons.Markdown} filled={isMarkdown} />
                 </IconButton>

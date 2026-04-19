@@ -4,8 +4,6 @@ import type { MatrixEvent, Room, RoomEventHandlerMap } from 'matrix-js-sdk';
 import { Direction, RoomEvent } from 'matrix-js-sdk';
 import type { HTMLReactParserOptions } from 'html-react-parser';
 import classNames from 'classnames';
-import { ReactEditor } from 'slate-react';
-import type { Editor } from 'slate';
 import { useAtomValue, useSetAtom } from 'jotai';
 import type { ContainerColor } from 'folds';
 import { Badge, Box, Chip, Icon, Icons, Line, Scroll, Text, as, color, config, toRem } from 'folds';
@@ -67,7 +65,8 @@ import { getResizeObserverEntry, useResizeObserver } from '../../hooks/useResize
 import * as css from './RoomTimeline.css';
 import { timeDayMonthYear, today, yesterday } from '../../utils/time';
 import { buildTimelineDescriptors } from '../../utils/buildTimelineDescriptors';
-import { isEmptyEditor } from '../../components/editor';
+import type { EditorController } from '../../components/editor';
+import { isEditorEmpty } from '../../components/editor';
 import { roomIdToReplyDraftAtomFamily } from '../../state/room/roomInputDrafts';
 import { usePowerLevelsContext } from '../../hooks/usePowerLevels';
 import { MessageEvent, StateEvent } from '../../../types/matrix/room';
@@ -122,17 +121,10 @@ type RoomTimelineProps = {
   room: Room;
   eventId?: string;
   roomInputRef: RefObject<HTMLElement>;
-  alternateInputRef: RefObject<HTMLDivElement>;
-  editor: Editor;
+  editorInputRef: RefObject<EditorController | null>;
 };
 
-export function RoomTimeline({
-  room,
-  eventId,
-  roomInputRef,
-  alternateInputRef,
-  editor,
-}: RoomTimelineProps) {
+export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: RoomTimelineProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
   const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
@@ -153,7 +145,6 @@ export function RoomTimeline({
 
   const [hour24Clock] = useSetting(settingsAtom, 'hour24Clock');
   const [dateFormatString] = useSetting(settingsAtom, 'dateFormatString');
-  const [alternateInput] = useSetting(settingsAtom, 'alternateInput');
   const [pauseGifs] = useSetting(settingsAtom, 'pauseGifs');
 
   const ignoredUsersList = useIgnoredUsers();
@@ -628,11 +619,13 @@ export function RoomTimeline({
     window,
     useCallback(
       (evt) => {
+        const el = editorInputRef.current?.el;
         if (
           isKeyHotkey('arrowup', evt) &&
           editableActiveElement() &&
           document.activeElement?.getAttribute('data-editable-name') === ROOM_INPUT_EDITABLE_NAME &&
-          isEmptyEditor(editor)
+          el &&
+          isEditorEmpty(el)
         ) {
           const editableEvt = getLatestEditableEvt(room.getLiveTimeline(), (mEvt) =>
             canEditEvent(mx, mEvt)
@@ -643,7 +636,7 @@ export function RoomTimeline({
           evt.preventDefault();
         }
       },
-      [mx, room, editor]
+      [mx, room, editorInputRef]
     )
   );
 
@@ -787,9 +780,7 @@ export function RoomTimeline({
       room,
       spaceRoomId: space?.roomId,
       openUserRoomProfile,
-      editor,
-      alternateInput,
-      alternateInputRef,
+      editorInputRef,
       replyDraftAtom: roomIdToReplyDraftAtomFamily(room.roomId),
     });
   const handleEdit = useCallback(
@@ -799,13 +790,9 @@ export function RoomTimeline({
         return;
       }
       setEditId(undefined);
-      if (alternateInput) {
-        alternateInputRef.current?.focus();
-      } else {
-        ReactEditor.focus(editor);
-      }
+      editorInputRef.current?.focus();
     },
-    [editor, alternateInput, alternateInputRef]
+    [editorInputRef]
   );
 
   const handleDecryptRetry = useCallback(async () => {

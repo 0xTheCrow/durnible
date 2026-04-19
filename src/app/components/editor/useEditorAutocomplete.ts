@@ -1,18 +1,17 @@
 import { useCallback, useRef, type RefObject } from 'react';
 import type { MatrixClient, Room } from 'matrix-js-sdk';
-import type { BaseRange } from 'slate';
 import type { AutocompletePrefix, AutocompleteQuery } from './autocomplete';
 import { AUTOCOMPLETE_PREFIXES } from './autocomplete';
 import {
-  createAltCommandNode,
-  createAltEmoticonNode,
-  createAltMentionNode,
+  createCommandNode,
+  createEmoticonNode,
+  createMentionNode,
   replaceRangeWithNode,
   replaceTextInNode,
-} from './altInput';
+} from './editorInput';
 import { getViaServers } from '../../plugins/via-servers';
 
-type AltAutocompleteRange = {
+type EditorAutocompleteRange = {
   textNode: Text | null;
   start: number;
   end: number;
@@ -32,7 +31,7 @@ const findAutocompleteTrigger = (
   return undefined;
 };
 
-export type AlternateAutocompleteHandlers = {
+export type EditorAutocompleteHandlers = {
   detectAutocompleteQuery: (el: HTMLElement) => AutocompleteQuery<AutocompletePrefix> | undefined;
   handleMentionSelect: (userId: string, name: string) => void;
   handleRoomMentionSelect: (roomAliasOrId: string, name: string) => void;
@@ -41,42 +40,42 @@ export type AlternateAutocompleteHandlers = {
 };
 
 type Args = {
-  alternateInputRef: RefObject<HTMLDivElement | null>;
+  editorInputRef: RefObject<HTMLDivElement | null>;
   mx: MatrixClient;
   useAuthentication: boolean;
   room: Room;
   roomId: string;
 };
 
-export const useAlternateAutocomplete = ({
-  alternateInputRef,
+export const useEditorAutocomplete = ({
+  editorInputRef,
   mx,
   useAuthentication,
   room,
   roomId,
-}: Args): AlternateAutocompleteHandlers => {
-  const rangeRef = useRef<AltAutocompleteRange>({ textNode: null, start: 0, end: 0 });
+}: Args): EditorAutocompleteHandlers => {
+  const rangeRef = useRef<EditorAutocompleteRange>({ textNode: null, start: 0, end: 0 });
 
   const sync = useCallback(() => {
-    alternateInputRef.current?.dispatchEvent(new Event('input', { bubbles: true }));
-  }, [alternateInputRef]);
+    editorInputRef.current?.dispatchEvent(new Event('input', { bubbles: true }));
+  }, [editorInputRef]);
 
   const replaceText = useCallback(
     (insertText: string) => {
       const { textNode, start, end } = rangeRef.current;
       if (!textNode || !textNode.isConnected) return;
-      alternateInputRef.current?.focus();
+      editorInputRef.current?.focus();
       replaceTextInNode(textNode, start, end, insertText);
       sync();
     },
-    [alternateInputRef, sync]
+    [editorInputRef, sync]
   );
 
   const replaceWithNode = useCallback(
     (node: Node, trailingText = '') => {
       const { textNode, start, end } = rangeRef.current;
       if (!textNode || !textNode.isConnected) return;
-      alternateInputRef.current?.focus();
+      editorInputRef.current?.focus();
       const result = replaceRangeWithNode(textNode, start, end, node);
       if (trailingText) {
         result.node.insertData(0, trailingText);
@@ -89,7 +88,7 @@ export const useAlternateAutocomplete = ({
       }
       sync();
     },
-    [alternateInputRef, sync]
+    [editorInputRef, sync]
   );
 
   const detectAutocompleteQuery = useCallback(
@@ -110,12 +109,7 @@ export const useAlternateAutocomplete = ({
       if (!trigger) return undefined;
 
       rangeRef.current = { textNode, start: trigger.triggerPos, end: caret };
-      const dummyRange: BaseRange = {
-        anchor: { path: [0, 0], offset: trigger.triggerPos },
-        focus: { path: [0, 0], offset: caret },
-      };
       return {
-        range: dummyRange,
         prefix: trigger.prefix,
         text: trigger.query,
       };
@@ -128,7 +122,7 @@ export const useAlternateAutocomplete = ({
       const displayName = name.startsWith('@') ? name : `@${name}`;
       const roomAliasOrId = room.getCanonicalAlias() || roomId;
       const highlight = mx.getUserId() === userId || roomAliasOrId === userId;
-      const node = createAltMentionNode({ id: userId, name: displayName, highlight });
+      const node = createMentionNode({ id: userId, name: displayName, highlight });
       replaceWithNode(node, ' ');
     },
     [mx, room, roomId, replaceWithNode]
@@ -140,7 +134,7 @@ export const useAlternateAutocomplete = ({
       const mentionRoom = mx.getRoom(roomAliasOrId);
       const viaServers = mentionRoom ? getViaServers(mentionRoom) : undefined;
       const highlight = roomId === roomAliasOrId || room.getCanonicalAlias() === roomAliasOrId;
-      const node = createAltMentionNode({
+      const node = createMentionNode({
         id: roomAliasOrId,
         name: displayName,
         highlight,
@@ -154,7 +148,7 @@ export const useAlternateAutocomplete = ({
   const handleEmoticonSelect = useCallback(
     (key: string, shortcode: string) => {
       if (key.startsWith('mxc://')) {
-        const node = createAltEmoticonNode({ mx, useAuthentication, key, shortcode });
+        const node = createEmoticonNode({ mx, useAuthentication, key, shortcode });
         replaceWithNode(node);
         return;
       }
@@ -165,7 +159,7 @@ export const useAlternateAutocomplete = ({
 
   const handleCommandSelect = useCallback(
     (commandName: string) => {
-      const node = createAltCommandNode({ command: commandName });
+      const node = createCommandNode({ command: commandName });
       replaceWithNode(node, ' ');
     },
     [replaceWithNode]
