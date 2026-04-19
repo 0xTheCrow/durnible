@@ -1,299 +1,205 @@
-import React, { forwardRef, useImperativeHandle } from 'react';
-import { render, act, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import type { Editor as SlateEditor } from 'slate';
-import { Transforms } from 'slate';
-import { getDefaultStore } from 'jotai';
-import type { MatrixClient } from 'matrix-js-sdk';
-import type * as MatrixUtils from '../../utils/matrix';
-import { CustomEditor, useEditor } from './Editor';
-import { createEmoticonElement } from './utils';
-import { BlockType } from './types';
-import { settingsAtom } from '../../state/settings';
+import React from 'react';
+import { render, screen, act, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { CustomEditor, type EditorController } from './Editor';
 import { MatrixTestWrapper } from '../../../test/wrapper';
-import { createAltEmoticonNode } from './altInput';
+import * as formatting from './editorFormatting';
 
-vi.mock('../../utils/user-agent', () => ({
-  mobileOrTablet: () => false,
+vi.mock('./editorFormatting');
+const mockedFormatting = vi.mocked(formatting);
+
+const { getImageUrlBlobMock } = vi.hoisted(() => ({
+  getImageUrlBlobMock: vi.fn(),
 }));
 
-vi.mock('../../utils/matrix', async () => {
-  const actual = (await vi.importActual('../../utils/matrix')) as typeof MatrixUtils;
-  return {
-    ...actual,
-    mxcUrlToHttp: (_mx: unknown, key: string) =>
-      key.startsWith('mxc://') ? `https://example.com/${key.slice(6)}` : null,
-  };
-});
+vi.mock('../../utils/dom', () => ({
+  getImageUrlBlob: getImageUrlBlobMock,
+}));
 
-if (
-  typeof HTMLElement !== 'undefined' &&
-  !Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'innerText')
-) {
-  Object.defineProperty(HTMLElement.prototype, 'innerText', {
-    get() {
-      return this.textContent ?? '';
-    },
-    set(value: string) {
-      this.textContent = value;
-    },
-    configurable: true,
-  });
-}
-
-function setAlternateInput(enabled: boolean) {
-  const store = getDefaultStore();
-  store.set(settingsAtom, { ...store.get(settingsAtom), alternateInput: enabled });
-}
-
-type Handle = { editor: SlateEditor };
-
-const TestHarness = forwardRef<Handle>((_props, ref) => {
-  const editor = useEditor();
-  useImperativeHandle(ref, () => ({ editor }), [editor]);
-  return <CustomEditor editor={editor} />;
-});
-TestHarness.displayName = 'TestHarness';
-
-function renderHarness() {
-  const ref = React.createRef<Handle>();
-  const utils = render(
+const renderEditor = (
+  props: {
+    onChange?: () => void;
+    onFiles?: (files: File[]) => void;
+  } = {}
+) => {
+  const ref = React.createRef<EditorController | null>();
+  const result = render(
     <MatrixTestWrapper>
-      <TestHarness ref={ref} />
+      <CustomEditor editorInputRef={ref} {...props} />
     </MatrixTestWrapper>
   );
-  return { ...utils, getEditor: () => ref.current!.editor };
-}
+  const editable = screen.getByTestId('editor') as HTMLDivElement;
+  return { ref, editable, ...result };
+};
 
-function extractSlateText(editor: SlateEditor): string {
-  return editor.children
-    .map((node) => {
-      if ('children' in node) {
-        return (node.children as Array<{ text?: string; type?: BlockType }>)
-          .map((child) => {
-            if (typeof child.text === 'string') return child.text;
-            if (child.type === BlockType.Emoticon) {
-              return (child as unknown as { key: string }).key;
-            }
-            return '';
-          })
-          .join('');
-      }
-      return '';
-    })
-    .join('');
-}
-
-const originalExecCommand = document.execCommand;
-
-beforeEach(() => {
-  document.execCommand = ((command: string, _showUI?: boolean, value?: string) => {
-    if (command !== 'insertText') return false;
-    const sel = window.getSelection();
-    if (!sel || sel.rangeCount === 0) return false;
-    const range = sel.getRangeAt(0);
-    range.deleteContents();
-    const node = document.createTextNode(value ?? '');
-    range.insertNode(node);
-    const newRange = document.createRange();
-    newRange.setStart(node, node.textContent?.length ?? 0);
-    newRange.collapse(true);
-    sel.removeAllRanges();
-    sel.addRange(newRange);
-    return true;
-  }) as typeof document.execCommand;
-});
-
-afterEach(() => {
-  document.execCommand = originalExecCommand;
-  setAlternateInput(false);
-});
-
-function positionCursorInContentEditable(el: HTMLElement, offset: number) {
-  const textNode = el.firstChild as Text | null;
-  if (!textNode) throw new Error('contentEditable has no text node');
+const placeCaretAt = (node: Node, offset: number) => {
   const range = document.createRange();
-  range.setStart(textNode, offset);
-  range.setEnd(textNode, offset);
+  range.setStart(node, offset);
+  range.collapse(true);
   const sel = window.getSelection();
   sel?.removeAllRanges();
   sel?.addRange(range);
-}
+  // Component listens on document for selectionchange; dispatch to populate
+  // savedRangeRef so subsequent insertText/Node use the tracked position.
+  document.dispatchEvent(new Event('selectionchange'));
+};
 
-describe('Alternate input emoji insertion', () => {
-  beforeEach(() => {
-    setAlternateInput(true);
+beforeEach(() => {
+  vi.resetAllMocks();
+  mockedFormatting.isBlockFormatActive.mockReturnValue(false);
+  mockedFormatting.isExitableBlock.mockReturnValue(false);
+  getImageUrlBlobMock.mockReset();
+});
+
+describe('EditorController', () => {
+  it('focus() focuses the contenteditable element', () => {
+    const { ref, editable } = renderEditor();
+    act(() => ref.current?.focus());
+    expect(document.activeElement).toBe(editable);
   });
 
-  it('inserts text at the saved cursor position after focus loss', () => {
-    const { getByTestId, getEditor } = renderHarness();
-    const el = getByTestId('editor-alternate-input') as HTMLDivElement;
-
-    el.focus();
-    el.textContent = 'hello world';
-    fireEvent.input(el);
-
-    positionCursorInContentEditable(el, 5);
-    document.dispatchEvent(new Event('selectionchange'));
-
-    // simulate selection being lost and focus moving away (as happens when
-    // the emoji picker's auto-focused search input steals focus)
-    window.getSelection()?.removeAllRanges();
-    document.dispatchEvent(new Event('selectionchange'));
-    fireEvent.blur(el);
-
-    act(() => {
-      getEditor().insertAlternateText!('😀');
-    });
-
-    expect(el.textContent).toBe('hello😀 world');
+  it('.el exposes the current contenteditable element', () => {
+    const { ref, editable } = renderEditor();
+    expect(ref.current?.el).toBe(editable);
   });
 
-  it('advances the cursor across sequential insertions without re-focusing', () => {
-    const { getByTestId, getEditor } = renderHarness();
-    const el = getByTestId('editor-alternate-input') as HTMLDivElement;
-
-    el.focus();
-    el.textContent = 'hello world';
-    fireEvent.input(el);
-
-    positionCursorInContentEditable(el, 5);
-    document.dispatchEvent(new Event('selectionchange'));
-
-    window.getSelection()?.removeAllRanges();
-    document.dispatchEvent(new Event('selectionchange'));
-    fireEvent.blur(el);
-
-    act(() => {
-      getEditor().insertAlternateText!('A');
-    });
-    act(() => {
-      getEditor().insertAlternateText!('B');
-    });
-
-    expect(el.textContent).toBe('helloAB world');
+  it('insertText appends text when caret has not been placed', () => {
+    const { ref, editable } = renderEditor();
+    act(() => ref.current?.insertText('hello'));
+    // insertNodeAtRange may prepend a zero-width caret anchor when no
+    // sibling exists; strip it before comparing.
+    expect(editable.textContent?.replace(/\u200B/g, '')).toBe('hello');
   });
 
-  it('does not throw when insertAlternateText is called with no prior selection', () => {
-    const { getByTestId, getEditor } = renderHarness();
-    const el = getByTestId('editor-alternate-input') as HTMLDivElement;
+  it('insertText calls onChange and flips data-empty off', () => {
+    const onChange = vi.fn();
+    const { ref, editable } = renderEditor({ onChange });
+    expect(editable.hasAttribute('data-empty')).toBe(true);
+    act(() => ref.current?.insertText('hi'));
+    expect(onChange).toHaveBeenCalled();
+    expect(editable.hasAttribute('data-empty')).toBe(false);
+  });
 
-    expect(() => {
-      act(() => {
-        getEditor().insertAlternateText!('X');
-      });
-    }).not.toThrow();
-    expect(el.textContent).toContain('X');
+  it('insertText preserves the saved caret position across focus loss', () => {
+    const { ref, editable } = renderEditor();
+    const text = document.createTextNode('hello world');
+    editable.appendChild(text);
+    act(() => ref.current?.focus());
+    placeCaretAt(text, 5);
+    // Simulate losing focus (e.g. user clicked a toolbar button)
+    editable.blur();
+    act(() => ref.current?.insertText('ITEM'));
+    expect(editable.textContent).toBe('helloITEM world');
+  });
+
+  it('insertNode inserts a given DOM node at the saved caret', () => {
+    const { ref, editable } = renderEditor();
+    const voidNode = document.createElement('span');
+    voidNode.setAttribute('data-node-type', 'emoticon');
+    voidNode.textContent = '[wave]';
+    act(() => ref.current?.insertNode(voidNode));
+    expect(editable.contains(voidNode)).toBe(true);
+  });
+
+  it('setContent replaces the contents via htmlToEditorDom', () => {
+    const { ref, editable } = renderEditor();
+    act(() => ref.current?.setContent('<p>hi there</p>'));
+    expect(editable.textContent).toContain('hi there');
+  });
+
+  it('setContent flips data-empty off when content is non-empty', () => {
+    const { ref, editable } = renderEditor();
+    expect(editable.hasAttribute('data-empty')).toBe(true);
+    act(() => ref.current?.setContent('<p>populated</p>'));
+    expect(editable.hasAttribute('data-empty')).toBe(false);
   });
 });
 
-describe('Alternate input node insertion', () => {
-  beforeEach(() => {
-    setAlternateInput(true);
-  });
-
-  const mockMx = {} as MatrixClient;
-
-  it('inserts a DOM node at the saved caret and serializes it as an inline void', () => {
-    const { getByTestId, getEditor } = renderHarness();
-    const el = getByTestId('editor-alternate-input') as HTMLDivElement;
-
-    el.focus();
-    el.textContent = 'hello world';
-    fireEvent.input(el);
-
-    positionCursorInContentEditable(el, 5);
-    document.dispatchEvent(new Event('selectionchange'));
-
-    window.getSelection()?.removeAllRanges();
-    document.dispatchEvent(new Event('selectionchange'));
-    fireEvent.blur(el);
-
-    const node = createAltEmoticonNode({
-      mx: mockMx,
-      useAuthentication: false,
-      key: 'mxc://example/wave',
-      shortcode: 'wave',
-    });
-
-    act(() => {
-      getEditor().insertAlternateNode!(node);
-    });
-
-    const voids = el.querySelectorAll('[data-alt-type="emoticon"]');
-    expect(voids).toHaveLength(1);
-    const emoticon = voids[0] as HTMLElement;
-    expect(emoticon.dataset.key).toBe('mxc://example/wave');
-    expect(emoticon.dataset.shortcode).toBe('wave');
-
-    const textBefore = emoticon.previousSibling;
-    expect(textBefore).toBeTruthy();
-    expect(textBefore!.textContent).toContain('hello');
-
-    const textAfter = emoticon.nextSibling;
-    expect(textAfter).toBeTruthy();
-    expect(textAfter!.textContent).toContain(' world');
-  });
-
-  it('preserves an existing inline void when inserting text via insertAlternateText', () => {
-    const { getByTestId, getEditor } = renderHarness();
-    const el = getByTestId('editor-alternate-input') as HTMLDivElement;
-
-    el.focus();
-
-    const node = createAltEmoticonNode({
-      mx: mockMx,
-      useAuthentication: false,
-      key: 'mxc://example/wave',
-      shortcode: 'wave',
-    });
-
-    act(() => {
-      getEditor().insertAlternateNode!(node);
-    });
-    act(() => {
-      getEditor().insertAlternateText!(' there');
-    });
-
-    expect(el.querySelectorAll('[data-alt-type="emoticon"]')).toHaveLength(1);
-    expect(el.textContent).toContain(' there');
+describe('CustomEditor — keyboard integration', () => {
+  it('Mod+B dispatches the editorFormatting.toggleExecFormat helper', () => {
+    const { editable } = renderEditor();
+    fireEvent.keyDown(editable, { key: 'b', ctrlKey: true });
+    expect(mockedFormatting.toggleExecFormat).toHaveBeenCalledWith('bold');
   });
 });
 
-describe('Slate editor emoji insertion', () => {
-  beforeEach(() => {
-    setAlternateInput(false);
+describe('CustomEditor — paste handling', () => {
+  it('pastes a clipboard file to onFiles', () => {
+    const onFiles = vi.fn();
+    const { editable } = renderEditor({ onFiles });
+    const file = new File(['x'], 'pic.png', { type: 'image/png' });
+    fireEvent.paste(editable, {
+      clipboardData: {
+        items: [
+          {
+            kind: 'file',
+            getAsFile: () => file,
+          },
+        ],
+        getData: () => '',
+      },
+    });
+    expect(onFiles).toHaveBeenCalledWith([file]);
   });
 
-  it('inserts an emoticon at the Slate selection after the editable has blurred', () => {
-    const { getByTestId, getEditor } = renderHarness();
-    // ensure the Slate editable is present
-    getByTestId('editor-slate');
+  it('paste with HTML containing <img> fetches the image URL as a file', async () => {
+    getImageUrlBlobMock.mockResolvedValueOnce(new Blob(['x'], { type: 'image/gif' }));
+    const onFiles = vi.fn();
+    const { editable } = renderEditor({ onFiles });
+    fireEvent.paste(editable, {
+      clipboardData: {
+        items: [],
+        getData: (type: string) =>
+          type === 'text/html' ? '<div><img src="https://example.com/pic.gif"/></div>' : '',
+      },
+    });
+    // fetchUrlAsFile is async; flush microtasks
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(getImageUrlBlobMock).toHaveBeenCalledWith('https://example.com/pic.gif');
+  });
 
-    const editor = getEditor();
-
-    act(() => {
-      Transforms.insertText(editor, 'hello world', {
-        at: { path: [0, 0], offset: 0 },
+  it('paste with plain text calls document.execCommand(insertText)', () => {
+    // jsdom doesn't implement execCommand; install a mock, run, then remove.
+    const execCommand = vi.fn().mockReturnValue(true);
+    Object.defineProperty(document, 'execCommand', {
+      value: execCommand,
+      configurable: true,
+      writable: true,
+    });
+    try {
+      const { editable } = renderEditor();
+      fireEvent.paste(editable, {
+        clipboardData: {
+          items: [],
+          getData: (type: string) => (type === 'text/plain' ? 'pasted text' : ''),
+        },
       });
-    });
+      expect(execCommand).toHaveBeenCalledWith('insertText', false, 'pasted text');
+    } finally {
+      delete (document as unknown as { execCommand?: unknown }).execCommand;
+    }
+  });
+});
 
-    act(() => {
-      Transforms.select(editor, {
-        anchor: { path: [0, 0], offset: 5 },
-        focus: { path: [0, 0], offset: 5 },
-      });
-    });
+describe('CustomEditor — input state sync', () => {
+  it('dispatching an input event calls onChange and updates data-empty', () => {
+    const onChange = vi.fn();
+    const { editable } = renderEditor({ onChange });
+    editable.appendChild(document.createTextNode('typed'));
+    fireEvent.input(editable);
+    expect(onChange).toHaveBeenCalled();
+    expect(editable.hasAttribute('data-empty')).toBe(false);
+  });
 
-    // simulate focus moving to the emoji picker's search input — in a real
-    // browser the window selection moves out of the editable, but Slate's
-    // editor.selection is independent and should still drive insertNode.
-    window.getSelection()?.removeAllRanges();
-
-    act(() => {
-      editor.insertNode(createEmoticonElement('😀', 'grinning'));
-    });
-
-    expect(extractSlateText(editor)).toBe('hello😀 world');
+  it('clearing the contents flips data-empty back on', () => {
+    const { editable } = renderEditor();
+    editable.appendChild(document.createTextNode('typed'));
+    fireEvent.input(editable);
+    expect(editable.hasAttribute('data-empty')).toBe(false);
+    editable.textContent = '';
+    fireEvent.input(editable);
+    expect(editable.hasAttribute('data-empty')).toBe(true);
   });
 });

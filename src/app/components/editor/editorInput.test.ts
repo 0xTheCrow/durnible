@@ -2,19 +2,16 @@ import { describe, it, expect, vi } from 'vitest';
 import type { MatrixClient } from 'matrix-js-sdk';
 import type * as MatrixUtils from '../../utils/matrix';
 import {
-  createAltEmoticonNode,
-  createAltMentionNode,
+  createEmoticonNode,
+  createMentionNode,
   insertNodeAtRange,
-  serializeAltInput,
   replaceTextInNode,
   replaceRangeWithNode,
-  htmlToAltInputDom,
-  isAltInputEmpty,
-  ALT_NODE_ATTR,
-  ALT_EMOTICON,
-} from './altInput';
-import { BlockType } from './types';
-import type { EmoticonElement, InlineElement, ParagraphElement } from './slate';
+  htmlToEditorDom,
+  isEditorEmpty,
+  NODE_TYPE_ATTR,
+  EMOTICON_NODE,
+} from './editorInput';
 
 vi.mock('../../utils/matrix', async () => {
   const actual = (await vi.importActual('../../utils/matrix')) as typeof MatrixUtils;
@@ -27,19 +24,9 @@ vi.mock('../../utils/matrix', async () => {
 
 const mockMx = {} as MatrixClient;
 
-const paragraphFrom = (descendants: unknown[]): ParagraphElement => {
-  expect(descendants).toHaveLength(1);
-  const [first] = descendants as ParagraphElement[];
-  expect(first.type).toBe(BlockType.Paragraph);
-  return first;
-};
-
-const isEmoticon = (node: InlineElement): node is EmoticonElement =>
-  'type' in node && node.type === BlockType.Emoticon;
-
-describe('createAltEmoticonNode', () => {
+describe('createEmoticonNode', () => {
   it('builds a contenteditable span with an img for mxc emojis', () => {
-    const node = createAltEmoticonNode({
+    const node = createEmoticonNode({
       mx: mockMx,
       useAuthentication: false,
       key: 'mxc://example.com/abc',
@@ -48,7 +35,7 @@ describe('createAltEmoticonNode', () => {
 
     expect(node.tagName).toBe('SPAN');
     expect(node.getAttribute('contenteditable')).toBe('false');
-    expect(node.getAttribute(ALT_NODE_ATTR)).toBe(ALT_EMOTICON);
+    expect(node.getAttribute(NODE_TYPE_ATTR)).toBe(EMOTICON_NODE);
     expect(node.dataset.key).toBe('mxc://example.com/abc');
     expect(node.dataset.shortcode).toBe('wave');
 
@@ -59,7 +46,7 @@ describe('createAltEmoticonNode', () => {
   });
 
   it('builds a span containing the unicode key for unicode emojis', () => {
-    const node = createAltEmoticonNode({
+    const node = createEmoticonNode({
       mx: mockMx,
       useAuthentication: false,
       key: '😀',
@@ -69,100 +56,6 @@ describe('createAltEmoticonNode', () => {
     expect(node.querySelector('img')).toBeNull();
     expect(node.textContent).toBe('😀');
     expect(node.dataset.key).toBe('😀');
-  });
-});
-
-describe('serializeAltInput', () => {
-  const buildContainer = (build: (el: HTMLDivElement) => void): HTMLDivElement => {
-    const el = document.createElement('div');
-    build(el);
-    return el;
-  };
-
-  const emoticonNode = (key: string, shortcode: string) =>
-    createAltEmoticonNode({ mx: mockMx, useAuthentication: false, key, shortcode });
-
-  it('returns a paragraph with one text leaf for plain text', () => {
-    const el = buildContainer((root) => {
-      root.appendChild(document.createTextNode('hello world'));
-    });
-
-    const paragraph = paragraphFrom(serializeAltInput(el));
-    expect(paragraph.children).toEqual([{ text: 'hello world' }]);
-  });
-
-  it('flanks an inline void with text leaves when surrounded by text', () => {
-    const el = buildContainer((root) => {
-      root.appendChild(document.createTextNode('hi '));
-      root.appendChild(emoticonNode('mxc://example/wave', 'wave'));
-      root.appendChild(document.createTextNode(' there'));
-    });
-
-    const paragraph = paragraphFrom(serializeAltInput(el));
-    const { children } = paragraph;
-
-    expect(children).toHaveLength(3);
-    expect(children[0]).toEqual({ text: 'hi ' });
-    expect(isEmoticon(children[1])).toBe(true);
-    expect((children[1] as EmoticonElement).key).toBe('mxc://example/wave');
-    expect((children[1] as EmoticonElement).shortcode).toBe('wave');
-    expect(children[2]).toEqual({ text: ' there' });
-  });
-
-  it('prepends an empty text leaf when a void is the first child', () => {
-    const el = buildContainer((root) => {
-      root.appendChild(emoticonNode('mxc://example/a', 'a'));
-      root.appendChild(document.createTextNode(' tail'));
-    });
-
-    const paragraph = paragraphFrom(serializeAltInput(el));
-    const { children } = paragraph;
-
-    expect(children[0]).toEqual({ text: '' });
-    expect(isEmoticon(children[1])).toBe(true);
-    expect(children[2]).toEqual({ text: ' tail' });
-  });
-
-  it('appends an empty text leaf when a void is the last child', () => {
-    const el = buildContainer((root) => {
-      root.appendChild(document.createTextNode('head '));
-      root.appendChild(emoticonNode('mxc://example/a', 'a'));
-    });
-
-    const paragraph = paragraphFrom(serializeAltInput(el));
-    const { children } = paragraph;
-
-    expect(children[0]).toEqual({ text: 'head ' });
-    expect(isEmoticon(children[1])).toBe(true);
-    expect(children[children.length - 1]).toEqual({ text: '' });
-  });
-
-  it('places empty text leaves between adjacent inline voids', () => {
-    const el = buildContainer((root) => {
-      root.appendChild(emoticonNode('mxc://example/a', 'a'));
-      root.appendChild(emoticonNode('mxc://example/b', 'b'));
-    });
-
-    const paragraph = paragraphFrom(serializeAltInput(el));
-    const { children } = paragraph;
-
-    const emoticonIndexes: number[] = [];
-    children.forEach((child, index) => {
-      if (isEmoticon(child)) emoticonIndexes.push(index);
-    });
-    expect(emoticonIndexes).toHaveLength(2);
-
-    const [first, second] = emoticonIndexes;
-    expect(second - first).toBeGreaterThanOrEqual(2);
-    expect(children[first - 1]).toEqual({ text: '' });
-    expect(children[first + 1]).toEqual({ text: '' });
-    expect(children[second + 1]).toEqual({ text: '' });
-  });
-
-  it('returns a paragraph with one empty text leaf for an empty container', () => {
-    const el = document.createElement('div');
-    const paragraph = paragraphFrom(serializeAltInput(el));
-    expect(paragraph.children).toEqual([{ text: '' }]);
   });
 });
 
@@ -197,7 +90,7 @@ describe('replaceRangeWithNode', () => {
     parent.appendChild(target);
     parent.appendChild(after);
 
-    const replacement = createAltEmoticonNode({
+    const replacement = createEmoticonNode({
       mx: mockMx,
       useAuthentication: false,
       key: 'mxc://example/x',
@@ -222,28 +115,10 @@ describe('replaceRangeWithNode', () => {
   });
 });
 
-describe('serializeAltInput zero-width-space handling', () => {
-  it('strips zero-width spaces from text content', () => {
-    const el = document.createElement('div');
-    el.appendChild(document.createTextNode('hi\u200Bthere'));
-
-    const paragraph = paragraphFrom(serializeAltInput(el));
-    expect(paragraph.children).toEqual([{ text: 'hithere' }]);
-  });
-
-  it('treats a text node containing only zero-width spaces as empty', () => {
-    const el = document.createElement('div');
-    el.appendChild(document.createTextNode('\u200B'));
-
-    const paragraph = paragraphFrom(serializeAltInput(el));
-    expect(paragraph.children).toEqual([{ text: '' }]);
-  });
-});
-
 describe('inline void leading anchor', () => {
   it('keeps a renderable text node before a void inserted at the start of the input', () => {
     const el = document.createElement('div');
-    const replacement = createAltEmoticonNode({
+    const replacement = createEmoticonNode({
       mx: mockMx,
       useAuthentication: false,
       key: 'mxc://example/x',
@@ -262,65 +137,65 @@ describe('inline void leading anchor', () => {
 
 const ctx = { mx: mockMx, useAuthentication: false };
 
-describe('htmlToAltInputDom formatting preservation', () => {
+describe('htmlToEditorDom formatting preservation', () => {
   it('converts <strong> to <b>', () => {
-    const fragment = htmlToAltInputDom('<strong>bold</strong>', ctx);
+    const fragment = htmlToEditorDom('<strong>bold</strong>', ctx);
     const b = fragment.querySelector('b');
     expect(b).not.toBeNull();
     expect(b?.textContent).toBe('bold');
   });
 
   it('converts <em> to <i>', () => {
-    const fragment = htmlToAltInputDom('<em>italic</em>', ctx);
+    const fragment = htmlToEditorDom('<em>italic</em>', ctx);
     const i = fragment.querySelector('i');
     expect(i).not.toBeNull();
     expect(i?.textContent).toBe('italic');
   });
 
   it('preserves <u>', () => {
-    const fragment = htmlToAltInputDom('<u>underline</u>', ctx);
+    const fragment = htmlToEditorDom('<u>underline</u>', ctx);
     const u = fragment.querySelector('u');
     expect(u).not.toBeNull();
     expect(u?.textContent).toBe('underline');
   });
 
   it('converts <del> to <s>', () => {
-    const fragment = htmlToAltInputDom('<del>strike</del>', ctx);
+    const fragment = htmlToEditorDom('<del>strike</del>', ctx);
     const s = fragment.querySelector('s');
     expect(s).not.toBeNull();
     expect(s?.textContent).toBe('strike');
   });
 
   it('preserves <code> for inline code', () => {
-    const fragment = htmlToAltInputDom('<code>inline</code>', ctx);
+    const fragment = htmlToEditorDom('<code>inline</code>', ctx);
     const code = fragment.querySelector('code');
     expect(code).not.toBeNull();
     expect(code?.textContent).toBe('inline');
   });
 
   it('preserves <span data-mx-spoiler>', () => {
-    const fragment = htmlToAltInputDom('<span data-mx-spoiler>hidden</span>', ctx);
+    const fragment = htmlToEditorDom('<span data-mx-spoiler>hidden</span>', ctx);
     const spoiler = fragment.querySelector('[data-mx-spoiler]');
     expect(spoiler).not.toBeNull();
     expect(spoiler?.textContent).toBe('hidden');
   });
 
   it('preserves <blockquote>', () => {
-    const fragment = htmlToAltInputDom('<blockquote>quoted</blockquote>', ctx);
+    const fragment = htmlToEditorDom('<blockquote>quoted</blockquote>', ctx);
     const bq = fragment.querySelector('blockquote');
     expect(bq).not.toBeNull();
     expect(bq?.textContent).toBe('quoted');
   });
 
   it('preserves <h1>', () => {
-    const fragment = htmlToAltInputDom('<h1>title</h1>', ctx);
+    const fragment = htmlToEditorDom('<h1>title</h1>', ctx);
     const h1 = fragment.querySelector('h1');
     expect(h1).not.toBeNull();
     expect(h1?.textContent).toBe('title');
   });
 
   it('preserves <ol> and <li>', () => {
-    const fragment = htmlToAltInputDom('<ol><li>item</li></ol>', ctx);
+    const fragment = htmlToEditorDom('<ol><li>item</li></ol>', ctx);
     const ol = fragment.querySelector('ol');
     const li = fragment.querySelector('li');
     expect(ol).not.toBeNull();
@@ -329,7 +204,7 @@ describe('htmlToAltInputDom formatting preservation', () => {
   });
 
   it('preserves <pre> and skips <code> inside it', () => {
-    const fragment = htmlToAltInputDom('<pre><code>code block</code></pre>', ctx);
+    const fragment = htmlToEditorDom('<pre><code>code block</code></pre>', ctx);
     const pre = fragment.querySelector('pre');
     expect(pre).not.toBeNull();
     expect(pre?.textContent).toBe('code block');
@@ -337,28 +212,28 @@ describe('htmlToAltInputDom formatting preservation', () => {
   });
 });
 
-describe('isAltInputEmpty', () => {
+describe('isEditorEmpty', () => {
   it('returns true for empty div', () => {
     const el = document.createElement('div');
-    expect(isAltInputEmpty(el)).toBe(true);
+    expect(isEditorEmpty(el)).toBe(true);
   });
 
   it('returns false for text content', () => {
     const el = document.createElement('div');
     el.textContent = 'hello';
-    expect(isAltInputEmpty(el)).toBe(false);
+    expect(isEditorEmpty(el)).toBe(false);
   });
 
   it('returns true for only zero-width spaces', () => {
     const el = document.createElement('div');
     el.textContent = '\u200B\u200B';
-    expect(isAltInputEmpty(el)).toBe(true);
+    expect(isEditorEmpty(el)).toBe(true);
   });
 
   it('returns true for empty formatting tag left behind', () => {
     const el = document.createElement('div');
     el.appendChild(document.createElement('b'));
-    expect(isAltInputEmpty(el)).toBe(true);
+    expect(isEditorEmpty(el)).toBe(true);
   });
 
   it('returns false for list with no text', () => {
@@ -366,33 +241,31 @@ describe('isAltInputEmpty', () => {
     const ol = document.createElement('ol');
     ol.appendChild(document.createElement('li'));
     el.appendChild(ol);
-    expect(isAltInputEmpty(el)).toBe(false);
+    expect(isEditorEmpty(el)).toBe(false);
   });
 
   it('returns false for void mention element', () => {
     const el = document.createElement('div');
-    el.appendChild(
-      createAltMentionNode({ id: '@alice:server.com', name: 'Alice', highlight: false })
-    );
-    expect(isAltInputEmpty(el)).toBe(false);
+    el.appendChild(createMentionNode({ id: '@alice:server.com', name: 'Alice', highlight: false }));
+    expect(isEditorEmpty(el)).toBe(false);
   });
 
   it('returns false for void emoticon element', () => {
     const el = document.createElement('div');
     el.appendChild(
-      createAltEmoticonNode({
+      createEmoticonNode({
         mx: mockMx,
         useAuthentication: false,
         key: '😀',
         shortcode: 'grinning',
       })
     );
-    expect(isAltInputEmpty(el)).toBe(false);
+    expect(isEditorEmpty(el)).toBe(false);
   });
 
   it('returns true for only whitespace', () => {
     const el = document.createElement('div');
     el.textContent = '   \n  ';
-    expect(isAltInputEmpty(el)).toBe(true);
+    expect(isEditorEmpty(el)).toBe(true);
   });
 });

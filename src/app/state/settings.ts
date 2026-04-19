@@ -21,6 +21,7 @@ export interface Settings {
   editorToolbar: boolean;
   twitterEmoji: boolean;
   emojiSearchAutoFocusMobile: boolean;
+  emojiSearchAutoFocusDesktop: boolean;
   pageZoom: number;
   hideActivity: boolean;
 
@@ -51,8 +52,6 @@ export interface Settings {
   hour24Clock: boolean;
   dateFormatString: string;
 
-  alternateInput: boolean;
-
   developerTools: boolean;
 
   swipeGestures: boolean;
@@ -72,6 +71,7 @@ const defaultSettings: Settings = {
   editorToolbar: false,
   twitterEmoji: false,
   emojiSearchAutoFocusMobile: false,
+  emojiSearchAutoFocusDesktop: true,
   pageZoom: 100,
   hideActivity: true,
 
@@ -101,8 +101,6 @@ const defaultSettings: Settings = {
 
   hour24Clock: false,
   dateFormatString: 'D MMM YYYY',
-
-  alternateInput: false,
 
   developerTools: false,
 

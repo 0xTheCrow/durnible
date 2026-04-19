@@ -7,8 +7,8 @@ import {
   getMentionsFromDom,
   replaceShortcodesInDom,
   getCommandFromDom,
-} from './altOutput';
-import { ALT_NODE_ATTR, ALT_EMOTICON, ALT_MENTION, ALT_COMMAND } from './altInput';
+} from './editorOutput';
+import { NODE_TYPE_ATTR, EMOTICON_NODE, MENTION_NODE, COMMAND_NODE } from './editorInput';
 import type { ShortcodeMapEntry } from '../../plugins/emoji';
 
 vi.mock('../../utils/matrix', async () => {
@@ -28,7 +28,7 @@ const el = (): HTMLDivElement => document.createElement('div');
 
 const mentionNode = (id: string, name: string, opts?: { eventId?: string; via?: string }) => {
   const span = document.createElement('span');
-  span.setAttribute(ALT_NODE_ATTR, ALT_MENTION);
+  span.setAttribute(NODE_TYPE_ATTR, MENTION_NODE);
   span.setAttribute('contenteditable', 'false');
   span.dataset.id = id;
   span.dataset.name = name;
@@ -41,7 +41,7 @@ const mentionNode = (id: string, name: string, opts?: { eventId?: string; via?: 
 
 const emoticonNode = (key: string, shortcode: string) => {
   const span = document.createElement('span');
-  span.setAttribute(ALT_NODE_ATTR, ALT_EMOTICON);
+  span.setAttribute(NODE_TYPE_ATTR, EMOTICON_NODE);
   span.setAttribute('contenteditable', 'false');
   span.dataset.key = key;
   span.dataset.shortcode = shortcode;
@@ -51,7 +51,7 @@ const emoticonNode = (key: string, shortcode: string) => {
 
 const commandNode = (command: string) => {
   const span = document.createElement('span');
-  span.setAttribute(ALT_NODE_ATTR, ALT_COMMAND);
+  span.setAttribute(NODE_TYPE_ATTR, COMMAND_NODE);
   span.setAttribute('contenteditable', 'false');
   span.dataset.command = command;
   span.textContent = `/${command}`;
@@ -393,7 +393,7 @@ describe('replaceShortcodesInDom', () => {
     const root = el();
     root.textContent = 'hello :wave: world';
     replaceShortcodesInDom(root, shortcodeMap, mockMx, false);
-    expect(root.querySelectorAll(`[${ALT_NODE_ATTR}="${ALT_EMOTICON}"]`)).toHaveLength(1);
+    expect(root.querySelectorAll(`[${NODE_TYPE_ATTR}="${EMOTICON_NODE}"]`)).toHaveLength(1);
     expect(root.textContent).toContain('hello');
     expect(root.textContent).toContain('world');
   });
@@ -402,7 +402,7 @@ describe('replaceShortcodesInDom', () => {
     const root = el();
     root.textContent = 'hello :unknown: world';
     replaceShortcodesInDom(root, shortcodeMap, mockMx, false);
-    expect(root.querySelectorAll(`[${ALT_NODE_ATTR}="${ALT_EMOTICON}"]`)).toHaveLength(0);
+    expect(root.querySelectorAll(`[${NODE_TYPE_ATTR}="${EMOTICON_NODE}"]`)).toHaveLength(0);
     expect(root.textContent).toContain(':unknown:');
   });
 
@@ -410,7 +410,7 @@ describe('replaceShortcodesInDom', () => {
     const root = el();
     root.textContent = ':wave: and :smile:';
     replaceShortcodesInDom(root, shortcodeMap, mockMx, false);
-    expect(root.querySelectorAll(`[${ALT_NODE_ATTR}="${ALT_EMOTICON}"]`)).toHaveLength(2);
+    expect(root.querySelectorAll(`[${NODE_TYPE_ATTR}="${EMOTICON_NODE}"]`)).toHaveLength(2);
   });
 
   it('skips shortcodes inside <pre>', () => {
@@ -419,7 +419,7 @@ describe('replaceShortcodesInDom', () => {
     pre.textContent = ':wave:';
     root.appendChild(pre);
     replaceShortcodesInDom(root, shortcodeMap, mockMx, false);
-    expect(root.querySelectorAll(`[${ALT_NODE_ATTR}="${ALT_EMOTICON}"]`)).toHaveLength(0);
+    expect(root.querySelectorAll(`[${NODE_TYPE_ATTR}="${EMOTICON_NODE}"]`)).toHaveLength(0);
   });
 
   it('skips shortcodes inside <code>', () => {
@@ -428,7 +428,7 @@ describe('replaceShortcodesInDom', () => {
     code.textContent = ':wave:';
     root.appendChild(code);
     replaceShortcodesInDom(root, shortcodeMap, mockMx, false);
-    expect(root.querySelectorAll(`[${ALT_NODE_ATTR}="${ALT_EMOTICON}"]`)).toHaveLength(0);
+    expect(root.querySelectorAll(`[${NODE_TYPE_ATTR}="${EMOTICON_NODE}"]`)).toHaveLength(0);
   });
 });
 

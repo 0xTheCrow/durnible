@@ -2,10 +2,9 @@ import type { MouseEventHandler, RefObject } from 'react';
 import { useCallback } from 'react';
 import type { IContent, MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk';
 import { EventType } from 'matrix-js-sdk';
-import { ReactEditor } from 'slate-react';
-import type { Editor } from 'slate';
 import { useSetAtom } from 'jotai';
-import { createMentionElement, moveCursor } from '../../components/editor';
+import type { EditorController } from '../../components/editor';
+import { createMentionNode } from '../../components/editor';
 import { eventWithShortcode, factoryEventSentBy, getMxIdLocalPart } from '../../utils/matrix';
 import {
   getEditedEvent,
@@ -23,9 +22,7 @@ export type TimelineClickHandlersDeps = {
   room: Room;
   spaceRoomId: string | undefined;
   openUserRoomProfile: OpenUserRoomProfile;
-  editor: Editor;
-  alternateInput: boolean;
-  alternateInputRef: RefObject<HTMLDivElement>;
+  editorInputRef: RefObject<EditorController | null>;
   replyDraftAtom: ReplyDraftAtom;
 };
 
@@ -44,9 +41,7 @@ export const useTimelineClickHandlers = ({
   room,
   spaceRoomId,
   openUserRoomProfile,
-  editor,
-  alternateInput,
-  alternateInputRef,
+  editorInputRef,
   replyDraftAtom,
 }: TimelineClickHandlersDeps): TimelineClickHandlers => {
   const setReplyDraft = useSetAtom(replyDraftAtom);
@@ -79,21 +74,17 @@ export const useTimelineClickHandlers = ({
         return;
       }
       const name = getMemberDisplayName(room, userId) ?? getMxIdLocalPart(userId) ?? userId;
-      if (alternateInput && editor.insertAlternateText) {
-        editor.insertAlternateText(name.startsWith('@') ? name : `@${name}`);
-      } else {
-        editor.insertNode(
-          createMentionElement(
-            userId,
-            name.startsWith('@') ? name : `@${name}`,
-            userId === mx.getUserId()
-          )
-        );
-        ReactEditor.focus(editor);
-        moveCursor(editor);
-      }
+      const controller = editorInputRef.current;
+      if (!controller) return;
+      const node = createMentionNode({
+        id: userId,
+        name: name.startsWith('@') ? name : `@${name}`,
+        highlight: userId === mx.getUserId(),
+      });
+      controller.insertNode(node);
+      controller.focus();
     },
-    [mx, room, editor, alternateInput]
+    [mx, room, editorInputRef]
   );
 
   const handleReplyClick = useCallback(
@@ -120,14 +111,10 @@ export const useTimelineClickHandlers = ({
           formattedBody,
           relation,
         });
-        if (alternateInput) {
-          alternateInputRef.current?.focus();
-        } else {
-          ReactEditor.focus(editor);
-        }
+        editorInputRef.current?.focus();
       }
     },
-    [room, setReplyDraft, editor, alternateInput, alternateInputRef]
+    [room, setReplyDraft, editorInputRef]
   );
 
   const handleReactionToggle = useCallback(

@@ -94,16 +94,6 @@ function HideActivitySetting() {
     />
   );
 }
-function AlternateInputSetting() {
-  const [value, setValue] = useSetting(settingsAtom, 'alternateInput');
-  return (
-    <SettingTile
-      title="Alternate Message Input"
-      description="Use a simple text input instead of the rich text editor."
-      after={<Switch variant="Primary" value={value} onChange={setValue} />}
-    />
-  );
-}
 
 // --- Messages ---
 function LegacyUsernameColorSetting() {
@@ -412,16 +402,6 @@ export const settingsSearchData: SearchEntry[] = [
     pageName: 'General',
     sectionName: 'Editor',
     Render: HideActivitySetting,
-  },
-  {
-    id: 'alternate-input',
-    title: 'Alternate Message Input',
-    description: 'Use a simple text input instead of the rich text editor.',
-    keywords: ['input', 'editor', 'text', 'simple', 'alternate', 'experimental', 'plain'],
-    page: SettingsPages.GeneralPage,
-    pageName: 'General',
-    sectionName: 'Editor',
-    Render: AlternateInputSetting,
   },
   // Messages
   {

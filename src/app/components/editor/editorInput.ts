@@ -1,4 +1,3 @@
-import type { Descendant } from 'slate';
 import type { MatrixClient } from 'matrix-js-sdk';
 import parse from 'html-dom-parser';
 import type { ChildNode, Element } from 'domhandler';
@@ -12,31 +11,21 @@ import {
   parseMatrixToUser,
   testMatrixTo,
 } from '../../plugins/matrix-to';
-import type {
-  CommandElement,
-  EmoticonElement,
-  InlineElement,
-  MentionElement,
-  ParagraphElement,
-} from './slate';
-import { BlockType } from './types';
-import { createEmoticonElement, createMentionElement } from './utils';
 
 export type MentionsData = {
   room: boolean;
   users: Set<string>;
 };
 
-export const ALT_NODE_ATTR = 'data-alt-type';
-export const ALT_EMOTICON = 'emoticon';
-export const ALT_MENTION = 'mention';
-export const ALT_COMMAND = 'command';
+export const NODE_TYPE_ATTR = 'data-node-type';
+export const EMOTICON_NODE = 'emoticon';
+export const MENTION_NODE = 'mention';
+export const COMMAND_NODE = 'command';
 
 // Browsers won't render a caret in an empty text node adjacent to a
-// contenteditable=false sibling, so the cursor can't navigate before a void
-// at the start of the input. A zero-width space (U+200B) gives the text
-// node a renderable position; serializeAltInput strips it so it never
-// reaches the message body.
+// contenteditable=false sibling. A zero-width space (U+200B) gives the text
+// node a renderable position; stripCaretAnchors removes it before serialization
+// so it never reaches the message body.
 const INLINE_VOID_CARET_ANCHOR = '\u200B';
 const stripCaretAnchors = (text: string): string =>
   text.replace(new RegExp(INLINE_VOID_CARET_ANCHOR, 'g'), '');
@@ -48,14 +37,14 @@ type CreateEmoticonNodeArgs = {
   shortcode: string;
 };
 
-export const createAltEmoticonNode = ({
+export const createEmoticonNode = ({
   mx,
   useAuthentication,
   key,
   shortcode,
 }: CreateEmoticonNodeArgs): HTMLSpanElement => {
   const wrapper = document.createElement('span');
-  wrapper.setAttribute(ALT_NODE_ATTR, ALT_EMOTICON);
+  wrapper.setAttribute(NODE_TYPE_ATTR, EMOTICON_NODE);
   wrapper.setAttribute('contenteditable', 'false');
   wrapper.dataset.key = key;
   wrapper.dataset.shortcode = shortcode;
@@ -82,7 +71,7 @@ type CreateMentionNodeArgs = {
   viaServers?: string[];
 };
 
-export const createAltMentionNode = ({
+export const createMentionNode = ({
   id,
   name,
   highlight,
@@ -90,7 +79,7 @@ export const createAltMentionNode = ({
   viaServers,
 }: CreateMentionNodeArgs): HTMLSpanElement => {
   const wrapper = document.createElement('span');
-  wrapper.setAttribute(ALT_NODE_ATTR, ALT_MENTION);
+  wrapper.setAttribute(NODE_TYPE_ATTR, MENTION_NODE);
   wrapper.setAttribute('contenteditable', 'false');
   wrapper.dataset.id = id;
   wrapper.dataset.name = name;
@@ -106,122 +95,14 @@ type CreateCommandNodeArgs = {
   command: string;
 };
 
-export const createAltCommandNode = ({ command }: CreateCommandNodeArgs): HTMLSpanElement => {
+export const createCommandNode = ({ command }: CreateCommandNodeArgs): HTMLSpanElement => {
   const wrapper = document.createElement('span');
-  wrapper.setAttribute(ALT_NODE_ATTR, ALT_COMMAND);
+  wrapper.setAttribute(NODE_TYPE_ATTR, COMMAND_NODE);
   wrapper.setAttribute('contenteditable', 'false');
   wrapper.dataset.command = command;
   wrapper.className = css.Command({ active: false, focus: false });
   wrapper.textContent = `/${command}`;
   return wrapper;
-};
-
-const readEmoticonElement = (el: HTMLElement): EmoticonElement | null => {
-  const key = el.dataset.key;
-  const shortcode = el.dataset.shortcode;
-  if (!key || !shortcode) return null;
-  return createEmoticonElement(key, shortcode);
-};
-
-const readMentionElement = (el: HTMLElement): MentionElement | null => {
-  const id = el.dataset.id;
-  const name = el.dataset.name;
-  if (!id || !name) return null;
-  const highlight = el.dataset.highlight === 'true';
-  const eventId = el.dataset.eventId;
-  const via = el.dataset.via;
-  const viaServers = via ? via.split(',').filter((s) => s.length > 0) : undefined;
-  return createMentionElement(id, name, highlight, eventId, viaServers);
-};
-
-const readCommandElement = (el: HTMLElement): CommandElement | null => {
-  const command = el.dataset.command;
-  if (!command) return null;
-  return {
-    type: BlockType.Command,
-    command,
-    children: [{ text: '' }],
-  };
-};
-
-const pushInline = (buffer: InlineElement[], node: InlineElement) => {
-  if ('type' in node) {
-    const last = buffer[buffer.length - 1];
-    if (!last || 'type' in last) buffer.push({ text: '' });
-    buffer.push(node);
-    buffer.push({ text: '' });
-    return;
-  }
-  buffer.push(node);
-};
-
-export const serializeAltInput = (el: HTMLElement): Descendant[] => {
-  const children: InlineElement[] = [];
-
-  el.childNodes.forEach((child) => {
-    if (child.nodeType === Node.TEXT_NODE) {
-      const text = stripCaretAnchors((child as Text).data);
-      if (text.length === 0) return;
-      const last = children[children.length - 1];
-      if (last && !('type' in last)) {
-        last.text += text;
-      } else {
-        children.push({ text });
-      }
-      return;
-    }
-
-    if (child.nodeType !== Node.ELEMENT_NODE) return;
-    const element = child as HTMLElement;
-
-    if (element.tagName === 'BR') {
-      const last = children[children.length - 1];
-      if (last && !('type' in last)) {
-        last.text += '\n';
-      } else {
-        children.push({ text: '\n' });
-      }
-      return;
-    }
-
-    const altType = element.getAttribute(ALT_NODE_ATTR);
-    if (altType === ALT_EMOTICON) {
-      const node = readEmoticonElement(element);
-      if (node) pushInline(children, node);
-      return;
-    }
-    if (altType === ALT_MENTION) {
-      const node = readMentionElement(element);
-      if (node) pushInline(children, node);
-      return;
-    }
-    if (altType === ALT_COMMAND) {
-      const node = readCommandElement(element);
-      if (node) pushInline(children, node);
-      return;
-    }
-
-    // Unknown element: fall back to its text content so we don't lose data
-    const text = stripCaretAnchors(element.textContent ?? '');
-    if (text.length === 0) return;
-    const last = children[children.length - 1];
-    if (last && !('type' in last)) {
-      last.text += text;
-    } else {
-      children.push({ text });
-    }
-  });
-
-  if (children.length === 0) children.push({ text: '' });
-  if ('type' in children[0]) children.unshift({ text: '' });
-  const tail = children[children.length - 1];
-  if ('type' in tail) children.push({ text: '' });
-
-  const paragraph: ParagraphElement = {
-    type: BlockType.Paragraph,
-    children,
-  };
-  return [paragraph];
 };
 
 const placeCaretAt = (node: Node, offset: number) => {
@@ -240,12 +121,12 @@ const ensureLeadingAnchor = (node: Node) => {
   node.parentNode?.insertBefore(document.createTextNode(INLINE_VOID_CARET_ANCHOR), node);
 };
 
-const isAltVoidElement = (node: Node): boolean => {
+const isVoidElement = (node: Node): boolean => {
   if (node.nodeType !== Node.ELEMENT_NODE) return false;
-  return (node as HTMLElement).hasAttribute(ALT_NODE_ATTR);
+  return (node as HTMLElement).hasAttribute(NODE_TYPE_ATTR);
 };
 
-export const handleAltInputBackspace = (el: HTMLElement, range: Range): boolean => {
+export const handleEditorBackspace = (el: HTMLElement, range: Range): boolean => {
   if (!range.collapsed) return false;
   const textNode = el.firstChild;
   if (!textNode || textNode.nodeType !== Node.TEXT_NODE) return false;
@@ -258,7 +139,7 @@ export const handleAltInputBackspace = (el: HTMLElement, range: Range): boolean 
   if (!atAnchor) return false;
 
   const next = textNode.nextSibling;
-  if (!next || !isAltVoidElement(next)) return false;
+  if (!next || !isVoidElement(next)) return false;
 
   el.removeChild(next);
   return true;
@@ -469,7 +350,7 @@ const walkHtmlNodes = (
       const key = element.attribs.src;
       const shortcode = element.attribs.alt || element.attribs.title || '';
       if (key) {
-        const voidNode = createAltEmoticonNode({
+        const voidNode = createEmoticonNode({
           mx: ctx.mx,
           useAuthentication: ctx.useAuthentication,
           key,
@@ -486,7 +367,7 @@ const walkHtmlNodes = (
       if (testMatrixTo(href)) {
         const mention = resolveMentionFromAnchor(element, href);
         if (mention) {
-          const voidNode = createAltMentionNode(mention);
+          const voidNode = createMentionNode(mention);
           appendVoidToParent(parent, voidNode);
           isFirstBlockChild = false;
           return;
@@ -561,7 +442,7 @@ const NON_EMPTY_TAGS = new Set([
   'H6',
 ]);
 
-export const isAltInputEmpty = (el: HTMLElement): boolean => {
+export const isEditorEmpty = (el: HTMLElement): boolean => {
   const text = el.textContent ?? '';
   if (stripCaretAnchors(text).trim().length > 0) return false;
   for (let i = 0; i < el.childNodes.length; i += 1) {
@@ -569,13 +450,13 @@ export const isAltInputEmpty = (el: HTMLElement): boolean => {
     if (child.nodeType === Node.ELEMENT_NODE) {
       const tag = (child as HTMLElement).tagName;
       if (NON_EMPTY_TAGS.has(tag)) return false;
-      if ((child as HTMLElement).hasAttribute(ALT_NODE_ATTR)) return false;
+      if ((child as HTMLElement).hasAttribute(NODE_TYPE_ATTR)) return false;
     }
   }
   return true;
 };
 
-export const htmlToAltInputDom = (html: string, ctx: HtmlToAltInputCtx): DocumentFragment => {
+export const htmlToEditorDom = (html: string, ctx: HtmlToAltInputCtx): DocumentFragment => {
   const sanitized = sanitizeCustomHtml(html);
   const parsed = parse(sanitized) as ChildNode[];
   const fragment = document.createDocumentFragment();

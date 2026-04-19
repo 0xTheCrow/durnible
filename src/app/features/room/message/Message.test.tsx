@@ -1,5 +1,3 @@
-// Prevents ReactEditor.focus() from firing asynchronously after component
-// unmount, which causes "Cannot resolve a DOM node from Slate node" errors.
 import React from 'react';
 import { render, screen, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';

@@ -1,37 +1,22 @@
 import type { KeyboardEventHandler } from 'react';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Box, Chip, Icon, IconButton, Icons, Line, Spinner, Text, as, config } from 'folds';
-import { Editor, Transforms } from 'slate';
-import { ReactEditor } from 'slate-react';
 import type { IContent, IMentions, MatrixEvent, Room } from 'matrix-js-sdk';
 import { RelationType } from 'matrix-js-sdk';
 import type { RoomMessageEventContent } from 'matrix-js-sdk/lib/@types/events';
 import { isKeyHotkey } from 'is-hotkey';
-import type { AutocompleteQuery } from '../../../components/editor';
+import type { AutocompleteQuery, EditorController } from '../../../components/editor';
 import {
-  AUTOCOMPLETE_PREFIXES,
   AutocompletePrefix,
   CustomEditor,
   EmoticonAutocomplete,
   RoomMentionAutocomplete,
-  Toolbar,
-  AltInputToolbar,
+  EditorToolbar,
   UserMentionAutocomplete,
-  createAltEmoticonNode,
-  createEmoticonElement,
-  useAlternateAutocomplete,
+  createEmoticonNode,
+  useEditorAutocomplete,
   customHtmlEqualsPlainText,
-  getAutocompleteQuery,
-  getPrevWorldRange,
-  htmlToEditorInput,
-  moveCursor,
-  plainToEditorInput,
-  toMatrixCustomHTML,
-  toPlainText,
   trimCustomHtml,
-  useEditor,
-  getMentions,
-  replaceShortcodes,
   domToMatrixCustomHTML,
   domToPlainText,
   getMentionsFromDom,
@@ -64,33 +49,36 @@ export const MessageEditor = as<'div', MessageEditorProps>(
   ({ room, roomId, mEvent, imagePackRooms, onCancel, ...props }, ref) => {
     const mx = useMatrixClient();
     const useAuthentication = useMediaAuthentication();
-    const editor = useEditor();
     const [enterForNewline] = useSetting(settingsAtom, 'enterForNewline');
     const [globalToolbar] = useSetting(settingsAtom, 'editorToolbar');
     const [isMarkdown] = useSetting(settingsAtom, 'isMarkdown');
-    const [alternateInput] = useSetting(settingsAtom, 'alternateInput');
     const [toolbar, setToolbar] = useState(globalToolbar);
     const isComposing = useComposingCheck();
-    const editorRef = React.useRef<HTMLDivElement>(null);
-    const alternateInputRef = React.useRef<HTMLDivElement>(null);
+    const editorInputRef = useRef<EditorController | null>(null);
+    const editableElRef = useRef<HTMLDivElement | null>(null);
+    editableElRef.current = editorInputRef.current?.el ?? null;
     const stableImagePackRooms = React.useMemo(() => imagePackRooms ?? [], [imagePackRooms]);
     const imagePacks = useRelevantImagePacks(ImageUsage.Emoticon, stableImagePackRooms);
 
     const [autocompleteQuery, setAutocompleteQuery] =
       useState<AutocompleteQuery<AutocompletePrefix>>();
 
-    const altAutocomplete = useAlternateAutocomplete({
-      alternateInputRef,
+    const editorAutocomplete = useEditorAutocomplete({
+      editorInputRef: {
+        get current() {
+          return editorInputRef.current?.el ?? null;
+        },
+      },
       mx,
       useAuthentication,
       room,
       roomId,
     });
     const {
-      handleMentionSelect: handleAlternateMentionSelect,
-      handleRoomMentionSelect: handleAlternateRoomMentionSelect,
-      handleEmoticonSelect: handleAlternateEmoticonSelect,
-    } = altAutocomplete;
+      handleMentionSelect,
+      handleRoomMentionSelect,
+      handleEmoticonSelect: handleAutocompleteEmoticonSelect,
+    } = editorAutocomplete;
 
     const getPrevBodyAndFormattedBody = useCallback((): [
       string | undefined,
@@ -118,35 +106,19 @@ export const MessageEditor = as<'div', MessageEditorProps>(
 
     const buildEditContent = useCallback((): IContent | undefined => {
       const shortcodeMap = buildShortcodeMap(imagePacks, unicodeEmojis);
-      const el = alternateInputRef.current;
+      const el = editorInputRef.current?.el;
+      if (!el) return undefined;
 
-      let plainText: string;
-      let customHtml: string;
-      let mentionData;
-
-      if (alternateInput && el) {
-        replaceShortcodesInDom(el, shortcodeMap, mx, useAuthentication);
-        plainText = domToPlainText(el).trim();
-        customHtml = trimCustomHtml(
-          domToMatrixCustomHTML(el, {
-            allowTextFormatting: true,
-            allowBlockMarkdown: isMarkdown,
-            allowInlineMarkdown: isMarkdown,
-          })
-        );
-        mentionData = getMentionsFromDom(el, mx);
-      } else {
-        const processedChildren = replaceShortcodes(editor.children, shortcodeMap);
-        plainText = toPlainText(processedChildren, isMarkdown).trim();
-        customHtml = trimCustomHtml(
-          toMatrixCustomHTML(processedChildren, {
-            allowTextFormatting: true,
-            allowBlockMarkdown: isMarkdown,
-            allowInlineMarkdown: isMarkdown,
-          })
-        );
-        mentionData = getMentions(mx, roomId, editor);
-      }
+      replaceShortcodesInDom(el, shortcodeMap, mx, useAuthentication);
+      const plainText = domToPlainText(el).trim();
+      const customHtml = trimCustomHtml(
+        domToMatrixCustomHTML(el, {
+          allowTextFormatting: true,
+          allowBlockMarkdown: isMarkdown,
+          allowInlineMarkdown: isMarkdown,
+        })
+      );
+      const mentionData = getMentionsFromDom(el, mx);
 
       const [prevBody, prevCustomHtml, prevMentions] = getPrevBodyAndFormattedBody();
 
@@ -190,18 +162,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
           rel_type: RelationType.Replace,
         },
       };
-    }, [
-      mx,
-      editor,
-      roomId,
-      mEvent,
-      isMarkdown,
-      getPrevBodyAndFormattedBody,
-      imagePacks,
-      alternateInput,
-      alternateInputRef,
-      useAuthentication,
-    ]);
+    }, [mx, mEvent, isMarkdown, getPrevBodyAndFormattedBody, imagePacks, useAuthentication]);
 
     const [saveState, save] = useAsyncCallback(
       useCallback(async () => {
@@ -219,15 +180,11 @@ export const MessageEditor = as<'div', MessageEditorProps>(
 
     const handleKeyDown: KeyboardEventHandler = useCallback(
       (evt) => {
-        if (
-          alternateInput &&
-          isKeyHotkey('shift+enter', evt) &&
-          alternateInputRef.current &&
-          isInsideList(alternateInputRef.current)
-        ) {
+        const el = editorInputRef.current?.el;
+        if (isKeyHotkey('shift+enter', evt) && el && isInsideList(el)) {
           evt.preventDefault();
-          handleListEnter(alternateInputRef.current);
-          alternateInputRef.current.dispatchEvent(new Event('input', { bubbles: true }));
+          handleListEnter(el);
+          el.dispatchEvent(new Event('input', { bubbles: true }));
           return;
         }
         if (
@@ -242,7 +199,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
           onCancel();
         }
       },
-      [onCancel, handleSave, enterForNewline, isComposing, alternateInput]
+      [onCancel, handleSave, enterForNewline, isComposing]
     );
 
     const handleKeyUp: KeyboardEventHandler = useCallback(
@@ -251,83 +208,57 @@ export const MessageEditor = as<'div', MessageEditorProps>(
           evt.preventDefault();
           return;
         }
-
-        if (alternateInput) {
-          const el = evt.currentTarget as HTMLDivElement;
-          setAutocompleteQuery(altAutocomplete.detectAutocompleteQuery(el));
-          return;
-        }
-        const prevWordRange = getPrevWorldRange(editor);
-        const query = prevWordRange
-          ? getAutocompleteQuery<AutocompletePrefix>(editor, prevWordRange, AUTOCOMPLETE_PREFIXES)
-          : undefined;
-        setAutocompleteQuery(query);
+        const el = evt.currentTarget as HTMLDivElement;
+        setAutocompleteQuery(editorAutocomplete.detectAutocompleteQuery(el));
       },
-      [editor, alternateInput, altAutocomplete]
+      [editorAutocomplete]
     );
 
     const handleCloseAutocomplete = useCallback(() => {
-      if (!alternateInput) ReactEditor.focus(editor);
       setAutocompleteQuery(undefined);
-    }, [editor, alternateInput]);
+    }, []);
 
     const handleEmoticonSelect = (key: string, shortcode: string) => {
-      if (alternateInput) {
-        if (key.startsWith('mxc://') && editor.insertAlternateNode) {
-          const node = createAltEmoticonNode({ mx, useAuthentication, key, shortcode });
-          editor.insertAlternateNode(node);
-          return;
-        }
-        editor.insertAlternateText?.(key);
+      const controller = editorInputRef.current;
+      if (!controller) return;
+      if (key.startsWith('mxc://')) {
+        const node = createEmoticonNode({ mx, useAuthentication, key, shortcode });
+        controller.insertNode(node);
         return;
       }
-      editor.insertNode(createEmoticonElement(key, shortcode));
-      moveCursor(editor);
+      controller.insertText(key);
     };
 
     useEffect(() => {
       const [body, customHtml] = getPrevBodyAndFormattedBody();
+      const controller = editorInputRef.current;
+      if (!controller) return;
 
-      if (alternateInput) {
-        const plainBody = typeof body === 'string' ? body : '';
-        const html =
-          typeof customHtml === 'string'
-            ? customHtml
-            : sanitizeText(plainBody).replace(/\n/g, '<br>');
-        editor.setAlternateInputContent?.(html);
-        const el = alternateInputRef.current;
-        if (el) {
-          el.focus();
-          let target: Node = el;
-          while (target.lastChild) {
-            target = target.lastChild;
-          }
-          const range = document.createRange();
-          if (target.nodeType === Node.TEXT_NODE) {
-            range.setStart(target, (target as Text).data.length);
-          } else {
-            range.selectNodeContents(target);
-          }
-          range.collapse(false);
-          const sel = window.getSelection();
-          sel?.removeAllRanges();
-          sel?.addRange(range);
+      const plainBody = typeof body === 'string' ? body : '';
+      const html =
+        typeof customHtml === 'string'
+          ? customHtml
+          : sanitizeText(plainBody).replace(/\n/g, '<br>');
+      controller.setContent(html);
+      const el = controller.el;
+      if (el) {
+        el.focus();
+        let target: Node = el;
+        while (target.lastChild) {
+          target = target.lastChild;
         }
-      } else {
-        const initialValue =
-          typeof customHtml === 'string'
-            ? htmlToEditorInput(customHtml, isMarkdown)
-            : plainToEditorInput(typeof body === 'string' ? body : '', isMarkdown);
-
-        Transforms.select(editor, {
-          anchor: Editor.start(editor, []),
-          focus: Editor.end(editor, []),
-        });
-
-        editor.insertFragment(initialValue);
-        ReactEditor.focus(editor);
+        const range = document.createRange();
+        if (target.nodeType === Node.TEXT_NODE) {
+          range.setStart(target, (target as Text).data.length);
+        } else {
+          range.selectNodeContents(target);
+        }
+        range.collapse(false);
+        const sel = window.getSelection();
+        sel?.removeAllRanges();
+        sel?.addRange(range);
       }
-    }, [editor, getPrevBodyAndFormattedBody, isMarkdown, alternateInput]);
+    }, [getPrevBodyAndFormattedBody]);
 
     useEffect(() => {
       if (saveState.status === AsyncStatus.Success) {
@@ -339,35 +270,29 @@ export const MessageEditor = as<'div', MessageEditorProps>(
       <div {...props} ref={ref}>
         {autocompleteQuery?.prefix === AutocompletePrefix.RoomMention && (
           <RoomMentionAutocomplete
-            roomId={roomId}
-            editor={editor}
             query={autocompleteQuery}
             onClose={handleCloseAutocomplete}
-            onSelect={alternateInput ? handleAlternateRoomMentionSelect : undefined}
+            onSelect={handleRoomMentionSelect}
           />
         )}
         {autocompleteQuery?.prefix === AutocompletePrefix.UserMention && (
           <UserMentionAutocomplete
             room={room}
-            editor={editor}
             query={autocompleteQuery}
             onClose={handleCloseAutocomplete}
-            onSelect={alternateInput ? handleAlternateMentionSelect : undefined}
+            onSelect={handleMentionSelect}
           />
         )}
         {autocompleteQuery?.prefix === AutocompletePrefix.Emoticon && (
           <EmoticonAutocomplete
             imagePackRooms={imagePackRooms || []}
-            editor={editor}
             query={autocompleteQuery}
             onClose={handleCloseAutocomplete}
-            onSelect={alternateInput ? handleAlternateEmoticonSelect : undefined}
+            onSelect={handleAutocompleteEmoticonSelect}
           />
         )}
         <CustomEditor
-          ref={editorRef}
-          editor={editor}
-          alternateInputRef={alternateInputRef}
+          editorInputRef={editorInputRef}
           onKeyDown={handleKeyDown}
           onKeyUp={handleKeyUp}
           bottom={
@@ -419,27 +344,19 @@ export const MessageEditor = as<'div', MessageEditorProps>(
                     position="Top"
                     align="End"
                     imagePackRooms={imagePackRooms ?? []}
-                    returnFocusOnDeactivate={alternateInput && !mobileOrTablet()}
+                    returnFocusOnDeactivate={!mobileOrTablet()}
                     onEmojiSelect={handleEmoticonSelect}
                     onCustomEmojiSelect={handleEmoticonSelect}
-                    onClose={() => {
-                      if (!alternateInput && !mobileOrTablet()) {
-                        ReactEditor.focus(editor);
-                      }
-                    }}
+                    onClose={() => editorInputRef.current?.focus()}
                   >
                     {({ triggerRef, open, isOpen }) => (
                       <IconButton
                         ref={triggerRef}
                         aria-pressed={isOpen}
-                        onMouseDown={
-                          alternateInput
-                            ? (e: React.MouseEvent) => {
-                                e.preventDefault();
-                                alternateInputRef.current?.focus();
-                              }
-                            : undefined
-                        }
+                        onMouseDown={(e: React.MouseEvent) => {
+                          e.preventDefault();
+                          editorInputRef.current?.focus();
+                        }}
                         onClick={open}
                         variant="SurfaceVariant"
                         size="300"
@@ -454,7 +371,13 @@ export const MessageEditor = as<'div', MessageEditorProps>(
               {toolbar && (
                 <div>
                   <Line variant="SurfaceVariant" size="300" />
-                  {alternateInput ? <AltInputToolbar inputRef={alternateInputRef} /> : <Toolbar />}
+                  <EditorToolbar
+                    inputRef={{
+                      get current() {
+                        return editorInputRef.current?.el ?? null;
+                      },
+                    }}
+                  />
                 </div>
               )}
             </>

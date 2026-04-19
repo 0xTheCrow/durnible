@@ -1,7 +1,7 @@
 import React from 'react';
-import { render, screen, act } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { ReactEditor } from 'slate-react';
+import { render, screen, act, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { MsgType, RelationType } from 'matrix-js-sdk';
 import { getDefaultStore } from 'jotai';
 import { MessageEditor } from './MessageEditor';
 import { MatrixTestWrapper } from '../../../../test/wrapper';
@@ -18,315 +18,189 @@ const { mobileOrTabletMock } = vi.hoisted(() => ({
 
 vi.mock('../../../utils/user-agent', () => ({
   mobileOrTablet: mobileOrTabletMock,
+  isMacOS: () => false,
 }));
 
-// jsdom doesn't implement HTMLElement.innerText. The alternateInput editor path
-// in Editor.tsx reads `el.innerText` when syncing DOM — polyfill it to textContent
-// so that code path doesn't throw during mount.
-if (
-  typeof HTMLElement !== 'undefined' &&
-  !Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'innerText')
-) {
-  Object.defineProperty(HTMLElement.prototype, 'innerText', {
-    get() {
-      return this.textContent ?? '';
-    },
-    set(value: string) {
-      this.textContent = value;
-    },
-    configurable: true,
-  });
-}
+const ROOM_ID = '!testroom:example.com';
+const EVENT_ID = '$event:example.com';
 
-function setAlternateInput(enabled: boolean) {
+const renderEditor = (
+  opts: {
+    content?: Record<string, unknown>;
+    onCancel?: () => void;
+    enterForNewline?: boolean;
+  } = {}
+) => {
+  if (opts.enterForNewline !== undefined) {
+    const store = getDefaultStore();
+    store.set(settingsAtom, { ...store.get(settingsAtom), enterForNewline: opts.enterForNewline });
+  }
+
+  const mx = createMockMatrixClient();
+  const room = createMockRoom(ROOM_ID, mx);
+  room._addMockMember('@alice:example.com', 'Alice');
+
+  const mEvent = createMockMatrixEvent({
+    id: EVENT_ID,
+    sender: '@alice:example.com',
+    content: opts.content ?? { body: 'original text', msgtype: MsgType.Text },
+    roomId: ROOM_ID,
+  });
+  const onCancel = opts.onCancel ?? vi.fn();
+
+  const utils = render(
+    <MatrixTestWrapper matrixClient={mx}>
+      <MessageEditor roomId={ROOM_ID} room={room as never} mEvent={mEvent} onCancel={onCancel} />
+    </MatrixTestWrapper>
+  );
+  return { mx, room, mEvent, onCancel, ...utils };
+};
+
+const getEditor = () => screen.getByTestId('editor') as HTMLDivElement;
+
+beforeEach(() => {
+  mobileOrTabletMock.mockReturnValue(false);
   const store = getDefaultStore();
-  store.set(settingsAtom, { ...store.get(settingsAtom), alternateInput: enabled });
-}
-
-function renderEditor() {
-  const mx = createMockMatrixClient();
-  const room = createMockRoom('!testroom:example.com', mx);
-  room._addMockMember('@alice:example.com', 'alice');
-
-  const mEvent = createMockMatrixEvent({
-    sender: '@alice:example.com',
-    content: { body: 'Original content', msgtype: 'm.text' },
-    roomId: '!testroom:example.com',
-  });
-
-  return render(
-    <MatrixTestWrapper matrixClient={mx}>
-      <MessageEditor
-        roomId="!testroom:example.com"
-        room={room as any}
-        mEvent={mEvent}
-        onCancel={vi.fn()}
-      />
-    </MatrixTestWrapper>
-  );
-}
-
-const RICH_PLAIN_BODY = 'Hello Alice in #general :party:';
-const RICH_FORMATTED_BODY =
-  'Hello <a href="https://matrix.to/#/@alice:example.com">Alice</a> in <a href="https://matrix.to/#/#general:example.com">#general</a> <img data-mx-emoticon src="mxc://example.com/party" alt=":party:" title=":party:" />';
-
-function renderRichEditor() {
-  const mx = createMockMatrixClient();
-  const room = createMockRoom('!testroom:example.com', mx);
-  room._addMockMember('@alice:example.com', 'alice');
-
-  const mEvent = createMockMatrixEvent({
-    sender: '@alice:example.com',
-    content: {
-      body: RICH_PLAIN_BODY,
-      msgtype: 'm.text',
-      format: 'org.matrix.custom.html',
-      formatted_body: RICH_FORMATTED_BODY,
-    },
-    roomId: '!testroom:example.com',
-  });
-
-  return render(
-    <MatrixTestWrapper matrixClient={mx}>
-      <MessageEditor
-        roomId="!testroom:example.com"
-        room={room as any}
-        mEvent={mEvent}
-        onCancel={vi.fn()}
-      />
-    </MatrixTestWrapper>
-  );
-}
-
-function assertCaretCollapsedInside(el: HTMLElement) {
-  const sel = window.getSelection();
-  expect(sel).not.toBeNull();
-  expect(sel!.rangeCount).toBe(1);
-  const range = sel!.getRangeAt(0);
-  expect(range.collapsed).toBe(true);
-  expect(el.contains(range.endContainer)).toBe(true);
-}
-
-describe('MessageEditor auto-focus on mount', () => {
-  let reactEditorFocusSpy: ReturnType<typeof vi.spyOn>;
-
-  beforeEach(() => {
-    mobileOrTabletMock.mockReturnValue(false);
-    setAlternateInput(false);
-    // Stub ReactEditor.focus so we can assert it was called without running
-    // Slate's deferred setTimeout chain, which races against component teardown
-    // in jsdom and leaks uncaught errors.
-    reactEditorFocusSpy = vi.spyOn(ReactEditor, 'focus').mockImplementation(() => {});
-  });
-
-  afterEach(() => {
-    reactEditorFocusSpy.mockRestore();
-    setAlternateInput(false);
-  });
-
-  it('requests focus on the Slate editor when opened with alternateInput disabled', async () => {
-    setAlternateInput(false);
-
-    await act(async () => {
-      renderEditor();
-    });
-
-    expect(screen.getByTestId('editor-slate')).toBeInTheDocument();
-    expect(reactEditorFocusSpy).toHaveBeenCalled();
-  });
-
-  it('focuses the alternate input element when opened with alternateInput enabled', async () => {
-    setAlternateInput(true);
-
-    await act(async () => {
-      renderEditor();
-    });
-
-    const alternateInput = screen.getByTestId('editor-alternate-input');
-    expect(document.activeElement).toBe(alternateInput);
-  });
-
-  it('requests focus on the Slate editor on mobile / tablet', async () => {
-    mobileOrTabletMock.mockReturnValue(true);
-    setAlternateInput(false);
-
-    await act(async () => {
-      renderEditor();
-    });
-
-    expect(screen.getByTestId('editor-slate')).toBeInTheDocument();
-    expect(reactEditorFocusSpy).toHaveBeenCalled();
-  });
-
-  it('focuses the alternate input on mobile / tablet', async () => {
-    mobileOrTabletMock.mockReturnValue(true);
-    setAlternateInput(true);
-
-    await act(async () => {
-      renderEditor();
-    });
-
-    const alternateInput = screen.getByTestId('editor-alternate-input');
-    expect(document.activeElement).toBe(alternateInput);
-  });
+  store.set(settingsAtom, { ...store.get(settingsAtom), enterForNewline: false, isMarkdown: true });
 });
 
-describe('MessageEditor content population on mount', () => {
-  let reactEditorFocusSpy: ReturnType<typeof vi.spyOn>;
-
-  beforeEach(() => {
-    mobileOrTabletMock.mockReturnValue(false);
-    setAlternateInput(false);
-    reactEditorFocusSpy = vi.spyOn(ReactEditor, 'focus').mockImplementation(() => {});
-  });
-
-  afterEach(() => {
-    reactEditorFocusSpy.mockRestore();
-    setAlternateInput(false);
-  });
-
-  it('populates the alternate input with the original body and places the caret at the end (desktop)', async () => {
-    setAlternateInput(true);
-
+describe('MessageEditor — mount & content hydration', () => {
+  it('populates the editor with the prior message body', async () => {
     await act(async () => {
       renderEditor();
     });
+    const editor = getEditor();
+    expect(editor.textContent).toContain('original text');
+  });
 
-    const alternateInput = screen.getByTestId('editor-alternate-input');
-    expect(alternateInput.textContent).toBe('Original content');
-
+  it('focuses the editor and places the caret at the end on mount', async () => {
+    await act(async () => {
+      renderEditor();
+    });
+    const editor = getEditor();
+    expect(document.activeElement).toBe(editor);
     const sel = window.getSelection();
     expect(sel).not.toBeNull();
     expect(sel!.rangeCount).toBe(1);
-    const range = sel!.getRangeAt(0);
-    expect(range.collapsed).toBe(true);
-    expect(alternateInput.contains(range.endContainer)).toBe(true);
-    if (range.endContainer === alternateInput) {
-      expect(range.endOffset).toBe(alternateInput.childNodes.length);
-    } else {
-      expect(range.endContainer.nodeType).toBe(Node.TEXT_NODE);
-      expect(range.endOffset).toBe((range.endContainer as Text).data.length);
-    }
+    expect(sel!.getRangeAt(0).collapsed).toBe(true);
+    expect(editor.contains(sel!.getRangeAt(0).endContainer)).toBe(true);
   });
 
-  it('populates the alternate input on mobile and places the caret at the end', async () => {
-    mobileOrTabletMock.mockReturnValue(true);
-    setAlternateInput(true);
-
+  it('hydrates formatted_body: mentions and emoticons survive as DOM nodes', async () => {
     await act(async () => {
-      renderEditor();
+      renderEditor({
+        content: {
+          body: 'hi Alice :smile:',
+          msgtype: MsgType.Text,
+          format: 'org.matrix.custom.html',
+          formatted_body:
+            'hi <a href="https://matrix.to/#/@alice:example.com">Alice</a> <img data-mx-emoticon src="mxc://example.com/smile" alt=":smile:" title=":smile:" />',
+        },
+      });
     });
-
-    const alternateInput = screen.getByTestId('editor-alternate-input');
-    expect(alternateInput.textContent).toBe('Original content');
-    expect(document.activeElement).toBe(alternateInput);
-
-    const sel = window.getSelection();
-    expect(sel).not.toBeNull();
-    expect(sel!.rangeCount).toBe(1);
-    const range = sel!.getRangeAt(0);
-    expect(range.collapsed).toBe(true);
-    expect(alternateInput.contains(range.endContainer)).toBe(true);
-    if (range.endContainer === alternateInput) {
-      expect(range.endOffset).toBe(alternateInput.childNodes.length);
-    } else {
-      expect(range.endContainer.nodeType).toBe(Node.TEXT_NODE);
-      expect(range.endOffset).toBe((range.endContainer as Text).data.length);
-    }
-  });
-
-  it('populates the Slate editor with the original body', async () => {
-    setAlternateInput(false);
-
-    await act(async () => {
-      renderEditor();
-    });
-
-    const slate = screen.getByTestId('editor-slate');
-    expect(slate.textContent).toBe('Original content');
+    const editor = getEditor();
+    const mentions = editor.querySelectorAll('[data-node-type="mention"]');
+    expect(mentions.length).toBe(1);
+    expect((mentions[0] as HTMLElement).dataset.id).toBe('@alice:example.com');
+    const emoticons = editor.querySelectorAll('[data-node-type="emoticon"]');
+    expect(emoticons.length).toBe(1);
+    expect((emoticons[0] as HTMLElement).dataset.shortcode).toBe(':smile:');
   });
 });
 
-describe('MessageEditor rich content population on mount', () => {
-  let reactEditorFocusSpy: ReturnType<typeof vi.spyOn>;
-
-  beforeEach(() => {
-    mobileOrTabletMock.mockReturnValue(false);
-    setAlternateInput(false);
-    reactEditorFocusSpy = vi.spyOn(ReactEditor, 'focus').mockImplementation(() => {});
-  });
-
-  afterEach(() => {
-    reactEditorFocusSpy.mockRestore();
-    setAlternateInput(false);
-  });
-
-  const assertRichAltInput = (alternateInput: HTMLElement) => {
-    const mentions = alternateInput.querySelectorAll<HTMLElement>('[data-alt-type="mention"]');
-    expect(mentions).toHaveLength(2);
-    expect(mentions[0].dataset.id).toBe('@alice:example.com');
-    expect(mentions[0].dataset.name).toBe('Alice');
-    expect(mentions[0].textContent).toBe('Alice');
-    expect(mentions[1].dataset.id).toBe('#general:example.com');
-    expect(mentions[1].dataset.name).toBe('#general');
-    expect(mentions[1].textContent).toBe('#general');
-
-    const emoticons = alternateInput.querySelectorAll<HTMLElement>('[data-alt-type="emoticon"]');
-    expect(emoticons).toHaveLength(1);
-    expect(emoticons[0].dataset.key).toBe('mxc://example.com/party');
-    expect(emoticons[0].dataset.shortcode).toBe(':party:');
-
-    expect(alternateInput.textContent?.startsWith('Hello ')).toBe(true);
-    expect(alternateInput.textContent).toContain(' in ');
-  };
-
-  it('renders formatted_body with mention, room link, and custom emoji on alt-input (desktop)', async () => {
-    setAlternateInput(true);
-
+describe('MessageEditor — save path', () => {
+  it('clicking Save dispatches sendMessage with the replacement content shape', async () => {
+    const { mx } = await act(async () => renderEditor());
+    const editor = getEditor();
+    editor.textContent = 'edited text';
+    fireEvent.input(editor);
     await act(async () => {
-      renderRichEditor();
+      fireEvent.click(screen.getByTestId('message-editor-save'));
     });
-
-    const alternateInput = screen.getByTestId('editor-alternate-input');
-    assertRichAltInput(alternateInput);
-    expect(document.activeElement).toBe(alternateInput);
-    assertCaretCollapsedInside(alternateInput);
+    expect(mx.sendMessage).toHaveBeenCalledTimes(1);
+    const [[roomId, content]] = (mx.sendMessage as ReturnType<typeof vi.fn>).mock.calls;
+    expect(roomId).toBe(ROOM_ID);
+    expect(content.body).toBe('* edited text');
+    expect(content.msgtype).toBe(MsgType.Text);
+    expect(content['m.new_content']).toMatchObject({
+      body: 'edited text',
+      msgtype: MsgType.Text,
+    });
+    expect(content['m.relates_to']).toEqual({
+      event_id: EVENT_ID,
+      rel_type: RelationType.Replace,
+    });
   });
 
-  it('renders formatted_body with mention, room link, and custom emoji on alt-input (mobile)', async () => {
-    mobileOrTabletMock.mockReturnValue(true);
-    setAlternateInput(true);
-
+  it('does not call sendMessage when the content is unchanged', async () => {
+    const { mx } = await act(async () => renderEditor());
     await act(async () => {
-      renderRichEditor();
+      fireEvent.click(screen.getByTestId('message-editor-save'));
     });
-
-    const alternateInput = screen.getByTestId('editor-alternate-input');
-    assertRichAltInput(alternateInput);
-    expect(document.activeElement).toBe(alternateInput);
-    assertCaretCollapsedInside(alternateInput);
+    expect(mx.sendMessage).not.toHaveBeenCalled();
   });
 
-  it('renders formatted_body with mention, room link, and custom emoji on Slate (desktop)', async () => {
-    setAlternateInput(false);
-
+  it('save after successful send calls onCancel', async () => {
+    const { onCancel } = await act(async () => renderEditor());
+    const editor = getEditor();
+    editor.textContent = 'updated';
+    fireEvent.input(editor);
     await act(async () => {
-      renderRichEditor();
+      fireEvent.click(screen.getByTestId('message-editor-save'));
     });
+    // wait for async send-then-cancel effect
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(onCancel).toHaveBeenCalled();
+  });
+});
 
-    const slate = screen.getByTestId('editor-slate');
+describe('MessageEditor — cancel path', () => {
+  it('clicking Cancel calls onCancel', async () => {
+    const { onCancel } = await act(async () => renderEditor());
+    fireEvent.click(screen.getByTestId('message-editor-cancel'));
+    expect(onCancel).toHaveBeenCalled();
+  });
 
-    const mentions = slate.querySelectorAll<HTMLElement>('[data-testid="slate-mention"]');
-    expect(mentions).toHaveLength(2);
-    const mentionIds = Array.from(mentions, (m) => m.dataset.mentionId);
-    expect(mentionIds).toContain('@alice:example.com');
-    expect(mentionIds).toContain('#general:example.com');
+  it('Escape calls onCancel', async () => {
+    const { onCancel } = await act(async () => renderEditor());
+    fireEvent.keyDown(getEditor(), { key: 'Escape' });
+    expect(onCancel).toHaveBeenCalled();
+  });
+});
 
-    const emoticons = slate.querySelectorAll<HTMLElement>('[data-testid="slate-emoticon"]');
-    expect(emoticons).toHaveLength(1);
-    expect(emoticons[0].dataset.emoticonKey).toBe('mxc://example.com/party');
+describe('MessageEditor — keyboard shortcuts for save', () => {
+  it('Mod+Enter triggers save', async () => {
+    const { mx } = await act(async () => renderEditor());
+    const editor = getEditor();
+    editor.textContent = 'via cmd enter';
+    fireEvent.input(editor);
+    await act(async () => {
+      fireEvent.keyDown(editor, { key: 'Enter', ctrlKey: true });
+    });
+    expect(mx.sendMessage).toHaveBeenCalledTimes(1);
+  });
 
-    expect(slate.textContent).toContain('Hello ');
-    expect(slate.textContent).toContain(' in ');
+  it('Enter alone triggers save when enterForNewline is false', async () => {
+    const { mx } = await act(async () => renderEditor({ enterForNewline: false }));
+    const editor = getEditor();
+    editor.textContent = 'plain enter';
+    fireEvent.input(editor);
+    await act(async () => {
+      fireEvent.keyDown(editor, { key: 'Enter' });
+    });
+    expect(mx.sendMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it('Enter does not trigger save when enterForNewline is true', async () => {
+    const { mx } = await act(async () => renderEditor({ enterForNewline: true }));
+    const editor = getEditor();
+    editor.textContent = 'plain enter newline';
+    fireEvent.input(editor);
+    await act(async () => {
+      fireEvent.keyDown(editor, { key: 'Enter' });
+    });
+    expect(mx.sendMessage).not.toHaveBeenCalled();
   });
 });

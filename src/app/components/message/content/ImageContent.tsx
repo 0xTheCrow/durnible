@@ -45,6 +45,7 @@ type RenderImageProps = {
 };
 export type ImageContentProps = {
   body: string;
+  filename?: string;
   mimeType?: string;
   url: string;
   info?: ImageInfo;
@@ -65,6 +66,7 @@ export const ImageContent = as<'div', ImageContentProps>(
     {
       className,
       body,
+      filename,
       mimeType,
       url,
       info,
@@ -125,12 +127,13 @@ export const ImageContent = as<'div', ImageContentProps>(
       loadSrc();
     };
 
+    const viewerLabel = filename || body;
     const handleView = useCallback(
       (resolvedSrc: string) => {
-        if (onView) onView(resolvedSrc, body);
-        else setViewerState({ src: resolvedSrc, alt: body });
+        if (onView) onView(resolvedSrc, viewerLabel);
+        else setViewerState({ src: resolvedSrc, alt: viewerLabel });
       },
-      [onView, body, setViewerState]
+      [onView, viewerLabel, setViewerState]
     );
 
     return (

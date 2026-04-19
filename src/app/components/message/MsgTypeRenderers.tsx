@@ -211,7 +211,8 @@ export function MImage({ content, renderImageContent }: MImageProps) {
         }}
       >
         {renderImageContent({
-          body: content.body || 'Image',
+          body: content.body || content.filename || 'Image',
+          filename: content.filename,
           info: imgInfo,
           mimeType: imgInfo?.mimetype,
           url: mxcUrl,
