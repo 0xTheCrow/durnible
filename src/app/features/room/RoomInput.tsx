@@ -695,6 +695,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
                   onEmojiSelect={handleEmoticonSelect}
                   onCustomEmojiSelect={handleEmoticonSelect}
                   onStickerSelect={handleStickerSelect}
+                  onClose={() => editorInputRef.current?.focus()}
                 >
                   {({ triggerRef, open, isOpen, tab: emojiBoardTab }) => (
                     <IconButton

@@ -84,7 +84,15 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
           return inputRef.current;
         },
         focus: () => {
-          inputRef.current?.focus();
+          const el = inputRef.current;
+          if (!el) return;
+          el.focus();
+          const saved = savedRangeRef.current;
+          if (saved && el.contains(saved.startContainer)) {
+            const sel = window.getSelection();
+            sel?.removeAllRanges();
+            sel?.addRange(saved.cloneRange());
+          }
         },
         insertText: (text: string) => {
           const el = inputRef.current;

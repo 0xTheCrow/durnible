@@ -347,6 +347,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
                     returnFocusOnDeactivate={!mobileOrTablet()}
                     onEmojiSelect={handleEmoticonSelect}
                     onCustomEmojiSelect={handleEmoticonSelect}
+                    onClose={() => editorInputRef.current?.focus()}
                   >
                     {({ triggerRef, open, isOpen }) => (
                       <IconButton
