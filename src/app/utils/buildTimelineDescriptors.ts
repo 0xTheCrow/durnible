@@ -193,3 +193,22 @@ export function buildTimelineDescriptors(
 
   return result;
 }
+
+// Element-wise identity check; ImageContent objects are stable per matrix-js-sdk
+// event, so reference equality across the array detects both length changes
+// (group grew/shrunk) and per-cell content reference changes (a new event
+// arrived or an absorbed image was redacted out of the group). Each call to
+// buildTimelineDescriptors produces a fresh array, so a plain `===` would
+// always treat the prop as changed.
+export const sameGroupedImages = (
+  a: ImageContent[] | undefined,
+  b: ImageContent[] | undefined
+): boolean => {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+};

@@ -50,6 +50,7 @@ import type {
   VideoContent,
 } from '../../types/matrix/common';
 import { getBlobSafeMimeType } from '../utils/mimeTypes';
+import { sameGroupedImages } from '../utils/buildTimelineDescriptors';
 
 const MEDIA_VOLUME_KEY = 'cinny_media_volume';
 
@@ -414,4 +415,28 @@ function RenderMessageContentInner({
   return <UnsupportedContent />;
 }
 
-export const RenderMessageContent = React.memo(RenderMessageContentInner);
+// Inner of two memo boundaries paired with MemoizedTimelineEvent. Several of
+// MemoizedTimelineEvent's props only affect the wrapper around the message
+// body (collapsed, isHighlighted, eventStatus, replyToMe, reactionRelations,
+// item), but a change to any of them still bails the outer memo. Without this
+// inner memo those bails cascade through Message and re-render the entire
+// content subtree, which visibly reflows images and other media.
+//
+// Custom comparator only because groupedImages is a fresh array on every
+// buildTimelineDescriptors call; reference equality would always treat it as
+// changed. All other props are referentially stable in the parent.
+export const RenderMessageContent = React.memo(
+  RenderMessageContentInner,
+  (prev, next) =>
+    prev.displayName === next.displayName &&
+    prev.msgType === next.msgType &&
+    prev.edited === next.edited &&
+    prev.content === next.content &&
+    sameGroupedImages(prev.groupedImages, next.groupedImages) &&
+    prev.mediaAutoLoad === next.mediaAutoLoad &&
+    prev.urlPreview === next.urlPreview &&
+    prev.highlightRegex === next.highlightRegex &&
+    prev.htmlReactParserOptions === next.htmlReactParserOptions &&
+    prev.linkifyOpts === next.linkifyOpts &&
+    prev.outlineAttachment === next.outlineAttachment
+);

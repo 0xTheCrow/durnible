@@ -3,6 +3,7 @@ import type { EventTimelineSet, MatrixEvent, Relations } from 'matrix-js-sdk';
 import { Box, Chip, Icon, Icons, Text, config, color, toRem } from 'folds';
 import { useTranslation } from 'react-i18next';
 import type { ImageContent } from '../../../types/matrix/common';
+import { sameGroupedImages } from '../../utils/buildTimelineDescriptors';
 import {
   Reply,
   MessageUnsupportedContent,
@@ -506,22 +507,15 @@ function TimelineEventComponent({
   );
 }
 
-// Shallow equality on the groupedImages array — detects changes to length
-// (group grew/shrunk) and per-cell content reference changes (a new event
-// arrived or an absorbed image was redacted out of the group).
-const sameGroupedImages = (
-  a: ImageContent[] | undefined,
-  b: ImageContent[] | undefined
-): boolean => {
-  if (a === b) return true;
-  if (!a || !b) return false;
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i += 1) {
-    if (a[i] !== b[i]) return false;
-  }
-  return true;
-};
-
+// Outer of two memo boundaries. Skips TimelineEventComponent entirely when no
+// prop on this specific message changed. RoomTimeline re-renders frequently
+// (scroll, range, focus, selection) and without this every visible message
+// would rebuild its JSX on every parent render.
+//
+// Wrapper-only prop changes (collapsed, isHighlighted, eventStatus, replyToMe,
+// reactionRelations, item) still bail this memo because they affect the
+// MessageBase wrapper, header, avatar, or reactions footer. RenderMessageContent
+// has its own memo so those bails don't cascade into the message body.
 export const MemoizedTimelineEvent = React.memo(TimelineEventComponent, (prev, next) => {
   const result =
     prev.mEventId === next.mEventId &&
