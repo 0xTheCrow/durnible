@@ -16,7 +16,7 @@ import {
   TooltipProvider,
   toRem,
 } from 'folds';
-import type { MouseEventHandler, ReactNode, RefObject } from 'react';
+import type { ComponentProps, MouseEventHandler, ReactNode, RefObject } from 'react';
 import React, { useCallback, useEffect, useState } from 'react';
 import * as css from './Editor.css';
 import { isMacOS } from '../../utils/user-agent';
@@ -24,6 +24,7 @@ import { KeySymbol } from '../../utils/key-symbol';
 import { useSetting } from '../../state/hooks/settings';
 import { settingsAtom } from '../../state/settings';
 import { stopPropagation } from '../../utils/keyboard';
+import { useCanHover } from '../../hooks/useCanHover';
 import {
   exitBlock,
   isExitableBlock,
@@ -39,6 +40,14 @@ import {
 } from './editorFormatting';
 
 const preventFocusLoss = (e: React.MouseEvent | React.TouchEvent) => e.preventDefault();
+
+const noopTriggerRef = () => {};
+
+function ConditionalTooltipProvider(props: ComponentProps<typeof TooltipProvider>) {
+  const canHover = useCanHover();
+  if (!canHover) return <>{props.children(noopTriggerRef)}</>;
+  return <TooltipProvider {...props} />;
+}
 
 function BtnTooltip({ text, shortCode }: { text: string; shortCode?: string }) {
   return (
@@ -67,7 +76,7 @@ type InlineButtonProps = {
 
 function InlineButton({ icon, tooltip, active, onClick, disabled }: InlineButtonProps) {
   return (
-    <TooltipProvider tooltip={tooltip} delay={500}>
+    <ConditionalTooltipProvider tooltip={tooltip} delay={500}>
       {(triggerRef) => (
         <IconButton
           ref={triggerRef}
@@ -83,7 +92,7 @@ function InlineButton({ icon, tooltip, active, onClick, disabled }: InlineButton
           <Icon size="200" src={icon} />
         </IconButton>
       )}
-    </TooltipProvider>
+    </ConditionalTooltipProvider>
   );
 }
 
@@ -96,7 +105,7 @@ type BlockButtonProps = {
 
 function BlockButton({ icon, tooltip, active, onClick }: BlockButtonProps) {
   return (
-    <TooltipProvider tooltip={tooltip} delay={500}>
+    <ConditionalTooltipProvider tooltip={tooltip} delay={500}>
       {(triggerRef) => (
         <IconButton
           ref={triggerRef}
@@ -111,7 +120,7 @@ function BlockButton({ icon, tooltip, active, onClick }: BlockButtonProps) {
           <Icon size="200" src={icon} />
         </IconButton>
       )}
-    </TooltipProvider>
+    </ConditionalTooltipProvider>
   );
 }
 
@@ -169,7 +178,7 @@ function HeadingButton({ inputRef, onFormat }: HeadingButtonProps) {
         >
           <Menu style={{ padding: config.space.S100 }}>
             <Box gap="100">
-              <TooltipProvider
+              <ConditionalTooltipProvider
                 tooltip={<BtnTooltip text="Heading 1" shortCode={`${modKey} + 1`} />}
                 delay={500}
               >
@@ -185,8 +194,8 @@ function HeadingButton({ inputRef, onFormat }: HeadingButtonProps) {
                     <Icon size="200" src={Icons.Heading1} />
                   </IconButton>
                 )}
-              </TooltipProvider>
-              <TooltipProvider
+              </ConditionalTooltipProvider>
+              <ConditionalTooltipProvider
                 tooltip={<BtnTooltip text="Heading 2" shortCode={`${modKey} + 2`} />}
                 delay={500}
               >
@@ -202,8 +211,8 @@ function HeadingButton({ inputRef, onFormat }: HeadingButtonProps) {
                     <Icon size="200" src={Icons.Heading2} />
                   </IconButton>
                 )}
-              </TooltipProvider>
-              <TooltipProvider
+              </ConditionalTooltipProvider>
+              <ConditionalTooltipProvider
                 tooltip={<BtnTooltip text="Heading 3" shortCode={`${modKey} + 3`} />}
                 delay={500}
               >
@@ -219,7 +228,7 @@ function HeadingButton({ inputRef, onFormat }: HeadingButtonProps) {
                     <Icon size="200" src={Icons.Heading3} />
                   </IconButton>
                 )}
-              </TooltipProvider>
+              </ConditionalTooltipProvider>
             </Box>
           </Menu>
         </FocusTrap>
@@ -296,7 +305,7 @@ export function EditorToolbar({ inputRef, onFormat }: EditorToolbarProps) {
   );
 
   return (
-    <Box className={css.EditorToolbarBase}>
+    <Box className={css.EditorToolbarBase} data-no-swipe-drawer>
       <Scroll direction="Horizontal" size="0">
         <Box className={css.EditorToolbar} alignItems="Center" gap="300">
           <Box shrink="No" gap="100">
@@ -375,7 +384,7 @@ export function EditorToolbar({ inputRef, onFormat }: EditorToolbarProps) {
             <>
               <Line variant="SurfaceVariant" direction="Vertical" style={{ height: toRem(12) }} />
               <Box shrink="No" gap="100">
-                <TooltipProvider
+                <ConditionalTooltipProvider
                   tooltip={
                     <BtnTooltip text="Exit Formatting" shortCode={`Escape, ${modKey} + E`} />
                   }
@@ -394,12 +403,12 @@ export function EditorToolbar({ inputRef, onFormat }: EditorToolbarProps) {
                       <Text size="B400">{`Exit ${KeySymbol.Hyper}`}</Text>
                     </IconButton>
                   )}
-                </TooltipProvider>
+                </ConditionalTooltipProvider>
               </Box>
             </>
           )}
           <Box className={css.MarkdownBtnBox} shrink="No" grow="Yes" justifyContent="End">
-            <TooltipProvider
+            <ConditionalTooltipProvider
               align="End"
               tooltip={<BtnTooltip text={isMarkdown ? 'Disable Markdown' : 'Enable Markdown'} />}
               delay={500}
@@ -418,7 +427,7 @@ export function EditorToolbar({ inputRef, onFormat }: EditorToolbarProps) {
                   <Icon size="200" src={Icons.Markdown} filled={isMarkdown} />
                 </IconButton>
               )}
-            </TooltipProvider>
+            </ConditionalTooltipProvider>
             <span />
           </Box>
         </Box>
