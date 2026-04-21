@@ -1,19 +1,9 @@
 import type { ReactNode } from 'react';
 import React, { useCallback, useState } from 'react';
-import {
-  Box,
-  Button,
-  Icon,
-  Icons,
-  Modal,
-  Spinner,
-  Text,
-  Tooltip,
-  TooltipProvider,
-  as,
-} from 'folds';
+import { Box, Button, Icon, Icons, Modal, Spinner, Text, Tooltip, as } from 'folds';
 import FileSaver from 'file-saver';
 import type { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
+import { TooltipProvider } from '../../TooltipProvider';
 import type { FileInfo } from '../../../../types/matrix/common';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';

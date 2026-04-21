@@ -17,12 +17,12 @@ import {
   Spinner,
   Text,
   Tooltip,
-  TooltipProvider,
   config,
 } from 'folds';
 import type { MatrixClient, Room, RoomMember } from 'matrix-js-sdk';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import classNames from 'classnames';
+import { TooltipProvider } from '../../../components/TooltipProvider';
 
 import * as css from './MembersDrawer.css';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';

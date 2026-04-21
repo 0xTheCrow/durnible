@@ -1,22 +1,11 @@
 import type { ReactNode } from 'react';
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Badge,
-  Box,
-  Button,
-  Chip,
-  Icon,
-  Icons,
-  Spinner,
-  Text,
-  Tooltip,
-  TooltipProvider,
-  as,
-} from 'folds';
+import { Badge, Box, Button, Chip, Icon, Icons, Spinner, Text, Tooltip, as } from 'folds';
 import classNames from 'classnames';
 import { BlurhashCanvas } from 'react-blurhash';
 import type { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
 import { useAtom } from 'jotai';
+import { TooltipProvider } from '../../TooltipProvider';
 import type { ThumbnailContent, VideoInfo } from '../../../../types/matrix/common';
 import { MATRIX_BLUR_HASH_PROPERTY_NAME } from '../../../../types/matrix/common';
 import * as css from './style.css';

@@ -10,7 +10,6 @@ import {
   Icon,
   Icons,
   Tooltip,
-  TooltipProvider,
   Menu,
   MenuItem,
   toRem,
@@ -25,6 +24,7 @@ import type { Room } from 'matrix-js-sdk';
 import { JoinRule } from 'matrix-js-sdk';
 import { useAtom, useAtomValue } from 'jotai';
 import { OverlayModal } from '../../../components/OverlayModal';
+import { TooltipProvider } from '../../../components/TooltipProvider';
 
 import { useStateEvent } from '../../../hooks/useStateEvent';
 import { PageHeader } from '../../../components/page';

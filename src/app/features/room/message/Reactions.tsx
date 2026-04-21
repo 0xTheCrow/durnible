@@ -1,10 +1,11 @@
 import type { MouseEventHandler } from 'react';
 import React, { useCallback, useMemo } from 'react';
-import { Box, Text, Tooltip, TooltipProvider, as, toRem } from 'folds';
+import { Box, Text, Tooltip, as, toRem } from 'folds';
 import classNames from 'classnames';
 import type { MatrixEvent, Room } from 'matrix-js-sdk';
 import { EventType, RelationType } from 'matrix-js-sdk';
 import { type Relations } from 'matrix-js-sdk/lib/models/relations';
+import { TooltipProvider } from '../../../components/TooltipProvider';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { factoryEventSentBy } from '../../../utils/matrix';
 import { Reaction, ReactionTooltipMsg } from '../../../components/message';

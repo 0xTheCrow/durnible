@@ -16,11 +16,11 @@ import {
   config,
   Spinner,
   toRem,
-  TooltipProvider,
   Tooltip,
 } from 'folds';
 import { HexColorPicker } from 'react-colorful';
 import { useAtomValue } from 'jotai';
+import { TooltipProvider } from '../../../components/TooltipProvider';
 import { Page, PageContent, PageHeader } from '../../../components/page';
 import type { PowerLevels } from '../../../hooks/usePowerLevels';
 import { SequenceCard } from '../../../components/sequence-card';

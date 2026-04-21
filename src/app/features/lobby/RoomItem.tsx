@@ -11,7 +11,6 @@ import {
   Spinner,
   Text,
   Tooltip,
-  TooltipProvider,
   as,
   color,
   toRem,
@@ -19,6 +18,7 @@ import {
 import type { MatrixError, Room } from 'matrix-js-sdk';
 import { JoinRule } from 'matrix-js-sdk';
 import type { IHierarchyRoom } from 'matrix-js-sdk/lib/@types/spaces';
+import { TooltipProvider } from '../../components/TooltipProvider';
 import { OverlayModal } from '../../components/OverlayModal';
 import { RoomAvatar, RoomIcon } from '../../components/room-avatar';
 import { SequenceCard } from '../../components/sequence-card';
