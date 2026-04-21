@@ -609,15 +609,21 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
   );
 
   useEffect(() => {
-    if (eventId) {
-      setAtBottom(false);
-      setTimeline(getEmptyTimeline());
-      loadEventTimeline(eventId);
-    } else {
+    if (!eventId) return;
+    setAtBottom(false);
+    setTimeline(getEmptyTimeline());
+    loadEventTimeline(eventId);
+  }, [eventId, loadEventTimeline, setAtBottom]);
+
+  const prevEventIdRef = useRef(eventId);
+  useEffect(() => {
+    const prev = prevEventIdRef.current;
+    prevEventIdRef.current = eventId;
+    if (prev && !eventId) {
       setTimeline(getInitialTimeline(room));
       requestScrollToBottom(false);
     }
-  }, [eventId, loadEventTimeline, room, setAtBottom, requestScrollToBottom]);
+  }, [eventId, room, requestScrollToBottom]);
 
   useLayoutEffect(() => {
     const scrollEl = scrollRef.current;
