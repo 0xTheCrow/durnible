@@ -21,8 +21,8 @@ import {
   toRem,
 } from 'folds';
 
-import { useMatrixClient } from '../../hooks/useMatrixClient';
-import type { AutocompleteQuery, EditorController } from '../../components/editor';
+import { useMatrixClient } from '../../../hooks/useMatrixClient';
+import type { AutocompleteQuery, EditorController } from '../../../components/editor';
 import {
   CustomEditor,
   EditorToolbar,
@@ -43,59 +43,66 @@ import {
   isEditorEmpty,
   isInsideList,
   handleListEnter,
-} from '../../components/editor';
-import { EmojiBoardWrapper, EmojiBoardTab } from '../../components/emoji-board';
-import type { UploadContent } from '../../utils/matrix';
-import { getImageInfo, getMxIdLocalPart, mxcUrlToHttp } from '../../utils/matrix';
-import { encryptFileInWorker } from '../../utils/encryptWorker';
-import { useTypingStatusUpdater } from '../../hooks/useTypingStatusUpdater';
-import { useFilePicker } from '../../hooks/useFilePicker';
-import { useFileDropZone } from '../../hooks/useFileDrop';
-import type { UploadItem, UploadMetadata } from '../../state/room/roomInputDrafts';
+} from '../../../components/editor';
+import { EmojiBoardWrapper, EmojiBoardTab } from '../../../components/emoji-board';
+import type { UploadContent } from '../../../utils/matrix';
+import { getImageInfo, getMxIdLocalPart, mxcUrlToHttp } from '../../../utils/matrix';
+import { encryptFileInWorker } from '../../../utils/encryptWorker';
+import { useTypingStatusUpdater } from '../../../hooks/useTypingStatusUpdater';
+import { useFilePicker } from '../../../hooks/useFilePicker';
+import { useFileDropZone } from '../../../hooks/useFileDrop';
+import type { UploadItem, UploadMetadata } from '../../../state/room/roomInputDrafts';
 import {
   roomIdToEditorDraftAtomFamily,
   roomIdToReplyDraftAtomFamily,
   roomIdToUploadItemsAtomFamily,
   roomUploadAtomFamily,
-} from '../../state/room/roomInputDrafts';
-import { UploadCardRenderer } from '../../components/upload-card';
-import type { UploadBoardImperativeHandlers } from '../../components/upload-board';
-import { UploadBoard, UploadBoardContent, UploadBoardHeader } from '../../components/upload-board';
-import type { Upload, UploadSuccess } from '../../state/upload';
-import { UploadStatus, createUploadFamilyObserverAtom } from '../../state/upload';
-import { getImageUrlBlob, loadImageElement } from '../../utils/dom';
+} from '../../../state/room/roomInputDrafts';
+import { UploadCardRenderer } from '../../../components/upload-card';
+import type { UploadBoardImperativeHandlers } from '../../../components/upload-board';
+import {
+  UploadBoard,
+  UploadBoardContent,
+  UploadBoardHeader,
+} from '../../../components/upload-board';
+import type { Upload, UploadSuccess } from '../../../state/upload';
+import { UploadStatus, createUploadFamilyObserverAtom } from '../../../state/upload';
+import { getImageUrlBlob, loadImageElement } from '../../../utils/dom';
 import { handleUploadFiles } from './handleUploadFiles';
-import { fulfilledPromiseSettledResult } from '../../utils/common';
-import { useSetting } from '../../state/hooks/settings';
-import { settingsAtom } from '../../state/settings';
+import { fulfilledPromiseSettledResult } from '../../../utils/common';
+import { useSetting } from '../../../state/hooks/settings';
+import { settingsAtom } from '../../../state/settings';
 import {
   getAudioMsgContent,
   getFileMsgContent,
   getImageMsgContent,
   getVideoMsgContent,
 } from './msgContent';
-import { getMemberDisplayName, getMentionContent, trimReplyFromBody } from '../../utils/room';
+import { getMemberDisplayName, getMentionContent, trimReplyFromBody } from '../../../utils/room';
 import { CommandAutocomplete } from './CommandAutocomplete';
 import { VoiceMessageRecorder } from './VoiceMessageRecorder';
-import { Command, SHRUG, TABLEFLIP, UNFLIP, useCommands } from '../../hooks/useCommands';
-import { mobileOrTablet } from '../../utils/user-agent';
-import { useElementSizeObserver } from '../../hooks/useElementSizeObserver';
-import { ReplyLayout, ThreadIndicator } from '../../components/message';
-import { roomToParentsAtom } from '../../state/room/roomToParents';
-import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
-import { useImagePackRooms } from '../../hooks/useImagePackRooms';
-import { useRelevantImagePacks } from '../../hooks/useImagePacks';
-import { ImageUsage } from '../../plugins/custom-emoji/types';
-import { buildShortcodeMap, emojis as unicodeEmojis } from '../../plugins/emoji';
-import { usePowerLevelsContext } from '../../hooks/usePowerLevels';
-import colorMXID from '../../../util/colorMXID';
-import { useIsDirectRoom } from '../../hooks/useRoom';
-import { useAccessiblePowerTagColors, useGetMemberPowerTag } from '../../hooks/useMemberPowerTag';
-import { useRoomCreators } from '../../hooks/useRoomCreators';
-import { useTheme } from '../../hooks/useTheme';
-import { useRoomCreatorsTag } from '../../hooks/useRoomCreatorsTag';
-import { usePowerLevelTags } from '../../hooks/usePowerLevelTags';
-import { useComposingCheck } from '../../hooks/useComposingCheck';
+import { Command, SHRUG, TABLEFLIP, UNFLIP, useCommands } from '../../../hooks/useCommands';
+import { mobileOrTablet } from '../../../utils/user-agent';
+import { useElementSizeObserver } from '../../../hooks/useElementSizeObserver';
+import { ReplyLayout, ThreadIndicator } from '../../../components/message';
+import { roomToParentsAtom } from '../../../state/room/roomToParents';
+import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
+import { useImagePackRooms } from '../../../hooks/useImagePackRooms';
+import { useRelevantImagePacks } from '../../../hooks/useImagePacks';
+import { ImageUsage } from '../../../plugins/custom-emoji/types';
+import { buildShortcodeMap, emojis as unicodeEmojis } from '../../../plugins/emoji';
+import { usePowerLevelsContext } from '../../../hooks/usePowerLevels';
+import colorMXID from '../../../../util/colorMXID';
+import { useIsDirectRoom } from '../../../hooks/useRoom';
+import {
+  useAccessiblePowerTagColors,
+  useGetMemberPowerTag,
+} from '../../../hooks/useMemberPowerTag';
+import { useRoomCreators } from '../../../hooks/useRoomCreators';
+import { useTheme } from '../../../hooks/useTheme';
+import { useRoomCreatorsTag } from '../../../hooks/useRoomCreatorsTag';
+import { usePowerLevelTags } from '../../../hooks/usePowerLevelTags';
+import { useComposingCheck } from '../../../hooks/useComposingCheck';
 
 export const ROOM_INPUT_EDITABLE_NAME = 'RoomInput';
 

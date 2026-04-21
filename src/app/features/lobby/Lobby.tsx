@@ -15,7 +15,7 @@ import type { HierarchyItem, HierarchyItemSpace } from '../../hooks/useSpaceHier
 import { useSpaceHierarchy } from '../../hooks/useSpaceHierarchy';
 import { VirtualTile } from '../../components/virtualizer';
 import { spaceRoomsAtom } from '../../state/spaceRooms';
-import { MembersDrawer } from '../room/MembersDrawer';
+import { MembersDrawer } from '../room/layout/MembersDrawer';
 import { useSetting } from '../../state/hooks/settings';
 import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
 import { settingsAtom } from '../../state/settings';

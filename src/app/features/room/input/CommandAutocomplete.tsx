@@ -2,15 +2,15 @@ import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { Box, config, MenuItem, Text } from 'folds';
 import type { Room } from 'matrix-js-sdk';
-import type { Command } from '../../hooks/useCommands';
-import { useCommands } from '../../hooks/useCommands';
-import type { AutocompleteQuery } from '../../components/editor';
-import { AutocompleteMenu } from '../../components/editor';
-import type { UseAsyncSearchOptions } from '../../hooks/useAsyncSearch';
-import { useAsyncSearch } from '../../hooks/useAsyncSearch';
-import { useMatrixClient } from '../../hooks/useMatrixClient';
-import { useKeyDown } from '../../hooks/useKeyDown';
-import { onTabPress } from '../../utils/keyboard';
+import type { Command } from '../../../hooks/useCommands';
+import { useCommands } from '../../../hooks/useCommands';
+import type { AutocompleteQuery } from '../../../components/editor';
+import { AutocompleteMenu } from '../../../components/editor';
+import type { UseAsyncSearchOptions } from '../../../hooks/useAsyncSearch';
+import { useAsyncSearch } from '../../../hooks/useAsyncSearch';
+import { useMatrixClient } from '../../../hooks/useMatrixClient';
+import { useKeyDown } from '../../../hooks/useKeyDown';
+import { onTabPress } from '../../../utils/keyboard';
 
 type CommandAutoCompleteHandler = (commandName: string) => void;
 

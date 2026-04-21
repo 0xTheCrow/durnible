@@ -3,13 +3,13 @@ import { Box, Icon, IconButton, Icons, Text, as } from 'folds';
 import type { Room } from 'matrix-js-sdk';
 import classNames from 'classnames';
 import { useSetAtom } from 'jotai';
-import { roomIdToTypingMembersAtom } from '../../state/typingMembers';
-import { TypingIndicator } from '../../components/typing-indicator';
-import { getMemberDisplayName } from '../../utils/room';
-import { getMxIdLocalPart } from '../../utils/matrix';
+import { roomIdToTypingMembersAtom } from '../../../state/typingMembers';
+import { TypingIndicator } from '../../../components/typing-indicator';
+import { getMemberDisplayName } from '../../../utils/room';
+import { getMxIdLocalPart } from '../../../utils/matrix';
 import * as css from './RoomViewTyping.css';
-import { useMatrixClient } from '../../hooks/useMatrixClient';
-import { useRoomTypingMember } from '../../hooks/useRoomTypingMembers';
+import { useMatrixClient } from '../../../hooks/useMatrixClient';
+import { useRoomTypingMember } from '../../../hooks/useRoomTypingMembers';
 
 export type RoomViewTypingProps = {
   room: Room;

@@ -3,17 +3,17 @@ import { useCallback } from 'react';
 import type { IContent, MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk';
 import { EventType } from 'matrix-js-sdk';
 import { useSetAtom } from 'jotai';
-import type { EditorController } from '../../components/editor';
-import { createMentionNode } from '../../components/editor';
-import { eventWithShortcode, factoryEventSentBy, getMxIdLocalPart } from '../../utils/matrix';
+import type { EditorController } from '../../../components/editor';
+import { createMentionNode } from '../../../components/editor';
+import { eventWithShortcode, factoryEventSentBy, getMxIdLocalPart } from '../../../utils/matrix';
 import {
   getEditedEvent,
   getEventReactions,
   getMemberDisplayName,
   getReactionContent,
-} from '../../utils/room';
-import type { ReplyDraftAtom } from '../../state/room/roomInputDrafts';
-import type { useOpenUserRoomProfile } from '../../state/hooks/userRoomProfile';
+} from '../../../utils/room';
+import type { ReplyDraftAtom } from '../../../state/room/roomInputDrafts';
+import type { useOpenUserRoomProfile } from '../../../state/hooks/userRoomProfile';
 
 type OpenUserRoomProfile = ReturnType<typeof useOpenUserRoomProfile>;
 

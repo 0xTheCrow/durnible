@@ -1,6 +1,6 @@
 import type { MatrixEvent } from 'matrix-js-sdk';
-import { isMembershipChanged, reactionOrEditEvent } from '../../utils/room';
-import { MessageEvent, StateEvent } from '../../../types/matrix/room';
+import { isMembershipChanged, reactionOrEditEvent } from '../../../utils/room';
+import { MessageEvent, StateEvent } from '../../../../types/matrix/room';
 
 export type WillEventRenderSettings = {
   showHiddenEvents: boolean;

@@ -2,8 +2,8 @@ import React from 'react';
 import type { EventTimelineSet, MatrixEvent, Relations } from 'matrix-js-sdk';
 import { Box, Chip, Icon, Icons, Text, config, color, toRem } from 'folds';
 import { useTranslation } from 'react-i18next';
-import type { ImageContent } from '../../../types/matrix/common';
-import { sameGroupedImages } from '../../utils/buildTimelineDescriptors';
+import type { ImageContent } from '../../../../types/matrix/common';
+import { sameGroupedImages } from '../../../utils/buildTimelineDescriptors';
 import {
   Reply,
   MessageUnsupportedContent,
@@ -14,16 +14,16 @@ import {
   EventContent,
   MPoll,
   LinePlaceholder,
-} from '../../components/message';
-import { getEditedEvent, getMemberDisplayName, isMembershipChanged } from '../../utils/room';
-import { MessageEvent, StateEvent } from '../../../types/matrix/room';
-import { MessageLayout } from '../../state/settings';
-import { getMxIdLocalPart } from '../../utils/matrix';
-import { RenderMessageContent } from '../../components/RenderMessageContent';
-import { Image } from '../../components/media';
-import { Reactions, Message, TimelineSystemEvent, EncryptedContent } from './message';
-import * as customHtmlCss from '../../styles/CustomHtml.css';
-import { useMemberEventParser } from '../../hooks/useMemberEventParser';
+} from '../../../components/message';
+import { getEditedEvent, getMemberDisplayName, isMembershipChanged } from '../../../utils/room';
+import { MessageEvent, StateEvent } from '../../../../types/matrix/room';
+import { MessageLayout } from '../../../state/settings';
+import { getMxIdLocalPart } from '../../../utils/matrix';
+import { RenderMessageContent } from '../../../components/RenderMessageContent';
+import { Image } from '../../../components/media';
+import { Reactions, Message, TimelineSystemEvent, EncryptedContent } from '../message';
+import * as customHtmlCss from '../../../styles/CustomHtml.css';
+import { useMemberEventParser } from '../../../hooks/useMemberEventParser';
 import { useTimelineMessageContext } from './TimelineMessageContext';
 
 const warningStyle = { color: color.Warning.Main, opacity: config.opacity.P300 };

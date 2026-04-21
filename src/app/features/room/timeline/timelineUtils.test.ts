@@ -8,7 +8,7 @@ import {
   getTimelineAndBaseIndex,
   getTimelinesEventsCount,
 } from './timelineUtils';
-import { createMockMatrixEvent } from '../../../test/mocks';
+import { createMockMatrixEvent } from '../../../../test/mocks';
 
 // ─── Fake EventTimeline chain ─────────────────────────────────────────────
 // These functions only use `getEvents()` and `getNeighbouringTimeline(direction)`,

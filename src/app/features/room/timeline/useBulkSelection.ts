@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { MatrixClient, Room } from 'matrix-js-sdk';
 import { useAtom } from 'jotai';
-import { useKeyDown } from '../../hooks/useKeyDown';
-import { selectedIdsAtom, selectionModeAtom } from './message/selectionAtom';
+import { useKeyDown } from '../../../hooks/useKeyDown';
+import { selectedIdsAtom, selectionModeAtom } from '../message/selectionAtom';
 
 export type BulkSelectionApi = {
   selectionMode: boolean;

@@ -5,8 +5,8 @@ import { RoomEvent } from 'matrix-js-sdk';
 import {
   getIntersectionObserverEntry,
   useIntersectionObserver,
-} from '../../hooks/useIntersectionObserver';
-import { scrollToBottom } from '../../utils/dom';
+} from '../../../hooks/useIntersectionObserver';
+import { scrollToBottom } from '../../../utils/dom';
 
 export type TimelineAutoScrollOptions = {
   room: Room;

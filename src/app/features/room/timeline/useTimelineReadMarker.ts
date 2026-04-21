@@ -2,7 +2,7 @@ import type { MutableRefObject } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { MatrixClient, Room } from 'matrix-js-sdk';
 import { Direction } from 'matrix-js-sdk';
-import { markAsRead } from '../../utils/notifications';
+import { markAsRead } from '../../../utils/notifications';
 import { getEventTimeline, getFirstLinkedTimeline } from './timelineUtils';
 
 export type UnreadInfo = {

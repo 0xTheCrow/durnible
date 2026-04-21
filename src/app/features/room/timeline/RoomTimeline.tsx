@@ -8,9 +8,9 @@ import { useAtomValue, useSetAtom } from 'jotai';
 import type { ContainerColor } from 'folds';
 import { Badge, Box, Chip, Icon, Icons, Line, Scroll, Text, as, color, config, toRem } from 'folds';
 import type { Opts as LinkifyOpts } from 'linkifyjs';
-import { useMatrixClient } from '../../hooks/useMatrixClient';
-import { useVirtualPaginator } from '../../hooks/useVirtualPaginator';
-import { useAlive } from '../../hooks/useAlive';
+import { useMatrixClient } from '../../../hooks/useMatrixClient';
+import { useVirtualPaginator } from '../../../hooks/useVirtualPaginator';
+import { useAlive } from '../../../hooks/useAlive';
 import {
   PAGINATION_LIMIT,
   getEmptyTimeline,
@@ -21,21 +21,21 @@ import {
   useTimelinePagination,
 } from './timelineState';
 import type { Timeline } from './timelineState';
-import { scrollToBottom } from '../../utils/dom';
-import { DefaultPlaceholder, CompactPlaceholder, MessageBase } from '../../components/message';
+import { scrollToBottom } from '../../../utils/dom';
+import { DefaultPlaceholder, CompactPlaceholder, MessageBase } from '../../../components/message';
 import {
   factoryRenderLinkifyWithMention,
   getReactCustomHtmlParser,
   LINKIFY_OPTS,
   makeMentionCustomProps,
   renderMatrixMention,
-} from '../../plugins/react-custom-html-parser';
+} from '../../../plugins/react-custom-html-parser';
 import {
   decryptAllTimelineEvent,
   getEditedEvent,
   getEventReactions,
   reactionOrEditEvent,
-} from '../../utils/room';
+} from '../../../utils/room';
 import { willEventRender } from './willEventRender';
 import { getRoomUnreadInfo, useTimelineReadMarker } from './useTimelineReadMarker';
 import { useTimelineClickHandlers } from './useTimelineClickHandlers';
@@ -49,43 +49,46 @@ import {
   getTimelineRelativeIndex,
   getTimelinesEventsCount,
 } from './timelineUtils';
-import { useSetting } from '../../state/hooks/settings';
-import { MessageLayout, settingsAtom } from '../../state/settings';
-import { RoomIntro } from '../../components/room-intro';
+import { useSetting } from '../../../state/hooks/settings';
+import { MessageLayout, settingsAtom } from '../../../state/settings';
+import { RoomIntro } from '../../../components/room-intro';
 import { TimelineMessageContext } from './TimelineMessageContext';
 import { MemoizedTimelineEvent } from './MemoizedTimelineEvent';
 import { SelectionActionBar } from './SelectionActionBar';
 import { useBulkSelection } from './useBulkSelection';
-import { markAsRead } from '../../utils/notifications';
+import { markAsRead } from '../../../utils/notifications';
 
-import { getResizeObserverEntry, useResizeObserver } from '../../hooks/useResizeObserver';
+import { getResizeObserverEntry, useResizeObserver } from '../../../hooks/useResizeObserver';
 import * as css from './RoomTimeline.css';
-import { timeDayMonthYear, today, yesterday } from '../../utils/time';
-import { buildTimelineDescriptors } from '../../utils/buildTimelineDescriptors';
-import type { EditorController } from '../../components/editor';
-import { roomIdToReplyDraftAtomFamily } from '../../state/room/roomInputDrafts';
-import { usePowerLevelsContext } from '../../hooks/usePowerLevels';
-import { MessageEvent, StateEvent } from '../../../types/matrix/room';
-import { useDocumentFocusChange } from '../../hooks/useDocumentFocusChange';
-import { roomToParentsAtom } from '../../state/room/roomToParents';
-import { useRoomUnread } from '../../state/hooks/unread';
-import { roomToUnreadAtom } from '../../state/room/roomToUnread';
-import { useMentionClickHandler } from '../../hooks/useMentionClickHandler';
-import { useSpoilerClickHandler } from '../../hooks/useSpoilerClickHandler';
-import { useRoomNavigate } from '../../hooks/useRoomNavigate';
-import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
-import { useIgnoredUsers } from '../../hooks/useIgnoredUsers';
+import { timeDayMonthYear, today, yesterday } from '../../../utils/time';
+import { buildTimelineDescriptors } from '../../../utils/buildTimelineDescriptors';
+import type { EditorController } from '../../../components/editor';
+import { roomIdToReplyDraftAtomFamily } from '../../../state/room/roomInputDrafts';
+import { usePowerLevelsContext } from '../../../hooks/usePowerLevels';
+import { MessageEvent, StateEvent } from '../../../../types/matrix/room';
+import { useDocumentFocusChange } from '../../../hooks/useDocumentFocusChange';
+import { roomToParentsAtom } from '../../../state/room/roomToParents';
+import { useRoomUnread } from '../../../state/hooks/unread';
+import { roomToUnreadAtom } from '../../../state/room/roomToUnread';
+import { useMentionClickHandler } from '../../../hooks/useMentionClickHandler';
+import { useSpoilerClickHandler } from '../../../hooks/useSpoilerClickHandler';
+import { useRoomNavigate } from '../../../hooks/useRoomNavigate';
+import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
+import { useIgnoredUsers } from '../../../hooks/useIgnoredUsers';
 import { timelineSliderPositionAtom, timelineSliderVisibleAtom } from './TimelineSlider';
-import { useImagePackRooms } from '../../hooks/useImagePackRooms';
-import { useIsDirectRoom } from '../../hooks/useRoom';
-import { useOpenUserRoomProfile } from '../../state/hooks/userRoomProfile';
-import { useSpaceOptionally } from '../../hooks/useSpace';
-import { useRoomCreators } from '../../hooks/useRoomCreators';
-import { useRoomPermissions } from '../../hooks/useRoomPermissions';
-import { useAccessiblePowerTagColors, useGetMemberPowerTag } from '../../hooks/useMemberPowerTag';
-import { useTheme } from '../../hooks/useTheme';
-import { useRoomCreatorsTag } from '../../hooks/useRoomCreatorsTag';
-import { usePowerLevelTags } from '../../hooks/usePowerLevelTags';
+import { useImagePackRooms } from '../../../hooks/useImagePackRooms';
+import { useIsDirectRoom } from '../../../hooks/useRoom';
+import { useOpenUserRoomProfile } from '../../../state/hooks/userRoomProfile';
+import { useSpaceOptionally } from '../../../hooks/useSpace';
+import { useRoomCreators } from '../../../hooks/useRoomCreators';
+import { useRoomPermissions } from '../../../hooks/useRoomPermissions';
+import {
+  useAccessiblePowerTagColors,
+  useGetMemberPowerTag,
+} from '../../../hooks/useMemberPowerTag';
+import { useTheme } from '../../../hooks/useTheme';
+import { useRoomCreatorsTag } from '../../../hooks/useRoomCreatorsTag';
+import { usePowerLevelTags } from '../../../hooks/usePowerLevelTags';
 import { useTimelineAutoScroll } from './useTimelineAutoScroll';
 
 const TimelineFloat = as<'div', css.TimelineFloatVariants>(

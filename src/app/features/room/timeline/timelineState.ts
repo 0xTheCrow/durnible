@@ -10,8 +10,8 @@ import type {
 } from 'matrix-js-sdk';
 import { Direction, RoomEvent } from 'matrix-js-sdk';
 import to from 'await-to-js';
-import { useAlive } from '../../hooks/useAlive';
-import { decryptAllTimelineEvent } from '../../utils/room';
+import { useAlive } from '../../../hooks/useAlive';
+import { decryptAllTimelineEvent } from '../../../utils/room';
 import {
   getEventIdAbsoluteIndex,
   getLinkedTimelines,

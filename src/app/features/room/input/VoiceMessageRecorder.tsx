@@ -13,11 +13,11 @@ import {
   toRem,
 } from 'folds';
 import { Range } from 'react-range';
-import { useVoiceRecording, VoiceRecordingStatus } from '../../hooks/useVoiceRecording';
-import { useMediaPlay, useMediaPlayTimeCallback, useMediaSeek } from '../../hooks/media';
-import { useThrottle } from '../../hooks/useThrottle';
-import { secondsToMinutesAndSeconds } from '../../utils/common';
-import * as editorCss from '../../components/editor/Editor.css';
+import { useVoiceRecording, VoiceRecordingStatus } from '../../../hooks/useVoiceRecording';
+import { useMediaPlay, useMediaPlayTimeCallback, useMediaSeek } from '../../../hooks/media';
+import { useThrottle } from '../../../hooks/useThrottle';
+import { secondsToMinutesAndSeconds } from '../../../utils/common';
+import * as editorCss from '../../../components/editor/Editor.css';
 
 type VoiceMessageRecorderProps = {
   onSend: (blob: Blob, mimeType: string, duration: number) => void;

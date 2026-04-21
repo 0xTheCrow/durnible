@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import type { MatrixEvent } from 'matrix-js-sdk';
 import { RelationType } from 'matrix-js-sdk';
 import { willEventRender } from './willEventRender';
-import { createMockMatrixEvent } from '../../../test/mocks';
+import { createMockMatrixEvent } from '../../../../test/mocks';
 
 const DEFAULT_SETTINGS = {
   showHiddenEvents: false,

@@ -25,29 +25,32 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import classNames from 'classnames';
 
 import * as css from './MembersDrawer.css';
-import { useMatrixClient } from '../../hooks/useMatrixClient';
-import { UseStateProvider } from '../../components/UseStateProvider';
-import type { SearchItemStrGetter, UseAsyncSearchOptions } from '../../hooks/useAsyncSearch';
-import { useAsyncSearch } from '../../hooks/useAsyncSearch';
-import { TypingIndicator } from '../../components/typing-indicator';
-import { getMemberDisplayName, getMemberSearchStr } from '../../utils/room';
-import { getMxIdLocalPart } from '../../utils/matrix';
-import { useSetSetting, useSetting } from '../../state/hooks/settings';
-import { settingsAtom } from '../../state/settings';
-import { millify } from '../../plugins/millify';
-import { ScrollTopContainer } from '../../components/scroll-top-container';
-import { UserAvatar } from '../../components/user-avatar';
-import { useRoomTypingMember } from '../../hooks/useRoomTypingMembers';
-import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
-import { useMembershipFilter, useMembershipFilterMenu } from '../../hooks/useMemberFilter';
-import { useMemberPowerSort, useMemberSort, useMemberSortMenu } from '../../hooks/useMemberSort';
-import { useGetMemberPowerLevel, usePowerLevelsContext } from '../../hooks/usePowerLevels';
-import { MembershipFilterMenu } from '../../components/MembershipFilterMenu';
-import { MemberSortMenu } from '../../components/MemberSortMenu';
-import { useOpenUserRoomProfile, useUserRoomProfileState } from '../../state/hooks/userRoomProfile';
-import { useSpaceOptionally } from '../../hooks/useSpace';
-import { ContainerColor } from '../../styles/ContainerColor.css';
-import { useRoomCreators } from '../../hooks/useRoomCreators';
+import { useMatrixClient } from '../../../hooks/useMatrixClient';
+import { UseStateProvider } from '../../../components/UseStateProvider';
+import type { SearchItemStrGetter, UseAsyncSearchOptions } from '../../../hooks/useAsyncSearch';
+import { useAsyncSearch } from '../../../hooks/useAsyncSearch';
+import { TypingIndicator } from '../../../components/typing-indicator';
+import { getMemberDisplayName, getMemberSearchStr } from '../../../utils/room';
+import { getMxIdLocalPart } from '../../../utils/matrix';
+import { useSetSetting, useSetting } from '../../../state/hooks/settings';
+import { settingsAtom } from '../../../state/settings';
+import { millify } from '../../../plugins/millify';
+import { ScrollTopContainer } from '../../../components/scroll-top-container';
+import { UserAvatar } from '../../../components/user-avatar';
+import { useRoomTypingMember } from '../../../hooks/useRoomTypingMembers';
+import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
+import { useMembershipFilter, useMembershipFilterMenu } from '../../../hooks/useMemberFilter';
+import { useMemberPowerSort, useMemberSort, useMemberSortMenu } from '../../../hooks/useMemberSort';
+import { useGetMemberPowerLevel, usePowerLevelsContext } from '../../../hooks/usePowerLevels';
+import { MembershipFilterMenu } from '../../../components/MembershipFilterMenu';
+import { MemberSortMenu } from '../../../components/MemberSortMenu';
+import {
+  useOpenUserRoomProfile,
+  useUserRoomProfileState,
+} from '../../../state/hooks/userRoomProfile';
+import { useSpaceOptionally } from '../../../hooks/useSpace';
+import { ContainerColor } from '../../../styles/ContainerColor.css';
+import { useRoomCreators } from '../../../hooks/useRoomCreators';
 
 type MemberDrawerHeaderProps = {
   room: Room;

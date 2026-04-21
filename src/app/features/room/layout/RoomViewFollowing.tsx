@@ -3,14 +3,14 @@ import { Box, Icon, Icons, Modal, Text, as, config } from 'folds';
 import type { Room } from 'matrix-js-sdk';
 import classNames from 'classnames';
 
-import { getMemberDisplayName } from '../../utils/room';
-import { getMxIdLocalPart } from '../../utils/matrix';
+import { getMemberDisplayName } from '../../../utils/room';
+import { getMxIdLocalPart } from '../../../utils/matrix';
 import * as css from './RoomViewFollowing.css';
-import { useMatrixClient } from '../../hooks/useMatrixClient';
-import { useRoomLatestRenderedEvent } from '../../hooks/useRoomLatestRenderedEvent';
-import { useRoomEventReaders } from '../../hooks/useRoomEventReaders';
-import { EventReaders } from '../../components/event-readers';
-import { OverlayModal } from '../../components/OverlayModal';
+import { useMatrixClient } from '../../../hooks/useMatrixClient';
+import { useRoomLatestRenderedEvent } from '../../../hooks/useRoomLatestRenderedEvent';
+import { useRoomEventReaders } from '../../../hooks/useRoomEventReaders';
+import { EventReaders } from '../../../components/event-readers';
+import { OverlayModal } from '../../../components/OverlayModal';
 
 export function RoomViewFollowingPlaceholder() {
   return <div className={css.RoomViewFollowingPlaceholder} />;

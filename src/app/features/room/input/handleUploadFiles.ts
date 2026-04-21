@@ -1,8 +1,8 @@
 import type { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
-import type { ListAction } from '../../state/list';
-import type { UploadItem } from '../../state/room/roomInputDrafts';
-import { safeFile } from '../../utils/mimeTypes';
-import { applyUploadQueueCap } from '../../utils/uploadQueueCap';
+import type { ListAction } from '../../../state/list';
+import type { UploadItem } from '../../../state/room/roomInputDrafts';
+import { safeFile } from '../../../utils/mimeTypes';
+import { applyUploadQueueCap } from '../../../utils/uploadQueueCap';
 
 /**
  * Shape of the result returned by an encryption function — matches what

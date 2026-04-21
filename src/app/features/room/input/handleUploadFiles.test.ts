@@ -1,11 +1,11 @@
 import type { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
 import { describe, it, expect, vi } from 'vitest';
-import type { ListAction } from '../../state/list';
-import type { UploadItem } from '../../state/room/roomInputDrafts';
+import type { ListAction } from '../../../state/list';
+import type { UploadItem } from '../../../state/room/roomInputDrafts';
 import type { EncryptedFileResult, HandleUploadFilesContext } from './handleUploadFiles';
 import { handleUploadFiles } from './handleUploadFiles';
-import { MAX_UPLOAD_QUEUE_SIZE } from '../../utils/uploadQueueCap';
-import { FALLBACK_MIMETYPE } from '../../utils/mimeTypes';
+import { MAX_UPLOAD_QUEUE_SIZE } from '../../../utils/uploadQueueCap';
+import { FALLBACK_MIMETYPE } from '../../../utils/mimeTypes';
 
 // ─── Fixtures ────────────────────────────────────────────────────────────────
 

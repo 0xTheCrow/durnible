@@ -6,10 +6,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoizedTimelineEvent } from './MemoizedTimelineEvent';
 import type { TimelineMessageContextValue } from './TimelineMessageContext';
 import { TimelineMessageContext } from './TimelineMessageContext';
-import { MatrixTestWrapper } from '../../../test/wrapper';
-import { createMockMatrixClient, createMockMatrixEvent, createMockRoom } from '../../../test/mocks';
-import { MessageLayout } from '../../state/settings';
-import { LINKIFY_OPTS, getReactCustomHtmlParser } from '../../plugins/react-custom-html-parser';
+import { MatrixTestWrapper } from '../../../../test/wrapper';
+import {
+  createMockMatrixClient,
+  createMockMatrixEvent,
+  createMockRoom,
+} from '../../../../test/mocks';
+import { MessageLayout } from '../../../state/settings';
+import { LINKIFY_OPTS, getReactCustomHtmlParser } from '../../../plugins/react-custom-html-parser';
 
 // Slate's focus() fires via setTimeout after mounting. Use fake timers so it
 // never runs against a torn-down DOM and produces spurious unhandled errors.

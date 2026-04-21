@@ -75,6 +75,10 @@ Durnible is a Matrix chat client built with React, TypeScript, and Vite. Forked 
 - Don't hardcode values in tests that are defined as constants in source. If the test needs a value that depends on a source constant — a timeout, a cap, a threshold, a mime type, an event type, a URL path — import that constant and reference it (or derive from it, e.g. `WINDOW_MS / 2`). If the value isn't currently exported but is useful in a test, make it exportable first rather than copying the literal over. Copy-pasted literals desync silently when the source constant is retuned: the test either passes with stale semantics or fails in a way that looks like a regression when it isn't.
 - Don't write tests that only verify behavior the type system already guarantees (e.g., that a function compares the correct fields on a typed object). Focus test effort on behavior types can't catch: state transitions, async sequencing, side effects, edge cases in runtime logic.
 
+## Git
+
+- Never run `git commit` (or `git push`, `git reset --hard`, or any other history-rewriting or publishing command). The user owns every commit on this repo and reviews the diff before recording it. Stage work if asked, but stop before `commit`. This holds even when tests and lint pass, and even when an earlier plan appeared to include a commit step.
+
 ## Git Hooks
 
 - **pre-commit** (Husky): runs `npx lint-staged && npm test`.

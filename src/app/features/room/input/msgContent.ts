@@ -1,11 +1,11 @@
 import type { IContent, MatrixClient } from 'matrix-js-sdk';
 import { MsgType } from 'matrix-js-sdk';
 import to from 'await-to-js';
-import type { ThumbnailContent } from '../../../types/matrix/common';
+import type { ThumbnailContent } from '../../../../types/matrix/common';
 import {
   MATRIX_BLUR_HASH_PROPERTY_NAME,
   MATRIX_SPOILER_PROPERTY_NAME,
-} from '../../../types/matrix/common';
+} from '../../../../types/matrix/common';
 import {
   getImageFileUrl,
   getThumbnail,
@@ -13,11 +13,16 @@ import {
   getVideoFileUrl,
   loadImageElement,
   loadVideoElement,
-} from '../../utils/dom';
-import { encryptFile, getImageInfo, getThumbnailContent, getVideoInfo } from '../../utils/matrix';
-import type { UploadItem } from '../../state/room/roomInputDrafts';
-import { encodeBlurHash } from '../../utils/blurHash';
-import { scaleYDimension } from '../../utils/common';
+} from '../../../utils/dom';
+import {
+  encryptFile,
+  getImageInfo,
+  getThumbnailContent,
+  getVideoInfo,
+} from '../../../utils/matrix';
+import type { UploadItem } from '../../../state/room/roomInputDrafts';
+import { encodeBlurHash } from '../../../utils/blurHash';
+import { scaleYDimension } from '../../../utils/common';
 
 const generateThumbnailContent = async (
   mx: MatrixClient,
