@@ -122,7 +122,6 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     const [legacyUsernameColor] = useSetting(settingsAtom, 'legacyUsernameColor');
     const direct = useIsDirectRoom();
     const commands = useCommands(mx, room);
-    const sendBtnRef = useRef<HTMLButtonElement>(null);
     const [hasEditorContent, setHasEditorContent] = useState(false);
     const roomToParents = useAtomValue(roomToParentsAtom);
     const powerLevels = usePowerLevelsContext();
@@ -178,10 +177,12 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
           isEncrypted: room.hasEncryptionStateEvent(),
           encrypt: encryptFileInWorker,
           onUploadBoardOpen: () => setUploadBoard(true),
-          onAccepted: () => sendBtnRef.current?.focus(),
+          onAccepted: () => {
+            if (!mobileOrTablet()) editorInputRef.current?.focus();
+          },
         });
       },
-      [setSelectedFiles, room, selectedFiles.length]
+      [setSelectedFiles, room, selectedFiles.length, editorInputRef]
     );
     const handleVoiceSend = useCallback(
       (blob: Blob, mimeType: string, _duration: number) => {
@@ -725,13 +726,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
                   )}
                 </EmojiBoardWrapper>
                 {hasEditorContent || !!replyDraft || selectedFiles.length > 0 ? (
-                  <IconButton
-                    ref={sendBtnRef}
-                    onClick={submit}
-                    variant="SurfaceVariant"
-                    size="300"
-                    radii="300"
-                  >
+                  <IconButton onClick={submit} variant="SurfaceVariant" size="300" radii="300">
                     <Icon src={Icons.Send} />
                   </IconButton>
                 ) : (
