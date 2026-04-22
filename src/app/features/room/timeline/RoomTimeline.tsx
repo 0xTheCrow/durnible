@@ -17,6 +17,7 @@ import {
   getInitialTimeline,
   useEventTimelineLoader,
   useLiveEventArrive,
+  useLiveEventDecryption,
   useLiveTimelineRefresh,
   useTimelinePagination,
 } from './timelineState';
@@ -61,7 +62,15 @@ import { markAsRead } from '../../../utils/notifications';
 import { getResizeObserverEntry, useResizeObserver } from '../../../hooks/useResizeObserver';
 import * as css from './RoomTimeline.css';
 import { timeDayMonthYear, today, yesterday } from '../../../utils/time';
-import { buildTimelineDescriptors } from '../../../utils/buildTimelineDescriptors';
+import {
+  buildTimelineDescriptors,
+  computeImageGroups,
+  groupsEqual,
+} from '../../../utils/buildTimelineDescriptors';
+import type {
+  ImageGroupsSnapshot,
+  TimelineEventInput,
+} from '../../../utils/buildTimelineDescriptors';
 import type { EditorController } from '../../../components/editor';
 import { roomIdToReplyDraftAtomFamily } from '../../../state/room/roomInputDrafts';
 import { usePowerLevelsContext } from '../../../hooks/usePowerLevels';
@@ -781,8 +790,12 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
   const { selectionMode, selectedIds, bulkDeleting, handleBulkDelete, handleCancelSelection } =
     useBulkSelection(mx, room);
 
+  const eventsRef = useRef<TimelineEventInput[]>([]);
+  const cachedGroupsRef = useRef<ImageGroupsSnapshot | null>(null);
+  const willRenderRef = useRef<(mEvent: MatrixEvent) => boolean>(() => true);
+
   const buildTimelineItems = () => {
-    const events: Parameters<typeof buildTimelineDescriptors>[0] = [];
+    const events: TimelineEventInput[] = [];
 
     for (const item of getItems()) {
       const [eventTimeline, baseIndex] = getTimelineAndBaseIndex(timeline.linkedTimelines, item);
@@ -800,20 +813,45 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
       events.push({ mEvent, mEventId, timelineSet, item });
     }
 
+    const willRender = (mEvent: MatrixEvent) =>
+      willEventRender(mEvent, {
+        showHiddenEvents,
+        hideMembershipEvents,
+        hideNickAvatarEvents,
+      });
+
+    const groups = computeImageGroups(events, willRender);
+    eventsRef.current = events;
+    willRenderRef.current = willRender;
+    cachedGroupsRef.current = groups;
+
     return buildTimelineDescriptors(
       events,
       readUptoEventIdRef.current ?? undefined,
       mx.getSafeUserId(),
-      (mEvent) =>
-        willEventRender(mEvent, {
-          showHiddenEvents,
-          hideMembershipEvents,
-          hideNickAvatarEvents,
-        })
+      willRender,
+      groups
     );
   };
 
   const timelineItems = buildTimelineItems();
+
+  // Unused value; setter call forces a rerender after grouping changes.
+  const [, setLastDecryptedId] = useState<string | null>(null);
+
+  const handleEventDecrypted = useCallback((mEvent: MatrixEvent) => {
+    const events = eventsRef.current;
+    const willRender = willRenderRef.current;
+    if (events.length === 0) return;
+    const newGroups = computeImageGroups(events, willRender);
+    const cached = cachedGroupsRef.current;
+    if (cached && groupsEqual(cached, newGroups)) return;
+    cachedGroupsRef.current = newGroups;
+    const id = mEvent.getId();
+    if (id) setLastDecryptedId(id);
+  }, []);
+
+  useLiveEventDecryption(room, handleEventDecrypted);
 
   const contextValue = useMemo(
     () => ({

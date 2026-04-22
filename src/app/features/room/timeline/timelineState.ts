@@ -8,8 +8,9 @@ import type {
   Room,
   RoomEventHandlerMap,
 } from 'matrix-js-sdk';
-import { Direction, RoomEvent } from 'matrix-js-sdk';
+import { Direction, MatrixEventEvent, RoomEvent } from 'matrix-js-sdk';
 import to from 'await-to-js';
+import { MessageEvent } from '../../../../types/matrix/room';
 import { useAlive } from '../../../hooks/useAlive';
 import { decryptAllTimelineEvent } from '../../../utils/room';
 import {
@@ -222,4 +223,35 @@ export const useLiveTimelineRefresh = (room: Room, onRefresh: () => void) => {
       room.removeListener(RoomEvent.TimelineRefresh, handleTimelineRefresh);
     };
   }, [room, onRefresh]);
+};
+
+export const useLiveEventDecryption = (room: Room, onDecrypted: (mEvent: MatrixEvent) => void) => {
+  useEffect(() => {
+    const pending = new Map<MatrixEvent, () => void>();
+    const handleTimelineEvent: EventTimelineSetHandlerMap[RoomEvent.Timeline] = (
+      mEvent,
+      eventRoom,
+      _toStartOfTimeline,
+      _removed,
+      data
+    ) => {
+      if (eventRoom?.roomId !== room.roomId || !data.liveEvent) return;
+      if (mEvent.getType() !== MessageEvent.RoomMessageEncrypted) return;
+      const handleDecrypted = () => {
+        if (mEvent.getType() === MessageEvent.RoomMessageEncrypted) return;
+        mEvent.removeListener(MatrixEventEvent.Decrypted, handleDecrypted);
+        pending.delete(mEvent);
+        onDecrypted(mEvent);
+      };
+      pending.set(mEvent, handleDecrypted);
+      mEvent.on(MatrixEventEvent.Decrypted, handleDecrypted);
+    };
+
+    room.on(RoomEvent.Timeline, handleTimelineEvent);
+    return () => {
+      room.removeListener(RoomEvent.Timeline, handleTimelineEvent);
+      pending.forEach((handler, evt) => evt.removeListener(MatrixEventEvent.Decrypted, handler));
+      pending.clear();
+    };
+  }, [room, onDecrypted]);
 };
