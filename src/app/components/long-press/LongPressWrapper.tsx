@@ -19,6 +19,7 @@ export function LongPressWrapper({ onLongPress, children }: LongPressWrapperProp
 
   const start = useCallback(
     (e: ReactPointerEvent) => {
+      if (e.pointerType !== 'touch') return;
       if (e.button !== 0) return;
       suppressRef.current = false;
       timerRef.current = setTimeout(() => {
