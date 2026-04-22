@@ -20,6 +20,7 @@ export type TimelineAutoScroll = {
   atBottomAnchorRef: RefObject<HTMLElement>;
   atBottom: boolean;
   atBottomRef: MutableRefObject<boolean>;
+  autoScrolling: boolean;
   setAtBottom: (value: boolean) => void;
   requestScrollToBottom: (smooth?: boolean) => void;
 };
@@ -43,6 +44,8 @@ export function useTimelineAutoScroll({
   autoPinEnabledRef.current = autoPinEnabled;
 
   const [scrollRequest, setScrollRequest] = useState<{ smooth: boolean } | null>(null);
+
+  const [autoScrolling, setAutoScrolling] = useState(false);
 
   const setAtBottom = useCallback((value: boolean) => {
     atBottomRef.current = value;
@@ -101,19 +104,37 @@ export function useTimelineAutoScroll({
   }, [room, requestScrollToBottom]);
 
   useLayoutEffect(() => {
-    if (scrollRequest) {
-      const scrollEl = scrollRef.current;
-      if (scrollEl) {
-        scrollToBottom(scrollEl, scrollRequest.smooth ? 'smooth' : 'instant');
-      }
+    if (!scrollRequest) return;
+    const scrollEl = scrollRef.current;
+    if (!scrollEl) return;
+    const target = scrollEl.scrollHeight - scrollEl.offsetHeight;
+    const needsScroll = Math.abs(scrollEl.scrollTop - target) > 1;
+    scrollToBottom(scrollEl, scrollRequest.smooth ? 'smooth' : 'instant');
+    // While a smooth scroll is animating, IntersectionObserver-derived state
+    // (atBottom, lastMsgVisible in the consumer) can transiently flip, causing
+    // UI like the "Jump to Latest" button to flash. Mark autoScrolling true
+    // for the duration so consumers can gate on it; scrollend clears it.
+    if (scrollRequest.smooth && needsScroll) {
+      setAutoScrolling(true);
     }
   }, [scrollRequest]);
+
+  useEffect(() => {
+    const scrollEl = scrollRef.current;
+    if (!scrollEl) return undefined;
+    const handleScrollEnd = () => setAutoScrolling(false);
+    scrollEl.addEventListener('scrollend', handleScrollEnd);
+    return () => {
+      scrollEl.removeEventListener('scrollend', handleScrollEnd);
+    };
+  }, []);
 
   return {
     scrollRef,
     atBottomAnchorRef,
     atBottom,
     atBottomRef,
+    autoScrolling,
     setAtBottom,
     requestScrollToBottom,
   };

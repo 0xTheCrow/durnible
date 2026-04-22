@@ -3,7 +3,6 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import type { MatrixEvent, Room, RoomEventHandlerMap } from 'matrix-js-sdk';
 import { Direction, RoomEvent } from 'matrix-js-sdk';
 import type { HTMLReactParserOptions } from 'html-react-parser';
-import classNames from 'classnames';
 import { useAtomValue, useSetAtom } from 'jotai';
 import type { ContainerColor } from 'folds';
 import { Badge, Box, Chip, Icon, Icons, Line, Scroll, Text, as, color, config, toRem } from 'folds';
@@ -35,7 +34,7 @@ import {
   decryptAllTimelineEvent,
   getEditedEvent,
   getEventReactions,
-  reactionOrEditEvent,
+  isInvisibleTimelineEvent,
 } from '../../../utils/room';
 import { willEventRender } from './willEventRender';
 import { getRoomUnreadInfo, useTimelineReadMarker } from './useTimelineReadMarker';
@@ -60,7 +59,6 @@ import { useBulkSelection } from './useBulkSelection';
 import { markAsRead } from '../../../utils/notifications';
 
 import { getResizeObserverEntry, useResizeObserver } from '../../../hooks/useResizeObserver';
-import * as css from './RoomTimeline.css';
 import { timeDayMonthYear, today, yesterday } from '../../../utils/time';
 import {
   buildTimelineDescriptors,
@@ -99,19 +97,8 @@ import { useTheme } from '../../../hooks/useTheme';
 import { useRoomCreatorsTag } from '../../../hooks/useRoomCreatorsTag';
 import { usePowerLevelTags } from '../../../hooks/usePowerLevelTags';
 import { useTimelineAutoScroll } from './useTimelineAutoScroll';
-
-const TimelineFloat = as<'div', css.TimelineFloatVariants>(
-  ({ position, className, ...props }, ref) => (
-    <Box
-      className={classNames(css.TimelineFloat({ position }), className)}
-      justifyContent="Center"
-      alignItems="Center"
-      gap="200"
-      {...props}
-      ref={ref}
-    />
-  )
-);
+import { JumpToLatestButton } from './JumpToLatestButton';
+import { TimelineOverlay } from './TimelineOverlay';
 
 const TimelineDivider = as<'div', { variant?: ContainerColor | 'Inherit' }>(
   ({ variant, children, ...props }, ref) => (
@@ -252,7 +239,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
       const [tl, base] = getTimelineAndBaseIndex(timeline.linkedTimelines, i);
       if (!tl) continue;
       const evt = getTimelineEvent(tl, getTimelineRelativeIndex(i, base));
-      if (evt && !reactionOrEditEvent(evt) && !evt.isRedaction()) return false;
+      if (evt && !isInvisibleTimelineEvent(evt)) return false;
     }
     return true;
   })();
@@ -264,6 +251,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
     atBottomAnchorRef,
     atBottom,
     atBottomRef,
+    autoScrolling,
     setAtBottom,
     requestScrollToBottom,
   } = useTimelineAutoScroll({
@@ -355,7 +343,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
         // of the rendered list without adding anything at the bottom, causing
         // images to unmount and messages to jump upward. Skip the range shift
         // for these events; a plain re-render is enough to update relation data.
-        const isInvisible = reactionOrEditEvent(mEvt) || mEvt.isRedaction();
+        const isInvisible = isInvisibleTimelineEvent(mEvt);
 
         if (atBottomRef.current) {
           if (!isInvisible) {
@@ -562,42 +550,6 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
       tryAutoMarkAsRead();
     }
   }, [atBottom, tryAutoMarkAsRead]);
-
-  // Track whether the last message is visible at all (for hiding Jump to Latest)
-  const [lastMsgVisible, setLastMsgVisible] = useState(true);
-  useEffect(() => {
-    const scrollEl = scrollRef.current;
-    if (!scrollEl || !liveTimelineLinked || !rangeAtNewest) {
-      setLastMsgVisible(false);
-      return undefined;
-    }
-
-    const lastIndex = timeline.range.newest - 1;
-    if (lastIndex < timeline.range.oldest) return undefined;
-    const lastEl = scrollEl.querySelector(
-      `[data-message-item="${lastIndex}"]`
-    ) as HTMLElement | null;
-    if (!lastEl) return undefined;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries.find((e) => e.target === lastEl);
-        if (entry) {
-          setLastMsgVisible(entry.isIntersecting);
-        }
-      },
-      { root: scrollEl }
-    );
-    observer.observe(lastEl);
-    return () => observer.disconnect();
-  }, [
-    timeline.range.newest,
-    timeline.range.oldest,
-    eventsLength,
-    liveTimelineLinked,
-    rangeAtNewest,
-    scrollRef,
-  ]);
 
   useDocumentFocusChange(
     useCallback(
@@ -928,7 +880,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
     <TimelineMessageContext.Provider value={contextValue}>
       <Box grow="Yes" style={{ position: 'relative' }}>
         {unreadInfo?.readUptoEventId && !unreadInfo?.inLiveTimeline && (
-          <TimelineFloat position="Top">
+          <TimelineOverlay position="Top">
             <Chip
               variant="Primary"
               radii="Pill"
@@ -948,7 +900,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
             >
               <Text size="L400">Mark as Read</Text>
             </Chip>
-          </TimelineFloat>
+          </TimelineOverlay>
         )}
         <Scroll ref={scrollRef} visibility="Hover" style={{ overscrollBehavior: 'none' }}>
           <Box
@@ -1104,30 +1056,28 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
             <span ref={atBottomAnchorRef} />
           </Box>
         </Scroll>
-        <TimelineFloat
-          className={css.JumpToLatestFloat}
-          position="Bottom"
-          data-visible={!atBottom && !lastMsgVisible}
-        >
-          <Chip
-            variant="SurfaceVariant"
-            radii="Pill"
-            outlined
-            before={<Icon size="50" src={Icons.ArrowBottom} />}
-            onClick={handleJumpToLatest}
-          >
-            <Text size="L400">Jump to Latest</Text>
-          </Chip>
-        </TimelineFloat>
+        <JumpToLatestButton
+          scrollRef={scrollRef}
+          lastMessageIndex={
+            liveTimelineLinked &&
+            rangeAtNewest &&
+            timeline.range.newest - 1 >= timeline.range.oldest
+              ? timeline.range.newest - 1
+              : null
+          }
+          atBottom={atBottom}
+          autoScrolling={autoScrolling}
+          onClick={handleJumpToLatest}
+        />
         {selectionMode && (
-          <TimelineFloat position="Bottom">
+          <TimelineOverlay position="Bottom">
             <SelectionActionBar
               selectedCount={selectedIds.size}
               onDelete={handleBulkDelete}
               onCancel={handleCancelSelection}
               deleting={bulkDeleting}
             />
-          </TimelineFloat>
+          </TimelineOverlay>
         )}
       </Box>
     </TimelineMessageContext.Provider>

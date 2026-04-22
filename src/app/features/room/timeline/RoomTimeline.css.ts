@@ -3,7 +3,7 @@ import { recipe } from '@vanilla-extract/recipes';
 import { style } from '@vanilla-extract/css';
 import { DefaultReset, config } from 'folds';
 
-export const TimelineFloat = recipe({
+export const TimelineOverlay = recipe({
   base: [
     DefaultReset,
     {
@@ -29,7 +29,7 @@ export const TimelineFloat = recipe({
   },
 });
 
-export const JumpToLatestFloat = style({
+export const JumpToLatestOverlay = style({
   transition: 'opacity 150ms ease, transform 150ms ease',
   selectors: {
     '&[data-visible="true"]': {
@@ -45,4 +45,4 @@ export const JumpToLatestFloat = style({
   },
 });
 
-export type TimelineFloatVariants = RecipeVariants<typeof TimelineFloat>;
+export type TimelineOverlayVariants = RecipeVariants<typeof TimelineOverlay>;
