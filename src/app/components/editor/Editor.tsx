@@ -246,7 +246,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
     );
 
     return (
-      <div className={css.Editor} ref={ref}>
+      <div className={css.Editor} ref={ref} data-no-swipe-drawer>
         {top}
         <Box alignItems="Start">
           {before && (

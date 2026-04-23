@@ -25,6 +25,7 @@ const findAutocompleteTrigger = (
     if (ch === ' ') return undefined;
     const matched = AUTOCOMPLETE_PREFIXES.find((p) => p === ch);
     if (matched) {
+      if (i > 0 && text[i - 1] !== ' ') return undefined;
       return { triggerPos: i, prefix: matched, query: text.slice(i + 1) };
     }
   }

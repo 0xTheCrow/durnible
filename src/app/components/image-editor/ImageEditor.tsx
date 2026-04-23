@@ -89,8 +89,20 @@ export function ImageEditor({ name, url, mimeType, onClose, onSave }: ImageEdito
   const exitCropMode = () => setCropMode(false);
 
   const handleCropperReady = () => {
+    const image = cropperRef.current?.getImage();
+    if (image) {
+      cropperRef.current?.setCoordinates(
+        {
+          left: 0,
+          top: 0,
+          width: image.width,
+          height: image.height,
+        },
+        { transitions: false }
+      );
+    }
     if (rotation !== 0) {
-      cropperRef.current?.rotateImage(rotation);
+      cropperRef.current?.rotateImage(rotation, { transitions: false });
     }
   };
 
@@ -189,10 +201,6 @@ export function ImageEditor({ name, url, mimeType, onClose, onSave }: ImageEdito
             src={url}
             className={css.ImageEditorCropper}
             onReady={handleCropperReady}
-            defaultSize={({ imageSize }) => ({
-              width: imageSize.width,
-              height: imageSize.height,
-            })}
           />
         ) : (
           <img

@@ -293,7 +293,7 @@ export function EditorToolbar({ inputRef, onFormat }: EditorToolbarProps) {
   );
 
   return (
-    <Box className={css.EditorToolbarBase} data-no-swipe-drawer>
+    <Box className={css.EditorToolbarBase}>
       <Scroll direction="Horizontal" size="0">
         <Box className={css.EditorToolbar} alignItems="Center" gap="300">
           <Box shrink="No" gap="100">
