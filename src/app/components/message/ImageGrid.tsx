@@ -142,7 +142,7 @@ export function ImageGrid({ contents, autoPlay }: ImageGridProps) {
       cells.map((content) => ({
         alt: content.filename || content.body || 'Image',
         mxcUrl: content.file?.url ?? content.url,
-        encInfo: content.file,
+        encryptionInfo: content.file,
         mimeType: content.info?.mimetype,
       })),
     [cells]
@@ -185,7 +185,7 @@ export function ImageGrid({ contents, autoPlay }: ImageGridProps) {
               info={content.info}
               mimeType={content.info?.mimetype}
               url={mxcUrl}
-              encInfo={content.file}
+              encryptionInfo={content.file}
               autoPlay={autoPlay}
               markedAsSpoiler={content[MATRIX_SPOILER_PROPERTY_NAME]}
               spoilerReason={content[MATRIX_SPOILER_REASON_PROPERTY_NAME]}

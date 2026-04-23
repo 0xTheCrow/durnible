@@ -41,7 +41,7 @@ const generateThumbnailContent = async (
   if (!thumbMxc) throw new Error('Failed when uploading thumbnail!');
   const thumbnailContent = getThumbnailContent({
     thumbnail: thumbnailFile,
-    encInfo: encThumbData?.encInfo,
+    encryptionInfo: encThumbData?.encryptionInfo,
     mxc: thumbMxc,
     width: dimensions[0],
     height: dimensions[1],
@@ -54,7 +54,7 @@ export const getImageMsgContent = async (
   item: UploadItem,
   mxc: string
 ): Promise<IContent> => {
-  const { file, originalFile, encInfo, metadata } = item;
+  const { file, originalFile, encryptionInfo, metadata } = item;
   const [imgError, imgEl] = await to(loadImageElement(getImageFileUrl(originalFile)));
   if (imgError) console.warn(imgError);
 
@@ -72,9 +72,9 @@ export const getImageMsgContent = async (
       [MATRIX_BLUR_HASH_PROPERTY_NAME]: blurHash,
     };
   }
-  if (encInfo) {
+  if (encryptionInfo) {
     content.file = {
-      ...encInfo,
+      ...encryptionInfo,
       url: mxc,
     };
   } else {
@@ -88,7 +88,7 @@ export const getVideoMsgContent = async (
   item: UploadItem,
   mxc: string
 ): Promise<IContent> => {
-  const { file, originalFile, encInfo, metadata } = item;
+  const { file, originalFile, encryptionInfo, metadata } = item;
 
   const [videoError, videoEl] = await to(loadVideoElement(getVideoFileUrl(originalFile)));
   if (videoError) console.warn(videoError);
@@ -105,7 +105,7 @@ export const getVideoMsgContent = async (
         mx,
         videoEl,
         getThumbnailDimensions(videoEl.videoWidth, videoEl.videoHeight),
-        !!encInfo
+        !!encryptionInfo
       )
     );
     if (thumbContent && thumbContent.thumbnail_info) {
@@ -121,9 +121,9 @@ export const getVideoMsgContent = async (
       ...thumbContent,
     };
   }
-  if (encInfo) {
+  if (encryptionInfo) {
     content.file = {
-      ...encInfo,
+      ...encryptionInfo,
       url: mxc,
     };
   } else {
@@ -133,7 +133,7 @@ export const getVideoMsgContent = async (
 };
 
 export const getAudioMsgContent = (item: UploadItem, mxc: string): IContent => {
-  const { file, encInfo } = item;
+  const { file, encryptionInfo } = item;
   const content: IContent = {
     msgtype: MsgType.Audio,
     filename: file.name,
@@ -143,9 +143,9 @@ export const getAudioMsgContent = (item: UploadItem, mxc: string): IContent => {
       size: file.size,
     },
   };
-  if (encInfo) {
+  if (encryptionInfo) {
     content.file = {
-      ...encInfo,
+      ...encryptionInfo,
       url: mxc,
     };
   } else {
@@ -155,7 +155,7 @@ export const getAudioMsgContent = (item: UploadItem, mxc: string): IContent => {
 };
 
 export const getFileMsgContent = (item: UploadItem, mxc: string): IContent => {
-  const { file, encInfo } = item;
+  const { file, encryptionInfo } = item;
   const content: IContent = {
     msgtype: MsgType.File,
     body: file.name,
@@ -165,9 +165,9 @@ export const getFileMsgContent = (item: UploadItem, mxc: string): IContent => {
       size: file.size,
     },
   };
-  if (encInfo) {
+  if (encryptionInfo) {
     content.file = {
-      ...encInfo,
+      ...encryptionInfo,
       url: mxc,
     };
   } else {

@@ -15,7 +15,7 @@ export type UploadItem = {
   file: UploadContent;
   originalFile: UploadContent;
   metadata: UploadMetadata;
-  encInfo: EncryptedAttachmentInfo | undefined;
+  encryptionInfo: EncryptedAttachmentInfo | undefined;
   isEncrypting?: boolean;
   isEncryptionSuccessful?: boolean;
   encryptError?: string;

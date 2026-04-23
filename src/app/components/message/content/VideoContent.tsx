@@ -35,7 +35,7 @@ type VideoContentProps = {
   mimeType: string;
   url: string;
   info: VideoInfo & ThumbnailContent;
-  encInfo?: EncryptedAttachmentInfo;
+  encryptionInfo?: EncryptedAttachmentInfo;
   autoPlay?: boolean;
   markedAsSpoiler?: boolean;
   spoilerReason?: string;
@@ -50,7 +50,7 @@ export const VideoContent = as<'div', VideoContentProps>(
       mimeType,
       url,
       info,
-      encInfo,
+      encryptionInfo,
       autoPlay,
       markedAsSpoiler,
       spoilerReason,
@@ -76,13 +76,13 @@ export const VideoContent = as<'div', VideoContentProps>(
     const [srcState, loadSrc] = useAutoLoadAsyncCallback(
       useCallback(async () => {
         const mediaUrl = mxcUrlToHttp(mx, url, useAuthentication) ?? url;
-        const fileContent = encInfo
+        const fileContent = encryptionInfo
           ? await downloadEncryptedMedia(mediaUrl, (encBuf) =>
-              decryptFile(encBuf, mimeType, encInfo)
+              decryptFile(encBuf, mimeType, encryptionInfo)
             )
           : await downloadMedia(mediaUrl);
         return URL.createObjectURL(fileContent);
-      }, [mx, url, useAuthentication, mimeType, encInfo]),
+      }, [mx, url, useAuthentication, mimeType, encryptionInfo]),
       !!autoPlay
     );
 

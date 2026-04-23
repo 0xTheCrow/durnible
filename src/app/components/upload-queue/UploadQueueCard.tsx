@@ -38,7 +38,7 @@ export function UploadQueueCard({ fileItem, setMetadata, onRemove }: UploadQueue
   const { upload, startUpload, cancelUpload } = useBindUploadAtom(
     mx,
     uploadAtom,
-    !!fileItem.encInfo
+    !!fileItem.encryptionInfo
   );
   const { file } = upload;
   const fileSizeExceeded = file.size >= allowSize;

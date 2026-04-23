@@ -9,7 +9,7 @@ import { FALLBACK_MIMETYPE } from '../../../utils/mimeTypes';
 
 // ─── Fixtures ────────────────────────────────────────────────────────────────
 
-const FAKE_ENC_INFO = { v: 'v2' } as unknown as EncryptedAttachmentInfo;
+const FAKE_ENCRYPTION_INFO = { v: 'v2' } as unknown as EncryptedAttachmentInfo;
 
 const makeFile = (name: string, type = 'image/png'): File => new File(['fake'], name, { type });
 
@@ -17,7 +17,7 @@ const makeImages = (count: number): File[] =>
   Array.from({ length: count }, (_, i) => makeFile(`img-${i}.png`));
 
 const successfulEncrypt = async (f: File): Promise<EncryptedFileResult> => ({
-  encInfo: FAKE_ENC_INFO,
+  encryptionInfo: FAKE_ENCRYPTION_INFO,
   file: new File(['enc'], f.name, { type: 'application/octet-stream' }),
   originalFile: f,
 });
@@ -152,7 +152,7 @@ describe('handleUploadFiles', () => {
       handleUploadFiles(makeImages(2), ctx);
       const items = itemsFromPut(setItems.mock.calls[0][0]);
       items.forEach((item) => {
-        expect(item.encInfo).toBeUndefined();
+        expect(item.encryptionInfo).toBeUndefined();
         expect(item.isEncrypting).toBeUndefined();
         expect(item.metadata.markedAsSpoiler).toBe(false);
         expect(item.file).toBe(item.originalFile);
@@ -175,7 +175,7 @@ describe('handleUploadFiles', () => {
       expect(items).toHaveLength(2);
       items.forEach((item) => {
         expect(item.isEncrypting).toBe(true);
-        expect(item.encInfo).toBeUndefined();
+        expect(item.encryptionInfo).toBeUndefined();
         expect(item.metadata.markedAsSpoiler).toBe(false);
       });
     });
@@ -194,7 +194,7 @@ describe('handleUploadFiles', () => {
         .map((c) => replacementOf(c[0] as ListAction<UploadItem>));
       replacements.forEach((replacement) => {
         expect(replacement.isEncryptionSuccessful).toBe(true);
-        expect(replacement.encInfo).toBe(FAKE_ENC_INFO);
+        expect(replacement.encryptionInfo).toBe(FAKE_ENCRYPTION_INFO);
         expect(replacement.metadata.markedAsSpoiler).toBe(false);
       });
     });

@@ -339,7 +339,7 @@ export function SearchResultGroup({
                               mimeType={info?.mimetype as string | undefined}
                               url={imgUrl}
                               info={info as unknown as ImageInfo}
-                              encInfo={img.content.file as unknown as EncryptedFile}
+                              encryptionInfo={img.content.file as unknown as EncryptedFile}
                               autoPlay={mediaAutoLoad}
                               renderImage={(p) => <Image {...p} loading="lazy" />}
                             />

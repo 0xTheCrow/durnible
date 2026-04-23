@@ -4,14 +4,14 @@ import type { EncryptedFile } from '../../types/matrix/common';
 /**
  * One image in a viewer gallery. `src` may be undefined when the viewer is
  * opened for an item that hasn't been loaded yet — in that case the viewer
- * resolves it lazily from `mxcUrl` (+ `encInfo` for encrypted media) when
+ * resolves it lazily from `mxcUrl` (+ `encryptionInfo` for encrypted media) when
  * the user navigates to it.
  */
 export type ImageViewerGalleryItem = {
   src?: string;
   alt: string;
   mxcUrl?: string;
-  encInfo?: EncryptedFile;
+  encryptionInfo?: EncryptedFile;
   mimeType?: string;
 };
 

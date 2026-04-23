@@ -40,14 +40,14 @@ export type AudioContentProps = {
   mimeType: string;
   url: string;
   info: AudioInfo;
-  encInfo?: EncryptedAttachmentInfo;
+  encryptionInfo?: EncryptedAttachmentInfo;
   renderMediaControl: (props: RenderMediaControlProps) => ReactNode;
 };
 export function AudioContent({
   mimeType,
   url,
   info,
-  encInfo,
+  encryptionInfo,
   renderMediaControl,
 }: AudioContentProps) {
   const mx = useMatrixClient();
@@ -56,11 +56,13 @@ export function AudioContent({
   const [srcState, loadSrc] = useAsyncCallback(
     useCallback(async () => {
       const mediaUrl = mxcUrlToHttp(mx, url, useAuthentication) ?? url;
-      const fileContent = encInfo
-        ? await downloadEncryptedMedia(mediaUrl, (encBuf) => decryptFile(encBuf, mimeType, encInfo))
+      const fileContent = encryptionInfo
+        ? await downloadEncryptedMedia(mediaUrl, (encBuf) =>
+            decryptFile(encBuf, mimeType, encryptionInfo)
+          )
         : await downloadMedia(mediaUrl);
       return URL.createObjectURL(fileContent);
-    }, [mx, url, useAuthentication, mimeType, encInfo])
+    }, [mx, url, useAuthentication, mimeType, encryptionInfo])
   );
 
   const audioRef = useRef<HTMLAudioElement | null>(null);

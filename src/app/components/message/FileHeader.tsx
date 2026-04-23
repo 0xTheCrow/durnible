@@ -20,23 +20,30 @@ type FileDownloadButtonProps = {
   filename: string;
   url: string;
   mimeType: string;
-  encInfo?: EncryptedAttachmentInfo;
+  encryptionInfo?: EncryptedAttachmentInfo;
 };
-export function FileDownloadButton({ filename, url, mimeType, encInfo }: FileDownloadButtonProps) {
+export function FileDownloadButton({
+  filename,
+  url,
+  mimeType,
+  encryptionInfo,
+}: FileDownloadButtonProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
 
   const [downloadState, download] = useAsyncCallback(
     useCallback(async () => {
       const mediaUrl = mxcUrlToHttp(mx, url, useAuthentication) ?? url;
-      const fileContent = encInfo
-        ? await downloadEncryptedMedia(mediaUrl, (encBuf) => decryptFile(encBuf, mimeType, encInfo))
+      const fileContent = encryptionInfo
+        ? await downloadEncryptedMedia(mediaUrl, (encBuf) =>
+            decryptFile(encBuf, mimeType, encryptionInfo)
+          )
         : await downloadMedia(mediaUrl);
 
       const fileURL = URL.createObjectURL(fileContent);
       FileSaver.saveAs(fileURL, filename);
       return fileURL;
-    }, [mx, url, useAuthentication, mimeType, encInfo, filename])
+    }, [mx, url, useAuthentication, mimeType, encryptionInfo, filename])
   );
 
   const downloading = downloadState.status === AsyncStatus.Loading;

@@ -38,7 +38,7 @@ export type ImageContentProps = {
   mimeType?: string;
   url: string;
   info?: ImageInfo;
-  encInfo?: EncryptedAttachmentInfo;
+  encryptionInfo?: EncryptedAttachmentInfo;
   autoPlay?: boolean;
   markedAsSpoiler?: boolean;
   spoilerReason?: string;
@@ -59,7 +59,7 @@ export const ImageContent = as<'div', ImageContentProps>(
       mimeType,
       url,
       info,
-      encInfo,
+      encryptionInfo,
       autoPlay,
       markedAsSpoiler,
       spoilerReason,
@@ -91,14 +91,14 @@ export const ImageContent = as<'div', ImageContentProps>(
     const [srcState, loadSrc] = useAutoLoadAsyncCallback(
       useCallback(async () => {
         const mediaUrl = mxcUrlToHttp(mx, url, useAuthentication) ?? url;
-        if (encInfo) {
+        if (encryptionInfo) {
           const fileContent = await downloadEncryptedMedia(mediaUrl, (encBuf) =>
-            decryptFile(encBuf, mimeType ?? FALLBACK_MIMETYPE, encInfo)
+            decryptFile(encBuf, mimeType ?? FALLBACK_MIMETYPE, encryptionInfo)
           );
           return URL.createObjectURL(fileContent);
         }
         return mediaUrl;
-      }, [mx, url, useAuthentication, mimeType, encInfo]),
+      }, [mx, url, useAuthentication, mimeType, encryptionInfo]),
       !!(autoPlay || isForceHidden)
     );
 

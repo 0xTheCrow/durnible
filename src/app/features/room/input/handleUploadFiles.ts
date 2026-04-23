@@ -14,7 +14,7 @@ const createUploadId = (): string => String(nextUploadId++);
  * without spinning up a real worker).
  */
 export type EncryptedFileResult = {
-  encInfo: EncryptedAttachmentInfo;
+  encryptionInfo: EncryptedAttachmentInfo;
   file: File;
   originalFile: File | Blob;
 };
@@ -73,7 +73,7 @@ export function handleUploadFiles(
       id: createUploadId(),
       file: f,
       originalFile: f,
-      encInfo: undefined,
+      encryptionInfo: undefined,
       metadata: { markedAsSpoiler: false },
       isEncrypting: true,
     }));
@@ -118,7 +118,7 @@ export function handleUploadFiles(
     id: createUploadId(),
     file: f,
     originalFile: f,
-    encInfo: undefined,
+    encryptionInfo: undefined,
     metadata: { markedAsSpoiler: false },
   }));
   ctx.setItems({ type: 'PUT', item: fileItems });

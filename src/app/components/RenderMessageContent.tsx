@@ -221,7 +221,7 @@ function RenderMessageContentInner({
     <>
       <MFile
         content={content as FileContent}
-        renderFileContent={({ body, mimeType, info, encInfo, url }) => (
+        renderFileContent={({ body, mimeType, info, encryptionInfo, url }) => (
           <FileContentView
             body={body}
             mimeType={mimeType}
@@ -230,7 +230,7 @@ function RenderMessageContentInner({
                 body={body}
                 mimeType={mimeType}
                 url={url}
-                encInfo={encInfo}
+                encryptionInfo={encryptionInfo}
                 renderViewer={(p) => <PdfViewer {...p} />}
               />
             )}
@@ -239,12 +239,18 @@ function RenderMessageContentInner({
                 body={body}
                 mimeType={mimeType}
                 url={url}
-                encInfo={encInfo}
+                encryptionInfo={encryptionInfo}
                 renderViewer={(p) => <TextViewer {...p} />}
               />
             )}
           >
-            <DownloadFile body={body} mimeType={mimeType} url={url} encInfo={encInfo} info={info} />
+            <DownloadFile
+              body={body}
+              mimeType={mimeType}
+              url={url}
+              encryptionInfo={encryptionInfo}
+              info={info}
+            />
           </FileContentView>
         )}
         outlined={outlineAttachment}
