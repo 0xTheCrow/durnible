@@ -62,6 +62,8 @@ import type { Upload, UploadSuccess } from '../../../state/upload';
 import { UploadStatus, createUploadFamilyObserverAtom } from '../../../state/upload';
 import { getImageUrlBlob, loadImageElement } from '../../../utils/dom';
 import { handleUploadFiles } from './handleUploadFiles';
+import { encryptAndReplace } from './encryptAndReplace';
+import { safeFile } from '../../../utils/mimeTypes';
 import { fulfilledPromiseSettledResult } from '../../../utils/common';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
@@ -257,6 +259,46 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       });
       handleRemoveUpload(uploads.map((upload) => upload.file));
     };
+
+    const handleReplaceUpload = useCallback(
+      async (fileItem: UploadItem, newFile: File) => {
+        const oldFile = fileItem.file;
+        const existingUpload = uploadsRef.current.find((u) => u.file === oldFile);
+        if (existingUpload?.status === UploadStatus.Loading) {
+          mx.cancelUpload(existingUpload.promise);
+        }
+        roomUploadAtomFamily.remove(oldFile);
+
+        const safe = safeFile(newFile);
+        const isEncrypted = room.hasEncryptionStateEvent();
+
+        if (isEncrypted) {
+          const placeholder: UploadItem = {
+            id: fileItem.id,
+            file: safe,
+            originalFile: safe,
+            encryptionInfo: undefined,
+            metadata: fileItem.metadata,
+            isEncrypting: true,
+          };
+          setSelectedFiles({ type: 'REPLACE', item: fileItem, replacement: placeholder });
+          await encryptAndReplace(placeholder, encryptFileInWorker, setSelectedFiles);
+        } else {
+          setSelectedFiles({
+            type: 'REPLACE',
+            item: fileItem,
+            replacement: {
+              id: fileItem.id,
+              file: safe,
+              originalFile: safe,
+              encryptionInfo: undefined,
+              metadata: fileItem.metadata,
+            },
+          });
+        }
+      },
+      [mx, room, setSelectedFiles]
+    );
 
     const handleSendUpload = async (uploads: UploadSuccess[]) => {
       const contentsPromises = uploads.map(async (upload) => {
@@ -596,6 +638,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
                     setMetadata={handleFileMetadata}
                     onRemove={handleRemoveUpload}
                     onClearAll={() => handleCancelUpload(uploadsRef.current)}
+                    onReplaceFile={handleReplaceUpload}
                   />
                 )}
                 {replyDraft && (

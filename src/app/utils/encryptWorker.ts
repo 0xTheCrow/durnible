@@ -34,10 +34,10 @@ function encryptBufferInWorker(
 }
 
 export async function encryptFileInWorker(
-  file: File | Blob
-): Promise<{ encryptionInfo: EncryptedAttachmentInfo; file: File; originalFile: File | Blob }> {
+  file: File
+): Promise<{ encryptionInfo: EncryptedAttachmentInfo; file: File; originalFile: File }> {
   const buffer = await file.arrayBuffer();
   const { data, info } = await encryptBufferInWorker(buffer);
-  const encFile = new File([data], (file as File).name ?? 'encrypted', { type: file.type });
+  const encFile = new File([data], file.name, { type: file.type });
   return { encryptionInfo: info, file: encFile, originalFile: file };
 }

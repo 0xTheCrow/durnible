@@ -1,23 +1,14 @@
-import type { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
 import type { ListAction } from '../../../state/list';
 import type { UploadItem } from '../../../state/room/roomInputDrafts';
 import { safeFile } from '../../../utils/mimeTypes';
 import { applyUploadQueueCap } from '../../../utils/uploadQueueCap';
+import type { EncryptFn } from './encryptAndReplace';
+import { encryptAndReplace } from './encryptAndReplace';
+
+export type { EncryptedFileResult } from './encryptAndReplace';
 
 let nextUploadId = 0;
-const createUploadId = (): string => String(nextUploadId++);
-
-/**
- * Shape of the result returned by an encryption function — matches what
- * `encryptFileInWorker` returns. Re-stated here so this module doesn't take
- * a dependency on the worker file (and so tests can construct fake values
- * without spinning up a real worker).
- */
-export type EncryptedFileResult = {
-  encryptionInfo: EncryptedAttachmentInfo;
-  file: File;
-  originalFile: File | Blob;
-};
+export const createUploadId = (): string => String(nextUploadId++);
 
 export type HandleUploadFilesContext = {
   /** Number of items currently in the upload queue. Read once at call time. */
@@ -27,7 +18,7 @@ export type HandleUploadFilesContext = {
   /** True iff the destination room has an encryption state event. */
   isEncrypted: boolean;
   /** Encrypts a single file (rejects on failure). */
-  encrypt: (file: File) => Promise<EncryptedFileResult>;
+  encrypt: EncryptFn;
   /** Optional side effect after files are accepted (e.g. focus the send button). */
   onAccepted?: () => void;
 };
@@ -79,33 +70,9 @@ export function handleUploadFiles(
     }));
     ctx.setItems({ type: 'PUT', item: placeholders });
 
-    const encryptionTasks = safeFiles.map(async (f, i) => {
-      try {
-        const encrypted = await ctx.encrypt(f);
-        ctx.setItems({
-          type: 'REPLACE',
-          item: placeholders[i],
-          replacement: {
-            ...encrypted,
-            id: placeholders[i].id,
-            metadata: { markedAsSpoiler: false },
-            isEncryptionSuccessful: true,
-          },
-        });
-      } catch (e) {
-        ctx.setItems({
-          type: 'REPLACE',
-          item: placeholders[i],
-          replacement: {
-            ...placeholders[i],
-            file: new File([], f.name, { type: f.type }),
-            isEncrypting: false,
-            isEncryptionSuccessful: false,
-            encryptError: e instanceof Error ? e.message : 'Encryption failed',
-          },
-        });
-      }
-    });
+    const encryptionTasks = placeholders.map((p) =>
+      encryptAndReplace(p, ctx.encrypt, ctx.setItems)
+    );
 
     ctx.onAccepted?.();
     return {

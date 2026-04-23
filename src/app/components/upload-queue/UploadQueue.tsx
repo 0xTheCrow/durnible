@@ -11,9 +11,16 @@ type UploadQueueProps = {
   setMetadata: (fileItem: UploadItem, metadata: UploadMetadata) => void;
   onRemove: (file: UploadContent) => void;
   onClearAll: () => void;
+  onReplaceFile: (fileItem: UploadItem, newFile: File) => void;
 };
 
-export function UploadQueue({ items, setMetadata, onRemove, onClearAll }: UploadQueueProps) {
+export function UploadQueue({
+  items,
+  setMetadata,
+  onRemove,
+  onClearAll,
+  onReplaceFile,
+}: UploadQueueProps) {
   return (
     <Box className={css.UploadQueue}>
       {items
@@ -25,6 +32,7 @@ export function UploadQueue({ items, setMetadata, onRemove, onClearAll }: Upload
             fileItem={fileItem}
             setMetadata={setMetadata}
             onRemove={onRemove}
+            onReplaceFile={onReplaceFile}
           />
         ))}
       {items.length >= 2 && (

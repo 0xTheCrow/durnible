@@ -40,9 +40,19 @@ export const UploadQueueStatusIcons = style({
   top: config.space.S100,
   left: config.space.S100,
   display: 'flex',
-  gap: config.space.S100,
   alignItems: 'center',
+  padding: config.space.S100,
+  borderRadius: config.radii.R300,
+  backgroundColor: color.Surface.Container,
+  boxShadow: config.shadow.E200,
   zIndex: 1,
+});
+
+export const UploadQueueStatusIconSlot = style({
+  padding: config.space.S100,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
 });
 
 export const UploadQueueCard = style({
@@ -84,10 +94,16 @@ export const UploadQueueActions = style({
   boxShadow: config.shadow.E200,
 });
 
-export const UploadQueueSpoilerChip = style({
+export const UploadQueueBottomActions = style({
   position: 'absolute',
-  left: config.space.S100,
+  right: config.space.S100,
   bottom: config.space.S100,
+  display: 'flex',
+  gap: config.space.S100,
+  padding: config.space.S100,
+  borderRadius: config.radii.R300,
+  backgroundColor: color.Surface.Container,
+  boxShadow: config.shadow.E200,
 });
 
 export const UploadQueueOverlay = style({

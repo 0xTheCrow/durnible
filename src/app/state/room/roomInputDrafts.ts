@@ -13,7 +13,7 @@ export type UploadMetadata = {
 export type UploadItem = {
   id: string;
   file: UploadContent;
-  originalFile: UploadContent;
+  originalFile: File;
   metadata: UploadMetadata;
   encryptionInfo: EncryptedAttachmentInfo | undefined;
   isEncrypting?: boolean;

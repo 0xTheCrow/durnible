@@ -61,6 +61,7 @@ Durnible is a Matrix chat client built with React, TypeScript, and Vite. Forked 
     setValue(propValue);
   }
   ```
+- Use `useCallback` and `useMemo` the way React is designed to have them used. Both preserve reference identity for a downstream consumer that actually depends on it — a hook dep array that would otherwise re-fire, a `React.memo`-wrapped child that would otherwise re-render, an external API that requires stable refs. `useMemo` additionally caches the result of a computation, which is worth reaching for only when the computation is *measurably* expensive. Neither is a default, and neither is a style to apply uniformly. If nothing downstream reads the identity and the computation isn't expensive, the wrapper allocates and adds noise without benefit. Before reaching for either, name the specific consumer that needs stable identity or the specific expensive computation being saved; if you can't, inline. Mixing wrapped and inline handlers within the same component is the tell — either every wrap is load-bearing for its own reason, or none of them are.
 - Don't patch matrix-js-sdk types with `as any` — find the correct type or fix the upstream typing.
 - Don't use `setTimeout` to work around race conditions in room state — use the SDK's event listeners.
 - Avoid `requestAnimationFrame` if possible — prefer CSS transitions/animations or React state-driven updates.
