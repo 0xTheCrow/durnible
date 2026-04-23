@@ -40,7 +40,6 @@ import { isUserId, mxcUrlToHttp } from '../../utils/matrix';
 import { editableActiveElement, targetFromEvent } from '../../utils/dom';
 import type { UseAsyncSearchOptions } from '../../hooks/useAsyncSearch';
 import { useAsyncSearch } from '../../hooks/useAsyncSearch';
-import { useThrottle } from '../../hooks/useThrottle';
 import { addRecentEmoji } from '../../plugins/recent-emoji';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
 import type { ImagePack, PackImageReader } from '../../plugins/custom-emoji';
@@ -730,34 +729,37 @@ function EmojiGroupHolder({
   children,
 }: EmojiGroupHolderProps) {
   const setPreviewData = useSetAtom(previewAtom);
+  const lastTargetRef = useRef<HTMLButtonElement | null>(null);
 
-  const handleEmojiPreview = useCallback(
-    (element: HTMLButtonElement) => {
-      const emojiInfo = getEmojiItemInfo(element);
-      if (!emojiInfo) return;
+  const showPreview = (element: HTMLButtonElement) => {
+    if (lastTargetRef.current === element) return;
+    const emojiInfo = getEmojiItemInfo(element);
+    if (!emojiInfo) return;
+    lastTargetRef.current = element;
+    setPreviewData({
+      key: emojiInfo.data,
+      shortcode: emojiInfo.shortcode,
+    });
+  };
 
-      setPreviewData({
-        key: emojiInfo.data,
-        shortcode: emojiInfo.shortcode,
-      });
-    },
-    [setPreviewData]
-  );
-
-  const throttleEmojiHover = useThrottle(handleEmojiPreview, {
-    wait: 200,
-    immediate: true,
-  });
+  const clearPreview = () => {
+    if (!lastTargetRef.current) return;
+    lastTargetRef.current = null;
+    setPreviewData(undefined);
+  };
 
   const handleEmojiHover: MouseEventHandler = (evt) => {
     const targetEl = targetFromEvent(evt.nativeEvent, 'button') as HTMLButtonElement | undefined;
-    if (!targetEl) return;
-    throttleEmojiHover(targetEl);
+    if (!targetEl) {
+      clearPreview();
+      return;
+    }
+    showPreview(targetEl);
   };
 
   const handleEmojiFocus: FocusEventHandler = (evt) => {
     const targetEl = evt.target as HTMLButtonElement;
-    handleEmojiPreview(targetEl);
+    showPreview(targetEl);
   };
 
   return (
@@ -766,7 +768,9 @@ function EmojiGroupHolder({
         onClick={onGroupItemClick}
         onContextMenu={onGroupItemContextMenu}
         onMouseMove={handleEmojiHover}
+        onMouseLeave={clearPreview}
         onFocus={handleEmojiFocus}
+        onBlur={clearPreview}
         direction="Column"
       >
         {children}
@@ -774,8 +778,6 @@ function EmojiGroupHolder({
     </Scroll>
   );
 }
-
-const DefaultEmojiPreview: PreviewData = { key: '🙂', shortcode: 'slight_smile' };
 
 const SEARCH_OPTIONS: UseAsyncSearchOptions = {
   limit: 1000,
@@ -824,10 +826,7 @@ export function EmojiBoard({
   const emojiTab = tab === EmojiBoardTab.Emoji;
   const usage = emojiTab ? ImageUsage.Emoticon : ImageUsage.Sticker;
 
-  const previewAtom = useMemo(
-    () => createPreviewDataAtom(emojiTab ? DefaultEmojiPreview : undefined),
-    [emojiTab]
-  );
+  const previewAtom = useMemo(() => createPreviewDataAtom(), []);
   const activeGroupIdAtom = useMemo(() => atom<string | undefined>(undefined), []);
   const setActiveGroupId = useSetAtom(activeGroupIdAtom);
   const rawImagePacks = useRelevantImagePacks(usage, imagePackRooms);
