@@ -13,7 +13,6 @@ import {
   Scroll,
   Text,
   Tooltip,
-  TooltipProvider,
   toRem,
 } from 'folds';
 import type { MouseEventHandler, ReactNode, RefObject } from 'react';
@@ -24,6 +23,7 @@ import { KeySymbol } from '../../utils/key-symbol';
 import { useSetting } from '../../state/hooks/settings';
 import { settingsAtom } from '../../state/settings';
 import { stopPropagation } from '../../utils/keyboard';
+import { TooltipProvider } from '../TooltipProvider';
 import {
   exitBlock,
   isExitableBlock,
@@ -67,7 +67,7 @@ type InlineButtonProps = {
 
 function InlineButton({ icon, tooltip, active, onClick, disabled }: InlineButtonProps) {
   return (
-    <TooltipProvider tooltip={tooltip} delay={500}>
+    <TooltipProvider tooltip={tooltip}>
       {(triggerRef) => (
         <IconButton
           ref={triggerRef}
@@ -96,7 +96,7 @@ type BlockButtonProps = {
 
 function BlockButton({ icon, tooltip, active, onClick }: BlockButtonProps) {
   return (
-    <TooltipProvider tooltip={tooltip} delay={500}>
+    <TooltipProvider tooltip={tooltip}>
       {(triggerRef) => (
         <IconButton
           ref={triggerRef}
@@ -171,7 +171,6 @@ function HeadingButton({ inputRef, onFormat }: HeadingButtonProps) {
             <Box gap="100">
               <TooltipProvider
                 tooltip={<BtnTooltip text="Heading 1" shortCode={`${modKey} + 1`} />}
-                delay={500}
               >
                 {(triggerRef) => (
                   <IconButton
@@ -188,7 +187,6 @@ function HeadingButton({ inputRef, onFormat }: HeadingButtonProps) {
               </TooltipProvider>
               <TooltipProvider
                 tooltip={<BtnTooltip text="Heading 2" shortCode={`${modKey} + 2`} />}
-                delay={500}
               >
                 {(triggerRef) => (
                   <IconButton
@@ -205,7 +203,6 @@ function HeadingButton({ inputRef, onFormat }: HeadingButtonProps) {
               </TooltipProvider>
               <TooltipProvider
                 tooltip={<BtnTooltip text="Heading 3" shortCode={`${modKey} + 3`} />}
-                delay={500}
               >
                 {(triggerRef) => (
                   <IconButton
@@ -296,7 +293,7 @@ export function EditorToolbar({ inputRef, onFormat }: EditorToolbarProps) {
   );
 
   return (
-    <Box className={css.EditorToolbarBase}>
+    <Box className={css.EditorToolbarBase} data-no-swipe-drawer>
       <Scroll direction="Horizontal" size="0">
         <Box className={css.EditorToolbar} alignItems="Center" gap="300">
           <Box shrink="No" gap="100">
@@ -379,7 +376,6 @@ export function EditorToolbar({ inputRef, onFormat }: EditorToolbarProps) {
                   tooltip={
                     <BtnTooltip text="Exit Formatting" shortCode={`Escape, ${modKey} + E`} />
                   }
-                  delay={500}
                 >
                   {(triggerRef) => (
                     <IconButton
@@ -402,7 +398,6 @@ export function EditorToolbar({ inputRef, onFormat }: EditorToolbarProps) {
             <TooltipProvider
               align="End"
               tooltip={<BtnTooltip text={isMarkdown ? 'Disable Markdown' : 'Enable Markdown'} />}
-              delay={500}
             >
               {(triggerRef) => (
                 <IconButton

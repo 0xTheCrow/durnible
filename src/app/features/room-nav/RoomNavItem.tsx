@@ -290,7 +290,7 @@ export function RoomNavItem({
       {...hoverProps}
       {...focusWithinProps}
     >
-      <NavLink to={linkPath}>
+      <NavLink to={linkPath} draggable={false}>
         <NavItemContent>
           <Box as="span" grow="Yes" alignItems="Center" gap="200">
             <Avatar size="200" radii="400">
@@ -325,11 +325,18 @@ export function RoomNavItem({
                 size="Inherit"
                 truncate
                 style={
-                  notificationMode === RoomNotificationMode.Mute ? { opacity: 0.5 } : undefined
+                  notificationMode === RoomNotificationMode.Mute ? { opacity: 0.45 } : undefined
                 }
               >
                 {room.name}
               </Text>
+              {notificationMode !== RoomNotificationMode.Unset && (
+                <Icon
+                  size="200"
+                  style={{ paddingLeft: config.space.S100 }}
+                  src={getRoomNotificationModeIcon(notificationMode)}
+                />
+              )}
             </Box>
             {!optionsVisible && !unread && !selected && typingMember.length > 0 && (
               <Badge size="300" variant="Secondary" fill="Soft" radii="Pill" outlined>
@@ -340,9 +347,6 @@ export function RoomNavItem({
               <UnreadBadgeCenter>
                 <UnreadBadge highlight={unread.highlight > 0} count={unread.total} />
               </UnreadBadgeCenter>
-            )}
-            {!optionsVisible && notificationMode !== RoomNotificationMode.Unset && (
-              <Icon size="50" src={getRoomNotificationModeIcon(notificationMode)} />
             )}
           </Box>
         </NavItemContent>

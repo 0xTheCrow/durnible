@@ -54,6 +54,84 @@ export type TimelineItem =
   | { type: 'new-messages'; key: string }
   | { type: 'day-divider'; key: string; ts: number };
 
+export type ImageGroupsSnapshot = {
+  imageGroups: Map<string, ImageContent[]>;
+  absorbedToAnchor: Map<string, string>;
+};
+
+// Element-wise identity check; ImageContent objects are stable per matrix-js-sdk
+// event, so reference equality across the array detects both length changes
+// (group grew/shrunk) and per-cell content reference changes (a new event
+// arrived or an absorbed image was redacted out of the group). Each call to
+// buildTimelineDescriptors produces a fresh array, so a plain `===` would
+// always treat the prop as changed.
+export const sameGroupedImages = (
+  a: ImageContent[] | undefined,
+  b: ImageContent[] | undefined
+): boolean => {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+};
+
+export const computeImageGroups = (
+  events: TimelineEventInput[],
+  willRender: (mEvent: MatrixEvent) => boolean = (mEvent) => !reactionOrEditEvent(mEvent)
+): ImageGroupsSnapshot => {
+  const imageGroups = new Map<string, ImageContent[]>();
+  const absorbedToAnchor = new Map<string, string>();
+
+  for (let i = 0; i < events.length; i += 1) {
+    const anchor = events[i];
+    if (absorbedToAnchor.has(anchor.mEventId)) continue;
+    if (!willRender(anchor.mEvent)) continue;
+    if (!isPlainImageEvent(anchor.mEvent)) continue;
+
+    const groupContents: ImageContent[] = [anchor.mEvent.getContent() as ImageContent];
+    const groupIds: string[] = [];
+    let lastTs = anchor.mEvent.getTs();
+    const sender = anchor.mEvent.getSender();
+
+    for (let j = i + 1; j < events.length && groupContents.length < IMAGE_GROUP_MAX_SIZE; j += 1) {
+      const next = events[j];
+      // Invisible events (reactions, edits) don't break a run.
+      if (!willRender(next.mEvent)) continue;
+      if (!isPlainImageEvent(next.mEvent)) break;
+      if (next.mEvent.getSender() !== sender) break;
+      const nextTs = next.mEvent.getTs();
+      if (nextTs - lastTs > IMAGE_GROUP_WINDOW_MS) break;
+      // Day-boundary merges would hide the day-divider inside the group.
+      if (!inSameDay(lastTs, nextTs)) break;
+      groupContents.push(next.mEvent.getContent() as ImageContent);
+      groupIds.push(next.mEventId);
+      lastTs = nextTs;
+    }
+
+    if (groupContents.length > 1) {
+      imageGroups.set(anchor.mEventId, groupContents);
+      groupIds.forEach((id) => absorbedToAnchor.set(id, anchor.mEventId));
+    }
+  }
+
+  return { imageGroups, absorbedToAnchor };
+};
+
+export const groupsEqual = (a: ImageGroupsSnapshot, b: ImageGroupsSnapshot): boolean => {
+  if (a.imageGroups.size !== b.imageGroups.size) return false;
+  if (a.absorbedToAnchor.size !== b.absorbedToAnchor.size) return false;
+  for (const [k, v] of a.imageGroups) {
+    if (!sameGroupedImages(v, b.imageGroups.get(k))) return false;
+  }
+  for (const [k, v] of a.absorbedToAnchor) {
+    if (b.absorbedToAnchor.get(k) !== v) return false;
+  }
+  return true;
+};
+
 /**
  * Converts a pre-filtered list of timeline events into a flat list of
  * renderable descriptors, inserting day-divider and new-messages divider
@@ -76,48 +154,12 @@ export function buildTimelineDescriptors(
   events: TimelineEventInput[],
   readUptoEventId: string | undefined,
   myUserId: string,
-  willRender: (mEvent: MatrixEvent) => boolean = (mEvent) => !reactionOrEditEvent(mEvent)
+  willRender?: (mEvent: MatrixEvent) => boolean,
+  precomputedGroups?: ImageGroupsSnapshot
 ): TimelineItem[] {
-  // ─── Pre-pass: detect image groups ─────────────────────────────────────────
-  // Walk the events once and identify runs of consecutive image messages from
-  // the same sender within IMAGE_GROUP_WINDOW_MS of each other (using the
-  // previous image's timestamp as the rolling reference). Each group is keyed
-  // by its anchor mEventId; the absorbed events are skipped by the main loop.
-  const imageGroups = new Map<string, ImageContent[]>();
-  const absorbedToAnchor = new Map<string, string>();
-
-  for (let i = 0; i < events.length; i += 1) {
-    const anchor = events[i];
-    if (absorbedToAnchor.has(anchor.mEventId)) continue;
-    if (!willRender(anchor.mEvent)) continue;
-    if (!isPlainImageEvent(anchor.mEvent)) continue;
-
-    const groupContents: ImageContent[] = [anchor.mEvent.getContent() as ImageContent];
-    const groupIds: string[] = [];
-    let lastTs = anchor.mEvent.getTs();
-    const sender = anchor.mEvent.getSender();
-
-    for (let j = i + 1; j < events.length && groupContents.length < IMAGE_GROUP_MAX_SIZE; j += 1) {
-      const next = events[j];
-      // Skip invisible events (reactions, edits) — they don't break a run.
-      if (!willRender(next.mEvent)) continue;
-      if (!isPlainImageEvent(next.mEvent)) break;
-      if (next.mEvent.getSender() !== sender) break;
-      const nextTs = next.mEvent.getTs();
-      if (nextTs - lastTs > IMAGE_GROUP_WINDOW_MS) break;
-      // Don't merge images that span a day boundary — the day-divider would
-      // otherwise be hidden inside the group.
-      if (!inSameDay(lastTs, nextTs)) break;
-      groupContents.push(next.mEvent.getContent() as ImageContent);
-      groupIds.push(next.mEventId);
-      lastTs = nextTs;
-    }
-
-    if (groupContents.length > 1) {
-      imageGroups.set(anchor.mEventId, groupContents);
-      groupIds.forEach((id) => absorbedToAnchor.set(id, anchor.mEventId));
-    }
-  }
+  const effectiveWillRender = willRender ?? ((mEvent: MatrixEvent) => !reactionOrEditEvent(mEvent));
+  const { imageGroups, absorbedToAnchor } =
+    precomputedGroups ?? computeImageGroups(events, effectiveWillRender);
 
   // If readUpto points to an absorbed image, redirect it to that group's
   // anchor — reading any image in a group means the user has seen the whole
@@ -161,7 +203,7 @@ export function buildTimelineDescriptors(
       prevRenderedEvent.getType() === mEvent.getType() &&
       minuteDifference(prevRenderedEvent.getTs(), mEvent.getTs()) < 2;
 
-    const renders = willRender(mEvent);
+    const renders = effectiveWillRender(mEvent);
 
     if (renders) {
       if (newDividerPending && eventSender !== myUserId) {

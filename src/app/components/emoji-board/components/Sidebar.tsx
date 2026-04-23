@@ -1,18 +1,7 @@
 import type { ReactNode } from 'react';
 import React, { useEffect, useRef, useState } from 'react';
 import type { IconSrc } from 'folds';
-import {
-  Box,
-  Scroll,
-  Line,
-  as,
-  TooltipProvider,
-  Tooltip,
-  Text,
-  IconButton,
-  Icon,
-  Icons,
-} from 'folds';
+import { Box, Scroll, Line, as, Tooltip, Text, IconButton, Icon, Icons } from 'folds';
 import classNames from 'classnames';
 import {
   draggable,
@@ -24,6 +13,7 @@ import {
   extractInstruction,
 } from '@atlaskit/pragmatic-drag-and-drop-hitbox/tree-item';
 import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
+import { TooltipProvider } from '../../TooltipProvider';
 import { LongPressWrapper } from '../../long-press';
 import * as css from './styles.css';
 
@@ -70,7 +60,6 @@ function SidebarBtn<T extends string>({
 }) {
   return (
     <TooltipProvider
-      delay={500}
       position="Left"
       tooltip={
         <Tooltip id={`SidebarStackItem-${id}-label`}>

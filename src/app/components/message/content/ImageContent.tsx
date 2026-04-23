@@ -1,22 +1,11 @@
 import type { ReactNode } from 'react';
 import React, { useCallback, useContext, useState } from 'react';
-import {
-  Badge,
-  Box,
-  Button,
-  Chip,
-  Icon,
-  Icons,
-  Spinner,
-  Text,
-  Tooltip,
-  TooltipProvider,
-  as,
-} from 'folds';
+import { Badge, Box, Button, Chip, Icon, Icons, Spinner, Text, Tooltip, as } from 'folds';
 import classNames from 'classnames';
 import { BlurhashCanvas } from 'react-blurhash';
 import { useAtom, useSetAtom } from 'jotai';
 import type { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
+import { TooltipProvider } from '../../TooltipProvider';
 import type { ImageInfo } from '../../../../types/matrix/common';
 import { MATRIX_BLUR_HASH_PROPERTY_NAME } from '../../../../types/matrix/common';
 import { AsyncStatus, useAutoLoadAsyncCallback } from '../../../hooks/useAsyncCallback';
@@ -49,7 +38,7 @@ export type ImageContentProps = {
   mimeType?: string;
   url: string;
   info?: ImageInfo;
-  encInfo?: EncryptedAttachmentInfo;
+  encryptionInfo?: EncryptedAttachmentInfo;
   autoPlay?: boolean;
   markedAsSpoiler?: boolean;
   spoilerReason?: string;
@@ -70,7 +59,7 @@ export const ImageContent = as<'div', ImageContentProps>(
       mimeType,
       url,
       info,
-      encInfo,
+      encryptionInfo,
       autoPlay,
       markedAsSpoiler,
       spoilerReason,
@@ -102,14 +91,14 @@ export const ImageContent = as<'div', ImageContentProps>(
     const [srcState, loadSrc] = useAutoLoadAsyncCallback(
       useCallback(async () => {
         const mediaUrl = mxcUrlToHttp(mx, url, useAuthentication) ?? url;
-        if (encInfo) {
+        if (encryptionInfo) {
           const fileContent = await downloadEncryptedMedia(mediaUrl, (encBuf) =>
-            decryptFile(encBuf, mimeType ?? FALLBACK_MIMETYPE, encInfo)
+            decryptFile(encBuf, mimeType ?? FALLBACK_MIMETYPE, encryptionInfo)
           );
           return URL.createObjectURL(fileContent);
         }
         return mediaUrl;
-      }, [mx, url, useAuthentication, mimeType, encInfo]),
+      }, [mx, url, useAuthentication, mimeType, encryptionInfo]),
       !!(autoPlay || isForceHidden)
     );
 

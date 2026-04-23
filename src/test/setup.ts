@@ -16,6 +16,19 @@ Object.defineProperty(window.navigator, 'platform', {
 // jsdom doesn't implement canvas — mock it to suppress the warning
 HTMLCanvasElement.prototype.getContext = vi.fn();
 
+// jsdom doesn't implement matchMedia — stub so hover-capability checks don't
+// throw. `matches: true` simulates a hover-capable environment (desktop).
+window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+  matches: true,
+  media: query,
+  onchange: null,
+  addListener: vi.fn(),
+  removeListener: vi.fn(),
+  addEventListener: vi.fn(),
+  removeEventListener: vi.fn(),
+  dispatchEvent: vi.fn(),
+}));
+
 // jsdom doesn't implement IntersectionObserver — provide a no-op stub. The
 // `as unknown as typeof IntersectionObserver` cast bridges the missing
 // constructor signature so we don't need a decorative empty constructor here.

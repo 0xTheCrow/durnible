@@ -29,7 +29,7 @@ export function ImageViewerRenderer() {
         throw new Error('Gallery item missing both src and mxcUrl');
       }
       const httpUrl = mxcUrlToHttp(mx, item.mxcUrl, useAuthentication) ?? item.mxcUrl;
-      const enc = item.encInfo;
+      const enc = item.encryptionInfo;
       if (enc) {
         const blob = await downloadEncryptedMedia(httpUrl, (encBuf) =>
           decryptFile(encBuf, item.mimeType ?? FALLBACK_MIMETYPE, enc)

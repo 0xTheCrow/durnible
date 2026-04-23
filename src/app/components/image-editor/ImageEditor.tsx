@@ -1,51 +1,209 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import classNames from 'classnames';
-import { Box, Chip, Header, Icon, IconButton, Icons, Text, as } from 'folds';
+import { Box, Header, Icon, Icons, Text } from 'folds';
+import type { CropperRef } from 'react-advanced-cropper';
+import { Cropper } from 'react-advanced-cropper';
+import 'react-advanced-cropper/dist/style.css';
 import * as css from './ImageEditor.css';
+import { loadImageElement } from '../../utils/dom';
+
+function CropIcon() {
+  return (
+    <>
+      <path
+        d="M7 2 L7 17 L22 17"
+        stroke="currentColor"
+        strokeWidth="2"
+        fill="none"
+        strokeLinecap="square"
+      />
+      <path
+        d="M2 7 L17 7 L17 22"
+        stroke="currentColor"
+        strokeWidth="2"
+        fill="none"
+        strokeLinecap="square"
+      />
+    </>
+  );
+}
+
+const CANVAS_OUTPUT_MIME_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp']);
+
+const pickOutputMimeType = (source: string | undefined): string => {
+  if (source && CANVAS_OUTPUT_MIME_TYPES.has(source)) return source;
+  return 'image/png';
+};
+
+const renderRotatedCanvas = async (
+  url: string,
+  rotation: number
+): Promise<HTMLCanvasElement | null> => {
+  const img = await loadImageElement(url);
+  const sw = img.naturalWidth;
+  const sh = img.naturalHeight;
+  const isQuarter = rotation === 90 || rotation === 270;
+  const cw = isQuarter ? sh : sw;
+  const ch = isQuarter ? sw : sh;
+  const canvas = document.createElement('canvas');
+  canvas.width = cw;
+  canvas.height = ch;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+  ctx.translate(cw / 2, ch / 2);
+  ctx.rotate((rotation * Math.PI) / 180);
+  ctx.drawImage(img, -sw / 2, -sh / 2);
+  return canvas;
+};
 
 export type ImageEditorProps = {
   name: string;
   url: string;
+  mimeType?: string;
   onClose: () => void;
+  onSave?: (file: File) => void;
 };
 
-export const ImageEditor = as<'div', ImageEditorProps>(
-  ({ className, name, url, onClose, ...props }, ref) => {
-    const handleApply = () => {
-      //
-    };
+export function ImageEditor({ name, url, mimeType, onClose, onSave }: ImageEditorProps) {
+  const cropperRef = useRef<CropperRef>(null);
+  const [cropMode, setCropMode] = useState(false);
+  const [rotation, setRotation] = useState(0);
 
-    return (
-      <Box
-        className={classNames(css.ImageEditor, className)}
-        direction="Column"
-        {...props}
-        ref={ref}
-      >
-        <Header className={css.ImageEditorHeader} size="400">
-          <Box grow="Yes" alignItems="Center" gap="200">
-            <IconButton size="300" radii="300" onClick={onClose}>
-              <Icon size="50" src={Icons.ArrowLeft} />
-            </IconButton>
-            <Text size="T300" truncate>
-              Image Editor
-            </Text>
-          </Box>
-          <Box shrink="No" alignItems="Center" gap="200">
-            <Chip variant="Primary" radii="300" onClick={handleApply}>
-              <Text size="B300">Save</Text>
-            </Chip>
-          </Box>
-        </Header>
-        <Box
-          grow="Yes"
-          className={css.ImageEditorContent}
-          justifyContent="Center"
-          alignItems="Center"
+  const rotateLeft = () => {
+    if (cropMode) {
+      cropperRef.current?.rotateImage(-90, { transitions: false });
+    } else {
+      setRotation((r) => (r - 90 + 360) % 360);
+    }
+  };
+
+  const rotateRight = () => {
+    if (cropMode) {
+      cropperRef.current?.rotateImage(90, { transitions: false });
+    } else {
+      setRotation((r) => (r + 90) % 360);
+    }
+  };
+
+  const enterCropMode = () => setCropMode(true);
+  const exitCropMode = () => setCropMode(false);
+
+  const handleCropperReady = () => {
+    if (rotation !== 0) {
+      cropperRef.current?.rotateImage(rotation);
+    }
+  };
+
+  const handleSave = async () => {
+    const outputMimeType = pickOutputMimeType(mimeType);
+    let canvas: HTMLCanvasElement | null;
+    try {
+      canvas = cropMode
+        ? cropperRef.current?.getCanvas() ?? null
+        : await renderRotatedCanvas(url, rotation);
+    } catch (err) {
+      console.error('ImageEditor: failed to render canvas', err);
+      return;
+    }
+    if (!canvas) {
+      console.error('ImageEditor: canvas unavailable');
+      return;
+    }
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        console.error('ImageEditor: canvas.toBlob returned null');
+        return;
+      }
+      onSave?.(new File([blob], name, { type: outputMimeType }));
+      onClose();
+    }, outputMimeType);
+  };
+
+  return (
+    <Box className={classNames(css.ImageEditor, css.ImageEditorExpanded)} direction="Column">
+      <Header className={css.ImageEditorHeader} size="500">
+        <button
+          type="button"
+          className={css.ImageEditorCloseButton}
+          onClick={onClose}
+          aria-label="Close"
         >
-          <img className={css.Image} src={url} alt={name} />
+          <Icon size="200" src={Icons.ArrowLeft} />
+        </button>
+        <Box grow="Yes" alignItems="Center" gap="300">
+          <Text size="T400" truncate>
+            {name}
+          </Text>
         </Box>
+        <div className={css.ImageEditorRotateGroup}>
+          <button
+            type="button"
+            className={css.ImageEditorToolButton}
+            onClick={rotateRight}
+            aria-label="Rotate Right"
+          >
+            <Icon size="100" src={Icons.Reload} />
+          </button>
+          <button
+            type="button"
+            className={css.ImageEditorToolButton}
+            onClick={rotateLeft}
+            aria-label="Rotate Left"
+          >
+            <Icon size="100" src={Icons.Reload} className={css.ImageEditorMirroredIcon} />
+          </button>
+        </div>
+        <button
+          type="button"
+          className={css.ImageEditorCropToggle}
+          onClick={cropMode ? exitCropMode : enterCropMode}
+          aria-pressed={cropMode}
+          aria-label={cropMode ? 'Exit Crop Mode' : 'Enter Crop Mode'}
+        >
+          <Icon size="100" src={cropMode ? Icons.Cross : CropIcon} />
+          <Text size="B300">Crop</Text>
+        </button>
+        {onSave && (
+          <button
+            type="button"
+            className={css.ImageEditorSaveButton}
+            onClick={handleSave}
+            aria-label="Save"
+          >
+            <Icon size="100" src={Icons.Check} />
+            <Text size="B300" as="span">
+              Save
+            </Text>
+          </button>
+        )}
+      </Header>
+      <Box
+        grow="Yes"
+        className={css.ImageEditorContent}
+        alignItems="Center"
+        justifyContent="Center"
+      >
+        {cropMode ? (
+          <Cropper
+            ref={cropperRef}
+            src={url}
+            className={css.ImageEditorCropper}
+            onReady={handleCropperReady}
+            defaultSize={({ imageSize }) => ({
+              width: imageSize.width,
+              height: imageSize.height,
+            })}
+          />
+        ) : (
+          <img
+            className={css.ImageEditorPreview}
+            src={url}
+            alt={name}
+            draggable={false}
+            style={{ transform: `rotate(${rotation}deg)` }}
+          />
+        )}
       </Box>
-    );
-  }
-);
+    </Box>
+  );
+}

@@ -61,6 +61,7 @@ Durnible is a Matrix chat client built with React, TypeScript, and Vite. Forked 
     setValue(propValue);
   }
   ```
+- Use `useCallback` and `useMemo` the way React is designed to have them used. Both preserve reference identity for a downstream consumer that actually depends on it — a hook dep array that would otherwise re-fire, a `React.memo`-wrapped child that would otherwise re-render, an external API that requires stable refs. `useMemo` additionally caches the result of a computation, which is worth reaching for only when the computation is *measurably* expensive. Neither is a default, and neither is a style to apply uniformly. If nothing downstream reads the identity and the computation isn't expensive, the wrapper allocates and adds noise without benefit. Before reaching for either, name the specific consumer that needs stable identity or the specific expensive computation being saved; if you can't, inline. Mixing wrapped and inline handlers within the same component is the tell — either every wrap is load-bearing for its own reason, or none of them are.
 - Don't patch matrix-js-sdk types with `as any` — find the correct type or fix the upstream typing.
 - Don't use `setTimeout` to work around race conditions in room state — use the SDK's event listeners.
 - Avoid `requestAnimationFrame` if possible — prefer CSS transitions/animations or React state-driven updates.
@@ -74,6 +75,10 @@ Durnible is a Matrix chat client built with React, TypeScript, and Vite. Forked 
 - Don't identify components in tests by matching on visible strings (button labels, body copy, translated text), ARIA roles alone, or DOM structure — those are brittle and will break on copy edits, i18n changes, or markup refactors. Add explicit `data-testid` props (or similar id props) to components and query by those. If the component you need to target lacks an id prop, add one as part of the test work.
 - Don't hardcode values in tests that are defined as constants in source. If the test needs a value that depends on a source constant — a timeout, a cap, a threshold, a mime type, an event type, a URL path — import that constant and reference it (or derive from it, e.g. `WINDOW_MS / 2`). If the value isn't currently exported but is useful in a test, make it exportable first rather than copying the literal over. Copy-pasted literals desync silently when the source constant is retuned: the test either passes with stale semantics or fails in a way that looks like a regression when it isn't.
 - Don't write tests that only verify behavior the type system already guarantees (e.g., that a function compares the correct fields on a typed object). Focus test effort on behavior types can't catch: state transitions, async sequencing, side effects, edge cases in runtime logic.
+
+## Git
+
+- Never run `git commit` (or `git push`, `git reset --hard`, or any other history-rewriting or publishing command). The user owns every commit on this repo and reviews the diff before recording it. Stage work if asked, but stop before `commit`. This holds even when tests and lint pass, and even when an earlier plan appeared to include a commit step.
 
 ## Git Hooks
 

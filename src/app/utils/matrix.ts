@@ -73,12 +73,12 @@ export const getVideoInfo = (video: HTMLVideoElement, fileOrBlob: File | Blob): 
 
 export const getThumbnailContent = (thumbnailInfo: {
   thumbnail: File | Blob;
-  encInfo: EncryptedAttachmentInfo | undefined;
+  encryptionInfo: EncryptedAttachmentInfo | undefined;
   mxc: string;
   width: number;
   height: number;
 }): ThumbnailContent => {
-  const { thumbnail, encInfo, mxc, width, height } = thumbnailInfo;
+  const { thumbnail, encryptionInfo, mxc, width, height } = thumbnailInfo;
 
   const content: ThumbnailContent = {
     thumbnail_info: {
@@ -88,9 +88,9 @@ export const getThumbnailContent = (thumbnailInfo: {
       h: height,
     },
   };
-  if (encInfo) {
+  if (encryptionInfo) {
     content.thumbnail_file = {
-      ...encInfo,
+      ...encryptionInfo,
       url: mxc,
     };
   } else {
@@ -102,7 +102,7 @@ export const getThumbnailContent = (thumbnailInfo: {
 export const encryptFile = async (
   file: File | Blob
 ): Promise<{
-  encInfo: EncryptedAttachmentInfo;
+  encryptionInfo: EncryptedAttachmentInfo;
   file: File;
   originalFile: File | Blob;
 }> => {
@@ -112,7 +112,7 @@ export const encryptFile = async (
     type: file.type,
   });
   return {
-    encInfo: encryptedAttachment.info,
+    encryptionInfo: encryptedAttachment.info,
     file: encFile,
     originalFile: file,
   };
@@ -121,9 +121,9 @@ export const encryptFile = async (
 export const decryptFile = async (
   dataBuffer: ArrayBuffer,
   type: string,
-  encInfo: EncryptedAttachmentInfo
+  encryptionInfo: EncryptedAttachmentInfo
 ): Promise<Blob> => {
-  const dataArray = await decryptAttachment(dataBuffer, encInfo);
+  const dataArray = await decryptAttachment(dataBuffer, encryptionInfo);
   const blob = new Blob([dataArray], { type });
   return blob;
 };

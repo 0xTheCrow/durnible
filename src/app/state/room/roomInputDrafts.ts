@@ -11,10 +11,11 @@ export type UploadMetadata = {
 };
 
 export type UploadItem = {
+  id: string;
   file: UploadContent;
-  originalFile: UploadContent;
+  originalFile: File;
   metadata: UploadMetadata;
-  encInfo: EncryptedAttachmentInfo | undefined;
+  encryptionInfo: EncryptedAttachmentInfo | undefined;
   isEncrypting?: boolean;
   isEncryptionSuccessful?: boolean;
   encryptError?: string;

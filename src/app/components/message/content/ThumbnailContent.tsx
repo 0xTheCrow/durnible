@@ -19,15 +19,15 @@ export function ThumbnailContent({ info, renderImage }: ThumbnailContentProps) {
     useCallback(async () => {
       const thumbInfo = info.thumbnail_info;
       const thumbMxcUrl = info.thumbnail_file?.url ?? info.thumbnail_url;
-      const encInfo = info.thumbnail_file;
+      const encryptionInfo = info.thumbnail_file;
       if (typeof thumbMxcUrl !== 'string' || typeof thumbInfo?.mimetype !== 'string') {
         throw new Error('Failed to load thumbnail');
       }
 
       const mediaUrl = mxcUrlToHttp(mx, thumbMxcUrl, useAuthentication) ?? thumbMxcUrl;
-      if (encInfo) {
+      if (encryptionInfo) {
         const fileContent = await downloadEncryptedMedia(mediaUrl, (encBuf) =>
-          decryptFile(encBuf, thumbInfo.mimetype ?? FALLBACK_MIMETYPE, encInfo)
+          decryptFile(encBuf, thumbInfo.mimetype ?? FALLBACK_MIMETYPE, encryptionInfo)
         );
         return URL.createObjectURL(fileContent);
       }
