@@ -25,14 +25,12 @@ const successfulEncrypt = async (f: File): Promise<EncryptedFileResult> => ({
 type Setup = {
   ctx: HandleUploadFilesContext;
   setItems: ReturnType<typeof vi.fn>;
-  onUploadBoardOpen: ReturnType<typeof vi.fn>;
   onAccepted: ReturnType<typeof vi.fn>;
   encrypt: ReturnType<typeof vi.fn>;
 };
 
 const setup = (overrides: Partial<HandleUploadFilesContext> = {}): Setup => {
   const setItems = vi.fn();
-  const onUploadBoardOpen = vi.fn();
   const onAccepted = vi.fn();
   const encrypt = vi.fn(successfulEncrypt);
   const ctx: HandleUploadFilesContext = {
@@ -40,7 +38,6 @@ const setup = (overrides: Partial<HandleUploadFilesContext> = {}): Setup => {
     setItems,
     isEncrypted: false,
     encrypt,
-    onUploadBoardOpen,
     onAccepted,
     ...overrides,
   };
@@ -49,7 +46,6 @@ const setup = (overrides: Partial<HandleUploadFilesContext> = {}): Setup => {
   return {
     ctx,
     setItems,
-    onUploadBoardOpen,
     onAccepted,
     encrypt: (overrides.encrypt as ReturnType<typeof vi.fn>) ?? encrypt,
   };
@@ -69,18 +65,11 @@ const replacementOf = (action: ListAction<UploadItem>): UploadItem => {
 
 describe('handleUploadFiles', () => {
   describe('side effects', () => {
-    it('opens the upload board on every call', () => {
-      const { ctx, onUploadBoardOpen } = setup();
-      handleUploadFiles(makeImages(2), ctx);
-      expect(onUploadBoardOpen).toHaveBeenCalledTimes(1);
-    });
-
-    it('opens the upload board even when no files are accepted', () => {
-      const { ctx, onUploadBoardOpen, setItems, onAccepted } = setup({
+    it('does not fire onAccepted or setItems when no files are accepted', () => {
+      const { ctx, setItems, onAccepted } = setup({
         currentItemCount: MAX_UPLOAD_QUEUE_SIZE,
       });
       handleUploadFiles(makeImages(3), ctx);
-      expect(onUploadBoardOpen).toHaveBeenCalledTimes(1);
       expect(setItems).not.toHaveBeenCalled();
       expect(onAccepted).not.toHaveBeenCalled();
     });

@@ -11,6 +11,7 @@ export type UploadMetadata = {
 };
 
 export type UploadItem = {
+  id: string;
   file: UploadContent;
   originalFile: UploadContent;
   metadata: UploadMetadata;

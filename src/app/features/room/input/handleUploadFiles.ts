@@ -4,6 +4,9 @@ import type { UploadItem } from '../../../state/room/roomInputDrafts';
 import { safeFile } from '../../../utils/mimeTypes';
 import { applyUploadQueueCap } from '../../../utils/uploadQueueCap';
 
+let nextUploadId = 0;
+const createUploadId = (): string => String(nextUploadId++);
+
 /**
  * Shape of the result returned by an encryption function — matches what
  * `encryptFileInWorker` returns. Re-stated here so this module doesn't take
@@ -25,8 +28,6 @@ export type HandleUploadFilesContext = {
   isEncrypted: boolean;
   /** Encrypts a single file (rejects on failure). */
   encrypt: (file: File) => Promise<EncryptedFileResult>;
-  /** Open the upload board UI — fired regardless of whether files were accepted. */
-  onUploadBoardOpen: () => void;
   /** Optional side effect after files are accepted (e.g. focus the send button). */
   onAccepted?: () => void;
 };
@@ -46,13 +47,12 @@ export type HandleUploadFilesResult = {
  * Add an incoming batch of files to the room's upload queue.
  *
  * Pipeline:
- *  1. Open the upload board (always).
- *  2. Cap against the queue's remaining capacity (drops excess silently).
- *  3. Sanitize each file's mime type via `safeFile`.
- *  4a. Encrypted room → PUT placeholders, then asynchronously REPLACE each
+ *  1. Cap against the queue's remaining capacity (drops excess silently).
+ *  2. Sanitize each file's mime type via `safeFile`.
+ *  3a. Encrypted room → PUT placeholders, then asynchronously REPLACE each
  *      with the encrypted result (or an error item on failure).
- *  4b. Plain room → PUT plain upload items.
- *  5. Fire `onAccepted` if at least one file made it through.
+ *  3b. Plain room → PUT plain upload items.
+ *  4. Fire `onAccepted` if at least one file made it through.
  *
  * Pure dependency injection — no React, no atoms, no DOM. The RoomInput
  * component is a thin adapter that wires its hooks/refs into the context.
@@ -61,8 +61,6 @@ export function handleUploadFiles(
   files: File[],
   ctx: HandleUploadFilesContext
 ): HandleUploadFilesResult {
-  ctx.onUploadBoardOpen();
-
   const accepted = applyUploadQueueCap(ctx.currentItemCount, files);
   if (accepted.length === 0) {
     return { acceptedCount: 0, encryptionDone: Promise.resolve() };
@@ -72,6 +70,7 @@ export function handleUploadFiles(
 
   if (ctx.isEncrypted) {
     const placeholders: UploadItem[] = safeFiles.map((f) => ({
+      id: createUploadId(),
       file: f,
       originalFile: f,
       encInfo: undefined,
@@ -88,6 +87,7 @@ export function handleUploadFiles(
           item: placeholders[i],
           replacement: {
             ...encrypted,
+            id: placeholders[i].id,
             metadata: { markedAsSpoiler: false },
             isEncryptionSuccessful: true,
           },
@@ -115,6 +115,7 @@ export function handleUploadFiles(
   }
 
   const fileItems: UploadItem[] = safeFiles.map((f) => ({
+    id: createUploadId(),
     file: f,
     originalFile: f,
     encInfo: undefined,

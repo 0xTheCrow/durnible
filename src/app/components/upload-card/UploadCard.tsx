@@ -37,24 +37,6 @@ type UploadCardProgressProps = {
   totalBytes: number;
 };
 
-export function UploadCardProgress({ sentBytes, totalBytes }: UploadCardProgressProps) {
-  return (
-    <Box grow="Yes" direction="Column" gap="200">
-      <ProgressBar variant="Secondary" size="300" min={0} max={totalBytes} value={sentBytes} />
-      <Box alignItems="Center" justifyContent="SpaceBetween">
-        <Badge variant="Secondary" fill="Solid" radii="Pill">
-          <Text size="L400">{`${Math.round(percent(0, totalBytes, sentBytes))}%`}</Text>
-        </Badge>
-        <Badge variant="Secondary" fill="Soft" radii="Pill">
-          <Text size="L400">
-            {bytesToSize(sentBytes)} / {bytesToSize(totalBytes)}
-          </Text>
-        </Badge>
-      </Box>
-    </Box>
-  );
-}
-
 export function CompactUploadCardProgress({ sentBytes, totalBytes }: UploadCardProgressProps) {
   return (
     <Box grow="Yes" gap="200" alignItems="Center">

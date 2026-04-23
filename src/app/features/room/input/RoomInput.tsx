@@ -1,5 +1,5 @@
 import type { KeyboardEventHandler, RefObject } from 'react';
-import React, { forwardRef, useCallback, useEffect, useRef, useState } from 'react';
+import React, { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAtom, useAtomValue } from 'jotai';
 import { isKeyHotkey } from 'is-hotkey';
 import type { IContent, Room } from 'matrix-js-sdk';
@@ -15,7 +15,6 @@ import {
   Overlay,
   OverlayBackdrop,
   OverlayCenter,
-  Scroll,
   Text,
   config,
   toRem,
@@ -58,13 +57,7 @@ import {
   roomIdToUploadItemsAtomFamily,
   roomUploadAtomFamily,
 } from '../../../state/room/roomInputDrafts';
-import { UploadCardRenderer } from '../../../components/upload-card';
-import type { UploadBoardImperativeHandlers } from '../../../components/upload-board';
-import {
-  UploadBoard,
-  UploadBoardContent,
-  UploadBoardHeader,
-} from '../../../components/upload-board';
+import { UploadQueue } from '../../../components/upload-queue';
 import type { Upload, UploadSuccess } from '../../../state/upload';
 import { UploadStatus, createUploadFamilyObserverAtom } from '../../../state/upload';
 import { getImageUrlBlob, loadImageElement } from '../../../utils/dom';
@@ -151,13 +144,18 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
 
     const [isVoiceRecording, setIsVoiceRecording] = useState(false);
 
-    const [uploadBoard, setUploadBoard] = useState(true);
     const [selectedFiles, setSelectedFiles] = useAtom(roomIdToUploadItemsAtomFamily(roomId));
-    const uploadFamilyObserverAtom = createUploadFamilyObserverAtom(
-      roomUploadAtomFamily,
-      selectedFiles.map((f) => f.file)
+    const uploadFamilyObserverAtom = useMemo(
+      () =>
+        createUploadFamilyObserverAtom(
+          roomUploadAtomFamily,
+          selectedFiles.map((f) => f.file)
+        ),
+      [selectedFiles]
     );
-    const uploadBoardHandlers = useRef<UploadBoardImperativeHandlers>();
+    const uploadsRef = useRef<Upload[]>([]);
+    uploadsRef.current = useAtomValue(uploadFamilyObserverAtom);
+    const sendingUploadsRef = useRef(false);
     const uploadsReplyDraftRef = useRef<typeof replyDraft>(undefined);
 
     const imagePackRooms: Room[] = useImagePackRooms(roomId, roomToParents);
@@ -176,7 +174,6 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
           setItems: setSelectedFiles,
           isEncrypted: room.hasEncryptionStateEvent(),
           encrypt: encryptFileInWorker,
-          onUploadBoardOpen: () => setUploadBoard(true),
           onAccepted: () => {
             if (!mobileOrTablet()) editorInputRef.current?.focus();
           },
@@ -300,7 +297,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       });
     };
 
-    const submit = useCallback(() => {
+    const submit = () => {
       const el = editorInputRef.current?.el;
       if (!el) return;
 
@@ -388,55 +385,48 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       }
 
       uploadsReplyDraftRef.current = plainText === '' ? replyDraft : undefined;
-      uploadBoardHandlers.current?.handleSend();
+      if (!sendingUploadsRef.current) {
+        sendingUploadsRef.current = true;
+        const successUploads = uploadsRef.current.filter(
+          (upload) => upload.status === UploadStatus.Success
+        ) as UploadSuccess[];
+        handleSendUpload(successUploads).finally(() => {
+          sendingUploadsRef.current = false;
+        });
+      }
 
       el.textContent = '';
       el.dispatchEvent(new Event('input', { bubbles: true }));
       setHasEditorContent(false);
       setReplyDraft(undefined);
       sendTypingStatus(false);
-    }, [
-      mx,
-      roomId,
-      replyDraft,
-      sendTypingStatus,
-      setReplyDraft,
-      isMarkdown,
-      commands,
-      imagePacks,
-      selectedFiles,
-      editorInputRef,
-      useAuthentication,
-    ]);
+    };
 
-    const handleKeyDown: KeyboardEventHandler = useCallback(
-      (evt) => {
-        const el = editorInputRef.current?.el;
-        if (isKeyHotkey('shift+enter', evt) && el && isInsideList(el)) {
-          evt.preventDefault();
-          handleListEnter(el);
-          el.dispatchEvent(new Event('input', { bubbles: true }));
+    const handleKeyDown: KeyboardEventHandler = (evt) => {
+      const el = editorInputRef.current?.el;
+      if (isKeyHotkey('shift+enter', evt) && el && isInsideList(el)) {
+        evt.preventDefault();
+        handleListEnter(el);
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        return;
+      }
+      if (
+        (isKeyHotkey('mod+enter', evt) ||
+          (!enterForNewline && !mobileOrTablet() && isKeyHotkey('enter', evt))) &&
+        !isComposing(evt)
+      ) {
+        evt.preventDefault();
+        submit();
+      }
+      if (isKeyHotkey('escape', evt)) {
+        evt.preventDefault();
+        if (autocompleteQuery) {
+          setAutocompleteQuery(undefined);
           return;
         }
-        if (
-          (isKeyHotkey('mod+enter', evt) ||
-            (!enterForNewline && !mobileOrTablet() && isKeyHotkey('enter', evt))) &&
-          !isComposing(evt)
-        ) {
-          evt.preventDefault();
-          submit();
-        }
-        if (isKeyHotkey('escape', evt)) {
-          evt.preventDefault();
-          if (autocompleteQuery) {
-            setAutocompleteQuery(undefined);
-            return;
-          }
-          setReplyDraft(undefined);
-        }
-      },
-      [submit, setReplyDraft, enterForNewline, autocompleteQuery, isComposing, editorInputRef]
-    );
+        setReplyDraft(undefined);
+      }
+    };
 
     const handleEditorChange = useCallback(() => {
       const el = editorInputRef.current?.el;
@@ -531,40 +521,6 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
 
     return (
       <div ref={ref}>
-        {selectedFiles.length > 0 && (
-          <UploadBoard
-            header={
-              <UploadBoardHeader
-                open={uploadBoard}
-                onToggle={() => setUploadBoard(!uploadBoard)}
-                uploadFamilyObserverAtom={uploadFamilyObserverAtom}
-                onSend={handleSendUpload}
-                onSubmit={submit}
-                imperativeHandlerRef={uploadBoardHandlers}
-                onCancel={handleCancelUpload}
-              />
-            }
-          >
-            {uploadBoard && (
-              <Scroll size="300" hideTrack visibility="Hover">
-                <UploadBoardContent>
-                  {Array.from(selectedFiles)
-                    .reverse()
-                    .map((fileItem, index) => (
-                      <UploadCardRenderer
-                        // eslint-disable-next-line react/no-array-index-key
-                        key={index}
-                        isEncrypted={!!fileItem.encInfo}
-                        fileItem={fileItem}
-                        setMetadata={handleFileMetadata}
-                        onRemove={handleRemoveUpload}
-                      />
-                    ))}
-                </UploadBoardContent>
-              </Scroll>
-            )}
-          </UploadBoard>
-        )}
         <Overlay
           open={dropZoneVisible}
           backdrop={<OverlayBackdrop />}
@@ -633,43 +589,55 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
             onChange={handleEditorChange}
             onFiles={handleFiles}
             top={
-              replyDraft && (
-                <div>
-                  <Box
-                    alignItems="Center"
-                    gap="300"
-                    style={{ padding: `${config.space.S200} ${config.space.S300} 0` }}
-                  >
-                    <IconButton
-                      onClick={() => setReplyDraft(undefined)}
-                      variant="SurfaceVariant"
-                      size="300"
-                      radii="300"
+              <>
+                {selectedFiles.length > 0 && (
+                  <UploadQueue
+                    items={selectedFiles}
+                    setMetadata={handleFileMetadata}
+                    onRemove={handleRemoveUpload}
+                    onClearAll={() => handleCancelUpload(uploadsRef.current)}
+                  />
+                )}
+                {replyDraft && (
+                  <div>
+                    <Box
+                      alignItems="Center"
+                      gap="300"
+                      style={{ padding: `${config.space.S200} ${config.space.S300} 0` }}
                     >
-                      <Icon src={Icons.Cross} size="50" />
-                    </IconButton>
-                    <Box direction="Row" gap="200" alignItems="Center">
-                      {replyDraft.relation?.rel_type === RelationType.Thread && <ThreadIndicator />}
-                      <ReplyLayout
-                        userColor={replyUsernameColor}
-                        username={
-                          <Text size="T300" truncate>
-                            <b>
-                              {getMemberDisplayName(room, replyDraft.userId) ??
-                                getMxIdLocalPart(replyDraft.userId) ??
-                                replyDraft.userId}
-                            </b>
-                          </Text>
-                        }
+                      <IconButton
+                        onClick={() => setReplyDraft(undefined)}
+                        variant="SurfaceVariant"
+                        size="300"
+                        radii="300"
                       >
-                        <Text size="T300" truncate>
-                          {trimReplyFromBody(replyDraft.body)}
-                        </Text>
-                      </ReplyLayout>
+                        <Icon src={Icons.Cross} size="50" />
+                      </IconButton>
+                      <Box direction="Row" gap="200" alignItems="Center">
+                        {replyDraft.relation?.rel_type === RelationType.Thread && (
+                          <ThreadIndicator />
+                        )}
+                        <ReplyLayout
+                          userColor={replyUsernameColor}
+                          username={
+                            <Text size="T300" truncate>
+                              <b>
+                                {getMemberDisplayName(room, replyDraft.userId) ??
+                                  getMxIdLocalPart(replyDraft.userId) ??
+                                  replyDraft.userId}
+                              </b>
+                            </Text>
+                          }
+                        >
+                          <Text size="T300" truncate>
+                            {trimReplyFromBody(replyDraft.body)}
+                          </Text>
+                        </ReplyLayout>
+                      </Box>
                     </Box>
-                  </Box>
-                </div>
-              )
+                  </div>
+                )}
+              </>
             }
             before={
               <IconButton
