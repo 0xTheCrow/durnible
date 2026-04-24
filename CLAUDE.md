@@ -21,7 +21,6 @@ Durnible is a Matrix chat client built with React, TypeScript, and Vite. Forked 
 - **matrix-js-sdk** for Matrix protocol
 - **Jotai** for state management (atoms in `src/app/state/`)
 - **Vanilla Extract** for CSS (`*.css.ts` files)
-- **Slate** for the rich text message editor
 - **Folds** — custom UI component library
 - **React Aria** for accessibility
 - **TanStack React Query** for async data
@@ -34,7 +33,7 @@ Durnible is a Matrix chat client built with React, TypeScript, and Vite. Forked 
 - `src/app/pages/` — Page-level components (App, Auth, Client)
 - `src/app/state/` — Jotai atoms and state logic
 - `src/app/hooks/` — Custom React hooks
-- `src/app/plugins/` — Slate editor plugins (markdown, emoji, etc.)
+- `src/app/plugins/` — Domain modules and third-party library wrappers (emoji, custom-emoji image packs, markdown parsing, matrix.to URL handling, HTML parsing/rendering, PDF, syntax highlighting, text-area helpers, etc.)
 - `src/app/utils/` — Utility functions
 - `src/app/styles/` — Global styles
 - `src/client/` — Matrix client initialization

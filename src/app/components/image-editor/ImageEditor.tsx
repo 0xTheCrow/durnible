@@ -40,19 +40,19 @@ const renderRotatedCanvas = async (
   rotation: number
 ): Promise<HTMLCanvasElement | null> => {
   const img = await loadImageElement(url);
-  const sw = img.naturalWidth;
-  const sh = img.naturalHeight;
+  const imageWidth = img.naturalWidth;
+  const imageHeight = img.naturalHeight;
   const isQuarter = rotation === 90 || rotation === 270;
-  const cw = isQuarter ? sh : sw;
-  const ch = isQuarter ? sw : sh;
+  const canvasWidth = isQuarter ? imageHeight : imageWidth;
+  const canvasHeight = isQuarter ? imageWidth : imageHeight;
   const canvas = document.createElement('canvas');
-  canvas.width = cw;
-  canvas.height = ch;
+  canvas.width = canvasWidth;
+  canvas.height = canvasHeight;
   const ctx = canvas.getContext('2d');
   if (!ctx) return null;
-  ctx.translate(cw / 2, ch / 2);
+  ctx.translate(canvasWidth / 2, imageHeight / 2);
   ctx.rotate((rotation * Math.PI) / 180);
-  ctx.drawImage(img, -sw / 2, -sh / 2);
+  ctx.drawImage(img, -imageWidth / 2, -imageHeight / 2);
   return canvas;
 };
 
@@ -69,19 +69,19 @@ export function ImageEditor({ name, url, mimeType, onClose, onSave }: ImageEdito
   const [cropMode, setCropMode] = useState(false);
   const [rotation, setRotation] = useState(0);
 
-  const rotateLeft = () => {
-    if (cropMode) {
-      cropperRef.current?.rotateImage(-90, { transitions: false });
-    } else {
-      setRotation((r) => (r - 90 + 360) % 360);
-    }
-  };
-
-  const rotateRight = () => {
+  const rotateCounterClockwise = () => {
     if (cropMode) {
       cropperRef.current?.rotateImage(90, { transitions: false });
     } else {
       setRotation((r) => (r + 90) % 360);
+    }
+  };
+
+  const rotateClockwise = () => {
+    if (cropMode) {
+      cropperRef.current?.rotateImage(-90, { transitions: false });
+    } else {
+      setRotation((r) => (r - 90 + 360) % 360);
     }
   };
 
@@ -151,7 +151,7 @@ export function ImageEditor({ name, url, mimeType, onClose, onSave }: ImageEdito
           <button
             type="button"
             className={css.ImageEditorToolButton}
-            onClick={rotateRight}
+            onClick={rotateClockwise}
             aria-label="Rotate Right"
           >
             <Icon size="100" src={Icons.Reload} />
@@ -159,7 +159,7 @@ export function ImageEditor({ name, url, mimeType, onClose, onSave }: ImageEdito
           <button
             type="button"
             className={css.ImageEditorToolButton}
-            onClick={rotateLeft}
+            onClick={rotateCounterClockwise}
             aria-label="Rotate Left"
           >
             <Icon size="100" src={Icons.Reload} className={css.ImageEditorMirroredIcon} />

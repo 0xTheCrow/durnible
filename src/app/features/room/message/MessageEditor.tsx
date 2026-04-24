@@ -23,6 +23,7 @@ import {
   replaceShortcodesInDom,
   isInsideList,
   handleListEnter,
+  isSubmitEnterHotkey,
 } from '../../../components/editor';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
@@ -187,10 +188,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
           el.dispatchEvent(new Event('input', { bubbles: true }));
           return;
         }
-        if (
-          (isKeyHotkey('mod+enter', evt) || (!enterForNewline && isKeyHotkey('enter', evt))) &&
-          !isComposing(evt)
-        ) {
+        if (isSubmitEnterHotkey(evt, enterForNewline) && !isComposing(evt)) {
           evt.preventDefault();
           handleSave();
         }
