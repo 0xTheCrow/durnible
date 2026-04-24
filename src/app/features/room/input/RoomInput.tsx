@@ -42,6 +42,7 @@ import {
   isEditorEmpty,
   isInsideList,
   handleListEnter,
+  isSubmitEnterHotkey,
 } from '../../../components/editor';
 import { EmojiBoardWrapper, EmojiBoardTab } from '../../../components/emoji-board';
 import type { UploadContent } from '../../../utils/matrix';
@@ -452,11 +453,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
         el.dispatchEvent(new Event('input', { bubbles: true }));
         return;
       }
-      if (
-        (isKeyHotkey('mod+enter', evt) ||
-          (!enterForNewline && !mobileOrTablet() && isKeyHotkey('enter', evt))) &&
-        !isComposing(evt)
-      ) {
+      if (isSubmitEnterHotkey(evt, enterForNewline) && !isComposing(evt)) {
         evt.preventDefault();
         submit();
       }

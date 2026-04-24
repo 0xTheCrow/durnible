@@ -10,6 +10,14 @@ import {
   toggleInlineCode,
   toggleSpoiler,
 } from './editorFormatting';
+import { mobileOrTablet } from '../../utils/user-agent';
+
+export const isSubmitEnterHotkey = (
+  evt: KeyboardEvent<Element>,
+  enterForNewline: boolean
+): boolean =>
+  isKeyHotkey('mod+enter', evt) ||
+  (!enterForNewline && !mobileOrTablet() && isKeyHotkey('enter', evt));
 
 const INLINE_MARK_HOTKEYS: Record<string, string> = {
   'mod+b': 'bold',
