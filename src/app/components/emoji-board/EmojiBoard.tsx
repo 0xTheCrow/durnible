@@ -62,6 +62,7 @@ import {
   NoStickerPacks,
   createPreviewDataAtom,
   Preview,
+  EmojiHoverTooltip,
   EmojiItem,
   StickerItem,
   CustomEmojiItem,
@@ -84,6 +85,15 @@ import { VirtualTile } from '../virtualizer';
 const RECENT_GROUP_ID = 'recent_group';
 const FAVORITES_GROUP_ID = 'favorites_group';
 const SEARCH_GROUP_ID = 'search_group';
+
+const compareByPackOrder = (orderMap: Map<string, number>, aId: string, bId: string): number => {
+  const ai = orderMap.get(aId);
+  const bi = orderMap.get(bId);
+  if (ai !== undefined && bi !== undefined) return ai - bi;
+  if (ai !== undefined) return -1;
+  if (bi !== undefined) return 1;
+  return aId.localeCompare(bId);
+};
 
 type EmojiGroupItem = {
   id: string;
@@ -362,9 +372,7 @@ function EmojiSidebar({
             : b.type === 'favorites'
             ? FAVORITES_GROUP_ID
             : b.pack.id;
-        const ai = orderMap.get(aId) ?? Infinity;
-        const bi = orderMap.get(bId) ?? Infinity;
-        return ai - bi;
+        return compareByPackOrder(orderMap, aId, bId);
       });
     }
     return items;
@@ -617,9 +625,7 @@ function StickerSidebar({
       items.sort((a, b) => {
         const aId = a.type === 'favorites' ? FAVORITES_GROUP_ID : a.pack.id;
         const bId = b.type === 'favorites' ? FAVORITES_GROUP_ID : b.pack.id;
-        const ai = orderMap.get(aId) ?? Infinity;
-        const bi = orderMap.get(bId) ?? Infinity;
-        return ai - bi;
+        return compareByPackOrder(orderMap, aId, bId);
       });
     }
     return items;
@@ -729,13 +735,39 @@ function EmojiGroupHolder({
   children,
 }: EmojiGroupHolderProps) {
   const setPreviewData = useSetAtom(previewAtom);
-  const lastTargetRef = useRef<HTMLButtonElement | null>(null);
 
-  const showPreview = (element: HTMLButtonElement) => {
-    if (lastTargetRef.current === element) return;
-    const emojiInfo = getEmojiItemInfo(element);
+  const [hoverState, setHoverState] = useState<{
+    shortcode: string;
+    rect: DOMRect;
+  } | null>(null);
+  const lastHoverTargetRef = useRef<HTMLButtonElement | null>(null);
+
+  const clearHover = () => {
+    if (!lastHoverTargetRef.current) return;
+    lastHoverTargetRef.current = null;
+    setHoverState(null);
+  };
+
+  const handleEmojiHover: MouseEventHandler = (evt) => {
+    const targetEl = targetFromEvent(evt.nativeEvent, 'button') as HTMLButtonElement | undefined;
+    if (!targetEl) {
+      clearHover();
+      return;
+    }
+    if (lastHoverTargetRef.current === targetEl) return;
+    const emojiInfo = getEmojiItemInfo(targetEl);
     if (!emojiInfo) return;
-    lastTargetRef.current = element;
+    lastHoverTargetRef.current = targetEl;
+    setHoverState({
+      shortcode: emojiInfo.shortcode,
+      rect: targetEl.getBoundingClientRect(),
+    });
+  };
+
+  const handleEmojiFocus: FocusEventHandler = (evt) => {
+    const targetEl = evt.target as HTMLButtonElement;
+    const emojiInfo = getEmojiItemInfo(targetEl);
+    if (!emojiInfo) return;
     setPreviewData({
       key: emojiInfo.data,
       shortcode: emojiInfo.shortcode,
@@ -743,23 +775,7 @@ function EmojiGroupHolder({
   };
 
   const clearPreview = () => {
-    if (!lastTargetRef.current) return;
-    lastTargetRef.current = null;
     setPreviewData(undefined);
-  };
-
-  const handleEmojiHover: MouseEventHandler = (evt) => {
-    const targetEl = targetFromEvent(evt.nativeEvent, 'button') as HTMLButtonElement | undefined;
-    if (!targetEl) {
-      clearPreview();
-      return;
-    }
-    showPreview(targetEl);
-  };
-
-  const handleEmojiFocus: FocusEventHandler = (evt) => {
-    const targetEl = evt.target as HTMLButtonElement;
-    showPreview(targetEl);
   };
 
   return (
@@ -768,13 +784,14 @@ function EmojiGroupHolder({
         onClick={onGroupItemClick}
         onContextMenu={onGroupItemContextMenu}
         onMouseMove={handleEmojiHover}
-        onMouseLeave={clearPreview}
+        onMouseLeave={clearHover}
         onFocus={handleEmojiFocus}
         onBlur={clearPreview}
         direction="Column"
       >
         {children}
       </Box>
+      {hoverState && <EmojiHoverTooltip shortcode={hoverState.shortcode} rect={hoverState.rect} />}
     </Scroll>
   );
 }
@@ -838,11 +855,7 @@ export function EmojiBoard({
   const imagePacks = useMemo(() => {
     if (packOrder.length === 0) return rawImagePacks;
     const orderMap = new Map(packOrder.map((id, i) => [id, i]));
-    return [...rawImagePacks].sort((a, b) => {
-      const ai = orderMap.get(a.id) ?? Infinity;
-      const bi = orderMap.get(b.id) ?? Infinity;
-      return ai - bi;
-    });
+    return [...rawImagePacks].sort((a, b) => compareByPackOrder(orderMap, a.id, b.id));
   }, [rawImagePacks, packOrder]);
 
   const [emojiGroupItems, stickerGroupItems] = useGroups(
