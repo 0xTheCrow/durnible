@@ -14,10 +14,8 @@ export const YouTubeEmbed = as<
   const embedSrc = `https://www.youtube-nocookie.com/embed/${videoId}${
     start ? `?start=${start}` : ''
   }`;
-  const linkUrl = invidiousInstance
-    ? `https://${invidiousInstance}/watch?v=${videoId}${start ? `&t=${start}` : ''}`
-    : undefined;
-  const showLinkBar = showLink && linkUrl !== undefined && linkUrl !== url;
+  const linkUrl = `https://${invidiousInstance}/watch?v=${videoId}${start ? `&t=${start}` : ''}`;
+  const showLinkBar = showLink && linkUrl !== url;
   return (
     <Box
       shrink="No"
