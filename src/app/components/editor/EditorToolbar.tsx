@@ -18,10 +18,11 @@ import {
 import type { MouseEventHandler, ReactNode, RefObject } from 'react';
 import React, { useCallback, useEffect, useState } from 'react';
 import * as css from './Editor.css';
-import { isMacOS } from '../../utils/user-agent';
-import { KeySymbol } from '../../utils/key-symbol';
 import { useSetting } from '../../state/hooks/settings';
 import { settingsAtom } from '../../state/settings';
+import { useFormattedKeybind } from '../../state/hooks/keybinds';
+import { KeybindAction } from '../../state/keybinds';
+import { KeySymbol } from '../../utils/key-symbol';
 import { stopPropagation } from '../../utils/keyboard';
 import { TooltipProvider } from '../TooltipProvider';
 import {
@@ -40,15 +41,23 @@ import {
 
 const preventFocusLoss = (e: React.MouseEvent | React.TouchEvent) => e.preventDefault();
 
-function BtnTooltip({ text, shortCode }: { text: string; shortCode?: string }) {
+type ToolbarTooltipProps = {
+  text: string;
+  keybind?: KeybindAction;
+  shortCode?: string;
+};
+
+function ToolbarTooltip({ text, keybind, shortCode }: ToolbarTooltipProps) {
+  const formatted = useFormattedKeybind(keybind);
+  const code = formatted || shortCode;
   return (
     <Tooltip style={{ padding: config.space.S300 }}>
       <Box gap="200" direction="Column" alignItems="Center">
         <Text align="Center">{text}</Text>
-        {shortCode && (
+        {code && (
           <Badge as="kbd" radii="300" size="500">
             <Text size="T200" align="Center">
-              {shortCode}
+              {code}
             </Text>
           </Badge>
         )}
@@ -130,7 +139,6 @@ function HeadingButton({ inputRef, onFormat }: HeadingButtonProps) {
       0
     : 0;
   const isActive = activeLevel > 0;
-  const modKey = isMacOS() ? KeySymbol.Command : 'Ctrl';
 
   const handleSelect = (tag: string) => {
     setAnchor(undefined);
@@ -170,7 +178,7 @@ function HeadingButton({ inputRef, onFormat }: HeadingButtonProps) {
           <Menu style={{ padding: config.space.S100 }}>
             <Box gap="100">
               <TooltipProvider
-                tooltip={<BtnTooltip text="Heading 1" shortCode={`${modKey} + 1`} />}
+                tooltip={<ToolbarTooltip text="Heading 1" keybind={KeybindAction.FormatHeading1} />}
               >
                 {(triggerRef) => (
                   <IconButton
@@ -186,7 +194,7 @@ function HeadingButton({ inputRef, onFormat }: HeadingButtonProps) {
                 )}
               </TooltipProvider>
               <TooltipProvider
-                tooltip={<BtnTooltip text="Heading 2" shortCode={`${modKey} + 2`} />}
+                tooltip={<ToolbarTooltip text="Heading 2" keybind={KeybindAction.FormatHeading2} />}
               >
                 {(triggerRef) => (
                   <IconButton
@@ -202,7 +210,7 @@ function HeadingButton({ inputRef, onFormat }: HeadingButtonProps) {
                 )}
               </TooltipProvider>
               <TooltipProvider
-                tooltip={<BtnTooltip text="Heading 3" shortCode={`${modKey} + 3`} />}
+                tooltip={<ToolbarTooltip text="Heading 3" keybind={KeybindAction.FormatHeading3} />}
               >
                 {(triggerRef) => (
                   <IconButton
@@ -248,7 +256,7 @@ type EditorToolbarProps = {
 };
 
 export function EditorToolbar({ inputRef, onFormat }: EditorToolbarProps) {
-  const modKey = isMacOS() ? KeySymbol.Command : 'Ctrl';
+  const exitBlockKey = useFormattedKeybind(KeybindAction.FormatExitBlock);
   const [isMarkdown, setIsMarkdown] = useSetting(settingsAtom, 'isMarkdown');
   const [, setTick] = useState(0);
 
@@ -299,42 +307,46 @@ export function EditorToolbar({ inputRef, onFormat }: EditorToolbarProps) {
           <Box shrink="No" gap="100">
             <InlineButton
               icon={Icons.Bold}
-              tooltip={<BtnTooltip text="Bold" shortCode={`${modKey} + B`} />}
+              tooltip={<ToolbarTooltip text="Bold" keybind={KeybindAction.FormatBold} />}
               active={isFormatActive('bold')}
               onClick={() => applyFormat(() => toggleExecFormat('bold'))}
               disabled={insideCode}
             />
             <InlineButton
               icon={Icons.Italic}
-              tooltip={<BtnTooltip text="Italic" shortCode={`${modKey} + I`} />}
+              tooltip={<ToolbarTooltip text="Italic" keybind={KeybindAction.FormatItalic} />}
               active={isFormatActive('italic')}
               onClick={() => applyFormat(() => toggleExecFormat('italic'))}
               disabled={insideCode}
             />
             <InlineButton
               icon={Icons.Underline}
-              tooltip={<BtnTooltip text="Underline" shortCode={`${modKey} + U`} />}
+              tooltip={<ToolbarTooltip text="Underline" keybind={KeybindAction.FormatUnderline} />}
               active={isFormatActive('underline')}
               onClick={() => applyFormat(() => toggleExecFormat('underline'))}
               disabled={insideCode}
             />
             <InlineButton
               icon={Icons.Strike}
-              tooltip={<BtnTooltip text="Strike Through" shortCode={`${modKey} + S`} />}
+              tooltip={
+                <ToolbarTooltip text="Strike Through" keybind={KeybindAction.FormatStrikethrough} />
+              }
               active={isFormatActive('strikeThrough')}
               onClick={() => applyFormat(() => toggleExecFormat('strikeThrough'))}
               disabled={insideCode}
             />
             <InlineButton
               icon={Icons.Code}
-              tooltip={<BtnTooltip text="Inline Code" shortCode={`${modKey} + [`} />}
+              tooltip={
+                <ToolbarTooltip text="Inline Code" keybind={KeybindAction.FormatInlineCode} />
+              }
               active={el ? isCodeActive(el) : false}
               onClick={() => applyFormat(toggleInlineCode)}
               disabled={insideCode}
             />
             <InlineButton
               icon={Icons.EyeBlind}
-              tooltip={<BtnTooltip text="Spoiler" shortCode={`${modKey} + H`} />}
+              tooltip={<ToolbarTooltip text="Spoiler" keybind={KeybindAction.FormatSpoiler} />}
               active={el ? isSpoilerActive(el) : false}
               onClick={() => applyFormat(toggleSpoiler)}
               disabled={insideCode}
@@ -344,25 +356,31 @@ export function EditorToolbar({ inputRef, onFormat }: EditorToolbarProps) {
           <Box shrink="No" gap="100">
             <BlockButton
               icon={Icons.BlockQuote}
-              tooltip={<BtnTooltip text="Block Quote" shortCode={`${modKey} + '`} />}
+              tooltip={
+                <ToolbarTooltip text="Block Quote" keybind={KeybindAction.FormatBlockquote} />
+              }
               active={el ? isBlockFormatActive(el, 'blockquote') : false}
               onClick={() => applyFormat((target) => toggleBlockFormat(target, 'blockquote'))}
             />
             <BlockButton
               icon={Icons.BlockCode}
-              tooltip={<BtnTooltip text="Block Code" shortCode={`${modKey} + ;`} />}
+              tooltip={<ToolbarTooltip text="Block Code" keybind={KeybindAction.FormatCodeBlock} />}
               active={el ? isBlockFormatActive(el, 'pre') : false}
               onClick={() => applyFormat(toggleCodeBlock)}
             />
             <BlockButton
               icon={Icons.OrderList}
-              tooltip={<BtnTooltip text="Ordered List" shortCode={`${modKey} + 7`} />}
+              tooltip={
+                <ToolbarTooltip text="Ordered List" keybind={KeybindAction.FormatOrderedList} />
+              }
               active={el ? isBlockFormatActive(el, 'ol') : false}
               onClick={() => applyFormat(() => toggleExecFormat('insertOrderedList'))}
             />
             <BlockButton
               icon={Icons.UnorderList}
-              tooltip={<BtnTooltip text="Unordered List" shortCode={`${modKey} + 8`} />}
+              tooltip={
+                <ToolbarTooltip text="Unordered List" keybind={KeybindAction.FormatUnorderedList} />
+              }
               active={el ? isBlockFormatActive(el, 'ul') : false}
               onClick={() => applyFormat(() => toggleExecFormat('insertUnorderedList'))}
             />
@@ -374,7 +392,7 @@ export function EditorToolbar({ inputRef, onFormat }: EditorToolbarProps) {
               <Box shrink="No" gap="100">
                 <TooltipProvider
                   tooltip={
-                    <BtnTooltip text="Exit Formatting" shortCode={`Escape, ${modKey} + E`} />
+                    <ToolbarTooltip text="Exit Formatting" shortCode={`Esc, ${exitBlockKey}`} />
                   }
                 >
                   {(triggerRef) => (
@@ -397,7 +415,9 @@ export function EditorToolbar({ inputRef, onFormat }: EditorToolbarProps) {
           <Box className={css.MarkdownBtnBox} shrink="No" grow="Yes" justifyContent="End">
             <TooltipProvider
               align="End"
-              tooltip={<BtnTooltip text={isMarkdown ? 'Disable Markdown' : 'Enable Markdown'} />}
+              tooltip={
+                <ToolbarTooltip text={isMarkdown ? 'Disable Markdown' : 'Enable Markdown'} />
+              }
             >
               {(triggerRef) => (
                 <IconButton

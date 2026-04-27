@@ -27,6 +27,7 @@ import {
 } from '../../../components/editor';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
+import { useKeybinds } from '../../../state/hooks/keybinds';
 import { useRelevantImagePacks } from '../../../hooks/useImagePacks';
 import { ImageUsage } from '../../../plugins/custom-emoji/types';
 import { buildShortcodeMap, emojis as unicodeEmojis } from '../../../plugins/emoji';
@@ -51,6 +52,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
     const mx = useMatrixClient();
     const useAuthentication = useMediaAuthentication();
     const [enterForNewline] = useSetting(settingsAtom, 'enterForNewline');
+    const keybinds = useKeybinds();
     const [globalToolbar] = useSetting(settingsAtom, 'editorToolbar');
     const [isMarkdown] = useSetting(settingsAtom, 'isMarkdown');
     const [toolbar, setToolbar] = useState(globalToolbar);
@@ -184,20 +186,23 @@ export const MessageEditor = as<'div', MessageEditorProps>(
         const el = editorInputRef.current?.el;
         if (isKeyHotkey('shift+enter', evt) && el && isInsideList(el)) {
           evt.preventDefault();
+          evt.stopPropagation();
           handleListEnter(el);
           el.dispatchEvent(new Event('input', { bubbles: true }));
           return;
         }
-        if (isSubmitEnterHotkey(evt, enterForNewline) && !isComposing(evt)) {
+        if (isSubmitEnterHotkey(evt, enterForNewline, keybinds) && !isComposing(evt)) {
           evt.preventDefault();
+          evt.stopPropagation();
           handleSave();
         }
         if (isKeyHotkey('escape', evt)) {
           evt.preventDefault();
+          evt.stopPropagation();
           onCancel();
         }
       },
-      [onCancel, handleSave, enterForNewline, isComposing]
+      [onCancel, handleSave, enterForNewline, keybinds, isComposing]
     );
 
     const handleKeyUp: KeyboardEventHandler = useCallback(

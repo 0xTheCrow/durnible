@@ -15,6 +15,7 @@ import { nameInitials } from '../../utils/common';
 import { Notifications } from './notifications';
 import { Devices } from './devices';
 import { EmojisStickers } from './emojis-stickers';
+import { Keybinds } from './keybinds';
 import { DeveloperTools } from './developer-tools';
 import { About } from './about';
 import { UseStateProvider } from '../../components/UseStateProvider';
@@ -56,6 +57,11 @@ const useSettingsMenuItems = (): SettingsMenuItem[] =>
         page: SettingsPages.EmojisStickersPage,
         name: 'Emojis & Stickers',
         icon: Icons.Smile,
+      },
+      {
+        page: SettingsPages.KeybindsPage,
+        name: 'Keybinds',
+        icon: Icons.Code,
       },
       {
         page: SettingsPages.DeveloperToolsPage,
@@ -207,26 +213,29 @@ export function Settings({ initialPage, onClose }: SettingsProps) {
               </Box>
               <PageNavContent>
                 <div style={{ flexGrow: 1 }}>
-                  {menuItems.map((item) => (
-                    <MenuItem
-                      key={item.name}
-                      variant="Background"
-                      radii="400"
-                      aria-pressed={activePage === item.page}
-                      before={<Icon src={item.icon} size="100" filled={activePage === item.page} />}
-                      onClick={() => setActivePage(item.page)}
-                    >
-                      <Text
-                        style={{
-                          fontWeight: activePage === item.page ? config.fontWeight.W600 : undefined,
-                        }}
-                        size="T300"
-                        truncate
+                  {menuItems.map((item) => {
+                    const isActive = !searchMode && activePage === item.page;
+                    return (
+                      <MenuItem
+                        key={item.name}
+                        variant="Background"
+                        radii="400"
+                        aria-pressed={isActive}
+                        before={<Icon src={item.icon} size="100" filled={isActive} />}
+                        onClick={() => handleNavigateTo(item.page)}
                       >
-                        {item.name}
-                      </Text>
-                    </MenuItem>
-                  ))}
+                        <Text
+                          style={{
+                            fontWeight: isActive ? config.fontWeight.W600 : undefined,
+                          }}
+                          size="T300"
+                          truncate
+                        >
+                          {item.name}
+                        </Text>
+                      </MenuItem>
+                    );
+                  })}
                 </div>
               </PageNavContent>
               <Box style={{ padding: config.space.S200 }} shrink="No" direction="Column">
@@ -281,6 +290,9 @@ export function Settings({ initialPage, onClose }: SettingsProps) {
           )}
           {activePage === SettingsPages.EmojisStickersPage && (
             <EmojisStickers onBack={handleBackToMenu} onClose={onClose} />
+          )}
+          {activePage === SettingsPages.KeybindsPage && (
+            <Keybinds onBack={handleBackToMenu} onClose={onClose} />
           )}
           {activePage === SettingsPages.DeveloperToolsPage && (
             <DeveloperTools onBack={handleBackToMenu} onClose={onClose} />

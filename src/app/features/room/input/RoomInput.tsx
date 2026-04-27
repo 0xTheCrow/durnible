@@ -68,6 +68,7 @@ import { safeFile } from '../../../utils/mimeTypes';
 import { fulfilledPromiseSettledResult } from '../../../utils/common';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
+import { useKeybinds } from '../../../state/hooks/keybinds';
 import {
   getAudioMsgContent,
   getFileMsgContent,
@@ -113,6 +114,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     const mx = useMatrixClient();
     const useAuthentication = useMediaAuthentication();
     const [enterForNewline] = useSetting(settingsAtom, 'enterForNewline');
+    const keybinds = useKeybinds();
     const [isMarkdown] = useSetting(settingsAtom, 'isMarkdown');
     const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
     const [legacyUsernameColor] = useSetting(settingsAtom, 'legacyUsernameColor');
@@ -449,16 +451,19 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       const el = editorInputRef.current?.el;
       if (isKeyHotkey('shift+enter', evt) && el && isInsideList(el)) {
         evt.preventDefault();
+        evt.stopPropagation();
         handleListEnter(el);
         el.dispatchEvent(new Event('input', { bubbles: true }));
         return;
       }
-      if (isSubmitEnterHotkey(evt, enterForNewline) && !isComposing(evt)) {
+      if (isSubmitEnterHotkey(evt, enterForNewline, keybinds) && !isComposing(evt)) {
         evt.preventDefault();
+        evt.stopPropagation();
         submit();
       }
       if (isKeyHotkey('escape', evt)) {
         evt.preventDefault();
+        evt.stopPropagation();
         if (autocompleteQuery) {
           setAutocompleteQuery(undefined);
           return;

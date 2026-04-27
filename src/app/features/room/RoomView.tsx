@@ -21,6 +21,8 @@ import { useKeyDown } from '../../hooks/useKeyDown';
 import { editableActiveElement } from '../../utils/dom';
 import { settingsAtom } from '../../state/settings';
 import { useSetting } from '../../state/hooks/settings';
+import { KeybindAction } from '../../state/keybinds';
+import { useKeybind } from '../../state/hooks/keybinds';
 import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
 import { useRoomPermissions } from '../../hooks/useRoomPermissions';
 import { useRoomCreators } from '../../hooks/useRoomCreators';
@@ -135,18 +137,22 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
     focusEditorRef.current();
   }, [roomId]);
 
+  const focusComposerHotkey = useKeybind(KeybindAction.GlobalFocusComposer);
   useKeyDown(
     window,
-    useCallback((evt) => {
-      if (editableActiveElement()) return;
-      const portalContainer = document.getElementById('portalContainer');
-      if (portalContainer && portalContainer.children.length > 0) {
-        return;
-      }
-      if (shouldFocusMessageField(evt) || isKeyHotkey('mod+v', evt)) {
-        editorInputRef.current?.focus();
-      }
-    }, [])
+    useCallback(
+      (evt) => {
+        if (editableActiveElement()) return;
+        const portalContainer = document.getElementById('portalContainer');
+        if (portalContainer && portalContainer.children.length > 0) {
+          return;
+        }
+        if (shouldFocusMessageField(evt) || isKeyHotkey(focusComposerHotkey, evt)) {
+          editorInputRef.current?.focus();
+        }
+      },
+      [focusComposerHotkey]
+    )
   );
 
   return (

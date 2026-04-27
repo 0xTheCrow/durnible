@@ -503,13 +503,12 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
     useCallback(() => contentRef.current, [])
   );
 
-  // Stay at bottom when room editor resize
+  // Stay at bottom when the room editor resizes
   useResizeObserver(
     useMemo(() => {
       let mounted = false;
       return (entries) => {
         if (!mounted) {
-          // skip initial mounting call
           mounted = true;
           return;
         }
@@ -557,8 +556,6 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
         if (inFocus && atBottomRef.current) {
           if (!unfocusedAutoScroll && unreadInfo?.inLiveTimeline) {
             handleOpenEvent(unreadInfo.readUptoEventId, false, (scrolled) => {
-              // the unread event is already in view
-              // so, try mark as read;
               if (!scrolled) {
                 tryAutoMarkAsRead();
               }
@@ -596,8 +593,9 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
     }
   }, [scrollRef]);
 
-  // if live timeline is linked and unreadInfo change
-  // Scroll to last read message
+  // On initial open of an unread room, place the last-read event at the
+  // bottom of the viewport so the new-messages divider sits at the end of
+  // the view.
   useLayoutEffect(() => {
     const { readUptoEventId, inLiveTimeline, scrollTo } = unreadInfo ?? {};
     if (readUptoEventId && inLiveTimeline && scrollTo) {
@@ -608,14 +606,13 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
       if (absoluteIndex) {
         scrollToItem(absoluteIndex, {
           behavior: 'instant',
-          align: 'start',
+          align: 'end',
           stopInView: true,
         });
       }
     }
   }, [room, unreadInfo, scrollToItem]);
 
-  // scroll to focused message
   // Look up by eventId so stale indices (from recalibratePagination) never land
   // on the wrong element. getBoundingClientRect gives the true current position
   // after all image containers have applied their aspect-ratio heights.
@@ -652,7 +649,6 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
     scrollEl.scrollTo({ top: newScrollTop, behavior: 'instant' });
   }, [focusItem, scrollRef]);
 
-  // clear focused message highlight after 2 s
   useEffect(() => {
     if (!focusItem) return undefined;
     const id = setTimeout(() => {
@@ -665,7 +661,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
     return () => clearTimeout(id);
   }, [alive, focusItem]);
 
-  // scroll out of view msg editor in view.
+  // When edit mode opens on a message, scroll it into view so the inline editor is visible.
   useEffect(() => {
     if (editId) {
       const editMsgElement =
@@ -1020,7 +1016,6 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
               Removed at the live end so the IntersectionObserver doesn't fire
               continuously (which caused forward/backward pagination to fight). */}
             {(!liveTimelineLinked || !rangeAtNewest) && <div ref={observeFrontAnchor} />}
-            {/* Visual skeletons — only shown while the server fetch is in-flight. */}
             {isForwardPaginating &&
               (messageLayout === MessageLayout.Compact ? (
                 <>

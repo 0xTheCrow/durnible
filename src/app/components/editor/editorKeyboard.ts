@@ -11,31 +11,34 @@ import {
   toggleSpoiler,
 } from './editorFormatting';
 import { mobileOrTablet } from '../../utils/user-agent';
+import type { KeybindMap } from '../../state/keybinds';
+import { defaultKeybinds, KeybindAction } from '../../state/keybinds';
 
 export const isSubmitEnterHotkey = (
   evt: KeyboardEvent<Element>,
-  enterForNewline: boolean
+  enterForNewline: boolean,
+  keybinds: KeybindMap = defaultKeybinds
 ): boolean =>
-  isKeyHotkey('mod+enter', evt) ||
+  isKeyHotkey(keybinds[KeybindAction.ComposeSend], evt) ||
   (!enterForNewline && !mobileOrTablet() && isKeyHotkey('enter', evt));
 
-const INLINE_MARK_HOTKEYS: Record<string, string> = {
-  'mod+b': 'bold',
-  'mod+i': 'italic',
-  'mod+u': 'underline',
-  'mod+s': 'strikeThrough',
-};
+const INLINE_MARK_ACTIONS: ReadonlyArray<{ id: KeybindAction; command: string }> = [
+  { id: KeybindAction.FormatBold, command: 'bold' },
+  { id: KeybindAction.FormatItalic, command: 'italic' },
+  { id: KeybindAction.FormatUnderline, command: 'underline' },
+  { id: KeybindAction.FormatStrikethrough, command: 'strikeThrough' },
+];
 
-const LIST_HOTKEYS: Record<string, string> = {
-  'mod+7': 'insertOrderedList',
-  'mod+8': 'insertUnorderedList',
-};
+const LIST_ACTIONS: ReadonlyArray<{ id: KeybindAction; command: string }> = [
+  { id: KeybindAction.FormatOrderedList, command: 'insertOrderedList' },
+  { id: KeybindAction.FormatUnorderedList, command: 'insertUnorderedList' },
+];
 
-const HEADING_HOTKEYS: Record<string, string> = {
-  'mod+1': 'h1',
-  'mod+2': 'h2',
-  'mod+3': 'h3',
-};
+const HEADING_ACTIONS: ReadonlyArray<{ id: KeybindAction; tag: string }> = [
+  { id: KeybindAction.FormatHeading1, tag: 'h1' },
+  { id: KeybindAction.FormatHeading2, tag: 'h2' },
+  { id: KeybindAction.FormatHeading3, tag: 'h3' },
+];
 
 const isCaretAtBlockStart = (el: HTMLElement): boolean => {
   const sel = window.getSelection();
@@ -61,7 +64,11 @@ const isCaretAtBlockStart = (el: HTMLElement): boolean => {
   return true;
 };
 
-export const handleEditorShortcut = (el: HTMLDivElement, evt: KeyboardEvent<Element>): boolean => {
+export const handleEditorShortcut = (
+  el: HTMLDivElement,
+  evt: KeyboardEvent<Element>,
+  keybinds: KeybindMap = defaultKeybinds
+): boolean => {
   if (isKeyHotkey('backspace', evt)) {
     if (isExitableBlock(el) && isCaretAtBlockStart(el)) {
       exitBlock(el);
@@ -70,7 +77,7 @@ export const handleEditorShortcut = (el: HTMLDivElement, evt: KeyboardEvent<Elem
     return false;
   }
 
-  if (isKeyHotkey('mod+e', evt) || isKeyHotkey('escape', evt)) {
+  if (isKeyHotkey(keybinds[KeybindAction.FormatExitBlock], evt) || isKeyHotkey('escape', evt)) {
     if (isExitableBlock(el)) {
       exitBlock(el);
       return true;
@@ -80,45 +87,45 @@ export const handleEditorShortcut = (el: HTMLDivElement, evt: KeyboardEvent<Elem
 
   const insideCodeBlock = isBlockFormatActive(el, 'pre');
 
-  for (const [hotkey, command] of Object.entries(INLINE_MARK_HOTKEYS)) {
-    if (isKeyHotkey(hotkey, evt)) {
+  for (const { id, command } of INLINE_MARK_ACTIONS) {
+    if (isKeyHotkey(keybinds[id], evt)) {
       if (insideCodeBlock) return false;
       toggleExecFormat(command);
       return true;
     }
   }
 
-  if (isKeyHotkey('mod+[', evt)) {
+  if (isKeyHotkey(keybinds[KeybindAction.FormatInlineCode], evt)) {
     if (insideCodeBlock) return false;
     toggleInlineCode(el);
     return true;
   }
 
-  if (isKeyHotkey('mod+h', evt)) {
+  if (isKeyHotkey(keybinds[KeybindAction.FormatSpoiler], evt)) {
     if (insideCodeBlock) return false;
     toggleSpoiler(el);
     return true;
   }
 
-  for (const [hotkey, command] of Object.entries(LIST_HOTKEYS)) {
-    if (isKeyHotkey(hotkey, evt)) {
+  for (const { id, command } of LIST_ACTIONS) {
+    if (isKeyHotkey(keybinds[id], evt)) {
       toggleExecFormat(command);
       return true;
     }
   }
 
-  if (isKeyHotkey("mod+'", evt)) {
+  if (isKeyHotkey(keybinds[KeybindAction.FormatBlockquote], evt)) {
     toggleBlockFormat(el, 'blockquote');
     return true;
   }
 
-  if (isKeyHotkey('mod+;', evt)) {
+  if (isKeyHotkey(keybinds[KeybindAction.FormatCodeBlock], evt)) {
     toggleCodeBlock(el);
     return true;
   }
 
-  for (const [hotkey, tag] of Object.entries(HEADING_HOTKEYS)) {
-    if (isKeyHotkey(hotkey, evt)) {
+  for (const { id, tag } of HEADING_ACTIONS) {
+    if (isKeyHotkey(keybinds[id], evt)) {
       toggleBlockFormat(el, tag);
       return true;
     }
