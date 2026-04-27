@@ -241,6 +241,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
         if (!el) return;
         if (handleEditorShortcut(el, evt, keybinds)) {
           evt.preventDefault();
+          evt.stopPropagation();
           el.dispatchEvent(new Event('input', { bubbles: true }));
         }
       },

@@ -1,8 +1,7 @@
 import type { ChangeEventHandler } from 'react';
 import React, { useMemo } from 'react';
 import { Box, Button, config, Icon, IconButton, Icons, Input, Scroll, Text } from 'folds';
-import { Page, PageContent } from '../../../components/page';
-import { SettingsPageHeader } from '../components';
+import { Page, PageContent, PageHeader } from '../../../components/page';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SequenceCardStyle } from '../styles.css';
 import { SettingTile } from '../../../components/setting-tile';
@@ -78,7 +77,37 @@ export function SearchResults({
 
   return (
     <Page>
-      <SettingsPageHeader title="Search Results" onBack={onBack} onClose={onClose} />
+      <PageHeader outlined={false}>
+        <Box grow="Yes" gap="200">
+          {isMobile && (
+            <Box shrink="No">
+              <IconButton onClick={onBack} variant="Surface" aria-label="Back to settings">
+                <Icon src={Icons.ArrowLeft} />
+              </IconButton>
+            </Box>
+          )}
+          <Box grow="Yes" alignItems="Center" gap="200">
+            <Text size="H3" truncate>
+              Search Results
+            </Text>
+            <Button
+              size="300"
+              variant="Secondary"
+              fill="Soft"
+              radii="300"
+              outlined
+              onClick={onBack}
+            >
+              <Text size="B300">Clear</Text>
+            </Button>
+          </Box>
+          <Box shrink="No">
+            <IconButton onClick={onClose} variant="Surface" aria-label="Close settings">
+              <Icon src={Icons.Cross} />
+            </IconButton>
+          </Box>
+        </Box>
+      </PageHeader>
       {isMobile && (
         <Box
           style={{ padding: `0 ${config.space.S400} ${config.space.S200}` }}

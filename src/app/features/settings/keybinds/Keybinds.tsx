@@ -71,6 +71,14 @@ export function Keybinds({ onBack, onClose }: KeybindsProps) {
     setKeybinds({ ...keybinds, [id]: next });
   };
 
+  const findConflictLabel = (selfId: KeybindAction, hotkey: string): string | null => {
+    const owner = (Object.entries(keybinds) as [KeybindAction, string][]).find(
+      ([id, hk]) => id !== selfId && hk === hotkey
+    );
+    if (!owner) return null;
+    return labels.get(owner[0]) ?? owner[0];
+  };
+
   const handleReset = (id: KeybindAction) => {
     setKeybinds({ ...keybinds, [id]: defaultKeybinds[id] });
   };
@@ -150,6 +158,7 @@ export function Keybinds({ onBack, onClose }: KeybindsProps) {
                               <KeybindRecorder
                                 value={keybinds[item.id]}
                                 onChange={(next) => handleChange(item.id, next)}
+                                findConflictLabel={(hk) => findConflictLabel(item.id, hk)}
                                 conflict={conflictsList.length > 0}
                               />
                             </Box>

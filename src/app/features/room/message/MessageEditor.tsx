@@ -186,16 +186,19 @@ export const MessageEditor = as<'div', MessageEditorProps>(
         const el = editorInputRef.current?.el;
         if (isKeyHotkey('shift+enter', evt) && el && isInsideList(el)) {
           evt.preventDefault();
+          evt.stopPropagation();
           handleListEnter(el);
           el.dispatchEvent(new Event('input', { bubbles: true }));
           return;
         }
         if (isSubmitEnterHotkey(evt, enterForNewline, keybinds) && !isComposing(evt)) {
           evt.preventDefault();
+          evt.stopPropagation();
           handleSave();
         }
         if (isKeyHotkey('escape', evt)) {
           evt.preventDefault();
+          evt.stopPropagation();
           onCancel();
         }
       },

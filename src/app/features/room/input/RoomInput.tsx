@@ -451,16 +451,19 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       const el = editorInputRef.current?.el;
       if (isKeyHotkey('shift+enter', evt) && el && isInsideList(el)) {
         evt.preventDefault();
+        evt.stopPropagation();
         handleListEnter(el);
         el.dispatchEvent(new Event('input', { bubbles: true }));
         return;
       }
       if (isSubmitEnterHotkey(evt, enterForNewline, keybinds) && !isComposing(evt)) {
         evt.preventDefault();
+        evt.stopPropagation();
         submit();
       }
       if (isKeyHotkey('escape', evt)) {
         evt.preventDefault();
+        evt.stopPropagation();
         if (autocompleteQuery) {
           setAutocompleteQuery(undefined);
           return;
