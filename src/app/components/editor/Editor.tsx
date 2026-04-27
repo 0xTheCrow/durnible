@@ -17,6 +17,7 @@ import {
 import { handleEditorShortcut } from './editorKeyboard';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
+import { useKeybinds } from '../../state/hooks/keybinds';
 import * as css from './Editor.css';
 import { getImageUrlBlob } from '../../utils/dom';
 
@@ -65,6 +66,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
   ) => {
     const mx = useMatrixClient();
     const useAuthentication = useMediaAuthentication();
+    const keybinds = useKeybinds();
 
     const [isEmpty, setIsEmpty] = useState(true);
     const inputRef = useRef<HTMLDivElement>(null);
@@ -237,12 +239,12 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
         if (evt.defaultPrevented) return;
         const el = inputRef.current;
         if (!el) return;
-        if (handleEditorShortcut(el, evt)) {
+        if (handleEditorShortcut(el, evt, keybinds)) {
           evt.preventDefault();
           el.dispatchEvent(new Event('input', { bubbles: true }));
         }
       },
-      [onKeyDown]
+      [onKeyDown, keybinds]
     );
 
     return (

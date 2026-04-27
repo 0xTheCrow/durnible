@@ -4,6 +4,7 @@ export enum SettingsPages {
   NotificationPage,
   DevicesPage,
   EmojisStickersPage,
+  KeybindsPage,
   DeveloperToolsPage,
   AboutPage,
 }

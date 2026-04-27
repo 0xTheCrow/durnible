@@ -43,9 +43,9 @@ import { UnreadBadge, UnreadBadgeCenter } from '../../components/unread-badge';
 import { searchModalAtom } from '../../state/searchModal';
 import { useKeyDown } from '../../hooks/useKeyDown';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
-import { KeySymbol } from '../../utils/key-symbol';
-import { isMacOS } from '../../utils/user-agent';
 import { OverlayModal } from '../../components/OverlayModal';
+import { KeybindAction } from '../../state/keybinds';
+import { useFormattedKeybind, useKeybind } from '../../state/hooks/keybinds';
 
 enum SearchRoomType {
   Rooms = '#',
@@ -124,6 +124,7 @@ type SearchProps = {
 export function Search({ onClose }: SearchProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
+  const openSearchHotkeyDisplay = useFormattedKeybind(KeybindAction.GlobalOpenSearch);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { navigateRoom, navigateSpace } = useRoomNavigate();
@@ -393,7 +394,7 @@ export function Search({ onClose }: SearchProps) {
         <Box shrink="No" justifyContent="Center" style={{ padding: config.space.S200 }}>
           <Text size="T200" priority="300">
             Type <b>#</b> for rooms, <b>@</b> for DMs and <b>*</b> for spaces. Hotkey:{' '}
-            <b>{isMacOS() ? KeySymbol.Command : 'Ctrl'} + k</b>
+            <b>{openSearchHotkeyDisplay}</b>
           </Text>
         </Box>
       </Modal>
@@ -403,12 +404,13 @@ export function Search({ onClose }: SearchProps) {
 
 export function SearchModalRenderer() {
   const [opened, setOpen] = useAtom(searchModalAtom);
+  const openSearchHotkey = useKeybind(KeybindAction.GlobalOpenSearch);
 
   useKeyDown(
     window,
     useCallback(
       (event) => {
-        if (isKeyHotkey('mod+k', event)) {
+        if (isKeyHotkey(openSearchHotkey, event)) {
           event.preventDefault();
           if (opened) {
             setOpen(false);
@@ -422,7 +424,7 @@ export function SearchModalRenderer() {
           setOpen(true);
         }
       },
-      [opened, setOpen]
+      [opened, setOpen, openSearchHotkey]
     )
   );
 
