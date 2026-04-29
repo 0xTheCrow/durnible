@@ -1,3 +1,4 @@
+import type { Ref } from 'react';
 import React from 'react';
 import type { EventTimelineSet, MatrixEvent, Relations } from 'matrix-js-sdk';
 import { Box, Chip, Icon, Icons, Text, config, color, toRem } from 'folds';
@@ -81,6 +82,10 @@ type MemoizedTimelineEventProps = {
   // would return undefined on initial load for off-screen ancestors and then
   // stay stale (the memo comparator can't detect the SDK-side change).
   replyToMe: boolean;
+  // Attached when this event is the last rendered message. useJumpToLatest
+  // uses this to track the DOM node across remounts (e.g. local echo →
+  // server-confirmed event triggers a key change → unmount/mount).
+  bottomRef?: Ref<HTMLDivElement>;
 };
 
 function TimelineEventComponent({
@@ -96,6 +101,7 @@ function TimelineEventComponent({
   editedEvent,
   isRedacted,
   replyToMe,
+  bottomRef,
 }: MemoizedTimelineEventProps) {
   const ctx = useTimelineMessageContext();
   const parseMemberEvent = useMemberEventParser();
@@ -190,6 +196,7 @@ function TimelineEventComponent({
     ) : undefined;
 
     const baseMessageProps = {
+      ref: bottomRef,
       'data-message-item': item,
       'data-message-id': mEventId,
       room,
@@ -379,6 +386,7 @@ function TimelineEventComponent({
   // ─── State events ───
 
   const baseEventProps = {
+    ref: bottomRef,
     'data-message-item': item,
     'data-message-id': mEventId,
     room,
@@ -540,6 +548,10 @@ export const MemoizedTimelineEvent = React.memo(TimelineEventComponent, (prev, n
     // Detects the false→true transition when backpagination loads the
     // ancestor of a reply, so the reply highlight appears without needing
     // a scroll to trip the comparator.
-    prev.replyToMe === next.replyToMe;
+    prev.replyToMe === next.replyToMe &&
+    // Detects when this event becomes (or stops being) the last rendered
+    // message, so the bottomRef gets attached to / removed from the DOM
+    // node correctly.
+    prev.bottomRef === next.bottomRef;
   return result;
 });

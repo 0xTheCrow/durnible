@@ -70,13 +70,11 @@ function createRelationEvent(type: string, relType: string): MatrixEvent {
   } as unknown as MatrixEvent;
 }
 
-const LAST_INDEX = 2;
-
 type HarnessProps = {
   room: Room;
   viewingLatest?: boolean;
-  lastMessageIndex?: number | null;
-  lastMessageEventId?: string | null;
+  lastMessageKey?: string;
+  attachLastRef?: boolean;
   autoPinEnabled?: boolean;
   initiallyAtBottom?: boolean;
   onHook?: (hook: UseJumpToLatest) => void;
@@ -85,8 +83,8 @@ type HarnessProps = {
 function Harness({
   room,
   viewingLatest = true,
-  lastMessageIndex = LAST_INDEX,
-  lastMessageEventId = '$last',
+  lastMessageKey = '$last',
+  attachLastRef = true,
   autoPinEnabled = true,
   initiallyAtBottom = true,
   onHook,
@@ -94,8 +92,6 @@ function Harness({
   const hook = useJumpToLatest({
     room,
     viewingLatest,
-    lastMessageIndex,
-    lastMessageEventId,
     autoPinEnabled,
     initiallyAtBottom,
   });
@@ -103,10 +99,14 @@ function Harness({
   return (
     <div ref={hook.scrollRef} data-testid="scroll">
       <div ref={hook.contentRef} data-testid="content">
-        <div data-message-item={0}>msg 0</div>
-        <div data-message-item={1}>msg 1</div>
-        <div data-message-item={LAST_INDEX} data-testid="last-msg">
-          msg {LAST_INDEX}
+        <div>msg 0</div>
+        <div>msg 1</div>
+        <div
+          key={lastMessageKey}
+          ref={attachLastRef ? hook.lastMessageRef : undefined}
+          data-testid="last-msg"
+        >
+          msg last
         </div>
       </div>
     </div>
@@ -484,19 +484,21 @@ describe('useJumpToLatest', () => {
     expect(findObserverOf(lastEl)).toBeUndefined();
   });
 
-  it('re-targets IO when lastMessageEventId changes (local echo → real event)', () => {
+  it('re-targets IO when the last message DOM node is replaced (local echo → real event)', () => {
     const room = createEventEmitterRoom('!test:example.com');
-    const { container, rerender } = render(<Harness room={room} lastMessageEventId="~temp-echo" />);
-    const lastEl = container.querySelector('[data-testid="last-msg"]') as HTMLElement;
+    const { container, rerender } = render(<Harness room={room} lastMessageKey="~temp-echo" />);
+    const oldEl = container.querySelector('[data-testid="last-msg"]') as HTMLElement;
 
-    const firstObserver = findObserverOf(lastEl);
+    const firstObserver = findObserverOf(oldEl);
     expect(firstObserver).toBeDefined();
-    const ioCountBefore = ioInstances.length;
 
-    rerender(<Harness room={room} lastMessageEventId="$real-event" />);
+    rerender(<Harness room={room} lastMessageKey="$real-event" />);
 
-    expect(ioInstances.length).toBeGreaterThan(ioCountBefore);
-    expect(firstObserver!.observed.has(lastEl)).toBe(false);
-    expect(findObserverOf(lastEl)).not.toBe(firstObserver);
+    const newEl = container.querySelector('[data-testid="last-msg"]') as HTMLElement;
+    expect(newEl).not.toBe(oldEl);
+    const newObserver = findObserverOf(newEl);
+    expect(newObserver).toBeDefined();
+    expect(newObserver).not.toBe(firstObserver);
+    expect(firstObserver!.observed.has(oldEl)).toBe(false);
   });
 });

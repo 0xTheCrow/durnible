@@ -243,27 +243,20 @@ export function RoomTimeline({ room, eventId, editorInputRef }: RoomTimelineProp
   const viewingLatestRef = useRef(liveTimelineLinked && rangeAtNewest);
   viewingLatestRef.current = liveTimelineLinked && rangeAtNewest;
 
-  const lastMessageIndex =
-    liveTimelineLinked && rangeAtNewest && timeline.range.newest - 1 >= timeline.range.oldest
-      ? timeline.range.newest - 1
-      : null;
-  const lastMessageEventId = (() => {
-    if (lastMessageIndex === null) return null;
-    const [tl, base] = getTimelineAndBaseIndex(timeline.linkedTimelines, lastMessageIndex);
-    if (!tl) return null;
-    const evt = getTimelineEvent(tl, getTimelineRelativeIndex(lastMessageIndex, base));
-    return evt?.getId() ?? null;
-  })();
-
-  const { scrollRef, contentRef, isAtBottom, isAtBottomRef, setIsAtBottom, requestScrollToBottom } =
-    useJumpToLatest({
-      room,
-      viewingLatest: viewingLatestRef.current,
-      lastMessageIndex,
-      lastMessageEventId,
-      autoPinEnabled: docFocused || unfocusedAutoScroll,
-      initiallyAtBottom: !willScrollToReadMarker,
-    });
+  const {
+    scrollRef,
+    contentRef,
+    lastMessageRef,
+    isAtBottom,
+    isAtBottomRef,
+    setIsAtBottom,
+    requestScrollToBottom,
+  } = useJumpToLatest({
+    room,
+    viewingLatest: viewingLatestRef.current,
+    autoPinEnabled: docFocused || unfocusedAutoScroll,
+    initiallyAtBottom: !willScrollToReadMarker,
+  });
 
   // Ref so that stable callbacks (handleOpenEvent, handleDecryptRetry) can
   // always read the current linked timelines without being in their deps.
@@ -728,6 +721,18 @@ export function RoomTimeline({ room, eventId, editorInputRef }: RoomTimelineProp
 
   const timelineItems = buildTimelineItems();
 
+  // Identify the descriptor for the last rendered event (skipping dividers),
+  // but only when the rendered tip is the live tip — otherwise the user is
+  // browsing history and there's no "latest" to track.
+  const lastEventDescriptorId = (() => {
+    if (!liveTimelineLinked || !rangeAtNewest) return null;
+    for (let i = timelineItems.length - 1; i >= 0; i -= 1) {
+      const d = timelineItems[i];
+      if (d.type !== 'new-messages' && d.type !== 'day-divider') return d.mEventId;
+    }
+    return null;
+  })();
+
   // Unused value; setter call forces a rerender after grouping changes.
   const [, setLastDecryptedId] = useState<string | null>(null);
 
@@ -952,6 +957,7 @@ export function RoomTimeline({ room, eventId, editorInputRef }: RoomTimelineProp
                   isRedacted={d.mEvent.isRedacted()}
                   eventStatus={d.mEvent.status}
                   replyToMe={replyToMe}
+                  bottomRef={d.mEventId === lastEventDescriptorId ? lastMessageRef : undefined}
                 />
               );
             })}

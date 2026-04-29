@@ -10,11 +10,6 @@ const SCROLLEND_FALLBACK_MS = 500;
 export type UseJumpToLatestOptions = {
   room: Room;
   viewingLatest: boolean;
-  lastMessageIndex: number | null;
-  // Event ID at lastMessageIndex. Used as an IO effect dep so the observer
-  // re-targets when the underlying DOM node is replaced (e.g. local echo →
-  // server-confirmed event causes a key change → unmount/mount).
-  lastMessageEventId: string | null;
   autoPinEnabled?: boolean;
   initiallyAtBottom?: boolean;
 };
@@ -22,6 +17,7 @@ export type UseJumpToLatestOptions = {
 export type UseJumpToLatest = {
   scrollRef: RefObject<HTMLDivElement>;
   contentRef: RefObject<HTMLDivElement>;
+  lastMessageRef: (node: HTMLElement | null) => void;
   isAtBottom: boolean;
   isAtBottomRef: MutableRefObject<boolean>;
   setIsAtBottom: (value: boolean) => void;
@@ -31,8 +27,6 @@ export type UseJumpToLatest = {
 export function useJumpToLatest({
   room,
   viewingLatest,
-  lastMessageIndex,
-  lastMessageEventId,
   autoPinEnabled = true,
   initiallyAtBottom = true,
 }: UseJumpToLatestOptions): UseJumpToLatest {
@@ -42,15 +36,17 @@ export function useJumpToLatest({
   const [isAtBottom, setIsAtBottomState] = useState(initiallyAtBottom);
   const isAtBottomRef = useRef(initiallyAtBottom);
 
+  const [lastMessageNode, setLastMessageNode] = useState<HTMLElement | null>(null);
+  const lastMessageRef = useCallback((node: HTMLElement | null) => {
+    setLastMessageNode(node);
+  }, []);
+
   const viewingLatestRef = useRef(viewingLatest);
   viewingLatestRef.current = viewingLatest;
 
   const autoPinEnabledRef = useRef(autoPinEnabled);
   autoPinEnabledRef.current = autoPinEnabled;
 
-  // True while a hook-initiated scroll is in flight. IntersectionObserver
-  // callbacks during this window are ignored — they would otherwise transiently
-  // report not-intersecting mid-animation and flash the button visible.
   const suppressIORef = useRef(false);
   const suppressTimeoutRef = useRef<number | null>(null);
 
@@ -85,16 +81,12 @@ export function useJumpToLatest({
     const scrollEl = scrollRef.current;
     if (!scrollEl) return undefined;
     if (!viewingLatest) return undefined;
-    if (lastMessageIndex === null || lastMessageIndex < 0) return undefined;
-    const target = scrollEl.querySelector(
-      `[data-message-item="${lastMessageIndex}"]`
-    ) as HTMLElement | null;
-    if (!target) return undefined;
+    if (!lastMessageNode) return undefined;
 
     const observer = new IntersectionObserver(
       (entries) => {
         if (suppressIORef.current) return;
-        const entry = entries.find((e) => e.target === target);
+        const entry = entries.find((e) => e.target === lastMessageNode);
         if (!entry) return;
         const next = entry.isIntersecting;
         if (isAtBottomRef.current === next) return;
@@ -103,9 +95,9 @@ export function useJumpToLatest({
       },
       { root: scrollEl }
     );
-    observer.observe(target);
+    observer.observe(lastMessageNode);
     return () => observer.disconnect();
-  }, [lastMessageIndex, lastMessageEventId, viewingLatest]);
+  }, [lastMessageNode, viewingLatest]);
 
   useEffect(() => {
     const scrollEl = scrollRef.current;
@@ -181,6 +173,7 @@ export function useJumpToLatest({
   return {
     scrollRef,
     contentRef,
+    lastMessageRef,
     isAtBottom,
     isAtBottomRef,
     setIsAtBottom,
