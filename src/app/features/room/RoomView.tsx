@@ -159,13 +159,7 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
     <Page ref={roomViewRef} style={{ position: 'relative' }}>
       <RoomViewHeader />
       <Box grow="Yes" direction="Column" style={{ position: 'relative' }}>
-        <RoomTimeline
-          key={roomId}
-          room={room}
-          eventId={eventId}
-          roomInputRef={roomInputRef}
-          editorInputRef={editorInputRef}
-        />
+        <RoomTimeline key={roomId} room={room} eventId={eventId} editorInputRef={editorInputRef} />
         <RoomViewTyping room={room} />
         <TimelineSlider
           room={room}

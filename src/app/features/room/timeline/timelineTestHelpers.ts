@@ -109,6 +109,8 @@ export function createFakeEvent(type: string): MatrixEvent {
     getRoomId: () => '!test:example.com',
     getSender: () => '@alice:example.com',
     isRedacted: () => false,
+    isRedaction: () => false,
+    getRelation: () => null,
   } as unknown as MatrixEvent;
 }
 

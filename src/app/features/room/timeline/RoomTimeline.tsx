@@ -58,7 +58,6 @@ import { SelectionActionBar } from './SelectionActionBar';
 import { useBulkSelection } from './useBulkSelection';
 import { markAsRead } from '../../../utils/notifications';
 
-import { getResizeObserverEntry, useResizeObserver } from '../../../hooks/useResizeObserver';
 import { timeDayMonthYear, today, yesterday } from '../../../utils/time';
 import {
   buildTimelineDescriptors,
@@ -96,7 +95,7 @@ import {
 import { useTheme } from '../../../hooks/useTheme';
 import { useRoomCreatorsTag } from '../../../hooks/useRoomCreatorsTag';
 import { usePowerLevelTags } from '../../../hooks/usePowerLevelTags';
-import { useTimelineAutoScroll } from './useTimelineAutoScroll';
+import { useJumpToLatest } from './useJumpToLatest';
 import { JumpToLatestButton } from './JumpToLatestButton';
 import { TimelineOverlay } from './TimelineOverlay';
 
@@ -113,11 +112,10 @@ const TimelineDivider = as<'div', { variant?: ContainerColor | 'Inherit' }>(
 type RoomTimelineProps = {
   room: Room;
   eventId?: string;
-  roomInputRef: RefObject<HTMLElement>;
   editorInputRef: RefObject<EditorController | null>;
 };
 
-export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: RoomTimelineProps) {
+export function RoomTimeline({ room, eventId, editorInputRef }: RoomTimelineProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
   const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
@@ -184,7 +182,6 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
     willScrollToReadMarker,
     tryAutoMarkAsRead,
   } = useTimelineReadMarker(mx, room, hideActivity, !!unread);
-  const contentRef = useRef<HTMLDivElement>(null);
 
   const [docFocused, setDocFocused] = useState(() =>
     typeof document !== 'undefined' ? document.hasFocus() : true
@@ -246,20 +243,19 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
   const viewingLatestRef = useRef(liveTimelineLinked && rangeAtNewest);
   viewingLatestRef.current = liveTimelineLinked && rangeAtNewest;
 
-  const {
-    scrollRef,
-    atBottomAnchorRef,
-    atBottom,
-    atBottomRef,
-    autoScrolling,
-    setAtBottom,
-    requestScrollToBottom,
-  } = useTimelineAutoScroll({
-    room,
-    viewingLatest: viewingLatestRef.current,
-    autoPinEnabled: docFocused || unfocusedAutoScroll,
-    initiallyAtBottom: !willScrollToReadMarker,
-  });
+  const lastMessageIndex =
+    liveTimelineLinked && rangeAtNewest && timeline.range.newest - 1 >= timeline.range.oldest
+      ? timeline.range.newest - 1
+      : null;
+
+  const { scrollRef, contentRef, isAtBottom, isAtBottomRef, setIsAtBottom, requestScrollToBottom } =
+    useJumpToLatest({
+      room,
+      viewingLatest: viewingLatestRef.current,
+      lastMessageIndex,
+      autoPinEnabled: docFocused || unfocusedAutoScroll,
+      initiallyAtBottom: !willScrollToReadMarker,
+    });
 
   // Ref so that stable callbacks (handleOpenEvent, handleDecryptRetry) can
   // always read the current linked timelines without being in their deps.
@@ -345,7 +341,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
         // for these events; a plain re-render is enough to update relation data.
         const isInvisible = isInvisibleTimelineEvent(mEvt);
 
-        if (atBottomRef.current) {
+        if (isAtBottomRef.current) {
           if (!isInvisible) {
             if (document.hasFocus() && (!unreadInfo || mEvt.getSender() === mx.getUserId())) {
               const evtRoomId = mEvt.getRoomId();
@@ -387,7 +383,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
           setUnreadInfo(getRoomUnreadInfo(room));
         }
       },
-      [mx, room, unreadInfo, hideActivity, unfocusedAutoScroll, atBottomRef, setUnreadInfo]
+      [mx, room, unreadInfo, hideActivity, unfocusedAutoScroll, isAtBottomRef, setUnreadInfo]
     )
   );
 
@@ -415,7 +411,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
     ) => {
       // Immediately mark as not at bottom to prevent auto-scroll-to-bottom
       // from firing during the smooth scroll animation (race with IntersectionObserver)
-      setAtBottom(false);
+      setIsAtBottom(false);
 
       const evtTimeline = getEventTimeline(room, evtId);
       const absoluteIndex =
@@ -440,7 +436,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
         loadEventTimeline(evtId);
       }
     },
-    [room, scrollToItem, loadEventTimeline, setAtBottom]
+    [room, scrollToItem, loadEventTimeline, setIsAtBottom]
   );
 
   useLiveTimelineRefresh(
@@ -484,76 +480,16 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [room, requestScrollToBottom]);
 
-  // Stay at bottom when message content grows (e.g. a tall image finishes loading)
-  useResizeObserver(
-    useMemo(() => {
-      let mounted = false;
-      return () => {
-        if (!mounted) {
-          mounted = true;
-          return;
-        }
-        const scrollElement = getScrollElement();
-        if (!scrollElement) return;
-        if (atBottomRef.current) {
-          scrollToBottom(scrollElement);
-        }
-      };
-    }, [getScrollElement, atBottomRef]),
-    useCallback(() => contentRef.current, [])
-  );
-
-  // Stay at bottom when the room editor resizes
-  useResizeObserver(
-    useMemo(() => {
-      let mounted = false;
-      return (entries) => {
-        if (!mounted) {
-          mounted = true;
-          return;
-        }
-        if (!roomInputRef.current) return;
-        const editorBaseEntry = getResizeObserverEntry(roomInputRef.current, entries);
-        const scrollElement = getScrollElement();
-        if (!editorBaseEntry || !scrollElement) return;
-
-        if (atBottomRef.current) {
-          scrollToBottom(scrollElement);
-        }
-      };
-    }, [getScrollElement, roomInputRef, atBottomRef]),
-    useCallback(() => roomInputRef.current, [roomInputRef])
-  );
-
-  // Stay at bottom when the scroll container itself resizes (e.g. window resize, keyboard open)
-  useResizeObserver(
-    useMemo(() => {
-      let mounted = false;
-      return () => {
-        if (!mounted) {
-          mounted = true;
-          return;
-        }
-        const scrollElement = getScrollElement();
-        if (!scrollElement) return;
-        if (atBottomRef.current) {
-          scrollToBottom(scrollElement);
-        }
-      };
-    }, [getScrollElement, atBottomRef]),
-    useCallback(() => scrollRef.current, [scrollRef])
-  );
-
   useEffect(() => {
-    if (atBottom && document.hasFocus()) {
+    if (isAtBottom && document.hasFocus()) {
       tryAutoMarkAsRead();
     }
-  }, [atBottom, tryAutoMarkAsRead]);
+  }, [isAtBottom, tryAutoMarkAsRead]);
 
   useDocumentFocusChange(
     useCallback(
       (inFocus) => {
-        if (inFocus && atBottomRef.current) {
+        if (inFocus && isAtBottomRef.current) {
           if (!unfocusedAutoScroll && unreadInfo?.inLiveTimeline) {
             handleOpenEvent(unreadInfo.readUptoEventId, false, (scrolled) => {
               if (!scrolled) {
@@ -565,16 +501,16 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
           tryAutoMarkAsRead();
         }
       },
-      [tryAutoMarkAsRead, unreadInfo, handleOpenEvent, unfocusedAutoScroll, atBottomRef]
+      [tryAutoMarkAsRead, unreadInfo, handleOpenEvent, unfocusedAutoScroll, isAtBottomRef]
     )
   );
 
   useEffect(() => {
     if (!eventId) return;
-    setAtBottom(false);
+    setIsAtBottom(false);
     setTimeline(getEmptyTimeline());
     loadEventTimeline(eventId);
-  }, [eventId, loadEventTimeline, setAtBottom]);
+  }, [eventId, loadEventTimeline, setIsAtBottom]);
 
   const prevEventIdRef = useRef(eventId);
   useEffect(() => {
@@ -688,7 +624,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
 
   const handleJumpToUnread = () => {
     if (unreadInfo?.readUptoEventId) {
-      setAtBottom(false);
+      setIsAtBottom(false);
       setTimeline(getEmptyTimeline());
       loadEventTimeline(unreadInfo.readUptoEventId);
     }
@@ -1048,20 +984,10 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
                   </MessageBase>
                 </>
               ))}
-            <span ref={atBottomAnchorRef} />
           </Box>
         </Scroll>
         <JumpToLatestButton
-          scrollRef={scrollRef}
-          lastMessageIndex={
-            liveTimelineLinked &&
-            rangeAtNewest &&
-            timeline.range.newest - 1 >= timeline.range.oldest
-              ? timeline.range.newest - 1
-              : null
-          }
-          atBottom={atBottom}
-          autoScrolling={autoScrolling}
+          visible={!viewingLatestRef.current || !isAtBottom}
           onClick={handleJumpToLatest}
         />
         {selectionMode && (
