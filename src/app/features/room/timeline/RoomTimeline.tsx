@@ -249,6 +249,7 @@ export function RoomTimeline({ room, eventId, editorInputRef }: RoomTimelineProp
     lastMessageRef,
     isAtBottom,
     isAtBottomRef,
+    hasObserved,
     setIsAtBottom,
     requestScrollToBottom,
   } = useJumpToLatest({
@@ -1001,7 +1002,7 @@ export function RoomTimeline({ room, eventId, editorInputRef }: RoomTimelineProp
           </Box>
         </Scroll>
         <JumpToLatestButton
-          visible={!viewingLatestRef.current || !isAtBottom}
+          visible={!viewingLatestRef.current || (hasObserved && !isAtBottom)}
           onClick={handleJumpToLatest}
         />
         {selectionMode && (

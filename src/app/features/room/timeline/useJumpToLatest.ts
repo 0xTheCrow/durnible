@@ -20,6 +20,10 @@ export type UseJumpToLatest = {
   lastMessageRef: (node: HTMLElement | null) => void;
   isAtBottom: boolean;
   isAtBottomRef: MutableRefObject<boolean>;
+  // False until the IntersectionObserver has produced its first reading.
+  // Use to delay button visibility decisions on initial mount so the button
+  // doesn't flash before the observer has caught up.
+  hasObserved: boolean;
   setIsAtBottom: (value: boolean) => void;
   requestScrollToBottom: (smooth?: boolean) => void;
 };
@@ -35,6 +39,7 @@ export function useJumpToLatest({
 
   const [isAtBottom, setIsAtBottomState] = useState(initiallyAtBottom);
   const isAtBottomRef = useRef(initiallyAtBottom);
+  const [hasObserved, setHasObserved] = useState(false);
 
   const [lastMessageNode, setLastMessageNode] = useState<HTMLElement | null>(null);
   const lastMessageRef = useCallback((node: HTMLElement | null) => {
@@ -89,6 +94,7 @@ export function useJumpToLatest({
         const entry = entries.find((e) => e.target === lastMessageNode);
         if (!entry) return;
         const next = entry.isIntersecting;
+        setHasObserved(true);
         if (isAtBottomRef.current === next) return;
         isAtBottomRef.current = next;
         setIsAtBottomState(next);
@@ -176,6 +182,7 @@ export function useJumpToLatest({
     lastMessageRef,
     isAtBottom,
     isAtBottomRef,
+    hasObserved,
     setIsAtBottom,
     requestScrollToBottom,
   };
