@@ -247,12 +247,20 @@ export function RoomTimeline({ room, eventId, editorInputRef }: RoomTimelineProp
     liveTimelineLinked && rangeAtNewest && timeline.range.newest - 1 >= timeline.range.oldest
       ? timeline.range.newest - 1
       : null;
+  const lastMessageEventId = (() => {
+    if (lastMessageIndex === null) return null;
+    const [tl, base] = getTimelineAndBaseIndex(timeline.linkedTimelines, lastMessageIndex);
+    if (!tl) return null;
+    const evt = getTimelineEvent(tl, getTimelineRelativeIndex(lastMessageIndex, base));
+    return evt?.getId() ?? null;
+  })();
 
   const { scrollRef, contentRef, isAtBottom, isAtBottomRef, setIsAtBottom, requestScrollToBottom } =
     useJumpToLatest({
       room,
       viewingLatest: viewingLatestRef.current,
       lastMessageIndex,
+      lastMessageEventId,
       autoPinEnabled: docFocused || unfocusedAutoScroll,
       initiallyAtBottom: !willScrollToReadMarker,
     });

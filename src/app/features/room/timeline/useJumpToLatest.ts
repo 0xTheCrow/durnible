@@ -11,6 +11,10 @@ export type UseJumpToLatestOptions = {
   room: Room;
   viewingLatest: boolean;
   lastMessageIndex: number | null;
+  // Event ID at lastMessageIndex. Used as an IO effect dep so the observer
+  // re-targets when the underlying DOM node is replaced (e.g. local echo →
+  // server-confirmed event causes a key change → unmount/mount).
+  lastMessageEventId: string | null;
   autoPinEnabled?: boolean;
   initiallyAtBottom?: boolean;
 };
@@ -28,6 +32,7 @@ export function useJumpToLatest({
   room,
   viewingLatest,
   lastMessageIndex,
+  lastMessageEventId,
   autoPinEnabled = true,
   initiallyAtBottom = true,
 }: UseJumpToLatestOptions): UseJumpToLatest {
@@ -100,7 +105,7 @@ export function useJumpToLatest({
     );
     observer.observe(target);
     return () => observer.disconnect();
-  }, [lastMessageIndex, viewingLatest]);
+  }, [lastMessageIndex, lastMessageEventId, viewingLatest]);
 
   useEffect(() => {
     const scrollEl = scrollRef.current;

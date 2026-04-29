@@ -76,6 +76,7 @@ type HarnessProps = {
   room: Room;
   viewingLatest?: boolean;
   lastMessageIndex?: number | null;
+  lastMessageEventId?: string | null;
   autoPinEnabled?: boolean;
   initiallyAtBottom?: boolean;
   onHook?: (hook: UseJumpToLatest) => void;
@@ -85,6 +86,7 @@ function Harness({
   room,
   viewingLatest = true,
   lastMessageIndex = LAST_INDEX,
+  lastMessageEventId = '$last',
   autoPinEnabled = true,
   initiallyAtBottom = true,
   onHook,
@@ -93,6 +95,7 @@ function Harness({
     room,
     viewingLatest,
     lastMessageIndex,
+    lastMessageEventId,
     autoPinEnabled,
     initiallyAtBottom,
   });
@@ -479,5 +482,21 @@ describe('useJumpToLatest', () => {
     const { container } = render(<Harness room={room} viewingLatest={false} />);
     const lastEl = container.querySelector('[data-testid="last-msg"]') as HTMLElement;
     expect(findObserverOf(lastEl)).toBeUndefined();
+  });
+
+  it('re-targets IO when lastMessageEventId changes (local echo → real event)', () => {
+    const room = createEventEmitterRoom('!test:example.com');
+    const { container, rerender } = render(<Harness room={room} lastMessageEventId="~temp-echo" />);
+    const lastEl = container.querySelector('[data-testid="last-msg"]') as HTMLElement;
+
+    const firstObserver = findObserverOf(lastEl);
+    expect(firstObserver).toBeDefined();
+    const ioCountBefore = ioInstances.length;
+
+    rerender(<Harness room={room} lastMessageEventId="$real-event" />);
+
+    expect(ioInstances.length).toBeGreaterThan(ioCountBefore);
+    expect(firstObserver!.observed.has(lastEl)).toBe(false);
+    expect(findObserverOf(lastEl)).not.toBe(firstObserver);
   });
 });
