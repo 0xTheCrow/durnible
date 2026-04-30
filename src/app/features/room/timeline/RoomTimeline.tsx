@@ -95,6 +95,7 @@ import {
 import { useTheme } from '../../../hooks/useTheme';
 import { useRoomCreatorsTag } from '../../../hooks/useRoomCreatorsTag';
 import { usePowerLevelTags } from '../../../hooks/usePowerLevelTags';
+import type { ApplyAnchor } from './useJumpToLatest';
 import { useJumpToLatest } from './useJumpToLatest';
 import { JumpToLatestButton } from './JumpToLatestButton';
 import { TimelineOverlay } from './TimelineOverlay';
@@ -243,6 +244,8 @@ export function RoomTimeline({ room, eventId, editorInputRef }: RoomTimelineProp
   const viewingLatestRef = useRef(liveTimelineLinked && rangeAtNewest);
   viewingLatestRef.current = liveTimelineLinked && rangeAtNewest;
 
+  const applyAnchorRef = useRef<ApplyAnchor>(() => {});
+
   const {
     scrollRef,
     contentRef,
@@ -250,13 +253,13 @@ export function RoomTimeline({ room, eventId, editorInputRef }: RoomTimelineProp
     isAtBottom,
     isAtBottomRef,
     hasObserved,
-    setIsAtBottom,
-    requestScrollToBottom,
+    setAnchor,
   } = useJumpToLatest({
     room,
     viewingLatest: viewingLatestRef.current,
     autoPinEnabled: docFocused || unfocusedAutoScroll,
     initiallyAtBottom: !willScrollToReadMarker,
+    applyAnchorRef,
   });
 
   // Ref so that stable callbacks (handleOpenEvent, handleDecryptRetry) can
@@ -296,6 +299,30 @@ export function RoomTimeline({ room, eventId, editorInputRef }: RoomTimelineProp
       onEnd: handleTimelinePagination,
     });
 
+  // Implementation of the anchor-application contract from useJumpToLatest.
+  // Reassigned on every render so the closure captures the latest scrollToItem
+  // and room. Stored on a ref so the hook's effects can call it without a
+  // circular dependency (the hook owns scrollRef, which useVirtualPaginator
+  // needs to produce scrollToItem, which we need here).
+  applyAnchorRef.current = (anchor, behavior) => {
+    if (anchor.kind === 'bottom') {
+      const scrollEl = scrollRef.current;
+      if (scrollEl) scrollToBottom(scrollEl, behavior);
+      return;
+    }
+    const evtTimeline = getEventTimeline(room, anchor.eventId);
+    const absoluteIndex =
+      evtTimeline &&
+      getEventIdAbsoluteIndex(linkedTimelinesRef.current, evtTimeline, anchor.eventId);
+    if (typeof absoluteIndex !== 'number') return;
+    scrollToItem(absoluteIndex, {
+      behavior,
+      align: anchor.align,
+      stopInView: true,
+      offset: anchor.offset,
+    });
+  };
+
   const loadEventTimeline = useEventTimelineLoader(
     mx,
     room,
@@ -327,9 +354,9 @@ export function RoomTimeline({ room, eventId, editorInputRef }: RoomTimelineProp
     useCallback(() => {
       if (!alive()) return;
       setTimeline(getInitialTimeline(room));
-      requestScrollToBottom(false);
+      setAnchor({ kind: 'bottom' });
       setSliderPosition(1);
-    }, [alive, room, setSliderPosition, requestScrollToBottom])
+    }, [alive, room, setSliderPosition, setAnchor])
   );
 
   useLiveEventArrive(
@@ -411,22 +438,21 @@ export function RoomTimeline({ room, eventId, editorInputRef }: RoomTimelineProp
       highlight = true,
       onScroll: ((scrolled: boolean) => void) | undefined = undefined
     ) => {
-      // Immediately mark as not at bottom to prevent auto-scroll-to-bottom
-      // from firing during the smooth scroll animation (race with IntersectionObserver)
-      setIsAtBottom(false);
-
       const evtTimeline = getEventTimeline(room, evtId);
       const absoluteIndex =
         evtTimeline && getEventIdAbsoluteIndex(linkedTimelinesRef.current, evtTimeline, evtId);
 
       if (typeof absoluteIndex === 'number') {
-        const scrolled = scrollToItem(absoluteIndex, {
-          behavior: 'smooth',
-          align: 'start',
-          stopInView: true,
-          offset: Math.round(window.innerHeight * 0.12),
-        });
-        if (onScroll) onScroll(scrolled);
+        setAnchor(
+          {
+            kind: 'event',
+            eventId: evtId,
+            align: 'start',
+            offset: Math.round(window.innerHeight * 0.12),
+          },
+          'smooth'
+        );
+        if (onScroll) onScroll(true);
         setFocusItem({
           index: absoluteIndex,
           eventId: evtId,
@@ -434,11 +460,22 @@ export function RoomTimeline({ room, eventId, editorInputRef }: RoomTimelineProp
           highlight,
         });
       } else {
+        // Set the anchor before loading so that as the new timeline renders
+        // and async content (URL previews, reactions, embeds) keeps shifting
+        // the layout, the ResizeObserver re-pins to this event each time.
+        // Without this, the focusItem one-shot scroll lands the user at the
+        // target, then later content loads push them off it.
+        setAnchor({
+          kind: 'event',
+          eventId: evtId,
+          align: 'start',
+          offset: Math.round(window.innerHeight * 0.12),
+        });
         setTimeline(getEmptyTimeline());
         loadEventTimeline(evtId);
       }
     },
-    [room, scrollToItem, loadEventTimeline, setIsAtBottom]
+    [room, loadEventTimeline, setAnchor]
   );
 
   useLiveTimelineRefresh(
@@ -475,12 +512,12 @@ export function RoomTimeline({ room, eventId, editorInputRef }: RoomTimelineProp
       });
 
       if (updated) {
-        requestScrollToBottom(false);
+        setAnchor({ kind: 'bottom' });
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [room, requestScrollToBottom]);
+  }, [room, setAnchor]);
 
   useEffect(() => {
     if (isAtBottom && document.hasFocus()) {
@@ -509,10 +546,18 @@ export function RoomTimeline({ room, eventId, editorInputRef }: RoomTimelineProp
 
   useEffect(() => {
     if (!eventId) return;
-    setIsAtBottom(false);
+    // Anchor on the permalink target so async content shifts during the
+    // load (and after) keep the user pinned to it instead of letting the
+    // initial-anchor 'bottom' assumption drift them around.
+    setAnchor({
+      kind: 'event',
+      eventId,
+      align: 'start',
+      offset: Math.round(window.innerHeight * 0.12),
+    });
     setTimeline(getEmptyTimeline());
     loadEventTimeline(eventId);
-  }, [eventId, loadEventTimeline, setIsAtBottom]);
+  }, [eventId, loadEventTimeline, setAnchor]);
 
   const prevEventIdRef = useRef(eventId);
   useEffect(() => {
@@ -520,36 +565,33 @@ export function RoomTimeline({ room, eventId, editorInputRef }: RoomTimelineProp
     prevEventIdRef.current = eventId;
     if (prev && !eventId) {
       setTimeline(getInitialTimeline(room));
-      requestScrollToBottom(false);
+      setAnchor({ kind: 'bottom' });
     }
-  }, [eventId, room, requestScrollToBottom]);
+  }, [eventId, room, setAnchor]);
 
+  // Single decision on mount: anchor on the last-read event when there are
+  // actual unread messages between it and the live tip (so the new-messages
+  // divider lands at the bottom of the view), or on the bottom otherwise.
+  // We compare readUptoEventId against the live timeline's last event rather
+  // than relying on the `unread` flag — getRoomUnreadInfo always returns a
+  // readUptoEventId even for fully-read rooms, and the unread flag can lag
+  // behind the timeline state. Anchoring (rather than a one-shot scroll)
+  // lets the hook re-snap when async content shifts the layout before the
+  // user takes over.
+  const initialAnchorAppliedRef = useRef(false);
   useLayoutEffect(() => {
-    const scrollEl = scrollRef.current;
-    if (scrollEl) {
-      scrollToBottom(scrollEl);
-    }
-  }, [scrollRef]);
-
-  // On initial open of an unread room, place the last-read event at the
-  // bottom of the viewport so the new-messages divider sits at the end of
-  // the view.
-  useLayoutEffect(() => {
+    if (initialAnchorAppliedRef.current) return;
+    initialAnchorAppliedRef.current = true;
     const { readUptoEventId, inLiveTimeline, scrollTo } = unreadInfo ?? {};
-    if (readUptoEventId && inLiveTimeline && scrollTo) {
-      const linkedTimelines = getLinkedTimelines(getLiveTimeline(room));
-      const evtTimeline = getEventTimeline(room, readUptoEventId);
-      const absoluteIndex =
-        evtTimeline && getEventIdAbsoluteIndex(linkedTimelines, evtTimeline, readUptoEventId);
-      if (absoluteIndex) {
-        scrollToItem(absoluteIndex, {
-          behavior: 'instant',
-          align: 'end',
-          stopInView: true,
-        });
-      }
+    const liveEvents = getLiveTimeline(room).getEvents();
+    const lastLiveEventId = liveEvents[liveEvents.length - 1]?.getId();
+    const fullyRead = !readUptoEventId || readUptoEventId === lastLiveEventId;
+    if (!fullyRead && inLiveTimeline && scrollTo) {
+      setAnchor({ kind: 'event', eventId: readUptoEventId, align: 'end' });
+    } else {
+      setAnchor({ kind: 'bottom' });
     }
-  }, [room, unreadInfo, scrollToItem]);
+  }, [room, unreadInfo, setAnchor]);
 
   // Look up by eventId so stale indices (from recalibratePagination) never land
   // on the wrong element. getBoundingClientRect gives the true current position
@@ -620,13 +662,12 @@ export function RoomTimeline({ room, eventId, editorInputRef }: RoomTimelineProp
       navigateRoom(room.roomId, undefined, { replace: true });
     }
     setTimeline(getInitialTimeline(room));
-    requestScrollToBottom(false);
+    setAnchor({ kind: 'bottom' });
     setSliderPosition(1);
   };
 
   const handleJumpToUnread = () => {
     if (unreadInfo?.readUptoEventId) {
-      setIsAtBottom(false);
       setTimeline(getEmptyTimeline());
       loadEventTimeline(unreadInfo.readUptoEventId);
     }
@@ -734,10 +775,7 @@ export function RoomTimeline({ room, eventId, editorInputRef }: RoomTimelineProp
     return null;
   })();
 
-  // Unused value; setter call forces a rerender after grouping changes.
-  const [, setLastDecryptedId] = useState<string | null>(null);
-
-  const handleEventDecrypted = useCallback((mEvent: MatrixEvent) => {
+  const handleEventDecrypted = useCallback(() => {
     const events = eventsRef.current;
     const willRender = willRenderRef.current;
     if (events.length === 0) return;
@@ -745,8 +783,7 @@ export function RoomTimeline({ room, eventId, editorInputRef }: RoomTimelineProp
     const cached = cachedGroupsRef.current;
     if (cached && groupsEqual(cached, newGroups)) return;
     cachedGroupsRef.current = newGroups;
-    const id = mEvent.getId();
-    if (id) setLastDecryptedId(id);
+    setTimeline((ct) => ({ ...ct }));
   }, []);
 
   useLiveEventDecryption(room, handleEventDecrypted);

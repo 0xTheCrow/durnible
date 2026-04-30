@@ -1,17 +1,29 @@
 import type { MutableRefObject, RefObject } from 'react';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import type { EventTimelineSetHandlerMap, Room } from 'matrix-js-sdk';
-import { RoomEvent } from 'matrix-js-sdk';
-import { isInvisibleTimelineEvent } from '../../../utils/room';
-import { scrollToBottom } from '../../../utils/dom';
+import type { Room } from 'matrix-js-sdk';
 
-const SCROLLEND_FALLBACK_MS = 500;
+export type ScrollAnchor =
+  | { kind: 'bottom' }
+  | {
+      kind: 'event';
+      eventId: string;
+      align: 'start' | 'end' | 'center';
+      offset?: number;
+    };
+
+export type ApplyAnchor = (anchor: ScrollAnchor, behavior: 'instant' | 'smooth') => void;
 
 export type UseJumpToLatestOptions = {
   room: Room;
   viewingLatest: boolean;
   autoPinEnabled?: boolean;
   initiallyAtBottom?: boolean;
+  // Provided by the consumer. Called when the hook needs to apply an anchor:
+  // either an explicit setAnchor() from the consumer, or a re-application
+  // after content size changes. The hook stores the latest function via the
+  // ref so it can be defined after the hook is called (avoids a circular
+  // dependency with useVirtualPaginator).
+  applyAnchorRef: MutableRefObject<ApplyAnchor>;
 };
 
 export type UseJumpToLatest = {
@@ -24,15 +36,16 @@ export type UseJumpToLatest = {
   // Use to delay button visibility decisions on initial mount so the button
   // doesn't flash before the observer has caught up.
   hasObserved: boolean;
-  setIsAtBottom: (value: boolean) => void;
-  requestScrollToBottom: (smooth?: boolean) => void;
+  setAnchor: (anchor: ScrollAnchor, behavior?: 'instant' | 'smooth') => void;
+  clearAnchor: () => void;
 };
 
 export function useJumpToLatest({
-  room,
+  room: _room,
   viewingLatest,
   autoPinEnabled = true,
   initiallyAtBottom = true,
+  applyAnchorRef,
 }: UseJumpToLatestOptions): UseJumpToLatest {
   const scrollRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -46,41 +59,39 @@ export function useJumpToLatest({
     setLastMessageNode(node);
   }, []);
 
-  const viewingLatestRef = useRef(viewingLatest);
-  viewingLatestRef.current = viewingLatest;
-
   const autoPinEnabledRef = useRef(autoPinEnabled);
   autoPinEnabledRef.current = autoPinEnabled;
 
-  const suppressIORef = useRef(false);
-  const suppressTimeoutRef = useRef<number | null>(null);
+  // Single source of truth for "where the user wants to be." Set explicitly
+  // by the consumer (e.g. on permalink, jump-to-reply, jump-to-unread) and
+  // implicitly by the IntersectionObserver (intersecting → 'bottom'). Drives
+  // re-scrolls when content shifts under the user.
+  const anchorRef = useRef<ScrollAnchor | null>(null);
 
-  const [scrollRequest, setScrollRequest] = useState<{ smooth: boolean } | null>(null);
+  // Pending scroll request as state. setAnchor stores the request; a layout
+  // effect picks it up and applies it on the post-render DOM. This batches
+  // with other setState calls (e.g. setTimeline in handleJumpToLatest) so
+  // the scroll runs on the new geometry, not the stale geometry at call
+  // time. Single scroll, no double-pin flash.
+  type AnchorRequest = { anchor: ScrollAnchor; behavior: 'instant' | 'smooth' };
+  const [pendingRequest, setPendingRequest] = useState<AnchorRequest | null>(null);
 
-  const setIsAtBottom = useCallback((value: boolean) => {
-    isAtBottomRef.current = value;
-    setIsAtBottomState(value);
+  const setAnchor = useCallback(
+    (anchor: ScrollAnchor, behavior: 'instant' | 'smooth' = 'instant') => {
+      anchorRef.current = anchor;
+      setPendingRequest({ anchor, behavior });
+    },
+    []
+  );
+
+  const clearAnchor = useCallback(() => {
+    anchorRef.current = null;
   }, []);
 
-  const clearSuppressTimeout = useCallback(() => {
-    if (suppressTimeoutRef.current !== null) {
-      window.clearTimeout(suppressTimeoutRef.current);
-      suppressTimeoutRef.current = null;
-    }
-  }, []);
-
-  const beginSuppress = useCallback(() => {
-    suppressIORef.current = true;
-    clearSuppressTimeout();
-    suppressTimeoutRef.current = window.setTimeout(() => {
-      suppressIORef.current = false;
-      suppressTimeoutRef.current = null;
-    }, SCROLLEND_FALLBACK_MS);
-  }, [clearSuppressTimeout]);
-
-  const requestScrollToBottom = useCallback((smooth = true) => {
-    setScrollRequest({ smooth });
-  }, []);
+  useLayoutEffect(() => {
+    if (!pendingRequest) return;
+    applyAnchorRef.current(pendingRequest.anchor, pendingRequest.behavior);
+  }, [pendingRequest, applyAnchorRef]);
 
   useEffect(() => {
     const scrollEl = scrollRef.current;
@@ -90,11 +101,21 @@ export function useJumpToLatest({
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (suppressIORef.current) return;
         const entry = entries.find((e) => e.target === lastMessageNode);
         if (!entry) return;
-        const next = entry.isIntersecting;
         setHasObserved(true);
+        const next = entry.isIntersecting;
+        if (next) {
+          // Last message visible — user is at the bottom. Adopt the 'bottom'
+          // anchor unless an explicit event anchor is in effect (e.g. user
+          // permalinked to the last message; respect their explicit intent).
+          if (!anchorRef.current || anchorRef.current.kind === 'bottom') {
+            anchorRef.current = { kind: 'bottom' };
+          }
+        } else if (anchorRef.current?.kind === 'bottom') {
+          // Last message no longer visible — release the bottom anchor.
+          anchorRef.current = null;
+        }
         if (isAtBottomRef.current === next) return;
         isAtBottomRef.current = next;
         setIsAtBottomState(next);
@@ -105,6 +126,11 @@ export function useJumpToLatest({
     return () => observer.disconnect();
   }, [lastMessageNode, viewingLatest]);
 
+  // Re-apply the current anchor when content or viewport size changes.
+  // Range expansions, image loads, reactions, and window/keyboard resizes
+  // all flow through here. The 'bottom' anchor is gated on autoPinEnabled
+  // so unfocusedAutoScroll=false is honored; explicit event anchors apply
+  // unconditionally because the consumer set them with intent.
   useEffect(() => {
     const scrollEl = scrollRef.current;
     if (!scrollEl) return undefined;
@@ -115,66 +141,41 @@ export function useJumpToLatest({
         mounted = true;
         return;
       }
-      if (!isAtBottomRef.current) return;
-      beginSuppress();
-      scrollToBottom(scrollEl);
+      const anchor = anchorRef.current;
+      if (!anchor) return;
+      if (anchor.kind === 'bottom' && !autoPinEnabledRef.current) return;
+      applyAnchorRef.current(anchor, 'instant');
     });
     observer.observe(scrollEl);
     const contentEl = contentRef.current;
     if (contentEl) observer.observe(contentEl);
     return () => observer.disconnect();
-  }, [beginSuppress]);
+  }, [applyAnchorRef]);
 
-  useEffect(() => {
-    const handleTimelineEvent: EventTimelineSetHandlerMap[RoomEvent.Timeline] = (
-      mEvent,
-      eventRoom,
-      _toStartOfTimeline,
-      _removed,
-      data
-    ) => {
-      if (eventRoom?.roomId !== room.roomId || !data.liveEvent) return;
-      if (!autoPinEnabledRef.current) return;
-      if (!isAtBottomRef.current) return;
-      if (!viewingLatestRef.current) return;
-      if (isInvisibleTimelineEvent(mEvent)) return;
-      requestScrollToBottom(true);
-    };
-    room.on(RoomEvent.Timeline, handleTimelineEvent);
-    return () => {
-      room.removeListener(RoomEvent.Timeline, handleTimelineEvent);
-    };
-  }, [room, requestScrollToBottom]);
-
-  useLayoutEffect(() => {
-    if (!scrollRequest) return;
-    const scrollEl = scrollRef.current;
-    if (!scrollEl) return;
-    beginSuppress();
-    scrollToBottom(scrollEl, scrollRequest.smooth ? 'smooth' : 'instant');
-  }, [scrollRequest, beginSuppress]);
-
+  // User-driven scroll input releases an event anchor — they've signaled
+  // intent to leave the anchored target. The 'bottom' anchor is left to
+  // the IntersectionObserver to manage; touching it here would cause it
+  // to drop on any wheel input, even tiny ones that keep the user at the
+  // bottom (auto-pin would then fail to re-engage on the next message).
+  // mousedown covers native scrollbar-thumb drags, which don't fire wheel
+  // or touchmove.
   useEffect(() => {
     const scrollEl = scrollRef.current;
     if (!scrollEl) return undefined;
-    const handleScrollEnd = () => {
-      clearSuppressTimeout();
-      suppressIORef.current = false;
-    };
-    scrollEl.addEventListener('scrollend', handleScrollEnd);
-    return () => {
-      scrollEl.removeEventListener('scrollend', handleScrollEnd);
-    };
-  }, [clearSuppressTimeout]);
-
-  useEffect(
-    () => () => {
-      if (suppressTimeoutRef.current !== null) {
-        window.clearTimeout(suppressTimeoutRef.current);
+    const handleUserInput = () => {
+      if (anchorRef.current?.kind === 'event') {
+        anchorRef.current = null;
       }
-    },
-    []
-  );
+    };
+    scrollEl.addEventListener('wheel', handleUserInput, { passive: true });
+    scrollEl.addEventListener('touchmove', handleUserInput, { passive: true });
+    scrollEl.addEventListener('mousedown', handleUserInput);
+    return () => {
+      scrollEl.removeEventListener('wheel', handleUserInput);
+      scrollEl.removeEventListener('touchmove', handleUserInput);
+      scrollEl.removeEventListener('mousedown', handleUserInput);
+    };
+  }, []);
 
   return {
     scrollRef,
@@ -183,7 +184,7 @@ export function useJumpToLatest({
     isAtBottom,
     isAtBottomRef,
     hasObserved,
-    setIsAtBottom,
-    requestScrollToBottom,
+    setAnchor,
+    clearAnchor,
   };
 }

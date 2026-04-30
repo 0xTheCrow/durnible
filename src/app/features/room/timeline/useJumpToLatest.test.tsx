@@ -1,17 +1,15 @@
-import React from 'react';
+import type { MutableRefObject } from 'react';
+import React, { useRef } from 'react';
 import { render, act } from '@testing-library/react';
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import type { MatrixEvent, Room } from 'matrix-js-sdk';
-import { RelationType, RoomEvent } from 'matrix-js-sdk';
-import type { UseJumpToLatest } from './useJumpToLatest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import type { Room } from 'matrix-js-sdk';
+import type { ApplyAnchor, ScrollAnchor, UseJumpToLatest } from './useJumpToLatest';
 import { useJumpToLatest } from './useJumpToLatest';
 import {
   createEventEmitterRoom,
-  createFakeEvent,
   findObserverOf,
   installIntersectionObserverStub,
   ioInstances,
-  stubScrollGeometry,
 } from './timelineTestHelpers';
 
 type FakeResizeObserver = {
@@ -57,19 +55,6 @@ function installResizeObserverStub(): void {
   (globalThis as unknown as { ResizeObserver: typeof ResizeObserver }).ResizeObserver = ctor;
 }
 
-function createRelationEvent(type: string, relType: string): MatrixEvent {
-  const id = `$${Math.random().toString(36).slice(2)}`;
-  return {
-    getId: () => id,
-    getType: () => type,
-    getContent: () => ({}),
-    getRoomId: () => '!test:example.com',
-    getSender: () => '@alice:example.com',
-    isRedacted: () => false,
-    getRelation: () => ({ rel_type: relType }),
-  } as unknown as MatrixEvent;
-}
-
 type HarnessProps = {
   room: Room;
   viewingLatest?: boolean;
@@ -77,7 +62,8 @@ type HarnessProps = {
   attachLastRef?: boolean;
   autoPinEnabled?: boolean;
   initiallyAtBottom?: boolean;
-  onHook?: (hook: UseJumpToLatest) => void;
+  applyAnchor?: ApplyAnchor;
+  onHook?: (hook: UseJumpToLatest, applyAnchorRef: MutableRefObject<ApplyAnchor>) => void;
 };
 
 function Harness({
@@ -87,15 +73,21 @@ function Harness({
   attachLastRef = true,
   autoPinEnabled = true,
   initiallyAtBottom = true,
+  applyAnchor,
   onHook,
 }: HarnessProps) {
+  const applyAnchorRef = useRef<ApplyAnchor>(applyAnchor ?? (() => {}));
+  if (applyAnchor) applyAnchorRef.current = applyAnchor;
+
   const hook = useJumpToLatest({
     room,
     viewingLatest,
     autoPinEnabled,
     initiallyAtBottom,
+    applyAnchorRef,
   });
-  onHook?.(hook);
+  onHook?.(hook, applyAnchorRef);
+
   return (
     <div ref={hook.scrollRef} data-testid="scroll">
       <div ref={hook.contentRef} data-testid="content">
@@ -179,304 +171,6 @@ describe('useJumpToLatest', () => {
     expect(hookState.current!.isAtBottomRef.current).toBe(false);
   });
 
-  it('setIsAtBottom updates ref and state synchronously', () => {
-    const room = createEventEmitterRoom('!test:example.com');
-    const hookState: { current: UseJumpToLatest | null } = { current: null };
-    render(
-      <Harness
-        room={room}
-        onHook={(h) => {
-          hookState.current = h;
-        }}
-      />
-    );
-    expect(hookState.current!.isAtBottom).toBe(true);
-    act(() => {
-      hookState.current!.setIsAtBottom(false);
-    });
-    expect(hookState.current!.isAtBottom).toBe(false);
-    expect(hookState.current!.isAtBottomRef.current).toBe(false);
-  });
-
-  it('requestScrollToBottom(true) performs a smooth scroll', () => {
-    const room = createEventEmitterRoom('!test:example.com');
-    const hookState: { current: UseJumpToLatest | null } = { current: null };
-    const { container } = render(
-      <Harness
-        room={room}
-        onHook={(h) => {
-          hookState.current = h;
-        }}
-      />
-    );
-    const scrollEl = container.querySelector('[data-testid="scroll"]') as HTMLDivElement;
-    const geom = stubScrollGeometry(scrollEl, { scrollHeight: 500, offsetHeight: 400 });
-    act(() => {
-      hookState.current!.requestScrollToBottom(true);
-    });
-    expect(geom.getLastScrollBehavior()).toBe('smooth');
-  });
-
-  it('requestScrollToBottom(false) performs an instant scroll', () => {
-    const room = createEventEmitterRoom('!test:example.com');
-    const hookState: { current: UseJumpToLatest | null } = { current: null };
-    const { container } = render(
-      <Harness
-        room={room}
-        onHook={(h) => {
-          hookState.current = h;
-        }}
-      />
-    );
-    const scrollEl = container.querySelector('[data-testid="scroll"]') as HTMLDivElement;
-    const geom = stubScrollGeometry(scrollEl, { scrollHeight: 500, offsetHeight: 400 });
-    act(() => {
-      hookState.current!.requestScrollToBottom(false);
-    });
-    expect(geom.getLastScrollBehavior()).toBe('instant');
-  });
-
-  it('auto-pins on a visible live message when at-bottom and viewing latest', () => {
-    const room = createEventEmitterRoom('!test:example.com');
-    const { container } = render(<Harness room={room} />);
-    const scrollEl = container.querySelector('[data-testid="scroll"]') as HTMLDivElement;
-    const lastEl = container.querySelector('[data-testid="last-msg"]') as HTMLElement;
-    const geom = stubScrollGeometry(scrollEl, { scrollHeight: 500, offsetHeight: 400 });
-    geom.setScrollTop(100);
-    act(() => {
-      findObserverOf(lastEl)?.trigger(true);
-    });
-    geom.setScrollHeight(540);
-    act(() => {
-      room.emit(RoomEvent.Timeline, createFakeEvent('m.room.message'), room, undefined, false, {
-        liveEvent: true,
-      });
-    });
-    expect(geom.getScrollTop()).toBe(540 - 400);
-  });
-
-  it('does not auto-pin for a reaction (invisible relation)', () => {
-    const room = createEventEmitterRoom('!test:example.com');
-    const { container } = render(<Harness room={room} />);
-    const scrollEl = container.querySelector('[data-testid="scroll"]') as HTMLDivElement;
-    const lastEl = container.querySelector('[data-testid="last-msg"]') as HTMLElement;
-    const geom = stubScrollGeometry(scrollEl, { scrollHeight: 500, offsetHeight: 400 });
-    geom.setScrollTop(100);
-    act(() => {
-      findObserverOf(lastEl)?.trigger(true);
-    });
-    act(() => {
-      room.emit(
-        RoomEvent.Timeline,
-        createRelationEvent('m.reaction', RelationType.Annotation),
-        room,
-        undefined,
-        false,
-        { liveEvent: true }
-      );
-    });
-    expect(geom.getScrollTop()).toBe(100);
-  });
-
-  it('does not auto-pin for an edit (invisible relation)', () => {
-    const room = createEventEmitterRoom('!test:example.com');
-    const { container } = render(<Harness room={room} />);
-    const scrollEl = container.querySelector('[data-testid="scroll"]') as HTMLDivElement;
-    const lastEl = container.querySelector('[data-testid="last-msg"]') as HTMLElement;
-    const geom = stubScrollGeometry(scrollEl, { scrollHeight: 500, offsetHeight: 400 });
-    geom.setScrollTop(100);
-    act(() => {
-      findObserverOf(lastEl)?.trigger(true);
-    });
-    act(() => {
-      room.emit(
-        RoomEvent.Timeline,
-        createRelationEvent('m.room.message', RelationType.Replace),
-        room,
-        undefined,
-        false,
-        { liveEvent: true }
-      );
-    });
-    expect(geom.getScrollTop()).toBe(100);
-  });
-
-  it('does not auto-pin for a redaction event', () => {
-    const room = createEventEmitterRoom('!test:example.com');
-    const { container } = render(<Harness room={room} />);
-    const scrollEl = container.querySelector('[data-testid="scroll"]') as HTMLDivElement;
-    const lastEl = container.querySelector('[data-testid="last-msg"]') as HTMLElement;
-    const geom = stubScrollGeometry(scrollEl, { scrollHeight: 500, offsetHeight: 400 });
-    geom.setScrollTop(100);
-    act(() => {
-      findObserverOf(lastEl)?.trigger(true);
-    });
-    const redaction = {
-      ...createFakeEvent('m.room.redaction'),
-      isRedaction: () => true,
-    } as unknown as MatrixEvent;
-    act(() => {
-      room.emit(RoomEvent.Timeline, redaction, room, undefined, false, { liveEvent: true });
-    });
-    expect(geom.getScrollTop()).toBe(100);
-  });
-
-  it('does not auto-pin when not at bottom', () => {
-    const room = createEventEmitterRoom('!test:example.com');
-    const { container } = render(<Harness room={room} />);
-    const scrollEl = container.querySelector('[data-testid="scroll"]') as HTMLDivElement;
-    const lastEl = container.querySelector('[data-testid="last-msg"]') as HTMLElement;
-    const geom = stubScrollGeometry(scrollEl, { scrollHeight: 1000, offsetHeight: 400 });
-    geom.setScrollTop(200);
-    act(() => {
-      findObserverOf(lastEl)?.trigger(false);
-    });
-    act(() => {
-      room.emit(RoomEvent.Timeline, createFakeEvent('m.room.message'), room, undefined, false, {
-        liveEvent: true,
-      });
-    });
-    expect(geom.getScrollTop()).toBe(200);
-  });
-
-  it('does not auto-pin when viewingLatest is false', () => {
-    const room = createEventEmitterRoom('!test:example.com');
-    const { container } = render(<Harness room={room} viewingLatest={false} />);
-    const scrollEl = container.querySelector('[data-testid="scroll"]') as HTMLDivElement;
-    const geom = stubScrollGeometry(scrollEl, { scrollHeight: 500, offsetHeight: 400 });
-    geom.setScrollTop(100);
-    act(() => {
-      room.emit(RoomEvent.Timeline, createFakeEvent('m.room.message'), room, undefined, false, {
-        liveEvent: true,
-      });
-    });
-    expect(geom.getScrollTop()).toBe(100);
-  });
-
-  it('does not auto-pin when autoPinEnabled is false', () => {
-    const room = createEventEmitterRoom('!test:example.com');
-    const { container } = render(<Harness room={room} autoPinEnabled={false} />);
-    const scrollEl = container.querySelector('[data-testid="scroll"]') as HTMLDivElement;
-    const lastEl = container.querySelector('[data-testid="last-msg"]') as HTMLElement;
-    const geom = stubScrollGeometry(scrollEl, { scrollHeight: 500, offsetHeight: 400 });
-    geom.setScrollTop(100);
-    act(() => {
-      findObserverOf(lastEl)?.trigger(true);
-    });
-    act(() => {
-      room.emit(RoomEvent.Timeline, createFakeEvent('m.room.message'), room, undefined, false, {
-        liveEvent: true,
-      });
-    });
-    expect(geom.getScrollTop()).toBe(100);
-  });
-
-  it('suppresses IO updates while a hook-initiated smooth scroll is in flight', () => {
-    const room = createEventEmitterRoom('!test:example.com');
-    const hookState: { current: UseJumpToLatest | null } = { current: null };
-    const { container } = render(
-      <Harness
-        room={room}
-        onHook={(h) => {
-          hookState.current = h;
-        }}
-      />
-    );
-    const scrollEl = container.querySelector('[data-testid="scroll"]') as HTMLDivElement;
-    const lastEl = container.querySelector('[data-testid="last-msg"]') as HTMLElement;
-    stubScrollGeometry(scrollEl, { scrollHeight: 500, offsetHeight: 400 });
-    act(() => {
-      findObserverOf(lastEl)?.trigger(true);
-    });
-    expect(hookState.current!.isAtBottom).toBe(true);
-
-    act(() => {
-      hookState.current!.requestScrollToBottom(true);
-    });
-
-    act(() => {
-      findObserverOf(lastEl)?.trigger(false);
-    });
-    expect(hookState.current!.isAtBottom).toBe(true);
-  });
-
-  it('clears IO suppression on scrollend', () => {
-    const room = createEventEmitterRoom('!test:example.com');
-    const hookState: { current: UseJumpToLatest | null } = { current: null };
-    const { container } = render(
-      <Harness
-        room={room}
-        onHook={(h) => {
-          hookState.current = h;
-        }}
-      />
-    );
-    const scrollEl = container.querySelector('[data-testid="scroll"]') as HTMLDivElement;
-    const lastEl = container.querySelector('[data-testid="last-msg"]') as HTMLElement;
-    stubScrollGeometry(scrollEl, { scrollHeight: 500, offsetHeight: 400 });
-    act(() => {
-      findObserverOf(lastEl)?.trigger(true);
-    });
-    act(() => {
-      hookState.current!.requestScrollToBottom(true);
-    });
-    act(() => {
-      scrollEl.dispatchEvent(new Event('scrollend'));
-    });
-    act(() => {
-      findObserverOf(lastEl)?.trigger(false);
-    });
-    expect(hookState.current!.isAtBottom).toBe(false);
-  });
-
-  it('ResizeObserver re-pins to bottom when at-bottom and content resizes', () => {
-    const room = createEventEmitterRoom('!test:example.com');
-    const { container } = render(<Harness room={room} />);
-    const scrollEl = container.querySelector('[data-testid="scroll"]') as HTMLDivElement;
-    const lastEl = container.querySelector('[data-testid="last-msg"]') as HTMLElement;
-    const geom = stubScrollGeometry(scrollEl, { scrollHeight: 500, offsetHeight: 400 });
-    geom.setScrollTop(100);
-    act(() => {
-      findObserverOf(lastEl)?.trigger(true);
-    });
-
-    expect(roInstances.length).toBeGreaterThan(0);
-    const ro = roInstances[0];
-
-    act(() => {
-      ro.trigger();
-    });
-    expect(geom.getScrollTop()).toBe(100);
-
-    geom.setScrollHeight(560);
-    act(() => {
-      ro.trigger();
-    });
-    expect(geom.getScrollTop()).toBe(560 - 400);
-  });
-
-  it('ResizeObserver does not re-pin when not at bottom', () => {
-    const room = createEventEmitterRoom('!test:example.com');
-    const { container } = render(<Harness room={room} />);
-    const scrollEl = container.querySelector('[data-testid="scroll"]') as HTMLDivElement;
-    const lastEl = container.querySelector('[data-testid="last-msg"]') as HTMLElement;
-    const geom = stubScrollGeometry(scrollEl, { scrollHeight: 1000, offsetHeight: 400 });
-    geom.setScrollTop(200);
-    act(() => {
-      findObserverOf(lastEl)?.trigger(false);
-    });
-
-    const ro = roInstances[0];
-    act(() => {
-      ro.trigger();
-    });
-    geom.setScrollHeight(1100);
-    act(() => {
-      ro.trigger();
-    });
-    expect(geom.getScrollTop()).toBe(200);
-  });
-
   it('does not observe the last message when viewingLatest is false', () => {
     const room = createEventEmitterRoom('!test:example.com');
     const { container } = render(<Harness room={room} viewingLatest={false} />);
@@ -500,5 +194,296 @@ describe('useJumpToLatest', () => {
     expect(newObserver).toBeDefined();
     expect(newObserver).not.toBe(firstObserver);
     expect(firstObserver!.observed.has(oldEl)).toBe(false);
+  });
+
+  it('setAnchor invokes applyAnchor on the next layout effect (deferred via state)', () => {
+    const room = createEventEmitterRoom('!test:example.com');
+    const hookState: { current: UseJumpToLatest | null } = { current: null };
+    const applyAnchor = vi.fn() as unknown as ApplyAnchor & {
+      mock: { calls: Parameters<ApplyAnchor>[] };
+      mockClear: () => void;
+    };
+    render(
+      <Harness
+        room={room}
+        applyAnchor={applyAnchor}
+        onHook={(h) => {
+          hookState.current = h;
+        }}
+      />
+    );
+    applyAnchor.mockClear();
+    const anchor: ScrollAnchor = { kind: 'bottom' };
+    act(() => {
+      hookState.current!.setAnchor(anchor, 'smooth');
+    });
+    expect(applyAnchor).toHaveBeenCalledTimes(1);
+    expect(applyAnchor).toHaveBeenCalledWith(anchor, 'smooth');
+  });
+
+  it('clearAnchor makes subsequent ResizeObserver fires a no-op', () => {
+    const room = createEventEmitterRoom('!test:example.com');
+    const hookState: { current: UseJumpToLatest | null } = { current: null };
+    const applyAnchor = vi.fn() as unknown as ApplyAnchor & {
+      mock: { calls: Parameters<ApplyAnchor>[] };
+      mockClear: () => void;
+    };
+    render(
+      <Harness
+        room={room}
+        applyAnchor={applyAnchor}
+        onHook={(h) => {
+          hookState.current = h;
+        }}
+      />
+    );
+    act(() => {
+      hookState.current!.setAnchor({ kind: 'bottom' });
+    });
+    applyAnchor.mockClear();
+    act(() => {
+      hookState.current!.clearAnchor();
+    });
+    const ro = roInstances[0];
+    act(() => {
+      ro.trigger(); // initial observe — skipped via mounted flag
+      ro.trigger(); // real fire
+    });
+    expect(applyAnchor).not.toHaveBeenCalled();
+  });
+
+  it('ResizeObserver re-applies the current anchor on size change', () => {
+    const room = createEventEmitterRoom('!test:example.com');
+    const hookState: { current: UseJumpToLatest | null } = { current: null };
+    const applyAnchor = vi.fn() as unknown as ApplyAnchor & {
+      mock: { calls: Parameters<ApplyAnchor>[] };
+      mockClear: () => void;
+    };
+    render(
+      <Harness
+        room={room}
+        applyAnchor={applyAnchor}
+        onHook={(h) => {
+          hookState.current = h;
+        }}
+      />
+    );
+    const anchor: ScrollAnchor = { kind: 'event', eventId: '$x', align: 'start' };
+    act(() => {
+      hookState.current!.setAnchor(anchor);
+    });
+    applyAnchor.mockClear();
+    const ro = roInstances[0];
+    act(() => {
+      ro.trigger(); // initial observe — skipped via mounted flag
+      ro.trigger(); // real fire
+    });
+    expect(applyAnchor).toHaveBeenCalledTimes(1);
+    expect(applyAnchor).toHaveBeenCalledWith(anchor, 'instant');
+  });
+
+  it('ResizeObserver no-ops when anchor=bottom and autoPinEnabled is false', () => {
+    const room = createEventEmitterRoom('!test:example.com');
+    const hookState: { current: UseJumpToLatest | null } = { current: null };
+    const applyAnchor = vi.fn() as unknown as ApplyAnchor & {
+      mock: { calls: Parameters<ApplyAnchor>[] };
+      mockClear: () => void;
+    };
+    render(
+      <Harness
+        room={room}
+        autoPinEnabled={false}
+        applyAnchor={applyAnchor}
+        onHook={(h) => {
+          hookState.current = h;
+        }}
+      />
+    );
+    act(() => {
+      hookState.current!.setAnchor({ kind: 'bottom' });
+    });
+    applyAnchor.mockClear();
+    const ro = roInstances[0];
+    act(() => {
+      ro.trigger();
+      ro.trigger();
+    });
+    expect(applyAnchor).not.toHaveBeenCalled();
+  });
+
+  it('ResizeObserver applies event anchor even when autoPinEnabled is false', () => {
+    const room = createEventEmitterRoom('!test:example.com');
+    const hookState: { current: UseJumpToLatest | null } = { current: null };
+    const applyAnchor = vi.fn() as unknown as ApplyAnchor & {
+      mock: { calls: Parameters<ApplyAnchor>[] };
+      mockClear: () => void;
+    };
+    render(
+      <Harness
+        room={room}
+        autoPinEnabled={false}
+        applyAnchor={applyAnchor}
+        onHook={(h) => {
+          hookState.current = h;
+        }}
+      />
+    );
+    const anchor: ScrollAnchor = { kind: 'event', eventId: '$x', align: 'start' };
+    act(() => {
+      hookState.current!.setAnchor(anchor);
+    });
+    applyAnchor.mockClear();
+    const ro = roInstances[0];
+    act(() => {
+      ro.trigger();
+      ro.trigger();
+    });
+    expect(applyAnchor).toHaveBeenCalledTimes(1);
+    expect(applyAnchor).toHaveBeenCalledWith(anchor, 'instant');
+  });
+
+  it('IO intersecting sets anchor=bottom when no anchor is active', () => {
+    const room = createEventEmitterRoom('!test:example.com');
+    const hookState: { current: UseJumpToLatest | null } = { current: null };
+    const applyAnchor = vi.fn() as unknown as ApplyAnchor & {
+      mock: { calls: Parameters<ApplyAnchor>[] };
+      mockClear: () => void;
+    };
+    const { container } = render(
+      <Harness
+        room={room}
+        initiallyAtBottom={false}
+        applyAnchor={applyAnchor}
+        onHook={(h) => {
+          hookState.current = h;
+        }}
+      />
+    );
+    const lastEl = container.querySelector('[data-testid="last-msg"]') as HTMLElement;
+    act(() => {
+      findObserverOf(lastEl)?.trigger(true);
+    });
+    applyAnchor.mockClear();
+    const ro = roInstances[0];
+    act(() => {
+      ro.trigger();
+      ro.trigger();
+    });
+    expect(applyAnchor).toHaveBeenCalledWith({ kind: 'bottom' }, 'instant');
+  });
+
+  it('IO not-intersecting clears anchor=bottom', () => {
+    const room = createEventEmitterRoom('!test:example.com');
+    const hookState: { current: UseJumpToLatest | null } = { current: null };
+    const applyAnchor = vi.fn() as unknown as ApplyAnchor & {
+      mock: { calls: Parameters<ApplyAnchor>[] };
+      mockClear: () => void;
+    };
+    const { container } = render(
+      <Harness
+        room={room}
+        applyAnchor={applyAnchor}
+        onHook={(h) => {
+          hookState.current = h;
+        }}
+      />
+    );
+    const lastEl = container.querySelector('[data-testid="last-msg"]') as HTMLElement;
+    act(() => {
+      findObserverOf(lastEl)?.trigger(true);
+    });
+    act(() => {
+      findObserverOf(lastEl)?.trigger(false);
+    });
+    applyAnchor.mockClear();
+    const ro = roInstances[0];
+    act(() => {
+      ro.trigger();
+      ro.trigger();
+    });
+    expect(applyAnchor).not.toHaveBeenCalled();
+  });
+
+  it('IO intersecting does NOT override an active event anchor', () => {
+    const room = createEventEmitterRoom('!test:example.com');
+    const hookState: { current: UseJumpToLatest | null } = { current: null };
+    const applyAnchor = vi.fn() as unknown as ApplyAnchor & {
+      mock: { calls: Parameters<ApplyAnchor>[] };
+      mockClear: () => void;
+    };
+    const { container } = render(
+      <Harness
+        room={room}
+        initiallyAtBottom={false}
+        applyAnchor={applyAnchor}
+        onHook={(h) => {
+          hookState.current = h;
+        }}
+      />
+    );
+    const eventAnchor: ScrollAnchor = { kind: 'event', eventId: '$x', align: 'start' };
+    act(() => {
+      hookState.current!.setAnchor(eventAnchor);
+    });
+    const lastEl = container.querySelector('[data-testid="last-msg"]') as HTMLElement;
+    act(() => {
+      findObserverOf(lastEl)?.trigger(true);
+    });
+    applyAnchor.mockClear();
+    const ro = roInstances[0];
+    act(() => {
+      ro.trigger();
+      ro.trigger();
+    });
+    expect(applyAnchor).toHaveBeenCalledWith(eventAnchor, 'instant');
+  });
+
+  it('mousedown clears event anchor but not bottom anchor', () => {
+    const room = createEventEmitterRoom('!test:example.com');
+    const hookState: { current: UseJumpToLatest | null } = { current: null };
+    const applyAnchor = vi.fn() as unknown as ApplyAnchor & {
+      mock: { calls: Parameters<ApplyAnchor>[] };
+      mockClear: () => void;
+    };
+    const { container } = render(
+      <Harness
+        room={room}
+        initiallyAtBottom={false}
+        applyAnchor={applyAnchor}
+        onHook={(h) => {
+          hookState.current = h;
+        }}
+      />
+    );
+    const scrollEl = container.querySelector('[data-testid="scroll"]') as HTMLDivElement;
+
+    // event anchor: mousedown should clear it.
+    act(() => {
+      hookState.current!.setAnchor({ kind: 'event', eventId: '$x', align: 'start' });
+    });
+    act(() => {
+      scrollEl.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    });
+    applyAnchor.mockClear();
+    const ro = roInstances[0];
+    act(() => {
+      ro.trigger();
+      ro.trigger();
+    });
+    expect(applyAnchor).not.toHaveBeenCalled();
+
+    // bottom anchor (set by IO): mousedown should leave it alone.
+    const lastEl = container.querySelector('[data-testid="last-msg"]') as HTMLElement;
+    act(() => {
+      findObserverOf(lastEl)?.trigger(true);
+    });
+    act(() => {
+      scrollEl.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    });
+    applyAnchor.mockClear();
+    act(() => {
+      ro.trigger();
+    });
+    expect(applyAnchor).toHaveBeenCalledWith({ kind: 'bottom' }, 'instant');
   });
 });
