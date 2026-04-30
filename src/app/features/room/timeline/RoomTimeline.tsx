@@ -401,6 +401,14 @@ export function RoomTimeline({ room, eventId, editorInputRef }: RoomTimelineProp
                 newest: ct.range.newest + 1,
               },
             }));
+            // Explicitly re-pin to bottom on the next layout effect. The
+            // ResizeObserver path also re-pins on content size change, but
+            // there's a race when the last-message DOM node is being replaced
+            // (local echo, key change) where the IO can transition to
+            // not-intersecting and clear the 'bottom' anchor before the
+            // ResizeObserver fires. setAnchor here guarantees a scroll-to-
+            // bottom on the new content regardless.
+            setAnchor({ kind: 'bottom' });
             return;
           }
 
@@ -412,7 +420,16 @@ export function RoomTimeline({ room, eventId, editorInputRef }: RoomTimelineProp
           setUnreadInfo(getRoomUnreadInfo(room));
         }
       },
-      [mx, room, unreadInfo, hideActivity, unfocusedAutoScroll, isAtBottomRef, setUnreadInfo]
+      [
+        mx,
+        room,
+        unreadInfo,
+        hideActivity,
+        unfocusedAutoScroll,
+        isAtBottomRef,
+        setUnreadInfo,
+        setAnchor,
+      ]
     )
   );
 
