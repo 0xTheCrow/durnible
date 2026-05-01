@@ -589,20 +589,30 @@ export function RoomTimeline({ room, eventId, editorInputRef }: RoomTimelineProp
   // Single decision on mount: anchor on the last-read event when there are
   // actual unread messages between it and the live tip (so the new-messages
   // divider lands at the bottom of the view), or on the bottom otherwise.
-  // We compare readUptoEventId against the live timeline's last event rather
-  // than relying on the `unread` flag — getRoomUnreadInfo always returns a
-  // readUptoEventId even for fully-read rooms, and the unread flag can lag
-  // behind the timeline state. Anchoring (rather than a one-shot scroll)
-  // lets the hook re-snap when async content shifts the layout before the
-  // user takes over.
+  // We compare readUptoEventId against the last *visible* live event rather
+  // than the raw tail — reactions, edits, and redactions land past the last
+  // displayed message but don't render, so a fully-read room would otherwise
+  // be misclassified as unread and anchored above the bottom padding. The
+  // `unread` flag isn't enough either: getRoomUnreadInfo always returns a
+  // readUptoEventId even for fully-read rooms, and the flag can lag behind
+  // the timeline state. Anchoring (rather than a one-shot scroll) lets the
+  // hook re-snap when async content shifts the layout before the user takes
+  // over.
   const initialAnchorAppliedRef = useRef(false);
   useLayoutEffect(() => {
     if (initialAnchorAppliedRef.current) return;
     initialAnchorAppliedRef.current = true;
     const { readUptoEventId, inLiveTimeline, scrollTo } = unreadInfo ?? {};
     const liveEvents = getLiveTimeline(room).getEvents();
-    const lastLiveEventId = liveEvents[liveEvents.length - 1]?.getId();
-    const fullyRead = !readUptoEventId || readUptoEventId === lastLiveEventId;
+    let lastVisibleLiveEventId: string | undefined;
+    for (let i = liveEvents.length - 1; i >= 0; i -= 1) {
+      const evt = liveEvents[i];
+      if (!isInvisibleTimelineEvent(evt)) {
+        lastVisibleLiveEventId = evt.getId();
+        break;
+      }
+    }
+    const fullyRead = !readUptoEventId || readUptoEventId === lastVisibleLiveEventId;
     if (!fullyRead && inLiveTimeline && scrollTo) {
       setAnchor({ kind: 'event', eventId: readUptoEventId, align: 'end' });
     } else {
