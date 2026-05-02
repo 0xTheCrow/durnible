@@ -246,8 +246,8 @@ describe('useJumpToLatest', () => {
     });
     const ro = roInstances[0];
     act(() => {
-      ro.trigger(); // initial observe — skipped via mounted flag
-      ro.trigger(); // real fire
+      ro.trigger();
+      ro.trigger();
     });
     expect(applyAnchor).not.toHaveBeenCalled();
   });
@@ -275,8 +275,7 @@ describe('useJumpToLatest', () => {
     applyAnchor.mockClear();
     const ro = roInstances[0];
     act(() => {
-      ro.trigger(); // initial observe — skipped via mounted flag
-      ro.trigger(); // real fire
+      ro.trigger();
     });
     expect(applyAnchor).toHaveBeenCalledTimes(1);
     expect(applyAnchor).toHaveBeenCalledWith(anchor, 'instant');
@@ -335,7 +334,6 @@ describe('useJumpToLatest', () => {
     applyAnchor.mockClear();
     const ro = roInstances[0];
     act(() => {
-      ro.trigger();
       ro.trigger();
     });
     expect(applyAnchor).toHaveBeenCalledTimes(1);

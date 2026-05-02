@@ -131,16 +131,20 @@ export function useJumpToLatest({
   // all flow through here. The 'bottom' anchor is gated on autoPinEnabled
   // so unfocusedAutoScroll=false is honored; explicit event anchors apply
   // unconditionally because the consumer set them with intent.
+  //
+  // We deliberately do NOT skip the first observer callback. The
+  // consumer's initial setAnchor flows through pendingRequest and runs in
+  // a layout effect; that scroll uses whatever scrollHeight exists at
+  // that moment, which can pre-date a follow-up commit (reactions, image
+  // aspect-ratio reservations, embed sizing). Re-applying when the
+  // observer reports the post-commit size catches that growth. When the
+  // anchor matches the current geometry the apply is a no-op, so the
+  // extra call is harmless.
   useEffect(() => {
     const scrollEl = scrollRef.current;
     if (!scrollEl) return undefined;
 
-    let mounted = false;
     const observer = new ResizeObserver(() => {
-      if (!mounted) {
-        mounted = true;
-        return;
-      }
       const anchor = anchorRef.current;
       if (!anchor) return;
       if (anchor.kind === 'bottom' && !autoPinEnabledRef.current) return;

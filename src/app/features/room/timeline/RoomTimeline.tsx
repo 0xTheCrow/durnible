@@ -604,15 +604,19 @@ export function RoomTimeline({ room, eventId, editorInputRef }: RoomTimelineProp
     initialAnchorAppliedRef.current = true;
     const { readUptoEventId, inLiveTimeline, scrollTo } = unreadInfo ?? {};
     const liveEvents = getLiveTimeline(room).getEvents();
-    let lastVisibleLiveEventId: string | undefined;
+    let lastVisibleIndex = -1;
+    let readUptoIndex = -1;
     for (let i = liveEvents.length - 1; i >= 0; i -= 1) {
       const evt = liveEvents[i];
-      if (!isInvisibleTimelineEvent(evt)) {
-        lastVisibleLiveEventId = evt.getId();
-        break;
+      if (lastVisibleIndex === -1 && !isInvisibleTimelineEvent(evt)) {
+        lastVisibleIndex = i;
       }
+      if (readUptoIndex === -1 && evt.getId() === readUptoEventId) {
+        readUptoIndex = i;
+      }
+      if (lastVisibleIndex !== -1 && readUptoIndex !== -1) break;
     }
-    const fullyRead = !readUptoEventId || readUptoEventId === lastVisibleLiveEventId;
+    const fullyRead = !readUptoEventId || readUptoIndex >= lastVisibleIndex;
     if (!fullyRead && inLiveTimeline && scrollTo) {
       setAnchor({ kind: 'event', eventId: readUptoEventId, align: 'end' });
     } else {
