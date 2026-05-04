@@ -13,7 +13,7 @@ export function SpecVersions({ baseUrl, children }: { baseUrl: string; children:
         <SplashScreen>
           <Box direction="Column" grow="Yes" alignItems="Center" justifyContent="Center" gap="400">
             <Spinner variant="Secondary" size="600" />
-            <Text>Connecting to server</Text>
+            <Text>Heating up</Text>
           </Box>
         </SplashScreen>
       )}

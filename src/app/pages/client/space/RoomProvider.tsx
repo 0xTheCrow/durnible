@@ -14,6 +14,7 @@ import { useSearchParamsViaServers } from '../../../hooks/router/useSearchParams
 import { mDirectAtom } from '../../../state/mDirectList';
 import { settingsAtom } from '../../../state/settings';
 import { useSetting } from '../../../state/hooks/settings';
+import { ROUTE_GATE_DEADLINE_MS, useReadinessGate } from '../../../state/readiness';
 
 export function SpaceRouteRoomProvider({ children }: { children: ReactNode }) {
   const mx = useMatrixClient();
@@ -28,9 +29,17 @@ export function SpaceRouteRoomProvider({ children }: { children: ReactNode }) {
   const roomId = useSelectedRoom();
   const room = mx.getRoom(roomId);
 
+  const isJoinedRoom = !!room && allRooms.includes(room.roomId);
+  const willRenderRealProvider =
+    isJoinedRoom &&
+    !!room &&
+    ((developerTools && room.isSpaceRoom() && room.roomId === space.roomId) ||
+      getAllParents(roomToParents, room.roomId).has(space.roomId));
+  useReadinessGate('route', !roomIdOrAlias || willRenderRealProvider, ROUTE_GATE_DEADLINE_MS);
+
   if (!roomIdOrAlias) return null;
 
-  if (!room || !allRooms.includes(room.roomId)) {
+  if (!isJoinedRoom) {
     return (
       <JoinBeforeNavigate roomIdOrAlias={roomIdOrAlias} eventId={eventId} viaServers={viaServers} />
     );

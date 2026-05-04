@@ -18,6 +18,7 @@ import { HttpApiEvent } from 'matrix-js-sdk';
 import FocusTrap from 'focus-trap-react';
 import type { MouseEventHandler, ReactNode } from 'react';
 import React, { useCallback, useEffect, useState } from 'react';
+import { useAtomValue } from 'jotai';
 import {
   clearCacheAndReload,
   clearLoginData,
@@ -26,6 +27,7 @@ import {
   startClient,
 } from '../../../client/initMatrix';
 import { SplashScreen } from '../../components/splash-screen';
+import * as splashCss from '../../components/splash-screen/SplashScreen.css';
 import { ServerConfigsLoader } from '../../components/ServerConfigsLoader';
 import { CapabilitiesProvider } from '../../hooks/useCapabilities';
 import { MediaConfigProvider } from '../../hooks/useMediaConfig';
@@ -36,17 +38,7 @@ import { useSyncState } from '../../hooks/useSyncState';
 import { stopPropagation } from '../../utils/keyboard';
 import { AuthMetadataProvider } from '../../hooks/useAuthMetadata';
 import { getFallbackSession } from '../../state/sessions';
-
-function ClientRootLoading() {
-  return (
-    <SplashScreen>
-      <Box direction="Column" grow="Yes" alignItems="Center" justifyContent="Center" gap="400">
-        <Spinner variant="Secondary" size="600" />
-        <Text>Heating up</Text>
-      </Box>
-    </SplashScreen>
-  );
-}
+import { overlayVisibleAtom, useReadinessGate } from '../../state/readiness';
 
 function ClientRootOptions({ mx }: { mx?: MatrixClient }) {
   const [menuAnchor, setMenuAnchor] = useState<RectCords>();
@@ -187,56 +179,22 @@ export function ClientRoot({ children }: ClientRootProps) {
     }, [])
   );
 
+  useReadinessGate('boot', !loading && !!mx);
+  const overlayVisible = useAtomValue(overlayVisibleAtom);
+  const [bootDone, setBootDone] = useState(false);
+  useEffect(() => {
+    if (!overlayVisible || bootDone) return undefined;
+    return () => setBootDone(true);
+  }, [overlayVisible, bootDone]);
+  const showSplash = !bootDone;
+  const hasError =
+    loadState.status === AsyncStatus.Error || startState.status === AsyncStatus.Error;
+
   if (!baseUrl) return null;
 
   return (
     <SpecVersions baseUrl={baseUrl}>
-      {loading && <ClientRootOptions mx={mx} />}
-      {(loadState.status === AsyncStatus.Error || startState.status === AsyncStatus.Error) && (
-        <SplashScreen>
-          <Box direction="Column" grow="Yes" alignItems="Center" justifyContent="Center" gap="400">
-            <Dialog data-testid="client-root-error-dialog">
-              <Box direction="Column" gap="400" style={{ padding: config.space.S400 }}>
-                {loadState.status === AsyncStatus.Error &&
-                  (isChunkLoadError(loadState.error) ? (
-                    <Text data-testid="client-root-load-error-chunk">
-                      Failed to load. The app was updated — please reload.
-                    </Text>
-                  ) : (
-                    <Text data-testid="client-root-load-error-generic">
-                      {`Failed to load. ${loadState.error.message}`}
-                    </Text>
-                  ))}
-                {startState.status === AsyncStatus.Error && (
-                  <Text data-testid="client-root-start-error">
-                    {`Failed to start. ${startState.error.message}`}
-                  </Text>
-                )}
-                <Button
-                  data-testid="client-root-error-action"
-                  data-variant={loadState.status === AsyncStatus.Error ? 'reload' : 'retry'}
-                  variant="Critical"
-                  onClick={
-                    loadState.status === AsyncStatus.Error || !mx
-                      ? () => window.location.reload()
-                      : () =>
-                          startMatrix(mx).catch((err) =>
-                            console.error('ClientRoot: failed to start matrix client', err)
-                          )
-                  }
-                >
-                  <Text as="span" size="B400">
-                    {loadState.status === AsyncStatus.Error ? 'Reload' : 'Retry'}
-                  </Text>
-                </Button>
-              </Box>
-            </Dialog>
-          </Box>
-        </SplashScreen>
-      )}
-      {loading || !mx ? (
-        <ClientRootLoading />
-      ) : (
+      {mx && !loading && (
         <MatrixClientProvider value={mx}>
           <ServerConfigsLoader>
             {(serverConfigs) => (
@@ -251,6 +209,60 @@ export function ClientRoot({ children }: ClientRootProps) {
           </ServerConfigsLoader>
         </MatrixClientProvider>
       )}
+      <div
+        className={splashCss.SplashScreenOverlay}
+        data-visible={showSplash || hasError}
+        aria-hidden={!(showSplash || hasError)}
+      >
+        {loading && <ClientRootOptions mx={mx} />}
+        <SplashScreen>
+          <Box direction="Column" grow="Yes" alignItems="Center" justifyContent="Center" gap="400">
+            {hasError ? (
+              <Dialog data-testid="client-root-error-dialog">
+                <Box direction="Column" gap="400" style={{ padding: config.space.S400 }}>
+                  {loadState.status === AsyncStatus.Error &&
+                    (isChunkLoadError(loadState.error) ? (
+                      <Text data-testid="client-root-load-error-chunk">
+                        Failed to load. The app was updated — please reload.
+                      </Text>
+                    ) : (
+                      <Text data-testid="client-root-load-error-generic">
+                        {`Failed to load. ${loadState.error.message}`}
+                      </Text>
+                    ))}
+                  {startState.status === AsyncStatus.Error && (
+                    <Text data-testid="client-root-start-error">
+                      {`Failed to start. ${startState.error.message}`}
+                    </Text>
+                  )}
+                  <Button
+                    data-testid="client-root-error-action"
+                    data-variant={loadState.status === AsyncStatus.Error ? 'reload' : 'retry'}
+                    variant="Critical"
+                    onClick={
+                      loadState.status === AsyncStatus.Error || !mx
+                        ? () => window.location.reload()
+                        : () =>
+                            startMatrix(mx).catch((err) =>
+                              console.error('ClientRoot: failed to start matrix client', err)
+                            )
+                    }
+                  >
+                    <Text as="span" size="B400">
+                      {loadState.status === AsyncStatus.Error ? 'Reload' : 'Retry'}
+                    </Text>
+                  </Button>
+                </Box>
+              </Dialog>
+            ) : (
+              <>
+                <Spinner variant="Secondary" size="600" />
+                <Text>Heating up</Text>
+              </>
+            )}
+          </Box>
+        </SplashScreen>
+      </div>
     </SpecVersions>
   );
 }

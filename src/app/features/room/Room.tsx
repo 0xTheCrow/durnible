@@ -1,7 +1,8 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Box, Line } from 'folds';
 import { useParams } from 'react-router-dom';
 import { isKeyHotkey } from 'is-hotkey';
+import type { MatrixClient, Room as MatrixRoom } from 'matrix-js-sdk';
 import { RoomView } from './RoomView';
 import { MembersDrawer } from './MembersDrawer';
 import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
@@ -13,11 +14,31 @@ import { useKeyDown } from '../../hooks/useKeyDown';
 import { markAsRead } from '../../utils/notifications';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { useRoomMembers } from '../../hooks/useRoomMembers';
+import { TIMELINE_GATE_DEADLINE_MS, useReadinessGate } from '../../state/readiness';
+import { decryptAllTimelineEvent } from '../../utils/room';
+
+function useTimelineDecryptionGate(mx: MatrixClient, room: MatrixRoom) {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    decryptAllTimelineEvent(mx, room.getLiveTimeline()).then(() => {
+      if (!cancelled) setReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [mx, room]);
+
+  useReadinessGate('timeline', ready, TIMELINE_GATE_DEADLINE_MS);
+}
 
 export function Room() {
   const { eventId } = useParams();
   const room = useRoom();
   const mx = useMatrixClient();
+
+  useTimelineDecryptionGate(mx, room);
 
   const [isDrawer] = useSetting(settingsAtom, 'isPeopleDrawer');
   const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
