@@ -10,16 +10,18 @@ import type { ReactionEventContent } from 'matrix-js-sdk/lib/types';
 import type { CryptoBackend } from 'matrix-js-sdk/lib/common-crypto/CryptoBackend';
 import { MessageEvent } from '../../../types/matrix/room';
 
-export const decryptAllTimelineEvent = async (mx: MatrixClient, timeline: EventTimeline) => {
+export const decryptEvents = async (mx: MatrixClient, events: MatrixEvent[]) => {
   const crypto = mx.getCrypto();
   if (!crypto) return;
-  const decryptionPromises = timeline
-    .getEvents()
+  const decryptionPromises = events
     .filter((event) => event.isEncrypted() && !event.isRedacted())
     .reverse()
     .map((event) => event.attemptDecryption(crypto as CryptoBackend, { isRetry: true }));
   await Promise.allSettled(decryptionPromises);
 };
+
+export const decryptAllTimelineEvent = (mx: MatrixClient, timeline: EventTimeline) =>
+  decryptEvents(mx, timeline.getEvents());
 
 export const getReactionContent = (
   eventId: string,

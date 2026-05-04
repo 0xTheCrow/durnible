@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from 'react';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import type {
   EventTimeline,
   EventTimelineSetHandlerMap,
@@ -11,7 +11,7 @@ import type {
 import { Direction, RoomEvent } from 'matrix-js-sdk';
 import to from 'await-to-js';
 import { useAlive } from '../../hooks/useAlive';
-import { decryptAllTimelineEvent } from '../../utils/room';
+import { decryptAllTimelineEvent, decryptEvents } from '../../utils/room';
 import {
   getEventIdAbsoluteIndex,
   getLinkedTimelines,
@@ -49,39 +49,77 @@ export const getEmptyTimeline = (): Timeline => ({
   linkedTimelines: [],
 });
 
-export const useEventTimelineLoader = (
+// Loads the event's timeline (fetching from the server if necessary), then
+// paginates backwards/forwards until at least `contextSize` events surround
+// the target on each side, and decrypts all events in the linked timelines.
+// Returns the resulting linked timelines and the absolute index of the target,
+// or null on error. Surrounding context being loaded + decrypted up front means
+// callers can render the new range and scroll to the target without later
+// height shifts from late-arriving content.
+export const loadEventContext = async (
   mx: MatrixClient,
   room: Room,
-  onLoad: (eventId: string, linkedTimelines: EventTimeline[], evtAbsIndex: number) => void,
-  onError: (err: Error | null) => void
-) => {
-  const loadEventTimeline = useCallback(
-    async (eventId: string) => {
-      const [err, replyEvtTimeline] = await to(
-        mx.getEventTimeline(room.getUnfilteredTimelineSet(), eventId)
-      );
-      if (!replyEvtTimeline) {
-        onError(err ?? null);
-        return;
+  eventId: string,
+  contextSize: number
+): Promise<{ linkedTimelines: EventTimeline[]; absoluteIndex: number } | null> => {
+  const [, eventTimeline] = await to(mx.getEventTimeline(room.getUnfilteredTimelineSet(), eventId));
+  if (!eventTimeline) return null;
+
+  let linkedTimelines = getLinkedTimelines(eventTimeline);
+  let absoluteIndex = getEventIdAbsoluteIndex(linkedTimelines, eventTimeline, eventId);
+  if (absoluteIndex === undefined) return null;
+
+  while (absoluteIndex < contextSize) {
+    const oldestTimeline = linkedTimelines[0];
+    const token = oldestTimeline.getPaginationToken(Direction.Backward);
+    if (!token) break;
+    const [paginateError] = await to(
+      mx.paginateEventTimeline(oldestTimeline, { backwards: true, limit: contextSize })
+    );
+    if (paginateError) break;
+    linkedTimelines = getLinkedTimelines(eventTimeline);
+    const recomputed = getEventIdAbsoluteIndex(linkedTimelines, eventTimeline, eventId);
+    if (recomputed === undefined) return null;
+    absoluteIndex = recomputed;
+  }
+
+  let totalCount = getTimelinesEventsCount(linkedTimelines);
+  while (totalCount - absoluteIndex - 1 < contextSize) {
+    const newestTimeline = linkedTimelines[linkedTimelines.length - 1];
+    const token = newestTimeline.getPaginationToken(Direction.Forward);
+    if (!token) break;
+    const [paginateError] = await to(
+      mx.paginateEventTimeline(newestTimeline, { backwards: false, limit: contextSize })
+    );
+    if (paginateError) break;
+    linkedTimelines = getLinkedTimelines(eventTimeline);
+    totalCount = getTimelinesEventsCount(linkedTimelines);
+  }
+
+  if (room.hasEncryptionStateEvent()) {
+    const oldestEventIndex = Math.max(absoluteIndex - contextSize, 0);
+    const newestEventIndex = Math.min(absoluteIndex + contextSize, totalCount);
+    const eventsToDecrypt: MatrixEvent[] = [];
+    let timelineStartIndex = 0;
+    for (const timeline of linkedTimelines) {
+      const events = timeline.getEvents();
+      const timelineEndIndex = timelineStartIndex + events.length;
+      if (timelineEndIndex <= oldestEventIndex) {
+        timelineStartIndex = timelineEndIndex;
+        continue;
       }
-      const linkedTimelines = getLinkedTimelines(replyEvtTimeline);
-      const absIndex = getEventIdAbsoluteIndex(linkedTimelines, replyEvtTimeline, eventId);
-
-      if (absIndex === undefined) {
-        onError(err ?? null);
-        return;
+      if (timelineStartIndex >= newestEventIndex) break;
+      const sliceStart = Math.max(0, oldestEventIndex - timelineStartIndex);
+      const sliceEnd = Math.min(events.length, newestEventIndex - timelineStartIndex);
+      for (let i = sliceStart; i < sliceEnd; i += 1) {
+        eventsToDecrypt.push(events[i]);
       }
+      timelineStartIndex = timelineEndIndex;
+    }
+    await decryptEvents(mx, eventsToDecrypt);
+  }
 
-      if (room.hasEncryptionStateEvent()) {
-        await to(decryptAllTimelineEvent(mx, replyEvtTimeline));
-      }
-
-      onLoad(eventId, linkedTimelines, absIndex);
-    },
-    [mx, room, onLoad, onError]
-  );
-
-  return loadEventTimeline;
+  return { linkedTimelines, absoluteIndex };
 };
 
 export const useTimelinePagination = (

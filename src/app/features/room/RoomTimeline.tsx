@@ -8,7 +8,21 @@ import { ReactEditor } from 'slate-react';
 import type { Editor } from 'slate';
 import { useAtomValue, useSetAtom } from 'jotai';
 import type { ContainerColor } from 'folds';
-import { Badge, Box, Chip, Icon, Icons, Line, Scroll, Text, as, color, config, toRem } from 'folds';
+import {
+  Badge,
+  Box,
+  Chip,
+  Icon,
+  Icons,
+  Line,
+  Scroll,
+  Spinner,
+  Text,
+  as,
+  color,
+  config,
+  toRem,
+} from 'folds';
 import { isKeyHotkey } from 'is-hotkey';
 import type { Opts as LinkifyOpts } from 'linkifyjs';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
@@ -18,7 +32,7 @@ import {
   PAGINATION_LIMIT,
   getEmptyTimeline,
   getInitialTimeline,
-  useEventTimelineLoader,
+  loadEventContext,
   useLiveEventArrive,
   useLiveTimelineRefresh,
   useTimelinePagination,
@@ -45,8 +59,6 @@ import { willEventRender } from './willEventRender';
 import { getRoomUnreadInfo, useTimelineReadMarker } from './useTimelineReadMarker';
 import { useTimelineClickHandlers } from './useTimelineClickHandlers';
 import {
-  getEventIdAbsoluteIndex,
-  getEventTimeline,
   getLinkedTimelines,
   getLiveTimeline,
   getTimelineAndBaseIndex,
@@ -199,6 +211,8 @@ export function RoomTimeline({
     readUptoEventIdRef,
     willScrollToReadMarker,
     tryAutoMarkAsRead,
+    dividerReadUptoEventId,
+    clearDivider,
   } = useTimelineReadMarker(mx, room, hideActivity, !!unread);
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -314,42 +328,6 @@ export function RoomTimeline({
     onEnd: handleTimelinePagination,
   });
 
-  const loadEventTimeline = useEventTimelineLoader(
-    mx,
-    room,
-    useCallback(
-      (evtId, lTimelines, evtAbsIndex) => {
-        if (!alive()) return;
-        const evLength = getTimelinesEventsCount(lTimelines);
-
-        // Batch both updates together so React commits them in one render pass.
-        // useLayoutEffect fires after that single commit — elements are in the
-        // DOM and we can scroll before any paint, eliminating the flash of the
-        // unscrolled position.
-        setTimeline({
-          linkedTimelines: lTimelines,
-          range: {
-            oldest: Math.max(evtAbsIndex - PAGINATION_LIMIT, 0),
-            newest: Math.min(evtAbsIndex + PAGINATION_LIMIT, evLength),
-          },
-        });
-        setFocusItem({
-          index: evtAbsIndex,
-          eventId: evtId,
-          scrollTo: true,
-          highlight: evtId !== readUptoEventIdRef.current,
-        });
-      },
-      [alive, readUptoEventIdRef]
-    ),
-    useCallback(() => {
-      if (!alive()) return;
-      setTimeline(getInitialTimeline(room));
-      requestScrollToBottom(false);
-      setSliderPosition(1);
-    }, [alive, room, setSliderPosition, requestScrollToBottom])
-  );
-
   useLiveEventArrive(
     room,
     useCallback(
@@ -423,64 +401,79 @@ export function RoomTimeline({
     };
   }, [room, setTimeline]);
 
+  const openEventRequestRef = useRef(0);
+  const loadingIndicatorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [isJumpLoading, setIsJumpLoading] = useState(false);
+  useEffect(
+    () => () => {
+      if (loadingIndicatorTimeoutRef.current) clearTimeout(loadingIndicatorTimeoutRef.current);
+    },
+    []
+  );
+
   const handleOpenEvent = useCallback(
     async (
       evtId: string,
       highlight = true,
       onScroll: ((scrolled: boolean) => void) | undefined = undefined
     ) => {
-      // Immediately mark as not at bottom to prevent auto-scroll-to-bottom
-      // from firing during the smooth scroll animation (race with IntersectionObserver)
+      const requestId = openEventRequestRef.current + 1;
+      openEventRequestRef.current = requestId;
+
+      // Only show the loading indicator if loadEventContext takes longer than
+      // 1.5 seconds — fast loads stay invisible to avoid flashing the spinner.
+      if (loadingIndicatorTimeoutRef.current) clearTimeout(loadingIndicatorTimeoutRef.current);
+      loadingIndicatorTimeoutRef.current = setTimeout(() => {
+        loadingIndicatorTimeoutRef.current = null;
+        if (!alive()) return;
+        if (openEventRequestRef.current !== requestId) return;
+        setIsJumpLoading(true);
+      }, 1500);
+
       setAtBottom(false);
 
-      const evtTimeline = getEventTimeline(room, evtId);
-      const absoluteIndex =
-        evtTimeline && getEventIdAbsoluteIndex(linkedTimelinesRef.current, evtTimeline, evtId);
+      const result = await loadEventContext(mx, room, evtId, PAGINATION_LIMIT);
+      if (!alive()) return;
+      // A newer handleOpenEvent call superseded this one — drop the result.
+      if (openEventRequestRef.current !== requestId) return;
 
-      if (typeof absoluteIndex === 'number') {
-        const linkedLength = getTimelinesEventsCount(linkedTimelinesRef.current);
-        // Recenter the range on the target event. setTimeline returns the
-        // same object when the range is unchanged, so it's a no-op for the
-        // already-in-range case.
-        setTimeline((current) => {
-          const newRange = {
-            oldest: Math.max(absoluteIndex - PAGINATION_LIMIT, 0),
-            newest: Math.min(absoluteIndex + PAGINATION_LIMIT, linkedLength),
-          };
-          if (
-            current.range.oldest === newRange.oldest &&
-            current.range.newest === newRange.newest
-          ) {
-            return current;
-          }
-          return { ...current, range: newRange };
-        });
-        // setAnchor returns false if the message is already in view (skipped),
-        // true if a scroll happened or is scheduled. If the range just expanded
-        // and the element isn't in the DOM yet, the tracked anchor is
-        // re-applied by the resize observer once content renders.
-        const scrolled = setAnchor(
-          {
-            kind: 'event',
-            eventId: evtId,
-            align: 'start',
-            offset: Math.round(window.innerHeight * 0.12),
-          },
-          { behavior: 'smooth', skipIfVisible: true }
-        );
-        if (onScroll) onScroll(scrolled);
-        setFocusItem({
-          index: absoluteIndex,
-          eventId: evtId,
-          scrollTo: false,
-          highlight,
-        });
-      } else {
-        setTimeline(getEmptyTimeline());
-        loadEventTimeline(evtId);
+      if (loadingIndicatorTimeoutRef.current) {
+        clearTimeout(loadingIndicatorTimeoutRef.current);
+        loadingIndicatorTimeoutRef.current = null;
       }
+      setIsJumpLoading(false);
+
+      if (!result) return;
+
+      const { linkedTimelines, absoluteIndex } = result;
+      const linkedLength = getTimelinesEventsCount(linkedTimelines);
+
+      setTimeline({
+        linkedTimelines,
+        range: {
+          oldest: Math.max(absoluteIndex - PAGINATION_LIMIT, 0),
+          newest: Math.min(absoluteIndex + PAGINATION_LIMIT, linkedLength),
+        },
+      });
+
+      const scrolled = setAnchor(
+        {
+          kind: 'event',
+          eventId: evtId,
+          align: 'start',
+          offset: Math.round(window.innerHeight * 0.12),
+        },
+        { behavior: 'smooth', skipIfVisible: true }
+      );
+      if (onScroll) onScroll(scrolled);
+      setFocusItem({
+        index: absoluteIndex,
+        eventId: evtId,
+        scrollTo: false,
+        highlight,
+      });
     },
-    [room, setAnchor, loadEventTimeline, setAtBottom]
+    [mx, room, alive, setAnchor, setAtBottom]
   );
 
   useLiveTimelineRefresh(
@@ -674,14 +667,12 @@ export function RoomTimeline({
 
   useEffect(() => {
     if (eventId) {
-      setAtBottom(false);
-      setTimeline(getEmptyTimeline());
-      loadEventTimeline(eventId);
+      handleOpenEvent(eventId, eventId !== readUptoEventIdRef.current);
     } else {
       setTimeline(getInitialTimeline(room));
       requestScrollToBottom(false);
     }
-  }, [eventId, loadEventTimeline, room, setAtBottom, requestScrollToBottom]);
+  }, [eventId, handleOpenEvent, room, requestScrollToBottom, readUptoEventIdRef]);
 
   useLayoutEffect(() => {
     const scrollEl = scrollRef.current;
@@ -690,13 +681,15 @@ export function RoomTimeline({
     }
   }, [scrollRef]);
 
-  // Scroll to last-read message when live timeline is linked and unreadInfo
-  // signals scrollTo. The tracked anchor lets the resize observer re-snap as
-  // images / async content shift the layout, until the user scrolls.
   useLayoutEffect(() => {
     const { readUptoEventId, inLiveTimeline, scrollTo } = unreadInfo ?? {};
     if (!readUptoEventId || !inLiveTimeline || !scrollTo) return;
-    setAnchor({ kind: 'event', eventId: readUptoEventId, align: 'start' }, { skipIfVisible: true });
+    setAnchor({
+      kind: 'marker',
+      markerId: 'unread',
+      align: 'start',
+      offset: Math.round(window.innerHeight * 0.12),
+    });
   }, [unreadInfo, setAnchor]);
 
   // scroll to focused message
@@ -767,15 +760,12 @@ export function RoomTimeline({
   };
 
   const handleJumpToUnread = () => {
-    if (unreadInfo?.readUptoEventId) {
-      setAtBottom(false);
-      setTimeline(getEmptyTimeline());
-      loadEventTimeline(unreadInfo.readUptoEventId);
-    }
+    if (unreadInfo?.readUptoEventId) handleOpenEvent(unreadInfo.readUptoEventId, false);
   };
 
   const handleMarkAsRead = () => {
     setUnreadInfo(undefined);
+    clearDivider();
     markAsRead(mx, room.roomId, hideActivity);
   };
 
@@ -843,16 +833,12 @@ export function RoomTimeline({
       events.push({ mEvent, mEventId, timelineSet, item });
     }
 
-    return buildTimelineDescriptors(
-      events,
-      readUptoEventIdRef.current ?? undefined,
-      mx.getSafeUserId(),
-      (mEvent) =>
-        willEventRender(mEvent, {
-          showHiddenEvents,
-          hideMembershipEvents,
-          hideNickAvatarEvents,
-        })
+    return buildTimelineDescriptors(events, dividerReadUptoEventId, mx.getSafeUserId(), (mEvent) =>
+      willEventRender(mEvent, {
+        showHiddenEvents,
+        hideMembershipEvents,
+        hideNickAvatarEvents,
+      })
     );
   };
 
@@ -932,6 +918,13 @@ export function RoomTimeline({
   return (
     <TimelineMessageContext.Provider value={contextValue}>
       <Box grow="Yes" style={{ position: 'relative' }}>
+        {isJumpLoading && (
+          <TimelineFloat position="Top">
+            <Chip variant="SurfaceVariant" radii="Pill" outlined before={<Spinner size="50" />}>
+              <Text size="L400">Loading…</Text>
+            </Chip>
+          </TimelineFloat>
+        )}
         {unreadInfo?.readUptoEventId && !unreadInfo?.inLiveTimeline && (
           <TimelineFloat position="Top">
             <Chip

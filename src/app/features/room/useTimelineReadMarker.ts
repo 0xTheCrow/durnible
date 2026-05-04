@@ -29,6 +29,8 @@ export type TimelineReadMarkerApi = {
   readUptoEventIdRef: MutableRefObject<string | undefined>;
   willScrollToReadMarker: boolean;
   tryAutoMarkAsRead: () => void;
+  dividerReadUptoEventId: string | undefined;
+  clearDivider: () => void;
 };
 
 export const useTimelineReadMarker = (
@@ -40,6 +42,17 @@ export const useTimelineReadMarker = (
   const [unreadInfo, setUnreadInfo] = useState(() => getRoomUnreadInfo(room, true));
   const readUptoEventIdRef = useRef<string>();
   readUptoEventIdRef.current = unreadInfo?.readUptoEventId;
+
+  const [dividerReadUptoEventId, setDividerReadUptoEventId] = useState<string | undefined>(
+    () => unreadInfo?.readUptoEventId
+  );
+  useEffect(() => {
+    if (dividerReadUptoEventId !== undefined) return;
+    if (unreadInfo?.readUptoEventId) {
+      setDividerReadUptoEventId(unreadInfo.readUptoEventId);
+    }
+  }, [unreadInfo?.readUptoEventId, dividerReadUptoEventId]);
+  const clearDivider = useCallback(() => setDividerReadUptoEventId(undefined), []);
 
   const willScrollToReadMarker = !!(unreadInfo?.inLiveTimeline && unreadInfo?.scrollTo);
 
@@ -68,5 +81,7 @@ export const useTimelineReadMarker = (
     readUptoEventIdRef,
     willScrollToReadMarker,
     tryAutoMarkAsRead,
+    dividerReadUptoEventId,
+    clearDivider,
   };
 };
