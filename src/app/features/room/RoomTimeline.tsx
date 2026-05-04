@@ -1011,6 +1011,17 @@ export function RoomTimeline({
                     key={d.key}
                     space={messageSpacing}
                     data-anchor-id={getMarkerAnchorId('unread')}
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Mark all messages as read"
+                    onClick={handleMarkAsRead}
+                    onKeyDown={(evt) => {
+                      if (evt.key === 'Enter' || evt.key === ' ') {
+                        evt.preventDefault();
+                        handleMarkAsRead();
+                      }
+                    }}
+                    style={{ cursor: 'pointer' }}
                   >
                     <TimelineDivider style={{ color: color.Success.Main }} variant="Inherit">
                       <Badge as="span" size="500" variant="Success" fill="Solid" radii="300">
