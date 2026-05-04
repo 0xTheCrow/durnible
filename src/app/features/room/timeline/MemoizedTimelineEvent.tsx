@@ -198,7 +198,7 @@ function TimelineEventComponent({
     const baseMessageProps = {
       ref: bottomRef,
       'data-message-item': item,
-      'data-message-id': mEventId,
+      'data-anchor-id': `event:${mEventId}`,
       room,
       mEvent,
       messageSpacing,
@@ -388,7 +388,7 @@ function TimelineEventComponent({
   const baseEventProps = {
     ref: bottomRef,
     'data-message-item': item,
-    'data-message-id': mEventId,
+    'data-anchor-id': `event:${mEventId}`,
     room,
     mEvent,
     highlight: isHighlighted,
