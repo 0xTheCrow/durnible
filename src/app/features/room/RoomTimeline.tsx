@@ -1037,15 +1037,6 @@ export function RoomTimeline({
                   </MessageBase>
                 );
               }
-              const { replyEventId } = d.mEvent;
-              // Use room.findEventById (broader — searches all timelineSets in
-              // the room) instead of d.timelineSet.findEventById (limited to
-              // one timelineSet). The Reply component does the same fallback,
-              // which is why the quoted preview can render even when the
-              // narrow lookup fails.
-              const replyToMe =
-                !!replyEventId &&
-                room.findEventById(replyEventId)?.getSender() === mx.getSafeUserId();
               return (
                 <MemoizedTimelineEvent
                   key={d.mEventId}
@@ -1061,7 +1052,6 @@ export function RoomTimeline({
                   editedEvent={getEditedEvent(d.mEventId, d.mEvent, d.timelineSet)}
                   isRedacted={d.mEvent.isRedacted()}
                   eventStatus={d.mEvent.status}
-                  replyToMe={replyToMe}
                 />
               );
             })}
