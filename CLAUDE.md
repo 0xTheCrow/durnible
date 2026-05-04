@@ -46,6 +46,7 @@ Durnible is a Matrix chat client built with React, TypeScript, and Vite. Forked 
 - Functional components only, with typed props via TypeScript interfaces
 - `useState` setters follow the `set[Name]` convention — e.g. `const [count, setCount]`, never `const [count, updateCount]` or `const [selected, selectItem]`. Rename violations when editing nearby code.
 - Named exports preferred over default exports for utilities
+- Don't abbreviate identifiers. Spell names out in full unless the abbreviation is the canonical term (a Web/DOM API name like `rect` from `getBoundingClientRect`, a math notation like `dx`/`dy`, a widely understood unit like `id`, or a loop counter like `i`). Avoid `el` for `element`, `scrollEl` for `scrollElement`, `sRect` for `scrollRect`, `ro` for `resizeObserver`, `io` for `intersectionObserver`, `max` for `maxScrollTop`, `top` for `targetScrollTop`, etc. Readability over keystrokes — if the name describes what the value is, don't shorten it.
 - Prettier: 100 char line width, single quotes
 - ESLint extends airbnb + prettier + TypeScript rules
 - `react-hooks/exhaustive-deps` is set to **error** — don't skip deps

@@ -27,20 +27,6 @@ export const isIntersectingScrollView = (
   return false;
 };
 
-export const isInScrollView = (scrollElement: HTMLElement, childElement: HTMLElement): boolean => {
-  const scrollTop = scrollElement.offsetTop + scrollElement.scrollTop;
-  const scrollBottom = scrollTop + scrollElement.offsetHeight;
-  return (
-    childElement.offsetTop >= scrollTop &&
-    childElement.offsetTop + childElement.offsetHeight <= scrollBottom
-  );
-};
-
-export const canFitInScrollView = (
-  scrollElement: HTMLElement,
-  childElement: HTMLElement
-): boolean => childElement.offsetHeight < scrollElement.offsetHeight;
-
 export type FilesOrFile<T extends boolean | undefined = undefined> = T extends true ? File[] : File;
 
 export const getFilesFromFileList = (fileList: FileList): File[] => {
@@ -202,6 +188,36 @@ export const scrollToBottom = (scrollEl: HTMLElement, behavior?: 'auto' | 'insta
     top: Math.round(scrollEl.scrollHeight - scrollEl.offsetHeight),
     behavior,
   });
+};
+
+export type ScrollAlign = 'start' | 'center' | 'end';
+
+export const computeAnchorScrollTop = (
+  scrollElement: HTMLElement,
+  element: HTMLElement,
+  align: ScrollAlign,
+  offset = 0
+): number => {
+  const elementRect = element.getBoundingClientRect();
+  const scrollRect = scrollElement.getBoundingClientRect();
+  const topRelativeToScrollContainer = elementRect.top - scrollRect.top + scrollElement.scrollTop;
+  const viewportHeight = scrollElement.clientHeight;
+  const maxScrollTop = Math.max(0, scrollElement.scrollHeight - viewportHeight);
+  let targetScrollTop: number;
+  switch (align) {
+    case 'start':
+      targetScrollTop = topRelativeToScrollContainer - offset;
+      break;
+    case 'end':
+      targetScrollTop =
+        topRelativeToScrollContainer + element.offsetHeight - viewportHeight + offset;
+      break;
+    case 'center':
+    default:
+      targetScrollTop = topRelativeToScrollContainer - (viewportHeight - element.offsetHeight) / 2;
+      break;
+  }
+  return Math.max(0, Math.min(targetScrollTop, maxScrollTop));
 };
 
 export const copyToClipboard = (text: string) => {

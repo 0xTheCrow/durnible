@@ -8,17 +8,18 @@ enableMapSet();
 // jsdom doesn't implement canvas — mock it to suppress the warning
 HTMLCanvasElement.prototype.getContext = vi.fn();
 
-// jsdom doesn't implement IntersectionObserver — provide a no-op stub. The
-// `as unknown as typeof IntersectionObserver` cast bridges the missing
+// jsdom doesn't implement IntersectionObserver / ResizeObserver — provide
+// no-op stubs. The `as unknown as typeof X` cast bridges the missing
 // constructor signature so we don't need a decorative empty constructor here.
-class MockIntersectionObserver {
+class MockObserver {
   observe = vi.fn();
 
   unobserve = vi.fn();
 
   disconnect = vi.fn();
 }
-global.IntersectionObserver = MockIntersectionObserver as unknown as typeof IntersectionObserver;
+global.IntersectionObserver = MockObserver as unknown as typeof IntersectionObserver;
+global.ResizeObserver = MockObserver as unknown as typeof ResizeObserver;
 
 // Mock SVG imports
 vi.mock('../../../../public/res/svg/cinny.svg', () => ({ default: 'cinny.svg' }));

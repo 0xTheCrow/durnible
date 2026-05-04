@@ -93,7 +93,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useRoomCreatorsTag } from '../../hooks/useRoomCreatorsTag';
 import { usePowerLevelTags } from '../../hooks/usePowerLevelTags';
 import { ROOM_INPUT_EDITABLE_NAME } from './RoomInput';
-import { useTimelineAutoScroll } from './useTimelineAutoScroll';
+import { getMarkerAnchorId, useTimelineAutoScroll } from './useTimelineAutoScroll';
 
 const TimelineFloat = as<'div', css.TimelineFloatVariants>(
   ({ position, className, ...props }, ref) => (
@@ -269,11 +269,13 @@ export function RoomTimeline({
     atBottomRef,
     setAtBottom,
     requestScrollToBottom,
+    setAnchor,
   } = useTimelineAutoScroll({
     room,
     viewingLatest: viewingLatestRef.current,
     autoPinEnabled: docFocused || unfocusedAutoScroll,
     initiallyAtBottom: !willScrollToReadMarker,
+    getContentElement: useCallback(() => contentRef.current, []),
   });
 
   // Ref so that stable callbacks (handleOpenEvent, handleDecryptRetry) can
@@ -294,24 +296,23 @@ export function RoomTimeline({
 
   const getScrollElement = useCallback(() => scrollRef.current, [scrollRef]);
 
-  const { getItems, scrollToItem, scrollToElement, observeBackAnchor, observeFrontAnchor } =
-    useVirtualPaginator({
-      count: eventsLength,
-      limit: PAGINATION_LIMIT,
-      range: { start: timeline.range.oldest, end: timeline.range.newest },
-      onRangeChange: useCallback(
-        (r) => setTimeline((cs) => ({ ...cs, range: { oldest: r.start, newest: r.end } })),
-        []
-      ),
-      getScrollElement,
-      getItemElement: useCallback(
-        (index: number) =>
-          (scrollRef.current?.querySelector(`[data-message-item="${index}"]`) as HTMLElement) ??
-          undefined,
-        [scrollRef]
-      ),
-      onEnd: handleTimelinePagination,
-    });
+  const { getItems, observeBackAnchor, observeFrontAnchor } = useVirtualPaginator({
+    count: eventsLength,
+    limit: PAGINATION_LIMIT,
+    range: { start: timeline.range.oldest, end: timeline.range.newest },
+    onRangeChange: useCallback(
+      (r) => setTimeline((cs) => ({ ...cs, range: { oldest: r.start, newest: r.end } })),
+      []
+    ),
+    getScrollElement,
+    getItemElement: useCallback(
+      (index: number) =>
+        (scrollRef.current?.querySelector(`[data-message-item="${index}"]`) as HTMLElement) ??
+        undefined,
+      [scrollRef]
+    ),
+    onEnd: handleTimelinePagination,
+  });
 
   const loadEventTimeline = useEventTimelineLoader(
     mx,
@@ -437,12 +438,36 @@ export function RoomTimeline({
         evtTimeline && getEventIdAbsoluteIndex(linkedTimelinesRef.current, evtTimeline, evtId);
 
       if (typeof absoluteIndex === 'number') {
-        const scrolled = scrollToItem(absoluteIndex, {
-          behavior: 'smooth',
-          align: 'start',
-          stopInView: true,
-          offset: Math.round(window.innerHeight * 0.12),
+        const linkedLength = getTimelinesEventsCount(linkedTimelinesRef.current);
+        // Recenter the range on the target event. setTimeline returns the
+        // same object when the range is unchanged, so it's a no-op for the
+        // already-in-range case.
+        setTimeline((current) => {
+          const newRange = {
+            oldest: Math.max(absoluteIndex - PAGINATION_LIMIT, 0),
+            newest: Math.min(absoluteIndex + PAGINATION_LIMIT, linkedLength),
+          };
+          if (
+            current.range.oldest === newRange.oldest &&
+            current.range.newest === newRange.newest
+          ) {
+            return current;
+          }
+          return { ...current, range: newRange };
         });
+        // setAnchor returns false if the message is already in view (skipped),
+        // true if a scroll happened or is scheduled. If the range just expanded
+        // and the element isn't in the DOM yet, the tracked anchor is
+        // re-applied by the resize observer once content renders.
+        const scrolled = setAnchor(
+          {
+            kind: 'event',
+            eventId: evtId,
+            align: 'start',
+            offset: Math.round(window.innerHeight * 0.12),
+          },
+          { behavior: 'smooth', skipIfVisible: true }
+        );
         if (onScroll) onScroll(scrolled);
         setFocusItem({
           index: absoluteIndex,
@@ -455,7 +480,7 @@ export function RoomTimeline({
         loadEventTimeline(evtId);
       }
     },
-    [room, scrollToItem, loadEventTimeline, setAtBottom]
+    [room, setAnchor, loadEventTimeline, setAtBottom]
   );
 
   useLiveTimelineRefresh(
@@ -665,24 +690,14 @@ export function RoomTimeline({
     }
   }, [scrollRef]);
 
-  // if live timeline is linked and unreadInfo change
-  // Scroll to last read message
+  // Scroll to last-read message when live timeline is linked and unreadInfo
+  // signals scrollTo. The tracked anchor lets the resize observer re-snap as
+  // images / async content shift the layout, until the user scrolls.
   useLayoutEffect(() => {
     const { readUptoEventId, inLiveTimeline, scrollTo } = unreadInfo ?? {};
-    if (readUptoEventId && inLiveTimeline && scrollTo) {
-      const linkedTimelines = getLinkedTimelines(getLiveTimeline(room));
-      const evtTimeline = getEventTimeline(room, readUptoEventId);
-      const absoluteIndex =
-        evtTimeline && getEventIdAbsoluteIndex(linkedTimelines, evtTimeline, readUptoEventId);
-      if (absoluteIndex) {
-        scrollToItem(absoluteIndex, {
-          behavior: 'instant',
-          align: 'start',
-          stopInView: true,
-        });
-      }
-    }
-  }, [room, unreadInfo, scrollToItem]);
+    if (!readUptoEventId || !inLiveTimeline || !scrollTo) return;
+    setAnchor({ kind: 'event', eventId: readUptoEventId, align: 'start' }, { skipIfVisible: true });
+  }, [unreadInfo, setAnchor]);
 
   // scroll to focused message
   // Look up by eventId so stale indices (from recalibratePagination) never land
@@ -734,21 +749,13 @@ export function RoomTimeline({
     return () => clearTimeout(id);
   }, [alive, focusItem]);
 
-  // scroll out of view msg editor in view.
   useEffect(() => {
-    if (editId) {
-      const editMsgElement =
-        (scrollRef.current?.querySelector(`[data-message-id="${editId}"]`) as HTMLElement) ??
-        undefined;
-      if (editMsgElement) {
-        scrollToElement(editMsgElement, {
-          align: 'center',
-          behavior: 'smooth',
-          stopInView: true,
-        });
-      }
-    }
-  }, [scrollToElement, editId, scrollRef]);
+    if (!editId) return;
+    setAnchor(
+      { kind: 'event', eventId: editId, align: 'center' },
+      { behavior: 'smooth', skipIfVisible: true }
+    );
+  }, [editId, setAnchor]);
 
   const handleJumpToLatest = () => {
     if (eventId) {
@@ -1007,7 +1014,11 @@ export function RoomTimeline({
             {timelineItems.map((d) => {
               if (d.type === 'new-messages') {
                 return (
-                  <MessageBase key={d.key} space={messageSpacing}>
+                  <MessageBase
+                    key={d.key}
+                    space={messageSpacing}
+                    data-anchor-id={getMarkerAnchorId('unread')}
+                  >
                     <TimelineDivider style={{ color: color.Success.Main }} variant="Inherit">
                       <Badge as="span" size="500" variant="Success" fill="Solid" radii="300">
                         <Text size="L400">New Messages</Text>
