@@ -40,7 +40,7 @@ export function SettingsTab() {
         )}
       </SidebarItemTooltip>
       {settings && (
-        <Modal500 onClose={closeSettings}>
+        <Modal500 onClose={closeSettings} focusTrapOptions={{ escapeDeactivates: true }}>
           <Settings onClose={closeSettings} />
         </Modal500>
       )}

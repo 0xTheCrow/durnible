@@ -1,6 +1,5 @@
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import React, { useEffect, useMemo } from 'react';
-import type { Editor } from 'slate';
 import { Box, MenuItem, Text, toRem } from 'folds';
 import type { Room } from 'matrix-js-sdk';
 
@@ -10,7 +9,6 @@ import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import type { UseAsyncSearchOptions } from '../../../hooks/useAsyncSearch';
 import { useAsyncSearch } from '../../../hooks/useAsyncSearch';
 import { onTabPress } from '../../../utils/keyboard';
-import { createEmoticonElement, moveCursor, replaceWithElement } from '../utils';
 import { useRecentEmoji } from '../../../hooks/useRecentEmoji';
 import { useRelevantImagePacks } from '../../../hooks/useImagePacks';
 import type { Emoji } from '../../../plugins/emoji';
@@ -28,10 +26,9 @@ type EmoticonSearchItem = PackImageReader | Emoji;
 
 type EmoticonAutocompleteProps = {
   imagePackRooms: Room[];
-  editor: Editor;
   query: AutocompleteQuery<string>;
   onClose: () => void;
-  onSelect?: (key: string, shortcode: string) => void;
+  onSelect: (key: string, shortcode: string) => void;
 };
 
 const SEARCH_OPTIONS: UseAsyncSearchOptions = {
@@ -42,7 +39,6 @@ const SEARCH_OPTIONS: UseAsyncSearchOptions = {
 
 export function EmoticonAutocomplete({
   imagePackRooms,
-  editor,
   query,
   onClose,
   onSelect,
@@ -74,14 +70,7 @@ export function EmoticonAutocomplete({
   }, [query.text, search, resetSearch]);
 
   const handleAutocomplete: EmoticonCompleteHandler = (key, shortcode) => {
-    if (onSelect) {
-      onSelect(key, shortcode);
-      onClose();
-      return;
-    }
-    const emoticonEl = createEmoticonElement(key, shortcode);
-    replaceWithElement(editor, query.range, emoticonEl);
-    moveCursor(editor, true);
+    onSelect(key, shortcode);
     onClose();
   };
 

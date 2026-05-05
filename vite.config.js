@@ -14,11 +14,6 @@ import buildConfig from './build.config';
 const copyFiles = {
   targets: [
     {
-      src: 'node_modules/pdfjs-dist/build/pdf.worker.min.mjs',
-      dest: '',
-      rename: 'pdf.worker.min.js',
-    },
-    {
       src: 'netlify.toml',
       dest: '',
     },
@@ -91,7 +86,7 @@ export default defineConfig({
       promiseImportName: (i) => `__tla_${i}`,
     }),
     viteStaticCopy(copyFiles),
-    vanillaExtractPlugin(),
+    vanillaExtractPlugin({ identifiers: 'debug' }),
     wasm(),
     react(),
     VitePWA({

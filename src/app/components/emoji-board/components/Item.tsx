@@ -13,7 +13,7 @@ const handleImgLoad: ReactEventHandler<HTMLImageElement> = (evt) => {
 };
 
 export const getEmojiItemInfo = (element: Element): EmojiItemInfo | undefined => {
-  const label = element.getAttribute('title');
+  const label = element.getAttribute('data-emoji-label');
   const type = element.getAttribute('data-emoji-type') as EmojiType | undefined;
   const data = element.getAttribute('data-emoji-data');
   const shortcode = element.getAttribute('data-emoji-shortcode');
@@ -39,11 +39,11 @@ export function EmojiItem({ emoji }: EmojiItemProps) {
       alignItems="Center"
       justifyContent="Center"
       className={css.EmojiItem}
-      title={emoji.label}
       aria-label={`${emoji.label} emoji`}
       data-emoji-type={EmojiType.Emoji}
       data-emoji-data={emoji.unicode}
       data-emoji-shortcode={emoji.shortcode}
+      data-emoji-label={emoji.label}
     >
       {emoji.unicode}
     </Box>
@@ -63,11 +63,11 @@ export function CustomEmojiItem({ mx, useAuthentication, image }: CustomEmojiIte
       alignItems="Center"
       justifyContent="Center"
       className={css.EmojiItem}
-      title={image.body || image.shortcode}
       aria-label={`${image.body || image.shortcode} emoji`}
       data-emoji-type={EmojiType.CustomEmoji}
       data-emoji-data={image.url}
       data-emoji-shortcode={image.shortcode}
+      data-emoji-label={image.body || image.shortcode}
     >
       <img
         loading="lazy"
@@ -95,11 +95,11 @@ export function StickerItem({ mx, useAuthentication, image }: StickerItemProps) 
       alignItems="Center"
       justifyContent="Center"
       className={css.StickerItem}
-      title={image.body || image.shortcode}
       aria-label={`${image.body || image.shortcode} emoji`}
       data-emoji-type={EmojiType.Sticker}
       data-emoji-data={image.url}
       data-emoji-shortcode={image.shortcode}
+      data-emoji-label={image.body || image.shortcode}
     >
       <img
         loading="lazy"

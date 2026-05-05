@@ -63,8 +63,10 @@ export function resolveInvidiousInstance(): Promise<string> {
   return _promise;
 }
 
-export function useInvidiousInstance(): string | null {
-  const [instance, setInstance] = useState<string | null>(null);
+export function useInvidiousInstance(): string {
+  const [instance, setInstance] = useState<string>(
+    () => INVIDIOUS_CANDIDATES[0] ?? 'inv.nadeko.net'
+  );
 
   useEffect(() => {
     let cancelled = false;

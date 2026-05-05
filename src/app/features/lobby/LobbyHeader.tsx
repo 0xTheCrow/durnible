@@ -13,11 +13,11 @@ import {
   PopOut,
   Text,
   Tooltip,
-  TooltipProvider,
   config,
   toRem,
 } from 'folds';
 import FocusTrap from 'focus-trap-react';
+import { TooltipProvider } from '../../components/TooltipProvider';
 import { PageHeader } from '../../components/page';
 import { useSetSetting } from '../../state/hooks/settings';
 import { settingsAtom } from '../../state/settings';

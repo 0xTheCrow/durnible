@@ -2,26 +2,27 @@ import React, { useCallback, useEffect, useRef } from 'react';
 import { Box, Text, config } from 'folds';
 import type { Room } from 'matrix-js-sdk';
 import { Direction, EventType, MatrixError } from 'matrix-js-sdk';
-import { ReactEditor } from 'slate-react';
 import { isKeyHotkey } from 'is-hotkey';
 import { useStateEvent } from '../../hooks/useStateEvent';
 import { StateEvent } from '../../../types/matrix/room';
 import { usePowerLevelsContext } from '../../hooks/usePowerLevels';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
-import { useEditor } from '../../components/editor';
-import { RoomInputPlaceholder } from './RoomInputPlaceholder';
-import { RoomTimeline } from './RoomTimeline';
-import { RoomViewTyping } from './RoomViewTyping';
-import { RoomTombstone } from './RoomTombstone';
-import { RoomInput } from './RoomInput';
-import { TimelineSlider } from './TimelineSlider';
-import { /* RoomViewFollowing, */ RoomViewFollowingPlaceholder } from './RoomViewFollowing';
+import type { EditorController } from '../../components/editor';
+import { RoomInputPlaceholder } from './input/RoomInputPlaceholder';
+import { RoomTimeline } from './timeline/RoomTimeline';
+import { RoomViewTyping } from './layout/RoomViewTyping';
+import { RoomTombstone } from './layout/RoomTombstone';
+import { RoomInput } from './input/RoomInput';
+import { TimelineSlider } from './timeline/TimelineSlider';
+import { /* RoomViewFollowing, */ RoomViewFollowingPlaceholder } from './layout/RoomViewFollowing';
 import { Page } from '../../components/page';
-import { RoomViewHeader } from './RoomViewHeader';
+import { RoomViewHeader } from './layout/RoomViewHeader';
 import { useKeyDown } from '../../hooks/useKeyDown';
 import { editableActiveElement } from '../../utils/dom';
 import { settingsAtom } from '../../state/settings';
 import { useSetting } from '../../state/hooks/settings';
+import { KeybindAction } from '../../state/keybinds';
+import { useKeybind } from '../../state/hooks/keybinds';
 import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
 import { useRoomPermissions } from '../../hooks/useRoomPermissions';
 import { useRoomCreators } from '../../hooks/useRoomCreators';
@@ -62,15 +63,13 @@ const shouldFocusMessageField = (evt: KeyboardEvent): boolean => {
 
 export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
   const roomInputRef = useRef<HTMLDivElement>(null);
-  const alternateInputRef = useRef<HTMLDivElement>(null);
+  const editorInputRef = useRef<EditorController | null>(null);
   const roomViewRef = useRef<HTMLDivElement>(null);
 
   const [_hideActivity] = useSetting(settingsAtom, 'hideActivity');
-  const [alternateInput] = useSetting(settingsAtom, 'alternateInput');
   const screenSize = useScreenSizeContext();
 
   const { roomId } = room;
-  const editor = useEditor();
 
   const mx = useMatrixClient();
   const { navigateRoom } = useRoomNavigate();
@@ -132,16 +131,13 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
   focusEditorRef.current = () => {
     if (screenSize !== ScreenSize.Desktop) return;
     if (!canMessage) return;
-    if (alternateInput) {
-      alternateInputRef.current?.focus();
-    } else {
-      ReactEditor.focus(editor);
-    }
+    editorInputRef.current?.focus();
   };
   useEffect(() => {
     focusEditorRef.current();
   }, [roomId]);
 
+  const focusComposerHotkey = useKeybind(KeybindAction.GlobalFocusComposer);
   useKeyDown(
     window,
     useCallback(
@@ -151,15 +147,11 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
         if (portalContainer && portalContainer.children.length > 0) {
           return;
         }
-        if (shouldFocusMessageField(evt) || isKeyHotkey('mod+v', evt)) {
-          if (alternateInput) {
-            alternateInputRef.current?.focus();
-          } else {
-            ReactEditor.focus(editor);
-          }
+        if (shouldFocusMessageField(evt) || isKeyHotkey(focusComposerHotkey, evt)) {
+          editorInputRef.current?.focus();
         }
       },
-      [editor, alternateInput, alternateInputRef]
+      [focusComposerHotkey]
     )
   );
 
@@ -172,8 +164,7 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
           room={room}
           eventId={eventId}
           roomInputRef={roomInputRef}
-          alternateInputRef={alternateInputRef}
-          editor={editor}
+          editorInputRef={editorInputRef}
         />
         <RoomViewTyping room={room} />
         <TimelineSlider
@@ -197,10 +188,9 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
               {canMessage && (
                 <RoomInput
                   room={room}
-                  editor={editor}
                   roomId={roomId}
                   fileDropContainerRef={roomViewRef}
-                  alternateInputRef={alternateInputRef}
+                  editorInputRef={editorInputRef}
                   ref={roomInputRef}
                 />
               )}

@@ -94,16 +94,6 @@ function HideActivitySetting() {
     />
   );
 }
-function AlternateInputSetting() {
-  const [value, setValue] = useSetting(settingsAtom, 'alternateInput');
-  return (
-    <SettingTile
-      title="Alternate Message Input"
-      description="Use a simple text input instead of the rich text editor."
-      after={<Switch variant="Primary" value={value} onChange={setValue} />}
-    />
-  );
-}
 
 // --- Messages ---
 function LegacyUsernameColorSetting() {
@@ -413,16 +403,6 @@ export const settingsSearchData: SearchEntry[] = [
     sectionName: 'Editor',
     Render: HideActivitySetting,
   },
-  {
-    id: 'alternate-input',
-    title: 'Alternate Message Input',
-    description: 'Use a simple text input instead of the rich text editor.',
-    keywords: ['input', 'editor', 'text', 'simple', 'alternate', 'experimental', 'plain'],
-    page: SettingsPages.GeneralPage,
-    pageName: 'General',
-    sectionName: 'Editor',
-    Render: AlternateInputSetting,
-  },
   // Messages
   {
     id: 'message-layout',
@@ -696,5 +676,32 @@ export const settingsSearchData: SearchEntry[] = [
     page: SettingsPages.EmojisStickersPage,
     pageName: 'Emojis & Stickers',
     sectionName: 'Packs',
+  },
+  // Keybinds
+  {
+    id: 'keybinds',
+    title: 'Keyboard Shortcuts',
+    description: 'Customize keybinds for sending messages, text formatting, and global actions.',
+    keywords: [
+      'keybind',
+      'keybinds',
+      'keyboard',
+      'shortcut',
+      'shortcuts',
+      'hotkey',
+      'hotkeys',
+      'bind',
+      'remap',
+      'send',
+      'bold',
+      'italic',
+      'underline',
+      'format',
+      'formatting',
+      'composer',
+    ],
+    page: SettingsPages.KeybindsPage,
+    pageName: 'Keybinds',
+    sectionName: 'Customize',
   },
 ];

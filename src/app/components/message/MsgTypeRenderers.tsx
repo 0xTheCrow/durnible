@@ -183,7 +183,7 @@ type RenderImageContentProps = {
   info?: ImageInfo & ThumbnailContent;
   mimeType?: string;
   url: string;
-  encInfo?: EncryptedFile;
+  encryptionInfo?: EncryptedFile;
   markedAsSpoiler?: boolean;
   spoilerReason?: string;
 };
@@ -211,11 +211,12 @@ export function MImage({ content, renderImageContent }: MImageProps) {
         }}
       >
         {renderImageContent({
-          body: content.body || 'Image',
+          body: content.body || content.filename || 'Image',
+          filename: content.filename,
           info: imgInfo,
           mimeType: imgInfo?.mimetype,
           url: mxcUrl,
-          encInfo: content.file,
+          encryptionInfo: content.file,
           markedAsSpoiler: content[MATRIX_SPOILER_PROPERTY_NAME],
           spoilerReason: content[MATRIX_SPOILER_REASON_PROPERTY_NAME],
         })}
@@ -229,7 +230,7 @@ type RenderVideoContentProps = {
   info: VideoInfo & ThumbnailContent;
   mimeType: string;
   url: string;
-  encInfo?: EncryptedFile;
+  encryptionInfo?: EncryptedFile;
   markedAsSpoiler?: boolean;
   spoilerReason?: string;
 };
@@ -266,7 +267,7 @@ export function MVideo({ content, renderAsFile, renderVideoContent, outlined }: 
               filename={filename}
               url={mxcUrl}
               mimeType={safeMimeType}
-              encInfo={content.file}
+              encryptionInfo={content.file}
             />
           }
         />
@@ -281,7 +282,7 @@ export function MVideo({ content, renderAsFile, renderVideoContent, outlined }: 
           info: videoInfo,
           mimeType: safeMimeType,
           url: mxcUrl,
-          encInfo: content.file,
+          encryptionInfo: content.file,
           markedAsSpoiler: content[MATRIX_SPOILER_PROPERTY_NAME],
           spoilerReason: content[MATRIX_SPOILER_REASON_PROPERTY_NAME],
         })}
@@ -294,7 +295,7 @@ type RenderAudioContentProps = {
   info: AudioInfo;
   mimeType: string;
   url: string;
-  encInfo?: EncryptedFile;
+  encryptionInfo?: EncryptedFile;
 };
 type MAudioProps = {
   content: AudioContent;
@@ -326,7 +327,7 @@ export function MAudio({ content, renderAsFile, renderAudioContent, outlined }: 
               filename={filename}
               url={mxcUrl}
               mimeType={safeMimeType}
-              encInfo={content.file}
+              encryptionInfo={content.file}
             />
           }
         />
@@ -337,7 +338,7 @@ export function MAudio({ content, renderAsFile, renderAudioContent, outlined }: 
             info: audioInfo,
             mimeType: safeMimeType,
             url: mxcUrl,
-            encInfo: content.file,
+            encryptionInfo: content.file,
           })}
         </AttachmentContent>
       </AttachmentBox>
@@ -350,7 +351,7 @@ type RenderFileContentProps = {
   info: FileInfo & ThumbnailContent;
   mimeType: string;
   url: string;
-  encInfo?: EncryptedFile;
+  encryptionInfo?: EncryptedFile;
 };
 type MFileProps = {
   content: FileContent;
@@ -380,7 +381,7 @@ export function MFile({ content, renderFileContent, outlined }: MFileProps) {
             info: fileInfo ?? {},
             mimeType: fileInfo?.mimetype ?? FALLBACK_MIMETYPE,
             url: mxcUrl,
-            encInfo: content.file,
+            encryptionInfo: content.file,
           })}
         </AttachmentContent>
       </AttachmentBox>
@@ -438,7 +439,7 @@ export function MSticker({ content, renderImageContent }: MStickerProps) {
         info: imgInfo,
         mimeType: imgInfo?.mimetype,
         url: mxcUrl,
-        encInfo: content.file,
+        encryptionInfo: content.file,
       })}
     </AttachmentBox>
   );

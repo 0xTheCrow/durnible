@@ -1,19 +1,9 @@
 import type { ReactNode } from 'react';
 import React, { useCallback, useState } from 'react';
-import {
-  Box,
-  Button,
-  Icon,
-  Icons,
-  Modal,
-  Spinner,
-  Text,
-  Tooltip,
-  TooltipProvider,
-  as,
-} from 'folds';
+import { Box, Button, Icon, Icons, Modal, Spinner, Text, Tooltip, as } from 'folds';
 import FileSaver from 'file-saver';
 import type { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
+import { TooltipProvider } from '../../TooltipProvider';
 import type { FileInfo } from '../../../../types/matrix/common';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
@@ -73,10 +63,16 @@ type ReadTextFileProps = {
   body: string;
   mimeType: string;
   url: string;
-  encInfo?: EncryptedAttachmentInfo;
+  encryptionInfo?: EncryptedAttachmentInfo;
   renderViewer: (props: RenderTextViewerProps) => ReactNode;
 };
-export function ReadTextFile({ body, mimeType, url, encInfo, renderViewer }: ReadTextFileProps) {
+export function ReadTextFile({
+  body,
+  mimeType,
+  url,
+  encryptionInfo,
+  renderViewer,
+}: ReadTextFileProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
   const [textViewer, setTextViewer] = useState(false);
@@ -84,14 +80,16 @@ export function ReadTextFile({ body, mimeType, url, encInfo, renderViewer }: Rea
   const [textState, loadText] = useAsyncCallback(
     useCallback(async () => {
       const mediaUrl = mxcUrlToHttp(mx, url, useAuthentication) ?? url;
-      const fileContent = encInfo
-        ? await downloadEncryptedMedia(mediaUrl, (encBuf) => decryptFile(encBuf, mimeType, encInfo))
+      const fileContent = encryptionInfo
+        ? await downloadEncryptedMedia(mediaUrl, (encBuf) =>
+            decryptFile(encBuf, mimeType, encryptionInfo)
+          )
         : await downloadMedia(mediaUrl);
 
       const text = fileContent.text();
       setTextViewer(true);
       return text;
-    }, [mx, useAuthentication, mimeType, encInfo, url])
+    }, [mx, useAuthentication, mimeType, encryptionInfo, url])
   );
 
   return (
@@ -148,10 +146,16 @@ export type ReadPdfFileProps = {
   body: string;
   mimeType: string;
   url: string;
-  encInfo?: EncryptedAttachmentInfo;
+  encryptionInfo?: EncryptedAttachmentInfo;
   renderViewer: (props: RenderPdfViewerProps) => ReactNode;
 };
-export function ReadPdfFile({ body, mimeType, url, encInfo, renderViewer }: ReadPdfFileProps) {
+export function ReadPdfFile({
+  body,
+  mimeType,
+  url,
+  encryptionInfo,
+  renderViewer,
+}: ReadPdfFileProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
   const [pdfViewer, setPdfViewer] = useState(false);
@@ -159,12 +163,14 @@ export function ReadPdfFile({ body, mimeType, url, encInfo, renderViewer }: Read
   const [pdfState, loadPdf] = useAsyncCallback(
     useCallback(async () => {
       const mediaUrl = mxcUrlToHttp(mx, url, useAuthentication) ?? url;
-      const fileContent = encInfo
-        ? await downloadEncryptedMedia(mediaUrl, (encBuf) => decryptFile(encBuf, mimeType, encInfo))
+      const fileContent = encryptionInfo
+        ? await downloadEncryptedMedia(mediaUrl, (encBuf) =>
+            decryptFile(encBuf, mimeType, encryptionInfo)
+          )
         : await downloadMedia(mediaUrl);
       setPdfViewer(true);
       return URL.createObjectURL(fileContent);
-    }, [mx, url, useAuthentication, mimeType, encInfo])
+    }, [mx, url, useAuthentication, mimeType, encryptionInfo])
   );
 
   return (
@@ -212,23 +218,25 @@ export type DownloadFileProps = {
   mimeType: string;
   url: string;
   info: FileInfo;
-  encInfo?: EncryptedAttachmentInfo;
+  encryptionInfo?: EncryptedAttachmentInfo;
 };
-export function DownloadFile({ body, mimeType, url, info, encInfo }: DownloadFileProps) {
+export function DownloadFile({ body, mimeType, url, info, encryptionInfo }: DownloadFileProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
 
   const [downloadState, download] = useAsyncCallback(
     useCallback(async () => {
       const mediaUrl = mxcUrlToHttp(mx, url, useAuthentication) ?? url;
-      const fileContent = encInfo
-        ? await downloadEncryptedMedia(mediaUrl, (encBuf) => decryptFile(encBuf, mimeType, encInfo))
+      const fileContent = encryptionInfo
+        ? await downloadEncryptedMedia(mediaUrl, (encBuf) =>
+            decryptFile(encBuf, mimeType, encryptionInfo)
+          )
         : await downloadMedia(mediaUrl);
 
       const fileURL = URL.createObjectURL(fileContent);
       FileSaver.saveAs(fileURL, body);
       return fileURL;
-    }, [mx, url, useAuthentication, mimeType, encInfo, body])
+    }, [mx, url, useAuthentication, mimeType, encryptionInfo, body])
   );
 
   return downloadState.status === AsyncStatus.Error ? (

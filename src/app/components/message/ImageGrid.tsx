@@ -140,9 +140,9 @@ export function ImageGrid({ contents, autoPlay }: ImageGridProps) {
   const galleryItems: ImageViewerGalleryItem[] = useMemo(
     () =>
       cells.map((content) => ({
-        alt: content.body || 'Image',
+        alt: content.filename || content.body || 'Image',
         mxcUrl: content.file?.url ?? content.url,
-        encInfo: content.file,
+        encryptionInfo: content.file,
         mimeType: content.info?.mimetype,
       })),
     [cells]
@@ -180,11 +180,12 @@ export function ImageGrid({ contents, autoPlay }: ImageGridProps) {
           // eslint-disable-next-line react/no-array-index-key
           <div key={idx} className={cellClassName}>
             <ImageContentView
-              body={content.body || 'Image'}
+              body={content.body || content.filename || 'Image'}
+              filename={content.filename}
               info={content.info}
               mimeType={content.info?.mimetype}
               url={mxcUrl}
-              encInfo={content.file}
+              encryptionInfo={content.file}
               autoPlay={autoPlay}
               markedAsSpoiler={content[MATRIX_SPOILER_PROPERTY_NAME]}
               spoilerReason={content[MATRIX_SPOILER_REASON_PROPERTY_NAME]}

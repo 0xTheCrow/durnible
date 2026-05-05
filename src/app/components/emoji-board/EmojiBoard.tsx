@@ -40,7 +40,6 @@ import { isUserId, mxcUrlToHttp } from '../../utils/matrix';
 import { editableActiveElement, targetFromEvent } from '../../utils/dom';
 import type { UseAsyncSearchOptions } from '../../hooks/useAsyncSearch';
 import { useAsyncSearch } from '../../hooks/useAsyncSearch';
-import { useThrottle } from '../../hooks/useThrottle';
 import { addRecentEmoji } from '../../plugins/recent-emoji';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
 import type { ImagePack, PackImageReader } from '../../plugins/custom-emoji';
@@ -63,6 +62,7 @@ import {
   NoStickerPacks,
   createPreviewDataAtom,
   Preview,
+  EmojiHoverTooltip,
   EmojiItem,
   StickerItem,
   CustomEmojiItem,
@@ -85,6 +85,15 @@ import { VirtualTile } from '../virtualizer';
 const RECENT_GROUP_ID = 'recent_group';
 const FAVORITES_GROUP_ID = 'favorites_group';
 const SEARCH_GROUP_ID = 'search_group';
+
+const compareByPackOrder = (orderMap: Map<string, number>, aId: string, bId: string): number => {
+  const ai = orderMap.get(aId);
+  const bi = orderMap.get(bId);
+  if (ai !== undefined && bi !== undefined) return ai - bi;
+  if (ai !== undefined) return -1;
+  if (bi !== undefined) return 1;
+  return aId.localeCompare(bId);
+};
 
 type EmojiGroupItem = {
   id: string;
@@ -363,9 +372,7 @@ function EmojiSidebar({
             : b.type === 'favorites'
             ? FAVORITES_GROUP_ID
             : b.pack.id;
-        const ai = orderMap.get(aId) ?? Infinity;
-        const bi = orderMap.get(bId) ?? Infinity;
-        return ai - bi;
+        return compareByPackOrder(orderMap, aId, bId);
       });
     }
     return items;
@@ -618,9 +625,7 @@ function StickerSidebar({
       items.sort((a, b) => {
         const aId = a.type === 'favorites' ? FAVORITES_GROUP_ID : a.pack.id;
         const bId = b.type === 'favorites' ? FAVORITES_GROUP_ID : b.pack.id;
-        const ai = orderMap.get(aId) ?? Infinity;
-        const bi = orderMap.get(bId) ?? Infinity;
-        return ai - bi;
+        return compareByPackOrder(orderMap, aId, bId);
       });
     }
     return items;
@@ -731,33 +736,46 @@ function EmojiGroupHolder({
 }: EmojiGroupHolderProps) {
   const setPreviewData = useSetAtom(previewAtom);
 
-  const handleEmojiPreview = useCallback(
-    (element: HTMLButtonElement) => {
-      const emojiInfo = getEmojiItemInfo(element);
-      if (!emojiInfo) return;
+  const [hoverState, setHoverState] = useState<{
+    shortcode: string;
+    rect: DOMRect;
+  } | null>(null);
+  const lastHoverTargetRef = useRef<HTMLButtonElement | null>(null);
 
-      setPreviewData({
-        key: emojiInfo.data,
-        shortcode: emojiInfo.shortcode,
-      });
-    },
-    [setPreviewData]
-  );
-
-  const throttleEmojiHover = useThrottle(handleEmojiPreview, {
-    wait: 200,
-    immediate: true,
-  });
+  const clearHover = () => {
+    if (!lastHoverTargetRef.current) return;
+    lastHoverTargetRef.current = null;
+    setHoverState(null);
+  };
 
   const handleEmojiHover: MouseEventHandler = (evt) => {
     const targetEl = targetFromEvent(evt.nativeEvent, 'button') as HTMLButtonElement | undefined;
-    if (!targetEl) return;
-    throttleEmojiHover(targetEl);
+    if (!targetEl) {
+      clearHover();
+      return;
+    }
+    if (lastHoverTargetRef.current === targetEl) return;
+    const emojiInfo = getEmojiItemInfo(targetEl);
+    if (!emojiInfo) return;
+    lastHoverTargetRef.current = targetEl;
+    setHoverState({
+      shortcode: emojiInfo.shortcode,
+      rect: targetEl.getBoundingClientRect(),
+    });
   };
 
   const handleEmojiFocus: FocusEventHandler = (evt) => {
     const targetEl = evt.target as HTMLButtonElement;
-    handleEmojiPreview(targetEl);
+    const emojiInfo = getEmojiItemInfo(targetEl);
+    if (!emojiInfo) return;
+    setPreviewData({
+      key: emojiInfo.data,
+      shortcode: emojiInfo.shortcode,
+    });
+  };
+
+  const clearPreview = () => {
+    setPreviewData(undefined);
   };
 
   return (
@@ -766,16 +784,17 @@ function EmojiGroupHolder({
         onClick={onGroupItemClick}
         onContextMenu={onGroupItemContextMenu}
         onMouseMove={handleEmojiHover}
+        onMouseLeave={clearHover}
         onFocus={handleEmojiFocus}
+        onBlur={clearPreview}
         direction="Column"
       >
         {children}
       </Box>
+      {hoverState && <EmojiHoverTooltip shortcode={hoverState.shortcode} rect={hoverState.rect} />}
     </Scroll>
   );
 }
-
-const DefaultEmojiPreview: PreviewData = { key: '🙂', shortcode: 'slight_smile' };
 
 const SEARCH_OPTIONS: UseAsyncSearchOptions = {
   limit: 1000,
@@ -793,6 +812,7 @@ type EmojiBoardProps = {
   onClose: () => void;
   onBackClick?: () => void;
   returnFocusOnDeactivate?: boolean;
+  handleOutsideClick?: boolean;
   onEmojiSelect?: (unicode: string, shortcode: string) => void;
   onCustomEmojiSelect?: (mxc: string, shortcode: string) => void;
   onStickerSelect?: (mxc: string, shortcode: string, label: string) => void;
@@ -807,6 +827,7 @@ export function EmojiBoard({
   onClose,
   onBackClick,
   returnFocusOnDeactivate,
+  handleOutsideClick = true,
   onEmojiSelect,
   onCustomEmojiSelect,
   onStickerSelect,
@@ -816,15 +837,13 @@ export function EmojiBoard({
   const mx = useMatrixClient();
   const isMobile = useScreenSize() !== ScreenSize.Desktop;
   const [emojiSearchAutoFocusMobile] = useSetting(settingsAtom, 'emojiSearchAutoFocusMobile');
-  const searchAutoFocus = !isMobile || emojiSearchAutoFocusMobile;
+  const [emojiSearchAutoFocusDesktop] = useSetting(settingsAtom, 'emojiSearchAutoFocusDesktop');
+  const searchAutoFocus = isMobile ? emojiSearchAutoFocusMobile : emojiSearchAutoFocusDesktop;
 
   const emojiTab = tab === EmojiBoardTab.Emoji;
   const usage = emojiTab ? ImageUsage.Emoticon : ImageUsage.Sticker;
 
-  const previewAtom = useMemo(
-    () => createPreviewDataAtom(emojiTab ? DefaultEmojiPreview : undefined),
-    [emojiTab]
-  );
+  const previewAtom = useMemo(() => createPreviewDataAtom(), []);
   const activeGroupIdAtom = useMemo(() => atom<string | undefined>(undefined), []);
   const setActiveGroupId = useSetAtom(activeGroupIdAtom);
   const rawImagePacks = useRelevantImagePacks(usage, imagePackRooms);
@@ -836,11 +855,7 @@ export function EmojiBoard({
   const imagePacks = useMemo(() => {
     if (packOrder.length === 0) return rawImagePacks;
     const orderMap = new Map(packOrder.map((id, i) => [id, i]));
-    return [...rawImagePacks].sort((a, b) => {
-      const ai = orderMap.get(a.id) ?? Infinity;
-      const bi = orderMap.get(b.id) ?? Infinity;
-      return ai - bi;
-    });
+    return [...rawImagePacks].sort((a, b) => compareByPackOrder(orderMap, a.id, b.id));
   }, [rawImagePacks, packOrder]);
 
   const [emojiGroupItems, stickerGroupItems] = useGroups(
@@ -1012,7 +1027,7 @@ export function EmojiBoard({
           returnFocusOnDeactivate,
           initialFocus: false,
           onDeactivate: onClose,
-          clickOutsideDeactivates: true,
+          clickOutsideDeactivates: handleOutsideClick,
           allowOutsideClick: true,
           isKeyForward: (evt: KeyboardEvent) =>
             !editableActiveElement() && isKeyHotkey(['arrowdown', 'arrowright'], evt),

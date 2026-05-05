@@ -17,7 +17,7 @@ import type { HttpApiEventHandlerMap, MatrixClient } from 'matrix-js-sdk';
 import { HttpApiEvent } from 'matrix-js-sdk';
 import FocusTrap from 'focus-trap-react';
 import type { MouseEventHandler, ReactNode } from 'react';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useAtomValue } from 'jotai';
 import {
   clearCacheAndReload,
@@ -39,6 +39,7 @@ import { stopPropagation } from '../../utils/keyboard';
 import { AuthMetadataProvider } from '../../hooks/useAuthMetadata';
 import { getFallbackSession } from '../../state/sessions';
 import { overlayVisibleAtom, useReadinessGate } from '../../state/readiness';
+import { logStartupSummary, startupMark } from '../../utils/startupPerf';
 
 function ClientRootOptions({ mx }: { mx?: MatrixClient }) {
   const [menuAnchor, setMenuAnchor] = useState<RectCords>();
@@ -140,6 +141,7 @@ export const isChunkLoadError = (err: Error) =>
 
 export function ClientRoot({ children }: ClientRootProps) {
   const [loading, setLoading] = useState(true);
+  const startupLoggedRef = useRef(false);
   const { baseUrl } = getFallbackSession() ?? {};
 
   const [loadState, loadMatrix] = useAsyncCallback<MatrixClient, Error, []>(
@@ -174,6 +176,11 @@ export function ClientRoot({ children }: ClientRootProps) {
     mx,
     useCallback((state) => {
       if (state === 'PREPARED') {
+        if (!startupLoggedRef.current) {
+          startupLoggedRef.current = true;
+          startupMark('sync-prepared');
+          logStartupSummary();
+        }
         setLoading(false);
       }
     }, [])

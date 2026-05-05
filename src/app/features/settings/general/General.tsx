@@ -8,8 +8,8 @@ import { SequenceCard } from '../../../components/sequence-card';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
 import { SettingTile } from '../../../components/setting-tile';
-import { KeySymbol } from '../../../utils/key-symbol';
-import { isMacOS } from '../../../utils/user-agent';
+import { useFormattedKeybind } from '../../../state/hooks/keybinds';
+import { KeybindAction } from '../../../state/keybinds';
 import type { Theme } from '../../../hooks/useTheme';
 import {
   DarkTheme,
@@ -160,6 +160,10 @@ function Appearance() {
     settingsAtom,
     'emojiSearchAutoFocusMobile'
   );
+  const [emojiSearchAutoFocusDesktop, setEmojiSearchAutoFocusDesktop] = useSetting(
+    settingsAtom,
+    'emojiSearchAutoFocusDesktop'
+  );
 
   return (
     <Box direction="Column" gap="100">
@@ -200,18 +204,38 @@ function Appearance() {
         />
       </SequenceCard>
 
-      <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
+      <SequenceCard
+        className={SequenceCardStyle}
+        variant="SurfaceVariant"
+        direction="Column"
+        gap="400"
+      >
         <SettingTile
-          title="Emoji Search Auto Focus on Mobile"
-          description="Focus the emoji board search input when opened on mobile."
-          after={
-            <Switch
-              variant="Primary"
-              value={emojiSearchAutoFocusMobile}
-              onChange={setEmojiSearchAutoFocusMobile}
-            />
-          }
+          title="Emoji Search Auto Focus"
+          description="Focus the emoji board search input when opened."
         />
+        <Box direction="Column" gap="100">
+          <SettingTile
+            title="Desktop"
+            after={
+              <Switch
+                variant="Primary"
+                value={emojiSearchAutoFocusDesktop}
+                onChange={setEmojiSearchAutoFocusDesktop}
+              />
+            }
+          />
+          <SettingTile
+            title="Mobile"
+            after={
+              <Switch
+                variant="Primary"
+                value={emojiSearchAutoFocusMobile}
+                onChange={setEmojiSearchAutoFocusMobile}
+              />
+            }
+          />
+        </Box>
       </SequenceCard>
 
       <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
@@ -245,7 +269,7 @@ function Editor() {
   const [enterForNewline, setEnterForNewline] = useSetting(settingsAtom, 'enterForNewline');
   const [isMarkdown, setIsMarkdown] = useSetting(settingsAtom, 'isMarkdown');
   const [hideActivity, setHideActivity] = useSetting(settingsAtom, 'hideActivity');
-  const [alternateInput, setAlternateInput] = useSetting(settingsAtom, 'alternateInput');
+  const sendKey = useFormattedKeybind(KeybindAction.ComposeSend);
 
   return (
     <Box direction="Column" gap="100">
@@ -253,9 +277,7 @@ function Editor() {
       <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
         <SettingTile
           title="ENTER for Newline"
-          description={`Use ${
-            isMacOS() ? KeySymbol.Command : 'Ctrl'
-          } + ENTER to send message and ENTER for newline.`}
+          description={`Use ${sendKey} to send message and ENTER for newline.`}
           after={<Switch variant="Primary" value={enterForNewline} onChange={setEnterForNewline} />}
         />
       </SequenceCard>
@@ -270,13 +292,6 @@ function Editor() {
           title="Hide Typing & Read Receipts"
           description="Turn off both typing status and read receipts to keep your activity private."
           after={<Switch variant="Primary" value={hideActivity} onChange={setHideActivity} />}
-        />
-      </SequenceCard>
-      <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
-        <SettingTile
-          title="Alternate Message Input (very experimental)"
-          description="Use a simple text input instead of the rich text editor."
-          after={<Switch variant="Primary" value={alternateInput} onChange={setAlternateInput} />}
         />
       </SequenceCard>
     </Box>

@@ -1,12 +1,10 @@
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import React, { useCallback, useEffect } from 'react';
-import type { Editor } from 'slate';
 import { Avatar, Icon, Icons, MenuItem, Text } from 'folds';
 import type { MatrixClient } from 'matrix-js-sdk';
 import { JoinRule } from 'matrix-js-sdk';
 import { useAtomValue } from 'jotai';
 
-import { createMentionElement, moveCursor, replaceWithElement } from '../utils';
 import { getDirectRoomAvatarUrl } from '../../../utils/room';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import type { AutocompleteQuery } from './autocompleteQuery';
@@ -20,7 +18,6 @@ import { mDirectAtom } from '../../../state/mDirectList';
 import { allRoomsAtom } from '../../../state/room-list/roomList';
 import { factoryRoomIdByActivity } from '../../../utils/sort';
 import { RoomAvatar, RoomIcon } from '../../room-avatar';
-import { getViaServers } from '../../../plugins/via-servers';
 
 type MentionAutoCompleteHandler = (roomAliasOrId: string, name: string) => void;
 
@@ -61,11 +58,9 @@ function UnknownRoomMentionItem({
 }
 
 type RoomMentionAutocompleteProps = {
-  roomId: string;
-  editor: Editor;
   query: AutocompleteQuery<string>;
   onClose: () => void;
-  onSelect?: (roomAliasOrId: string, name: string) => void;
+  onSelect: (roomAliasOrId: string, name: string) => void;
 };
 
 const SEARCH_OPTIONS: UseAsyncSearchOptions = {
@@ -75,8 +70,6 @@ const SEARCH_OPTIONS: UseAsyncSearchOptions = {
 };
 
 export function RoomMentionAutocomplete({
-  roomId,
-  editor,
   query,
   onClose,
   onSelect,
@@ -109,22 +102,7 @@ export function RoomMentionAutocomplete({
   }, [query.text, search, resetSearch]);
 
   const handleAutocomplete: MentionAutoCompleteHandler = (roomAliasOrId, name) => {
-    if (onSelect) {
-      onSelect(roomAliasOrId, name);
-      onClose();
-      return;
-    }
-    const mentionRoom = mx.getRoom(roomAliasOrId);
-    const viaServers = mentionRoom ? getViaServers(mentionRoom) : undefined;
-    const mentionEl = createMentionElement(
-      roomAliasOrId,
-      name.startsWith('#') ? name : `#${name}`,
-      roomId === roomAliasOrId || mx.getRoom(roomId)?.getCanonicalAlias() === roomAliasOrId,
-      undefined,
-      viaServers
-    );
-    replaceWithElement(editor, query.range, mentionEl);
-    moveCursor(editor, true);
+    onSelect(roomAliasOrId, name);
     onClose();
   };
 

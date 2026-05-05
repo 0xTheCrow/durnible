@@ -1,6 +1,5 @@
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import React, { useEffect } from 'react';
-import type { Editor } from 'slate';
 import { Avatar, Icon, Icons, MenuItem, Text } from 'folds';
 import type { MatrixClient, Room, RoomMember } from 'matrix-js-sdk';
 
@@ -11,7 +10,6 @@ import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import type { SearchItemStrGetter, UseAsyncSearchOptions } from '../../../hooks/useAsyncSearch';
 import { useAsyncSearch } from '../../../hooks/useAsyncSearch';
 import { onTabPress } from '../../../utils/keyboard';
-import { createMentionElement, moveCursor, replaceWithElement } from '../utils';
 import { useKeyDown } from '../../../hooks/useKeyDown';
 import { getMxIdLocalPart, getMxIdServer, isUserId } from '../../../utils/matrix';
 import { getMemberDisplayName, getMemberSearchStr } from '../../../utils/room';
@@ -61,10 +59,9 @@ function UnknownMentionItem({
 
 type UserMentionAutocompleteProps = {
   room: Room;
-  editor: Editor;
   query: AutocompleteQuery<string>;
   onClose: () => void;
-  onSelect?: (userId: string, name: string) => void;
+  onSelect: (userId: string, name: string) => void;
 };
 
 const withAllowedMembership = (member: RoomMember): boolean =>
@@ -83,7 +80,6 @@ const getRoomMemberStr: SearchItemStrGetter<RoomMember> = (m, query) =>
 
 export function UserMentionAutocomplete({
   room,
-  editor,
   query,
   onClose,
   onSelect,
@@ -105,18 +101,7 @@ export function UserMentionAutocomplete({
   }, [query.text, search, resetSearch]);
 
   const handleAutocomplete: MentionAutoCompleteHandler = (uId, name) => {
-    if (onSelect) {
-      onSelect(uId, name);
-      onClose();
-      return;
-    }
-    const mentionEl = createMentionElement(
-      uId,
-      name.startsWith('@') ? name : `@${name}`,
-      mx.getUserId() === uId || roomAliasOrId === uId
-    );
-    replaceWithElement(editor, query.range, mentionEl);
-    moveCursor(editor, true);
+    onSelect(uId, name);
     onClose();
   };
 
