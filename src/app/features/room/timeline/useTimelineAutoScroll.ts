@@ -99,7 +99,17 @@ export function useTimelineAutoScroll({
     setAtBottomState(value);
   }, []);
 
+  // Tracked anchor for ResizeObserver-driven re-snap. Only event/marker kinds
+  // get tracked; bottom and free are no-ops here so the bottom-pin path stays
+  // event-driven.
+  const trackedAnchorRef = useRef<ScrollAnchor>({ kind: 'free' });
+
   const requestScrollToBottom = useCallback((smooth = true) => {
+    // Pinning to the bottom is incompatible with following a tracked event /
+    // marker anchor: without this, a stale anchor (e.g., set by a prior reply
+    // jump) would re-apply on the next ResizeObserver tick and yank the scroll
+    // back to the old target.
+    trackedAnchorRef.current = { kind: 'free' };
     setScrollRequest({ smooth });
   }, []);
 
@@ -165,11 +175,6 @@ export function useTimelineAutoScroll({
       setAutoScrolling(true);
     }
   }, [scrollRequest]);
-
-  // Tracked anchor for ResizeObserver-driven re-snap. Only event/marker kinds
-  // get tracked; bottom and free are no-ops here so the bottom-pin path stays
-  // event-driven.
-  const trackedAnchorRef = useRef<ScrollAnchor>({ kind: 'free' });
 
   // Returns true if a scroll happened or is scheduled (element not yet in DOM
   // — the tracked anchor will re-apply when the resize observer fires after
