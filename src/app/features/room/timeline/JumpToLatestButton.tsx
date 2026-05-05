@@ -7,9 +7,11 @@ import { TimelineOverlay } from './TimelineOverlay';
 export type JumpToLatestButtonProps = {
   scrollRef: RefObject<HTMLDivElement>;
   // null when the caller has nothing to track (not live-linked, range not at
-  // newest, or empty range). In that case we don't observe anything and let
-  // the button surface based on the other gates (atBottom, autoScrolling).
-  lastMessageIndex: number | null;
+  // newest, or no rendered events). In that case we don't observe anything and
+  // let the button surface based on the other gates (atBottom, autoScrolling).
+  // Identified by event id rather than range index so that filtered events
+  // (redactions) don't leave us observing a detached node.
+  lastMessageId: string | null;
   atBottom: boolean;
   autoScrolling: boolean;
   onClick: () => void;
@@ -17,7 +19,7 @@ export type JumpToLatestButtonProps = {
 
 export function JumpToLatestButton({
   scrollRef,
-  lastMessageIndex,
+  lastMessageId,
   atBottom,
   autoScrolling,
   onClick,
@@ -26,14 +28,17 @@ export function JumpToLatestButton({
 
   useEffect(() => {
     const scrollEl = scrollRef.current;
-    if (!scrollEl || lastMessageIndex === null || lastMessageIndex < 0) {
+    if (!scrollEl || lastMessageId === null) {
       setLastMsgVisible(false);
       return undefined;
     }
     const lastEl = scrollEl.querySelector(
-      `[data-message-item="${lastMessageIndex}"]`
+      `[data-message-id="${CSS.escape(lastMessageId)}"]`
     ) as HTMLElement | null;
-    if (!lastEl) return undefined;
+    if (!lastEl) {
+      setLastMsgVisible(false);
+      return undefined;
+    }
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -46,7 +51,7 @@ export function JumpToLatestButton({
     );
     observer.observe(lastEl);
     return () => observer.disconnect();
-  }, [lastMessageIndex, scrollRef]);
+  }, [lastMessageId, scrollRef]);
 
   return (
     <TimelineOverlay

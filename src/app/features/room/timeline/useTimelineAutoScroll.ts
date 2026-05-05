@@ -26,6 +26,8 @@ export type SetAnchorOptions = {
 // data-anchor-id attribute that callers add to the marker element.
 export const getMarkerAnchorId = (markerId: string): string => `marker:${markerId}`;
 
+export const NEW_MESSAGES_DIVIDER_TOP_OFFSET_FRACTION = 0.12;
+
 const findAnchorElement = (
   scrollElement: HTMLElement,
   anchor: Extract<ScrollAnchor, { kind: 'event' | 'marker' }>

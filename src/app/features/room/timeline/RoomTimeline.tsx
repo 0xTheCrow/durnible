@@ -108,7 +108,11 @@ import {
 import { useTheme } from '../../../hooks/useTheme';
 import { useRoomCreatorsTag } from '../../../hooks/useRoomCreatorsTag';
 import { usePowerLevelTags } from '../../../hooks/usePowerLevelTags';
-import { getMarkerAnchorId, useTimelineAutoScroll } from './useTimelineAutoScroll';
+import {
+  getMarkerAnchorId,
+  NEW_MESSAGES_DIVIDER_TOP_OFFSET_FRACTION,
+  useTimelineAutoScroll,
+} from './useTimelineAutoScroll';
 import { JumpToLatestButton } from './JumpToLatestButton';
 import { TimelineOverlay } from './TimelineOverlay';
 
@@ -587,12 +591,20 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
     )
   );
 
+  const willScrollToReadMarkerRef = useRef(willScrollToReadMarker);
+  willScrollToReadMarkerRef.current = willScrollToReadMarker;
+
   useEffect(() => {
     if (eventId) {
       handleOpenEvent(eventId, eventId !== readUptoEventIdRef.current);
     } else {
       setTimeline(getInitialTimeline(room));
-      requestScrollToBottom(false);
+      // The new-messages anchor effect handles scroll placement when there's
+      // an unread divider. Skipping requestScrollToBottom here prevents that
+      // anchor from being silently overridden in the next commit.
+      if (!willScrollToReadMarkerRef.current) {
+        requestScrollToBottom(false);
+      }
     }
   }, [eventId, handleOpenEvent, room, requestScrollToBottom, readUptoEventIdRef]);
 
@@ -610,7 +622,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
       kind: 'marker',
       markerId: 'unread',
       align: 'start',
-      offset: Math.round(window.innerHeight * 0.12),
+      offset: Math.round(window.innerHeight * NEW_MESSAGES_DIVIDER_TOP_OFFSET_FRACTION),
     });
   }, [unreadInfo, setAnchor]);
 
@@ -774,6 +786,14 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
   };
 
   const timelineItems = buildTimelineItems();
+
+  const lastRenderedEventId = (() => {
+    for (let i = timelineItems.length - 1; i >= 0; i -= 1) {
+      const item = timelineItems[i];
+      if (item.type === 'event') return item.mEventId;
+    }
+    return null;
+  })();
 
   // Unused value; setter call forces a rerender after grouping changes.
   const [, setLastDecryptedId] = useState<string | null>(null);
@@ -1056,13 +1076,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
         </Scroll>
         <JumpToLatestButton
           scrollRef={scrollRef}
-          lastMessageIndex={
-            liveTimelineLinked &&
-            rangeAtNewest &&
-            timeline.range.newest - 1 >= timeline.range.oldest
-              ? timeline.range.newest - 1
-              : null
-          }
+          lastMessageId={liveTimelineLinked && rangeAtNewest ? lastRenderedEventId : null}
           atBottom={atBottom}
           autoScrolling={autoScrolling}
           onClick={handleJumpToLatest}

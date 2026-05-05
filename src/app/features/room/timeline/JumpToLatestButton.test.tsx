@@ -16,31 +16,37 @@ import {
 
 let originalIO: typeof IntersectionObserver | undefined;
 
-const LAST_INDEX = 2;
+const MSG_A_ID = '$msg-a:example.com';
+const MSG_B_ID = '$msg-b:example.com';
+const MSG_C_ID = '$msg-c:example.com';
 
 function Harness({
   room,
-  lastMessageIndex = LAST_INDEX,
+  lastMessageId = MSG_C_ID,
+  renderRedactedLast = false,
 }: {
   room: Room;
-  lastMessageIndex?: number | null;
+  lastMessageId?: string | null;
+  renderRedactedLast?: boolean;
 }) {
   const hook = useTimelineAutoScroll({ room, viewingLatest: true });
   return (
     <div ref={hook.scrollRef} data-testid="timeline-scroll">
-      <div data-message-item={0} data-testid="msg-0">
-        msg 0
+      <div data-message-id={MSG_A_ID} data-testid="msg-0">
+        msg A
       </div>
-      <div data-message-item={1} data-testid="msg-1">
-        msg 1
+      <div data-message-id={MSG_B_ID} data-testid="msg-1">
+        msg B
       </div>
-      <div data-message-item={LAST_INDEX} data-testid="last-msg">
-        msg {LAST_INDEX}
-      </div>
+      {!renderRedactedLast && (
+        <div data-message-id={MSG_C_ID} data-testid="last-msg">
+          msg C
+        </div>
+      )}
       <span ref={hook.atBottomAnchorRef} data-testid="bottom-sentinel" />
       <JumpToLatestButton
         scrollRef={hook.scrollRef}
-        lastMessageIndex={lastMessageIndex}
+        lastMessageId={lastMessageId}
         atBottom={hook.atBottom}
         autoScrolling={hook.autoScrolling}
         onClick={() => undefined}
@@ -145,9 +151,9 @@ describe('JumpToLatestButton', () => {
     expect(getVisibility(container)).toBe('true');
   });
 
-  it('shows when lastMessageIndex is null and the user is not at the bottom', () => {
+  it('shows when lastMessageId is null and the user is not at the bottom', () => {
     const room = createEventEmitterRoom('!test:example.com');
-    const { container } = render(<Harness room={room} lastMessageIndex={null} />);
+    const { container } = render(<Harness room={room} lastMessageId={null} />);
     const scrollEl = container.querySelector('[data-testid="timeline-scroll"]') as HTMLDivElement;
     const sentinel = container.querySelector('[data-testid="bottom-sentinel"]') as HTMLElement;
     stubScrollGeometry(scrollEl, { scrollHeight: 1000, offsetHeight: 400 });
@@ -176,6 +182,49 @@ describe('JumpToLatestButton', () => {
     act(() => {
       findObserverOf(sentinel)?.trigger(true);
       findObserverOf(lastEl)?.trigger(true);
+    });
+    expect(getVisibility(container)).toBe('false');
+  });
+
+  // When the most recent message is redacted, the parent filters it out and
+  // passes the previous message's id as the new last. The button must rebind
+  // its observer to the new last element, otherwise the user can scroll up
+  // (button shows) and back down (button stays visible) because the observer
+  // is stuck on a detached node.
+  it('rebinds to the new last message after the previous last is filtered out (redaction)', () => {
+    const room = createEventEmitterRoom('!test:example.com');
+    const { container, rerender } = render(<Harness room={room} />);
+    const scrollEl = container.querySelector('[data-testid="timeline-scroll"]') as HTMLDivElement;
+    const originalLast = container.querySelector('[data-testid="last-msg"]') as HTMLElement;
+    const sentinel = container.querySelector('[data-testid="bottom-sentinel"]') as HTMLElement;
+    stubScrollGeometry(scrollEl, { scrollHeight: 500, offsetHeight: 400 });
+
+    act(() => {
+      findObserverOf(sentinel)?.trigger(true);
+      findObserverOf(originalLast)?.trigger(true);
+    });
+    expect(getVisibility(container)).toBe('false');
+
+    // Simulate the original last being redacted: parent stops rendering it and
+    // passes the previous message's id as the new last.
+    rerender(<Harness room={room} lastMessageId={MSG_B_ID} renderRedactedLast />);
+
+    const newLast = container.querySelector(`[data-message-id="${MSG_B_ID}"]`) as HTMLElement;
+    expect(newLast).not.toBeNull();
+
+    // User scrolls up: sentinel and the new last both leave view. Button shows.
+    act(() => {
+      findObserverOf(sentinel)?.trigger(false);
+      findObserverOf(newLast)?.trigger(false);
+    });
+    expect(getVisibility(container)).toBe('true');
+
+    // User scrolls back down: sentinel and the new last intersect again. The
+    // observer must be on the new element for this to flip lastMsgVisible
+    // back to true and hide the button.
+    act(() => {
+      findObserverOf(sentinel)?.trigger(true);
+      findObserverOf(newLast)?.trigger(true);
     });
     expect(getVisibility(container)).toBe('false');
   });
