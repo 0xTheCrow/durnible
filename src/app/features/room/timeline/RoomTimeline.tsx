@@ -48,7 +48,7 @@ import {
   decryptAllTimelineEvent,
   getEditedEvent,
   getEventReactions,
-  isInvisibleTimelineEvent,
+  isModifierTimelineEvent,
 } from '../../../utils/room';
 import { willEventRender } from './willEventRender';
 import { getRoomUnreadInfo, useTimelineReadMarker } from './useTimelineReadMarker';
@@ -257,7 +257,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
       const [tl, base] = getTimelineAndBaseIndex(timeline.linkedTimelines, i);
       if (!tl) continue;
       const evt = getTimelineEvent(tl, getTimelineRelativeIndex(i, base));
-      if (evt && !isInvisibleTimelineEvent(evt)) return false;
+      if (evt && !isModifierTimelineEvent(evt)) return false;
     }
     return true;
   })();
@@ -321,15 +321,16 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
     room,
     useCallback(
       (mEvt: MatrixEvent) => {
-        // Invisible events (reactions, edits, redactions) produce no visible
-        // output. Shifting the range window for them drops an item from the top
+        // Modifier events (reactions, edits, redactions) don't take their own
+        // row in the rendered list — they update existing messages in place.
+        // Shifting the range window for them drops an item from the top
         // of the rendered list without adding anything at the bottom, causing
         // images to unmount and messages to jump upward. Skip the range shift
         // for these events; a plain re-render is enough to update relation data.
-        const isInvisible = isInvisibleTimelineEvent(mEvt);
+        const isModifier = isModifierTimelineEvent(mEvt);
 
         if (atBottomRef.current) {
-          if (!isInvisible) {
+          if (!isModifier) {
             if (document.hasFocus() && (!unreadInfo || mEvt.getSender() === mx.getUserId())) {
               const evtRoomId = mEvt.getRoomId();
               if (evtRoomId) {

@@ -109,7 +109,7 @@ export const reactionOrEditEvent = (mEvent: MatrixEvent) => {
   return false;
 };
 
-export const isInvisibleTimelineEvent = (mEvent: MatrixEvent) =>
+export const isModifierTimelineEvent = (mEvent: MatrixEvent) =>
   reactionOrEditEvent(mEvent) || mEvent.isRedaction();
 
 export const getPollResponses = (timelineSet: EventTimelineSet, eventId: string) =>
