@@ -182,6 +182,17 @@ const setupVirtualKeyboard = () => {
     if (vv.height > maxSeenHeight) maxSeenHeight = vv.height;
     const keyboardOpen = vv.height < window.innerHeight || vv.height < maxSeenHeight;
     if (keyboardOpen) {
+      if (getSettings().altMobileKeyboardAdjustment) {
+        // vv.height is fractional, window.innerHeight is integer-rounded — strict
+        // equality misses cases where the browser resized natively but the values
+        // differ by <1px due to rounding.
+        if (Math.abs(vv.height - window.innerHeight) < 1) {
+          document.documentElement.style.removeProperty('--app-height');
+        } else {
+          document.documentElement.style.setProperty('--app-height', `${vv.height}px`);
+        }
+        return;
+      }
       // Skip if Brave (explicit check), or if the layout viewport already shrank
       // to match the visual viewport — both mean the browser handled the resize
       // natively and setting --app-height would cause a black content area.

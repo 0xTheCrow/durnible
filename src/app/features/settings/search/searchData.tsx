@@ -257,6 +257,16 @@ function PwaModeSetting() {
     />
   );
 }
+function AltMobileKeyboardAdjustmentSetting() {
+  const [value, setValue] = useSetting(settingsAtom, 'altMobileKeyboardAdjustment');
+  return (
+    <SettingTile
+      title="Alt Mobile Keyboard Adjustment"
+      description="Use an alternative method to calculate the software keyboard height. Try this if you see a large empty space when the keyboard opens on mobile."
+      after={<Switch variant="Primary" value={value} onChange={setValue} />}
+    />
+  );
+}
 
 // --- Appearance ---
 function ThemeSetting() {
@@ -571,6 +581,34 @@ export const settingsSearchData: SearchEntry[] = [
     pageName: 'General',
     sectionName: 'Advanced',
     Render: SwipeGesturesSetting,
+  },
+  {
+    id: 'alt-mobile-keyboard-adjustment',
+    title: 'Alt Mobile Keyboard Adjustment',
+    description:
+      'Use an alternative method to calculate the software keyboard height. Try this if you see a large empty space when the keyboard opens on mobile.',
+    keywords: [
+      'keyboard',
+      'mobile',
+      'virtual',
+      'software',
+      'soft',
+      'viewport',
+      'gap',
+      'empty',
+      'space',
+      'adjust',
+      'adjustment',
+      'alt',
+      'alternative',
+      'input',
+      'ios',
+      'android',
+    ],
+    page: SettingsPages.GeneralPage,
+    pageName: 'General',
+    sectionName: 'Advanced',
+    Render: AltMobileKeyboardAdjustmentSetting,
   },
   {
     id: 'pwa-mode',
