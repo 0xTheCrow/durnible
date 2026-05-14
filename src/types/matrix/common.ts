@@ -5,6 +5,8 @@ export const MATRIX_BLUR_HASH_PROPERTY_NAME = 'xyz.amorgan.blurhash';
 export const MATRIX_SPOILER_PROPERTY_NAME = 'page.codeberg.everypizza.msc4193.spoiler';
 export const MATRIX_SPOILER_REASON_PROPERTY_NAME =
   'page.codeberg.everypizza.msc4193.spoiler.reason';
+export const MATRIX_BATCH_ID_PROPERTY_NAME = 'com.durnible.batch_id';
+export const MATRIX_BATCH_INDEX_PROPERTY_NAME = 'com.durnible.batch_index';
 
 export type ImageInfo = {
   w?: number;
@@ -52,6 +54,8 @@ export type ImageContent = {
   file?: EncryptedFile;
   [MATRIX_SPOILER_PROPERTY_NAME]?: boolean;
   [MATRIX_SPOILER_REASON_PROPERTY_NAME]?: string;
+  [MATRIX_BATCH_ID_PROPERTY_NAME]?: string;
+  [MATRIX_BATCH_INDEX_PROPERTY_NAME]?: number;
 };
 
 export type VideoContent = {

@@ -29,27 +29,38 @@ export const MessageDeleteItem = as<
   {
     room: Room;
     mEvent: MatrixEvent;
+    groupedEventIds?: string[];
     onClose?: () => void;
   }
->(({ room, mEvent, onClose, ...props }, ref) => {
+>(({ room, mEvent, groupedEventIds, onClose, ...props }, ref) => {
   const mx = useMatrixClient();
   const setSelectionMode = useSetAtom(selectionModeAtom);
   const setSelectedIds = useSetAtom(selectedIdsAtom);
   const [open, setOpen] = useState(false);
 
+  const targetIds =
+    groupedEventIds && groupedEventIds.length > 1
+      ? groupedEventIds
+      : ([mEvent.getId()].filter(Boolean) as string[]);
+  const isGroup = targetIds.length > 1;
+
   const [deleteState, deleteMessage] = useAsyncCallback(
     useCallback(
-      (eventId: string, reason?: string) =>
-        mx.redactEvent(room.roomId, eventId, undefined, reason ? { reason } : undefined),
+      async (ids: string[], reason?: string) => {
+        await Promise.all(
+          ids.map((id) =>
+            mx.redactEvent(room.roomId, id, undefined, reason ? { reason } : undefined)
+          )
+        );
+      },
       [mx, room]
     )
   );
 
   const handleSubmit: FormEventHandler<HTMLFormElement> = (evt) => {
     evt.preventDefault();
-    const eventId = mEvent.getId();
     if (
-      !eventId ||
+      targetIds.length === 0 ||
       deleteState.status === AsyncStatus.Loading ||
       deleteState.status === AsyncStatus.Success
     )
@@ -57,7 +68,7 @@ export const MessageDeleteItem = as<
     const target = evt.target as HTMLFormElement | undefined;
     const reasonInput = target?.reasonInput as HTMLInputElement | undefined;
     const reason = reasonInput && reasonInput.value.trim();
-    deleteMessage(eventId, reason);
+    deleteMessage(targetIds, reason);
   };
 
   const handleClose = () => {
@@ -79,7 +90,7 @@ export const MessageDeleteItem = as<
           >
             <Box grow="Yes">
               <Text size="H4" data-testid="message-delete-dialog-title">
-                Delete Message
+                {isGroup ? `Delete ${targetIds.length} Images` : 'Delete Message'}
               </Text>
             </Box>
             <IconButton size="300" onClick={handleClose} radii="300">
@@ -95,7 +106,9 @@ export const MessageDeleteItem = as<
             gap="400"
           >
             <Text priority="400">
-              This action is irreversible! Are you sure that you want to delete this message?
+              {isGroup
+                ? `This action is irreversible! Are you sure that you want to delete all ${targetIds.length} images in this grid?`
+                : 'This action is irreversible! Are you sure that you want to delete this message?'}
             </Text>
             <Box direction="Column" gap="100">
               <Text size="L400">
@@ -111,7 +124,9 @@ export const MessageDeleteItem = as<
                   style={{ color: color.Critical.Main }}
                   size="T300"
                 >
-                  Failed to delete message! Please try again.
+                  {isGroup
+                    ? 'Failed to delete one or more images! Please try again.'
+                    : 'Failed to delete message! Please try again.'}
                 </Text>
               )}
             </Box>
@@ -136,10 +151,13 @@ export const MessageDeleteItem = as<
               variant="Secondary"
               fill="None"
               onClick={() => {
-                const eventId = mEvent.getId();
-                if (eventId) {
+                if (targetIds.length > 0) {
                   setSelectionMode(true);
-                  setSelectedIds((prev) => new Set(prev).add(eventId));
+                  setSelectedIds((prev) => {
+                    const next = new Set(prev);
+                    targetIds.forEach((id) => next.add(id));
+                    return next;
+                  });
                 }
                 handleClose();
               }}

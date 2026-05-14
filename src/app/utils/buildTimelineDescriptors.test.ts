@@ -1,7 +1,11 @@
 import { RelationType } from 'matrix-js-sdk';
 import { describe, it, expect, vi } from 'vitest';
 import type { TimelineEventInput, TimelineItem } from './buildTimelineDescriptors';
-import { buildTimelineDescriptors, IMAGE_GROUP_WINDOW_MS } from './buildTimelineDescriptors';
+import { buildTimelineDescriptors, IMAGE_GROUP_MAX_SIZE } from './buildTimelineDescriptors';
+import {
+  MATRIX_BATCH_ID_PROPERTY_NAME,
+  MATRIX_BATCH_INDEX_PROPERTY_NAME,
+} from '../../types/matrix/common';
 import { createMockMatrixEvent } from '../../test/mocks';
 
 const MY_USER = '@me:example.com';
@@ -40,17 +44,26 @@ function makeEvent(opts: {
   return { mEvent: mEvent as any, mEventId: opts.id, timelineSet: FAKE_TIMELINE_SET, item: 0 };
 }
 
-function makeImageEvent(opts: { id: string; sender?: string; ts?: number }): TimelineEventInput {
+function makeImageEvent(opts: {
+  id: string;
+  sender?: string;
+  ts?: number;
+  batchId?: string;
+  batchIndex?: number;
+}): TimelineEventInput {
+  const content: Record<string, unknown> = {
+    msgtype: 'm.image',
+    body: 'image.png',
+    url: `mxc://example.com/${opts.id}`,
+    info: { w: 800, h: 600, mimetype: 'image/png' },
+  };
+  if (opts.batchId !== undefined) content[MATRIX_BATCH_ID_PROPERTY_NAME] = opts.batchId;
+  if (opts.batchIndex !== undefined) content[MATRIX_BATCH_INDEX_PROPERTY_NAME] = opts.batchIndex;
   return makeEvent({
     id: opts.id,
     sender: opts.sender,
     ts: opts.ts,
-    content: {
-      msgtype: 'm.image',
-      body: 'image.png',
-      url: `mxc://example.com/${opts.id}`,
-      info: { w: 800, h: 600, mimetype: 'image/png' },
-    },
+    content,
   });
 }
 
@@ -388,11 +401,11 @@ describe('buildTimelineDescriptors', () => {
         | Extract<TimelineItem, { type: 'event' }>
         | undefined;
 
-    it('groups two consecutive images from the same sender within the window', () => {
+    it('groups two images sharing a batch_id', () => {
       const result = buildTimelineDescriptors(
         [
-          makeImageEvent({ id: '$A', sender: OTHER_USER, ts: 1000 }),
-          makeImageEvent({ id: '$B', sender: OTHER_USER, ts: 1000 + IMAGE_GROUP_WINDOW_MS / 2 }),
+          makeImageEvent({ id: '$A', sender: OTHER_USER, ts: 1000, batchId: 'b1', batchIndex: 0 }),
+          makeImageEvent({ id: '$B', sender: OTHER_USER, ts: 2000, batchId: 'b1', batchIndex: 1 }),
         ],
         undefined,
         MY_USER
@@ -404,29 +417,11 @@ describe('buildTimelineDescriptors', () => {
       expect(anchor?.groupedImages?.length).toBe(2);
     });
 
-    it('groups up to 6 images and stops at the cap', () => {
-      const events: TimelineEventInput[] = [];
-      for (let i = 0; i < 8; i += 1) {
-        events.push(
-          makeImageEvent({
-            id: `$img${i}`,
-            sender: OTHER_USER,
-            ts: 1000 + i * Math.floor(IMAGE_GROUP_WINDOW_MS / 2),
-          })
-        );
-      }
-      const result = buildTimelineDescriptors(events, undefined, MY_USER);
-      // First 6 are merged into $img0; $img6 starts a new group with $img7.
-      expect(types(result)).toEqual(['event:$img0', 'event:$img6']);
-      expect(findEvent(result, '$img0')?.groupedImages?.length).toBe(6);
-      expect(findEvent(result, '$img6')?.groupedImages?.length).toBe(2);
-    });
-
-    it('does not group images outside the window', () => {
+    it('does not group images with different batch_ids', () => {
       const result = buildTimelineDescriptors(
         [
-          makeImageEvent({ id: '$A', sender: OTHER_USER, ts: 1000 }),
-          makeImageEvent({ id: '$B', sender: OTHER_USER, ts: 1000 + IMAGE_GROUP_WINDOW_MS + 1 }),
+          makeImageEvent({ id: '$A', sender: OTHER_USER, ts: 1000, batchId: 'b1', batchIndex: 0 }),
+          makeImageEvent({ id: '$B', sender: OTHER_USER, ts: 1001, batchId: 'b2', batchIndex: 0 }),
         ],
         undefined,
         MY_USER
@@ -436,32 +431,11 @@ describe('buildTimelineDescriptors', () => {
       expect(findEvent(result, '$B')?.groupedImages).toBeUndefined();
     });
 
-    it('window slides across consecutive images (each within window of previous, total > window)', () => {
-      // Each gap is below the window, but A→C exceeds it. The rolling reference
-      // (previous image's ts, not the anchor's) keeps the group together.
-      const gap = Math.floor(IMAGE_GROUP_WINDOW_MS * 0.8);
+    it('does not group images that lack batch_id even with identical timestamps', () => {
       const result = buildTimelineDescriptors(
         [
           makeImageEvent({ id: '$A', sender: OTHER_USER, ts: 1000 }),
-          makeImageEvent({ id: '$B', sender: OTHER_USER, ts: 1000 + gap }),
-          makeImageEvent({ id: '$C', sender: OTHER_USER, ts: 1000 + gap * 2 }),
-        ],
-        undefined,
-        MY_USER
-      );
-      expect(types(result)).toEqual(['event:$A']);
-      expect(findEvent(result, '$A')?.groupedImages?.length).toBe(3);
-    });
-
-    it('does not group images from different senders', () => {
-      const result = buildTimelineDescriptors(
-        [
-          makeImageEvent({ id: '$A', sender: OTHER_USER, ts: 1000 }),
-          makeImageEvent({
-            id: '$B',
-            sender: MY_USER,
-            ts: 1000 + Math.floor(IMAGE_GROUP_WINDOW_MS / 2),
-          }),
+          makeImageEvent({ id: '$B', sender: OTHER_USER, ts: 1000 }),
         ],
         undefined,
         MY_USER
@@ -471,34 +445,19 @@ describe('buildTimelineDescriptors', () => {
       expect(findEvent(result, '$B')?.groupedImages).toBeUndefined();
     });
 
-    it('a non-image message between images breaks the group', () => {
+    it('groups images regardless of timestamp gap when batch_id matches', () => {
+      // Demonstrates that the timestamp window is no longer authoritative —
+      // a slow upload that lands seconds apart still groups if the sender
+      // tagged both events with the same batch_id.
       const result = buildTimelineDescriptors(
         [
-          makeImageEvent({ id: '$A', sender: OTHER_USER, ts: 1000 }),
-          makeEvent({ id: '$txt', sender: OTHER_USER, ts: 1000 + 1_000 }),
-          makeImageEvent({ id: '$B', sender: OTHER_USER, ts: 1000 + 2_000 }),
-        ],
-        undefined,
-        MY_USER
-      );
-      expect(types(result)).toEqual(['event:$A', 'event:$txt', 'event:$B']);
-      expect(findEvent(result, '$A')?.groupedImages).toBeUndefined();
-      expect(findEvent(result, '$B')?.groupedImages).toBeUndefined();
-    });
-
-    it('a reaction between images is invisible and does not break the group', () => {
-      const result = buildTimelineDescriptors(
-        [
-          makeImageEvent({ id: '$A', sender: OTHER_USER, ts: 1000 }),
-          makeEvent({
-            id: '$reaction',
-            isReaction: true,
-            ts: 1000 + Math.floor(IMAGE_GROUP_WINDOW_MS / 4),
-          }),
+          makeImageEvent({ id: '$A', sender: OTHER_USER, ts: 1000, batchId: 'b1', batchIndex: 0 }),
           makeImageEvent({
             id: '$B',
             sender: OTHER_USER,
-            ts: 1000 + Math.floor(IMAGE_GROUP_WINDOW_MS / 2),
+            ts: 1000 + 60_000, // 1 minute later
+            batchId: 'b1',
+            batchIndex: 1,
           }),
         ],
         undefined,
@@ -508,38 +467,113 @@ describe('buildTimelineDescriptors', () => {
       expect(findEvent(result, '$A')?.groupedImages?.length).toBe(2);
     });
 
-    it('does not group images that span a day boundary', () => {
+    it('caps a same-batch run at IMAGE_GROUP_MAX_SIZE and starts a new group with the overflow', () => {
+      const total = IMAGE_GROUP_MAX_SIZE + 2;
+      const events: TimelineEventInput[] = [];
+      for (let i = 0; i < total; i += 1) {
+        events.push(
+          makeImageEvent({
+            id: `$img${i}`,
+            sender: OTHER_USER,
+            ts: 1000 + i,
+            batchId: 'b1',
+            batchIndex: i,
+          })
+        );
+      }
+      const result = buildTimelineDescriptors(events, undefined, MY_USER);
+      // First IMAGE_GROUP_MAX_SIZE merge into $img0; the rest start a new group at $img{cap}.
+      expect(types(result)).toEqual(['event:$img0', `event:$img${IMAGE_GROUP_MAX_SIZE}`]);
+      expect(findEvent(result, '$img0')?.groupedImages?.length).toBe(IMAGE_GROUP_MAX_SIZE);
+      expect(findEvent(result, `$img${IMAGE_GROUP_MAX_SIZE}`)?.groupedImages?.length).toBe(
+        total - IMAGE_GROUP_MAX_SIZE
+      );
+    });
+
+    it('does not group images from different senders even when batch_id matches', () => {
+      // A sender check stays in place so a colliding/replayed batch_id from
+      // another user can never merge with the local user's batch.
       const result = buildTimelineDescriptors(
         [
-          makeImageEvent({ id: '$A', sender: OTHER_USER, ts: 1000 }),
-          // Within 10s but on the next calendar day → still must not merge.
-          makeImageEvent({ id: '$B', sender: OTHER_USER, ts: 1000 + ONE_DAY_MS }),
+          makeImageEvent({ id: '$A', sender: OTHER_USER, ts: 1000, batchId: 'b1', batchIndex: 0 }),
+          makeImageEvent({ id: '$B', sender: MY_USER, ts: 1001, batchId: 'b1', batchIndex: 1 }),
         ],
         undefined,
         MY_USER
       );
-      // The day-divider must still appear and the images must remain separate.
+      expect(types(result)).toEqual(['event:$A', 'event:$B']);
+      expect(findEvent(result, '$A')?.groupedImages).toBeUndefined();
+      expect(findEvent(result, '$B')?.groupedImages).toBeUndefined();
+    });
+
+    it('a non-image message between same-batch images breaks the group', () => {
+      const result = buildTimelineDescriptors(
+        [
+          makeImageEvent({ id: '$A', sender: OTHER_USER, ts: 1000, batchId: 'b1', batchIndex: 0 }),
+          makeEvent({ id: '$txt', sender: OTHER_USER, ts: 1500 }),
+          makeImageEvent({ id: '$B', sender: OTHER_USER, ts: 2000, batchId: 'b1', batchIndex: 1 }),
+        ],
+        undefined,
+        MY_USER
+      );
+      expect(types(result)).toEqual(['event:$A', 'event:$txt', 'event:$B']);
+      expect(findEvent(result, '$A')?.groupedImages).toBeUndefined();
+      expect(findEvent(result, '$B')?.groupedImages).toBeUndefined();
+    });
+
+    it('a reaction between same-batch images is invisible and does not break the group', () => {
+      const result = buildTimelineDescriptors(
+        [
+          makeImageEvent({ id: '$A', sender: OTHER_USER, ts: 1000, batchId: 'b1', batchIndex: 0 }),
+          makeEvent({ id: '$reaction', isReaction: true, ts: 1500 }),
+          makeImageEvent({ id: '$B', sender: OTHER_USER, ts: 2000, batchId: 'b1', batchIndex: 1 }),
+        ],
+        undefined,
+        MY_USER
+      );
+      expect(types(result)).toEqual(['event:$A']);
+      expect(findEvent(result, '$A')?.groupedImages?.length).toBe(2);
+    });
+
+    it('does not group same-batch images that span a day boundary', () => {
+      // Renderer constraint: a day-divider hidden inside a grid is the same
+      // UX problem regardless of how the group was formed.
+      const result = buildTimelineDescriptors(
+        [
+          makeImageEvent({ id: '$A', sender: OTHER_USER, ts: 1000, batchId: 'b1', batchIndex: 0 }),
+          makeImageEvent({
+            id: '$B',
+            sender: OTHER_USER,
+            ts: 1000 + ONE_DAY_MS,
+            batchId: 'b1',
+            batchIndex: 1,
+          }),
+        ],
+        undefined,
+        MY_USER
+      );
       expect(types(result)).toEqual(['event:$A', 'day-divider', 'event:$B']);
       expect(findEvent(result, '$A')?.groupedImages).toBeUndefined();
       expect(findEvent(result, '$B')?.groupedImages).toBeUndefined();
     });
 
-    it('groupedImages contains the image contents in chronological order', () => {
-      const step = Math.floor(IMAGE_GROUP_WINDOW_MS / 3);
+    it('grouped images render in batch_index order, not timeline order', () => {
+      // Same origin_server_ts on every event — homeserver tie-break could deliver
+      // them in any order. batch_index is the authority for visual ordering.
       const result = buildTimelineDescriptors(
         [
-          makeImageEvent({ id: '$A', sender: OTHER_USER, ts: 1000 }),
-          makeImageEvent({ id: '$B', sender: OTHER_USER, ts: 1000 + step }),
-          makeImageEvent({ id: '$C', sender: OTHER_USER, ts: 1000 + step * 2 }),
+          makeImageEvent({ id: '$A', sender: OTHER_USER, ts: 1000, batchId: 'b1', batchIndex: 2 }),
+          makeImageEvent({ id: '$B', sender: OTHER_USER, ts: 1000, batchId: 'b1', batchIndex: 0 }),
+          makeImageEvent({ id: '$C', sender: OTHER_USER, ts: 1000, batchId: 'b1', batchIndex: 1 }),
         ],
         undefined,
         MY_USER
       );
       const anchor = findEvent(result, '$A');
       expect(anchor?.groupedImages?.map((c) => c.url)).toEqual([
-        'mxc://example.com/$A',
         'mxc://example.com/$B',
         'mxc://example.com/$C',
+        'mxc://example.com/$A',
       ]);
     });
 
@@ -547,13 +581,12 @@ describe('buildTimelineDescriptors', () => {
       // The user has read up to $B, which is an absorbed image inside the
       // group anchored at $A. Reading any image in the group means the user
       // has seen the entire grid, so the divider should fire after the anchor.
-      const step = Math.floor(IMAGE_GROUP_WINDOW_MS / 3);
       const result = buildTimelineDescriptors(
         [
-          makeImageEvent({ id: '$A', sender: OTHER_USER, ts: 1000 }),
-          makeImageEvent({ id: '$B', sender: OTHER_USER, ts: 1000 + step }),
-          makeImageEvent({ id: '$C', sender: OTHER_USER, ts: 1000 + step * 2 }),
-          makeEvent({ id: '$D', sender: OTHER_USER, ts: 1000 + step * 2 + 60_000 }),
+          makeImageEvent({ id: '$A', sender: OTHER_USER, ts: 1000, batchId: 'b1', batchIndex: 0 }),
+          makeImageEvent({ id: '$B', sender: OTHER_USER, ts: 1100, batchId: 'b1', batchIndex: 1 }),
+          makeImageEvent({ id: '$C', sender: OTHER_USER, ts: 1200, batchId: 'b1', batchIndex: 2 }),
+          makeEvent({ id: '$D', sender: OTHER_USER, ts: 1200 + 60_000 }),
         ],
         '$B',
         MY_USER
@@ -567,12 +600,8 @@ describe('buildTimelineDescriptors', () => {
       // a following text message.
       const result = buildTimelineDescriptors(
         [
-          makeImageEvent({ id: '$A', sender: OTHER_USER, ts: 1000 }),
-          makeImageEvent({
-            id: '$B',
-            sender: OTHER_USER,
-            ts: 1000 + Math.floor(IMAGE_GROUP_WINDOW_MS / 2),
-          }),
+          makeImageEvent({ id: '$A', sender: OTHER_USER, ts: 1000, batchId: 'b1', batchIndex: 0 }),
+          makeImageEvent({ id: '$B', sender: OTHER_USER, ts: 1100, batchId: 'b1', batchIndex: 1 }),
           makeEvent({ id: '$txt', sender: OTHER_USER, ts: 1000 + 60_000 }),
         ],
         undefined,

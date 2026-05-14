@@ -61,6 +61,7 @@ type MemoizedTimelineEventProps = {
    * own content) and the renderer displays them as a single grid.
    */
   groupedImages?: ImageContent[];
+  groupedEventIds?: string[];
   isHighlighted: boolean;
   isEditing: boolean;
   // Passed from parent so the comparator can detect the undefined→Relations
@@ -90,6 +91,7 @@ function TimelineEventComponent({
   item,
   collapsed,
   groupedImages,
+  groupedEventIds,
   isHighlighted,
   isEditing: isEditingProp,
   reactionRelations,
@@ -199,6 +201,7 @@ function TimelineEventComponent({
       collapse: collapsed,
       highlight: isHighlighted,
       canDelete,
+      groupedEventIds,
       canSendReaction,
       canPinEvent,
       imagePackRooms,

@@ -66,6 +66,11 @@ import { handleUploadFiles } from './handleUploadFiles';
 import { encryptAndReplace } from './encryptAndReplace';
 import { safeFile } from '../../../utils/mimeTypes';
 import { fulfilledPromiseSettledResult } from '../../../utils/common';
+import {
+  MATRIX_BATCH_ID_PROPERTY_NAME,
+  MATRIX_BATCH_INDEX_PROPERTY_NAME,
+} from '../../../../types/matrix/common';
+import { IMAGE_GROUP_MAX_SIZE } from '../../../utils/buildTimelineDescriptors';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
 import { useKeybinds } from '../../../state/hooks/keybinds';
@@ -323,8 +328,16 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       const uploadReplyDraft = uploadsReplyDraftRef.current;
       uploadsReplyDraftRef.current = undefined;
       const contents = fulfilledPromiseSettledResult(await Promise.allSettled(contentsPromises));
-      contents.forEach((rawContent) => {
-        let content = rawContent;
+      const sliceIds: string[] = [];
+      for (let i = 0; i < contents.length; i += IMAGE_GROUP_MAX_SIZE) {
+        sliceIds.push(crypto.randomUUID());
+      }
+      contents.forEach((rawContent, i) => {
+        let content: IContent = {
+          ...rawContent,
+          [MATRIX_BATCH_ID_PROPERTY_NAME]: sliceIds[Math.floor(i / IMAGE_GROUP_MAX_SIZE)],
+          [MATRIX_BATCH_INDEX_PROPERTY_NAME]: i % IMAGE_GROUP_MAX_SIZE,
+        };
         if (uploadReplyDraft) {
           const relatesTo: Record<string, unknown> = {
             'm.in_reply_to': {
@@ -336,7 +349,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
             relatesTo.rel_type = RelationType.Thread;
             relatesTo.is_falling_back = false;
           }
-          content = { ...rawContent, 'm.relates_to': relatesTo };
+          content = { ...content, 'm.relates_to': relatesTo };
         }
         mx.sendMessage(roomId, content as RoomMessageEventContent);
       });
