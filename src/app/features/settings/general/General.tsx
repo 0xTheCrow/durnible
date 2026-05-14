@@ -511,7 +511,7 @@ function Advanced() {
       <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
         <SettingTile
           title="Alt Mobile Keyboard Adjustment"
-          description="Use an alternative method to calculate the software keyboard height. Try this if you see a large empty space when the keyboard opens on mobile."
+          description="Disables the keyboard height adjustment on iOS and lets the browser handle it natively. Try this if you see a large empty space when the keyboard opens on iPhone or iPad."
           after={
             <Switch
               variant="Primary"

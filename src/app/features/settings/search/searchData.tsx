@@ -262,7 +262,7 @@ function AltMobileKeyboardAdjustmentSetting() {
   return (
     <SettingTile
       title="Alt Mobile Keyboard Adjustment"
-      description="Use an alternative method to calculate the software keyboard height. Try this if you see a large empty space when the keyboard opens on mobile."
+      description="Disables the keyboard height adjustment on iOS and lets the browser handle it natively. Try this if you see a large empty space when the keyboard opens on iPhone or iPad."
       after={<Switch variant="Primary" value={value} onChange={setValue} />}
     />
   );
@@ -586,7 +586,7 @@ export const settingsSearchData: SearchEntry[] = [
     id: 'alt-mobile-keyboard-adjustment',
     title: 'Alt Mobile Keyboard Adjustment',
     description:
-      'Use an alternative method to calculate the software keyboard height. Try this if you see a large empty space when the keyboard opens on mobile.',
+      'Disables the keyboard height adjustment on iOS and lets the browser handle it natively. Try this if you see a large empty space when the keyboard opens on iPhone or iPad.',
     keywords: [
       'keyboard',
       'mobile',
