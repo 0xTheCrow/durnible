@@ -90,8 +90,7 @@ Durnible is a Matrix chat client built with React, TypeScript, and Vite. Forked 
 
 Vite env vars use `VITE_` prefix, accessed via `import.meta.env.VITE_*`:
 
-- `VITE_GIF_SERVER_URL` — GIF search API endpoint
-- `VITE_GIF_API_KEY` — GIF API key
+- `VITE_GIF_SERVER_URL` — GIF server base URL. Auth is per-user via Matrix OpenID token exchange (`POST /auth/matrix` → bearer JWT, re-minted on expiry/401); there is no API key.
 
 ## Communication Style
 

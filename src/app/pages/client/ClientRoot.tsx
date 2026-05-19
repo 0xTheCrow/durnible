@@ -34,6 +34,7 @@ import { SpecVersions } from './SpecVersions';
 import { AsyncStatus, useAsyncCallback } from '../../hooks/useAsyncCallback';
 import { useSyncState } from '../../hooks/useSyncState';
 import { stopPropagation } from '../../utils/keyboard';
+import { setGifServerClient } from '../../utils/gifServer';
 import { AuthMetadataProvider } from '../../hooks/useAuthMetadata';
 import { getFallbackSession } from '../../state/sessions';
 import { logStartupSummary, startupMark } from '../../utils/startupPerf';
@@ -179,6 +180,11 @@ export function ClientRoot({ children }: ClientRootProps) {
       startMatrix(mx);
     }
   }, [mx, startMatrix]);
+
+  useEffect(() => {
+    setGifServerClient(mx ?? null);
+    return () => setGifServerClient(null);
+  }, [mx]);
 
   useSyncState(
     mx,

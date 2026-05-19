@@ -141,7 +141,9 @@ export const EmojiGroupLabel = style({
 export const EmojiGroupContent = style([
   DefaultReset,
   {
-    padding: `0 ${config.space.S200}`,
+    padding: 0,
+    paddingLeft: config.space.S300,
+    paddingRight: config.space.S100,
   },
 ]);
 
@@ -219,8 +221,10 @@ export const StickerImg = style([
 export const GifGrid = style({
   display: 'grid',
   gridTemplateColumns: '1fr 1fr',
-  gap: config.space.S100,
+  gap: config.space.S200,
   padding: config.space.S200,
+  paddingLeft: config.space.S300,
+  paddingRight: config.space.S100,
 });
 
 export const GifItem = style([
@@ -247,3 +251,26 @@ export const GifItemImg = style([
     display: 'block',
   },
 ]);
+
+export const GifItemWrap = style({
+  position: 'relative',
+});
+
+export const GifItemActions = style({
+  position: 'absolute',
+  top: config.space.S100,
+  right: config.space.S100,
+  zIndex: 1,
+  display: 'flex',
+  gap: config.space.S100,
+});
+
+export const GifItemActionBtn = style({
+  backgroundColor: color.Surface.Container,
+  opacity: 0.85,
+  selectors: {
+    '&:hover': {
+      opacity: 1,
+    },
+  },
+});

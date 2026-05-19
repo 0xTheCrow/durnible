@@ -17,6 +17,18 @@ export function EmojiBoardTabs({
 }) {
   return (
     <Box gap="100">
+      <Badge
+        style={styles}
+        as="button"
+        variant="Secondary"
+        fill={tab === EmojiBoardTab.Emoji ? 'Solid' : 'None'}
+        size="500"
+        onClick={() => onTabChange(EmojiBoardTab.Emoji)}
+      >
+        <Text as="span" size="L400">
+          Emoji
+        </Text>
+      </Badge>
       {gifServerEnabled && (
         <Badge
           style={styles}
@@ -41,18 +53,6 @@ export function EmojiBoardTabs({
       >
         <Text as="span" size="L400">
           Sticker
-        </Text>
-      </Badge>
-      <Badge
-        style={styles}
-        as="button"
-        variant="Secondary"
-        fill={tab === EmojiBoardTab.Emoji ? 'Solid' : 'None'}
-        size="500"
-        onClick={() => onTabChange(EmojiBoardTab.Emoji)}
-      >
-        <Text as="span" size="L400">
-          Emoji
         </Text>
       </Badge>
     </Box>

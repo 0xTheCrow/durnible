@@ -782,7 +782,7 @@ function EmojiGroupHolder({
   };
 
   return (
-    <Scroll ref={contentScrollRef} size="400" onKeyDown={preventScrollWithArrowKey} hideTrack>
+    <Scroll ref={contentScrollRef} size="300" onKeyDown={preventScrollWithArrowKey} hideTrack>
       <Box
         onClick={onGroupItemClick}
         onContextMenu={onGroupItemContextMenu}

@@ -15,8 +15,6 @@ import type { InCinnySpacesContent } from '../app/hooks/useSidebarItems';
 import type { StickerPackOrderContent } from '../app/hooks/useStickerPackOrder';
 import type { FavoriteEmojiContent } from '../app/plugins/favorite-emoji';
 import type { RecentEmojiContent } from '../app/plugins/recent-emoji';
-import type { IFavoriteGifContent } from '../app/plugins/favorite-gif';
-import type { IRecentGifContent } from '../app/plugins/recent-gif';
 import type { PowerLevelTags } from '../app/hooks/usePowerLevelTags';
 
 declare module 'matrix-js-sdk/lib/@types/event.ts' {
@@ -24,8 +22,6 @@ declare module 'matrix-js-sdk/lib/@types/event.ts' {
     'in.cinny.spaces': InCinnySpacesContent;
     'in.cinny.sticker_pack_order': StickerPackOrderContent;
     'in.cinny.favorite_emoji': FavoriteEmojiContent;
-    'in.durnible.favorite_gif': IFavoriteGifContent;
-    'in.durnible.recent_gif': IRecentGifContent;
     'io.element.recent_emoji': RecentEmojiContent;
     'im.ponies.user_emotes': PackContent;
     'im.ponies.emote_rooms': EmoteRoomsContent;

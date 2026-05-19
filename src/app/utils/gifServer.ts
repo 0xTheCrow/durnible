@@ -1,6 +1,7 @@
+import type { MatrixClient } from 'matrix-js-sdk';
+
 export const GIF_SERVER_URL = import.meta.env.VITE_GIF_SERVER_URL || '';
-export const GIF_API_KEY = import.meta.env.VITE_GIF_API_KEY || '';
-export const gifServerEnabled = !!(GIF_SERVER_URL && GIF_API_KEY);
+export const gifServerEnabled = !!GIF_SERVER_URL;
 
 export type GifRendition = {
   url: string;
@@ -15,9 +16,14 @@ export type GifRenditions = {
   thumbnail: GifRendition;
 };
 
+export type GifVisibility = 'shared' | 'private';
+
 export type GifItem = {
   id: string;
   filename: string;
+  uploader_id: string;
+  visibility: GifVisibility;
+  is_nsfw: boolean;
   tags: string[];
   frame_count: number;
   duration_ms: number;
@@ -31,35 +37,205 @@ export type GifListResponse = {
   next: string | null;
 };
 
-const gifFetch = (url: string, options?: RequestInit): Promise<Response> =>
-  fetch(url, {
+export class GifAuthError extends Error {}
+
+let gifClient: MatrixClient | null = null;
+
+export function setGifServerClient(mx: MatrixClient | null): void {
+  gifClient = mx;
+}
+
+const EXPIRY_SKEW_MS = 60_000;
+let sessionToken: string | null = null;
+let sessionExpiresAt = 0;
+let mintPromise: Promise<string> | null = null;
+
+function clearGifSession(): void {
+  sessionToken = null;
+  sessionExpiresAt = 0;
+}
+
+async function mintSession(): Promise<string> {
+  if (!gifClient) throw new GifAuthError('Matrix client unavailable');
+  let openIdToken;
+  try {
+    openIdToken = await gifClient.getOpenIdToken();
+  } catch (e) {
+    throw new GifAuthError(`failed to obtain Matrix OpenID token: ${e}`);
+  }
+  const res = await fetch(`${GIF_SERVER_URL}/auth/matrix`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(openIdToken),
+  });
+  if (!res.ok) throw new GifAuthError(`GIF auth failed: ${res.status}`);
+  const data = (await res.json()) as { token: string; expires_in: number };
+  sessionToken = data.token;
+  sessionExpiresAt = Date.now() + data.expires_in * 1000;
+  return data.token;
+}
+
+async function ensureSession(): Promise<string> {
+  if (sessionToken && Date.now() < sessionExpiresAt - EXPIRY_SKEW_MS) {
+    return sessionToken;
+  }
+  if (!mintPromise) {
+    mintPromise = mintSession().finally(() => {
+      mintPromise = null;
+    });
+  }
+  return mintPromise;
+}
+
+async function gifFetch(url: string, options?: RequestInit, retry = true): Promise<Response> {
+  const token = await ensureSession();
+  const res = await fetch(url, {
     ...options,
     headers: {
-      'X-API-Key': GIF_API_KEY,
+      Authorization: `Bearer ${token}`,
       ...options?.headers,
     },
   });
+  if (res.status === 401 && retry) {
+    clearGifSession();
+    return gifFetch(url, options, false);
+  }
+  return res;
+}
+
+function listUrl(
+  path: string,
+  limit: number,
+  pos?: string,
+  nsfw?: boolean,
+  mine?: boolean
+): string {
+  const url = new URL(`${GIF_SERVER_URL}${path}`);
+  url.searchParams.set('limit', String(limit));
+  if (pos) url.searchParams.set('pos', pos);
+  if (nsfw) url.searchParams.set('grab_nsfw', 'true');
+  if (mine) url.searchParams.set('mine', 'true');
+  return url.toString();
+}
 
 export async function searchGifs(
   query: string,
   limit: number,
-  pos?: string
+  pos?: string,
+  nsfw?: boolean
 ): Promise<GifListResponse> {
   const url = new URL(`${GIF_SERVER_URL}/gifs/search`);
   if (query) url.searchParams.set('q', query);
   url.searchParams.set('limit', String(limit));
   if (pos) url.searchParams.set('pos', pos);
+  if (nsfw) url.searchParams.set('grab_nsfw', 'true');
   const res = await gifFetch(url.toString());
   if (!res.ok) throw new Error(`GIF search failed: ${res.status}`);
   return res.json();
 }
 
-export async function getFeaturedGifs(limit: number, pos?: string): Promise<GifListResponse> {
-  const url = new URL(`${GIF_SERVER_URL}/gifs/featured`);
-  url.searchParams.set('limit', String(limit));
-  if (pos) url.searchParams.set('pos', pos);
-  const res = await gifFetch(url.toString());
+export async function getFeaturedGifs(
+  limit: number,
+  pos?: string,
+  nsfw?: boolean
+): Promise<GifListResponse> {
+  const res = await gifFetch(listUrl('/gifs/featured', limit, pos, nsfw));
   if (!res.ok) throw new Error(`GIF featured failed: ${res.status}`);
+  return res.json();
+}
+
+export async function getFavoriteGifs(
+  limit: number,
+  pos?: string,
+  nsfw?: boolean
+): Promise<GifListResponse> {
+  const res = await gifFetch(listUrl('/gifs/favorites', limit, pos, nsfw));
+  if (!res.ok) throw new Error(`GIF favorites failed: ${res.status}`);
+  return res.json();
+}
+
+export async function getHistoryGifs(
+  limit: number,
+  pos?: string,
+  nsfw?: boolean
+): Promise<GifListResponse> {
+  const res = await gifFetch(listUrl('/gifs/history', limit, pos, nsfw));
+  if (!res.ok) throw new Error(`GIF history failed: ${res.status}`);
+  return res.json();
+}
+
+export async function getMyGifs(
+  limit: number,
+  pos?: string,
+  nsfw?: boolean
+): Promise<GifListResponse> {
+  const res = await gifFetch(listUrl('/gifs/recent', limit, pos, nsfw, true));
+  if (!res.ok) throw new Error(`GIF mine failed: ${res.status}`);
+  return res.json();
+}
+
+export async function addFavorite(gifId: string): Promise<void> {
+  const res = await gifFetch(`${GIF_SERVER_URL}/gifs/${gifId}/favorite`, { method: 'PUT' });
+  if (!res.ok) throw new Error(`GIF favorite failed: ${res.status}`);
+}
+
+export async function removeFavorite(gifId: string): Promise<void> {
+  const res = await gifFetch(`${GIF_SERVER_URL}/gifs/${gifId}/favorite`, { method: 'DELETE' });
+  if (!res.ok) throw new Error(`GIF unfavorite failed: ${res.status}`);
+}
+
+export type GifMetaPatch = {
+  visibility?: GifVisibility;
+  is_nsfw?: boolean;
+};
+
+export async function patchGifMeta(gifId: string, patch: GifMetaPatch): Promise<void> {
+  const res = await gifFetch(`${GIF_SERVER_URL}/gifs/${gifId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(patch),
+  });
+  if (!res.ok) throw new Error(`GIF update failed: ${res.status}`);
+}
+
+export async function replaceGifTags(gifId: string, tags: string[]): Promise<void> {
+  const res = await gifFetch(`${GIF_SERVER_URL}/gifs/${gifId}/tags`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tags }),
+  });
+  if (!res.ok) throw new Error(`GIF tag update failed: ${res.status}`);
+}
+
+export async function deleteGif(gifId: string): Promise<void> {
+  const res = await gifFetch(`${GIF_SERVER_URL}/gifs/${gifId}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error(`GIF delete failed: ${res.status}`);
+}
+
+export type UploadGifParams = {
+  tags?: string;
+  visibility?: GifVisibility;
+  nsfw?: boolean;
+};
+
+export async function uploadGif(file: File, params: UploadGifParams = {}): Promise<GifItem> {
+  const form = new FormData();
+  form.append('file', file);
+  if (params.tags) form.append('tags', params.tags);
+  if (params.visibility) form.append('visibility', params.visibility);
+  if (params.nsfw) form.append('nsfw', 'true');
+  const res = await gifFetch(`${GIF_SERVER_URL}/gifs`, { method: 'POST', body: form });
+  if (res.status === 507) throw new Error('The GIF server is out of storage');
+  if (!res.ok) {
+    let message = `GIF upload failed: ${res.status}`;
+    try {
+      const body = (await res.json()) as { message?: string };
+      if (body?.message) message = body.message;
+    } catch {
+      /* keep status-based message */
+    }
+    throw new Error(message);
+  }
   return res.json();
 }
 
