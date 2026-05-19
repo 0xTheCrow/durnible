@@ -29,6 +29,18 @@ export function EmojiBoardTabs({
           Emoji
         </Text>
       </Badge>
+      <Badge
+        style={styles}
+        as="button"
+        variant="Secondary"
+        fill={tab === EmojiBoardTab.Sticker ? 'Solid' : 'None'}
+        size="500"
+        onClick={() => onTabChange(EmojiBoardTab.Sticker)}
+      >
+        <Text as="span" size="L400">
+          Sticker
+        </Text>
+      </Badge>
       {gifServerEnabled && (
         <Badge
           style={styles}
@@ -43,18 +55,6 @@ export function EmojiBoardTabs({
           </Text>
         </Badge>
       )}
-      <Badge
-        style={styles}
-        as="button"
-        variant="Secondary"
-        fill={tab === EmojiBoardTab.Sticker ? 'Solid' : 'None'}
-        size="500"
-        onClick={() => onTabChange(EmojiBoardTab.Sticker)}
-      >
-        <Text as="span" size="L400">
-          Sticker
-        </Text>
-      </Badge>
     </Box>
   );
 }
