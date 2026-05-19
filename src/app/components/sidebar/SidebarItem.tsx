@@ -1,6 +1,8 @@
 import classNames from 'classnames';
-import { as, Avatar, Text, Tooltip, TooltipProvider, toRem } from 'folds';
-import React, { ComponentProps, ReactNode, RefCallback } from 'react';
+import { as, Avatar, Text, Tooltip, toRem } from 'folds';
+import type { ComponentProps, ReactNode, RefCallback } from 'react';
+import React from 'react';
+import { TooltipProvider } from '../TooltipProvider';
 import * as css from './Sidebar.css';
 
 export const SidebarItem = as<'div', css.SidebarItemVariants>(
@@ -36,7 +38,6 @@ export function SidebarItemTooltip({
 
   return (
     <TooltipProvider
-      delay={400}
       position="Right"
       tooltip={
         <Tooltip style={{ maxWidth: toRem(280) }}>

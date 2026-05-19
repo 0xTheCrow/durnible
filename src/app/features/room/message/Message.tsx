@@ -1,42 +1,30 @@
+import type { RectCords } from 'folds';
 import {
   Avatar,
   Box,
-  Button,
-  Dialog,
-  Header,
+  Checkbox,
   Icon,
   IconButton,
   Icons,
-  Input,
   Line,
   Menu,
   MenuItem,
-  Modal,
   PopOut,
-  RectCords,
-  Spinner,
   Text,
   as,
   color,
-  config,
 } from 'folds';
-import React, {
-  FormEventHandler,
-  MouseEventHandler,
-  ReactNode,
-  useCallback,
-  useState,
-} from 'react';
+import type { MouseEventHandler, ReactNode } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import FocusTrap from 'focus-trap-react';
-import { useHover, useFocusWithin } from 'react-aria';
-import { useAtom } from 'jotai';
-import { MsgType } from 'matrix-js-sdk';
-import { messageOptionsAtom } from './messageOptionsAtom';
-import { hiddenImagesAtom, MessageEventIdContext } from '../../../state/hiddenImages';
-import { EventStatus, MatrixEvent, Room } from 'matrix-js-sdk';
-import { Relations } from 'matrix-js-sdk/lib/models/relations';
+import { useAtom, useAtomValue } from 'jotai';
+import type { MatrixEvent, Room } from 'matrix-js-sdk';
+import { MsgType, EventStatus } from 'matrix-js-sdk';
+import type { Relations } from 'matrix-js-sdk/lib/models/relations';
 import classNames from 'classnames';
-import { RoomPinnedEventsEventContent } from 'matrix-js-sdk/lib/types';
+import { selectionModeAtom, selectedIdsAtom } from './selectionAtom';
+import { useMessagePopupTrigger } from './useMessagePopupTrigger';
+import { hiddenImagesAtom, MessageEventIdContext } from '../../../state/hiddenImages';
 import {
   AvatarBase,
   BubbleLayout,
@@ -47,597 +35,53 @@ import {
   Username,
   UsernameBold,
 } from '../../../components/message';
-import {
-  canEditEvent,
-  getEventEdits,
-  getMemberAvatarMxc,
-  getMemberDisplayName,
-} from '../../../utils/room';
-import {
-  getCanonicalAliasOrRoomId,
-  getMxIdLocalPart,
-  isRoomAlias,
-  mxcUrlToHttp,
-} from '../../../utils/matrix';
-import { MessageLayout, MessageSpacing } from '../../../state/settings';
+import { canEditEvent, getMemberAvatarMxc, getMemberDisplayName } from '../../../utils/room';
+import { getMxIdLocalPart, mxcUrlToHttp } from '../../../utils/matrix';
+import type { MessageSpacing } from '../../../state/settings';
+import { MessageLayout } from '../../../state/settings';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
-import { useRecentEmoji } from '../../../hooks/useRecentEmoji';
 import * as css from './styles.css';
-import { EventReaders } from '../../../components/event-readers';
-import { TextViewer } from '../../../components/text-viewer';
-import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
-import { EmojiBoard } from '../../../components/emoji-board';
-import { ReactionViewer } from '../reaction-viewer';
+import type { EmojiBoardWrapperHandle } from '../../../components/emoji-board';
+import { EmojiBoardWrapper } from '../../../components/emoji-board';
 import { MessageEditor } from './MessageEditor';
+import { useOpenReactionViewer } from '../../../state/hooks/reactionViewer';
 import { UserAvatar } from '../../../components/user-avatar';
-import { copyToClipboard } from '../../../utils/dom';
 import { stopPropagation } from '../../../utils/keyboard';
-import { OverlayModal } from '../../../components/OverlayModal';
-import { getMatrixToRoomEvent } from '../../../plugins/matrix-to';
-import { getViaServers } from '../../../plugins/via-servers';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
-import { useRoomPinnedEvents } from '../../../hooks/useRoomPinnedEvents';
-import { MemberPowerTag, StateEvent } from '../../../../types/matrix/room';
+import type { MemberPowerTag } from '../../../../types/matrix/room';
 import { PowerIcon } from '../../../components/power';
 import colorMXID from '../../../../util/colorMXID';
 import { getPowerTagIconSrc } from '../../../hooks/useMemberPowerTag';
+import {
+  MessageAllReactionButton,
+  MessageAllReactionItem,
+  MessageQuickReactions,
+} from './reactions';
+import {
+  MessageCopyLinkItem,
+  MessageDeleteItem,
+  MessagePinItem,
+  MessageReadReceiptItem,
+  MessageReportItem,
+  MessageSourceCodeItem,
+} from './menu';
 
-export type ReactionHandler = (keyOrMxc: string, shortcode: string) => void;
-
-type MessageQuickReactionsProps = {
-  onReaction: ReactionHandler;
-};
-export const MessageQuickReactions = as<'div', MessageQuickReactionsProps>(
-  ({ onReaction, ...props }, ref) => {
-    const mx = useMatrixClient();
-    const recentEmojis = useRecentEmoji(mx, 4);
-
-    if (recentEmojis.length === 0) return <span />;
-    return (
-      <>
-        <Box
-          style={{ padding: config.space.S200 }}
-          alignItems="Center"
-          justifyContent="Center"
-          gap="200"
-          {...props}
-          ref={ref}
-        >
-          {recentEmojis.map((emoji) => (
-            <IconButton
-              key={emoji.unicode}
-              className={css.MessageQuickReaction}
-              size="300"
-              variant="SurfaceVariant"
-              radii="Pill"
-              title={emoji.shortcode}
-              aria-label={emoji.shortcode}
-              onClick={() => onReaction(emoji.unicode, emoji.shortcode)}
-            >
-              <Text size="T500">{emoji.unicode}</Text>
-            </IconButton>
-          ))}
-        </Box>
-        <Line size="300" />
-      </>
-    );
-  }
-);
-
-export const MessageAllReactionButton = as<
-  'button',
-  {
-    room: Room;
-    relations: Relations;
-  }
->(({ room, relations, ...props }, ref) => {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <>
-      <OverlayModal
-        open={open}
-        requestClose={() => setOpen(false)}
-        overlayProps={{ onContextMenu: (evt: any) => evt.stopPropagation() }}
-        focusTrapOptions={{ returnFocusOnDeactivate: false }}
-      >
-        <Modal variant="Surface" size="300" flexHeight>
-          <ReactionViewer
-            room={room}
-            relations={relations}
-            requestClose={() => setOpen(false)}
-          />
-        </Modal>
-      </OverlayModal>
-      <IconButton
-        variant="SurfaceVariant"
-        size="300"
-        radii="300"
-        onClick={() => setOpen(true)}
-        aria-pressed={open}
-        {...props}
-        ref={ref}
-      >
-        <Icon src={Icons.Smile} size="100" />
-      </IconButton>
-    </>
-  );
-});
-
-export const MessageAllReactionItem = as<
-  'button',
-  {
-    room: Room;
-    relations: Relations;
-    onClose?: () => void;
-  }
->(({ room, relations, onClose, ...props }, ref) => {
-  const [open, setOpen] = useState(false);
-
-  const handleClose = () => {
-    setOpen(false);
-    onClose?.();
-  };
-
-  return (
-    <>
-      <OverlayModal
-        open={open}
-        requestClose={handleClose}
-        overlayProps={{ onContextMenu: (evt: any) => evt.stopPropagation() }}
-        focusTrapOptions={{ returnFocusOnDeactivate: false }}
-      >
-        <Modal variant="Surface" size="300" flexHeight>
-          <ReactionViewer
-            room={room}
-            relations={relations}
-            requestClose={() => setOpen(false)}
-          />
-        </Modal>
-      </OverlayModal>
-      <MenuItem
-        size="300"
-        after={<Icon size="100" src={Icons.Smile} />}
-        radii="300"
-        onClick={() => setOpen(true)}
-        {...props}
-        ref={ref}
-        aria-pressed={open}
-      >
-        <Text className={css.MessageMenuItemText} as="span" size="T300" truncate>
-          View Reactions
-        </Text>
-      </MenuItem>
-    </>
-  );
-});
-
-export const MessageReadReceiptItem = as<
-  'button',
-  {
-    room: Room;
-    eventId: string;
-    onClose?: () => void;
-  }
->(({ room, eventId, onClose, ...props }, ref) => {
-  const [open, setOpen] = useState(false);
-
-  const handleClose = () => {
-    setOpen(false);
-    onClose?.();
-  };
-
-  return (
-    <>
-      <OverlayModal open={open} requestClose={handleClose}>
-        <Modal variant="Surface" size="300">
-          <EventReaders room={room} eventId={eventId} requestClose={handleClose} />
-        </Modal>
-      </OverlayModal>
-      <MenuItem
-        size="300"
-        after={<Icon size="100" src={Icons.CheckTwice} />}
-        radii="300"
-        onClick={() => setOpen(true)}
-        {...props}
-        ref={ref}
-        aria-pressed={open}
-      >
-        <Text className={css.MessageMenuItemText} as="span" size="T300" truncate>
-          Read Receipts
-        </Text>
-      </MenuItem>
-    </>
-  );
-});
-
-export const MessageSourceCodeItem = as<
-  'button',
-  {
-    room: Room;
-    mEvent: MatrixEvent;
-    onClose?: () => void;
-  }
->(({ room, mEvent, onClose, ...props }, ref) => {
-  const [open, setOpen] = useState(false);
-
-  const getContent = (evt: MatrixEvent) =>
-    evt.isEncrypted()
-      ? {
-          [`<== DECRYPTED_EVENT ==>`]: evt.getEffectiveEvent(),
-          [`<== ORIGINAL_EVENT ==>`]: evt.event,
-        }
-      : evt.event;
-
-  const getText = (): string => {
-    const evtId = mEvent.getId()!;
-    const evtTimeline = room.getTimelineForEvent(evtId);
-    const edits =
-      evtTimeline &&
-      getEventEdits(evtTimeline.getTimelineSet(), evtId, mEvent.getType())?.getRelations();
-
-    if (!edits) return JSON.stringify(getContent(mEvent), null, 2);
-
-    const content: Record<string, unknown> = {
-      '<== MAIN_EVENT ==>': getContent(mEvent),
-    };
-
-    edits.forEach((editEvt, index) => {
-      content[`<== REPLACEMENT_EVENT_${index + 1} ==>`] = getContent(editEvt);
-    });
-
-    return JSON.stringify(content, null, 2);
-  };
-
-  const handleClose = () => {
-    setOpen(false);
-    onClose?.();
-  };
-
-  return (
-    <>
-      <OverlayModal open={open} requestClose={handleClose}>
-        <Modal variant="Surface" size="500">
-          <TextViewer
-            name="Source Code"
-            langName="json"
-            text={getText()}
-            requestClose={handleClose}
-          />
-        </Modal>
-      </OverlayModal>
-      <MenuItem
-        size="300"
-        after={<Icon size="100" src={Icons.BlockCode} />}
-        radii="300"
-        onClick={() => setOpen(true)}
-        {...props}
-        ref={ref}
-        aria-pressed={open}
-      >
-        <Text className={css.MessageMenuItemText} as="span" size="T300" truncate>
-          View Source
-        </Text>
-      </MenuItem>
-    </>
-  );
-});
-
-export const MessageCopyLinkItem = as<
-  'button',
-  {
-    room: Room;
-    mEvent: MatrixEvent;
-    onClose?: () => void;
-  }
->(({ room, mEvent, onClose, ...props }, ref) => {
-  const mx = useMatrixClient();
-
-  const handleCopy = () => {
-    const roomIdOrAlias = getCanonicalAliasOrRoomId(mx, room.roomId);
-    const eventId = mEvent.getId();
-    const viaServers = isRoomAlias(roomIdOrAlias) ? undefined : getViaServers(room);
-    if (!eventId) return;
-    copyToClipboard(getMatrixToRoomEvent(roomIdOrAlias, eventId, viaServers));
-    onClose?.();
-  };
-
-  return (
-    <MenuItem
-      size="300"
-      after={<Icon size="100" src={Icons.Link} />}
-      radii="300"
-      onClick={handleCopy}
-      {...props}
-      ref={ref}
-    >
-      <Text className={css.MessageMenuItemText} as="span" size="T300" truncate>
-        Copy Link
-      </Text>
-    </MenuItem>
-  );
-});
-
-export const MessagePinItem = as<
-  'button',
-  {
-    room: Room;
-    mEvent: MatrixEvent;
-    onClose?: () => void;
-  }
->(({ room, mEvent, onClose, ...props }, ref) => {
-  const mx = useMatrixClient();
-  const pinnedEvents = useRoomPinnedEvents(room);
-  const isPinned = pinnedEvents.includes(mEvent.getId() ?? '');
-
-  const handlePin = () => {
-    const eventId = mEvent.getId();
-    const pinContent: RoomPinnedEventsEventContent = {
-      pinned: Array.from(pinnedEvents).filter((id) => id !== eventId),
-    };
-    if (!isPinned && eventId) {
-      pinContent.pinned.push(eventId);
-    }
-    mx.sendStateEvent(room.roomId, StateEvent.RoomPinnedEvents as any, pinContent);
-    onClose?.();
-  };
-
-  return (
-    <MenuItem
-      size="300"
-      after={<Icon size="100" src={Icons.Pin} />}
-      radii="300"
-      onClick={handlePin}
-      {...props}
-      ref={ref}
-    >
-      <Text className={css.MessageMenuItemText} as="span" size="T300" truncate>
-        {isPinned ? 'Unpin Message' : 'Pin Message'}
-      </Text>
-    </MenuItem>
-  );
-});
-
-export const MessageDeleteItem = as<
-  'button',
-  {
-    room: Room;
-    mEvent: MatrixEvent;
-    onClose?: () => void;
-  }
->(({ room, mEvent, onClose, ...props }, ref) => {
-  const mx = useMatrixClient();
-  const [open, setOpen] = useState(false);
-
-  const [deleteState, deleteMessage] = useAsyncCallback(
-    useCallback(
-      (eventId: string, reason?: string) =>
-        mx.redactEvent(room.roomId, eventId, undefined, reason ? { reason } : undefined),
-      [mx, room]
-    )
-  );
-
-  const handleSubmit: FormEventHandler<HTMLFormElement> = (evt) => {
-    evt.preventDefault();
-    const eventId = mEvent.getId();
-    if (
-      !eventId ||
-      deleteState.status === AsyncStatus.Loading ||
-      deleteState.status === AsyncStatus.Success
-    )
-      return;
-    const target = evt.target as HTMLFormElement | undefined;
-    const reasonInput = target?.reasonInput as HTMLInputElement | undefined;
-    const reason = reasonInput && reasonInput.value.trim();
-    deleteMessage(eventId, reason);
-  };
-
-  const handleClose = () => {
-    setOpen(false);
-    onClose?.();
-  };
-
-  return (
-    <>
-      <OverlayModal open={open} requestClose={handleClose}>
-        <Dialog variant="Surface">
-          <Header
-            style={{
-              padding: `0 ${config.space.S200} 0 ${config.space.S400}`,
-              borderBottomWidth: config.borderWidth.B300,
-            }}
-            variant="Surface"
-            size="500"
-          >
-            <Box grow="Yes">
-              <Text size="H4">Delete Message</Text>
-            </Box>
-            <IconButton size="300" onClick={handleClose} radii="300">
-              <Icon src={Icons.Cross} />
-            </IconButton>
-          </Header>
-          <Box
-            as="form"
-            onSubmit={handleSubmit}
-            style={{ padding: config.space.S400 }}
-            direction="Column"
-            gap="400"
-          >
-            <Text priority="400">
-              This action is irreversible! Are you sure that you want to delete this message?
-            </Text>
-            <Box direction="Column" gap="100">
-              <Text size="L400">
-                Reason{' '}
-                <Text as="span" size="T200">
-                  (optional)
-                </Text>
-              </Text>
-              <Input name="reasonInput" variant="Background" />
-              {deleteState.status === AsyncStatus.Error && (
-                <Text style={{ color: color.Critical.Main }} size="T300">
-                  Failed to delete message! Please try again.
-                </Text>
-              )}
-            </Box>
-            <Button
-              type="submit"
-              variant="Critical"
-              before={
-                deleteState.status === AsyncStatus.Loading ? (
-                  <Spinner fill="Solid" variant="Critical" size="200" />
-                ) : undefined
-              }
-              aria-disabled={deleteState.status === AsyncStatus.Loading}
-            >
-              <Text size="B400">
-                {deleteState.status === AsyncStatus.Loading ? 'Deleting...' : 'Delete'}
-              </Text>
-            </Button>
-          </Box>
-        </Dialog>
-      </OverlayModal>
-      <Button
-        variant="Critical"
-        fill="None"
-        size="300"
-        after={<Icon size="100" src={Icons.Delete} />}
-        radii="300"
-        onClick={() => setOpen(true)}
-        aria-pressed={open}
-        {...props}
-        ref={ref}
-      >
-        <Text className={css.MessageMenuItemText} as="span" size="T300" truncate>
-          Delete
-        </Text>
-      </Button>
-    </>
-  );
-});
-
-export const MessageReportItem = as<
-  'button',
-  {
-    room: Room;
-    mEvent: MatrixEvent;
-    onClose?: () => void;
-  }
->(({ room, mEvent, onClose, ...props }, ref) => {
-  const mx = useMatrixClient();
-  const [open, setOpen] = useState(false);
-
-  const [reportState, reportMessage] = useAsyncCallback(
-    useCallback(
-      (eventId: string, score: number, reason: string) =>
-        mx.reportEvent(room.roomId, eventId, score, reason),
-      [mx, room]
-    )
-  );
-
-  const handleSubmit: FormEventHandler<HTMLFormElement> = (evt) => {
-    evt.preventDefault();
-    const eventId = mEvent.getId();
-    if (
-      !eventId ||
-      reportState.status === AsyncStatus.Loading ||
-      reportState.status === AsyncStatus.Success
-    )
-      return;
-    const target = evt.target as HTMLFormElement | undefined;
-    const reasonInput = target?.reasonInput as HTMLInputElement | undefined;
-    const reason = reasonInput && reasonInput.value.trim();
-    if (reasonInput) reasonInput.value = '';
-    reportMessage(eventId, reason ? -100 : -50, reason || 'No reason provided');
-  };
-
-  const handleClose = () => {
-    setOpen(false);
-    onClose?.();
-  };
-
-  return (
-    <>
-      <OverlayModal open={open} requestClose={handleClose}>
-        <Dialog variant="Surface">
-          <Header
-            style={{
-              padding: `0 ${config.space.S200} 0 ${config.space.S400}`,
-              borderBottomWidth: config.borderWidth.B300,
-            }}
-            variant="Surface"
-            size="500"
-          >
-            <Box grow="Yes">
-              <Text size="H4">Report Message</Text>
-            </Box>
-            <IconButton size="300" onClick={handleClose} radii="300">
-              <Icon src={Icons.Cross} />
-            </IconButton>
-          </Header>
-          <Box
-            as="form"
-            onSubmit={handleSubmit}
-            style={{ padding: config.space.S400 }}
-            direction="Column"
-            gap="400"
-          >
-            <Text priority="400">
-              Report this message to server, which may then notify the appropriate people to
-              take action.
-            </Text>
-            <Box direction="Column" gap="100">
-              <Text size="L400">Reason</Text>
-              <Input name="reasonInput" variant="Background" required />
-              {reportState.status === AsyncStatus.Error && (
-                <Text style={{ color: color.Critical.Main }} size="T300">
-                  Failed to report message! Please try again.
-                </Text>
-              )}
-              {reportState.status === AsyncStatus.Success && (
-                <Text style={{ color: color.Success.Main }} size="T300">
-                  Message has been reported to server.
-                </Text>
-              )}
-            </Box>
-            <Button
-              type="submit"
-              variant="Critical"
-              before={
-                reportState.status === AsyncStatus.Loading ? (
-                  <Spinner fill="Solid" variant="Critical" size="200" />
-                ) : undefined
-              }
-              aria-disabled={
-                reportState.status === AsyncStatus.Loading ||
-                reportState.status === AsyncStatus.Success
-              }
-            >
-              <Text size="B400">
-                {reportState.status === AsyncStatus.Loading ? 'Reporting...' : 'Report'}
-              </Text>
-            </Button>
-          </Box>
-        </Dialog>
-      </OverlayModal>
-      <Button
-        variant="Critical"
-        fill="None"
-        size="300"
-        after={<Icon size="100" src={Icons.Warning} />}
-        radii="300"
-        onClick={() => setOpen(true)}
-        aria-pressed={open}
-        {...props}
-        ref={ref}
-      >
-        <Text className={css.MessageMenuItemText} as="span" size="T300" truncate>
-          Report
-        </Text>
-      </Button>
-    </>
-  );
-});
+export type { ReactionHandler } from './reactions';
+export {
+  MessageQuickReactions,
+  MessageAllReactionButton,
+  MessageAllReactionItem,
+} from './reactions';
+export {
+  MessageReadReceiptItem,
+  MessageSourceCodeItem,
+  MessageCopyLinkItem,
+  MessagePinItem,
+  MessageDeleteItem,
+  MessageReportItem,
+} from './menu';
+export { TimelineSystemEvent } from './TimelineSystemEvent';
+export type { TimelineSystemEventProps } from './TimelineSystemEvent';
 
 export type MessageProps = {
   room: Room;
@@ -647,6 +91,7 @@ export type MessageProps = {
   mentionHighlight?: boolean;
   edit?: boolean;
   canDelete?: boolean;
+  groupedEventIds?: string[];
   canSendReaction?: boolean;
   canPinEvent?: boolean;
   imagePackRooms?: Room[];
@@ -682,6 +127,7 @@ export const Message = as<'div', MessageProps>(
       mentionHighlight,
       edit,
       canDelete,
+      groupedEventIds,
       canSendReaction,
       canPinEvent,
       imagePackRooms,
@@ -712,18 +158,29 @@ export const Message = as<'div', MessageProps>(
     const senderId = mEvent.getSender() ?? '';
 
     const eventId = mEvent.getId() ?? '';
-    const [activeMessageOptionsId, setActiveMessageOptionsId] = useAtom(messageOptionsAtom);
-    const hover = activeMessageOptionsId === eventId;
-    const setHover = useCallback(
-      (isHovered: boolean) => {
-        setActiveMessageOptionsId(isHovered ? eventId : (prev) => (prev === eventId ? null : prev));
-      },
-      [eventId, setActiveMessageOptionsId]
+    const selectionMode = useAtomValue(selectionModeAtom);
+    const [selectedIds, setSelectedIds] = useAtom(selectedIdsAtom);
+    const isSelected = selectionMode && selectedIds.has(eventId);
+    const toggleSelection = useCallback(() => {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(eventId)) {
+          next.delete(eventId);
+        } else {
+          next.add(eventId);
+        }
+        return next;
+      });
+    }, [eventId, setSelectedIds]);
+    const { hoverProps, focusWithinProps, handleTap, showOptions } = useMessagePopupTrigger(
+      eventId,
+      { disabled: selectionMode || !!edit }
     );
-    const { hoverProps } = useHover({ onHoverChange: setHover });
-    const { focusWithinProps } = useFocusWithin({ onFocusWithinChange: setHover });
     const [menuAnchor, setMenuAnchor] = useState<RectCords>();
-    const [emojiBoardAnchor, setEmojiBoardAnchor] = useState<RectCords>();
+    const [emojiBoardOpen, setEmojiBoardOpen] = useState(false);
+    const emojiBoardRef = useRef<EmojiBoardWrapperHandle>(null);
+    const skipMenuReturnFocusRef = useRef(false);
+    const openReactionViewer = useOpenReactionViewer();
     const [hiddenImages, setHiddenImages] = useAtom(hiddenImagesAtom);
 
     const msgType = mEvent.getContent().msgtype;
@@ -772,6 +229,7 @@ export const Message = as<'div', MessageProps>(
             as="button"
             style={{ color: usernameColor }}
             data-user-id={senderId}
+            data-testid="message-sender-name"
             onContextMenu={onUserClick}
             onClick={onUsernameClick}
           >
@@ -786,16 +244,6 @@ export const Message = as<'div', MessageProps>(
           {tagIconSrc && <PowerIcon size="100" iconSrc={tagIconSrc} />}
         </Box>
         <Box shrink="No" gap="100" alignItems="Center">
-          {messageLayout === MessageLayout.Modern && hover && !isFailed && (
-            <>
-              <Text as="span" size="T200" priority="300">
-                {senderId}
-              </Text>
-              <Text as="span" size="T200" priority="300">
-                |
-              </Text>
-            </>
-          )}
           {isFailed && (
             <>
               <Icon size="100" src={Icons.Warning} style={{ color: color.Critical.Main }} />
@@ -869,7 +317,11 @@ export const Message = as<'div', MessageProps>(
       <Box
         direction="Column"
         alignSelf="Start"
-        style={{ maxWidth: '100%', opacity: isPending ? 0.6 : isFailed ? 0.4 : 1, transition: 'opacity 0.4s linear' }}
+        style={{
+          maxWidth: '100%',
+          opacity: isPending ? 0.6 : isFailed ? 0.4 : 1,
+          transition: 'opacity 0.4s linear',
+        }}
       >
         {reply}
         {edit && onEditId ? (
@@ -894,9 +346,9 @@ export const Message = as<'div', MessageProps>(
     );
 
     const handleContextMenu: MouseEventHandler<HTMLDivElement> = (evt) => {
-      if (evt.altKey || !window.getSelection()?.isCollapsed || edit) return;
-      const tag = (evt.target as any).tagName;
-      if (typeof tag === 'string' && tag.toLowerCase() === 'a') return;
+      if (selectionMode || evt.altKey || !window.getSelection()?.isCollapsed || edit) return;
+      const target = evt.target as Element | null;
+      if (target?.tagName.toLowerCase() === 'a') return;
       evt.preventDefault();
       setMenuAnchor({
         x: evt.clientX,
@@ -915,82 +367,79 @@ export const Message = as<'div', MessageProps>(
       setMenuAnchor(undefined);
     };
 
-    const handleOpenEmojiBoard: MouseEventHandler<HTMLButtonElement> = (evt) => {
-      const target = evt.currentTarget.parentElement?.parentElement ?? evt.currentTarget;
-      setEmojiBoardAnchor(target.getBoundingClientRect());
-    };
     const handleAddReactions: MouseEventHandler<HTMLButtonElement> = () => {
       const rect = menuAnchor;
+      if (!rect) return;
+      skipMenuReturnFocusRef.current = true;
       closeMenu();
-      // open it with timeout because closeMenu
-      // FocusTrap will return focus from emojiBoard
-
-      setTimeout(() => {
-        setEmojiBoardAnchor(rect);
-      }, 100);
+      if (rect.width === 0) {
+        emojiBoardRef.current?.openAtRect(rect, { align: 'Start', offset: 0 });
+      } else {
+        emojiBoardRef.current?.openAtRect(rect);
+      }
     };
 
     return (
       <MessageBase
         className={classNames(css.MessageBase, className, {
           [css.MessageBaseBubbleCollapsed]: messageLayout === MessageLayout.Bubble && collapse,
+          [css.MessageBaseSelecting]: selectionMode,
         })}
         tabIndex={0}
         space={messageSpacing}
         collapse={collapse}
         highlight={highlight}
         mentionHighlight={mentionHighlight}
-        selected={!!menuAnchor || !!emojiBoardAnchor}
+        selected={!!menuAnchor || emojiBoardOpen || isSelected}
+        onClick={selectionMode && canDelete ? toggleSelection : handleTap}
+        onContextMenu={handleContextMenu}
+        style={selectionMode ? { cursor: 'pointer' } : undefined}
         {...props}
         {...hoverProps}
         {...focusWithinProps}
         ref={ref}
       >
-        {!edit && (hover || !!menuAnchor || !!emojiBoardAnchor) && (
+        {selectionMode && canDelete && (
+          <Box className={css.SelectionCheckbox} alignItems="Center" justifyContent="Center">
+            <Checkbox variant="Primary" size="300" checked={!!isSelected} />
+          </Box>
+        )}
+        {!selectionMode && !edit && (showOptions || !!menuAnchor || emojiBoardOpen) && (
           <div className={css.MessageOptionsBase}>
             <Menu className={css.MessageOptionsBar} variant="SurfaceVariant">
               <Box gap="100">
                 {canSendReaction && (
-                  <PopOut
+                  <EmojiBoardWrapper
+                    ref={emojiBoardRef}
                     position="Bottom"
-                    align={emojiBoardAnchor?.width === 0 ? 'Start' : 'End'}
-                    offset={emojiBoardAnchor?.width === 0 ? 0 : undefined}
-                    anchor={emojiBoardAnchor}
-                    content={
-                      <EmojiBoard
-                        imagePackRooms={imagePackRooms ?? []}
-                        returnFocusOnDeactivate={false}
-                        allowTextCustomEmoji
-                        onEmojiSelect={(key) => {
-                          onReactionToggle(mEvent.getId()!, key);
-                          setEmojiBoardAnchor(undefined);
-                        }}
-                        onCustomEmojiSelect={(mxc, shortcode) => {
-                          onReactionToggle(mEvent.getId()!, mxc, shortcode);
-                          setEmojiBoardAnchor(undefined);
-                        }}
-                        requestClose={() => {
-                          setEmojiBoardAnchor(undefined);
-                        }}
-                      />
-                    }
+                    align="End"
+                    imagePackRooms={imagePackRooms ?? []}
+                    returnFocusOnDeactivate={false}
+                    allowTextCustomEmoji
+                    onEmojiSelect={(key) => {
+                      onReactionToggle(eventId, key);
+                    }}
+                    onCustomEmojiSelect={(mxc, shortcode) => {
+                      onReactionToggle(eventId, mxc, shortcode);
+                    }}
+                    onOpenChange={setEmojiBoardOpen}
                   >
-                    <IconButton
-                      onClick={handleOpenEmojiBoard}
-                      variant="SurfaceVariant"
-                      size="300"
-                      radii="300"
-                      aria-pressed={!!emojiBoardAnchor}
-                    >
-                      <Icon src={Icons.SmilePlus} size="100" />
-                    </IconButton>
-                  </PopOut>
+                    {({ triggerRef, open, isOpen }) => (
+                      <IconButton
+                        ref={triggerRef}
+                        onClick={open}
+                        variant="SurfaceVariant"
+                        size="300"
+                        radii="300"
+                        aria-pressed={isOpen}
+                      >
+                        <Icon src={Icons.SmilePlus} size="100" />
+                      </IconButton>
+                    )}
+                  </EmojiBoardWrapper>
                 )}
                 {relations && (
-                  <MessageAllReactionButton
-                    room={room}
-                    relations={relations}
-                  />
+                  <MessageAllReactionButton onOpen={() => openReactionViewer(room, relations)} />
                 )}
                 <IconButton
                   onClick={onReplyClick}
@@ -1025,13 +474,20 @@ export const Message = as<'div', MessageProps>(
                         isKeyForward: (evt: KeyboardEvent) => evt.key === 'ArrowDown',
                         isKeyBackward: (evt: KeyboardEvent) => evt.key === 'ArrowUp',
                         escapeDeactivates: stopPropagation,
+                        setReturnFocus: (previousFocusedElement) => {
+                          if (skipMenuReturnFocusRef.current) {
+                            skipMenuReturnFocusRef.current = false;
+                            return false;
+                          }
+                          return previousFocusedElement;
+                        },
                       }}
                     >
                       <Menu>
                         {canSendReaction && (
                           <MessageQuickReactions
                             onReaction={(key, shortcode) => {
-                              onReactionToggle(mEvent.getId()!, key, shortcode);
+                              onReactionToggle(eventId, key, shortcode);
                               closeMenu();
                             }}
                           />
@@ -1056,9 +512,10 @@ export const Message = as<'div', MessageProps>(
                           )}
                           {relations && (
                             <MessageAllReactionItem
-                              room={room}
-                              relations={relations}
-                              onClose={closeMenu}
+                              onOpen={() => {
+                                openReactionViewer(room, relations);
+                                closeMenu();
+                              }}
                             />
                           )}
                           <MenuItem
@@ -1066,7 +523,7 @@ export const Message = as<'div', MessageProps>(
                             after={<Icon size="100" src={Icons.ReplyArrow} />}
                             radii="300"
                             data-event-id={mEvent.getId()}
-                            onClick={(evt: any) => {
+                            onClick={(evt) => {
                               onReplyClick(evt);
                               closeMenu();
                             }}
@@ -1087,6 +544,7 @@ export const Message = as<'div', MessageProps>(
                               radii="300"
                               data-event-id={mEvent.getId()}
                               onClick={() => {
+                                skipMenuReturnFocusRef.current = true;
                                 onEditId(mEvent.getId());
                                 closeMenu();
                               }}
@@ -1122,7 +580,9 @@ export const Message = as<'div', MessageProps>(
                           {isImageMessage && (
                             <MenuItem
                               size="300"
-                              after={<Icon size="100" src={isImageHidden ? Icons.Eye : Icons.EyeBlind} />}
+                              after={
+                                <Icon size="100" src={isImageHidden ? Icons.Eye : Icons.EyeBlind} />
+                              }
                               radii="300"
                               onClick={() => {
                                 toggleImageHidden();
@@ -1149,6 +609,7 @@ export const Message = as<'div', MessageProps>(
                                 <MessageDeleteItem
                                   room={room}
                                   mEvent={mEvent}
+                                  groupedEventIds={groupedEventIds}
                                   onClose={closeMenu}
                                 />
                               )}
@@ -1167,10 +628,10 @@ export const Message = as<'div', MessageProps>(
                   }
                 >
                   <IconButton
+                    onClick={handleOpenMenu}
                     variant="SurfaceVariant"
                     size="300"
                     radii="300"
-                    onClick={handleOpenMenu}
                     aria-pressed={!!menuAnchor}
                   >
                     <Icon src={Icons.VerticalDots} size="100" />
@@ -1181,180 +642,19 @@ export const Message = as<'div', MessageProps>(
           </div>
         )}
         {messageLayout === MessageLayout.Compact && (
-          <CompactLayout before={headerJSX} onContextMenu={handleContextMenu}>
-            {msgContentJSX}
-          </CompactLayout>
+          <CompactLayout before={headerJSX}>{msgContentJSX}</CompactLayout>
         )}
         {messageLayout === MessageLayout.Bubble && (
-          <BubbleLayout before={avatarJSX} header={headerJSX} onContextMenu={handleContextMenu}>
+          <BubbleLayout before={avatarJSX} header={headerJSX}>
             {msgContentJSX}
           </BubbleLayout>
         )}
         {messageLayout !== MessageLayout.Compact && messageLayout !== MessageLayout.Bubble && (
-          <ModernLayout before={avatarJSX} onContextMenu={handleContextMenu}>
+          <ModernLayout before={avatarJSX}>
             {headerJSX}
             {msgContentJSX}
           </ModernLayout>
         )}
-      </MessageBase>
-    );
-  }
-);
-
-export type EventProps = {
-  room: Room;
-  mEvent: MatrixEvent;
-  highlight: boolean;
-  canDelete?: boolean;
-  messageSpacing: MessageSpacing;
-  hideReadReceipts?: boolean;
-  showDeveloperTools?: boolean;
-};
-export const Event = as<'div', EventProps>(
-  (
-    {
-      className,
-      room,
-      mEvent,
-      highlight,
-      canDelete,
-      messageSpacing,
-      hideReadReceipts,
-      showDeveloperTools,
-      children,
-      ...props
-    },
-    ref
-  ) => {
-    const mx = useMatrixClient();
-    const eventId = mEvent.getId() ?? '';
-    const [activeMessageOptionsId, setActiveMessageOptionsId] = useAtom(messageOptionsAtom);
-    const hover = activeMessageOptionsId === eventId;
-    const setHover = useCallback(
-      (isHovered: boolean) => {
-        setActiveMessageOptionsId(isHovered ? eventId : (prev) => (prev === eventId ? null : prev));
-      },
-      [eventId, setActiveMessageOptionsId]
-    );
-    const { hoverProps } = useHover({ onHoverChange: setHover });
-    const { focusWithinProps } = useFocusWithin({ onFocusWithinChange: setHover });
-    const [menuAnchor, setMenuAnchor] = useState<RectCords>();
-    const stateEvent = typeof mEvent.getStateKey() === 'string';
-
-    const handleContextMenu: MouseEventHandler<HTMLDivElement> = (evt) => {
-      if (evt.altKey || !window.getSelection()?.isCollapsed) return;
-      const tag = (evt.target as any).tagName;
-      if (typeof tag === 'string' && tag.toLowerCase() === 'a') return;
-      evt.preventDefault();
-      setMenuAnchor({
-        x: evt.clientX,
-        y: evt.clientY,
-        width: 0,
-        height: 0,
-      });
-    };
-
-    const handleOpenMenu: MouseEventHandler<HTMLButtonElement> = (evt) => {
-      const target = evt.currentTarget.parentElement?.parentElement ?? evt.currentTarget;
-      setMenuAnchor(target.getBoundingClientRect());
-    };
-
-    const closeMenu = () => {
-      setMenuAnchor(undefined);
-    };
-
-    return (
-      <MessageBase
-        className={classNames(css.MessageBase, className)}
-        tabIndex={0}
-        space={messageSpacing}
-        autoCollapse
-        highlight={highlight}
-        selected={!!menuAnchor}
-        {...props}
-        {...hoverProps}
-        {...focusWithinProps}
-        ref={ref}
-      >
-        {(hover || !!menuAnchor) && (
-          <div className={css.MessageOptionsBase}>
-            <Menu className={css.MessageOptionsBar} variant="SurfaceVariant">
-              <Box gap="100">
-                <PopOut
-                  anchor={menuAnchor}
-                  position="Bottom"
-                  align={menuAnchor?.width === 0 ? 'Start' : 'End'}
-                  offset={menuAnchor?.width === 0 ? 0 : undefined}
-                  content={
-                    <FocusTrap
-                      focusTrapOptions={{
-                        initialFocus: false,
-                        onDeactivate: () => setMenuAnchor(undefined),
-                        clickOutsideDeactivates: true,
-                        isKeyForward: (evt: KeyboardEvent) => evt.key === 'ArrowDown',
-                        isKeyBackward: (evt: KeyboardEvent) => evt.key === 'ArrowUp',
-                        escapeDeactivates: stopPropagation,
-                      }}
-                    >
-                      <Menu {...props} ref={ref}>
-                        <Box direction="Column" gap="100" className={css.MessageMenuGroup}>
-                          {!hideReadReceipts && (
-                            <MessageReadReceiptItem
-                              room={room}
-                              eventId={mEvent.getId() ?? ''}
-                              onClose={closeMenu}
-                            />
-                          )}
-                          {showDeveloperTools && (
-                            <MessageSourceCodeItem
-                              room={room}
-                              mEvent={mEvent}
-                              onClose={closeMenu}
-                            />
-                          )}
-                          <MessageCopyLinkItem room={room} mEvent={mEvent} onClose={closeMenu} />
-                        </Box>
-                        {((!mEvent.isRedacted() && canDelete && !stateEvent) ||
-                          (mEvent.getSender() !== mx.getUserId() && !stateEvent)) && (
-                          <>
-                            <Line size="300" />
-                            <Box direction="Column" gap="100" className={css.MessageMenuGroup}>
-                              {!mEvent.isRedacted() && canDelete && (
-                                <MessageDeleteItem
-                                  room={room}
-                                  mEvent={mEvent}
-                                  onClose={closeMenu}
-                                />
-                              )}
-                              {mEvent.getSender() !== mx.getUserId() && (
-                                <MessageReportItem
-                                  room={room}
-                                  mEvent={mEvent}
-                                  onClose={closeMenu}
-                                />
-                              )}
-                            </Box>
-                          </>
-                        )}
-                      </Menu>
-                    </FocusTrap>
-                  }
-                >
-                  <IconButton
-                    variant="SurfaceVariant"
-                    size="300"
-                    radii="300"
-                    onClick={handleOpenMenu}
-                    aria-pressed={!!menuAnchor}
-                  >
-                    <Icon src={Icons.VerticalDots} size="100" />
-                  </IconButton>
-                </PopOut>
-              </Box>
-            </Menu>
-          </div>
-        )}
-        <div onContextMenu={handleContextMenu}>{children}</div>
       </MessageBase>
     );
   }

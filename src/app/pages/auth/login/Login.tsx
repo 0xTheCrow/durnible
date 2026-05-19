@@ -11,7 +11,7 @@ import { TokenLogin } from './TokenLogin';
 import { OrDivider } from '../OrDivider';
 import { getLoginPath, getRegisterPath, withSearchParam } from '../../pathUtils';
 import { usePathWithOrigin } from '../../../hooks/usePathWithOrigin';
-import { LoginPathSearchParams } from '../../paths';
+import type { LoginPathSearchParams } from '../../paths';
 import { useClientConfig } from '../../../hooks/useClientConfig';
 
 const getLoginTokenSearchParam = () => {

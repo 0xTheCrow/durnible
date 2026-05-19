@@ -1,35 +1,24 @@
 import React from 'react';
-import { Box, Text, IconButton, Icon, Icons, Scroll, Button, config, toRem } from 'folds';
-import { Page, PageContent, PageHeader } from '../../../components/page';
+import { Box, Text, Scroll, Button, config, toRem } from 'folds';
+import { Page, PageContent } from '../../../components/page';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SequenceCardStyle } from '../styles.css';
 import { SettingTile } from '../../../components/setting-tile';
 import CinnySVG from '../../../../../public/res/svg/cinny.svg';
 import { clearCacheAndReload } from '../../../../client/initMatrix';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
+import { SettingsPageHeader } from '../components';
 
 type AboutProps = {
-  requestClose: () => void;
+  onBack: () => void;
+  onClose: () => void;
 };
-export function About({ requestClose }: AboutProps) {
+export function About({ onBack, onClose }: AboutProps) {
   const mx = useMatrixClient();
 
   return (
     <Page>
-      <PageHeader outlined={false}>
-        <Box grow="Yes" gap="200">
-          <Box grow="Yes" alignItems="Center" gap="200">
-            <Text size="H3" truncate>
-              About
-            </Text>
-          </Box>
-          <Box shrink="No">
-            <IconButton onClick={requestClose} variant="Surface">
-              <Icon src={Icons.Cross} />
-            </IconButton>
-          </Box>
-        </Box>
-      </PageHeader>
+      <SettingsPageHeader title="About" onBack={onBack} onClose={onClose} />
       <Box grow="Yes">
         <Scroll hideTrack visibility="Hover">
           <PageContent>
@@ -39,45 +28,16 @@ export function About({ requestClose }: AboutProps) {
                   <img
                     style={{ width: toRem(60), height: toRem(60) }}
                     src={CinnySVG}
-                    alt="Cinny logo"
+                    alt="Durnible logo"
                   />
                 </Box>
                 <Box direction="Column" gap="300">
                   <Box direction="Column" gap="100">
                     <Box gap="100" alignItems="End">
-                      <Text size="H3">Cinny</Text>
+                      <Text size="H3">Durnible</Text>
                       <Text size="T200">v4.10.2</Text>
                     </Box>
                     <Text>Yet another matrix client.</Text>
-                  </Box>
-
-                  <Box gap="200" wrap="Wrap">
-                    <Button
-                      as="a"
-                      href="https://github.com/cinnyapp/cinny"
-                      rel="noreferrer noopener"
-                      target="_blank"
-                      variant="Secondary"
-                      fill="Soft"
-                      size="300"
-                      radii="300"
-                      before={<Icon src={Icons.Code} size="100" filled />}
-                    >
-                      <Text size="B300">Source Code</Text>
-                    </Button>
-                    <Button
-                      as="a"
-                      href="https://cinny.in/#sponsor"
-                      rel="noreferrer noopener"
-                      target="_blank"
-                      variant="Critical"
-                      fill="Soft"
-                      size="300"
-                      radii="300"
-                      before={<Icon src={Icons.Heart} size="100" filled />}
-                    >
-                      <Text size="B300">Support</Text>
-                    </Button>
                   </Box>
                 </Box>
               </Box>

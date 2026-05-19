@@ -1,10 +1,10 @@
-import {
+import type {
   BackupTrustInfo,
   CryptoApi,
-  CryptoEvent,
   CryptoEventHandlerMap,
   KeyBackupInfo,
 } from 'matrix-js-sdk/lib/crypto-api';
+import { CryptoEvent } from 'matrix-js-sdk/lib/crypto-api';
 import { useCallback, useEffect, useState } from 'react';
 import { useMatrixClient } from './useMatrixClient';
 import { useAlive } from './useAlive';

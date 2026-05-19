@@ -1,5 +1,6 @@
-import { ReactNode, useCallback, useEffect } from 'react';
-import { Capabilities } from 'matrix-js-sdk';
+import type { ReactNode } from 'react';
+import { useCallback, useEffect } from 'react';
+import type { Capabilities } from 'matrix-js-sdk';
 import { AsyncStatus, useAsyncCallback } from '../hooks/useAsyncCallback';
 import { useMatrixClient } from '../hooks/useMatrixClient';
 

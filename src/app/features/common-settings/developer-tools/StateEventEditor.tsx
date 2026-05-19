@@ -1,4 +1,5 @@
-import React, { FormEventHandler, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { FormEventHandler } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Box,
   Text,
@@ -13,13 +14,14 @@ import {
   Spinner,
   Button,
 } from 'folds';
-import { MatrixError } from 'matrix-js-sdk';
+import type { MatrixError } from 'matrix-js-sdk';
+import type { StateEvents } from 'matrix-js-sdk/lib/@types/event';
 import { Page, PageHeader } from '../../../components/page';
 import { SequenceCard } from '../../../components/sequence-card';
 import { TextViewerContent } from '../../../components/text-viewer';
 import { useStateEvent } from '../../../hooks/useStateEvent';
 import { useRoom } from '../../../hooks/useRoom';
-import { StateEvent } from '../../../../types/matrix/room';
+import type { StateEvent } from '../../../../types/matrix/room';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { useAlive } from '../../../hooks/useAlive';
 import { Cursor } from '../../../plugins/text-area';
@@ -38,9 +40,9 @@ type StateEventEditProps = {
   type: string;
   stateKey: string;
   content: object;
-  requestClose: () => void;
+  onClose: () => void;
 };
-function StateEventEdit({ type, stateKey, content, requestClose }: StateEventEditProps) {
+function StateEventEdit({ type, stateKey, content, onClose }: StateEventEditProps) {
   const mx = useMatrixClient();
   const room = useRoom();
   const alive = useAlive();
@@ -59,7 +61,13 @@ function StateEventEdit({ type, stateKey, content, requestClose }: StateEventEdi
 
   const [submitState, submit] = useAsyncCallback<object, MatrixError, [object]>(
     useCallback(
-      (c) => mx.sendStateEvent(room.roomId, type as any, c, stateKey),
+      (c) =>
+        mx.sendStateEvent(
+          room.roomId,
+          type as keyof StateEvents,
+          c as StateEvents[keyof StateEvents],
+          stateKey
+        ),
       [mx, room, type, stateKey]
     )
   );
@@ -93,7 +101,7 @@ function StateEventEdit({ type, stateKey, content, requestClose }: StateEventEdi
 
     submit(parsedContent).then(() => {
       if (alive()) {
-        requestClose();
+        onClose();
       }
     });
   };
@@ -145,7 +153,7 @@ function StateEventEdit({ type, stateKey, content, requestClose }: StateEventEdi
                   fill="Soft"
                   size="300"
                   radii="300"
-                  onClick={requestClose}
+                  onClick={onClose}
                   disabled={submitting}
                 >
                   <Text size="B300">Cancel</Text>
@@ -237,10 +245,10 @@ export type StateEventInfo = {
   stateKey: string;
 };
 export type StateEventEditorProps = StateEventInfo & {
-  requestClose: () => void;
+  onClose: () => void;
 };
 
-export function StateEventEditor({ type, stateKey, requestClose }: StateEventEditorProps) {
+export function StateEventEditor({ type, stateKey, onClose }: StateEventEditorProps) {
   const mx = useMatrixClient();
   const room = useRoom();
   const stateEvent = useStateEvent(room, type as unknown as StateEvent, stateKey);
@@ -268,14 +276,14 @@ export function StateEventEditor({ type, stateKey, requestClose }: StateEventEdi
             <Chip
               size="500"
               radii="Pill"
-              onClick={requestClose}
+              onClick={onClose}
               before={<Icon size="100" src={Icons.ArrowLeft} />}
             >
               <Text size="T300">Developer Tools</Text>
             </Chip>
           </Box>
           <Box shrink="No">
-            <IconButton onClick={requestClose} variant="Surface">
+            <IconButton onClick={onClose} variant="Surface">
               <Icon src={Icons.Cross} />
             </IconButton>
           </Box>
@@ -287,7 +295,7 @@ export function StateEventEditor({ type, stateKey, requestClose }: StateEventEdi
             type={type}
             stateKey={stateKey}
             content={editContent}
-            requestClose={handleCloseEdit}
+            onClose={handleCloseEdit}
           />
         ) : (
           <StateEventView

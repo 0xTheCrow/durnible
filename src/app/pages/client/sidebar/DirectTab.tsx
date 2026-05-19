@@ -1,6 +1,8 @@
-import React, { MouseEventHandler, forwardRef, useState } from 'react';
+import type { MouseEventHandler } from 'react';
+import React, { forwardRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Icon, Icons, Menu, MenuItem, PopOut, RectCords, Text, config, toRem } from 'folds';
+import type { RectCords } from 'folds';
+import { Box, Icon, Icons, Menu, MenuItem, PopOut, Text, config, toRem } from 'folds';
 import FocusTrap from 'focus-trap-react';
 import { useAtomValue } from 'jotai';
 import { useDirects } from '../../../state/hooks/roomList';
@@ -27,9 +29,9 @@ import { settingsAtom } from '../../../state/settings';
 import { useSetting } from '../../../state/hooks/settings';
 
 type DirectMenuProps = {
-  requestClose: () => void;
+  onClose: () => void;
 };
-const DirectMenu = forwardRef<HTMLDivElement, DirectMenuProps>(({ requestClose }, ref) => {
+const DirectMenu = forwardRef<HTMLDivElement, DirectMenuProps>(({ onClose }, ref) => {
   const orphanRooms = useDirectRooms();
   const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
   const unread = useRoomsUnread(orphanRooms, roomToUnreadAtom);
@@ -38,7 +40,7 @@ const DirectMenu = forwardRef<HTMLDivElement, DirectMenuProps>(({ requestClose }
   const handleMarkAsRead = () => {
     if (!unread) return;
     orphanRooms.forEach((rId) => markAsRead(mx, rId, hideActivity));
-    requestClose();
+    onClose();
   };
 
   return (
@@ -128,7 +130,7 @@ export function DirectTab() {
                 escapeDeactivates: stopPropagation,
               }}
             >
-              <DirectMenu requestClose={() => setMenuAnchor(undefined)} />
+              <DirectMenu onClose={() => setMenuAnchor(undefined)} />
             </FocusTrap>
           }
         />

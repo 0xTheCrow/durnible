@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
-import {
-  IPowerLevels,
+import type {
+  PowerLevels,
   PowerLevelActions,
   PowerLevelNotificationsAction,
-  readPowerLevel,
 } from './usePowerLevels';
+import { readPowerLevel } from './usePowerLevels';
 
 export type RoomPermissionsAPI = {
   event: (type: string, userId: string) => boolean;
@@ -15,7 +15,7 @@ export type RoomPermissionsAPI = {
 
 export const getRoomPermissionsAPI = (
   creators: Set<string>,
-  powerLevels: IPowerLevels
+  powerLevels: PowerLevels
 ): RoomPermissionsAPI => {
   const api: RoomPermissionsAPI = {
     event: (type, userId) => {
@@ -49,7 +49,7 @@ export const getRoomPermissionsAPI = (
 
 export const useRoomPermissions = (
   creators: Set<string>,
-  powerLevels: IPowerLevels
+  powerLevels: PowerLevels
 ): RoomPermissionsAPI => {
   const api: RoomPermissionsAPI = useMemo(
     () => getRoomPermissionsAPI(creators, powerLevels),

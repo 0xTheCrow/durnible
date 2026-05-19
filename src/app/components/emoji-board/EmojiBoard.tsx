@@ -1,23 +1,35 @@
-import React, {
+import type {
   ChangeEventHandler,
   FocusEventHandler,
+  KeyboardEventHandler,
   MouseEventHandler,
   ReactNode,
   RefObject,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
 } from 'react';
-import { Box, config, Icon, IconButton, Icons, Menu, MenuItem, PopOut, RectCords, Scroll, Text, toRem } from 'folds';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { RectCords } from 'folds';
+import {
+  Box,
+  config,
+  Icon,
+  IconButton,
+  Icons,
+  Menu,
+  MenuItem,
+  PopOut,
+  Scroll,
+  Text,
+  toRem,
+} from 'folds';
 import FocusTrap from 'focus-trap-react';
 import { isKeyHotkey } from 'is-hotkey';
-import { Room } from 'matrix-js-sdk';
-import { atom, PrimitiveAtom, useAtom, useSetAtom } from 'jotai';
+import type { Room } from 'matrix-js-sdk';
+import type { PrimitiveAtom } from 'jotai';
+import { atom, useAtom, useSetAtom } from 'jotai';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { monitorForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
-import { IEmoji, emojiGroups, emojis } from '../../plugins/emoji';
+import type { Emoji } from '../../plugins/emoji';
+import { emojiGroups, emojis } from '../../plugins/emoji';
 import { useEmojiGroupLabels } from './useEmojiGroupLabels';
 import { useEmojiGroupIcons } from './useEmojiGroupIcons';
 import { preventScrollWithArrowKey, stopPropagation } from '../../utils/keyboard';
@@ -26,16 +38,21 @@ import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { useRecentEmoji } from '../../hooks/useRecentEmoji';
 import { isUserId, mxcUrlToHttp } from '../../utils/matrix';
 import { editableActiveElement, targetFromEvent } from '../../utils/dom';
-import { useAsyncSearch, UseAsyncSearchOptions } from '../../hooks/useAsyncSearch';
-import { useDebounce } from '../../hooks/useDebounce';
-import { useThrottle } from '../../hooks/useThrottle';
+import type { UseAsyncSearchOptions } from '../../hooks/useAsyncSearch';
+import { useAsyncSearch } from '../../hooks/useAsyncSearch';
 import { addRecentEmoji } from '../../plugins/recent-emoji';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
-import { ImagePack, ImageUsage, PackImageReader } from '../../plugins/custom-emoji';
+import type { ImagePack, PackImageReader } from '../../plugins/custom-emoji';
+import { ImageUsage } from '../../plugins/custom-emoji';
 import { getEmoticonSearchStr } from '../../plugins/utils';
 import { useStickerPackOrder } from '../../hooks/useStickerPackOrder';
 import { useFavoriteEmoji, useFavoriteEntries } from '../../hooks/useFavoriteEmoji';
-import { addFavoriteEmoji, removeFavoriteEmoji, isFavoriteEmoji } from '../../plugins/favorite-emoji';
+import {
+  addFavoriteEmoji,
+  removeFavoriteEmoji,
+  isFavoriteEmoji,
+} from '../../plugins/favorite-emoji';
+import type { PreviewData } from './components';
 import {
   SearchInput,
   EmojiBoardTabs,
@@ -45,11 +62,10 @@ import {
   NoStickerPacks,
   createPreviewDataAtom,
   Preview,
-  PreviewData,
+  EmojiHoverTooltip,
   EmojiItem,
   StickerItem,
   CustomEmojiItem,
-  ImageGroupIcon,
   DraggableImageGroupIcon,
   GroupIcon,
   DraggableGroupIcon,
@@ -60,19 +76,32 @@ import {
   EmojiBoardLayout,
 } from './components';
 import { useScreenSize, ScreenSize } from '../../hooks/useScreenSize';
-import { EmojiBoardTab, EmojiItemInfo, EmojiType } from './types';
+import { useSetting } from '../../state/hooks/settings';
+import { settingsAtom } from '../../state/settings';
+import type { EmojiItemInfo } from './types';
+import { EmojiBoardTab, EmojiType } from './types';
 import { VirtualTile } from '../virtualizer';
 import { GifBoard } from './GifBoard';
+import type { GifItem } from '../../utils/gifServer';
 import { gifServerEnabled } from '../../utils/gifServer';
 
 const RECENT_GROUP_ID = 'recent_group';
 const FAVORITES_GROUP_ID = 'favorites_group';
 const SEARCH_GROUP_ID = 'search_group';
 
+const compareByPackOrder = (orderMap: Map<string, number>, aId: string, bId: string): number => {
+  const ai = orderMap.get(aId);
+  const bi = orderMap.get(bId);
+  if (ai !== undefined && bi !== undefined) return ai - bi;
+  if (ai !== undefined) return -1;
+  if (bi !== undefined) return 1;
+  return aId.localeCompare(bId);
+};
+
 type EmojiGroupItem = {
   id: string;
   name: string;
-  items: Array<IEmoji | PackImageReader>;
+  items: Array<Emoji | PackImageReader>;
 };
 type StickerGroupItem = {
   id: string;
@@ -84,7 +113,7 @@ const useGroups = (
   tab: EmojiBoardTab,
   imagePacks: ImagePack[],
   packOrder: string[],
-  favoriteEmojis: Array<IEmoji | PackImageReader>
+  favoriteEmojis: Array<Emoji | PackImageReader>
 ): [EmojiGroupItem[], StickerGroupItem[]] => {
   const mx = useMatrixClient();
 
@@ -118,7 +147,11 @@ const useGroups = (
       };
     });
 
-    const reorderableGroups = [recentGroup, ...(favoriteEmojis.length > 0 ? [favoritesGroup] : []), ...packGroups];
+    const reorderableGroups = [
+      recentGroup,
+      ...(favoriteEmojis.length > 0 ? [favoritesGroup] : []),
+      ...packGroups,
+    ];
     if (packOrder.length > 0) {
       const orderMap = new Map(packOrder.map((id, i) => [id, i]));
       reorderableGroups.sort((a, b) => {
@@ -188,7 +221,7 @@ const useItemRenderer = (tab: EmojiBoardTab) => {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
 
-  const renderItem = (emoji: IEmoji | PackImageReader, index: number) => {
+  const renderItem = (emoji: Emoji | PackImageReader, index: number) => {
     if ('unicode' in emoji) {
       return <EmojiItem key={emoji.unicode + index} emoji={emoji} />;
     }
@@ -223,7 +256,14 @@ type EmojiSidebarProps = {
   onScrollToGroup: (groupId: string) => void;
   setPackOrder: (ids: string[]) => void;
 };
-function EmojiSidebar({ activeGroupAtom, packs, packOrder, hasFavorites, onScrollToGroup, setPackOrder }: EmojiSidebarProps) {
+function EmojiSidebar({
+  activeGroupAtom,
+  packs,
+  packOrder,
+  hasFavorites,
+  onScrollToGroup,
+  setPackOrder,
+}: EmojiSidebarProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
 
@@ -247,7 +287,11 @@ function EmojiSidebar({ activeGroupAtom, packs, packOrder, hasFavorites, onScrol
       const idx = packOrder.indexOf(specialId);
       if (idx < 0) {
         // Not in packOrder, prepend (recent first, then favorites)
-        packIds.splice(specialId === RECENT_GROUP_ID ? 0 : Math.min(1, packIds.length), 0, specialId);
+        packIds.splice(
+          specialId === RECENT_GROUP_ID ? 0 : Math.min(1, packIds.length),
+          0,
+          specialId
+        );
       } else {
         const packIdSet = new Set(packIds);
         const insertAt = packOrder.slice(0, idx).filter((id) => packIdSet.has(id)).length;
@@ -255,23 +299,29 @@ function EmojiSidebar({ activeGroupAtom, packs, packOrder, hasFavorites, onScrol
       }
     }
     return packIds;
-  }, [packs, packOrder]);
+  }, [packs, packOrder, hasFavorites]);
 
-  const handleMoveUp = useCallback((id: string) => {
-    const idx = reorderableIds.indexOf(id);
-    if (idx <= 0) return;
-    const newIds = [...reorderableIds];
-    [newIds[idx - 1], newIds[idx]] = [newIds[idx], newIds[idx - 1]];
-    setPackOrder(newIds);
-  }, [reorderableIds, setPackOrder]);
+  const handleMoveUp = useCallback(
+    (id: string) => {
+      const idx = reorderableIds.indexOf(id);
+      if (idx <= 0) return;
+      const newIds = [...reorderableIds];
+      [newIds[idx - 1], newIds[idx]] = [newIds[idx], newIds[idx - 1]];
+      setPackOrder(newIds);
+    },
+    [reorderableIds, setPackOrder]
+  );
 
-  const handleMoveDown = useCallback((id: string) => {
-    const idx = reorderableIds.indexOf(id);
-    if (idx < 0 || idx >= reorderableIds.length - 1) return;
-    const newIds = [...reorderableIds];
-    [newIds[idx + 1], newIds[idx]] = [newIds[idx], newIds[idx + 1]];
-    setPackOrder(newIds);
-  }, [reorderableIds, setPackOrder]);
+  const handleMoveDown = useCallback(
+    (id: string) => {
+      const idx = reorderableIds.indexOf(id);
+      if (idx < 0 || idx >= reorderableIds.length - 1) return;
+      const newIds = [...reorderableIds];
+      [newIds[idx + 1], newIds[idx]] = [newIds[idx], newIds[idx + 1]];
+      setPackOrder(newIds);
+    },
+    [reorderableIds, setPackOrder]
+  );
 
   useEffect(
     () =>
@@ -301,7 +351,10 @@ function EmojiSidebar({ activeGroupAtom, packs, packOrder, hasFavorites, onScrol
   );
 
   const sortedItems = useMemo(() => {
-    type SidebarItem = { type: 'recent' } | { type: 'favorites' } | { type: 'pack'; pack: ImagePack };
+    type SidebarItem =
+      | { type: 'recent' }
+      | { type: 'favorites' }
+      | { type: 'pack'; pack: ImagePack };
     const items: SidebarItem[] = [
       { type: 'recent' },
       ...(hasFavorites ? [{ type: 'favorites' as const }] : []),
@@ -310,15 +363,23 @@ function EmojiSidebar({ activeGroupAtom, packs, packOrder, hasFavorites, onScrol
     if (packOrder.length > 0) {
       const orderMap = new Map(packOrder.map((id, i) => [id, i]));
       items.sort((a, b) => {
-        const aId = a.type === 'recent' ? RECENT_GROUP_ID : a.type === 'favorites' ? FAVORITES_GROUP_ID : a.pack.id;
-        const bId = b.type === 'recent' ? RECENT_GROUP_ID : b.type === 'favorites' ? FAVORITES_GROUP_ID : b.pack.id;
-        const ai = orderMap.get(aId) ?? Infinity;
-        const bi = orderMap.get(bId) ?? Infinity;
-        return ai - bi;
+        const aId =
+          a.type === 'recent'
+            ? RECENT_GROUP_ID
+            : a.type === 'favorites'
+            ? FAVORITES_GROUP_ID
+            : a.pack.id;
+        const bId =
+          b.type === 'recent'
+            ? RECENT_GROUP_ID
+            : b.type === 'favorites'
+            ? FAVORITES_GROUP_ID
+            : b.pack.id;
+        return compareByPackOrder(orderMap, aId, bId);
       });
     }
     return items;
-  }, [packs, packOrder]);
+  }, [packs, packOrder, hasFavorites]);
 
   return (
     <Sidebar>
@@ -335,7 +396,12 @@ function EmojiSidebar({ activeGroupAtom, packs, packOrder, hasFavorites, onScrol
           </IconButton>
         )}
         {sortedItems.map((item) => {
-          const id = item.type === 'recent' ? RECENT_GROUP_ID : item.type === 'favorites' ? FAVORITES_GROUP_ID : item.pack.id;
+          const id =
+            item.type === 'recent'
+              ? RECENT_GROUP_ID
+              : item.type === 'favorites'
+              ? FAVORITES_GROUP_ID
+              : item.pack.id;
           const idx = reorderableIds.indexOf(id);
 
           if (item.type === 'recent') {
@@ -403,8 +469,7 @@ function EmojiSidebar({ activeGroupAtom, packs, packOrder, hasFavorites, onScrol
           if (!label) label = isUserId(pack.id) ? 'Personal Pack' : mx.getRoom(pack.id)?.name;
 
           const url =
-            mxcUrlToHttp(mx, pack.getAvatarUrl(usage) ?? '', useAuthentication) ||
-            pack.meta.avatar;
+            mxcUrlToHttp(mx, pack.getAvatarUrl(usage) ?? '', useAuthentication) || pack.meta.avatar;
 
           if (isMobile) {
             return (
@@ -467,7 +532,14 @@ type StickerSidebarProps = {
   onScrollToGroup: (groupId: string) => void;
   setPackOrder: (ids: string[]) => void;
 };
-function StickerSidebar({ activeGroupAtom, packs, packOrder, hasFavorites, onScrollToGroup, setPackOrder }: StickerSidebarProps) {
+function StickerSidebar({
+  activeGroupAtom,
+  packs,
+  packOrder,
+  hasFavorites,
+  onScrollToGroup,
+  setPackOrder,
+}: StickerSidebarProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
 
@@ -496,21 +568,27 @@ function StickerSidebar({ activeGroupAtom, packs, packOrder, hasFavorites, onScr
     return ids;
   }, [packs, packOrder, hasFavorites]);
 
-  const handleMoveUp = useCallback((id: string) => {
-    const idx = reorderableIds.indexOf(id);
-    if (idx <= 0) return;
-    const newIds = [...reorderableIds];
-    [newIds[idx - 1], newIds[idx]] = [newIds[idx], newIds[idx - 1]];
-    setPackOrder(newIds);
-  }, [reorderableIds, setPackOrder]);
+  const handleMoveUp = useCallback(
+    (id: string) => {
+      const idx = reorderableIds.indexOf(id);
+      if (idx <= 0) return;
+      const newIds = [...reorderableIds];
+      [newIds[idx - 1], newIds[idx]] = [newIds[idx], newIds[idx - 1]];
+      setPackOrder(newIds);
+    },
+    [reorderableIds, setPackOrder]
+  );
 
-  const handleMoveDown = useCallback((id: string) => {
-    const idx = reorderableIds.indexOf(id);
-    if (idx < 0 || idx >= reorderableIds.length - 1) return;
-    const newIds = [...reorderableIds];
-    [newIds[idx + 1], newIds[idx]] = [newIds[idx], newIds[idx + 1]];
-    setPackOrder(newIds);
-  }, [reorderableIds, setPackOrder]);
+  const handleMoveDown = useCallback(
+    (id: string) => {
+      const idx = reorderableIds.indexOf(id);
+      if (idx < 0 || idx >= reorderableIds.length - 1) return;
+      const newIds = [...reorderableIds];
+      [newIds[idx + 1], newIds[idx]] = [newIds[idx], newIds[idx + 1]];
+      setPackOrder(newIds);
+    },
+    [reorderableIds, setPackOrder]
+  );
 
   useEffect(
     () =>
@@ -550,9 +628,7 @@ function StickerSidebar({ activeGroupAtom, packs, packOrder, hasFavorites, onScr
       items.sort((a, b) => {
         const aId = a.type === 'favorites' ? FAVORITES_GROUP_ID : a.pack.id;
         const bId = b.type === 'favorites' ? FAVORITES_GROUP_ID : b.pack.id;
-        const ai = orderMap.get(aId) ?? Infinity;
-        const bi = orderMap.get(bId) ?? Infinity;
-        return ai - bi;
+        return compareByPackOrder(orderMap, aId, bId);
       });
     }
     return items;
@@ -663,33 +739,46 @@ function EmojiGroupHolder({
 }: EmojiGroupHolderProps) {
   const setPreviewData = useSetAtom(previewAtom);
 
-  const handleEmojiPreview = useCallback(
-    (element: HTMLButtonElement) => {
-      const emojiInfo = getEmojiItemInfo(element);
-      if (!emojiInfo) return;
+  const [hoverState, setHoverState] = useState<{
+    shortcode: string;
+    rect: DOMRect;
+  } | null>(null);
+  const lastHoverTargetRef = useRef<HTMLButtonElement | null>(null);
 
-      setPreviewData({
-        key: emojiInfo.data,
-        shortcode: emojiInfo.shortcode,
-      });
-    },
-    [setPreviewData]
-  );
-
-  const throttleEmojiHover = useThrottle(handleEmojiPreview, {
-    wait: 200,
-    immediate: true,
-  });
+  const clearHover = () => {
+    if (!lastHoverTargetRef.current) return;
+    lastHoverTargetRef.current = null;
+    setHoverState(null);
+  };
 
   const handleEmojiHover: MouseEventHandler = (evt) => {
     const targetEl = targetFromEvent(evt.nativeEvent, 'button') as HTMLButtonElement | undefined;
-    if (!targetEl) return;
-    throttleEmojiHover(targetEl);
+    if (!targetEl) {
+      clearHover();
+      return;
+    }
+    if (lastHoverTargetRef.current === targetEl) return;
+    const emojiInfo = getEmojiItemInfo(targetEl);
+    if (!emojiInfo) return;
+    lastHoverTargetRef.current = targetEl;
+    setHoverState({
+      shortcode: emojiInfo.shortcode,
+      rect: targetEl.getBoundingClientRect(),
+    });
   };
 
   const handleEmojiFocus: FocusEventHandler = (evt) => {
     const targetEl = evt.target as HTMLButtonElement;
-    handleEmojiPreview(targetEl);
+    const emojiInfo = getEmojiItemInfo(targetEl);
+    if (!emojiInfo) return;
+    setPreviewData({
+      key: emojiInfo.data,
+      shortcode: emojiInfo.shortcode,
+    });
+  };
+
+  const clearPreview = () => {
+    setPreviewData(undefined);
   };
 
   return (
@@ -698,16 +787,17 @@ function EmojiGroupHolder({
         onClick={onGroupItemClick}
         onContextMenu={onGroupItemContextMenu}
         onMouseMove={handleEmojiHover}
+        onMouseLeave={clearHover}
         onFocus={handleEmojiFocus}
+        onBlur={clearPreview}
         direction="Column"
       >
         {children}
       </Box>
+      {hoverState && <EmojiHoverTooltip shortcode={hoverState.shortcode} rect={hoverState.rect} />}
     </Scroll>
   );
 }
-
-const DefaultEmojiPreview: PreviewData = { key: '🙂', shortcode: 'slight_smile' };
 
 const SEARCH_OPTIONS: UseAsyncSearchOptions = {
   limit: 1000,
@@ -722,12 +812,14 @@ type EmojiBoardProps = {
   tab?: EmojiBoardTab;
   onTabChange?: (tab: EmojiBoardTab) => void;
   imagePackRooms: Room[];
-  requestClose: () => void;
+  onClose: () => void;
+  onBackClick?: () => void;
   returnFocusOnDeactivate?: boolean;
+  handleOutsideClick?: boolean;
   onEmojiSelect?: (unicode: string, shortcode: string) => void;
   onCustomEmojiSelect?: (mxc: string, shortcode: string) => void;
   onStickerSelect?: (mxc: string, shortcode: string, label: string) => void;
-  onGifSelect?: (gif: import('../../utils/gifServer').GifItem) => void;
+  onGifSelect?: (gif: GifItem) => void;
   allowTextCustomEmoji?: boolean;
   addToRecentEmoji?: boolean;
 };
@@ -736,8 +828,10 @@ export function EmojiBoard({
   tab = EmojiBoardTab.Emoji,
   onTabChange,
   imagePackRooms,
-  requestClose,
+  onClose,
+  onBackClick,
   returnFocusOnDeactivate,
+  handleOutsideClick = true,
   onEmojiSelect,
   onCustomEmojiSelect,
   onStickerSelect,
@@ -746,14 +840,15 @@ export function EmojiBoard({
   addToRecentEmoji = true,
 }: EmojiBoardProps) {
   const mx = useMatrixClient();
+  const isMobile = useScreenSize() !== ScreenSize.Desktop;
+  const [emojiSearchAutoFocusMobile] = useSetting(settingsAtom, 'emojiSearchAutoFocusMobile');
+  const [emojiSearchAutoFocusDesktop] = useSetting(settingsAtom, 'emojiSearchAutoFocusDesktop');
+  const searchAutoFocus = isMobile ? emojiSearchAutoFocusMobile : emojiSearchAutoFocusDesktop;
 
   const emojiTab = tab === EmojiBoardTab.Emoji;
   const usage = emojiTab ? ImageUsage.Emoticon : ImageUsage.Sticker;
 
-  const previewAtom = useMemo(
-    () => createPreviewDataAtom(emojiTab ? DefaultEmojiPreview : undefined),
-    [emojiTab]
-  );
+  const previewAtom = useMemo(() => createPreviewDataAtom(), []);
   const activeGroupIdAtom = useMemo(() => atom<string | undefined>(undefined), []);
   const setActiveGroupId = useSetAtom(activeGroupIdAtom);
   const rawImagePacks = useRelevantImagePacks(usage, imagePackRooms);
@@ -765,19 +860,20 @@ export function EmojiBoard({
   const imagePacks = useMemo(() => {
     if (packOrder.length === 0) return rawImagePacks;
     const orderMap = new Map(packOrder.map((id, i) => [id, i]));
-    return [...rawImagePacks].sort((a, b) => {
-      const ai = orderMap.get(a.id) ?? Infinity;
-      const bi = orderMap.get(b.id) ?? Infinity;
-      return ai - bi;
-    });
+    return [...rawImagePacks].sort((a, b) => compareByPackOrder(orderMap, a.id, b.id));
   }, [rawImagePacks, packOrder]);
 
-  const [emojiGroupItems, stickerGroupItems] = useGroups(tab, imagePacks, packOrder, favoriteEmojis);
+  const [emojiGroupItems, stickerGroupItems] = useGroups(
+    tab,
+    imagePacks,
+    packOrder,
+    favoriteEmojis
+  );
   const groups = emojiTab ? emojiGroupItems : stickerGroupItems;
   const renderItem = useItemRenderer(tab);
 
   const searchList = useMemo(() => {
-    let list: Array<PackImageReader | IEmoji> = [];
+    let list: Array<PackImageReader | Emoji> = [];
     list = list.concat(imagePacks.flatMap((pack) => pack.getImages(usage)));
     if (emojiTab) list = list.concat(emojis);
     return list;
@@ -791,16 +887,13 @@ export function EmojiBoard({
 
   const searchedItems = result?.items.slice(0, 100);
 
-  const handleOnChange: ChangeEventHandler<HTMLInputElement> = useDebounce(
-    useCallback(
-      (evt) => {
-        const term = evt.target.value;
-        if (term) search(term);
-        else resetSearch();
-      },
-      [search, resetSearch]
-    ),
-    { wait: 200 }
+  const handleOnChange: ChangeEventHandler<HTMLInputElement> = useCallback(
+    (evt) => {
+      const term = evt.target.value;
+      if (term) search(term);
+      else resetSearch();
+    },
+    [search, resetSearch]
   );
 
   const contentScrollRef = useRef<HTMLDivElement>(null);
@@ -817,10 +910,10 @@ export function EmojiBoard({
   const [contextMenuEmojiInfo, setContextMenuEmojiInfo] = useState<EmojiItemInfo>();
 
   const handleGroupItemContextMenu: MouseEventHandler = (evt) => {
+    evt.preventDefault();
     const targetEl = targetFromEvent(evt.nativeEvent, 'button');
     const emojiInfo = targetEl && getEmojiItemInfo(targetEl);
     if (!emojiInfo) return;
-    evt.preventDefault();
     const rect = (targetEl as HTMLElement).getBoundingClientRect();
     setContextMenuAnchor({
       x: rect.x,
@@ -837,20 +930,21 @@ export function EmojiBoard({
     if (isFavoriteEmoji(favoriteEntries, type, data)) {
       removeFavoriteEmoji(mx, type, data);
     } else {
-      addFavoriteEmoji(mx, { type: type as 'emoji' | 'customEmoji' | 'sticker', data, shortcode, label });
+      addFavoriteEmoji(mx, {
+        type: type as 'emoji' | 'customEmoji' | 'sticker',
+        data,
+        shortcode,
+        label,
+      });
     }
     setContextMenuAnchor(undefined);
     setContextMenuEmojiInfo(undefined);
   };
 
-  const handleGroupItemClick: MouseEventHandler = (evt) => {
-    const targetEl = targetFromEvent(evt.nativeEvent, 'button');
-    const emojiInfo = targetEl && getEmojiItemInfo(targetEl);
-    if (!emojiInfo) return;
-
+  const selectEmojiInfo = (emojiInfo: EmojiItemInfo, altKey: boolean, shiftKey: boolean) => {
     if (emojiInfo.type === EmojiType.Emoji) {
       onEmojiSelect?.(emojiInfo.data, emojiInfo.shortcode);
-      if (!evt.altKey && !evt.shiftKey && addToRecentEmoji) {
+      if (!altKey && !shiftKey && addToRecentEmoji) {
         addRecentEmoji(mx, emojiInfo.data);
       }
     }
@@ -860,12 +954,42 @@ export function EmojiBoard({
     if (emojiInfo.type === EmojiType.Sticker) {
       onStickerSelect?.(emojiInfo.data, emojiInfo.shortcode, emojiInfo.label);
     }
-    if (!evt.altKey && !evt.shiftKey) requestClose();
+    if (!altKey && !shiftKey) onClose();
+  };
+
+  const handleGroupItemClick: MouseEventHandler = (evt) => {
+    const targetEl = targetFromEvent(evt.nativeEvent, 'button');
+    const emojiInfo = targetEl && getEmojiItemInfo(targetEl);
+    if (!emojiInfo) return;
+    selectEmojiInfo(emojiInfo, evt.altKey, evt.shiftKey);
+  };
+
+  const handleSearchKeyDown: KeyboardEventHandler<HTMLInputElement> = (evt) => {
+    if (evt.nativeEvent.isComposing) return;
+    if (!isKeyHotkey('enter', evt)) return;
+    const firstItem = searchedItems?.[0];
+    if (!firstItem) return;
+    evt.preventDefault();
+    const emojiInfo: EmojiItemInfo =
+      'unicode' in firstItem
+        ? {
+            type: EmojiType.Emoji,
+            data: firstItem.unicode,
+            shortcode: firstItem.shortcode,
+            label: firstItem.label,
+          }
+        : {
+            type: tab === EmojiBoardTab.Sticker ? EmojiType.Sticker : EmojiType.CustomEmoji,
+            data: firstItem.url,
+            shortcode: firstItem.shortcode,
+            label: firstItem.body || firstItem.shortcode,
+          };
+    selectEmojiInfo(emojiInfo, evt.altKey, evt.shiftKey);
   };
 
   const handleTextCustomEmojiSelect = (textEmoji: string) => {
     onCustomEmojiSelect?.(textEmoji, textEmoji);
-    requestClose();
+    onClose();
   };
 
   const handleScrollToGroup = (groupId: string) => {
@@ -903,152 +1027,177 @@ export function EmojiBoard({
 
   return (
     <>
-    <FocusTrap
-      focusTrapOptions={{
-        returnFocusOnDeactivate,
-        initialFocus: false,
-        onDeactivate: requestClose,
-        clickOutsideDeactivates: true,
-        allowOutsideClick: true,
-        isKeyForward: (evt: KeyboardEvent) =>
-          !editableActiveElement() && isKeyHotkey(['arrowdown', 'arrowright'], evt),
-        isKeyBackward: (evt: KeyboardEvent) =>
-          !editableActiveElement() && isKeyHotkey(['arrowup', 'arrowleft'], evt),
-        escapeDeactivates: stopPropagation,
-      }}
-    >
-      <div style={{ display: 'contents' }}>
-      {gifServerEnabled && tab === EmojiBoardTab.Gif ? (
-        <GifBoard
-          tab={tab}
-          onTabChange={onTabChange}
-          onGifSelect={onGifSelect}
-          requestClose={requestClose}
-        />
-      ) : (
-      <EmojiBoardLayout
-        header={
-          <Box direction="Column" gap="200">
-            {onTabChange && <EmojiBoardTabs tab={tab} onTabChange={onTabChange} />}
-            <SearchInput
-              key={tab}
-              query={result?.query}
-              onChange={handleOnChange}
-              allowTextCustomEmoji={allowTextCustomEmoji}
-              onTextCustomEmojiSelect={handleTextCustomEmojiSelect}
-            />
-          </Box>
-        }
-        sidebar={
-          emojiTab ? (
-            <EmojiSidebar
-              activeGroupAtom={activeGroupIdAtom}
-              packs={imagePacks}
-              packOrder={packOrder}
-              hasFavorites={emojiGroupItems.some((g) => g.id === FAVORITES_GROUP_ID)}
-              onScrollToGroup={handleScrollToGroup}
-              setPackOrder={setPackOrder}
+      <FocusTrap
+        focusTrapOptions={{
+          returnFocusOnDeactivate,
+          initialFocus: false,
+          onDeactivate: onClose,
+          clickOutsideDeactivates: handleOutsideClick,
+          allowOutsideClick: true,
+          isKeyForward: (evt: KeyboardEvent) =>
+            !editableActiveElement() && isKeyHotkey(['arrowdown', 'arrowright'], evt),
+          isKeyBackward: (evt: KeyboardEvent) =>
+            !editableActiveElement() && isKeyHotkey(['arrowup', 'arrowleft'], evt),
+          escapeDeactivates: (evt: KeyboardEvent) => {
+            evt.stopPropagation();
+            return true;
+          },
+        }}
+      >
+        <div style={{ display: 'contents' }}>
+          {gifServerEnabled && tab === EmojiBoardTab.Gif ? (
+            <GifBoard
+              tab={tab}
+              onTabChange={onTabChange}
+              onGifSelect={onGifSelect}
+              requestClose={onClose}
             />
           ) : (
-            <StickerSidebar
-              activeGroupAtom={activeGroupIdAtom}
-              packs={imagePacks}
-              packOrder={packOrder}
-              hasFavorites={stickerGroupItems.some((g) => g.id === FAVORITES_GROUP_ID)}
-              onScrollToGroup={handleScrollToGroup}
-              setPackOrder={setPackOrder}
-            />
-          )
-        }
-      >
-        <Box grow="Yes">
-          <EmojiGroupHolder
-            key={tab}
-            contentScrollRef={contentScrollRef}
-            previewAtom={previewAtom}
-            onGroupItemClick={handleGroupItemClick}
-            onGroupItemContextMenu={handleGroupItemContextMenu}
-          >
-            {searchedItems && (
-              <EmojiGroup
-                id={SEARCH_GROUP_ID}
-                label={searchedItems.length ? 'Search Results' : 'No Results found'}
-              >
-                {searchedItems.map(renderItem)}
-              </EmojiGroup>
-            )}
-            <div
-              ref={virtualBaseRef}
-              style={{
-                position: 'relative',
-                height: virtualizer.getTotalSize(),
+            <EmojiBoardLayout
+              header={
+                <Box direction="Column" gap="200">
+                  {(onBackClick || onTabChange) && (
+                    <Box direction="Row" gap="200" alignItems="Center">
+                      {onBackClick && (
+                        <IconButton
+                          onClick={onBackClick}
+                          aria-label="Close"
+                          variant="SurfaceVariant"
+                          size="300"
+                          radii="300"
+                        >
+                          <Icon src={Icons.ArrowLeft} />
+                        </IconButton>
+                      )}
+                      {onTabChange && <EmojiBoardTabs tab={tab} onTabChange={onTabChange} />}
+                    </Box>
+                  )}
+                  <SearchInput
+                    key={tab}
+                    query={result?.query}
+                    onChange={handleOnChange}
+                    onKeyDown={handleSearchKeyDown}
+                    allowTextCustomEmoji={allowTextCustomEmoji}
+                    onTextCustomEmojiSelect={handleTextCustomEmojiSelect}
+                    autoFocus={searchAutoFocus}
+                  />
+                </Box>
+              }
+              sidebar={
+                emojiTab ? (
+                  <EmojiSidebar
+                    activeGroupAtom={activeGroupIdAtom}
+                    packs={imagePacks}
+                    packOrder={packOrder}
+                    hasFavorites={emojiGroupItems.some((g) => g.id === FAVORITES_GROUP_ID)}
+                    onScrollToGroup={handleScrollToGroup}
+                    setPackOrder={setPackOrder}
+                  />
+                ) : (
+                  <StickerSidebar
+                    activeGroupAtom={activeGroupIdAtom}
+                    packs={imagePacks}
+                    packOrder={packOrder}
+                    hasFavorites={stickerGroupItems.some((g) => g.id === FAVORITES_GROUP_ID)}
+                    onScrollToGroup={handleScrollToGroup}
+                    setPackOrder={setPackOrder}
+                  />
+                )
+              }
+            >
+              <Box grow="Yes">
+                <EmojiGroupHolder
+                  key={tab}
+                  contentScrollRef={contentScrollRef}
+                  previewAtom={previewAtom}
+                  onGroupItemClick={handleGroupItemClick}
+                  onGroupItemContextMenu={handleGroupItemContextMenu}
+                >
+                  {searchedItems && (
+                    <EmojiGroup
+                      id={SEARCH_GROUP_ID}
+                      label={searchedItems.length ? 'Search Results' : 'No Results found'}
+                    >
+                      {searchedItems.map(renderItem)}
+                    </EmojiGroup>
+                  )}
+                  <div
+                    ref={virtualBaseRef}
+                    style={{
+                      position: 'relative',
+                      height: virtualizer.getTotalSize(),
+                    }}
+                  >
+                    {vItems.map((vItem) => {
+                      const group = groups[vItem.index];
+
+                      return (
+                        <VirtualTile
+                          virtualItem={vItem}
+                          style={{ paddingTop: config.space.S200 }}
+                          ref={virtualizer.measureElement}
+                          key={vItem.index}
+                        >
+                          <EmojiGroup key={group.id} id={group.id} label={group.name}>
+                            {group.items.map(renderItem)}
+                          </EmojiGroup>
+                        </VirtualTile>
+                      );
+                    })}
+                  </div>
+                  {tab === EmojiBoardTab.Sticker && groups.length === 0 && <NoStickerPacks />}
+                </EmojiGroupHolder>
+              </Box>
+              <Preview previewAtom={previewAtom} />
+            </EmojiBoardLayout>
+          )}
+        </div>
+      </FocusTrap>
+      {contextMenuAnchor && (
+        <PopOut
+          anchor={contextMenuAnchor}
+          position="Right"
+          align="Start"
+          content={
+            <FocusTrap
+              focusTrapOptions={{
+                initialFocus: false,
+                returnFocusOnDeactivate: false,
+                onDeactivate: () => {
+                  setContextMenuAnchor(undefined);
+                  setContextMenuEmojiInfo(undefined);
+                },
+                clickOutsideDeactivates: true,
+                isKeyForward: (evt: KeyboardEvent) => evt.key === 'ArrowDown',
+                isKeyBackward: (evt: KeyboardEvent) => evt.key === 'ArrowUp',
+                escapeDeactivates: stopPropagation,
               }}
             >
-              {vItems.map((vItem) => {
-                const group = groups[vItem.index];
-
-                return (
-                  <VirtualTile
-                    virtualItem={vItem}
-                    style={{ paddingTop: config.space.S200 }}
-                    ref={virtualizer.measureElement}
-                    key={vItem.index}
+              <Menu style={{ maxWidth: toRem(250), width: '100vw' }}>
+                <Box direction="Column" gap="100" style={{ padding: config.space.S100 }}>
+                  <MenuItem
+                    onClick={handleToggleFavorite}
+                    size="300"
+                    radii="300"
+                    before={<Icon size="100" src={Icons.Star} />}
                   >
-                    <EmojiGroup key={group.id} id={group.id} label={group.name}>
-                      {group.items.map(renderItem)}
-                    </EmojiGroup>
-                  </VirtualTile>
-                );
-              })}
-            </div>
-            {tab === EmojiBoardTab.Sticker && groups.length === 0 && <NoStickerPacks />}
-          </EmojiGroupHolder>
-        </Box>
-        <Preview previewAtom={previewAtom} />
-      </EmojiBoardLayout>
+                    <Text size="T300">
+                      {contextMenuEmojiInfo &&
+                      isFavoriteEmoji(
+                        favoriteEntries,
+                        contextMenuEmojiInfo.type,
+                        contextMenuEmojiInfo.data
+                      )
+                        ? 'Remove from Favorites'
+                        : 'Add to Favorites'}
+                    </Text>
+                  </MenuItem>
+                </Box>
+              </Menu>
+            </FocusTrap>
+          }
+        />
       )}
-      </div>
-    </FocusTrap>
-    {contextMenuAnchor && (
-      <PopOut
-        anchor={contextMenuAnchor}
-        position="Right"
-        align="Start"
-        content={
-          <FocusTrap
-            focusTrapOptions={{
-              initialFocus: false,
-              returnFocusOnDeactivate: false,
-              onDeactivate: () => {
-                setContextMenuAnchor(undefined);
-                setContextMenuEmojiInfo(undefined);
-              },
-              clickOutsideDeactivates: true,
-              isKeyForward: (evt: KeyboardEvent) => evt.key === 'ArrowDown',
-              isKeyBackward: (evt: KeyboardEvent) => evt.key === 'ArrowUp',
-              escapeDeactivates: stopPropagation,
-            }}
-          >
-            <Menu style={{ maxWidth: toRem(250), width: '100vw' }}>
-              <Box direction="Column" gap="100" style={{ padding: config.space.S100 }}>
-                <MenuItem
-                  onClick={handleToggleFavorite}
-                  size="300"
-                  radii="300"
-                  before={<Icon size="100" src={Icons.Star} />}
-                >
-                  <Text size="T300">
-                    {contextMenuEmojiInfo && isFavoriteEmoji(favoriteEntries, contextMenuEmojiInfo.type, contextMenuEmojiInfo.data)
-                      ? 'Remove from Favorites'
-                      : 'Add to Favorites'}
-                  </Text>
-                </MenuItem>
-              </Box>
-            </Menu>
-          </FocusTrap>
-        }
-      />
-    )}
     </>
   );
 }

@@ -1,4 +1,5 @@
-import React, { ChangeEventHandler, FormEventHandler, useCallback, useState } from 'react';
+import type { ChangeEventHandler, FormEventHandler } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Box, Button, Chip, Icon, IconButton, Icons, Input, Spinner, Text, config } from 'folds';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SequenceCardStyle } from '../styles.css';

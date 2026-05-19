@@ -1,8 +1,9 @@
-import { Room } from 'matrix-js-sdk';
+import type { Room } from 'matrix-js-sdk';
 import { useMemo } from 'react';
-import { IPowerLevels } from './usePowerLevels';
+import type { PowerLevels } from './usePowerLevels';
 import { useStateEvent } from './useStateEvent';
-import { MemberPowerTag, StateEvent } from '../../types/matrix/room';
+import type { MemberPowerTag } from '../../types/matrix/room';
+import { StateEvent } from '../../types/matrix/room';
 
 export type PowerLevelTags = Record<number, MemberPowerTag>;
 
@@ -23,7 +24,7 @@ export const getPowers = (tags: PowerLevelTags): number[] => {
   return sortPowers(powers);
 };
 
-export const getUsedPowers = (powerLevels: IPowerLevels): Set<number> => {
+export const getUsedPowers = (powerLevels: PowerLevels): Set<number> => {
   const powers: Set<number> = new Set();
 
   const findAndAddPower = (data: Record<string, unknown>) => {
@@ -87,7 +88,7 @@ const generateFallbackTag = (powerLevelTags: PowerLevelTags, power: number): Mem
   };
 };
 
-export const usePowerLevelTags = (room: Room, powerLevels: IPowerLevels): PowerLevelTags => {
+export const usePowerLevelTags = (room: Room, powerLevels: PowerLevels): PowerLevelTags => {
   const tagsEvent = useStateEvent(room, StateEvent.PowerLevelTags);
 
   const powerLevelTags: PowerLevelTags = useMemo(() => {

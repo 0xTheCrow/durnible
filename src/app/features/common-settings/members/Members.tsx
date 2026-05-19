@@ -1,11 +1,6 @@
-import React, {
-  ChangeEventHandler,
-  MouseEventHandler,
-  useCallback,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import type { ChangeEventHandler, MouseEventHandler } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import type { RectCords } from 'folds';
 import {
   Box,
   Chip,
@@ -15,14 +10,13 @@ import {
   Icons,
   Input,
   PopOut,
-  RectCords,
   Scroll,
   Spinner,
   Text,
   toRem,
 } from 'folds';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { RoomMember } from 'matrix-js-sdk';
+import type { RoomMember } from 'matrix-js-sdk';
 import { Page, PageContent, PageHeader } from '../../../components/page';
 import { useRoom } from '../../../hooks/useRoom';
 import { useRoomMembers } from '../../../hooks/useRoomMembers';
@@ -33,12 +27,8 @@ import { MemberTile } from '../../../components/member-tile';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
 import { getMxIdLocalPart, getMxIdServer } from '../../../utils/matrix';
 import { ServerBadge } from '../../../components/server-badge';
-import { useDebounce } from '../../../hooks/useDebounce';
-import {
-  SearchItemStrGetter,
-  useAsyncSearch,
-  UseAsyncSearchOptions,
-} from '../../../hooks/useAsyncSearch';
+import type { SearchItemStrGetter, UseAsyncSearchOptions } from '../../../hooks/useAsyncSearch';
+import { useAsyncSearch } from '../../../hooks/useAsyncSearch';
 import { getMemberSearchStr } from '../../../utils/room';
 import { useMembershipFilter, useMembershipFilterMenu } from '../../../hooks/useMemberFilter';
 import { useMemberPowerSort, useMemberSort, useMemberSortMenu } from '../../../hooks/useMemberSort';
@@ -72,9 +62,9 @@ const getRoomMemberStr: SearchItemStrGetter<RoomMember> = (m, query) =>
   getMemberSearchStr(m, query, mxIdToName);
 
 type MembersProps = {
-  requestClose: () => void;
+  onClose: () => void;
 };
-export function Members({ requestClose }: MembersProps) {
+export function Members({ onClose }: MembersProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
   const room = useRoom();
@@ -124,15 +114,12 @@ export function Members({ requestClose }: MembersProps) {
     overscan: 10,
   });
 
-  const handleSearchChange: ChangeEventHandler<HTMLInputElement> = useDebounce(
-    useCallback(
-      (evt) => {
-        if (evt.target.value) search(evt.target.value);
-        else resetSearch();
-      },
-      [search, resetSearch]
-    ),
-    { wait: 200 }
+  const handleSearchChange: ChangeEventHandler<HTMLInputElement> = useCallback(
+    (evt) => {
+      if (evt.target.value) search(evt.target.value);
+      else resetSearch();
+    },
+    [search, resetSearch]
   );
 
   const handleSearchReset = () => {
@@ -161,7 +148,7 @@ export function Members({ requestClose }: MembersProps) {
             </Text>
           </Box>
           <Box shrink="No">
-            <IconButton onClick={requestClose} variant="Surface">
+            <IconButton onClick={onClose} variant="Surface">
               <Icon src={Icons.Cross} />
             </IconButton>
           </Box>
@@ -217,7 +204,7 @@ export function Members({ requestClose }: MembersProps) {
                         <MembershipFilterMenu
                           selected={membershipFilterIndex}
                           onSelect={setMembershipFilterIndex}
-                          requestClose={() => setAnchor(undefined)}
+                          onClose={() => setAnchor(undefined)}
                         />
                       }
                     >
@@ -249,7 +236,7 @@ export function Members({ requestClose }: MembersProps) {
                         <MemberSortMenu
                           selected={sortFilterIndex}
                           onSelect={setSortFilterIndex}
-                          requestClose={() => setAnchor(undefined)}
+                          onClose={() => setAnchor(undefined)}
                         />
                       }
                     >

@@ -17,9 +17,9 @@ import { useRoomCreators } from '../../../hooks/useRoomCreators';
 import { useRoomPermissions } from '../../../hooks/useRoomPermissions';
 
 type GeneralProps = {
-  requestClose: () => void;
+  onClose: () => void;
 };
-export function General({ requestClose }: GeneralProps) {
+export function General({ onClose }: GeneralProps) {
   const room = useRoom();
   const powerLevels = usePowerLevels(room);
   const creators = useRoomCreators(room);
@@ -35,7 +35,7 @@ export function General({ requestClose }: GeneralProps) {
             </Text>
           </Box>
           <Box shrink="No">
-            <IconButton onClick={requestClose} variant="Surface">
+            <IconButton onClick={onClose} variant="Surface">
               <Icon src={Icons.Cross} />
             </IconButton>
           </Box>
@@ -60,7 +60,7 @@ export function General({ requestClose }: GeneralProps) {
               </Box>
               <Box direction="Column" gap="100">
                 <Text size="L400">Advanced Options</Text>
-                <RoomUpgrade permissions={permissions} requestClose={requestClose} />
+                <RoomUpgrade permissions={permissions} onClose={onClose} />
               </Box>
             </Box>
           </PageContent>

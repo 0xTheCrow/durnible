@@ -1,3 +1,4 @@
+import type { RectCords } from 'folds';
 import {
   Box,
   Button,
@@ -10,26 +11,21 @@ import {
   Menu,
   MenuItem,
   PopOut,
-  RectCords,
   Scroll,
   Text,
   toRem,
 } from 'folds';
 import { isKeyHotkey } from 'is-hotkey';
 import FocusTrap from 'focus-trap-react';
-import React, {
-  ChangeEventHandler,
-  KeyboardEventHandler,
-  MouseEventHandler,
-  useMemo,
-  useState,
-} from 'react';
+import type { ChangeEventHandler, KeyboardEventHandler, MouseEventHandler } from 'react';
+import React, { useMemo, useState } from 'react';
 import { getMxIdLocalPart, getMxIdServer, isUserId } from '../../utils/matrix';
 import { useDirectUsers } from '../../hooks/useDirectUsers';
 import { SettingTile } from '../setting-tile';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { stopPropagation } from '../../utils/keyboard';
-import { useAsyncSearch, UseAsyncSearchOptions } from '../../hooks/useAsyncSearch';
+import type { UseAsyncSearchOptions } from '../../hooks/useAsyncSearch';
+import { useAsyncSearch } from '../../hooks/useAsyncSearch';
 import { highlightText, makeHighlightRegex } from '../../plugins/react-custom-html-parser';
 
 export const useAdditionalCreators = (defaultCreators?: string[]) => {

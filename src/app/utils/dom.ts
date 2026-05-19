@@ -124,6 +124,8 @@ export const loadImageElement = (url: string): Promise<HTMLImageElement> =>
     img.src = url;
   });
 
+// Seeking off position 0 and waiting for `seeked` is what makes drawImage
+// paint a real frame; `loadeddata` can fire before pixels are committed.
 export const loadVideoElement = (url: string): Promise<HTMLVideoElement> =>
   new Promise((resolve, reject) => {
     const video = document.createElement('video');
@@ -131,17 +133,43 @@ export const loadVideoElement = (url: string): Promise<HTMLVideoElement> =>
     video.playsInline = true;
     video.muted = true;
 
-    video.onloadeddata = () => {
-      resolve(video);
+    let settled = false;
+    const cleanup = () => {
+      video.removeEventListener('seeked', handleSeeked);
+      video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      video.removeEventListener('error', handleError);
+    };
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      cleanup();
       video.pause();
+      resolve(video);
     };
-    video.onerror = (e) => {
+    function handleSeeked() {
+      finish();
+    }
+    function handleLoadedMetadata() {
+      const { duration } = video;
+      if (Number.isFinite(duration) && duration > 0) {
+        video.currentTime = Math.min(0.1, duration / 2);
+      } else {
+        finish();
+      }
+    }
+    function handleError(e: Event) {
+      if (settled) return;
+      settled = true;
+      cleanup();
       reject(e);
-    };
+    }
+
+    video.addEventListener('seeked', handleSeeked);
+    video.addEventListener('loadedmetadata', handleLoadedMetadata);
+    video.addEventListener('error', handleError);
 
     video.src = url;
     video.load();
-    video.play();
   });
 
 export const getThumbnailDimensions = (width: number, height: number): [number, number] => {

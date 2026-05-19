@@ -4,7 +4,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { getLoginPath } from '../../pathUtils';
 import { useAuthServer } from '../../../hooks/useAuthServer';
 import { PasswordResetForm } from './PasswordResetForm';
-import { ResetPasswordPathSearchParams } from '../../paths';
+import type { ResetPasswordPathSearchParams } from '../../paths';
 
 const useResetPasswordSearchParams = (
   searchParams: URLSearchParams

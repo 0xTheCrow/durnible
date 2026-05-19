@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo } from 'react';
-import { ConditionKind, IPushRules, PushRuleKind, RuleId } from 'matrix-js-sdk';
+import type { IPushRules } from 'matrix-js-sdk';
+import { ConditionKind, PushRuleKind, RuleId } from 'matrix-js-sdk';
 import { Box, Text, Badge } from 'folds';
 import { useAccountData } from '../../../hooks/useAccountData';
 import { AccountDataEvent } from '../../../../types/matrix/accountData';
@@ -9,11 +10,12 @@ import { SettingTile } from '../../../components/setting-tile';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { useUserProfile } from '../../../hooks/useUserProfile';
 import { getMxIdLocalPart } from '../../../utils/matrix';
-import { makePushRuleData, PushRuleData, usePushRule } from '../../../hooks/usePushRule';
+import type { PushRuleData } from '../../../hooks/usePushRule';
+import { makePushRuleData, usePushRule } from '../../../hooks/usePushRule';
+import type { NotificationModeOptions } from '../../../hooks/useNotificationMode';
 import {
   getNotificationModeActions,
   NotificationMode,
-  NotificationModeOptions,
   useNotificationModeActions,
 } from '../../../hooks/useNotificationMode';
 import { NotificationModeSwitcher } from './NotificationModeSwitcher';
@@ -113,7 +115,7 @@ function MentionModeSwitcher({ ruleId, pushRules, defaultPushRuleData }: PushRul
 
 export function SpecialMessagesNotifications() {
   const mx = useMatrixClient();
-  const userId = mx.getUserId()!;
+  const userId = mx.getSafeUserId();
   const { displayName } = useUserProfile(userId);
   const pushRulesEvt = useAccountData(AccountDataEvent.PushRules);
   const pushRules = useMemo(

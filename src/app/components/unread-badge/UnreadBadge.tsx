@@ -1,4 +1,5 @@
-import React, { CSSProperties, ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
+import React from 'react';
 import { Box, Badge, toRem, Text } from 'folds';
 import { millify } from '../../plugins/millify';
 

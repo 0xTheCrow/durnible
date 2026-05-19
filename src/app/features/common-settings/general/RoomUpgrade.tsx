@@ -12,20 +12,22 @@ import {
   Icon,
   Icons,
 } from 'folds';
-import { MatrixError, Method } from 'matrix-js-sdk';
-import { RoomTombstoneEventContent } from 'matrix-js-sdk/lib/types';
+import type { MatrixError } from 'matrix-js-sdk';
+import { Method } from 'matrix-js-sdk';
+import type { RoomTombstoneEventContent } from 'matrix-js-sdk/lib/types';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SequenceCardStyle } from '../../room-settings/styles.css';
 import { SettingTile } from '../../../components/setting-tile';
 import { useRoom } from '../../../hooks/useRoom';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
-import { IRoomCreateContent, StateEvent } from '../../../../types/matrix/room';
+import type { RoomCreateContent } from '../../../../types/matrix/room';
+import { StateEvent } from '../../../../types/matrix/room';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { useStateEvent } from '../../../hooks/useStateEvent';
 import { useRoomNavigate } from '../../../hooks/useRoomNavigate';
 import { useCapabilities } from '../../../hooks/useCapabilities';
 import { OverlayModal } from '../../../components/OverlayModal';
-import { RoomPermissionsAPI } from '../../../hooks/useRoomPermissions';
+import type { RoomPermissionsAPI } from '../../../hooks/useRoomPermissions';
 import {
   AdditionalCreatorInput,
   RoomVersionSelector,
@@ -36,7 +38,7 @@ import { creatorsSupported } from '../../../utils/matrix';
 import { useRoomCreators } from '../../../hooks/useRoomCreators';
 import { BreakWord } from '../../../styles/Text.css';
 
-function RoomUpgradeDialog({ requestClose }: { requestClose: () => void }) {
+function RoomUpgradeDialog({ onClose }: { onClose: () => void }) {
   const mx = useMatrixClient();
   const room = useRoom();
   const alive = useAlive();
@@ -73,88 +75,85 @@ function RoomUpgradeDialog({ requestClose }: { requestClose: () => void }) {
 
     upgrade(version, allowAdditionalCreators ? additionalCreators : undefined).then(() => {
       if (alive()) {
-        requestClose();
+        onClose();
       }
     });
   };
 
   return (
-    <OverlayModal open requestClose={requestClose}>
-          <Dialog variant="Surface">
-            <Header
-              style={{
-                padding: `0 ${config.space.S200} 0 ${config.space.S400}`,
-                borderBottomWidth: config.borderWidth.B300,
-              }}
-              variant="Surface"
-              size="500"
-            >
-              <Box grow="Yes">
-                <Text size="H4">{room.isSpaceRoom() ? 'Space Upgrade' : 'Room Upgrade'}</Text>
-              </Box>
-              <IconButton size="300" onClick={requestClose} radii="300">
-                <Icon src={Icons.Cross} />
-              </IconButton>
-            </Header>
-            <Box style={{ padding: config.space.S400 }} direction="Column" gap="400">
-              <Text priority="400" style={{ color: color.Critical.Main }}>
-                <b>This action is irreversible!</b>
-              </Text>
-              <Box direction="Column" gap="100">
-                <Text size="L400">Options</Text>
-                <RoomVersionSelector
-                  versions={roomVersions?.available ? Object.keys(roomVersions.available) : ['1']}
-                  value={selectedRoomVersion}
-                  onChange={selectRoomVersion}
+    <OverlayModal open onClose={onClose}>
+      <Dialog variant="Surface">
+        <Header
+          style={{
+            padding: `0 ${config.space.S200} 0 ${config.space.S400}`,
+            borderBottomWidth: config.borderWidth.B300,
+          }}
+          variant="Surface"
+          size="500"
+        >
+          <Box grow="Yes">
+            <Text size="H4">{room.isSpaceRoom() ? 'Space Upgrade' : 'Room Upgrade'}</Text>
+          </Box>
+          <IconButton size="300" onClick={onClose} radii="300">
+            <Icon src={Icons.Cross} />
+          </IconButton>
+        </Header>
+        <Box style={{ padding: config.space.S400 }} direction="Column" gap="400">
+          <Text priority="400" style={{ color: color.Critical.Main }}>
+            <b>This action is irreversible!</b>
+          </Text>
+          <Box direction="Column" gap="100">
+            <Text size="L400">Options</Text>
+            <RoomVersionSelector
+              versions={roomVersions?.available ? Object.keys(roomVersions.available) : ['1']}
+              value={selectedRoomVersion}
+              onChange={selectRoomVersion}
+              disabled={upgrading}
+            />
+            {allowAdditionalCreators && (
+              <SequenceCard
+                style={{ padding: config.space.S300 }}
+                variant="SurfaceVariant"
+                direction="Column"
+                gap="500"
+              >
+                <AdditionalCreatorInput
+                  additionalCreators={additionalCreators}
+                  onSelect={addAdditionalCreator}
+                  onRemove={removeAdditionalCreator}
                   disabled={upgrading}
                 />
-                {allowAdditionalCreators && (
-                  <SequenceCard
-                    style={{ padding: config.space.S300 }}
-                    variant="SurfaceVariant"
-                    direction="Column"
-                    gap="500"
-                  >
-                    <AdditionalCreatorInput
-                      additionalCreators={additionalCreators}
-                      onSelect={addAdditionalCreator}
-                      onRemove={removeAdditionalCreator}
-                      disabled={upgrading}
-                    />
-                  </SequenceCard>
-                )}
-              </Box>
-              {upgradeState.status === AsyncStatus.Error && (
-                <Text className={BreakWord} style={{ color: color.Critical.Main }} size="T200">
-                  {(upgradeState.error as MatrixError).message}
-                </Text>
-              )}
-              <Button
-                onClick={handleUpgradeRoom}
-                variant="Secondary"
-                disabled={upgrading}
-                before={upgrading && <Spinner size="200" variant="Secondary" fill="Solid" />}
-              >
-                <Text size="B400">{room.isSpaceRoom() ? 'Upgrade Space' : 'Upgrade Room'}</Text>
-              </Button>
-            </Box>
-          </Dialog>
+              </SequenceCard>
+            )}
+          </Box>
+          {upgradeState.status === AsyncStatus.Error && (
+            <Text className={BreakWord} style={{ color: color.Critical.Main }} size="T200">
+              {(upgradeState.error as MatrixError).message}
+            </Text>
+          )}
+          <Button
+            onClick={handleUpgradeRoom}
+            variant="Secondary"
+            disabled={upgrading}
+            before={upgrading && <Spinner size="200" variant="Secondary" fill="Solid" />}
+          >
+            <Text size="B400">{room.isSpaceRoom() ? 'Upgrade Space' : 'Upgrade Room'}</Text>
+          </Button>
+        </Box>
+      </Dialog>
     </OverlayModal>
   );
 }
 
 type RoomUpgradeProps = {
   permissions: RoomPermissionsAPI;
-  requestClose: () => void;
+  onClose: () => void;
 };
-export function RoomUpgrade({ permissions, requestClose }: RoomUpgradeProps) {
+export function RoomUpgrade({ permissions, onClose }: RoomUpgradeProps) {
   const mx = useMatrixClient();
   const room = useRoom();
   const { navigateRoom, navigateSpace } = useRoomNavigate();
-  const createContent = useStateEvent(
-    room,
-    StateEvent.RoomCreate
-  )?.getContent<IRoomCreateContent>();
+  const createContent = useStateEvent(room, StateEvent.RoomCreate)?.getContent<RoomCreateContent>();
   const roomVersion = createContent?.room_version ?? '1';
   const predecessorRoomId = createContent?.predecessor?.room_id;
 
@@ -168,7 +167,7 @@ export function RoomUpgrade({ permissions, requestClose }: RoomUpgradeProps) {
 
   const handleOpenRoom = () => {
     if (replacementRoom) {
-      requestClose();
+      onClose();
       if (room.isSpaceRoom()) {
         navigateSpace(replacementRoom);
       } else {
@@ -179,7 +178,7 @@ export function RoomUpgrade({ permissions, requestClose }: RoomUpgradeProps) {
 
   const handleOpenOldRoom = () => {
     if (predecessorRoomId) {
-      requestClose();
+      onClose();
       if (room.isSpaceRoom()) {
         navigateSpace(predecessorRoomId);
       } else {
@@ -244,7 +243,7 @@ export function RoomUpgrade({ permissions, requestClose }: RoomUpgradeProps) {
           </Box>
         }
       >
-        {prompt && <RoomUpgradeDialog requestClose={() => setPrompt(false)} />}
+        {prompt && <RoomUpgradeDialog onClose={() => setPrompt(false)} />}
       </SettingTile>
     </SequenceCard>
   );

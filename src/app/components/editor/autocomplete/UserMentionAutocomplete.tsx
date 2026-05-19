@@ -1,19 +1,15 @@
-import React, { useEffect, KeyboardEvent as ReactKeyboardEvent } from 'react';
-import { Editor } from 'slate';
+import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
+import React, { useEffect } from 'react';
 import { Avatar, Icon, Icons, MenuItem, Text } from 'folds';
-import { MatrixClient, Room, RoomMember } from 'matrix-js-sdk';
+import type { MatrixClient, Room, RoomMember } from 'matrix-js-sdk';
 
-import { AutocompleteQuery } from './autocompleteQuery';
+import type { AutocompleteQuery } from './autocompleteQuery';
 import { AutocompleteMenu } from './AutocompleteMenu';
 import { useRoomMembers } from '../../../hooks/useRoomMembers';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
-import {
-  SearchItemStrGetter,
-  UseAsyncSearchOptions,
-  useAsyncSearch,
-} from '../../../hooks/useAsyncSearch';
+import type { SearchItemStrGetter, UseAsyncSearchOptions } from '../../../hooks/useAsyncSearch';
+import { useAsyncSearch } from '../../../hooks/useAsyncSearch';
 import { onTabPress } from '../../../utils/keyboard';
-import { createMentionElement, moveCursor, replaceWithElement } from '../utils';
 import { useKeyDown } from '../../../hooks/useKeyDown';
 import { getMxIdLocalPart, getMxIdServer, isUserId } from '../../../utils/matrix';
 import { getMemberDisplayName, getMemberSearchStr } from '../../../utils/room';
@@ -63,15 +59,13 @@ function UnknownMentionItem({
 
 type UserMentionAutocompleteProps = {
   room: Room;
-  editor: Editor;
   query: AutocompleteQuery<string>;
-  requestClose: () => void;
+  onClose: () => void;
+  onSelect: (userId: string, name: string) => void;
 };
 
 const withAllowedMembership = (member: RoomMember): boolean =>
-  member.membership === Membership.Join ||
-  member.membership === Membership.Invite ||
-  member.membership === Membership.Knock;
+  member.membership === Membership.Join;
 
 const SEARCH_OPTIONS: UseAsyncSearchOptions = {
   limit: 1000,
@@ -86,13 +80,13 @@ const getRoomMemberStr: SearchItemStrGetter<RoomMember> = (m, query) =>
 
 export function UserMentionAutocomplete({
   room,
-  editor,
   query,
-  requestClose,
+  onClose,
+  onSelect,
 }: UserMentionAutocompleteProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
-  const roomId: string = room.roomId!;
+  const roomId: string = room.roomId;
   const roomAliasOrId = room.getCanonicalAlias() || roomId;
   const members = useRoomMembers(mx, roomId);
 
@@ -107,18 +101,15 @@ export function UserMentionAutocomplete({
   }, [query.text, search, resetSearch]);
 
   const handleAutocomplete: MentionAutoCompleteHandler = (uId, name) => {
-    const mentionEl = createMentionElement(
-      uId,
-      name.startsWith('@') ? name : `@${name}`,
-      mx.getUserId() === uId || roomAliasOrId === uId
-    );
-    replaceWithElement(editor, query.range, mentionEl);
-    moveCursor(editor, true);
-    requestClose();
+    onSelect(uId, name);
+    onClose();
   };
 
   useKeyDown(window, (evt: KeyboardEvent) => {
     onTabPress(evt, () => {
+      // If a menu item button is focused, its own onKeyDown handler fires —
+      // skip here to avoid calling handleAutocomplete twice.
+      if (evt.target instanceof HTMLButtonElement) return;
       if (query.text === 'room') {
         handleAutocomplete(roomAliasOrId, '@room');
         return;
@@ -137,7 +128,7 @@ export function UserMentionAutocomplete({
     getMemberDisplayName(room, member.userId) ?? getMxIdLocalPart(member.userId) ?? member.userId;
 
   return (
-    <AutocompleteMenu headerContent={<Text size="L400">Mentions</Text>} requestClose={requestClose}>
+    <AutocompleteMenu headerContent={<Text size="L400">Mentions</Text>} onClose={onClose}>
       {query.text === 'room' && (
         <UnknownMentionItem
           userId={roomAliasOrId}

@@ -5,18 +5,18 @@ import { stopPropagation } from '../utils/keyboard';
 import { useMemberSortMenu } from '../hooks/useMemberSort';
 
 type MemberSortMenuProps = {
-  requestClose: () => void;
+  onClose: () => void;
   selected: number;
   onSelect: (index: number) => void;
 };
-export function MemberSortMenu({ selected, onSelect, requestClose }: MemberSortMenuProps) {
+export function MemberSortMenu({ selected, onSelect, onClose }: MemberSortMenuProps) {
   const memberSortMenu = useMemberSortMenu();
 
   return (
     <FocusTrap
       focusTrapOptions={{
         initialFocus: false,
-        onDeactivate: requestClose,
+        onDeactivate: onClose,
         clickOutsideDeactivates: true,
         isKeyForward: (evt: KeyboardEvent) => evt.key === 'ArrowDown',
         isKeyBackward: (evt: KeyboardEvent) => evt.key === 'ArrowUp',
@@ -33,7 +33,7 @@ export function MemberSortMenu({ selected, onSelect, requestClose }: MemberSortM
             radii="300"
             onClick={() => {
               onSelect(index);
-              requestClose();
+              onClose();
             }}
           >
             <Text size="T300">{menuItem.name}</Text>

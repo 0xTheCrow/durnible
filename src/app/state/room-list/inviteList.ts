@@ -1,8 +1,10 @@
-import { atom, WritableAtom } from 'jotai';
-import { MatrixClient } from 'matrix-js-sdk';
+import type { WritableAtom } from 'jotai';
+import { atom } from 'jotai';
+import type { MatrixClient } from 'matrix-js-sdk';
 import { useMemo } from 'react';
 import { Membership } from '../../../types/matrix/room';
-import { RoomsAction, useBindRoomsWithMembershipsAtom } from './utils';
+import type { RoomsAction } from './utils';
+import { useBindRoomsWithMembershipsAtom } from './utils';
 
 const baseRoomsAtom = atom<string[]>([]);
 export const allInvitesAtom = atom<string[], [RoomsAction], undefined>(

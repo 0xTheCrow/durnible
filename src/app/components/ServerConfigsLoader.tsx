@@ -1,8 +1,10 @@
-import { ReactNode, useCallback, useMemo } from 'react';
-import { Capabilities, validateAuthMetadata, ValidatedAuthMetadata } from 'matrix-js-sdk';
+import type { ReactNode } from 'react';
+import { useCallback, useMemo } from 'react';
+import type { Capabilities, ValidatedAuthMetadata } from 'matrix-js-sdk';
+import { validateAuthMetadata } from 'matrix-js-sdk';
 import { AsyncStatus, useAsyncCallbackValue } from '../hooks/useAsyncCallback';
 import { useMatrixClient } from '../hooks/useMatrixClient';
-import { MediaConfig } from '../hooks/useMediaConfig';
+import type { MediaConfig } from '../hooks/useMediaConfig';
 import { promiseFulfilledResult } from '../utils/common';
 
 export type ServerConfigs = {
@@ -20,10 +22,12 @@ export function ServerConfigsLoader({ children }: ServerConfigsLoaderProps) {
 
   const [configsState] = useAsyncCallbackValue<ServerConfigs, unknown>(
     useCallback(async () => {
+      const oidcEnabled = import.meta.env.VITE_OIDC_ENABLED === 'true';
+
       const result = await Promise.allSettled([
         mx.getCapabilities(),
         mx.getMediaConfig(),
-        mx.getAuthMetadata(),
+        oidcEnabled ? mx.getAuthMetadata() : Promise.resolve(undefined),
       ]);
 
       const capabilities = promiseFulfilledResult(result[0]);
@@ -31,10 +35,12 @@ export function ServerConfigsLoader({ children }: ServerConfigsLoaderProps) {
       const authMetadata = promiseFulfilledResult(result[2]);
       let validatedAuthMetadata: ValidatedAuthMetadata | undefined;
 
-      try {
-        validatedAuthMetadata = validateAuthMetadata(authMetadata);
-      } catch (e) {
-        console.error(e);
+      if (authMetadata) {
+        try {
+          validatedAuthMetadata = validateAuthMetadata(authMetadata);
+        } catch (e) {
+          console.error(e);
+        }
       }
 
       return {

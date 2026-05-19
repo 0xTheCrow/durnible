@@ -1,4 +1,5 @@
-import React, { FormEventHandler, ReactNode, useCallback, useEffect, useState } from 'react';
+import type { FormEventHandler, ReactNode } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Box,
   Text,
@@ -12,8 +13,8 @@ import {
   Spinner,
   toRem,
 } from 'folds';
-import { CryptoApi } from 'matrix-js-sdk/lib/crypto-api';
-import { IMyDevice, MatrixError } from 'matrix-js-sdk';
+import type { CryptoApi } from 'matrix-js-sdk/lib/crypto-api';
+import type { IMyDevice, MatrixError } from 'matrix-js-sdk';
 import { SettingTile } from '../../../components/setting-tile';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { timeDayMonYear, timeHourMinute, today, yesterday } from '../../../utils/time';
@@ -202,8 +203,8 @@ export function DeviceLogoutBtn() {
         <Text size="B300">Logout</Text>
       </Chip>
       {prompt && (
-        <OverlayModal open requestClose={handleClose}>
-              <LogoutDialog handleClose={handleClose} />
+        <OverlayModal open onClose={handleClose}>
+          <LogoutDialog onClose={handleClose} />
         </OverlayModal>
       )}
     </>

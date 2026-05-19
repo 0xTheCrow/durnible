@@ -1,16 +1,8 @@
-import {
-  as,
-  Badge,
-  Box,
-  color,
-  ContainerColor,
-  MainColor,
-  Text,
-  Tooltip,
-  TooltipProvider,
-  toRem,
-} from 'folds';
-import React, { ReactNode, useId } from 'react';
+import type { ContainerColor, MainColor } from 'folds';
+import { as, Badge, Box, color, Text, Tooltip, toRem } from 'folds';
+import type { ReactNode } from 'react';
+import React, { useId } from 'react';
+import { TooltipProvider } from '../TooltipProvider';
 import * as css from './styles.css';
 import { Presence, usePresenceLabel } from '../../hooks/useUserPresence';
 
@@ -34,7 +26,6 @@ export function PresenceBadge({ presence, status, size }: PresenceBadgeProps) {
       position="Right"
       align="Center"
       offset={4}
-      delay={200}
       tooltip={
         <Tooltip id={badgeLabelId}>
           <Box style={{ maxWidth: toRem(250) }} alignItems="Baseline" gap="100">

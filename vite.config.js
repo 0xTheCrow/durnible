@@ -14,11 +14,6 @@ import buildConfig from './build.config';
 const copyFiles = {
   targets: [
     {
-      src: 'node_modules/pdfjs-dist/build/pdf.worker.min.mjs',
-      dest: '',
-      rename: 'pdf.worker.min.js',
-    },
-    {
       src: 'netlify.toml',
       dest: '',
     },
@@ -32,11 +27,11 @@ const copyFiles = {
     },
     {
       src: 'public/res/android',
-      dest: 'public/',
+      dest: '',
     },
     {
       src: 'public/locales',
-      dest: 'public/',
+      dest: '',
     },
   ],
 };
@@ -47,7 +42,10 @@ function serverMatrixSdkCryptoWasm(wasmFilePath) {
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
         if (req.url === wasmFilePath) {
-          const resolvedPath = path.join(path.resolve(), "/node_modules/@matrix-org/matrix-sdk-crypto-wasm/pkg/matrix_sdk_crypto_wasm_bg.wasm");
+          const resolvedPath = path.join(
+            path.resolve(),
+            '/node_modules/@matrix-org/matrix-sdk-crypto-wasm/pkg/matrix_sdk_crypto_wasm_bg.wasm'
+          );
 
           if (fs.existsSync(resolvedPath)) {
             res.setHeader('Content-Type', 'application/wasm');
@@ -88,7 +86,7 @@ export default defineConfig({
       promiseImportName: (i) => `__tla_${i}`,
     }),
     viteStaticCopy(copyFiles),
-    vanillaExtractPlugin(),
+    vanillaExtractPlugin({ identifiers: 'debug' }),
     wasm(),
     react(),
     VitePWA({
@@ -99,12 +97,12 @@ export default defineConfig({
       manifest: false,
       injectManifest: {
         globPatterns: ['**/*.{js,css,html}'],
-        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+        maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
       },
       devOptions: {
         enabled: true,
-        type: 'module'
-      }
+        type: 'module',
+      },
     }),
   ],
   optimizeDeps: {

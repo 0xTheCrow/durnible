@@ -1,4 +1,6 @@
-import React, { FormEventHandler, MouseEventHandler, useCallback, useMemo, useState } from 'react';
+import type { FormEventHandler, MouseEventHandler } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
+import type { RectCords } from 'folds';
 import {
   Box,
   Text,
@@ -9,28 +11,23 @@ import {
   Scroll,
   Button,
   Input,
-  RectCords,
   PopOut,
   Menu,
   config,
   Spinner,
   toRem,
-  TooltipProvider,
   Tooltip,
 } from 'folds';
 import { HexColorPicker } from 'react-colorful';
 import { useAtomValue } from 'jotai';
+import { TooltipProvider } from '../../../components/TooltipProvider';
 import { Page, PageContent, PageHeader } from '../../../components/page';
-import { IPowerLevels } from '../../../hooks/usePowerLevels';
+import type { PowerLevels } from '../../../hooks/usePowerLevels';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SequenceCardStyle } from '../styles.css';
 import { SettingTile } from '../../../components/setting-tile';
-import {
-  getPowers,
-  getUsedPowers,
-  PowerLevelTags,
-  usePowerLevelTags,
-} from '../../../hooks/usePowerLevelTags';
+import type { PowerLevelTags } from '../../../hooks/usePowerLevelTags';
+import { getPowers, getUsedPowers, usePowerLevelTags } from '../../../hooks/usePowerLevelTags';
 import { useRoom } from '../../../hooks/useRoom';
 import { HexColorPickerPopOut } from '../../../components/HexColorPickerPopOut';
 import { PowerColorBadge, PowerIcon } from '../../../components/power';
@@ -42,9 +39,11 @@ import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { useFilePicker } from '../../../hooks/useFilePicker';
 import { CompactUploadCardRenderer } from '../../../components/upload-card';
-import { createUploadAtom, UploadSuccess } from '../../../state/upload';
+import type { UploadSuccess } from '../../../state/upload';
+import { createUploadAtom } from '../../../state/upload';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
-import { MemberPowerTag, MemberPowerTagIcon, StateEvent } from '../../../../types/matrix/room';
+import type { MemberPowerTag, MemberPowerTagIcon } from '../../../../types/matrix/room';
+import { StateEvent } from '../../../../types/matrix/room';
 import { useAlive } from '../../../hooks/useAlive';
 import { BetaNoticeBadge } from '../../../components/BetaNoticeBadge';
 import { getPowerTagIconSrc } from '../../../hooks/useMemberPowerTag';
@@ -220,7 +219,7 @@ function EditPower({ maxPower, power, tag, onSave, onClose }: EditPowerProps) {
                             setTagIcon({ key: mxc });
                             setCords(undefined);
                           }}
-                          requestClose={() => {
+                          onClose={() => {
                             setCords(undefined);
                           }}
                         />
@@ -287,10 +286,10 @@ function EditPower({ maxPower, power, tag, onSave, onClose }: EditPowerProps) {
 }
 
 type PowersEditorProps = {
-  powerLevels: IPowerLevels;
-  requestClose: () => void;
+  powerLevels: PowerLevels;
+  onClose: () => void;
 };
-export function PowersEditor({ powerLevels, requestClose }: PowersEditorProps) {
+export function PowersEditor({ powerLevels, onClose }: PowersEditorProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
   const room = useRoom();
@@ -335,7 +334,7 @@ export function PowersEditor({ powerLevels, requestClose }: PowersEditorProps) {
       deleted.forEach((power) => {
         delete content[power];
       });
-      await mx.sendStateEvent(room.roomId, StateEvent.PowerLevelTags as any, content);
+      await mx.sendStateEvent(room.roomId, StateEvent.PowerLevelTags, content);
     }, [mx, room, powerLevelTags, editedPowerTags, deleted])
   );
 
@@ -364,14 +363,14 @@ export function PowersEditor({ powerLevels, requestClose }: PowersEditorProps) {
             <Chip
               size="500"
               radii="Pill"
-              onClick={requestClose}
+              onClick={onClose}
               before={<Icon size="100" src={Icons.ArrowLeft} />}
             >
               <Text size="T300">Permissions</Text>
             </Chip>
           </Box>
           <Box shrink="No">
-            <IconButton onClick={requestClose} variant="Surface">
+            <IconButton onClick={onClose} variant="Surface">
               <Icon src={Icons.Cross} />
             </IconButton>
           </Box>

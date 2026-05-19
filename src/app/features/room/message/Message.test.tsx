@@ -1,6 +1,6 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { render, screen, act } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { MsgType } from 'matrix-js-sdk';
 import { Message } from './Message';
 import { RenderMessageContent } from '../../../components/RenderMessageContent';
@@ -11,10 +11,11 @@ import {
   createMockRoom,
 } from '../../../../test/mocks';
 import { MessageLayout } from '../../../state/settings';
-import {
-  LINKIFY_OPTS,
-  getReactCustomHtmlParser,
-} from '../../../plugins/react-custom-html-parser';
+import { LINKIFY_OPTS, getReactCustomHtmlParser } from '../../../plugins/react-custom-html-parser';
+
+vi.mock('../../../utils/user-agent', () => ({
+  mobileOrTablet: () => true,
+}));
 
 function renderMessage(opts: {
   body: string;
@@ -64,7 +65,6 @@ function renderMessage(opts: {
         <RenderMessageContent
           displayName={sender.split(':')[0].slice(1)}
           msgType={opts.msgtype}
-          ts={Date.now()}
           content={content as any}
           mediaAutoLoad={false}
           urlPreview={false}
@@ -76,50 +76,174 @@ function renderMessage(opts: {
   );
 }
 
+describe('edit mode', () => {
+  // Slate schedules a focus() via setTimeout after mounting. Use fake timers so
+  // that callback never fires against a torn-down DOM and produces spurious errors.
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+  it('shows the editor immediately when edit prop flips to true', async () => {
+    const mx = createMockMatrixClient();
+    const room = createMockRoom('!testroom:example.com', mx);
+    room._addMockMember('@alice:example.com', 'alice');
+
+    const mEvent = createMockMatrixEvent({
+      sender: '@alice:example.com',
+      content: { body: 'Original content', msgtype: 'm.text' },
+      roomId: '!testroom:example.com',
+    });
+
+    const onEditId = vi.fn();
+
+    const baseProps = {
+      room: room as any,
+      mEvent,
+      collapse: false,
+      highlight: false,
+      mentionHighlight: false,
+      canDelete: false,
+      canSendReaction: false,
+      canPinEvent: false,
+      messageLayout: MessageLayout.Modern,
+      messageSpacing: '400' as const,
+      onUserClick: vi.fn(),
+      onUsernameClick: vi.fn(),
+      onReplyClick: vi.fn(),
+      onReactionToggle: vi.fn(),
+      onEditId,
+      hour24Clock: false,
+      dateFormatString: '',
+    };
+
+    const { rerender } = render(
+      <MatrixTestWrapper matrixClient={mx}>
+        <Message {...baseProps} edit={false}>
+          <span>Original content</span>
+        </Message>
+      </MatrixTestWrapper>
+    );
+
+    expect(screen.queryByTestId('message-editor-save')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('message-editor-cancel')).not.toBeInTheDocument();
+
+    // Flip edit prop — simulates MemoizedTimelineEvent receiving isEditing=true.
+    // Drain Slate's deferred microtask state update with async act so it doesn't
+    // escape the act() boundary and produce an "update not wrapped in act" warning.
+    await act(async () => {
+      rerender(
+        <MatrixTestWrapper matrixClient={mx}>
+          <Message {...baseProps} edit>
+            <span>Original content</span>
+          </Message>
+        </MatrixTestWrapper>
+      );
+    });
+
+    // Editor must appear immediately — no additional events should be needed
+    expect(screen.getByTestId('message-editor-save')).toBeInTheDocument();
+    expect(screen.getByTestId('message-editor-cancel')).toBeInTheDocument();
+  });
+
+  it('hides the editor and restores content when edit prop flips back to false', async () => {
+    const mx = createMockMatrixClient();
+    const room = createMockRoom('!testroom:example.com', mx);
+    room._addMockMember('@alice:example.com', 'alice');
+
+    const mEvent = createMockMatrixEvent({
+      sender: '@alice:example.com',
+      content: { body: 'Original content', msgtype: 'm.text' },
+      roomId: '!testroom:example.com',
+    });
+
+    const onEditId = vi.fn();
+
+    const baseProps = {
+      room: room as any,
+      mEvent,
+      collapse: false,
+      highlight: false,
+      mentionHighlight: false,
+      canDelete: false,
+      canSendReaction: false,
+      canPinEvent: false,
+      messageLayout: MessageLayout.Modern,
+      messageSpacing: '400' as const,
+      onUserClick: vi.fn(),
+      onUsernameClick: vi.fn(),
+      onReplyClick: vi.fn(),
+      onReactionToggle: vi.fn(),
+      onEditId,
+      hour24Clock: false,
+      dateFormatString: '',
+    };
+
+    const { rerender } = render(
+      <MatrixTestWrapper matrixClient={mx}>
+        <Message {...baseProps} edit>
+          <span data-testid="test-message-child">Original content</span>
+        </Message>
+      </MatrixTestWrapper>
+    );
+
+    expect(screen.getByTestId('message-editor-save')).toBeInTheDocument();
+
+    await act(async () => {
+      rerender(
+        <MatrixTestWrapper matrixClient={mx}>
+          <Message {...baseProps} edit={false}>
+            <span data-testid="test-message-child">Original content</span>
+          </Message>
+        </MatrixTestWrapper>
+      );
+    });
+
+    expect(screen.queryByTestId('message-editor-save')).not.toBeInTheDocument();
+    expect(screen.getByTestId('test-message-child')).toBeInTheDocument();
+  });
+});
+
 describe('Message component', () => {
   describe('text messages', () => {
-    it('renders a text message in modern layout', () => {
+    it('renders body and sender name in modern layout', () => {
       renderMessage({
         body: 'Hello from Alice!',
         msgtype: MsgType.Text,
         sender: '@alice:example.com',
       });
-      expect(screen.getByText('Hello from Alice!')).toBeInTheDocument();
-      expect(screen.getByText('alice')).toBeInTheDocument();
+      expect(screen.getByTestId('message-body')).toHaveTextContent('Hello from Alice!');
+      expect(screen.getByTestId('message-sender-name')).toHaveTextContent('alice');
     });
 
-    it('renders a text message in compact layout', () => {
+    it('renders body in compact layout', () => {
       renderMessage({
         body: 'Compact message',
         msgtype: MsgType.Text,
         layout: MessageLayout.Compact,
       });
-      expect(screen.getByText('Compact message')).toBeInTheDocument();
+      expect(screen.getByTestId('message-body')).toHaveTextContent('Compact message');
     });
 
-    it('renders a text message in bubble layout', () => {
+    it('renders body in bubble layout', () => {
       renderMessage({
         body: 'Bubble message',
         msgtype: MsgType.Text,
         layout: MessageLayout.Bubble,
       });
-      expect(screen.getByText('Bubble message')).toBeInTheDocument();
+      expect(screen.getByTestId('message-body')).toHaveTextContent('Bubble message');
     });
 
-    it('renders a collapsed message (same sender continuation)', () => {
+    it('hides the sender name on a collapsed continuation message', () => {
       renderMessage({
         body: 'Continuation message',
         msgtype: MsgType.Text,
         collapse: true,
       });
-      expect(screen.getByText('Continuation message')).toBeInTheDocument();
-      // Username should NOT be shown when collapsed
-      expect(screen.queryByText('alice')).not.toBeInTheDocument();
+      expect(screen.getByTestId('message-body')).toHaveTextContent('Continuation message');
+      expect(screen.queryByTestId('message-sender-name')).not.toBeInTheDocument();
     });
   });
 
   describe('image messages', () => {
-    it('renders an image message without crashing', () => {
+    it('renders an image message with sender name', () => {
       renderMessage({
         body: 'photo.png',
         msgtype: MsgType.Image,
@@ -136,18 +260,18 @@ describe('Message component', () => {
           },
         },
       });
-      expect(screen.getByText('bob')).toBeInTheDocument();
+      expect(screen.getByTestId('message-sender-name')).toHaveTextContent('bob');
     });
   });
 
   describe('emote messages', () => {
-    it('renders an emote message', () => {
+    it('renders an emote message body', () => {
       renderMessage({
         body: 'dances around',
         msgtype: MsgType.Emote,
         sender: '@charlie:example.com',
       });
-      expect(screen.getByText(/dances around/)).toBeInTheDocument();
+      expect(screen.getByTestId('message-body')).toHaveTextContent('dances around');
     });
   });
 
@@ -170,11 +294,9 @@ describe('Message component', () => {
         roomId: '!testroom:example.com',
       });
 
-      const htmlReactParserOptions = getReactCustomHtmlParser(
-        mx as any,
-        '!testroom:example.com',
-        { linkifyOpts: LINKIFY_OPTS }
-      );
+      const htmlReactParserOptions = getReactCustomHtmlParser(mx as any, '!testroom:example.com', {
+        linkifyOpts: LINKIFY_OPTS,
+      });
 
       const messageProps = {
         room: room as any,
@@ -195,13 +317,12 @@ describe('Message component', () => {
         dateFormatString: '',
       };
 
-      const { rerender } = render(
+      render(
         <MatrixTestWrapper matrixClient={mx}>
           <Message {...messageProps} mEvent={aliceEvent}>
             <RenderMessageContent
               displayName="Alice"
               msgType={MsgType.Text}
-              ts={Date.now()}
               content={aliceEvent.getContent() as any}
               mediaAutoLoad={false}
               urlPreview={false}
@@ -213,7 +334,6 @@ describe('Message component', () => {
             <RenderMessageContent
               displayName="Bob"
               msgType={MsgType.Text}
-              ts={Date.now()}
               content={bobEvent.getContent() as any}
               mediaAutoLoad={false}
               urlPreview={false}
@@ -224,10 +344,17 @@ describe('Message component', () => {
         </MatrixTestWrapper>
       );
 
-      expect(screen.getByText('Hi Bob!')).toBeInTheDocument();
-      expect(screen.getByText('Hey Alice!')).toBeInTheDocument();
-      expect(screen.getByText('Alice')).toBeInTheDocument();
-      expect(screen.getByText('Bob')).toBeInTheDocument();
+      const bodies = screen.getAllByTestId('message-body');
+      const senderNames = screen.getAllByTestId('message-sender-name');
+      expect(bodies.map((el) => el.textContent)).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining('Hi Bob!'),
+          expect.stringContaining('Hey Alice!'),
+        ])
+      );
+      expect(senderNames.map((el) => el.textContent)).toEqual(
+        expect.arrayContaining(['Alice', 'Bob'])
+      );
     });
   });
 });

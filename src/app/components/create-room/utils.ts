@@ -1,14 +1,9 @@
-import {
-  ICreateRoomOpts,
-  ICreateRoomStateEvent,
-  JoinRule,
-  MatrixClient,
-  RestrictedAllowType,
-  Room,
-} from 'matrix-js-sdk';
-import { RoomJoinRulesEventContent } from 'matrix-js-sdk/lib/types';
+import type { ICreateRoomOpts, ICreateRoomStateEvent, MatrixClient, Room } from 'matrix-js-sdk';
+import { EventType, JoinRule, RestrictedAllowType } from 'matrix-js-sdk';
+import type { RoomJoinRulesEventContent } from 'matrix-js-sdk/lib/types';
 import { CreateRoomKind } from './CreateRoomKindSelector';
-import { RoomType, StateEvent } from '../../../types/matrix/room';
+import type { RoomType } from '../../../types/matrix/room';
+import { StateEvent } from '../../../types/matrix/room';
 import { getViaServers } from '../../plugins/via-servers';
 import { getMxIdServer } from '../../utils/matrix';
 
@@ -17,7 +12,7 @@ export const createRoomCreationContent = (
   allowFederation: boolean,
   additionalCreators: string[] | undefined
 ): object => {
-  const content: Record<string, any> = {};
+  const content: Record<string, unknown> = {};
   if (typeof type === 'string') {
     content.type = type;
   }
@@ -126,9 +121,8 @@ export const createRoom = async (mx: MatrixClient, data: CreateRoomData): Promis
   if (data.parent) {
     await mx.sendStateEvent(
       data.parent.roomId,
-      StateEvent.SpaceChild as any,
+      EventType.SpaceChild,
       {
-        auto_join: false,
         suggested: false,
         via: [getMxIdServer(mx.getUserId() ?? '') ?? ''],
       },

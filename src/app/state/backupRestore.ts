@@ -1,5 +1,6 @@
 import { atom } from 'jotai';
-import { ImportRoomKeyProgressData, ImportRoomKeyStage } from 'matrix-js-sdk/lib/crypto-api';
+import type { ImportRoomKeyProgressData } from 'matrix-js-sdk/lib/crypto-api';
+import { ImportRoomKeyStage } from 'matrix-js-sdk/lib/crypto-api';
 
 export enum BackupProgressStatus {
   Idle,
@@ -13,7 +14,7 @@ export type ProgressData = {
   failures: number;
   total: number;
 };
-export type IBackupProgress =
+export type BackupProgress =
   | {
       status: BackupProgressStatus.Idle;
     }
@@ -28,12 +29,12 @@ export type IBackupProgress =
       status: BackupProgressStatus.Done;
     };
 
-const baseBackupRestoreProgressAtom = atom<IBackupProgress>({
+const baseBackupRestoreProgressAtom = atom<BackupProgress>({
   status: BackupProgressStatus.Idle,
 });
 
 export const backupRestoreProgressAtom = atom<
-  IBackupProgress,
+  BackupProgress,
   [ImportRoomKeyProgressData],
   undefined
 >(

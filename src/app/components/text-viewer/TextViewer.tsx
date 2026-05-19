@@ -1,5 +1,6 @@
 /* eslint-disable jsx-a11y/no-noninteractive-element-interactions */
-import React, { ComponentProps, HTMLAttributes, Suspense, forwardRef, lazy } from 'react';
+import type { ComponentProps, HTMLAttributes } from 'react';
+import React, { Suspense, forwardRef, lazy } from 'react';
 import classNames from 'classnames';
 import { Box, Chip, Header, Icon, IconButton, Icons, Scroll, Text, as } from 'folds';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -35,11 +36,11 @@ export type TextViewerProps = {
   name: string;
   text: string;
   langName: string;
-  requestClose: () => void;
+  onClose: () => void;
 };
 
 export const TextViewer = as<'div', TextViewerProps>(
-  ({ className, name, text, langName, requestClose, ...props }, ref) => {
+  ({ className, name, text, langName, onClose, ...props }, ref) => {
     const handleCopy = () => {
       copyToClipboard(text);
     };
@@ -53,7 +54,7 @@ export const TextViewer = as<'div', TextViewerProps>(
       >
         <Header className={css.TextViewerHeader} size="400">
           <Box grow="Yes" alignItems="Center" gap="200">
-            <IconButton size="300" radii="300" onClick={requestClose}>
+            <IconButton size="300" radii="300" onClick={onClose}>
               <Icon size="50" src={Icons.ArrowLeft} />
             </IconButton>
             <Text size="T300" truncate>

@@ -1,5 +1,7 @@
-import React, { MouseEventHandler, forwardRef, useState } from 'react';
-import { Room } from 'matrix-js-sdk';
+import type { MouseEventHandler } from 'react';
+import React, { forwardRef, useState } from 'react';
+import type { Room } from 'matrix-js-sdk';
+import type { RectCords } from 'folds';
 import {
   Avatar,
   Box,
@@ -13,7 +15,6 @@ import {
   PopOut,
   toRem,
   Line,
-  RectCords,
   Badge,
   Spinner,
 } from 'folds';
@@ -54,11 +55,11 @@ import { InviteUserPrompt } from '../../components/invite-user-prompt';
 
 type RoomNavItemMenuProps = {
   room: Room;
-  requestClose: () => void;
+  onClose: () => void;
   notificationMode?: RoomNotificationMode;
 };
 const RoomNavItemMenu = forwardRef<HTMLDivElement, RoomNavItemMenuProps>(
-  ({ room, requestClose, notificationMode }, ref) => {
+  ({ room, onClose, notificationMode }, ref) => {
     const mx = useMatrixClient();
     const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
     const unread = useRoomUnread(room.roomId, roomToUnreadAtom);
@@ -80,12 +81,12 @@ const RoomNavItemMenu = forwardRef<HTMLDivElement, RoomNavItemMenuProps>(
       } else {
         mx.setRoomTag(room.roomId, 'm.favourite', { order: 0.5 });
       }
-      requestClose();
+      onClose();
     };
 
     const handleMarkAsRead = () => {
       markAsRead(mx, room.roomId, hideActivity);
-      requestClose();
+      onClose();
     };
 
     const handleInvite = () => {
@@ -96,12 +97,12 @@ const RoomNavItemMenu = forwardRef<HTMLDivElement, RoomNavItemMenuProps>(
       const roomIdOrAlias = getCanonicalAliasOrRoomId(mx, room.roomId);
       const viaServers = isRoomAlias(roomIdOrAlias) ? undefined : getViaServers(room);
       copyToClipboard(getMatrixToRoom(roomIdOrAlias, viaServers));
-      requestClose();
+      onClose();
     };
 
     const handleRoomSettings = () => {
       openRoomSettings(room.roomId, space?.roomId);
-      requestClose();
+      onClose();
     };
 
     return (
@@ -109,9 +110,9 @@ const RoomNavItemMenu = forwardRef<HTMLDivElement, RoomNavItemMenuProps>(
         {invitePrompt && room && (
           <InviteUserPrompt
             room={room}
-            requestClose={() => {
+            onClose={() => {
               setInvitePrompt(false);
-              requestClose();
+              onClose();
             }}
           />
         )}
@@ -217,7 +218,7 @@ const RoomNavItemMenu = forwardRef<HTMLDivElement, RoomNavItemMenuProps>(
                 {promptLeave && (
                   <LeaveRoomPrompt
                     roomId={room.roomId}
-                    onDone={requestClose}
+                    onDone={onClose}
                     onCancel={() => setPromptLeave(false)}
                   />
                 )}
@@ -289,7 +290,7 @@ export function RoomNavItem({
       {...hoverProps}
       {...focusWithinProps}
     >
-      <NavLink to={linkPath}>
+      <NavLink to={linkPath} draggable={false}>
         <NavItemContent>
           <Box as="span" grow="Yes" alignItems="Center" gap="200">
             <Avatar size="200" radii="400">
@@ -318,22 +319,34 @@ export function RoomNavItem({
               )}
             </Avatar>
             <Box as="span" grow="Yes">
-              <Text priority={unread ? '500' : '300'} as="span" size="Inherit" truncate>
+              <Text
+                priority={unread && notificationMode !== RoomNotificationMode.Mute ? '500' : '300'}
+                as="span"
+                size="Inherit"
+                truncate
+                style={
+                  notificationMode === RoomNotificationMode.Mute ? { opacity: 0.45 } : undefined
+                }
+              >
                 {room.name}
               </Text>
+              {notificationMode !== RoomNotificationMode.Unset && (
+                <Icon
+                  size="200"
+                  style={{ paddingLeft: config.space.S100 }}
+                  src={getRoomNotificationModeIcon(notificationMode)}
+                />
+              )}
             </Box>
             {!optionsVisible && !unread && !selected && typingMember.length > 0 && (
               <Badge size="300" variant="Secondary" fill="Soft" radii="Pill" outlined>
                 <TypingIndicator size="300" disableAnimation />
               </Badge>
             )}
-            {!optionsVisible && unread && (
+            {!optionsVisible && unread && notificationMode !== RoomNotificationMode.Mute && (
               <UnreadBadgeCenter>
                 <UnreadBadge highlight={unread.highlight > 0} count={unread.total} />
               </UnreadBadgeCenter>
-            )}
-            {!optionsVisible && notificationMode !== RoomNotificationMode.Unset && (
-              <Icon size="50" src={getRoomNotificationModeIcon(notificationMode)} />
             )}
           </Box>
         </NavItemContent>
@@ -360,7 +373,7 @@ export function RoomNavItem({
               >
                 <RoomNavItemMenu
                   room={room}
-                  requestClose={() => setMenuAnchor(undefined)}
+                  onClose={() => setMenuAnchor(undefined)}
                   notificationMode={notificationMode}
                 />
               </FocusTrap>

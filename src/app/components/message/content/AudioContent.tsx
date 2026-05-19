@@ -1,13 +1,14 @@
 /* eslint-disable jsx-a11y/media-has-caption */
-import React, { ReactNode, useCallback, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { Badge, Chip, Icon, IconButton, Icons, ProgressBar, Spinner, Text, toRem } from 'folds';
-import { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
+import type { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
 import { Range } from 'react-range';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
-import { IAudioInfo } from '../../../../types/matrix/common';
+import type { AudioInfo } from '../../../../types/matrix/common';
+import type { PlayTimeCallback } from '../../../hooks/media';
 import {
-  PlayTimeCallback,
   useMediaLoading,
   useMediaPlay,
   useMediaPlayTimeCallback,
@@ -38,15 +39,15 @@ type RenderMediaControlProps = {
 export type AudioContentProps = {
   mimeType: string;
   url: string;
-  info: IAudioInfo;
-  encInfo?: EncryptedAttachmentInfo;
+  info: AudioInfo;
+  encryptionInfo?: EncryptedAttachmentInfo;
   renderMediaControl: (props: RenderMediaControlProps) => ReactNode;
 };
 export function AudioContent({
   mimeType,
   url,
   info,
-  encInfo,
+  encryptionInfo,
   renderMediaControl,
 }: AudioContentProps) {
   const mx = useMatrixClient();
@@ -55,11 +56,13 @@ export function AudioContent({
   const [srcState, loadSrc] = useAsyncCallback(
     useCallback(async () => {
       const mediaUrl = mxcUrlToHttp(mx, url, useAuthentication) ?? url;
-      const fileContent = encInfo
-        ? await downloadEncryptedMedia(mediaUrl, (encBuf) => decryptFile(encBuf, mimeType, encInfo))
+      const fileContent = encryptionInfo
+        ? await downloadEncryptedMedia(mediaUrl, (encBuf) =>
+            decryptFile(encBuf, mimeType, encryptionInfo)
+          )
         : await downloadMedia(mediaUrl);
       return URL.createObjectURL(fileContent);
-    }, [mx, url, useAuthentication, mimeType, encInfo])
+    }, [mx, url, useAuthentication, mimeType, encryptionInfo])
   );
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -147,9 +150,9 @@ export function AudioContent({
           <Text size="B300">{playing ? 'Pause' : 'Play'}</Text>
         </Chip>
 
-        <Text size="T200">{`${secondsToMinutesAndSeconds(
-          currentTime
-        )} / ${secondsToMinutesAndSeconds(duration)}`}</Text>
+        <Text size="T200">{`${secondsToMinutesAndSeconds(currentTime)} / ${
+          duration > 0 ? secondsToMinutesAndSeconds(duration) : '-:--'
+        }`}</Text>
       </>
     ),
     rightControl: (

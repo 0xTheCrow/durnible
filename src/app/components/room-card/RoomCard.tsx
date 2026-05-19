@@ -1,5 +1,6 @@
-import React, { ReactNode, useCallback, useRef, useState } from 'react';
-import { MatrixError, Room } from 'matrix-js-sdk';
+import type { ReactNode } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
+import type { MatrixError, Room } from 'matrix-js-sdk';
 import {
   Avatar,
   Badge,
@@ -98,20 +99,20 @@ function ErrorDialog({
   return (
     <>
       {children(openError)}
-      <OverlayModal open={viewError} requestClose={closeError}>
-            <Dialog variant="Surface">
-              <Box style={{ padding: config.space.S400 }} direction="Column" gap="400">
-                <Box direction="Column" gap="100">
-                  <Text>{title}</Text>
-                  <Text style={{ color: color.Critical.Main }} size="T300" priority="400">
-                    {message}
-                  </Text>
-                </Box>
-                <Button size="400" variant="Secondary" fill="Soft" onClick={closeError}>
-                  <Text size="B400">Cancel</Text>
-                </Button>
-              </Box>
-            </Dialog>
+      <OverlayModal open={viewError} onClose={closeError}>
+        <Dialog variant="Surface">
+          <Box style={{ padding: config.space.S400 }} direction="Column" gap="400">
+            <Box direction="Column" gap="100">
+              <Text>{title}</Text>
+              <Text style={{ color: color.Critical.Main }} size="T300" priority="400">
+                {message}
+              </Text>
+            </Box>
+            <Button size="400" variant="Secondary" fill="Soft" onClick={closeError}>
+              <Text size="B400">Cancel</Text>
+            </Button>
+          </Box>
+        </Dialog>
       </OverlayModal>
     </>
   );
@@ -127,7 +128,7 @@ type RoomCardProps = {
   roomType?: string;
   viaServers?: string[];
   onView?: (roomId: string) => void;
-  renderTopicViewer: (name: string, topic: string, requestClose: () => void) => ReactNode;
+  renderTopicViewer: (name: string, topic: string, onClose: () => void) => ReactNode;
 };
 
 export const RoomCard = as<'div', RoomCardProps>(
@@ -220,8 +221,8 @@ export const RoomCard = as<'div', RoomCardProps>(
             {roomTopic}
           </RoomCardTopic>
 
-          <OverlayModal open={viewTopic} requestClose={closeTopic}>
-                {renderTopicViewer(roomName, roomTopic, closeTopic)}
+          <OverlayModal open={viewTopic} onClose={closeTopic}>
+            {renderTopicViewer(roomName, roomTopic, closeTopic)}
           </OverlayModal>
         </Box>
         {typeof joinedMemberCount === 'number' && (

@@ -2,7 +2,7 @@ import React from 'react';
 import { Dialog, Text, Box, Button, config } from 'folds';
 import { AuthType } from 'matrix-js-sdk';
 import ReCAPTCHA from 'react-google-recaptcha';
-import { StageComponentProps } from './types';
+import type { StageComponentProps } from './types';
 
 function ReCaptchaErrorDialog({
   title,

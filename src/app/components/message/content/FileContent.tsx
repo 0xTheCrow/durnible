@@ -1,19 +1,10 @@
-import React, { ReactNode, useCallback, useState } from 'react';
-import {
-  Box,
-  Button,
-  Icon,
-  Icons,
-  Modal,
-  Spinner,
-  Text,
-  Tooltip,
-  TooltipProvider,
-  as,
-} from 'folds';
+import type { ReactNode } from 'react';
+import React, { useCallback, useState } from 'react';
+import { Box, Button, Icon, Icons, Modal, Spinner, Text, Tooltip, as } from 'folds';
 import FileSaver from 'file-saver';
-import { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
-import { IFileInfo } from '../../../../types/matrix/common';
+import type { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
+import { TooltipProvider } from '../../TooltipProvider';
+import type { FileInfo } from '../../../../types/matrix/common';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { bytesToSize } from '../../../utils/common';
@@ -66,16 +57,22 @@ type RenderTextViewerProps = {
   name: string;
   text: string;
   langName: string;
-  requestClose: () => void;
+  onClose: () => void;
 };
 type ReadTextFileProps = {
   body: string;
   mimeType: string;
   url: string;
-  encInfo?: EncryptedAttachmentInfo;
+  encryptionInfo?: EncryptedAttachmentInfo;
   renderViewer: (props: RenderTextViewerProps) => ReactNode;
 };
-export function ReadTextFile({ body, mimeType, url, encInfo, renderViewer }: ReadTextFileProps) {
+export function ReadTextFile({
+  body,
+  mimeType,
+  url,
+  encryptionInfo,
+  renderViewer,
+}: ReadTextFileProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
   const [textViewer, setTextViewer] = useState(false);
@@ -83,34 +80,32 @@ export function ReadTextFile({ body, mimeType, url, encInfo, renderViewer }: Rea
   const [textState, loadText] = useAsyncCallback(
     useCallback(async () => {
       const mediaUrl = mxcUrlToHttp(mx, url, useAuthentication) ?? url;
-      const fileContent = encInfo
-        ? await downloadEncryptedMedia(mediaUrl, (encBuf) => decryptFile(encBuf, mimeType, encInfo))
+      const fileContent = encryptionInfo
+        ? await downloadEncryptedMedia(mediaUrl, (encBuf) =>
+            decryptFile(encBuf, mimeType, encryptionInfo)
+          )
         : await downloadMedia(mediaUrl);
 
       const text = fileContent.text();
       setTextViewer(true);
       return text;
-    }, [mx, useAuthentication, mimeType, encInfo, url])
+    }, [mx, useAuthentication, mimeType, encryptionInfo, url])
   );
 
   return (
     <>
       {textState.status === AsyncStatus.Success && (
-        <OverlayModal open={textViewer} requestClose={() => setTextViewer(false)}>
-              <Modal
-                className={ModalWide}
-                size="500"
-                onContextMenu={(evt: any) => evt.stopPropagation()}
-              >
-                {renderViewer({
-                  name: body,
-                  text: textState.data,
-                  langName: READABLE_TEXT_MIME_TYPES.includes(mimeType)
-                    ? mimeTypeToExt(mimeType)
-                    : mimeTypeToExt(READABLE_EXT_TO_MIME_TYPE[getFileNameExt(body)] ?? mimeType),
-                  requestClose: () => setTextViewer(false),
-                })}
-              </Modal>
+        <OverlayModal open={textViewer} onClose={() => setTextViewer(false)}>
+          <Modal className={ModalWide} size="500" onContextMenu={(evt) => evt.stopPropagation()}>
+            {renderViewer({
+              name: body,
+              text: textState.data,
+              langName: READABLE_TEXT_MIME_TYPES.includes(mimeType)
+                ? mimeTypeToExt(mimeType)
+                : mimeTypeToExt(READABLE_EXT_TO_MIME_TYPE[getFileNameExt(body)] ?? mimeType),
+              onClose: () => setTextViewer(false),
+            })}
+          </Modal>
         </OverlayModal>
       )}
       {textState.status === AsyncStatus.Error ? (
@@ -145,16 +140,22 @@ export function ReadTextFile({ body, mimeType, url, encInfo, renderViewer }: Rea
 type RenderPdfViewerProps = {
   name: string;
   src: string;
-  requestClose: () => void;
+  onClose: () => void;
 };
 export type ReadPdfFileProps = {
   body: string;
   mimeType: string;
   url: string;
-  encInfo?: EncryptedAttachmentInfo;
+  encryptionInfo?: EncryptedAttachmentInfo;
   renderViewer: (props: RenderPdfViewerProps) => ReactNode;
 };
-export function ReadPdfFile({ body, mimeType, url, encInfo, renderViewer }: ReadPdfFileProps) {
+export function ReadPdfFile({
+  body,
+  mimeType,
+  url,
+  encryptionInfo,
+  renderViewer,
+}: ReadPdfFileProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
   const [pdfViewer, setPdfViewer] = useState(false);
@@ -162,29 +163,27 @@ export function ReadPdfFile({ body, mimeType, url, encInfo, renderViewer }: Read
   const [pdfState, loadPdf] = useAsyncCallback(
     useCallback(async () => {
       const mediaUrl = mxcUrlToHttp(mx, url, useAuthentication) ?? url;
-      const fileContent = encInfo
-        ? await downloadEncryptedMedia(mediaUrl, (encBuf) => decryptFile(encBuf, mimeType, encInfo))
+      const fileContent = encryptionInfo
+        ? await downloadEncryptedMedia(mediaUrl, (encBuf) =>
+            decryptFile(encBuf, mimeType, encryptionInfo)
+          )
         : await downloadMedia(mediaUrl);
       setPdfViewer(true);
       return URL.createObjectURL(fileContent);
-    }, [mx, url, useAuthentication, mimeType, encInfo])
+    }, [mx, url, useAuthentication, mimeType, encryptionInfo])
   );
 
   return (
     <>
       {pdfState.status === AsyncStatus.Success && (
-        <OverlayModal open={pdfViewer} requestClose={() => setPdfViewer(false)}>
-              <Modal
-                className={ModalWide}
-                size="500"
-                onContextMenu={(evt: any) => evt.stopPropagation()}
-              >
-                {renderViewer({
-                  name: body,
-                  src: pdfState.data,
-                  requestClose: () => setPdfViewer(false),
-                })}
-              </Modal>
+        <OverlayModal open={pdfViewer} onClose={() => setPdfViewer(false)}>
+          <Modal className={ModalWide} size="500" onContextMenu={(evt) => evt.stopPropagation()}>
+            {renderViewer({
+              name: body,
+              src: pdfState.data,
+              onClose: () => setPdfViewer(false),
+            })}
+          </Modal>
         </OverlayModal>
       )}
       {pdfState.status === AsyncStatus.Error ? (
@@ -218,24 +217,26 @@ export type DownloadFileProps = {
   body: string;
   mimeType: string;
   url: string;
-  info: IFileInfo;
-  encInfo?: EncryptedAttachmentInfo;
+  info: FileInfo;
+  encryptionInfo?: EncryptedAttachmentInfo;
 };
-export function DownloadFile({ body, mimeType, url, info, encInfo }: DownloadFileProps) {
+export function DownloadFile({ body, mimeType, url, info, encryptionInfo }: DownloadFileProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
 
   const [downloadState, download] = useAsyncCallback(
     useCallback(async () => {
       const mediaUrl = mxcUrlToHttp(mx, url, useAuthentication) ?? url;
-      const fileContent = encInfo
-        ? await downloadEncryptedMedia(mediaUrl, (encBuf) => decryptFile(encBuf, mimeType, encInfo))
+      const fileContent = encryptionInfo
+        ? await downloadEncryptedMedia(mediaUrl, (encBuf) =>
+            decryptFile(encBuf, mimeType, encryptionInfo)
+          )
         : await downloadMedia(mediaUrl);
 
       const fileURL = URL.createObjectURL(fileContent);
       FileSaver.saveAs(fileURL, body);
       return fileURL;
-    }, [mx, url, useAuthentication, mimeType, encInfo, body])
+    }, [mx, url, useAuthentication, mimeType, encryptionInfo, body])
   );
 
   return downloadState.status === AsyncStatus.Error ? (

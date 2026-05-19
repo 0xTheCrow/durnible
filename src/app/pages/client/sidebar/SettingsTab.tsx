@@ -13,7 +13,7 @@ import { Modal500 } from '../../../components/Modal500';
 export function SettingsTab() {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
-  const userId = mx.getUserId()!;
+  const userId = mx.getSafeUserId();
   const profile = useUserProfile(userId);
 
   const [settings, setSettings] = useState(false);
@@ -40,8 +40,8 @@ export function SettingsTab() {
         )}
       </SidebarItemTooltip>
       {settings && (
-        <Modal500 requestClose={closeSettings}>
-          <Settings requestClose={closeSettings} />
+        <Modal500 onClose={closeSettings} focusTrapOptions={{ escapeDeactivates: true }}>
+          <Settings onClose={closeSettings} />
         </Modal500>
       )}
     </SidebarItem>

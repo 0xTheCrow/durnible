@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { MsgType } from 'matrix-js-sdk';
 import { RenderMessageContent } from './RenderMessageContent';
@@ -22,7 +22,6 @@ function renderMessageContent(
       <RenderMessageContent
         displayName="Alice"
         msgType={msgType}
-        ts={Date.now()}
         content={content as any}
         mediaAutoLoad={opts?.mediaAutoLoad ?? false}
         urlPreview={false}
@@ -40,7 +39,7 @@ describe('RenderMessageContent', () => {
         body: 'Hello, world!',
         msgtype: 'm.text',
       });
-      expect(screen.getByText('Hello, world!')).toBeInTheDocument();
+      expect(screen.getByTestId('message-body')).toHaveTextContent('Hello, world!');
     });
 
     it('renders an HTML formatted text message', () => {
@@ -50,7 +49,9 @@ describe('RenderMessageContent', () => {
         format: 'org.matrix.custom.html',
         formatted_body: 'hello <strong>bold</strong>',
       });
-      expect(screen.getByText('bold')).toBeInTheDocument();
+      const body = screen.getByTestId('message-body');
+      expect(body).toHaveTextContent('hello bold');
+      expect(body.querySelector('strong')).not.toBeNull();
     });
 
     it('renders an edited text message', () => {
@@ -64,7 +65,6 @@ describe('RenderMessageContent', () => {
           <RenderMessageContent
             displayName="Alice"
             msgType={MsgType.Text}
-            ts={Date.now()}
             edited
             content={{ body: 'edited message', msgtype: 'm.text' } as any}
             mediaAutoLoad={false}
@@ -74,7 +74,7 @@ describe('RenderMessageContent', () => {
           />
         </MatrixTestWrapper>
       );
-      expect(screen.getByText('edited message')).toBeInTheDocument();
+      expect(screen.getByTestId('message-body')).toHaveTextContent('edited message');
     });
   });
 
@@ -84,7 +84,7 @@ describe('RenderMessageContent', () => {
         body: 'waves hello',
         msgtype: 'm.emote',
       });
-      expect(screen.getByText(/waves hello/)).toBeInTheDocument();
+      expect(screen.getByTestId('message-body')).toHaveTextContent('waves hello');
     });
   });
 
@@ -94,12 +94,12 @@ describe('RenderMessageContent', () => {
         body: 'This is a notice',
         msgtype: 'm.notice',
       });
-      expect(screen.getByText('This is a notice')).toBeInTheDocument();
+      expect(screen.getByTestId('message-body')).toHaveTextContent('This is a notice');
     });
   });
 
   describe('image messages', () => {
-    it('renders an image message without crashing', () => {
+    it('renders an image message without crashing', async () => {
       renderMessageContent(MsgType.Image, {
         body: 'photo.png',
         msgtype: 'm.image',
@@ -111,9 +111,10 @@ describe('RenderMessageContent', () => {
           mimetype: 'image/png',
         },
       });
+      await act(async () => {});
     });
 
-    it('renders an image with autoPlay loading', () => {
+    it('renders an image with autoPlay loading', async () => {
       renderMessageContent(
         MsgType.Image,
         {
@@ -129,11 +130,12 @@ describe('RenderMessageContent', () => {
         },
         { mediaAutoLoad: true }
       );
+      await act(async () => {});
     });
   });
 
   describe('file messages', () => {
-    it('renders a file message', () => {
+    it('renders a file message with the provided filename', () => {
       renderMessageContent(MsgType.File, {
         body: 'document.pdf',
         msgtype: 'm.file',
@@ -143,7 +145,41 @@ describe('RenderMessageContent', () => {
           mimetype: 'application/pdf',
         },
       });
-      expect(screen.getByText('document.pdf')).toBeInTheDocument();
+      expect(screen.getByTestId('file-name')).toHaveTextContent('document.pdf');
+    });
+  });
+
+  describe('video messages', () => {
+    it('renders a video message without crashing', async () => {
+      renderMessageContent(MsgType.Video, {
+        body: 'video.mp4',
+        msgtype: 'm.video',
+        url: 'mxc://example.com/vid123',
+        info: {
+          w: 1280,
+          h: 720,
+          size: 5_000_000,
+          mimetype: 'video/mp4',
+          duration: 30000,
+        },
+      });
+      await act(async () => {});
+    });
+  });
+
+  describe('audio messages', () => {
+    it('renders an audio message without crashing', async () => {
+      renderMessageContent(MsgType.Audio, {
+        body: 'audio.ogg',
+        msgtype: 'm.audio',
+        url: 'mxc://example.com/aud123',
+        info: {
+          size: 200_000,
+          mimetype: 'audio/ogg',
+          duration: 10000,
+        },
+      });
+      await act(async () => {});
     });
   });
 
@@ -153,10 +189,12 @@ describe('RenderMessageContent', () => {
         body: 'something',
         msgtype: 'm.unknown.type',
       });
+      expect(screen.getByTestId('message-unsupported')).toBeInTheDocument();
     });
 
-    it('renders bad encrypted content', () => {
+    it('renders bad encrypted content with a decrypt failure message', () => {
       renderMessageContent('m.bad.encrypted', {});
+      expect(screen.getByTestId('message-bad-encrypted')).toBeInTheDocument();
     });
   });
 });

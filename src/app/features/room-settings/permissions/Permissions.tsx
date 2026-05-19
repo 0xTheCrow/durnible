@@ -11,9 +11,9 @@ import { useRoomCreators } from '../../../hooks/useRoomCreators';
 import { useRoomPermissions } from '../../../hooks/useRoomPermissions';
 
 type PermissionsProps = {
-  requestClose: () => void;
+  onClose: () => void;
 };
-export function Permissions({ requestClose }: PermissionsProps) {
+export function Permissions({ onClose }: PermissionsProps) {
   const mx = useMatrixClient();
   const room = useRoom();
   const powerLevels = usePowerLevels(room);
@@ -32,7 +32,7 @@ export function Permissions({ requestClose }: PermissionsProps) {
   };
 
   if (canEditPowers && powerEditor) {
-    return <PowersEditor powerLevels={powerLevels} requestClose={() => setPowerEditor(false)} />;
+    return <PowersEditor powerLevels={powerLevels} onClose={() => setPowerEditor(false)} />;
   }
 
   return (
@@ -45,7 +45,7 @@ export function Permissions({ requestClose }: PermissionsProps) {
             </Text>
           </Box>
           <Box shrink="No">
-            <IconButton onClick={requestClose} variant="Surface">
+            <IconButton onClick={onClose} variant="Surface">
               <Icon src={Icons.Cross} />
             </IconButton>
           </Box>

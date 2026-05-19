@@ -1,36 +1,27 @@
 /* eslint-disable react/no-array-index-key */
-import React, { useState, MouseEventHandler, ReactNode } from 'react';
+import type { MouseEventHandler, ReactNode } from 'react';
+import React, { useState } from 'react';
 import FocusTrap from 'focus-trap-react';
-import {
-  Box,
-  Button,
-  Chip,
-  Text,
-  RectCords,
-  PopOut,
-  Menu,
-  Scroll,
-  toRem,
-  config,
-  color,
-} from 'folds';
+import type { RectCords } from 'folds';
+import { Box, Button, Chip, Text, PopOut, Menu, Scroll, toRem, config, color } from 'folds';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SequenceCardStyle } from '../styles.css';
 import { getPowers, usePowerLevelTags } from '../../../hooks/usePowerLevelTags';
 import { SettingTile } from '../../../components/setting-tile';
-import { getPermissionPower, IPowerLevels } from '../../../hooks/usePowerLevels';
+import type { PowerLevels } from '../../../hooks/usePowerLevels';
+import { getPermissionPower } from '../../../hooks/usePowerLevels';
 import { useRoom } from '../../../hooks/useRoom';
 import { PowerColorBadge, PowerIcon } from '../../../components/power';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
 import { stopPropagation } from '../../../utils/keyboard';
-import { PermissionGroup } from './types';
+import type { PermissionGroup } from './types';
 import { getPowerTagIconSrc } from '../../../hooks/useMemberPowerTag';
 import { useRoomCreatorsTag } from '../../../hooks/useRoomCreatorsTag';
 import { useRoomCreators } from '../../../hooks/useRoomCreators';
 
 type PeekPermissionsProps = {
-  powerLevels: IPowerLevels;
+  powerLevels: PowerLevels;
   power: number;
   permissionGroups: PermissionGroup[];
   children: (handleOpen: MouseEventHandler<HTMLButtonElement>, opened: boolean) => ReactNode;
@@ -103,7 +94,7 @@ function PeekPermissions({ powerLevels, power, permissionGroups, children }: Pee
 }
 
 type PowersProps = {
-  powerLevels: IPowerLevels;
+  powerLevels: PowerLevels;
   permissionGroups: PermissionGroup[];
   onEdit?: () => void;
 };

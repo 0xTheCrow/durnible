@@ -1,6 +1,7 @@
-import React, { CSSProperties, ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
+import React from 'react';
 import { Box, Chip, Icon, Icons, Text, toRem } from 'folds';
-import { IContent } from 'matrix-js-sdk';
+import type { IContent } from 'matrix-js-sdk';
 import { JUMBO_EMOJI_REG, URL_REG } from '../../utils/regex';
 import { trimReplyFromBody } from '../../utils/room';
 import { MessageTextBody } from './layout';
@@ -11,17 +12,19 @@ import {
   MessageEditedContent,
   MessageUnsupportedContent,
 } from './content';
+import type {
+  AudioContent,
+  AudioInfo,
+  EncryptedFile,
+  FileContent,
+  FileInfo,
+  ImageContent,
+  ImageInfo,
+  ThumbnailContent,
+  VideoContent,
+  VideoInfo,
+} from '../../../types/matrix/common';
 import {
-  IAudioContent,
-  IAudioInfo,
-  IEncryptedFile,
-  IFileContent,
-  IFileInfo,
-  IImageContent,
-  IImageInfo,
-  IThumbnailContent,
-  IVideoContent,
-  IVideoInfo,
   MATRIX_SPOILER_PROPERTY_NAME,
   MATRIX_SPOILER_REASON_PROPERTY_NAME,
 } from '../../../types/matrix/common';
@@ -32,7 +35,7 @@ import { FileHeader, FileDownloadButton } from './FileHeader';
 
 export function MBadEncrypted() {
   return (
-    <Text>
+    <Text data-testid="message-bad-encrypted">
       <MessageBadEncryptedContent />
     </Text>
   );
@@ -43,7 +46,7 @@ type RedactedContentProps = {
 };
 export function RedactedContent({ reason }: RedactedContentProps) {
   return (
-    <Text>
+    <Text data-testid="message-redacted">
       <MessageDeletedContent reason={reason} />
     </Text>
   );
@@ -51,7 +54,7 @@ export function RedactedContent({ reason }: RedactedContentProps) {
 
 export function UnsupportedContent() {
   return (
-    <Text>
+    <Text data-testid="message-unsupported">
       <MessageUnsupportedContent />
     </Text>
   );
@@ -59,7 +62,7 @@ export function UnsupportedContent() {
 
 export function BrokenContent() {
   return (
-    <Text>
+    <Text data-testid="message-broken">
       <MessageBrokenContent />
     </Text>
   );
@@ -177,17 +180,16 @@ export function MNotice({ edited, content, renderBody, renderUrlsPreview }: MNot
 type RenderImageContentProps = {
   body: string;
   filename?: string;
-  info?: IImageInfo & IThumbnailContent;
+  info?: ImageInfo & ThumbnailContent;
   mimeType?: string;
   url: string;
-  encInfo?: IEncryptedFile;
+  encryptionInfo?: EncryptedFile;
   markedAsSpoiler?: boolean;
   spoilerReason?: string;
 };
 type MImageProps = {
-  content: IImageContent;
+  content: ImageContent;
   renderImageContent: (props: RenderImageContentProps) => ReactNode;
-  outlined?: boolean;
 };
 export function MImage({ content, renderImageContent }: MImageProps) {
   const imgInfo = content?.info;
@@ -209,11 +211,12 @@ export function MImage({ content, renderImageContent }: MImageProps) {
         }}
       >
         {renderImageContent({
-          body: content.body || 'Image',
+          body: content.body || content.filename || 'Image',
+          filename: content.filename,
           info: imgInfo,
           mimeType: imgInfo?.mimetype,
           url: mxcUrl,
-          encInfo: content.file,
+          encryptionInfo: content.file,
           markedAsSpoiler: content[MATRIX_SPOILER_PROPERTY_NAME],
           spoilerReason: content[MATRIX_SPOILER_REASON_PROPERTY_NAME],
         })}
@@ -224,15 +227,15 @@ export function MImage({ content, renderImageContent }: MImageProps) {
 
 type RenderVideoContentProps = {
   body: string;
-  info: IVideoInfo & IThumbnailContent;
+  info: VideoInfo & ThumbnailContent;
   mimeType: string;
   url: string;
-  encInfo?: IEncryptedFile;
+  encryptionInfo?: EncryptedFile;
   markedAsSpoiler?: boolean;
   spoilerReason?: string;
 };
 type MVideoProps = {
-  content: IVideoContent;
+  content: VideoContent;
   renderAsFile: () => ReactNode;
   renderVideoContent: (props: RenderVideoContentProps) => ReactNode;
   outlined?: boolean;
@@ -264,7 +267,7 @@ export function MVideo({ content, renderAsFile, renderVideoContent, outlined }: 
               filename={filename}
               url={mxcUrl}
               mimeType={safeMimeType}
-              encInfo={content.file}
+              encryptionInfo={content.file}
             />
           }
         />
@@ -279,7 +282,7 @@ export function MVideo({ content, renderAsFile, renderVideoContent, outlined }: 
           info: videoInfo,
           mimeType: safeMimeType,
           url: mxcUrl,
-          encInfo: content.file,
+          encryptionInfo: content.file,
           markedAsSpoiler: content[MATRIX_SPOILER_PROPERTY_NAME],
           spoilerReason: content[MATRIX_SPOILER_REASON_PROPERTY_NAME],
         })}
@@ -289,13 +292,13 @@ export function MVideo({ content, renderAsFile, renderVideoContent, outlined }: 
 }
 
 type RenderAudioContentProps = {
-  info: IAudioInfo;
+  info: AudioInfo;
   mimeType: string;
   url: string;
-  encInfo?: IEncryptedFile;
+  encryptionInfo?: EncryptedFile;
 };
 type MAudioProps = {
-  content: IAudioContent;
+  content: AudioContent;
   renderAsFile: () => ReactNode;
   renderAudioContent: (props: RenderAudioContentProps) => ReactNode;
   outlined?: boolean;
@@ -324,7 +327,7 @@ export function MAudio({ content, renderAsFile, renderAudioContent, outlined }: 
               filename={filename}
               url={mxcUrl}
               mimeType={safeMimeType}
-              encInfo={content.file}
+              encryptionInfo={content.file}
             />
           }
         />
@@ -335,7 +338,7 @@ export function MAudio({ content, renderAsFile, renderAudioContent, outlined }: 
             info: audioInfo,
             mimeType: safeMimeType,
             url: mxcUrl,
-            encInfo: content.file,
+            encryptionInfo: content.file,
           })}
         </AttachmentContent>
       </AttachmentBox>
@@ -345,13 +348,13 @@ export function MAudio({ content, renderAsFile, renderAudioContent, outlined }: 
 
 type RenderFileContentProps = {
   body: string;
-  info: IFileInfo & IThumbnailContent;
+  info: FileInfo & ThumbnailContent;
   mimeType: string;
   url: string;
-  encInfo?: IEncryptedFile;
+  encryptionInfo?: EncryptedFile;
 };
 type MFileProps = {
-  content: IFileContent;
+  content: FileContent;
   renderFileContent: (props: RenderFileContentProps) => ReactNode;
   outlined?: boolean;
 };
@@ -378,7 +381,7 @@ export function MFile({ content, renderFileContent, outlined }: MFileProps) {
             info: fileInfo ?? {},
             mimeType: fileInfo?.mimetype ?? FALLBACK_MIMETYPE,
             url: mxcUrl,
-            encInfo: content.file,
+            encryptionInfo: content.file,
           })}
         </AttachmentContent>
       </AttachmentBox>
@@ -413,7 +416,7 @@ export function MLocation({ content }: MLocationProps) {
 }
 
 type MStickerProps = {
-  content: IImageContent;
+  content: ImageContent;
   renderImageContent: (props: RenderImageContentProps) => ReactNode;
 };
 export function MSticker({ content, renderImageContent }: MStickerProps) {
@@ -436,7 +439,7 @@ export function MSticker({ content, renderImageContent }: MStickerProps) {
         info: imgInfo,
         mimeType: imgInfo?.mimetype,
         url: mxcUrl,
-        encInfo: content.file,
+        encryptionInfo: content.file,
       })}
     </AttachmentBox>
   );

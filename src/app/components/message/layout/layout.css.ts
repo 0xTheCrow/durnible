@@ -1,5 +1,6 @@
 import { createVar, keyframes, style, styleVariants } from '@vanilla-extract/css';
-import { recipe, RecipeVariants } from '@vanilla-extract/recipes';
+import type { RecipeVariants } from '@vanilla-extract/recipes';
+import { recipe } from '@vanilla-extract/recipes';
 import { DefaultReset, color, config, toRem } from 'folds';
 
 export const StickySection = style({
@@ -199,8 +200,8 @@ export const MessageTextBody = recipe({
     },
     jumboEmoji: {
       true: {
-        fontSize: '1.504em',
-        lineHeight: '1.4962em',
+        fontSize: '2em',
+        lineHeight: '2.2em',
       },
     },
     emote: {

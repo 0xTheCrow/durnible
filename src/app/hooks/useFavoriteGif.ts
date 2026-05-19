@@ -1,9 +1,9 @@
 import { useState, useCallback } from 'react';
-import { MatrixClient } from 'matrix-js-sdk';
+import type { MatrixClient } from 'matrix-js-sdk';
 import { getFavoriteGifs } from '../plugins/favorite-gif';
 import { AccountDataEvent } from '../../types/matrix/accountData';
 import { useAccountDataCallback } from './useAccountDataCallback';
-import { GifItem } from '../utils/gifServer';
+import type { GifItem } from '../utils/gifServer';
 
 export const useFavoriteGifs = (mx: MatrixClient): GifItem[] => {
   const [favorites, setFavorites] = useState(() => getFavoriteGifs(mx));
@@ -12,7 +12,7 @@ export const useFavoriteGifs = (mx: MatrixClient): GifItem[] => {
     mx,
     useCallback(
       (evt) => {
-        if (evt.getType() === AccountDataEvent.CinnyFavoriteGif) {
+        if (evt.getType() === AccountDataEvent.DurnibleFavoriteGif) {
           setFavorites(getFavoriteGifs(mx));
         }
       },

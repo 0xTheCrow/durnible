@@ -55,3 +55,15 @@ export const ReactionsContainer = style({
 export const ReactionsTooltipText = style({
   wordBreak: 'break-word',
 });
+
+export const MessageBaseSelecting = style({
+  paddingRight: toRem(40),
+});
+
+export const SelectionCheckbox = style({
+  position: 'absolute',
+  right: config.space.S300,
+  top: '50%',
+  transform: 'translateY(-50%)',
+  zIndex: 1,
+});

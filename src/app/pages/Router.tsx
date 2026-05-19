@@ -8,7 +8,7 @@ import {
   redirect,
 } from 'react-router-dom';
 
-import { ClientConfig } from '../hooks/useClientConfig';
+import type { ClientConfig } from '../hooks/useClientConfig';
 import { AuthLayout, Login, Register, ResetPassword } from './auth';
 import {
   DIRECT_PATH,
@@ -42,8 +42,9 @@ import {
 import { ClientBindAtoms, ClientLayout, ClientRoot } from './client';
 import { Home, HomeRouteRoomProvider, HomeSearch } from './client/home';
 import { Direct, DirectCreate, DirectRouteRoomProvider } from './client/direct';
-import { RouteSpaceProvider, Space, SpaceRoomDrawer, SpaceRouteRoomProvider, SpaceSearch } from './client/space';
-import { FavoritesDrawer, FavoritesSection } from './client/FavoritesDrawer';
+import { RouteSpaceProvider, Space, SpaceRouteRoomProvider, SpaceSearch } from './client/space';
+import { RoomDrawer } from './client/RoomDrawer';
+import { FavoriteRoomsSection } from './client/FavoriteRooms';
 import { Explore, FeaturedRooms, PublicRooms } from './client/explore';
 import { Notifications, Inbox, Invites } from './client/inbox';
 import { setAfterLoginRedirectPath } from './afterLoginRedirectPath';
@@ -63,6 +64,7 @@ import { RoomSettingsRenderer } from '../features/room-settings';
 import { ClientRoomsNotificationPreferences } from './client/ClientRoomsNotificationPreferences';
 import { SpaceSettingsRenderer } from '../features/space-settings';
 import { UserRoomProfileRenderer } from '../components/UserRoomProfileRenderer';
+import { ReactionViewerRenderer } from '../components/ReactionViewerRenderer';
 import { CreateRoomModalRenderer } from '../features/create-room';
 import { HomeCreateRoom } from './client/home/CreateRoom';
 import { Create } from './client/create';
@@ -137,6 +139,7 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
                       <SearchModalRenderer />
                       <ImageViewerRenderer />
                       <UserRoomProfileRenderer />
+                      <ReactionViewerRenderer />
                       <CreateRoomModalRenderer />
                       <CreateSpaceModalRenderer />
                       <RoomSettingsRenderer />
@@ -157,13 +160,13 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
             <PageRoot
               nav={
                 <MobileFriendlyPageNav path={HOME_PATH}>
-                  <Home />
+                  <Home extra={<FavoriteRoomsSection />} />
                 </MobileFriendlyPageNav>
               }
             >
-              <FavoritesDrawer>
+              <RoomDrawer>
                 <Outlet />
-              </FavoritesDrawer>
+              </RoomDrawer>
             </PageRoot>
           }
         >
@@ -186,13 +189,13 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
             <PageRoot
               nav={
                 <MobileFriendlyPageNav path={DIRECT_PATH}>
-                  <Direct />
+                  <Direct extra={<FavoriteRoomsSection />} />
                 </MobileFriendlyPageNav>
               }
             >
-              <FavoritesDrawer>
+              <RoomDrawer>
                 <Outlet />
-              </FavoritesDrawer>
+              </RoomDrawer>
             </PageRoot>
           }
         >
@@ -214,13 +217,13 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
               <PageRoot
                 nav={
                   <MobileFriendlyPageNav path={SPACE_PATH}>
-                    <Space extra={<FavoritesSection />} />
+                    <Space extra={<FavoriteRoomsSection />} />
                   </MobileFriendlyPageNav>
                 }
               >
-                <SpaceRoomDrawer>
+                <RoomDrawer>
                   <Outlet />
-                </SpaceRoomDrawer>
+                </RoomDrawer>
               </PageRoot>
             </RouteSpaceProvider>
           }
@@ -284,9 +287,9 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
                 </MobileFriendlyPageNav>
               }
             >
-              <FavoritesDrawer>
+              <RoomDrawer>
                 <Outlet />
-              </FavoritesDrawer>
+              </RoomDrawer>
             </PageRoot>
           }
         >

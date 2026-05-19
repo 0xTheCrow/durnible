@@ -1,18 +1,22 @@
-import React, { ChangeEventHandler, useRef } from 'react';
+import type { ChangeEventHandler, KeyboardEventHandler } from 'react';
+import React, { useRef } from 'react';
 import { Input, Chip, Icon, Icons, Text } from 'folds';
-import { mobileOrTablet } from '../../../utils/user-agent';
 
 type SearchInputProps = {
   query?: string;
   onChange: ChangeEventHandler<HTMLInputElement>;
+  onKeyDown?: KeyboardEventHandler<HTMLInputElement>;
   allowTextCustomEmoji?: boolean;
   onTextCustomEmojiSelect?: (text: string) => void;
+  autoFocus?: boolean;
 };
 export function SearchInput({
   query,
   onChange,
+  onKeyDown,
   allowTextCustomEmoji,
   onTextCustomEmojiSelect,
+  autoFocus = true,
 }: SearchInputProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -45,7 +49,8 @@ export function SearchInput({
         )
       }
       onChange={onChange}
-      autoFocus={!mobileOrTablet()}
+      onKeyDown={onKeyDown}
+      autoFocus={autoFocus}
     />
   );
 }

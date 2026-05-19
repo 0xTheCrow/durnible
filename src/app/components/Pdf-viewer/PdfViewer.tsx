@@ -1,7 +1,9 @@
 /* eslint-disable no-param-reassign */
 /* eslint-disable jsx-a11y/no-noninteractive-element-interactions */
-import React, { FormEventHandler, MouseEventHandler, useEffect, useRef, useState } from 'react';
+import type { FormEventHandler, MouseEventHandler } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import classNames from 'classnames';
+import type { RectCords } from 'folds';
 import {
   Box,
   Button,
@@ -13,7 +15,6 @@ import {
   Input,
   Menu,
   PopOut,
-  RectCords,
   Scroll,
   Spinner,
   Text,
@@ -31,11 +32,11 @@ import { stopPropagation } from '../../utils/keyboard';
 export type PdfViewerProps = {
   name: string;
   src: string;
-  requestClose: () => void;
+  onClose: () => void;
 };
 
 export const PdfViewer = as<'div', PdfViewerProps>(
-  ({ className, name, src, requestClose, ...props }, ref) => {
+  ({ className, name, src, onClose, ...props }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
     const { zoom, zoomIn, zoomOut, setZoom } = useZoom(0.2);
@@ -108,7 +109,7 @@ export const PdfViewer = as<'div', PdfViewerProps>(
       <Box className={classNames(css.PdfViewer, className)} direction="Column" {...props} ref={ref}>
         <Header className={css.PdfViewerHeader} size="400">
           <Box grow="Yes" alignItems="Center" gap="200">
-            <IconButton size="300" radii="300" onClick={requestClose}>
+            <IconButton size="300" radii="300" onClick={onClose}>
               <Icon size="50" src={Icons.ArrowLeft} />
             </IconButton>
             <Text size="T300" truncate>

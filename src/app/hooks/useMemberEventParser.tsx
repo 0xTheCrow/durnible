@@ -1,7 +1,10 @@
-import React, { ReactNode } from 'react';
-import { IconSrc, Icons } from 'folds';
-import { MatrixEvent } from 'matrix-js-sdk';
-import { IMemberContent, Membership } from '../../types/matrix/room';
+import type { ReactNode } from 'react';
+import React from 'react';
+import type { IconSrc } from 'folds';
+import { Icons } from 'folds';
+import type { MatrixEvent } from 'matrix-js-sdk';
+import type { MemberContent } from '../../types/matrix/room';
+import { Membership } from '../../types/matrix/room';
 import { getMxIdLocalPart } from '../utils/matrix';
 import { isMembershipChanged } from '../utils/room';
 
@@ -14,8 +17,8 @@ export type MemberEventParser = (mEvent: MatrixEvent) => ParsedResult;
 
 export const useMemberEventParser = (): MemberEventParser => {
   const parseMemberEvent: MemberEventParser = (mEvent) => {
-    const content = mEvent.getContent<IMemberContent>();
-    const prevContent = mEvent.getPrevContent() as IMemberContent;
+    const content = mEvent.getContent<MemberContent>();
+    const prevContent = mEvent.getPrevContent() as MemberContent;
     const senderId = mEvent.getSender();
     const userId = mEvent.getStateKey();
     const reason = typeof content.reason === 'string' ? content.reason : undefined;

@@ -1,4 +1,5 @@
-import { PackMeta, ImageUsage } from './types';
+import type { PackMeta } from './types';
+import { ImageUsage } from './types';
 
 export class PackMetaReader {
   private readonly meta: PackMeta;
@@ -37,6 +38,10 @@ export class PackMetaReader {
     if (knownUsage.length === 0) return this.fallbackUsage;
 
     return knownUsage;
+  }
+
+  get portable(): boolean {
+    return this.meta.portable === true;
   }
 
   get content(): PackMeta {

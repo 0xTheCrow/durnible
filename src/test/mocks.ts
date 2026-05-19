@@ -1,5 +1,5 @@
 import { vi } from 'vitest';
-import { EventTimeline, MatrixClient, MatrixEvent, Room, RoomMember } from 'matrix-js-sdk';
+import type { MatrixClient, MatrixEvent, Room, RoomMember } from 'matrix-js-sdk';
 
 let eventCounter = 0;
 
@@ -121,10 +121,7 @@ export type MockRoom = Partial<Room> & {
   _addMockMember: (userId: string, displayName?: string, avatarUrl?: string) => void;
 };
 
-export function createMockRoom(
-  roomId?: string,
-  mx?: Partial<MatrixClient>
-): MockRoom {
+export function createMockRoom(roomId?: string, mx?: Partial<MatrixClient>): MockRoom {
   const id = roomId ?? '!room:example.com';
   const members = new Map<string, Partial<RoomMember>>();
   const timeline = createMockTimeline();
@@ -166,7 +163,16 @@ export function createMockMatrixClient(): Partial<MatrixClient> {
     getRoom: vi.fn(() => null),
     getAccountData: vi.fn(() => undefined),
     sendEvent: vi.fn(async () => ({ event_id: '$sent' })),
-    redactEvent: vi.fn(async () => ({ event_id: '$redacted' })) as unknown as MatrixClient['redactEvent'],
+    sendMessage: vi.fn(async () => ({
+      event_id: '$sent',
+    })) as unknown as MatrixClient['sendMessage'],
+    redactEvent: vi.fn(async () => ({
+      event_id: '$redacted',
+    })) as unknown as MatrixClient['redactEvent'],
+    sendStateEvent: vi.fn(async () => ({
+      event_id: '$state',
+    })) as unknown as MatrixClient['sendStateEvent'],
+    reportEvent: vi.fn(async () => ({})) as unknown as MatrixClient['reportEvent'],
     on: vi.fn().mockReturnThis(),
     off: vi.fn().mockReturnThis(),
     removeListener: vi.fn().mockReturnThis(),

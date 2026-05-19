@@ -1,5 +1,7 @@
-import React, { FormEventHandler, useCallback, useEffect, useState } from 'react';
-import { MatrixError, Room } from 'matrix-js-sdk';
+import type { FormEventHandler } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+import type { Room } from 'matrix-js-sdk';
+import { MatrixError } from 'matrix-js-sdk';
 import {
   Box,
   Button,
@@ -28,11 +30,11 @@ import { AsyncStatus, useAsyncCallback } from '../../hooks/useAsyncCallback';
 import { useCapabilities } from '../../hooks/useCapabilities';
 import { useAlive } from '../../hooks/useAlive';
 import { ErrorCode } from '../../cs-errorcode';
+import type { CreateRoomData } from '../../components/create-room';
 import {
   AdditionalCreatorInput,
   createRoom,
   CreateRoomAliasInput,
-  CreateRoomData,
   CreateRoomKind,
   CreateRoomKindSelector,
   RoomVersionSelector,

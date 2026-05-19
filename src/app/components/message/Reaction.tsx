@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { Box, Text, as } from 'folds';
 import classNames from 'classnames';
-import { MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk';
+import type { MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk';
 import * as css from './Reaction.css';
 import { getHexcodeForEmoji, getShortcodeFor } from '../../plugins/emoji';
 import { getMemberDisplayName } from '../../utils/room';
 import { eventWithShortcode, getMxIdLocalPart, mxcUrlToHttp } from '../../utils/matrix';
-import { AnimatedImg } from '../AnimatedImg';
+import { AnimatedEmojiOverlay } from '../AnimatedEmojiOverlay';
 
 export const Reaction = as<
   'button',
@@ -19,6 +19,28 @@ export const Reaction = as<
   }
 >(({ className, mx, count, reaction, useAuthentication, pauseGifs, ...props }, ref) => {
   const [hovered, setHovered] = useState(false);
+
+  const isMxc = reaction.startsWith('mxc://');
+
+  let reactionContent: React.ReactNode;
+  if (!isMxc) {
+    reactionContent = (
+      <Text as="span" size="Inherit" truncate>
+        {reaction}
+      </Text>
+    );
+  } else {
+    const resolvedSrc = mxcUrlToHttp(mx, reaction, useAuthentication) ?? reaction;
+    reactionContent = (
+      <AnimatedEmojiOverlay
+        className={css.ReactionImg}
+        src={resolvedSrc}
+        alt={reaction}
+        pauseGifs={pauseGifs ?? false}
+        hovered={hovered}
+      />
+    );
+  }
 
   return (
     <Box
@@ -33,19 +55,7 @@ export const Reaction = as<
       ref={ref}
     >
       <Text className={css.ReactionText} as="span" size="T500">
-        {reaction.startsWith('mxc://') ? (
-          <AnimatedImg
-            className={css.ReactionImg}
-            src={mxcUrlToHttp(mx, reaction, useAuthentication) ?? reaction}
-            alt={reaction}
-            pauseGifs={pauseGifs ?? false}
-            hovered={hovered}
-          />
-        ) : (
-          <Text as="span" size="Inherit" truncate>
-            {reaction}
-          </Text>
-        )}
+        {reactionContent}
       </Text>
       <Text as="span" size="T300">
         {count}

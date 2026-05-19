@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { CryptoApi } from 'matrix-js-sdk/lib/crypto-api';
+import type { CryptoApi } from 'matrix-js-sdk/lib/crypto-api';
 import { verifiedDevice } from '../utils/matrix-crypto';
 import { useAlive } from './useAlive';
 import { fulfilledPromiseSettledResult } from '../utils/common';

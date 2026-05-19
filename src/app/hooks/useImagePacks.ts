@@ -1,18 +1,20 @@
-import { Room } from 'matrix-js-sdk';
+import type { Room } from 'matrix-js-sdk';
 import { useCallback, useMemo, useState } from 'react';
+import { useAtomValue } from 'jotai';
+import { useResettableState } from './useResettableState';
 import { AccountDataEvent } from '../../types/matrix/accountData';
 import { StateEvent } from '../../types/matrix/room';
+import type { ImagePack, ImageUsage } from '../plugins/custom-emoji';
 import {
   getGlobalImagePacks,
   getRoomImagePack,
   getRoomImagePacks,
   getUserImagePack,
-  ImagePack,
-  ImageUsage,
 } from '../plugins/custom-emoji';
 import { useMatrixClient } from './useMatrixClient';
 import { useAccountDataCallback } from './useAccountDataCallback';
 import { useStateEventCallback } from './useStateEventCallback';
+import { portableImagePacksAtom } from '../state/portableImagePacks';
 
 export const useUserImagePack = (): ImagePack | undefined => {
   const mx = useMatrixClient();
@@ -120,7 +122,7 @@ export const useRoomImagePacks = (room: Room): ImagePack[] => {
 
 export const useRoomsImagePacks = (rooms: Room[]) => {
   const mx = useMatrixClient();
-  const [roomPacks, setRoomPacks] = useState(() => rooms.flatMap(getRoomImagePacks));
+  const [roomPacks, setRoomPacks] = useResettableState(rooms, (r) => r.flatMap(getRoomImagePacks));
 
   useStateEventCallback(
     mx,
@@ -133,29 +135,43 @@ export const useRoomsImagePacks = (rooms: Room[]) => {
           setRoomPacks(rooms.flatMap(getRoomImagePacks));
         }
       },
-      [rooms]
+      [rooms, setRoomPacks]
     )
   );
 
   return roomPacks;
 };
 
+const packAddressKey = (pack: ImagePack): string =>
+  pack.address ? `${pack.address.roomId}:${pack.address.stateKey}` : pack.id;
+
 export const useRelevantImagePacks = (usage: ImageUsage, rooms: Room[]): ImagePack[] => {
   const userPack = useUserImagePack();
   const globalPacks = useGlobalImagePacks();
   const roomsPacks = useRoomsImagePacks(rooms);
+  const portablePacksMap = useAtomValue(portableImagePacksAtom);
 
   const relevantPacks = useMemo(() => {
     const packs = userPack ? [userPack] : [];
+    const seenKeys = new Set<string>();
     const globalPackIds = new Set(globalPacks.map((pack) => pack.id));
 
-    const relPacks = packs.concat(
-      globalPacks,
-      roomsPacks.filter((pack) => !globalPackIds.has(pack.id))
-    );
+    const pushUnique = (pack: ImagePack) => {
+      const key = packAddressKey(pack);
+      if (seenKeys.has(key)) return;
+      seenKeys.add(key);
+      packs.push(pack);
+    };
 
-    return relPacks.filter((pack) => pack.getImages(usage).length > 0);
-  }, [userPack, globalPacks, roomsPacks, usage]);
+    globalPacks.forEach(pushUnique);
+    roomsPacks.forEach((pack) => {
+      if (globalPackIds.has(pack.id)) return;
+      pushUnique(pack);
+    });
+    portablePacksMap.forEach(pushUnique);
+
+    return packs.filter((pack) => pack.getImages(usage).length > 0);
+  }, [userPack, globalPacks, roomsPacks, portablePacksMap, usage]);
 
   return relevantPacks;
 };

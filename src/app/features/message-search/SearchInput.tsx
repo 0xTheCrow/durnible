@@ -1,15 +1,8 @@
-import React, {
-  FormEventHandler,
-  KeyboardEventHandler,
-  RefObject,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
-import { Box, Text, Input, Icon, Icons, IconSrc, Spinner, Chip, config, Menu, MenuItem, toRem } from 'folds';
-import { RoomMember } from 'matrix-js-sdk';
+import type { FormEventHandler, KeyboardEventHandler, RefObject } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { IconSrc } from 'folds';
+import { Box, Text, Input, Icon, Icons, Spinner, Chip, config, Menu, MenuItem, toRem } from 'folds';
+import type { RoomMember } from 'matrix-js-sdk';
 import { getMxIdLocalPart } from '../../utils/matrix';
 
 type TokenType = 'from' | 'has';
@@ -91,7 +84,9 @@ export function SearchInput({
     const q = token.query.toLowerCase();
     const alreadySelected = new Set(selectedHasTypes ?? []);
     return HAS_OPTIONS.filter(
-      (opt) => !alreadySelected.has(opt.value) && (!q || opt.value.includes(q) || opt.label.toLowerCase().includes(q))
+      (opt) =>
+        !alreadySelected.has(opt.value) &&
+        (!q || opt.value.includes(q) || opt.label.toLowerCase().includes(q))
     );
   }, [token, selectedHasTypes]);
 
@@ -171,7 +166,15 @@ export function SearchInput({
         }
       }
     },
-    [token, suggestionCount, highlightedIndex, memberSuggestions, hasSuggestions, selectMember, selectHasOption]
+    [
+      token,
+      suggestionCount,
+      highlightedIndex,
+      memberSuggestions,
+      hasSuggestions,
+      selectMember,
+      selectHasOption,
+    ]
   );
 
   useEffect(() => {

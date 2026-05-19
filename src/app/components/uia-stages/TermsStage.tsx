@@ -1,7 +1,7 @@
 import React, { useEffect, useCallback } from 'react';
 import { Dialog, Text, Box, Button, config } from 'folds';
 import { AuthType } from 'matrix-js-sdk';
-import { StageComponentProps } from './types';
+import type { StageComponentProps } from './types';
 
 function TermsErrorDialog({
   title,

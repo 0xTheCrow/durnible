@@ -40,7 +40,11 @@ const gifFetch = (url: string, options?: RequestInit): Promise<Response> =>
     },
   });
 
-export async function searchGifs(query: string, limit = 20, pos?: string): Promise<GifListResponse> {
+export async function searchGifs(
+  query: string,
+  limit: number,
+  pos?: string
+): Promise<GifListResponse> {
   const url = new URL(`${GIF_SERVER_URL}/gifs/search`);
   if (query) url.searchParams.set('q', query);
   url.searchParams.set('limit', String(limit));
@@ -50,7 +54,7 @@ export async function searchGifs(query: string, limit = 20, pos?: string): Promi
   return res.json();
 }
 
-export async function getFeaturedGifs(limit = 20, pos?: string): Promise<GifListResponse> {
+export async function getFeaturedGifs(limit: number, pos?: string): Promise<GifListResponse> {
   const url = new URL(`${GIF_SERVER_URL}/gifs/featured`);
   url.searchParams.set('limit', String(limit));
   if (pos) url.searchParams.set('pos', pos);

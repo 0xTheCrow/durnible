@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useAtomValue, useSetAtom } from 'jotai';
-import { createSpaceModalAtom, CreateSpaceModalState } from '../createSpaceModal';
+import type { CreateSpaceModalState } from '../createSpaceModal';
+import { createSpaceModalAtom } from '../createSpaceModal';
 
 export const useCreateSpaceModalState = (): CreateSpaceModalState | undefined => {
   const data = useAtomValue(createSpaceModalAtom);

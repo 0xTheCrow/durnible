@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { RoomMember } from 'matrix-js-sdk';
+import type { RoomMember } from 'matrix-js-sdk';
 import { Membership } from '../../types/matrix/room';
 
 export const MembershipFilter = {

@@ -1,5 +1,7 @@
-import React, { MouseEventHandler, forwardRef, useMemo, useRef, useState } from 'react';
+import type { MouseEventHandler } from 'react';
+import React, { forwardRef, useMemo, useRef, useState } from 'react';
 import { useAtom, useAtomValue } from 'jotai';
+import type { RectCords } from 'folds';
 import {
   Avatar,
   Box,
@@ -10,7 +12,6 @@ import {
   Menu,
   MenuItem,
   PopOut,
-  RectCords,
   Text,
   config,
   toRem,
@@ -41,7 +42,6 @@ import { useNavToActivePathMapper } from '../../../hooks/useNavToActivePathMappe
 import { useDirectRooms } from './useDirectRooms';
 import { PageNav, PageNavContent, PageNavHeader } from '../../../components/page';
 import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
-import { FavoritesSection } from '../FavoritesDrawer';
 import { useClosedNavCategoriesAtom } from '../../../state/hooks/closedNavCategories';
 import { useRoomsUnread } from '../../../state/hooks/unread';
 import { markAsRead } from '../../../utils/notifications';
@@ -55,9 +55,9 @@ import {
 import { useDirectCreateSelected } from '../../../hooks/router/useDirectSelected';
 
 type DirectMenuProps = {
-  requestClose: () => void;
+  onClose: () => void;
 };
-const DirectMenu = forwardRef<HTMLDivElement, DirectMenuProps>(({ requestClose }, ref) => {
+const DirectMenu = forwardRef<HTMLDivElement, DirectMenuProps>(({ onClose }, ref) => {
   const mx = useMatrixClient();
   const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
   const orphanRooms = useDirectRooms();
@@ -66,7 +66,7 @@ const DirectMenu = forwardRef<HTMLDivElement, DirectMenuProps>(({ requestClose }
   const handleMarkAsRead = () => {
     if (!unread) return;
     orphanRooms.forEach((rId) => markAsRead(mx, rId, hideActivity));
-    requestClose();
+    onClose();
   };
 
   return (
@@ -132,7 +132,7 @@ function DirectHeader() {
               escapeDeactivates: stopPropagation,
             }}
           >
-            <DirectMenu requestClose={() => setMenuAnchor(undefined)} />
+            <DirectMenu onClose={() => setMenuAnchor(undefined)} />
           </FocusTrap>
         }
       />
@@ -170,7 +170,11 @@ function DirectEmpty() {
 }
 
 const DEFAULT_CATEGORY_ID = makeNavCategoryId('direct', 'direct');
-export function Direct() {
+type DirectProps = {
+  isDrawerMode?: boolean;
+  extra?: React.ReactNode;
+};
+export function Direct({ isDrawerMode, extra }: DirectProps = {}) {
   const mx = useMatrixClient();
   useNavToActivePathMapper('direct');
   const screenSize = useScreenSizeContext();
@@ -213,7 +217,11 @@ export function Direct() {
         <DirectEmpty />
       ) : (
         <PageNavContent scrollRef={scrollRef}>
-          <Box direction="Column" gap="300">
+          <Box
+            direction="Column"
+            gap="300"
+            style={isDrawerMode ? { minHeight: '100%', justifyContent: 'center' } : undefined}
+          >
             <NavCategory>
               <NavItem variant="Background" radii="400" aria-selected={createDirectSelected}>
                 <NavButton onClick={() => navigate(getDirectCreatePath())}>
@@ -271,6 +279,7 @@ export function Direct() {
                           room.roomId
                         )}
                         tall={isDesktop}
+                        isDrawerMode={isDrawerMode}
                       />
                     </VirtualTile>
                   );
@@ -280,7 +289,7 @@ export function Direct() {
           </Box>
         </PageNavContent>
       )}
-      <FavoritesSection />
+      {extra}
     </PageNav>
   );
 }

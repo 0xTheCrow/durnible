@@ -1,6 +1,7 @@
 import produce from 'immer';
 import { atom, useSetAtom } from 'jotai';
-import { MatrixClient, RoomMemberEvent, RoomMemberEventHandlerMap } from 'matrix-js-sdk';
+import type { MatrixClient, RoomMemberEventHandlerMap } from 'matrix-js-sdk';
+import { RoomMemberEvent } from 'matrix-js-sdk';
 import { useEffect } from 'react';
 import { useSetting } from './hooks/settings';
 import { settingsAtom } from './settings';
@@ -11,7 +12,7 @@ export type TypingReceipt = {
   userId: string;
   ts: number;
 };
-export type IRoomIdToTypingMembers = Map<string, TypingReceipt[]>;
+export type RoomIdToTypingMembers = Map<string, TypingReceipt[]>;
 
 type TypingMemberPutAction = {
   type: 'PUT';
@@ -24,14 +25,14 @@ type TypingMemberDeleteAction = {
   roomId: string;
   userId: string;
 };
-export type IRoomIdToTypingMembersAction = TypingMemberPutAction | TypingMemberDeleteAction;
+export type RoomIdToTypingMembersAction = TypingMemberPutAction | TypingMemberDeleteAction;
 
-const baseRoomIdToTypingMembersAtom = atom<IRoomIdToTypingMembers>(new Map());
+const baseRoomIdToTypingMembersAtom = atom<RoomIdToTypingMembers>(new Map());
 
 const putTypingMember = (
-  roomToMembers: IRoomIdToTypingMembers,
+  roomToMembers: RoomIdToTypingMembers,
   action: TypingMemberPutAction
-): IRoomIdToTypingMembers => {
+): RoomIdToTypingMembers => {
   let typingMembers = roomToMembers.get(action.roomId) ?? [];
 
   typingMembers = typingMembers.filter((receipt) => receipt.userId !== action.userId);
@@ -44,9 +45,9 @@ const putTypingMember = (
 };
 
 const deleteTypingMember = (
-  roomToMembers: IRoomIdToTypingMembers,
+  roomToMembers: RoomIdToTypingMembers,
   action: TypingMemberDeleteAction
-): IRoomIdToTypingMembers => {
+): RoomIdToTypingMembers => {
   let typingMembers = roomToMembers.get(action.roomId) ?? [];
 
   typingMembers = typingMembers.filter((receipt) => receipt.userId !== action.userId);
@@ -59,7 +60,7 @@ const deleteTypingMember = (
 };
 
 const timeoutReceipt = (
-  roomToMembers: IRoomIdToTypingMembers,
+  roomToMembers: RoomIdToTypingMembers,
   roomId: string,
   userId: string,
   timeout: number
@@ -73,8 +74,8 @@ const timeoutReceipt = (
 };
 
 export const roomIdToTypingMembersAtom = atom<
-  IRoomIdToTypingMembers,
-  [IRoomIdToTypingMembersAction],
+  RoomIdToTypingMembers,
+  [RoomIdToTypingMembersAction],
   undefined
 >(
   (get) => get(baseRoomIdToTypingMembersAtom),
@@ -87,8 +88,10 @@ export const roomIdToTypingMembersAtom = atom<
         produce(rToTyping, (draft) => putTypingMember(draft, action))
       );
 
-      // remove typing receipt after some timeout
-      // to prevent stuck typing members
+      // matrix-js-sdk only fires RoomMember.typing on m.typing EDU transitions
+      // and has no internal timeout, so if the server never sends a stop-typing
+      // EDU (network drop, missed sync) the receipt would stick forever. Expire
+      // it locally per the Matrix spec's client-side TTL expectation.
       setTimeout(() => {
         const { roomId, userId } = action;
         const timeout = timeoutReceipt(

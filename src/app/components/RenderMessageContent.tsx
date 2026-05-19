@@ -1,13 +1,16 @@
 import React, { useEffect, useRef } from 'react';
+import { useAtomValue } from 'jotai';
+import type { IContent } from 'matrix-js-sdk';
 import { MsgType } from 'matrix-js-sdk';
-import { HTMLReactParserOptions } from 'html-react-parser';
-import { Opts } from 'linkifyjs';
+import type { HTMLReactParserOptions } from 'html-react-parser';
+import type { Opts } from 'linkifyjs';
 import { config } from 'folds';
 import {
-  AudioContent,
+  AudioContent as AudioContentView,
   DownloadFile,
-  FileContent,
-  ImageContent,
+  FileContent as FileContentView,
+  ImageContent as ImageContentView,
+  ImageGrid,
   MAudio,
   MBadEncrypted,
   MEmote,
@@ -20,18 +23,34 @@ import {
   ReadPdfFile,
   ReadTextFile,
   RenderBody,
-  ThumbnailContent,
+  ThumbnailContent as ThumbnailContentView,
   UnsupportedContent,
-  VideoContent,
+  VideoContent as VideoContentView,
 } from './message';
-import { YouTubeEmbed } from './url-preview';
+import { YouTubeEmbed, SpotifyEmbed, SoundCloudEmbed, NitterEmbed } from './url-preview';
 import { Image, MediaControl, Video } from './media';
 import { PdfViewer } from './Pdf-viewer';
 import { TextViewer } from './text-viewer';
 import { testMatrixTo } from '../plugins/matrix-to';
-import { testYouTubeUrl, getYouTubeVideoId } from '../utils/youtube';
-import { IAudioContent, IFileContent, IImageContent, IVideoContent } from '../../types/matrix/common';
+import {
+  testYouTubeUrl,
+  getYouTubeEmbedInfo,
+  testSpotifyUrl,
+  getSpotifyEmbedInfo,
+  testSoundCloudUrl,
+  getSoundCloudEmbedInfo,
+  testTwitterUrl,
+  getTwitterEmbedInfo,
+} from '../utils/embeds';
+import { settingsAtom } from '../state/settings';
+import type {
+  AudioContent,
+  FileContent,
+  ImageContent,
+  VideoContent,
+} from '../../types/matrix/common';
 import { getBlobSafeMimeType } from '../utils/mimeTypes';
+import { sameGroupedImages } from '../utils/buildTimelineDescriptors';
 
 const MEDIA_VOLUME_KEY = 'cinny_media_volume';
 
@@ -40,7 +59,7 @@ function VideoWithPersistedVolume(props: React.VideoHTMLAttributes<HTMLVideoElem
 
   useEffect(() => {
     const el = ref.current;
-    if (!el) return;
+    if (!el) return undefined;
 
     const stored = localStorage.getItem(MEDIA_VOLUME_KEY);
     el.volume = stored !== null ? Math.max(0, Math.min(1, parseFloat(stored))) : 0.5;
@@ -59,9 +78,14 @@ function VideoWithPersistedVolume(props: React.VideoHTMLAttributes<HTMLVideoElem
 type RenderMessageContentProps = {
   displayName: string;
   msgType: string;
-  ts: number;
   edited?: boolean;
-  content: Record<string, any>;
+  content: IContent;
+  /**
+   * When set, this message is the anchor of an image group: the array
+   * contains every image content (including this one) and the renderer
+   * displays them as a single grid instead of a single image.
+   */
+  groupedImages?: ImageContent[];
   mediaAutoLoad?: boolean;
   urlPreview?: boolean;
   highlightRegex?: RegExp;
@@ -69,12 +93,12 @@ type RenderMessageContentProps = {
   linkifyOpts: Opts;
   outlineAttachment?: boolean;
 };
-export const RenderMessageContent = React.memo(function RenderMessageContent({
+function RenderMessageContentInner({
   displayName,
   msgType,
-  ts,
   edited,
   content,
+  groupedImages,
   mediaAutoLoad,
   urlPreview,
   highlightRegex,
@@ -82,23 +106,87 @@ export const RenderMessageContent = React.memo(function RenderMessageContent({
   linkifyOpts,
   outlineAttachment,
 }: RenderMessageContentProps) {
+  const settings = useAtomValue(settingsAtom);
+
   const renderUrlsPreview = (urls: string[]) => {
     const filteredUrls = urls.filter((url) => !testMatrixTo(url));
     if (filteredUrls.length === 0) return undefined;
 
-    const youtubeUrls = filteredUrls.filter((url) => testYouTubeUrl(url));
-    if (youtubeUrls.length === 0) return undefined;
+    const youtubeUrls = settings.embedYouTube
+      ? filteredUrls.filter((url) => testYouTubeUrl(url))
+      : [];
+    const spotifyUrls = settings.embedSpotify
+      ? filteredUrls.filter((url) => testSpotifyUrl(url))
+      : [];
+    const soundcloudUrls = settings.embedSoundCloud
+      ? filteredUrls.filter((url) => testSoundCloudUrl(url))
+      : [];
+    const twitterUrls = settings.embedNitter
+      ? filteredUrls.filter((url) => testTwitterUrl(url))
+      : [];
+
+    if (
+      youtubeUrls.length === 0 &&
+      spotifyUrls.length === 0 &&
+      soundcloudUrls.length === 0 &&
+      twitterUrls.length === 0
+    )
+      return undefined;
+
+    const showEmbed = !!urlPreview;
+    const showLink = settings.embedLinks;
 
     return (
       <>
         {youtubeUrls.map((url) => {
-          const videoId = getYouTubeVideoId(url);
-          return videoId ? (
+          const info = getYouTubeEmbedInfo(url);
+          return info ? (
             <YouTubeEmbed
               key={url}
-              videoId={videoId}
+              videoId={info.videoId}
               url={url}
-              ts={ts}
+              start={info.start}
+              showEmbed={showEmbed}
+              showLink={showLink}
+              style={{ marginTop: config.space.S200 }}
+            />
+          ) : null;
+        })}
+        {spotifyUrls.map((url) => {
+          const info = getSpotifyEmbedInfo(url);
+          return info ? (
+            <SpotifyEmbed
+              key={url}
+              info={info}
+              url={url}
+              showEmbed={showEmbed}
+              showLink={showLink}
+              style={{ marginTop: config.space.S200 }}
+            />
+          ) : null;
+        })}
+        {soundcloudUrls.map((url) => {
+          const info = getSoundCloudEmbedInfo(url);
+          return info ? (
+            <SoundCloudEmbed
+              key={url}
+              info={info}
+              url={url}
+              showEmbed={showEmbed}
+              showLink={showLink}
+              style={{ marginTop: config.space.S200 }}
+            />
+          ) : null;
+        })}
+        {twitterUrls.map((url) => {
+          const info = getTwitterEmbedInfo(url);
+          return info ? (
+            <NitterEmbed
+              key={url}
+              info={info}
+              url={url}
+              showEmbed={showEmbed}
+              showLink={showLink}
               style={{ marginTop: config.space.S200 }}
             />
           ) : null;
@@ -107,7 +195,7 @@ export const RenderMessageContent = React.memo(function RenderMessageContent({
     );
   };
   const renderCaption = () => {
-    const imageContent = content as IImageContent;
+    const imageContent = content as ImageContent;
     if (imageContent.filename && imageContent.filename !== imageContent.body) {
       return (
         <MText
@@ -122,7 +210,7 @@ export const RenderMessageContent = React.memo(function RenderMessageContent({
               linkifyOpts={linkifyOpts}
             />
           )}
-          renderUrlsPreview={urlPreview ? renderUrlsPreview : undefined}
+          renderUrlsPreview={urlPreview || settings.embedLinks ? renderUrlsPreview : undefined}
         />
       );
     }
@@ -132,9 +220,9 @@ export const RenderMessageContent = React.memo(function RenderMessageContent({
   const renderFile = () => (
     <>
       <MFile
-        content={content as IFileContent}
-        renderFileContent={({ body, mimeType, info, encInfo, url }) => (
-          <FileContent
+        content={content as FileContent}
+        renderFileContent={({ body, mimeType, info, encryptionInfo, url }) => (
+          <FileContentView
             body={body}
             mimeType={mimeType}
             renderAsPdfFile={() => (
@@ -142,7 +230,7 @@ export const RenderMessageContent = React.memo(function RenderMessageContent({
                 body={body}
                 mimeType={mimeType}
                 url={url}
-                encInfo={encInfo}
+                encryptionInfo={encryptionInfo}
                 renderViewer={(p) => <PdfViewer {...p} />}
               />
             )}
@@ -151,13 +239,19 @@ export const RenderMessageContent = React.memo(function RenderMessageContent({
                 body={body}
                 mimeType={mimeType}
                 url={url}
-                encInfo={encInfo}
+                encryptionInfo={encryptionInfo}
                 renderViewer={(p) => <TextViewer {...p} />}
               />
             )}
           >
-            <DownloadFile body={body} mimeType={mimeType} url={url} encInfo={encInfo} info={info} />
-          </FileContent>
+            <DownloadFile
+              body={body}
+              mimeType={mimeType}
+              url={url}
+              encryptionInfo={encryptionInfo}
+              info={info}
+            />
+          </FileContentView>
         )}
         outlined={outlineAttachment}
       />
@@ -178,7 +272,7 @@ export const RenderMessageContent = React.memo(function RenderMessageContent({
             linkifyOpts={linkifyOpts}
           />
         )}
-        renderUrlsPreview={urlPreview ? renderUrlsPreview : undefined}
+        renderUrlsPreview={urlPreview || settings.embedLinks ? renderUrlsPreview : undefined}
       />
     );
   }
@@ -197,7 +291,7 @@ export const RenderMessageContent = React.memo(function RenderMessageContent({
             linkifyOpts={linkifyOpts}
           />
         )}
-        renderUrlsPreview={urlPreview ? renderUrlsPreview : undefined}
+        renderUrlsPreview={urlPreview || settings.embedLinks ? renderUrlsPreview : undefined}
       />
     );
   }
@@ -215,24 +309,31 @@ export const RenderMessageContent = React.memo(function RenderMessageContent({
             linkifyOpts={linkifyOpts}
           />
         )}
-        renderUrlsPreview={urlPreview ? renderUrlsPreview : undefined}
+        renderUrlsPreview={urlPreview || settings.embedLinks ? renderUrlsPreview : undefined}
       />
     );
   }
 
   if (msgType === MsgType.Image) {
+    if (groupedImages && groupedImages.length > 1) {
+      return (
+        <>
+          <ImageGrid contents={groupedImages} autoPlay={mediaAutoLoad} />
+          {renderCaption()}
+        </>
+      );
+    }
     return (
       <>
         <MImage
-          content={content as IImageContent}
+          content={content as ImageContent}
           renderImageContent={(props) => (
-            <ImageContent
+            <ImageContentView
               {...props}
               autoPlay={mediaAutoLoad}
               renderImage={(p) => <Image {...p} loading="lazy" />}
             />
           )}
-          outlined={outlineAttachment}
         />
         {renderCaption()}
       </>
@@ -243,17 +344,17 @@ export const RenderMessageContent = React.memo(function RenderMessageContent({
     return (
       <>
         <MVideo
-          content={content as IVideoContent}
+          content={content as VideoContent}
           renderAsFile={renderFile}
           renderVideoContent={({ body, info, ...props }) => (
-            <VideoContent
+            <VideoContentView
               body={body}
               info={info}
               {...props}
               renderThumbnail={
                 mediaAutoLoad
                   ? () => (
-                      <ThumbnailContent
+                      <ThumbnailContentView
                         info={info}
                         renderImage={(src) => (
                           <Image alt={body} title={body} src={src} loading="lazy" />
@@ -276,10 +377,10 @@ export const RenderMessageContent = React.memo(function RenderMessageContent({
     return (
       <>
         <MAudio
-          content={content as IAudioContent}
+          content={content as AudioContent}
           renderAsFile={renderFile}
           renderAudioContent={(props) => (
-            <AudioContent {...props} renderMediaControl={(p) => <MediaControl {...p} />} />
+            <AudioContentView {...props} renderMediaControl={(p) => <MediaControl {...p} />} />
           )}
           outlined={outlineAttachment}
         />
@@ -289,7 +390,7 @@ export const RenderMessageContent = React.memo(function RenderMessageContent({
   }
 
   if (msgType === MsgType.File) {
-    const fileContent = content as IAudioContent;
+    const fileContent = content as AudioContent;
     const fileMimeType = getBlobSafeMimeType(fileContent.info?.mimetype ?? '');
     if (fileMimeType.startsWith('audio')) {
       return (
@@ -298,7 +399,7 @@ export const RenderMessageContent = React.memo(function RenderMessageContent({
             content={fileContent}
             renderAsFile={renderFile}
             renderAudioContent={(props) => (
-              <AudioContent {...props} renderMediaControl={(p) => <MediaControl {...p} />} />
+              <AudioContentView {...props} renderMediaControl={(p) => <MediaControl {...p} />} />
             )}
             outlined={outlineAttachment}
           />
@@ -318,4 +419,30 @@ export const RenderMessageContent = React.memo(function RenderMessageContent({
   }
 
   return <UnsupportedContent />;
-});
+}
+
+// Inner of two memo boundaries paired with MemoizedTimelineEvent. Several of
+// MemoizedTimelineEvent's props only affect the wrapper around the message
+// body (collapsed, isHighlighted, eventStatus, replyToMe, reactionRelations,
+// item), but a change to any of them still bails the outer memo. Without this
+// inner memo those bails cascade through Message and re-render the entire
+// content subtree, which visibly reflows images and other media.
+//
+// Custom comparator only because groupedImages is a fresh array on every
+// buildTimelineDescriptors call; reference equality would always treat it as
+// changed. All other props are referentially stable in the parent.
+export const RenderMessageContent = React.memo(
+  RenderMessageContentInner,
+  (prev, next) =>
+    prev.displayName === next.displayName &&
+    prev.msgType === next.msgType &&
+    prev.edited === next.edited &&
+    prev.content === next.content &&
+    sameGroupedImages(prev.groupedImages, next.groupedImages) &&
+    prev.mediaAutoLoad === next.mediaAutoLoad &&
+    prev.urlPreview === next.urlPreview &&
+    prev.highlightRegex === next.highlightRegex &&
+    prev.htmlReactParserOptions === next.htmlReactParserOptions &&
+    prev.linkifyOpts === next.linkifyOpts &&
+    prev.outlineAttachment === next.outlineAttachment
+);

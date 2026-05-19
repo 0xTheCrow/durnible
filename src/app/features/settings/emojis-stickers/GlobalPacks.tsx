@@ -1,4 +1,6 @@
-import React, { MouseEventHandler, useCallback, useEffect, useMemo, useState } from 'react';
+import type { MouseEventHandler } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import type { RectCords } from 'folds';
 import {
   Box,
   Text,
@@ -12,7 +14,6 @@ import {
   config,
   Spinner,
   Menu,
-  RectCords,
   PopOut,
   Checkbox,
   toRem,
@@ -23,7 +24,7 @@ import {
 } from 'folds';
 import FocusTrap from 'focus-trap-react';
 import { useAtomValue } from 'jotai';
-import { Room } from 'matrix-js-sdk';
+import type { Room } from 'matrix-js-sdk';
 import { useGlobalImagePacks, useRoomsImagePacks } from '../../../hooks/useImagePacks';
 import { SequenceCardStyle } from '../styles.css';
 import { SequenceCard } from '../../../components/sequence-card';
@@ -31,13 +32,8 @@ import { SettingTile } from '../../../components/setting-tile';
 import { mxcUrlToHttp } from '../../../utils/matrix';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
-import {
-  EmoteRoomsContent,
-  ImagePack,
-  ImageUsage,
-  PackAddress,
-  packAddressEqual,
-} from '../../../plugins/custom-emoji';
+import type { EmoteRoomsContent, ImagePack, PackAddress } from '../../../plugins/custom-emoji';
+import { ImageUsage, packAddressEqual } from '../../../plugins/custom-emoji';
 import { LineClamp2 } from '../../../styles/Text.css';
 import { allRoomsAtom } from '../../../state/room-list/roomList';
 import { AccountDataEvent } from '../../../../types/matrix/accountData';

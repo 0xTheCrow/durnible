@@ -1,14 +1,9 @@
 import to from 'await-to-js';
-import {
-  IAuthData,
-  MatrixClient,
-  MatrixError,
-  RegisterRequest,
-  RegisterResponse,
-} from 'matrix-js-sdk';
+import type { IAuthData, MatrixClient, RegisterRequest, RegisterResponse } from 'matrix-js-sdk';
+import { MatrixError } from 'matrix-js-sdk';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LoginPathSearchParams } from '../../paths';
+import type { LoginPathSearchParams } from '../../paths';
 import { ErrorCode } from '../../../cs-errorcode';
 import {
   deleteAfterLoginRedirectPath,

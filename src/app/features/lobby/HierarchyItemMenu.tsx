@@ -1,5 +1,7 @@
-import React, { MouseEventHandler, useCallback, useEffect, useState } from 'react';
+import type { MouseEventHandler } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import FocusTrap from 'focus-trap-react';
+import type { RectCords } from 'folds';
 import {
   Box,
   IconButton,
@@ -9,15 +11,15 @@ import {
   Menu,
   MenuItem,
   Text,
-  RectCords,
   config,
   Line,
   Spinner,
   toRem,
 } from 'folds';
-import { HierarchyItem } from '../../hooks/useSpaceHierarchy';
+import { EventType } from 'matrix-js-sdk';
+import type { HierarchyItem } from '../../hooks/useSpaceHierarchy';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
-import { MSpaceChildContent, StateEvent } from '../../../types/matrix/room';
+import type { MSpaceChildContent } from '../../../types/matrix/room';
 import { AsyncStatus, useAsyncCallback } from '../../hooks/useAsyncCallback';
 import { UseStateProvider } from '../../components/UseStateProvider';
 import { LeaveSpacePrompt } from '../../components/leave-space-prompt';
@@ -26,7 +28,7 @@ import { stopPropagation } from '../../utils/keyboard';
 import { useOpenRoomSettings } from '../../state/hooks/roomSettings';
 import { useSpaceOptionally } from '../../hooks/useSpace';
 import { useOpenSpaceSettings } from '../../state/hooks/spaceSettings';
-import { IPowerLevels } from '../../hooks/usePowerLevels';
+import type { PowerLevels } from '../../hooks/usePowerLevels';
 import { getRoomCreatorsForRoomId } from '../../hooks/useRoomCreators';
 import { getRoomPermissionsAPI } from '../../hooks/useRoomPermissions';
 import { InviteUserPrompt } from '../../components/invite-user-prompt';
@@ -37,10 +39,10 @@ type HierarchyItemWithParent = HierarchyItem & {
 
 function SuggestMenuItem({
   item,
-  requestClose,
+  onClose,
 }: {
   item: HierarchyItemWithParent;
-  requestClose: () => void;
+  onClose: () => void;
 }) {
   const mx = useMatrixClient();
   const { roomId, parentId, content } = item;
@@ -48,15 +50,15 @@ function SuggestMenuItem({
   const [toggleState, handleToggleSuggested] = useAsyncCallback(
     useCallback(() => {
       const newContent: MSpaceChildContent = { ...content, suggested: !content.suggested };
-      return mx.sendStateEvent(parentId, StateEvent.SpaceChild as any, newContent, roomId);
+      return mx.sendStateEvent(parentId, EventType.SpaceChild, newContent, roomId);
     }, [mx, parentId, roomId, content])
   );
 
   useEffect(() => {
     if (toggleState.status === AsyncStatus.Success) {
-      requestClose();
+      onClose();
     }
-  }, [requestClose, toggleState]);
+  }, [onClose, toggleState]);
 
   return (
     <MenuItem
@@ -73,28 +75,22 @@ function SuggestMenuItem({
   );
 }
 
-function RemoveMenuItem({
-  item,
-  requestClose,
-}: {
-  item: HierarchyItemWithParent;
-  requestClose: () => void;
-}) {
+function RemoveMenuItem({ item, onClose }: { item: HierarchyItemWithParent; onClose: () => void }) {
   const mx = useMatrixClient();
   const { roomId, parentId } = item;
 
   const [removeState, handleRemove] = useAsyncCallback(
     useCallback(
-      () => mx.sendStateEvent(parentId, StateEvent.SpaceChild as any, {}, roomId),
+      () => mx.sendStateEvent(parentId, EventType.SpaceChild, {}, roomId),
       [mx, parentId, roomId]
     )
   );
 
   useEffect(() => {
     if (removeState.status === AsyncStatus.Success) {
-      requestClose();
+      onClose();
     }
-  }, [requestClose, removeState]);
+  }, [onClose, removeState]);
 
   return (
     <MenuItem
@@ -119,11 +115,11 @@ function RemoveMenuItem({
 
 function InviteMenuItem({
   item,
-  requestClose,
+  onClose,
   disabled,
 }: {
   item: HierarchyItemWithParent;
-  requestClose: () => void;
+  onClose: () => void;
   disabled?: boolean;
 }) {
   const mx = useMatrixClient();
@@ -152,9 +148,9 @@ function InviteMenuItem({
       {invitePrompt && room && (
         <InviteUserPrompt
           room={room}
-          requestClose={() => {
+          onClose={() => {
             setInvitePrompt(false);
-            requestClose();
+            onClose();
           }}
         />
       )}
@@ -164,11 +160,11 @@ function InviteMenuItem({
 
 function SettingsMenuItem({
   item,
-  requestClose,
+  onClose,
   disabled,
 }: {
   item: HierarchyItemWithParent;
-  requestClose: () => void;
+  onClose: () => void;
   disabled?: boolean;
 }) {
   const openRoomSettings = useOpenRoomSettings();
@@ -181,7 +177,7 @@ function SettingsMenuItem({
     } else {
       openRoomSettings(item.roomId, space?.roomId);
     }
-    requestClose();
+    onClose();
   };
 
   return (
@@ -198,7 +194,7 @@ type HierarchyItemMenuProps = {
     parentId: string;
   };
   joined: boolean;
-  powerLevels?: IPowerLevels;
+  powerLevels?: PowerLevels;
   canEditChild: boolean;
   pinned?: boolean;
   onTogglePin?: (roomId: string) => void;
@@ -280,10 +276,10 @@ export function HierarchyItemMenu({
                     )}
                     <InviteMenuItem
                       item={item}
-                      requestClose={handleRequestClose}
+                      onClose={handleRequestClose}
                       disabled={!canInvite()}
                     />
-                    <SettingsMenuItem item={item} requestClose={handleRequestClose} />
+                    <SettingsMenuItem item={item} onClose={handleRequestClose} />
                     <UseStateProvider initial={false}>
                       {(promptLeave, setPromptLeave) => (
                         <>
@@ -324,8 +320,8 @@ export function HierarchyItemMenu({
                 )}
                 {canEditChild && (
                   <Box direction="Column" gap="100" style={{ padding: config.space.S100 }}>
-                    <SuggestMenuItem item={item} requestClose={handleRequestClose} />
-                    <RemoveMenuItem item={item} requestClose={handleRequestClose} />
+                    <SuggestMenuItem item={item} onClose={handleRequestClose} />
+                    <RemoveMenuItem item={item} onClose={handleRequestClose} />
                   </Box>
                 )}
               </Menu>

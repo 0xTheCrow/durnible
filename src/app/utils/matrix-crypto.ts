@@ -1,4 +1,4 @@
-import { CryptoApi } from 'matrix-js-sdk/lib/crypto-api';
+import type { CryptoApi } from 'matrix-js-sdk/lib/crypto-api';
 
 export const verifiedDevice = async (
   api: CryptoApi,

@@ -1,14 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { as, Box, Text, config, Button, Menu, Spinner } from 'folds';
-import {
-  ImagePack,
-  ImageUsage,
-  PackContent,
-  PackImage,
-  PackImageReader,
-  packMetaEqual,
-  PackMetaReader,
-} from '../../plugins/custom-emoji';
+import { as, Box, Text, config, Button, Menu, Spinner, Switch } from 'folds';
+import type { ImagePack, ImageUsage, PackContent, PackImage } from '../../plugins/custom-emoji';
+import { PackImageReader, packMetaEqual, PackMetaReader } from '../../plugins/custom-emoji';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
 import { SequenceCard } from '../sequence-card';
 import { ImageTile, ImageTileEdit, ImageTileUpload } from './ImageTile';
@@ -18,8 +11,9 @@ import { ImagePackProfile, ImagePackProfileEdit } from './PackMeta';
 import * as css from './style.css';
 import { useFilePicker } from '../../hooks/useFilePicker';
 import { CompactUploadCardRenderer } from '../upload-card';
-import { UploadSuccess } from '../../state/upload';
-import { getImageInfo, TUploadContent } from '../../utils/matrix';
+import type { UploadSuccess } from '../../state/upload';
+import type { UploadContent } from '../../utils/matrix';
+import { getImageInfo } from '../../utils/matrix';
 import { getImageFileUrl, loadImageElement, renameFile } from '../../utils/dom';
 import { replaceSpaceWithDash, suffixRename } from '../../utils/common';
 import { getFileNameWithoutExt } from '../../utils/mimeTypes';
@@ -110,7 +104,21 @@ export const ImagePackContent = as<'div', ImagePackContentProps>(
       [imagePack.meta]
     );
 
-    const handleUploadRemove = useCallback((file: TUploadContent) => {
+    const handlePackPortableChange = useCallback(
+      (portable: boolean) => {
+        setSavedMeta(
+          (m) =>
+            new PackMetaReader({
+              ...imagePack.meta.content,
+              ...m?.content,
+              portable,
+            })
+        );
+      },
+      [imagePack.meta]
+    );
+
+    const handleUploadRemove = useCallback((file: UploadContent) => {
       setFiles((fs) => fs.filter((f) => f !== file));
     }, []);
 
@@ -325,6 +333,24 @@ export const ImagePackContent = as<'div', ImagePackContentProps>(
                   usage={currentMeta.usage}
                   canEdit={canEdit}
                   onChange={handlePackUsageChange}
+                />
+              }
+            />
+          </SequenceCard>
+          <SequenceCard
+            style={{ padding: config.space.S300 }}
+            variant="SurfaceVariant"
+            direction="Column"
+            gap="400"
+          >
+            <SettingTile
+              title="Portable"
+              description="Allow members of this room to use this pack in any other room they are in."
+              after={
+                <Switch
+                  value={currentMeta.portable}
+                  onChange={handlePackPortableChange}
+                  disabled={!canEdit}
                 />
               }
             />

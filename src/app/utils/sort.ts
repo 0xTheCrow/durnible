@@ -1,4 +1,4 @@
-import { MatrixClient } from 'matrix-js-sdk';
+import type { MatrixClient } from 'matrix-js-sdk';
 
 export type SortFunc<T> = (a: T, b: T) => number;
 

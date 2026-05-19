@@ -1,9 +1,7 @@
-import { ReactNode } from 'react';
-import { CryptoApi } from 'matrix-js-sdk/lib/crypto-api';
-import {
-  useDeviceVerificationStatus,
-  VerificationStatus,
-} from '../hooks/useDeviceVerificationStatus';
+import type { ReactNode } from 'react';
+import type { CryptoApi } from 'matrix-js-sdk/lib/crypto-api';
+import type { VerificationStatus } from '../hooks/useDeviceVerificationStatus';
+import { useDeviceVerificationStatus } from '../hooks/useDeviceVerificationStatus';
 
 type DeviceVerificationStatusProps = {
   crypto?: CryptoApi;

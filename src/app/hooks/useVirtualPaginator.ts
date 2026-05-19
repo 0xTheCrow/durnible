@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
-import { OnIntersectionCallback, useIntersectionObserver } from './useIntersectionObserver';
+import type { OnIntersectionCallback } from './useIntersectionObserver';
+import { useIntersectionObserver } from './useIntersectionObserver';
 import {
   canFitInScrollView,
   getScrollInfo,

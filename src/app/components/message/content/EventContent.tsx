@@ -1,5 +1,7 @@
-import { Box, Icon, IconSrc } from 'folds';
-import React, { ReactNode } from 'react';
+import type { IconSrc } from 'folds';
+import { Box, Icon } from 'folds';
+import type { ReactNode } from 'react';
+import React from 'react';
 import { BubbleLayout, CompactLayout, ModernLayout } from '..';
 import { MessageLayout } from '../../../state/settings';
 

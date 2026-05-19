@@ -22,7 +22,7 @@ import { useRoomPermissions } from '../../hooks/useRoomPermissions';
 import { useMemberPowerCompare } from '../../hooks/useMemberPowerCompare';
 import { CreatorChip } from './CreatorChip';
 import { getDirectCreatePath, withSearchParam } from '../../pages/pathUtils';
-import { DirectCreateSearchParams } from '../../pages/paths';
+import type { DirectCreateSearchParams } from '../../pages/paths';
 
 type UserRoomProfileProps = {
   userId: string;

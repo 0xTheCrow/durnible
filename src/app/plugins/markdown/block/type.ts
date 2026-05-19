@@ -1,4 +1,4 @@
-import { MatchResult, MatchRule } from '../internal';
+import type { MatchResult, MatchRule } from '../internal';
 
 /**
  * Type for a function that parses block-level markdown into HTML.

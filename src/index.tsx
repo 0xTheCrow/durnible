@@ -11,12 +11,9 @@ enableMapSet();
 import './index.css';
 
 import { trimTrailingSlash } from './app/utils/common';
-import { mobileOrTablet } from './app/utils/user-agent';
+import { isIOS, mobileOrTablet } from './app/utils/user-agent';
 import { getSettings } from './app/state/settings';
 import App from './app/pages/App';
-
-// import i18n (needs to be bundled ;))
-import './app/i18n';
 
 document.body.classList.add(configClass, varsClass);
 
@@ -141,11 +138,22 @@ if ('serviceWorker' in navigator) {
     window.location.reload();
   });
 
+  // On mobile PWAs, pages are frozen in bfcache when backgrounded. The controllerchange
+  // event fires while the page is frozen and the reload above may never execute.
+  // When the page is restored from bfcache, check if the SW controller changed and
+  // reload so the page gets fresh HTML with the correct asset hashes.
+  const initialController = navigator.serviceWorker.controller;
+  window.addEventListener('pageshow', (event) => {
+    if (event.persisted && navigator.serviceWorker.controller !== initialController) {
+      window.location.reload();
+    }
+  });
+
   navigator.serviceWorker.addEventListener('message', (event) => {
-    if (event.data?.type === 'token' && event.data?.responseKey) {
+    if (event.data?.type === 'token' && event.data?.responseKey && event.source) {
       // Get the token for SW.
       const token = localStorage.getItem('cinny_access_token') ?? undefined;
-      event.source!.postMessage({
+      event.source.postMessage({
         responseKey: event.data.responseKey,
         token,
       });
@@ -163,18 +171,33 @@ if ('serviceWorker' in navigator) {
 
 const setupVirtualKeyboard = () => {
   if (!mobileOrTablet()) return;
+  // Brave handles keyboard resize natively via interactive-widget=resizes-content;
+  // our JS adjustment interferes and causes a black content area.
+  const isBrave = (navigator as unknown as { brave?: unknown }).brave !== undefined;
+  // iOS WebKit (all iOS browsers — Safari, Brave iOS, Chrome iOS) handles keyboard
+  // by scrolling the focused input into view; vv.height can report a much smaller
+  // value than the actual visible area above the keyboard, which collapses #root.
+  const isIOSDevice = isIOS();
   const vv = window.visualViewport;
   if (!vv) return;
   // Tracks the natural (no-keyboard) height for the current orientation.
-  // Some browsers (e.g. Brave) resize both vv.height and window.innerHeight
-  // equally when the keyboard opens, so vv.height < window.innerHeight is
-  // never true. Comparing against maxSeenHeight catches that case.
   let maxSeenHeight = vv.height;
   const update = () => {
     if (vv.height > maxSeenHeight) maxSeenHeight = vv.height;
+    if (getSettings().altMobileKeyboardAdjustment && isIOSDevice) {
+      document.documentElement.style.removeProperty('--app-height');
+      return;
+    }
     const keyboardOpen = vv.height < window.innerHeight || vv.height < maxSeenHeight;
     if (keyboardOpen) {
-      document.documentElement.style.setProperty('--app-height', `${vv.height}px`);
+      // Skip if Brave (explicit check), or if the layout viewport already shrank
+      // to match the visual viewport — both mean the browser handled the resize
+      // natively and setting --app-height would cause a black content area.
+      if (isBrave || vv.height === window.innerHeight) {
+        document.documentElement.style.removeProperty('--app-height');
+      } else {
+        document.documentElement.style.setProperty('--app-height', `${vv.height}px`);
+      }
     } else {
       document.documentElement.style.removeProperty('--app-height');
     }
@@ -183,7 +206,7 @@ const setupVirtualKeyboard = () => {
   vv.addEventListener('resize', update);
   // Zero out maxSeenHeight on orientation change so the next vv resize
   // recalibrates it to the new orientation's natural height.
-  screen.orientation?.addEventListener('change', () => {
+  window.screen.orientation?.addEventListener('change', () => {
     maxSeenHeight = 0;
   });
 };

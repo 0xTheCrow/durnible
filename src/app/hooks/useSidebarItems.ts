@@ -1,18 +1,19 @@
-import { Dispatch, SetStateAction, useCallback, useEffect, useState } from 'react';
-import { MatrixClient } from 'matrix-js-sdk';
+import type { Dispatch, SetStateAction } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import type { MatrixClient } from 'matrix-js-sdk';
 import { AccountDataEvent } from '../../types/matrix/accountData';
 import { useMatrixClient } from './useMatrixClient';
 import { getAccountData, isSpace } from '../utils/room';
 import { Membership } from '../../types/matrix/room';
 import { useAccountDataCallback } from './useAccountDataCallback';
 
-export type ISidebarFolder = {
+export type SidebarFolder = {
   name?: string;
   id: string;
   content: string[];
 };
-export type TSidebarItem = string | ISidebarFolder;
-export type SidebarItems = Array<TSidebarItem>;
+export type SidebarItem = string | SidebarFolder;
+export type SidebarItems = Array<SidebarItem>;
 
 export type InCinnySpacesContent = {
   shortcut?: string[];

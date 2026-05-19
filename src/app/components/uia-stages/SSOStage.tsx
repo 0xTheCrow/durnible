@@ -1,6 +1,6 @@
 import { Box, Button, color, config, Dialog, Header, Icon, IconButton, Icons, Text } from 'folds';
 import React, { useCallback, useEffect, useState } from 'react';
-import { StageComponentProps } from './types';
+import type { StageComponentProps } from './types';
 
 export function SSOStage({
   ssoRedirectURL,

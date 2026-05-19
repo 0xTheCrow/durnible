@@ -1,4 +1,5 @@
-import { Room, RoomEvent, RoomEventHandlerMap } from 'matrix-js-sdk';
+import type { Room, RoomEventHandlerMap } from 'matrix-js-sdk';
+import { RoomEvent } from 'matrix-js-sdk';
 import { useCallback, useEffect, useState } from 'react';
 
 export const useRoomAccountData = (room: Room): Map<string, object> => {

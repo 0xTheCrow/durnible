@@ -1,21 +1,16 @@
 /* eslint-disable react/no-array-index-key */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Badge, Box, Button, Chip, config, Icon, Icons, Menu, Spinner, Text } from 'folds';
-import produce from 'immer';
+import { EventType } from 'matrix-js-sdk';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SequenceCardStyle } from '../styles.css';
 import { SettingTile } from '../../../components/setting-tile';
-import {
-  applyPermissionPower,
-  getPermissionPower,
-  IPowerLevels,
-  PermissionLocation,
-} from '../../../hooks/usePowerLevels';
-import { PermissionGroup } from './types';
+import type { PowerLevels, PermissionLocation } from '../../../hooks/usePowerLevels';
+import { applyPermissionPower, getPermissionPower } from '../../../hooks/usePowerLevels';
+import type { PermissionGroup } from './types';
 import { getPowerLevelTag, getPowers, usePowerLevelTags } from '../../../hooks/usePowerLevelTags';
 import { useRoom } from '../../../hooks/useRoom';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
-import { StateEvent } from '../../../../types/matrix/room';
 import { PowerSwitcher } from '../../../components/power';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { useAlive } from '../../../hooks/useAlive';
@@ -26,7 +21,7 @@ const USER_DEFAULT_LOCATION: PermissionLocation = {
 
 type PermissionGroupsProps = {
   canEdit: boolean;
-  powerLevels: IPowerLevels;
+  powerLevels: PowerLevels;
   permissionGroups: PermissionGroup[];
 };
 export function PermissionGroups({
@@ -72,20 +67,17 @@ export function PermissionGroups({
 
   const [applyState, applyChanges] = useAsyncCallback(
     useCallback(async () => {
-      const editedPowerLevels = produce(powerLevels, (draftPowerLevels) => {
-        permissionGroups.forEach((group) =>
-          group.items.forEach((item) => {
-            const power = getPermissionPower(powerLevels, item.location);
-            applyPermissionPower(draftPowerLevels, item.location, power);
-          })
-        );
-        permissionUpdate.forEach((power, location) =>
-          applyPermissionPower(draftPowerLevels, location, power)
-        );
-
-        return draftPowerLevels;
+      let editedPowerLevels = { ...powerLevels };
+      permissionGroups.forEach((group) =>
+        group.items.forEach((item) => {
+          const power = getPermissionPower(powerLevels, item.location);
+          editedPowerLevels = applyPermissionPower(editedPowerLevels, item.location, power);
+        })
+      );
+      permissionUpdate.forEach((power, location) => {
+        editedPowerLevels = applyPermissionPower(editedPowerLevels, location, power);
       });
-      await mx.sendStateEvent(room.roomId, StateEvent.RoomPowerLevels as any, editedPowerLevels);
+      await mx.sendStateEvent(room.roomId, EventType.RoomPowerLevels, editedPowerLevels);
     }, [mx, room, powerLevels, permissionUpdate, permissionGroups])
   );
 

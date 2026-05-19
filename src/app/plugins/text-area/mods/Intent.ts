@@ -1,6 +1,6 @@
 import { Cursor } from '../Cursor';
-import { Operations } from '../Operations';
-import { TextArea } from '../TextArea';
+import type { Operations } from '../Operations';
+import type { TextArea } from '../TextArea';
 
 export class Intent {
   public readonly textArea: TextArea;

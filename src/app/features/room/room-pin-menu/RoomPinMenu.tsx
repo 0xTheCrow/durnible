@@ -1,7 +1,8 @@
-/* eslint-disable react/destructuring-assignment */
-import React, { forwardRef, MouseEventHandler, useCallback, useMemo, useRef } from 'react';
-import { MatrixEvent, Room } from 'matrix-js-sdk';
-import { RoomPinnedEventsEventContent } from 'matrix-js-sdk/lib/types';
+import type { MouseEventHandler } from 'react';
+import React, { forwardRef, useCallback, useMemo, useRef } from 'react';
+import type { MatrixEvent, Room } from 'matrix-js-sdk';
+import { EventType } from 'matrix-js-sdk';
+import type { RoomPinnedEventsEventContent } from 'matrix-js-sdk/lib/types';
 import {
   Avatar,
   Box,
@@ -18,8 +19,8 @@ import {
   Text,
   toRem,
 } from 'folds';
-import { Opts as LinkifyOpts } from 'linkifyjs';
-import { HTMLReactParserOptions } from 'html-react-parser';
+import type { Opts as LinkifyOpts } from 'linkifyjs';
+import type { HTMLReactParserOptions } from 'html-react-parser';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useRoomPinnedEvents } from '../../../hooks/useRoomPinnedEvents';
 import * as css from './RoomPinMenu.css';
@@ -49,7 +50,8 @@ import {
   getMemberDisplayName,
   getStateEvent,
 } from '../../../utils/room';
-import { GetContentCallback, MessageEvent, StateEvent } from '../../../../types/matrix/room';
+import type { GetContentCallback } from '../../../../types/matrix/room';
+import { MessageEvent, StateEvent } from '../../../../types/matrix/room';
 import { useMentionClickHandler } from '../../../hooks/useMentionClickHandler';
 import { useSpoilerClickHandler } from '../../../hooks/useSpoilerClickHandler';
 import {
@@ -59,7 +61,8 @@ import {
   makeMentionCustomProps,
   renderMatrixMention,
 } from '../../../plugins/react-custom-html-parser';
-import { RenderMatrixEvent, useMatrixEventRenderer } from '../../../hooks/useMatrixEventRenderer';
+import type { RenderMatrixEvent } from '../../../hooks/useMatrixEventRenderer';
+import { useMatrixEventRenderer } from '../../../hooks/useMatrixEventRenderer';
 import { RenderMessageContent } from '../../../components/RenderMessageContent';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
@@ -78,8 +81,8 @@ import colorMXID from '../../../../util/colorMXID';
 import { useIsDirectRoom } from '../../../hooks/useRoom';
 import { useRoomCreators } from '../../../hooks/useRoomCreators';
 import { useRoomPermissions } from '../../../hooks/useRoomPermissions';
+import type { GetMemberPowerTag } from '../../../hooks/useMemberPowerTag';
 import {
-  GetMemberPowerTag,
   getPowerTagIconSrc,
   useAccessiblePowerTagColors,
   useGetMemberPowerTag,
@@ -122,7 +125,7 @@ function PinnedMessage({
         pinned: content.pinned.filter((id) => id !== eventId),
       };
 
-      return mx.sendStateEvent(room.roomId, StateEvent.RoomPinnedEvents as any, newContent);
+      return mx.sendStateEvent(room.roomId, EventType.RoomPinnedEvents, newContent);
     }, [room, eventId, mx])
   );
 
@@ -173,7 +176,7 @@ function PinnedMessage({
       </Box>
     );
 
-  const sender = pinnedEvent.getSender()!;
+  const sender = pinnedEvent.getSender() ?? '';
   const displayName = getMemberDisplayName(room, sender) ?? getMxIdLocalPart(sender) ?? sender;
   const senderAvatarMxc = getMemberAvatarMxc(room, sender);
   const getContent = (() => pinnedEvent.getContent()) as GetContentCallback;
@@ -244,12 +247,12 @@ function PinnedMessage({
 
 type RoomPinMenuProps = {
   room: Room;
-  requestClose: () => void;
+  onClose: () => void;
 };
 export const RoomPinMenu = forwardRef<HTMLDivElement, RoomPinMenuProps>(
-  ({ room, requestClose }, ref) => {
+  ({ room, onClose }, ref) => {
     const mx = useMatrixClient();
-    const userId = mx.getUserId()!;
+    const userId = mx.getSafeUserId();
     const powerLevels = usePowerLevelsContext();
     const creators = useRoomCreators(room);
 
@@ -312,7 +315,15 @@ export const RoomPinMenu = forwardRef<HTMLDivElement, RoomPinMenuProps>(
           handleMentionClick: mentionClickHandler,
           pauseGifs,
         }),
-      [mx, room, linkifyOpts, mentionClickHandler, spoilerClickHandler, useAuthentication, pauseGifs]
+      [
+        mx,
+        room,
+        linkifyOpts,
+        mentionClickHandler,
+        spoilerClickHandler,
+        useAuthentication,
+        pauseGifs,
+      ]
     );
 
     const renderMatrixEvent = useMatrixEventRenderer<[MatrixEvent, string, GetContentCallback]>(
@@ -328,7 +339,6 @@ export const RoomPinMenu = forwardRef<HTMLDivElement, RoomPinMenuProps>(
             <RenderMessageContent
               displayName={displayName}
               msgType={event.getContent().msgtype ?? ''}
-              ts={event.getTs()}
               content={getContent()}
               edited={!!event.replacingEvent()}
               mediaAutoLoad={mediaAutoLoad}
@@ -340,12 +350,12 @@ export const RoomPinMenu = forwardRef<HTMLDivElement, RoomPinMenuProps>(
           );
         },
         [MessageEvent.RoomMessageEncrypted]: (event, displayName) => {
-          const eventId = event.getId()!;
-          const evtTimeline = room.getTimelineForEvent(eventId);
+          const eventId = event.getId();
+          const evtTimeline = eventId ? room.getTimelineForEvent(eventId) : undefined;
 
           const mEvent = evtTimeline?.getEvents().find((e) => e.getId() === eventId);
 
-          if (!mEvent || !evtTimeline) {
+          if (!mEvent || !evtTimeline || !eventId) {
             return (
               <Box grow="Yes" direction="Column">
                 <Text size="T400" priority="300">
@@ -383,7 +393,6 @@ export const RoomPinMenu = forwardRef<HTMLDivElement, RoomPinMenuProps>(
                     <RenderMessageContent
                       displayName={displayName}
                       msgType={mEvent.getContent().msgtype ?? ''}
-                      ts={mEvent.getTs()}
                       edited={!!editedEvent || !!mEvent.replacingEvent()}
                       content={getContent()}
                       mediaAutoLoad={mediaAutoLoad}
@@ -446,7 +455,7 @@ export const RoomPinMenu = forwardRef<HTMLDivElement, RoomPinMenuProps>(
 
     const handleOpen = (roomId: string, eventId: string) => {
       navigateRoom(roomId, eventId);
-      requestClose();
+      onClose();
     };
 
     return (
@@ -457,7 +466,7 @@ export const RoomPinMenu = forwardRef<HTMLDivElement, RoomPinMenuProps>(
               <Text size="H5">Pinned Messages</Text>
             </Box>
             <Box shrink="No">
-              <IconButton size="300" onClick={requestClose} radii="300">
+              <IconButton size="300" onClick={onClose} radii="300">
                 <Icon src={Icons.Cross} size="400" />
               </IconButton>
             </Box>

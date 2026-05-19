@@ -1,11 +1,12 @@
-import { CompactEmoji, fromUnicodeToHexcode } from 'emojibase';
+import type { CompactEmoji } from 'emojibase';
+import { fromUnicodeToHexcode } from 'emojibase';
 import emojisData from 'emojibase-data/en/compact.json';
 import joypixels from 'emojibase-data/en/shortcodes/joypixels.json';
 import emojibase from 'emojibase-data/en/shortcodes/emojibase.json';
-import { ImagePack } from './custom-emoji/ImagePack';
+import type { ImagePack } from './custom-emoji/ImagePack';
 import { ImageUsage } from './custom-emoji/types';
 
-export type IEmoji = CompactEmoji & {
+export type Emoji = CompactEmoji & {
   shortcode: string;
 };
 
@@ -20,10 +21,10 @@ export enum EmojiGroupId {
   Flag = 'Flag',
 }
 
-export type IEmojiGroup = {
+export type EmojiGroup = {
   id: EmojiGroupId;
   order: number;
-  emojis: IEmoji[];
+  emojis: Emoji[];
 };
 
 export const getShortcodesFor = (hexcode: string): string[] | string | undefined =>
@@ -36,7 +37,7 @@ export const getShortcodeFor = (hexcode: string): string | undefined => {
 
 export const getHexcodeForEmoji = fromUnicodeToHexcode;
 
-export const emojiGroups: IEmojiGroup[] = [
+export const emojiGroups: EmojiGroup[] = [
   {
     id: EmojiGroupId.People,
     order: 0,
@@ -79,13 +80,13 @@ export const emojiGroups: IEmojiGroup[] = [
   },
 ];
 
-export const emojis: IEmoji[] = [];
+export const emojis: Emoji[] = [];
 
-function addEmojiToGroup(groupIndex: number, emoji: IEmoji) {
+function addEmojiToGroup(groupIndex: number, emoji: Emoji) {
   emojiGroups[groupIndex].emojis.push(emoji);
 }
 
-function getGroupIndex(emoji: IEmoji): number | undefined {
+function getGroupIndex(emoji: Emoji): number | undefined {
   if (emoji.group === 0 || emoji.group === 1) return 0;
   if (emoji.group === 3) return 1;
   if (emoji.group === 4) return 2;
@@ -101,7 +102,7 @@ export type ShortcodeMapEntry = { key: string; shortcode: string };
 
 export const buildShortcodeMap = (
   imagePacks: ImagePack[],
-  unicodeEmojis: IEmoji[]
+  unicodeEmojis: Emoji[]
 ): Map<string, ShortcodeMapEntry> => {
   const map = new Map<string, ShortcodeMapEntry>();
 
@@ -134,7 +135,7 @@ emojisData.forEach((emoji) => {
   if (!myShortCodes) return;
   if (Array.isArray(myShortCodes) && myShortCodes.length === 0) return;
 
-  const em: IEmoji = {
+  const em: Emoji = {
     ...emoji,
     shortcode: Array.isArray(myShortCodes) ? myShortCodes[0] : myShortCodes,
     shortcodes: Array.isArray(myShortCodes) ? myShortCodes : emoji.shortcodes,

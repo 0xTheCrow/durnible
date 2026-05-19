@@ -1,4 +1,6 @@
-import React, { MouseEventHandler, forwardRef, useState } from 'react';
+import type { MouseEventHandler } from 'react';
+import React, { forwardRef, useState } from 'react';
+import type { RectCords } from 'folds';
 import {
   Avatar,
   Box,
@@ -9,14 +11,13 @@ import {
   Menu,
   MenuItem,
   PopOut,
-  RectCords,
   Text,
   Tooltip,
-  TooltipProvider,
   config,
   toRem,
 } from 'folds';
 import FocusTrap from 'focus-trap-react';
+import { TooltipProvider } from '../../components/TooltipProvider';
 import { PageHeader } from '../../components/page';
 import { useSetSetting } from '../../state/hooks/settings';
 import { settingsAtom } from '../../state/settings';
@@ -26,7 +27,7 @@ import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { RoomAvatar } from '../../components/room-avatar';
 import { nameInitials } from '../../utils/common';
 import * as css from './LobbyHeader.css';
-import { IPowerLevels } from '../../hooks/usePowerLevels';
+import type { PowerLevels } from '../../hooks/usePowerLevels';
 import { UseStateProvider } from '../../components/UseStateProvider';
 import { LeaveSpacePrompt } from '../../components/leave-space-prompt';
 import { stopPropagation } from '../../utils/keyboard';
@@ -40,104 +41,102 @@ import { useRoomPermissions } from '../../hooks/useRoomPermissions';
 import { InviteUserPrompt } from '../../components/invite-user-prompt';
 
 type LobbyMenuProps = {
-  powerLevels: IPowerLevels;
-  requestClose: () => void;
+  powerLevels: PowerLevels;
+  onClose: () => void;
 };
-const LobbyMenu = forwardRef<HTMLDivElement, LobbyMenuProps>(
-  ({ powerLevels, requestClose }, ref) => {
-    const mx = useMatrixClient();
-    const space = useSpace();
-    const creators = useRoomCreators(space);
+const LobbyMenu = forwardRef<HTMLDivElement, LobbyMenuProps>(({ powerLevels, onClose }, ref) => {
+  const mx = useMatrixClient();
+  const space = useSpace();
+  const creators = useRoomCreators(space);
 
-    const permissions = useRoomPermissions(creators, powerLevels);
-    const canInvite = permissions.action('invite', mx.getSafeUserId());
-    const openSpaceSettings = useOpenSpaceSettings();
+  const permissions = useRoomPermissions(creators, powerLevels);
+  const canInvite = permissions.action('invite', mx.getSafeUserId());
+  const openSpaceSettings = useOpenSpaceSettings();
 
-    const [invitePrompt, setInvitePrompt] = useState(false);
+  const [invitePrompt, setInvitePrompt] = useState(false);
 
-    const handleInvite = () => {
-      setInvitePrompt(true);
-    };
+  const handleInvite = () => {
+    setInvitePrompt(true);
+  };
 
-    const handleRoomSettings = () => {
-      openSpaceSettings(space.roomId);
-      requestClose();
-    };
+  const handleRoomSettings = () => {
+    openSpaceSettings(space.roomId);
+    onClose();
+  };
 
-    return (
-      <Menu ref={ref} style={{ maxWidth: toRem(160), width: '100vw' }}>
-        {invitePrompt && (
-          <InviteUserPrompt
-            room={space}
-            requestClose={() => {
-              setInvitePrompt(false);
-              requestClose();
-            }}
-          />
-        )}
-        <Box direction="Column" gap="100" style={{ padding: config.space.S100 }}>
-          <MenuItem
-            onClick={handleInvite}
-            variant="Primary"
-            fill="None"
-            size="300"
-            after={<Icon size="100" src={Icons.UserPlus} />}
-            radii="300"
-            aria-pressed={invitePrompt}
-            disabled={!canInvite}
-          >
-            <Text style={{ flexGrow: 1 }} as="span" size="T300" truncate>
-              Invite
-            </Text>
-          </MenuItem>
-          <MenuItem
-            onClick={handleRoomSettings}
-            size="300"
-            after={<Icon size="100" src={Icons.Setting} />}
-            radii="300"
-          >
-            <Text style={{ flexGrow: 1 }} as="span" size="T300" truncate>
-              Space Settings
-            </Text>
-          </MenuItem>
-        </Box>
-        <Line variant="Surface" size="300" />
-        <Box direction="Column" gap="100" style={{ padding: config.space.S100 }}>
-          <UseStateProvider initial={false}>
-            {(promptLeave, setPromptLeave) => (
-              <>
-                <MenuItem
-                  onClick={() => setPromptLeave(true)}
-                  variant="Critical"
-                  fill="None"
-                  size="300"
-                  after={<Icon size="100" src={Icons.ArrowGoLeft} />}
-                  radii="300"
-                  aria-pressed={promptLeave}
-                >
-                  <Text style={{ flexGrow: 1 }} as="span" size="T300" truncate>
-                    Leave Space
-                  </Text>
-                </MenuItem>
-                {promptLeave && (
-                  <LeaveSpacePrompt
-                    roomId={space.roomId}
-                    onDone={requestClose}
-                    onCancel={() => setPromptLeave(false)}
-                  />
-                )}
-              </>
-            )}
-          </UseStateProvider>
-        </Box>
-      </Menu>
-    );
-  }
-);
+  return (
+    <Menu ref={ref} style={{ maxWidth: toRem(160), width: '100vw' }}>
+      {invitePrompt && (
+        <InviteUserPrompt
+          room={space}
+          onClose={() => {
+            setInvitePrompt(false);
+            onClose();
+          }}
+        />
+      )}
+      <Box direction="Column" gap="100" style={{ padding: config.space.S100 }}>
+        <MenuItem
+          onClick={handleInvite}
+          variant="Primary"
+          fill="None"
+          size="300"
+          after={<Icon size="100" src={Icons.UserPlus} />}
+          radii="300"
+          aria-pressed={invitePrompt}
+          disabled={!canInvite}
+        >
+          <Text style={{ flexGrow: 1 }} as="span" size="T300" truncate>
+            Invite
+          </Text>
+        </MenuItem>
+        <MenuItem
+          onClick={handleRoomSettings}
+          size="300"
+          after={<Icon size="100" src={Icons.Setting} />}
+          radii="300"
+        >
+          <Text style={{ flexGrow: 1 }} as="span" size="T300" truncate>
+            Space Settings
+          </Text>
+        </MenuItem>
+      </Box>
+      <Line variant="Surface" size="300" />
+      <Box direction="Column" gap="100" style={{ padding: config.space.S100 }}>
+        <UseStateProvider initial={false}>
+          {(promptLeave, setPromptLeave) => (
+            <>
+              <MenuItem
+                onClick={() => setPromptLeave(true)}
+                variant="Critical"
+                fill="None"
+                size="300"
+                after={<Icon size="100" src={Icons.ArrowGoLeft} />}
+                radii="300"
+                aria-pressed={promptLeave}
+              >
+                <Text style={{ flexGrow: 1 }} as="span" size="T300" truncate>
+                  Leave Space
+                </Text>
+              </MenuItem>
+              {promptLeave && (
+                <LeaveSpacePrompt
+                  roomId={space.roomId}
+                  onDone={onClose}
+                  onCancel={() => setPromptLeave(false)}
+                />
+              )}
+            </>
+          )}
+        </UseStateProvider>
+      </Box>
+    </Menu>
+  );
+});
 
 type LobbyHeaderProps = {
   showProfile?: boolean;
-  powerLevels: IPowerLevels;
+  powerLevels: PowerLevels;
 };
 export function LobbyHeader({ showProfile, powerLevels }: LobbyHeaderProps) {
   const mx = useMatrixClient();
@@ -256,10 +255,7 @@ export function LobbyHeader({ showProfile, powerLevels }: LobbyHeaderProps) {
                   escapeDeactivates: stopPropagation,
                 }}
               >
-                <LobbyMenu
-                  powerLevels={powerLevels}
-                  requestClose={() => setMenuAnchor(undefined)}
-                />
+                <LobbyMenu powerLevels={powerLevels} onClose={() => setMenuAnchor(undefined)} />
               </FocusTrap>
             }
           />

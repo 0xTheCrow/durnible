@@ -77,8 +77,8 @@ function UnverifiedIndicator() {
         </SidebarItem>
       )}
       {settings && (
-        <Modal500 requestClose={closeSettings}>
-          <Settings initialPage={SettingsPages.DevicesPage} requestClose={closeSettings} />
+        <Modal500 onClose={closeSettings}>
+          <Settings initialPage={SettingsPages.DevicesPage} onClose={closeSettings} />
         </Modal500>
       )}
     </>

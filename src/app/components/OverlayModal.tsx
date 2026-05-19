@@ -1,6 +1,7 @@
-import React, { ReactNode, useEffect, useRef } from 'react';
+import type { ReactNode } from 'react';
+import React, { useEffect, useRef } from 'react';
 import FocusTrap from 'focus-trap-react';
-import { Options as FocusTrapOptions } from 'focus-trap';
+import type { Options as FocusTrapOptions } from 'focus-trap';
 import { Overlay, OverlayBackdrop, OverlayCenter } from 'folds';
 import { stopPropagation } from '../utils/keyboard';
 
@@ -8,7 +9,7 @@ let overlayModalCounter = 0;
 
 type OverlayModalProps = {
   open: boolean;
-  requestClose: () => void;
+  onClose: () => void;
   children: ReactNode;
   focusTrapOptions?: Partial<FocusTrapOptions>;
   backdrop?: boolean;
@@ -18,18 +19,17 @@ type OverlayModalProps = {
 
 export function OverlayModal({
   open,
-  requestClose,
+  onClose,
   children,
   focusTrapOptions,
   backdrop = true,
   overlayProps,
   overlayCenterProps,
 }: OverlayModalProps) {
-  const requestCloseRef = useRef(requestClose);
-  requestCloseRef.current = requestClose;
+  const requestCloseRef = useRef(onClose);
+  requestCloseRef.current = onClose;
 
-  const clickOutsideCloses =
-    focusTrapOptions?.clickOutsideDeactivates !== false;
+  const clickOutsideCloses = focusTrapOptions?.clickOutsideDeactivates !== false;
 
   useEffect(() => {
     if (!open) return undefined;
@@ -60,7 +60,7 @@ export function OverlayModal({
 
   const mergedFocusTrapOptions: FocusTrapOptions = {
     initialFocus: false,
-    onDeactivate: requestClose,
+    onDeactivate: onClose,
     escapeDeactivates: stopPropagation,
     ...focusTrapOptions,
     // Never let FocusTrap close on outside clicks — it fires on
@@ -85,13 +85,11 @@ export function OverlayModal({
           if (e.target !== e.currentTarget) return;
           e.stopPropagation();
           if (clickOutsideCloses) {
-            requestClose();
+            onClose();
           }
         }}
       >
-        <FocusTrap focusTrapOptions={mergedFocusTrapOptions}>
-          {children}
-        </FocusTrap>
+        <FocusTrap focusTrapOptions={mergedFocusTrapOptions}>{children}</FocusTrap>
       </OverlayCenter>
     </Overlay>
   );

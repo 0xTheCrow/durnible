@@ -1,27 +1,21 @@
-import React, { MouseEventHandler, useCallback, useMemo, useState } from 'react';
-import {
-  Box,
-  Modal,
-  Text,
-  Tooltip,
-  TooltipProvider,
-  as,
-  toRem,
-} from 'folds';
+import type { MouseEventHandler } from 'react';
+import React, { useCallback, useMemo } from 'react';
+import { Box, Text, Tooltip, as, toRem } from 'folds';
 import classNames from 'classnames';
-import { EventType, MatrixEvent, RelationType, Room } from 'matrix-js-sdk';
+import type { MatrixEvent, Room } from 'matrix-js-sdk';
+import { EventType, RelationType } from 'matrix-js-sdk';
 import { type Relations } from 'matrix-js-sdk/lib/models/relations';
+import { TooltipProvider } from '../../../components/TooltipProvider';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { factoryEventSentBy } from '../../../utils/matrix';
 import { Reaction, ReactionTooltipMsg } from '../../../components/message';
 import { useRelations } from '../../../hooks/useRelations';
 import * as css from './styles.css';
-import { ReactionViewer } from '../reaction-viewer';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
-import { OverlayModal } from '../../../components/OverlayModal';
 import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
+import { useOpenReactionViewer } from '../../../state/hooks/reactionViewer';
 
 export type ReactionsProps = {
   room: Room;
@@ -36,7 +30,7 @@ export const Reactions = as<'div', ReactionsProps>(
     const useAuthentication = useMediaAuthentication();
     const screenSize = useScreenSizeContext();
     const [pauseGifs] = useSetting(settingsAtom, 'pauseGifs');
-    const [viewer, setViewer] = useState<boolean | string>(false);
+    const openReactionViewer = useOpenReactionViewer();
     const myUserId = mx.getUserId();
 
     // Get earliest timestamp for each reaction key from timeline (including redacted events)
@@ -52,7 +46,8 @@ export const Reactions = as<'div', ReactionsProps>(
           relation?.event_id !== mEventId ||
           relation?.rel_type !== RelationType.Annotation ||
           typeof relation?.key !== 'string'
-        ) return timestamps;
+        )
+          return timestamps;
 
         const { key } = relation;
         const ts = event.getTs() ?? 0;
@@ -66,32 +61,34 @@ export const Reactions = as<'div', ReactionsProps>(
 
     const reactions = useRelations(
       relations,
-      useCallback((rel) => {
-        const events = rel.getRelations();
-        const keyMap = events.reduce((map, ev) => {
-          const key = ev.getRelation()?.key;
-          if (typeof key !== 'string') return map;
-          const existing = map.get(key) ?? new Set<MatrixEvent>();
-          existing.add(ev);
-          map.set(key, existing);
-          return map;
-        }, new Map<string, Set<MatrixEvent>>());
+      useCallback(
+        (rel) => {
+          const events = rel.getRelations();
+          const keyMap = events.reduce((map, ev) => {
+            const key = ev.getRelation()?.key;
+            if (typeof key !== 'string') return map;
+            const existing = map.get(key) ?? new Set<MatrixEvent>();
+            existing.add(ev);
+            map.set(key, existing);
+            return map;
+          }, new Map<string, Set<MatrixEvent>>());
 
-        // Sort by earliest reaction timestamp (from timeline, includes redacted)
-        return Array.from(keyMap.entries()).sort((a, b) => {
-          const aTs = firstReactionTimestamps.get(a[0]) ?? Infinity;
-          const bTs = firstReactionTimestamps.get(b[0]) ?? Infinity;
-          return aTs - bTs;
-        });
-      }, [firstReactionTimestamps])
+          // Sort by earliest reaction timestamp (from timeline, includes redacted)
+          return Array.from(keyMap.entries()).sort((a, b) => {
+            const aTs = firstReactionTimestamps.get(a[0]) ?? Infinity;
+            const bTs = firstReactionTimestamps.get(b[0]) ?? Infinity;
+            return aTs - bTs;
+          });
+        },
+        [firstReactionTimestamps]
+      )
     );
 
     const handleViewReaction: MouseEventHandler<HTMLButtonElement> = (evt) => {
       evt.stopPropagation();
       evt.preventDefault();
       const key = evt.currentTarget.getAttribute('data-reaction-key');
-      if (!key) setViewer(true);
-      else setViewer(key);
+      openReactionViewer(room, relations, key ?? undefined);
     };
 
     return (
@@ -113,7 +110,7 @@ export const Reactions = as<'div', ReactionsProps>(
               key={key}
               position="Top"
               tooltip={
-                viewer || screenSize === ScreenSize.Mobile ? undefined : (
+                screenSize === ScreenSize.Mobile ? undefined : (
                   <Tooltip style={{ maxWidth: toRem(200) }}>
                     <Text className={css.ReactionsTooltipText} size="T300">
                       <ReactionTooltipMsg room={room} reaction={key} events={rEvents} />
@@ -141,29 +138,6 @@ export const Reactions = as<'div', ReactionsProps>(
             </TooltipProvider>
           );
         })}
-        {reactions.length > 0 && (
-          <OverlayModal
-            open={!!viewer}
-            requestClose={() => setViewer(false)}
-            overlayProps={{ onContextMenu: (evt: any) => { evt.stopPropagation(); } }}
-            focusTrapOptions={{
-              returnFocusOnDeactivate: false,
-            }}
-          >
-            <Modal
-              variant="Surface"
-              size="300"
-              flexHeight
-            >
-              <ReactionViewer
-                room={room}
-                initialKey={typeof viewer === 'string' ? viewer : undefined}
-                relations={relations}
-                requestClose={() => setViewer(false)}
-              />
-            </Modal>
-          </OverlayModal>
-        )}
       </Box>
     );
   }

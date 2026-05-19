@@ -3,7 +3,7 @@ import { Box, Line } from 'folds';
 import { useParams } from 'react-router-dom';
 import { isKeyHotkey } from 'is-hotkey';
 import { RoomView } from './RoomView';
-import { MembersDrawer } from './MembersDrawer';
+import { MembersDrawer } from './layout/MembersDrawer';
 import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
 import { useSetting } from '../../state/hooks/settings';
 import { settingsAtom } from '../../state/settings';

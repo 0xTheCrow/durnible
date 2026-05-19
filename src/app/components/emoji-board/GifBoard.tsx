@@ -1,22 +1,23 @@
-import React, {
-  ChangeEventHandler,
-  MouseEventHandler,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import type { ChangeEventHandler, MouseEventHandler } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import FocusTrap from 'focus-trap-react';
-import { Box, Icon, Icons, Input, Menu, MenuItem, PopOut, RectCords, Scroll, Text, config, toRem } from 'folds';
+import type { RectCords } from 'folds';
 import {
-  GifItem,
-  GifListResponse,
-  fetchGifBlob,
-  getFeaturedGifs,
-  recordGifSelect,
-  searchGifs,
-} from '../../utils/gifServer';
-import { EmojiBoardTab } from './types';
+  Box,
+  Icon,
+  Icons,
+  Input,
+  Menu,
+  MenuItem,
+  PopOut,
+  Scroll,
+  Text,
+  config,
+  toRem,
+} from 'folds';
+import type { GifItem, GifListResponse } from '../../utils/gifServer';
+import { fetchGifBlob, getFeaturedGifs, recordGifSelect, searchGifs } from '../../utils/gifServer';
+import type { EmojiBoardTab } from './types';
 import { EmojiBoardTabs } from './components/Tabs';
 import { EmojiBoardLayout, GroupIcon, Sidebar, SidebarStack } from './components';
 import * as css from './components/styles.css';
@@ -141,12 +142,7 @@ type GifBoardProps = {
   requestClose: () => void;
 };
 
-export function GifBoard({
-  tab,
-  onTabChange,
-  onGifSelect,
-  requestClose,
-}: GifBoardProps) {
+export function GifBoard({ tab, onTabChange, onGifSelect, requestClose }: GifBoardProps) {
   const mx = useMatrixClient();
   const favoriteGifs = useFavoriteGifs(mx);
   const recentGifs = useRecentGifs(mx, 50);

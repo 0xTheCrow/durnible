@@ -1,32 +1,34 @@
-import React, { KeyboardEvent as ReactKeyboardEvent, useEffect, useMemo } from 'react';
-import { Editor } from 'slate';
+import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Box, MenuItem, Text, toRem } from 'folds';
-import { Room } from 'matrix-js-sdk';
+import type { Room } from 'matrix-js-sdk';
 
-import { AutocompleteQuery } from './autocompleteQuery';
+import type { AutocompleteQuery } from './autocompleteQuery';
 import { AutocompleteMenu } from './AutocompleteMenu';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
-import { UseAsyncSearchOptions, useAsyncSearch } from '../../../hooks/useAsyncSearch';
+import type { UseAsyncSearchOptions } from '../../../hooks/useAsyncSearch';
+import { useAsyncSearch } from '../../../hooks/useAsyncSearch';
 import { onTabPress } from '../../../utils/keyboard';
-import { createEmoticonElement, moveCursor, replaceWithElement } from '../utils';
 import { useRecentEmoji } from '../../../hooks/useRecentEmoji';
 import { useRelevantImagePacks } from '../../../hooks/useImagePacks';
-import { IEmoji, emojis } from '../../../plugins/emoji';
+import type { Emoji } from '../../../plugins/emoji';
+import { emojis } from '../../../plugins/emoji';
 import { useKeyDown } from '../../../hooks/useKeyDown';
 import { mxcUrlToHttp } from '../../../utils/matrix';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
-import { ImageUsage, PackImageReader } from '../../../plugins/custom-emoji';
+import type { PackImageReader } from '../../../plugins/custom-emoji';
+import { ImageUsage } from '../../../plugins/custom-emoji';
 import { getEmoticonSearchStr } from '../../../plugins/utils';
 
 type EmoticonCompleteHandler = (key: string, shortcode: string) => void;
 
-type EmoticonSearchItem = PackImageReader | IEmoji;
+type EmoticonSearchItem = PackImageReader | Emoji;
 
 type EmoticonAutocompleteProps = {
   imagePackRooms: Room[];
-  editor: Editor;
   query: AutocompleteQuery<string>;
-  requestClose: () => void;
+  onClose: () => void;
+  onSelect: (key: string, shortcode: string) => void;
 };
 
 const SEARCH_OPTIONS: UseAsyncSearchOptions = {
@@ -37,9 +39,9 @@ const SEARCH_OPTIONS: UseAsyncSearchOptions = {
 
 export function EmoticonAutocomplete({
   imagePackRooms,
-  editor,
   query,
-  requestClose,
+  onClose,
+  onSelect,
 }: EmoticonAutocompleteProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
@@ -68,14 +70,13 @@ export function EmoticonAutocomplete({
   }, [query.text, search, resetSearch]);
 
   const handleAutocomplete: EmoticonCompleteHandler = (key, shortcode) => {
-    const emoticonEl = createEmoticonElement(key, shortcode);
-    replaceWithElement(editor, query.range, emoticonEl);
-    moveCursor(editor, true);
-    requestClose();
+    onSelect(key, shortcode);
+    onClose();
   };
 
   useKeyDown(window, (evt: KeyboardEvent) => {
     onTabPress(evt, () => {
+      if (evt.target instanceof HTMLButtonElement) return;
       if (autoCompleteEmoticon.length === 0) return;
       const emoticon = autoCompleteEmoticon[0];
       const key = 'url' in emoticon ? emoticon.url : emoticon.unicode;
@@ -84,7 +85,7 @@ export function EmoticonAutocomplete({
   });
 
   return autoCompleteEmoticon.length === 0 ? null : (
-    <AutocompleteMenu headerContent={<Text size="L400">Emojis</Text>} requestClose={requestClose}>
+    <AutocompleteMenu headerContent={<Text size="L400">Emojis</Text>} onClose={onClose}>
       {autoCompleteEmoticon.map((emoticon) => {
         const isCustomEmoji = 'url' in emoticon;
         const key = isCustomEmoji ? emoticon.url : emoticon.unicode;

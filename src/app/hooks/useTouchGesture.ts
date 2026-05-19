@@ -1,5 +1,6 @@
-import { Dispatch, SetStateAction, TouchEventHandler, useRef } from 'react';
-import { Pan } from './usePan';
+import type { Dispatch, SetStateAction, TouchEventHandler } from 'react';
+import { useRef } from 'react';
+import type { Pan } from './usePan';
 
 type TouchGestureState = {
   initialDistance: number;
@@ -120,7 +121,8 @@ export const useTouchGesture = (
             now - lastTap.time < DOUBLE_TAP_DELAY &&
             Math.hypot(ct.clientX - lastTap.x, ct.clientY - lastTap.y) < TAP_MOVE_THRESHOLD
           ) {
-            // Double tap detected — toggle zoom
+            // Double tap detected — prevent synthesized dblclick from also firing
+            e.preventDefault();
             if (zoomRef.current === 1) {
               setZoomTracked(2);
             } else {

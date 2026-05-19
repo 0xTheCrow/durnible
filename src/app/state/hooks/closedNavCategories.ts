@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import { ClosedNavCategoriesAtom } from '../closedNavCategories';
+import type { ClosedNavCategoriesAtom } from '../closedNavCategories';
 
 const ClosedNavCategoriesAtomContext = createContext<ClosedNavCategoriesAtom | null>(null);
 export const ClosedNavCategoriesProvider = ClosedNavCategoriesAtomContext.Provider;

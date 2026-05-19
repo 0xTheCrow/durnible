@@ -1,14 +1,16 @@
-import { createVar, style } from '@vanilla-extract/css';
+import { createVar, globalStyle, style } from '@vanilla-extract/css';
 import { toRem, color, config, DefaultReset, FocusOutline } from 'folds';
+import { skeletonShimmer } from '../../../styles/Skeleton.css';
 
 /**
  * Layout
  */
 
 export const Base = style({
-  maxWidth: toRem(432),
-  width: `calc(100vw - 2 * ${config.space.S400})`,
+  width: '100vw',
+  maxWidth: toRem(500),
   height: toRem(450),
+  maxHeight: `var(--emoji-board-max-height, calc(var(--app-height, 100vh) - ${toRem(96)}))`,
   backgroundColor: color.Surface.Container,
   color: color.Surface.OnContainer,
   border: `${config.borderWidth.B300} solid ${color.Surface.ContainerLine}`,
@@ -119,6 +121,11 @@ export const EmojiGroup = style({
   padding: `${config.space.S100} 0`,
 });
 
+globalStyle(`${EmojiGroup}[data-group-id="search_group"] button:first-of-type`, {
+  backgroundColor: color.Primary.Container,
+  color: color.Primary.OnContainer,
+});
+
 export const EmojiGroupLabel = style({
   position: 'sticky',
   top: config.space.S200,
@@ -173,6 +180,16 @@ export const CustomEmojiImg = style([
     width: toRem(32),
     height: toRem(32),
     objectFit: 'contain',
+    color: 'transparent',
+    fontSize: 0,
+    borderRadius: config.radii.R300,
+
+    selectors: {
+      '&:not([data-image-loaded="true"])': skeletonShimmer,
+      '&[data-image-loaded="true"]': {
+        backgroundColor: 'transparent',
+      },
+    },
   },
 ]);
 
@@ -182,6 +199,16 @@ export const StickerImg = style([
     width: toRem(96),
     height: toRem(96),
     objectFit: 'contain',
+    color: 'transparent',
+    fontSize: 0,
+    borderRadius: config.radii.R400,
+
+    selectors: {
+      '&:not([data-image-loaded="true"])': skeletonShimmer,
+      '&[data-image-loaded="true"]': {
+        backgroundColor: 'transparent',
+      },
+    },
   },
 ]);
 

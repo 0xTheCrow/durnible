@@ -3,7 +3,7 @@ import { RoomSettings } from './RoomSettings';
 import { Modal500 } from '../../components/Modal500';
 import { useCloseRoomSettings, useRoomSettingsState } from '../../state/hooks/roomSettings';
 import { useAllJoinedRoomsSet, useGetRoom } from '../../hooks/useGetRoom';
-import { RoomSettingsState } from '../../state/roomSettings';
+import type { RoomSettingsState } from '../../state/roomSettings';
 import { RoomProvider } from '../../hooks/useRoom';
 import { SpaceProvider } from '../../hooks/useSpace';
 
@@ -21,10 +21,10 @@ function RenderSettings({ state }: RenderSettingsProps) {
   if (!room) return null;
 
   return (
-    <Modal500 requestClose={closeSettings}>
+    <Modal500 onClose={closeSettings}>
       <SpaceProvider value={space ?? null}>
         <RoomProvider value={room}>
-          <RoomSettings initialPage={page} requestClose={closeSettings} />
+          <RoomSettings initialPage={page} onClose={closeSettings} />
         </RoomProvider>
       </SpaceProvider>
     </Modal500>

@@ -61,7 +61,7 @@ export const ReactionText = style([
     display: 'inline-flex',
     alignItems: 'center',
     fontSize: toRem(22),
-    lineHeight: toRem(24),
+    lineHeight: toRem(26),
   },
 ]);
 
@@ -72,5 +72,6 @@ export const ReactionImg = style([
     minWidth: 0,
     maxWidth: toRem(150),
     objectFit: 'contain',
+    overflow: 'visible',
   },
 ]);

@@ -1,29 +1,16 @@
-import React, { ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Badge,
-  Box,
-  Button,
-  Chip,
-  Icon,
-  Icons,
-  Spinner,
-  Text,
-  Tooltip,
-  TooltipProvider,
-  as,
-} from 'folds';
+import type { ReactNode } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { Badge, Box, Button, Chip, Icon, Icons, Spinner, Text, Tooltip, as } from 'folds';
 import classNames from 'classnames';
 import { BlurhashCanvas } from 'react-blurhash';
-import { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
+import type { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
 import { useAtom } from 'jotai';
-import {
-  IThumbnailContent,
-  IVideoInfo,
-  MATRIX_BLUR_HASH_PROPERTY_NAME,
-} from '../../../../types/matrix/common';
+import { TooltipProvider } from '../../TooltipProvider';
+import type { ThumbnailContent, VideoInfo } from '../../../../types/matrix/common';
+import { MATRIX_BLUR_HASH_PROPERTY_NAME } from '../../../../types/matrix/common';
 import * as css from './style.css';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
-import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
+import { AsyncStatus, useAutoLoadAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { bytesToSize, millisecondsToMinutesAndSeconds } from '../../../utils/common';
 import {
   decryptFile,
@@ -47,8 +34,8 @@ type VideoContentProps = {
   body: string;
   mimeType: string;
   url: string;
-  info: IVideoInfo & IThumbnailContent;
-  encInfo?: EncryptedAttachmentInfo;
+  info: VideoInfo & ThumbnailContent;
+  encryptionInfo?: EncryptedAttachmentInfo;
   autoPlay?: boolean;
   markedAsSpoiler?: boolean;
   spoilerReason?: string;
@@ -63,7 +50,7 @@ export const VideoContent = as<'div', VideoContentProps>(
       mimeType,
       url,
       info,
-      encInfo,
+      encryptionInfo,
       autoPlay,
       markedAsSpoiler,
       spoilerReason,
@@ -86,16 +73,17 @@ export const VideoContent = as<'div', VideoContentProps>(
     const [blurred, setBlurred] = useState(markedAsSpoiler ?? false);
     const effectiveBlurred = blurred || isForceHidden;
 
-    const [srcState, loadSrc] = useAsyncCallback(
+    const [srcState, loadSrc] = useAutoLoadAsyncCallback(
       useCallback(async () => {
         const mediaUrl = mxcUrlToHttp(mx, url, useAuthentication) ?? url;
-        const fileContent = encInfo
+        const fileContent = encryptionInfo
           ? await downloadEncryptedMedia(mediaUrl, (encBuf) =>
-              decryptFile(encBuf, mimeType, encInfo)
+              decryptFile(encBuf, mimeType, encryptionInfo)
             )
           : await downloadMedia(mediaUrl);
         return URL.createObjectURL(fileContent);
-      }, [mx, url, useAuthentication, mimeType, encInfo])
+      }, [mx, url, useAuthentication, mimeType, encryptionInfo]),
+      !!autoPlay
     );
 
     const handleLoad = () => {
@@ -121,10 +109,6 @@ export const VideoContent = as<'div', VideoContentProps>(
       return setRef;
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [ref]);
-
-    useEffect(() => {
-      if (autoPlay) loadSrc();
-    }, [autoPlay, loadSrc]);
 
     useEffect(() => {
       const el = containerRef.current;

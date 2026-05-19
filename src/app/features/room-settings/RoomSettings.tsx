@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useAtomValue } from 'jotai';
-import { Avatar, Box, config, Icon, IconButton, Icons, IconSrc, MenuItem, Text } from 'folds';
+import type { IconSrc } from 'folds';
+import { Avatar, Box, config, Icon, IconButton, Icons, MenuItem, Text } from 'folds';
 import { JoinRule } from 'matrix-js-sdk';
 import { PageNav, PageNavContent, PageNavHeader, PageRoot } from '../../components/page';
 import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
@@ -58,9 +59,9 @@ const useRoomSettingsMenuItems = (): RoomSettingsMenuItem[] =>
 
 type RoomSettingsProps = {
   initialPage?: RoomSettingsPage;
-  requestClose: () => void;
+  onClose: () => void;
 };
-export function RoomSettings({ initialPage, requestClose }: RoomSettingsProps) {
+export function RoomSettings({ initialPage, onClose }: RoomSettingsProps) {
   const room = useRoom();
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
@@ -86,7 +87,7 @@ export function RoomSettings({ initialPage, requestClose }: RoomSettingsProps) {
       setActivePage(undefined);
       return;
     }
-    requestClose();
+    onClose();
   };
 
   return (
@@ -116,7 +117,7 @@ export function RoomSettings({ initialPage, requestClose }: RoomSettingsProps) {
               </Box>
               <Box shrink="No">
                 {screenSize === ScreenSize.Mobile && (
-                  <IconButton onClick={requestClose} variant="Background">
+                  <IconButton onClick={onClose} variant="Background">
                     <Icon src={Icons.Cross} />
                   </IconButton>
                 )}
@@ -152,20 +153,16 @@ export function RoomSettings({ initialPage, requestClose }: RoomSettingsProps) {
         )
       }
     >
-      {activePage === RoomSettingsPage.GeneralPage && (
-        <General requestClose={handlePageRequestClose} />
-      )}
-      {activePage === RoomSettingsPage.MembersPage && (
-        <Members requestClose={handlePageRequestClose} />
-      )}
+      {activePage === RoomSettingsPage.GeneralPage && <General onClose={handlePageRequestClose} />}
+      {activePage === RoomSettingsPage.MembersPage && <Members onClose={handlePageRequestClose} />}
       {activePage === RoomSettingsPage.PermissionsPage && (
-        <Permissions requestClose={handlePageRequestClose} />
+        <Permissions onClose={handlePageRequestClose} />
       )}
       {activePage === RoomSettingsPage.EmojisStickersPage && (
-        <EmojisStickers requestClose={handlePageRequestClose} />
+        <EmojisStickers onClose={handlePageRequestClose} />
       )}
       {activePage === RoomSettingsPage.DeveloperToolsPage && (
-        <DeveloperTools requestClose={handlePageRequestClose} />
+        <DeveloperTools onClose={handlePageRequestClose} />
       )}
     </PageRoot>
   );

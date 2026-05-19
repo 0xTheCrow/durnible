@@ -1,4 +1,5 @@
-import sanitizeHtml, { Transformer } from 'sanitize-html';
+import type { Transformer } from 'sanitize-html';
+import sanitizeHtml from 'sanitize-html';
 
 const MAX_TAG_NESTING = 100;
 

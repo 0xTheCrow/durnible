@@ -1,15 +1,10 @@
 import produce from 'immer';
 import { atom, useSetAtom } from 'jotai';
-import {
-  ClientEvent,
-  MatrixClient,
-  MatrixEvent,
-  Room,
-  RoomEvent,
-  RoomStateEvent,
-} from 'matrix-js-sdk';
+import type { MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk';
+import { ClientEvent, RoomEvent, RoomStateEvent } from 'matrix-js-sdk';
 import { useEffect } from 'react';
-import { Membership, RoomToParents, StateEvent } from '../../../types/matrix/room';
+import type { RoomToParents } from '../../../types/matrix/room';
+import { Membership, StateEvent } from '../../../types/matrix/room';
 import {
   getRoomToParents,
   getSpaceChildren,

@@ -1,7 +1,10 @@
-import React, { forwardRef, MouseEventHandler, ReactNode, useState } from 'react';
+import type { MouseEventHandler, ReactNode } from 'react';
+import React, { forwardRef, useState } from 'react';
 import FocusTrap from 'focus-trap-react';
-import { Box, config, Menu, MenuItem, PopOut, Scroll, Text, toRem, RectCords } from 'folds';
-import { getPowers, PowerLevelTags } from '../../hooks/usePowerLevelTags';
+import type { RectCords } from 'folds';
+import { Box, config, Menu, MenuItem, PopOut, Scroll, Text, toRem } from 'folds';
+import type { PowerLevelTags } from '../../hooks/usePowerLevelTags';
+import { getPowers } from '../../hooks/usePowerLevelTags';
 import { PowerColorBadge } from './PowerColorBadge';
 import { stopPropagation } from '../../utils/keyboard';
 

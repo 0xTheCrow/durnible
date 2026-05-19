@@ -1,9 +1,10 @@
-/* eslint-disable react/destructuring-assignment */
-import React, { MouseEventHandler, useMemo } from 'react';
-import { IEventWithRoomId, JoinRule, RelationType, Room } from 'matrix-js-sdk';
-import { HTMLReactParserOptions } from 'html-react-parser';
+import type { MouseEventHandler } from 'react';
+import React, { useMemo } from 'react';
+import type { IEventWithRoomId, Room } from 'matrix-js-sdk';
+import { JoinRule, RelationType } from 'matrix-js-sdk';
+import type { HTMLReactParserOptions } from 'html-react-parser';
 import { Avatar, Box, Chip, Header, Icon, Icons, Text, config, toRem } from 'folds';
-import { Opts as LinkifyOpts } from 'linkifyjs';
+import type { Opts as LinkifyOpts } from 'linkifyjs';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import {
   factoryRenderLinkifyWithMention,
@@ -15,7 +16,9 @@ import {
 } from '../../plugins/react-custom-html-parser';
 import { getMxIdLocalPart, mxcUrlToHttp } from '../../utils/matrix';
 import { useMatrixEventRenderer } from '../../hooks/useMatrixEventRenderer';
-import { GetContentCallback, MessageEvent, StateEvent } from '../../../types/matrix/room';
+import type { GetContentCallback } from '../../../types/matrix/room';
+import { MessageEvent, StateEvent } from '../../../types/matrix/room';
+import type { EncryptedFile, ImageInfo } from '../../../types/matrix/common';
 import {
   AvatarBase,
   ImageContent,
@@ -32,7 +35,7 @@ import { Image } from '../../components/media';
 import * as customHtmlCss from '../../styles/CustomHtml.css';
 import { RoomAvatar, RoomIcon } from '../../components/room-avatar';
 import { getMemberAvatarMxc, getMemberDisplayName, getRoomAvatarUrl } from '../../utils/room';
-import { ResultItem } from './useMessageSearch';
+import type { ResultItem } from './useMessageSearch';
 import { SequenceCard } from '../../components/sequence-card';
 import { UserAvatar } from '../../components/user-avatar';
 import { useMentionClickHandler } from '../../hooks/useMentionClickHandler';
@@ -86,7 +89,12 @@ export function SearchResultGroup({
   const getMemberPowerTag = useGetMemberPowerTag(room, creators, powerLevels);
 
   const theme = useTheme();
-  const accessibleTagColors = useAccessiblePowerTagColors(theme.kind, creatorsTag, powerLevelTags, true);
+  const accessibleTagColors = useAccessiblePowerTagColors(
+    theme.kind,
+    creatorsTag,
+    powerLevelTags,
+    true
+  );
 
   const mentionClickHandler = useMentionClickHandler(room.roomId);
   const spoilerClickHandler = useSpoilerClickHandler();
@@ -133,7 +141,6 @@ export function SearchResultGroup({
           <RenderMessageContent
             displayName={displayName}
             msgType={event.content.msgtype ?? ''}
-            ts={event.origin_server_ts}
             content={getContent()}
             mediaAutoLoad={mediaAutoLoad}
             urlPreview={false}
@@ -251,7 +258,11 @@ export function SearchResultGroup({
               variant="SurfaceVariant"
               direction="Row"
             >
-              <Box grow="Yes" style={{ padding: config.space.S400, minWidth: 0 }} direction="Column">
+              <Box
+                grow="Yes"
+                style={{ padding: config.space.S400, minWidth: 0 }}
+                direction="Column"
+              >
                 <ModernLayout
                   before={
                     <AvatarBase>
@@ -287,7 +298,10 @@ export function SearchResultGroup({
                       {tagIconSrc && <PowerIcon size="100" iconSrc={tagIconSrc} />}
                     </Box>
                     <Text as="time" style={{ flexShrink: 0 }} size="T200" priority="300">
-                      {`${timeDayMonYear(event.origin_server_ts, dateFormatString)} ${timeHourMinute(event.origin_server_ts, hour24Clock)}`}
+                      {`${timeDayMonYear(
+                        event.origin_server_ts,
+                        dateFormatString
+                      )} ${timeHourMinute(event.origin_server_ts, hour24Clock)}`}
                     </Text>
                   </Box>
                   {replyEventId && (
@@ -305,8 +319,9 @@ export function SearchResultGroup({
                   {item.attachedImages && item.attachedImages.length > 0 && (
                     <Box gap="200" wrap="Wrap" style={{ marginTop: config.space.S200 }}>
                       {item.attachedImages.map((img) => {
-                        const imgUrl = (img.content.file as Record<string, unknown>)?.url as string
-                          ?? img.content.url as string;
+                        const imgUrl =
+                          ((img.content.file as Record<string, unknown>)?.url as string) ??
+                          (img.content.url as string);
                         if (!imgUrl) return null;
                         const info = img.content.info as Record<string, unknown> | undefined;
                         return (
@@ -320,11 +335,11 @@ export function SearchResultGroup({
                             }}
                           >
                             <ImageContent
-                              body={img.content.body as string ?? 'Image'}
+                              body={(img.content.body as string) ?? 'Image'}
                               mimeType={info?.mimetype as string | undefined}
                               url={imgUrl}
-                              info={info as any}
-                              encInfo={img.content.file as any}
+                              info={info as unknown as ImageInfo}
+                              encryptionInfo={img.content.file as unknown as EncryptedFile}
                               autoPlay={mediaAutoLoad}
                               renderImage={(p) => <Image {...p} loading="lazy" />}
                             />

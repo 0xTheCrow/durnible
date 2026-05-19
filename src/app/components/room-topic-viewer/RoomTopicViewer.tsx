@@ -10,9 +10,9 @@ export const RoomTopicViewer = as<
   {
     name: string;
     topic: string;
-    requestClose: () => void;
+    onClose: () => void;
   }
->(({ name, topic, requestClose, className, ...props }, ref) => (
+>(({ name, topic, onClose, className, ...props }, ref) => (
   <Modal
     size="300"
     flexHeight
@@ -26,7 +26,7 @@ export const RoomTopicViewer = as<
           {name}
         </Text>
       </Box>
-      <IconButton size="300" onClick={requestClose} radii="300">
+      <IconButton size="300" onClick={onClose} radii="300">
         <Icon src={Icons.Cross} />
       </IconButton>
     </Header>

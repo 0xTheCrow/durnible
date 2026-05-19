@@ -1,17 +1,20 @@
-import React, { forwardRef, MouseEventHandler, useEffect, useMemo } from 'react';
-import { MatrixError, Room } from 'matrix-js-sdk';
-import { IHierarchyRoom } from 'matrix-js-sdk/lib/@types/spaces';
+import type { MouseEventHandler } from 'react';
+import React, { forwardRef, useEffect, useMemo } from 'react';
+import type { Room } from 'matrix-js-sdk';
+import { MatrixError } from 'matrix-js-sdk';
+import type { IHierarchyRoom } from 'matrix-js-sdk/lib/@types/spaces';
 import { Box, config, Text } from 'folds';
-import {
+import type {
   HierarchyItem,
   HierarchyItemRoom,
   HierarchyItemSpace,
-  useFetchSpaceHierarchyLevel,
 } from '../../hooks/useSpaceHierarchy';
-import { IPowerLevels } from '../../hooks/usePowerLevels';
+import { useFetchSpaceHierarchyLevel } from '../../hooks/useSpaceHierarchy';
+import type { PowerLevels } from '../../hooks/usePowerLevels';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { SpaceItemCard } from './SpaceItem';
-import { AfterItemDropTarget, CanDropCallback } from './DnD';
+import type { CanDropCallback } from './DnD';
+import { AfterItemDropTarget } from './DnD';
 import { HierarchyItemMenu } from './HierarchyItemMenu';
 import { RoomItemCard } from './RoomItem';
 import { RoomType, StateEvent } from '../../../types/matrix/room';
@@ -25,10 +28,10 @@ type SpaceHierarchyProps = {
   roomItems?: HierarchyItemRoom[];
   allJoinedRooms: Set<string>;
   mDirects: Set<string>;
-  roomsPowerLevels: Map<string, IPowerLevels>;
+  roomsPowerLevels: Map<string, PowerLevels>;
   categoryId: string;
   closed: boolean;
-  handleClose: MouseEventHandler<HTMLButtonElement>;
+  onClose: MouseEventHandler<HTMLButtonElement>;
   draggingItem?: HierarchyItem;
   onDragging: (item?: HierarchyItem) => void;
   canDrop: CanDropCallback;
@@ -51,7 +54,7 @@ export const SpaceHierarchy = forwardRef<HTMLDivElement, SpaceHierarchyProps>(
       roomsPowerLevels,
       categoryId,
       closed,
-      handleClose,
+      onClose,
       draggingItem,
       onDragging,
       canDrop,
@@ -118,7 +121,7 @@ export const SpaceHierarchy = forwardRef<HTMLDivElement, SpaceHierarchyProps>(
           joined={allJoinedRooms.has(spaceItem.roomId)}
           categoryId={categoryId}
           closed={closed}
-          handleClose={handleClose}
+          onClose={onClose}
           getRoom={getRoom}
           canEditChild={!!spacePermissions?.stateEvent(StateEvent.SpaceChild, mx.getSafeUserId())}
           canReorder={

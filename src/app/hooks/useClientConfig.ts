@@ -18,6 +18,10 @@ export type ClientConfig = {
   };
 
   hashRouter?: HashRouterConfig;
+
+  locales?: {
+    path?: string;
+  };
 };
 
 const ClientConfigContext = createContext<ClientConfig | null>(null);

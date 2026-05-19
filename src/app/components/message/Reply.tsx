@@ -1,17 +1,18 @@
 import { Box, Icon, Icons, Text, as, color, toRem } from 'folds';
-import { EventTimelineSet, Room } from 'matrix-js-sdk';
-import React, { MouseEventHandler, ReactNode, useCallback, useMemo } from 'react';
+import type { EventTimelineSet, Room } from 'matrix-js-sdk';
+import type { MouseEventHandler, ReactNode } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import classNames from 'classnames';
 import { getMemberDisplayName, trimReplyFromBody } from '../../utils/room';
 import { getMxIdLocalPart } from '../../utils/matrix';
 import { LinePlaceholder } from './placeholder';
 import { randomNumberBetween } from '../../utils/common';
 import * as css from './Reply.css';
-import { MessageBadEncryptedContent, MessageDeletedContent, MessageFailedContent } from './content';
+import { MessageDeletedContent, MessageFailedContent } from './content';
 import { scaleSystemEmoji } from '../../plugins/react-custom-html-parser';
 import { useRoomEvent } from '../../hooks/useRoomEvent';
 import colorMXID from '../../../util/colorMXID';
-import { GetMemberPowerTag } from '../../hooks/useMemberPowerTag';
+import type { GetMemberPowerTag } from '../../hooks/useMemberPowerTag';
 
 type ReplyLayoutProps = {
   userColor?: string;
@@ -89,16 +90,17 @@ export const Reply = as<'div', ReplyProps>(
     const powerTag = sender ? getMemberPowerTag?.(sender) : undefined;
     const tagColor = powerTag?.color ? accessibleTagColors?.get(powerTag.color) : undefined;
 
-    const usernameColor = legacyUsernameColor ? colorMXID(sender ?? replyEventId) : tagColor;
+    const usernameColor = sender ? (legacyUsernameColor ? colorMXID(sender) : tagColor) : undefined;
 
-    const fallbackBody = replyEvent?.isRedacted() ? (
+    const isRedacted = replyEvent?.isRedacted() ?? false;
+    const showContent = replyEvent !== undefined;
+    const bodyJSX = body ? (
+      scaleSystemEmoji(trimReplyFromBody(body))
+    ) : isRedacted ? (
       <MessageDeletedContent />
     ) : (
       <MessageFailedContent />
     );
-
-    const badEncryption = replyEvent?.getContent().msgtype === 'm.bad.encrypted';
-    const bodyJSX = body ? scaleSystemEmoji(trimReplyFromBody(body)) : fallbackBody;
 
     return (
       <Box direction="Row" gap="200" alignItems="Center" {...props} ref={ref}>
@@ -118,12 +120,20 @@ export const Reply = as<'div', ReplyProps>(
           data-event-id={replyEventId}
           onClick={onClick}
         >
-          {replyEvent !== undefined ? (
-            <Text size="T300" truncate>
-              {badEncryption ? <MessageBadEncryptedContent /> : bodyJSX}
+          {showContent ? (
+            <Text
+              size="T300"
+              truncate
+              data-testid={
+                // eslint-disable-next-line no-nested-ternary
+                body ? 'reply-body' : isRedacted ? 'reply-deleted' : 'reply-failed'
+              }
+            >
+              {bodyJSX}
             </Text>
           ) : (
             <LinePlaceholder
+              data-testid="reply-loading"
               style={{
                 backgroundColor: color.SurfaceVariant.ContainerActive,
                 width: toRem(placeholderWidth),

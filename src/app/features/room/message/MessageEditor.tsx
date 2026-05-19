@@ -1,63 +1,42 @@
-import React, {
-  KeyboardEventHandler,
-  MouseEventHandler,
-  useCallback,
-  useEffect,
-  useState,
-} from 'react';
-import {
-  Box,
-  Chip,
-  Icon,
-  IconButton,
-  Icons,
-  Line,
-  PopOut,
-  RectCords,
-  Spinner,
-  Text,
-  as,
-  config,
-} from 'folds';
-import { Editor, Transforms } from 'slate';
-import { ReactEditor } from 'slate-react';
-import { IContent, IMentions, MatrixEvent, RelationType, Room } from 'matrix-js-sdk';
+import type { KeyboardEventHandler } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Box, Chip, Icon, IconButton, Icons, Line, Spinner, Text, as, config } from 'folds';
+import type { IContent, IMentions, MatrixEvent, Room } from 'matrix-js-sdk';
+import { RelationType } from 'matrix-js-sdk';
 import type { RoomMessageEventContent } from 'matrix-js-sdk/lib/@types/events';
 import { isKeyHotkey } from 'is-hotkey';
+import type { AutocompleteQuery, EditorController } from '../../../components/editor';
 import {
-  AUTOCOMPLETE_PREFIXES,
   AutocompletePrefix,
-  AutocompleteQuery,
-  BlockType,
   CustomEditor,
   EmoticonAutocomplete,
   RoomMentionAutocomplete,
-  Toolbar,
+  EditorToolbar,
   UserMentionAutocomplete,
-  createEmoticonElement,
+  createEmoticonNode,
+  useEditorAutocomplete,
   customHtmlEqualsPlainText,
-  getAutocompleteQuery,
-  getPrevWorldRange,
-  htmlToEditorInput,
-  moveCursor,
-  plainToEditorInput,
-  toMatrixCustomHTML,
-  toPlainText,
   trimCustomHtml,
-  useEditor,
-  getMentions,
-  replaceShortcodes,
+  domToMatrixCustomHTML,
+  domToPlainText,
+  getMentionsFromDom,
+  replaceShortcodesInDom,
+  isInsideList,
+  handleListEnter,
+  isSubmitEnterHotkey,
 } from '../../../components/editor';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
+import { useKeybinds } from '../../../state/hooks/keybinds';
 import { useRelevantImagePacks } from '../../../hooks/useImagePacks';
 import { ImageUsage } from '../../../plugins/custom-emoji/types';
 import { buildShortcodeMap, emojis as unicodeEmojis } from '../../../plugins/emoji';
-import { UseStateProvider } from '../../../components/UseStateProvider';
-import { EmojiBoard } from '../../../components/emoji-board';
+import { EmojiBoardWrapper } from '../../../components/emoji-board';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
+import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
 import { getEditedEvent, getMentionContent, trimReplyFromFormattedBody } from '../../../utils/room';
+import { sanitizeText } from '../../../utils/sanitize';
 import { mobileOrTablet } from '../../../utils/user-agent';
 import { useComposingCheck } from '../../../hooks/useComposingCheck';
 
@@ -71,28 +50,50 @@ type MessageEditorProps = {
 export const MessageEditor = as<'div', MessageEditorProps>(
   ({ room, roomId, mEvent, imagePackRooms, onCancel, ...props }, ref) => {
     const mx = useMatrixClient();
-    const editor = useEditor();
+    const useAuthentication = useMediaAuthentication();
     const [enterForNewline] = useSetting(settingsAtom, 'enterForNewline');
+    const keybinds = useKeybinds();
     const [globalToolbar] = useSetting(settingsAtom, 'editorToolbar');
     const [isMarkdown] = useSetting(settingsAtom, 'isMarkdown');
-    const [alternateInput] = useSetting(settingsAtom, 'alternateInput');
     const [toolbar, setToolbar] = useState(globalToolbar);
     const isComposing = useComposingCheck();
-    const editorRef = React.useRef<HTMLDivElement>(null);
-    const imagePacks = useRelevantImagePacks(ImageUsage.Emoticon, imagePackRooms || []);
+    const editorInputRef = useRef<EditorController | null>(null);
+    const editableElRef = useRef<HTMLDivElement | null>(null);
+    editableElRef.current = editorInputRef.current?.el ?? null;
+    const stableImagePackRooms = React.useMemo(() => imagePackRooms ?? [], [imagePackRooms]);
+    const imagePacks = useRelevantImagePacks(ImageUsage.Emoticon, stableImagePackRooms);
 
     const [autocompleteQuery, setAutocompleteQuery] =
       useState<AutocompleteQuery<AutocompletePrefix>>();
+
+    const editorAutocomplete = useEditorAutocomplete({
+      editorInputRef: {
+        get current() {
+          return editorInputRef.current?.el ?? null;
+        },
+      },
+      mx,
+      useAuthentication,
+      room,
+      roomId,
+    });
+    const {
+      handleMentionSelect,
+      handleRoomMentionSelect,
+      handleEmoticonSelect: handleAutocompleteEmoticonSelect,
+    } = editorAutocomplete;
 
     const getPrevBodyAndFormattedBody = useCallback((): [
       string | undefined,
       string | undefined,
       IMentions | undefined
     ] => {
-      const evtId = mEvent.getId()!;
-      const evtTimeline = room.getTimelineForEvent(evtId);
+      const evtId = mEvent.getId();
+      const evtTimeline = evtId ? room.getTimelineForEvent(evtId) : undefined;
       const editedEvent =
-        evtTimeline && getEditedEvent(evtId, mEvent, evtTimeline.getTimelineSet());
+        evtId && evtTimeline
+          ? getEditedEvent(evtId, mEvent, evtTimeline.getTimelineSet())
+          : undefined;
 
       const content: IContent = editedEvent?.getContent()['m.new_content'] ?? mEvent.getContent();
       const { body, formatted_body: customHtml }: Record<string, unknown> = content;
@@ -106,67 +107,72 @@ export const MessageEditor = as<'div', MessageEditorProps>(
       ];
     }, [room, mEvent]);
 
+    const buildEditContent = useCallback((): IContent | undefined => {
+      const shortcodeMap = buildShortcodeMap(imagePacks, unicodeEmojis);
+      const el = editorInputRef.current?.el;
+      if (!el) return undefined;
+
+      replaceShortcodesInDom(el, shortcodeMap, mx, useAuthentication);
+      const plainText = domToPlainText(el).trim();
+      const customHtml = trimCustomHtml(
+        domToMatrixCustomHTML(el, {
+          allowTextFormatting: true,
+          allowBlockMarkdown: isMarkdown,
+          allowInlineMarkdown: isMarkdown,
+        })
+      );
+      const mentionData = getMentionsFromDom(el, mx);
+
+      const [prevBody, prevCustomHtml, prevMentions] = getPrevBodyAndFormattedBody();
+
+      if (plainText === '') return undefined;
+      if (prevBody) {
+        if (prevCustomHtml && trimReplyFromFormattedBody(prevCustomHtml) === customHtml) {
+          return undefined;
+        }
+        if (
+          !prevCustomHtml &&
+          prevBody === plainText &&
+          customHtmlEqualsPlainText(customHtml, plainText)
+        ) {
+          return undefined;
+        }
+      }
+
+      const newContent: IContent = {
+        msgtype: mEvent.getContent().msgtype,
+        body: plainText,
+      };
+
+      prevMentions?.user_ids?.forEach((prevMentionId) => {
+        mentionData.users.add(prevMentionId);
+      });
+
+      const mMentions = getMentionContent(Array.from(mentionData.users), mentionData.room);
+      newContent['m.mentions'] = mMentions;
+
+      if (!customHtmlEqualsPlainText(customHtml, plainText)) {
+        newContent.format = 'org.matrix.custom.html';
+        newContent.formatted_body = customHtml;
+      }
+
+      return {
+        ...newContent,
+        body: `* ${plainText}`,
+        'm.new_content': newContent,
+        'm.relates_to': {
+          event_id: mEvent.getId(),
+          rel_type: RelationType.Replace,
+        },
+      };
+    }, [mx, mEvent, isMarkdown, getPrevBodyAndFormattedBody, imagePacks, useAuthentication]);
+
     const [saveState, save] = useAsyncCallback(
       useCallback(async () => {
-        const shortcodeMap = buildShortcodeMap(imagePacks, unicodeEmojis);
-        const processedChildren = replaceShortcodes(editor.children, shortcodeMap);
-
-        const plainText = toPlainText(processedChildren, isMarkdown).trim();
-        const customHtml = trimCustomHtml(
-          toMatrixCustomHTML(processedChildren, {
-            allowTextFormatting: true,
-            allowBlockMarkdown: isMarkdown,
-            allowInlineMarkdown: isMarkdown,
-          })
-        );
-
-        const [prevBody, prevCustomHtml, prevMentions] = getPrevBodyAndFormattedBody();
-
-        if (plainText === '') return undefined;
-        if (prevBody) {
-          if (prevCustomHtml && trimReplyFromFormattedBody(prevCustomHtml) === customHtml) {
-            return undefined;
-          }
-          if (
-            !prevCustomHtml &&
-            prevBody === plainText &&
-            customHtmlEqualsPlainText(customHtml, plainText)
-          ) {
-            return undefined;
-          }
-        }
-
-        const newContent: IContent = {
-          msgtype: mEvent.getContent().msgtype,
-          body: plainText,
-        };
-
-        const mentionData = getMentions(mx, roomId, editor);
-
-        prevMentions?.user_ids?.forEach((prevMentionId) => {
-          mentionData.users.add(prevMentionId);
-        });
-
-        const mMentions = getMentionContent(Array.from(mentionData.users), mentionData.room);
-        newContent['m.mentions'] = mMentions;
-
-        if (!customHtmlEqualsPlainText(customHtml, plainText)) {
-          newContent.format = 'org.matrix.custom.html';
-          newContent.formatted_body = customHtml;
-        }
-
-        const content: IContent = {
-          ...newContent,
-          body: `* ${plainText}`,
-          'm.new_content': newContent,
-          'm.relates_to': {
-            event_id: mEvent.getId(),
-            rel_type: RelationType.Replace,
-          },
-        };
-
+        const content = buildEditContent();
+        if (!content) return undefined;
         return mx.sendMessage(roomId, content as RoomMessageEventContent);
-      }, [mx, editor, roomId, mEvent, isMarkdown, getPrevBodyAndFormattedBody, imagePacks])
+      }, [mx, roomId, buildEditContent])
     );
 
     const handleSave = useCallback(() => {
@@ -177,19 +183,26 @@ export const MessageEditor = as<'div', MessageEditorProps>(
 
     const handleKeyDown: KeyboardEventHandler = useCallback(
       (evt) => {
-        if (
-          (isKeyHotkey('mod+enter', evt) || (!enterForNewline && isKeyHotkey('enter', evt))) &&
-          !isComposing(evt)
-        ) {
+        const el = editorInputRef.current?.el;
+        if (isKeyHotkey('shift+enter', evt) && el && isInsideList(el)) {
           evt.preventDefault();
+          evt.stopPropagation();
+          handleListEnter(el);
+          el.dispatchEvent(new Event('input', { bubbles: true }));
+          return;
+        }
+        if (isSubmitEnterHotkey(evt, enterForNewline, keybinds) && !isComposing(evt)) {
+          evt.preventDefault();
+          evt.stopPropagation();
           handleSave();
         }
         if (isKeyHotkey('escape', evt)) {
           evt.preventDefault();
+          evt.stopPropagation();
           onCancel();
         }
       },
-      [onCancel, handleSave, enterForNewline, isComposing]
+      [onCancel, handleSave, enterForNewline, keybinds, isComposing]
     );
 
     const handleKeyUp: KeyboardEventHandler = useCallback(
@@ -198,59 +211,57 @@ export const MessageEditor = as<'div', MessageEditorProps>(
           evt.preventDefault();
           return;
         }
-
-        if (alternateInput) return;
-        const prevWordRange = getPrevWorldRange(editor);
-        const query = prevWordRange
-          ? getAutocompleteQuery<AutocompletePrefix>(editor, prevWordRange, AUTOCOMPLETE_PREFIXES)
-          : undefined;
-        setAutocompleteQuery(query);
+        const el = evt.currentTarget as HTMLDivElement;
+        setAutocompleteQuery(editorAutocomplete.detectAutocompleteQuery(el));
       },
-      [editor, alternateInput]
+      [editorAutocomplete]
     );
 
     const handleCloseAutocomplete = useCallback(() => {
-      if (!alternateInput) ReactEditor.focus(editor);
       setAutocompleteQuery(undefined);
-    }, [editor, alternateInput]);
+    }, []);
 
     const handleEmoticonSelect = (key: string, shortcode: string) => {
-      if (alternateInput && (editor as any).insertAlternateText) {
-        (editor as any).insertAlternateText(key);
-      } else {
-        editor.insertNode(createEmoticonElement(key, shortcode));
-        moveCursor(editor);
+      const controller = editorInputRef.current;
+      if (!controller) return;
+      if (key.startsWith('mxc://')) {
+        const node = createEmoticonNode({ mx, useAuthentication, key, shortcode });
+        controller.insertNode(node);
+        return;
       }
+      controller.insertText(key);
     };
 
     useEffect(() => {
       const [body, customHtml] = getPrevBodyAndFormattedBody();
+      const controller = editorInputRef.current;
+      if (!controller) return;
 
-      if (alternateInput) {
-        const text = typeof body === 'string' ? body : '';
-        editor.children = [
-          { type: BlockType.Paragraph, children: [{ text }] },
-        ];
-        editor.onChange();
-        requestAnimationFrame(() => {
-          const contentEl = editorRef.current?.querySelector('[contenteditable]') as HTMLElement | null;
-          if (contentEl) contentEl.focus();
-        });
-      } else {
-        const initialValue =
-          typeof customHtml === 'string'
-            ? htmlToEditorInput(customHtml, isMarkdown)
-            : plainToEditorInput(typeof body === 'string' ? body : '', isMarkdown);
-
-        Transforms.select(editor, {
-          anchor: Editor.start(editor, []),
-          focus: Editor.end(editor, []),
-        });
-
-        editor.insertFragment(initialValue);
-        if (!mobileOrTablet()) ReactEditor.focus(editor);
+      const plainBody = typeof body === 'string' ? body : '';
+      const html =
+        typeof customHtml === 'string'
+          ? customHtml
+          : sanitizeText(plainBody).replace(/\n/g, '<br>');
+      controller.setContent(html);
+      const el = controller.el;
+      if (el) {
+        el.focus();
+        let target: Node = el;
+        while (target.lastChild) {
+          target = target.lastChild;
+        }
+        const range = document.createRange();
+        if (target.nodeType === Node.TEXT_NODE) {
+          range.setStart(target, (target as Text).data.length);
+        } else {
+          range.selectNodeContents(target);
+        }
+        range.collapse(false);
+        const sel = window.getSelection();
+        sel?.removeAllRanges();
+        sel?.addRange(range);
       }
-    }, [editor, getPrevBodyAndFormattedBody, isMarkdown, alternateInput]);
+    }, [getPrevBodyAndFormattedBody]);
 
     useEffect(() => {
       if (saveState.status === AsyncStatus.Success) {
@@ -262,32 +273,29 @@ export const MessageEditor = as<'div', MessageEditorProps>(
       <div {...props} ref={ref}>
         {autocompleteQuery?.prefix === AutocompletePrefix.RoomMention && (
           <RoomMentionAutocomplete
-            roomId={roomId}
-            editor={editor}
             query={autocompleteQuery}
-            requestClose={handleCloseAutocomplete}
+            onClose={handleCloseAutocomplete}
+            onSelect={handleRoomMentionSelect}
           />
         )}
         {autocompleteQuery?.prefix === AutocompletePrefix.UserMention && (
           <UserMentionAutocomplete
             room={room}
-            editor={editor}
             query={autocompleteQuery}
-            requestClose={handleCloseAutocomplete}
+            onClose={handleCloseAutocomplete}
+            onSelect={handleMentionSelect}
           />
         )}
         {autocompleteQuery?.prefix === AutocompletePrefix.Emoticon && (
           <EmoticonAutocomplete
             imagePackRooms={imagePackRooms || []}
-            editor={editor}
             query={autocompleteQuery}
-            requestClose={handleCloseAutocomplete}
+            onClose={handleCloseAutocomplete}
+            onSelect={handleAutocompleteEmoticonSelect}
           />
         )}
         <CustomEditor
-          ref={editorRef}
-          editor={editor}
-          placeholder="Edit message..."
+          editorInputRef={editorInputRef}
           onKeyDown={handleKeyDown}
           onKeyUp={handleKeyUp}
           bottom={
@@ -300,6 +308,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
               >
                 <Box gap="Inherit">
                   <Chip
+                    data-testid="message-editor-save"
                     onClick={handleSave}
                     variant="Primary"
                     radii="Pill"
@@ -313,73 +322,65 @@ export const MessageEditor = as<'div', MessageEditorProps>(
                   >
                     <Text size="B300">Save</Text>
                   </Chip>
-                  <Chip onClick={onCancel} variant="SurfaceVariant" radii="Pill">
+                  <Chip
+                    data-testid="message-editor-cancel"
+                    onClick={onCancel}
+                    variant="SurfaceVariant"
+                    radii="Pill"
+                  >
                     <Text size="B300">Cancel</Text>
                   </Chip>
                 </Box>
                 <Box gap="Inherit">
-                  {!alternateInput && (
-                    <IconButton
-                      variant="SurfaceVariant"
-                      size="300"
-                      radii="300"
-                      onClick={() => setToolbar(!toolbar)}
-                    >
-                      <Icon size="400" src={toolbar ? Icons.AlphabetUnderline : Icons.Alphabet} />
-                    </IconButton>
-                  )}
-                  <UseStateProvider initial={undefined}>
-                    {(anchor: RectCords | undefined, setAnchor) => (
-                      <PopOut
-                        anchor={anchor}
-                        alignOffset={-8}
-                        position="Top"
-                        align="End"
-                        content={
-                          <EmojiBoard
-                            imagePackRooms={imagePackRooms ?? []}
-                            returnFocusOnDeactivate={false}
-                            onEmojiSelect={handleEmoticonSelect}
-                            onCustomEmojiSelect={handleEmoticonSelect}
-                            requestClose={() => {
-                              setAnchor((v) => {
-                                if (v) {
-                                  if (alternateInput) {
-                                    editorRef.current?.querySelector('textarea')?.focus();
-                                  } else if (!mobileOrTablet()) {
-                                    ReactEditor.focus(editor);
-                                  }
-                                  return undefined;
-                                }
-                                return v;
-                              });
-                            }}
-                          />
-                        }
+                  <IconButton
+                    variant="SurfaceVariant"
+                    size="300"
+                    radii="300"
+                    onMouseDown={(e: React.MouseEvent) => e.preventDefault()}
+                    onTouchStart={(e: React.TouchEvent) => e.preventDefault()}
+                    onClick={() => setToolbar(!toolbar)}
+                  >
+                    <Icon size="400" src={toolbar ? Icons.AlphabetUnderline : Icons.Alphabet} />
+                  </IconButton>
+                  <EmojiBoardWrapper
+                    alignOffset={-8}
+                    position="Top"
+                    align="End"
+                    imagePackRooms={imagePackRooms ?? []}
+                    returnFocusOnDeactivate={!mobileOrTablet()}
+                    onEmojiSelect={handleEmoticonSelect}
+                    onCustomEmojiSelect={handleEmoticonSelect}
+                    onClose={() => editorInputRef.current?.focus()}
+                  >
+                    {({ triggerRef, open, isOpen }) => (
+                      <IconButton
+                        ref={triggerRef}
+                        aria-pressed={isOpen}
+                        onMouseDown={(e: React.MouseEvent) => {
+                          e.preventDefault();
+                          editorInputRef.current?.focus();
+                        }}
+                        onClick={open}
+                        variant="SurfaceVariant"
+                        size="300"
+                        radii="300"
                       >
-                        <IconButton
-                          aria-pressed={anchor !== undefined}
-                          onClick={
-                            ((evt) =>
-                              setAnchor(
-                                evt.currentTarget.getBoundingClientRect()
-                              )) as MouseEventHandler<HTMLButtonElement>
-                          }
-                          variant="SurfaceVariant"
-                          size="300"
-                          radii="300"
-                        >
-                          <Icon size="400" src={Icons.Smile} filled={anchor !== undefined} />
-                        </IconButton>
-                      </PopOut>
+                        <Icon size="400" src={Icons.Smile} filled={isOpen} />
+                      </IconButton>
                     )}
-                  </UseStateProvider>
+                  </EmojiBoardWrapper>
                 </Box>
               </Box>
-              {!alternateInput && toolbar && (
+              {toolbar && (
                 <div>
                   <Line variant="SurfaceVariant" size="300" />
-                  <Toolbar />
+                  <EditorToolbar
+                    inputRef={{
+                      get current() {
+                        return editorInputRef.current?.el ?? null;
+                      },
+                    }}
+                  />
                 </div>
               )}
             </>

@@ -1,4 +1,5 @@
-import React, { ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import React from 'react';
 import FocusTrap from 'focus-trap-react';
 import { isKeyHotkey } from 'is-hotkey';
 import { Header, Menu, Scroll, config } from 'folds';
@@ -8,17 +9,17 @@ import { preventScrollWithArrowKey, stopPropagation } from '../../../utils/keybo
 import { useAlive } from '../../../hooks/useAlive';
 
 type AutocompleteMenuProps = {
-  requestClose: () => void;
+  onClose: () => void;
   headerContent: ReactNode;
   children: ReactNode;
 };
-export function AutocompleteMenu({ headerContent, requestClose, children }: AutocompleteMenuProps) {
+export function AutocompleteMenu({ headerContent, onClose, children }: AutocompleteMenuProps) {
   const alive = useAlive();
 
   const handleDeactivate = () => {
     if (alive()) {
-      // The component is unmounted so we will not call for `requestClose`
-      requestClose();
+      // The component is unmounted so we will not call for `onClose`
+      onClose();
     }
   };
 
@@ -29,7 +30,7 @@ export function AutocompleteMenu({ headerContent, requestClose, children }: Auto
           focusTrapOptions={{
             initialFocus: false,
             onPostDeactivate: handleDeactivate,
-            returnFocusOnDeactivate: false,
+            returnFocusOnDeactivate: true,
             clickOutsideDeactivates: true,
             allowOutsideClick: true,
             isKeyForward: (evt: KeyboardEvent) => isKeyHotkey('arrowdown', evt),

@@ -1,11 +1,6 @@
-import React, {
-  ChangeEventHandler,
-  KeyboardEventHandler,
-  MouseEventHandler,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import type { ChangeEventHandler, KeyboardEventHandler, MouseEventHandler } from 'react';
+import React, { useState } from 'react';
+import type { RectCords } from 'folds';
 import {
   Header,
   Icon,
@@ -15,7 +10,6 @@ import {
   Menu,
   MenuItem,
   PopOut,
-  RectCords,
   Text,
   config,
 } from 'folds';
@@ -36,18 +30,17 @@ export function ServerPicker({
   onServerChange: (server: string) => void;
 }) {
   const [serverMenuAnchor, setServerMenuAnchor] = useState<RectCords>();
-  const serverInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    // sync input with it outside server changes
-    if (serverInputRef.current && serverInputRef.current.value !== server) {
-      serverInputRef.current.value = server;
-    }
-  }, [server]);
+  const [inputValue, setInputValue] = useState(server);
+  const [prevServer, setPrevServer] = useState(server);
+  if (server !== prevServer) {
+    setPrevServer(server);
+    setInputValue(server);
+  }
 
   const debounceServerSelect = useDebounce(onServerChange, { wait: 700 });
 
   const handleServerChange: ChangeEventHandler<HTMLInputElement> = (evt) => {
+    setInputValue(evt.target.value);
     const inputServer = evt.target.value.trim();
     if (inputServer) debounceServerSelect(inputServer);
   };
@@ -79,11 +72,10 @@ export function ServerPicker({
 
   return (
     <Input
-      ref={serverInputRef}
       style={{ paddingRight: config.space.S200 }}
       variant={allowCustomServer ? 'Background' : 'Surface'}
       outlined
-      defaultValue={server}
+      value={inputValue}
       onChange={handleServerChange}
       onKeyDown={handleKeyDown}
       size="500"

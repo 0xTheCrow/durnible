@@ -1,18 +1,7 @@
-import React, { MouseEventHandler, useCallback, useMemo, useState } from 'react';
-import {
-  config,
-  Box,
-  MenuItem,
-  Text,
-  Icon,
-  Icons,
-  IconSrc,
-  RectCords,
-  PopOut,
-  Menu,
-  Button,
-  Spinner,
-} from 'folds';
+import type { MouseEventHandler } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
+import type { IconSrc, RectCords } from 'folds';
+import { config, Box, MenuItem, Text, Icon, Icons, PopOut, Menu, Button, Spinner } from 'folds';
 import { JoinRule } from 'matrix-js-sdk';
 import FocusTrap from 'focus-trap-react';
 import { stopPropagation } from '../utils/keyboard';

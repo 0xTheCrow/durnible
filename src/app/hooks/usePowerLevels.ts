@@ -1,6 +1,5 @@
-import { MatrixEvent, Room } from 'matrix-js-sdk';
+import type { MatrixEvent, Room } from 'matrix-js-sdk';
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
-import produce from 'immer';
 import { useStateEvent } from './useStateEvent';
 import { StateEvent } from '../../types/matrix/room';
 import { useStateEventCallback } from './useStateEventCallback';
@@ -10,7 +9,7 @@ import { getStateEvent } from '../utils/room';
 export type PowerLevelActions = 'invite' | 'redact' | 'kick' | 'ban' | 'historical';
 export type PowerLevelNotificationsAction = 'room';
 
-export type IPowerLevels = {
+export type PowerLevels = {
   users_default?: number;
   state_default?: number;
   events_default?: number;
@@ -25,7 +24,7 @@ export type IPowerLevels = {
   notifications?: Record<string, number>;
 };
 
-const DEFAULT_POWER_LEVELS: Required<IPowerLevels> = {
+export const DEFAULT_POWER_LEVELS: Required<PowerLevels> = {
   users_default: 0,
   state_default: 50,
   events_default: 0,
@@ -41,33 +40,31 @@ const DEFAULT_POWER_LEVELS: Required<IPowerLevels> = {
   },
 };
 
-const fillMissingPowers = (powerLevels: IPowerLevels): IPowerLevels =>
-  produce(powerLevels, (draftPl: IPowerLevels) => {
-    const keys = Object.keys(DEFAULT_POWER_LEVELS) as unknown as (keyof IPowerLevels)[];
-    keys.forEach((key) => {
-      if (draftPl[key] === undefined) {
-        // eslint-disable-next-line no-param-reassign
-        draftPl[key] = DEFAULT_POWER_LEVELS[key] as any;
-      }
-    });
-    if (draftPl.notifications && typeof draftPl.notifications.room !== 'number') {
-      // eslint-disable-next-line no-param-reassign
-      draftPl.notifications.room = DEFAULT_POWER_LEVELS.notifications.room;
-    }
-    return draftPl;
-  });
+export const fillMissingPowers = (powerLevels: PowerLevels): PowerLevels => {
+  const defined = Object.fromEntries(
+    Object.entries(powerLevels).filter(([, v]) => v !== undefined)
+  );
+  const filled: PowerLevels = { ...DEFAULT_POWER_LEVELS, ...defined };
+  if (filled.notifications && typeof filled.notifications.room !== 'number') {
+    filled.notifications = {
+      ...filled.notifications,
+      room: DEFAULT_POWER_LEVELS.notifications.room,
+    };
+  }
+  return filled;
+};
 
-const getPowersLevelFromMatrixEvent = (mEvent?: MatrixEvent): IPowerLevels => {
-  const plContent = mEvent?.getContent<IPowerLevels>();
+const getPowersLevelFromMatrixEvent = (mEvent?: MatrixEvent): PowerLevels => {
+  const plContent = mEvent?.getContent<PowerLevels>();
 
   const powerLevels = !plContent ? DEFAULT_POWER_LEVELS : fillMissingPowers(plContent);
 
   return powerLevels;
 };
 
-export function usePowerLevels(room: Room): IPowerLevels {
+export function usePowerLevels(room: Room): PowerLevels {
   const powerLevelsEvent = useStateEvent(room, StateEvent.RoomPowerLevels);
-  const powerLevels: IPowerLevels = useMemo(
+  const powerLevels: PowerLevels = useMemo(
     () => getPowersLevelFromMatrixEvent(powerLevelsEvent),
     [powerLevelsEvent]
   );
@@ -75,20 +72,20 @@ export function usePowerLevels(room: Room): IPowerLevels {
   return powerLevels;
 }
 
-export const PowerLevelsContext = createContext<IPowerLevels | null>(null);
+export const PowerLevelsContext = createContext<PowerLevels | null>(null);
 
 export const PowerLevelsContextProvider = PowerLevelsContext.Provider;
 
-export const usePowerLevelsContext = (): IPowerLevels => {
+export const usePowerLevelsContext = (): PowerLevels => {
   const pl = useContext(PowerLevelsContext);
   if (!pl) throw new Error('PowerLevelContext is not initialized!');
   return pl;
 };
 
-export const useRoomsPowerLevels = (rooms: Room[]): Map<string, IPowerLevels> => {
+export const useRoomsPowerLevels = (rooms: Room[]): Map<string, PowerLevels> => {
   const mx = useMatrixClient();
   const getRoomsPowerLevels = useCallback(() => {
-    const rToPl = new Map<string, IPowerLevels>();
+    const rToPl = new Map<string, PowerLevels>();
 
     rooms.forEach((room) => {
       const mEvent = getStateEvent(room, StateEvent.RoomPowerLevels, '');
@@ -122,11 +119,11 @@ export const useRoomsPowerLevels = (rooms: Room[]): Map<string, IPowerLevels> =>
 };
 
 export type ReadPowerLevelAPI = {
-  user: (powerLevels: IPowerLevels, userId: string | undefined) => number;
-  event: (powerLevels: IPowerLevels, eventType: string | undefined) => number;
-  state: (powerLevels: IPowerLevels, eventType: string | undefined) => number;
-  action: (powerLevels: IPowerLevels, action: PowerLevelActions) => number;
-  notification: (powerLevels: IPowerLevels, action: PowerLevelNotificationsAction) => number;
+  user: (powerLevels: PowerLevels, userId: string | undefined) => number;
+  event: (powerLevels: PowerLevels, eventType: string | undefined) => number;
+  state: (powerLevels: PowerLevels, eventType: string | undefined) => number;
+  action: (powerLevels: PowerLevels, action: PowerLevelActions) => number;
+  notification: (powerLevels: PowerLevels, action: PowerLevelNotificationsAction) => number;
 };
 
 export const readPowerLevel: ReadPowerLevelAPI = {
@@ -168,7 +165,7 @@ export const readPowerLevel: ReadPowerLevelAPI = {
   },
 };
 
-export const useGetMemberPowerLevel = (powerLevels: IPowerLevels) => {
+export const useGetMemberPowerLevel = (powerLevels: PowerLevels) => {
   const callback = useCallback(
     (userId?: string): number => readPowerLevel.user(powerLevels, userId),
     [powerLevels]
@@ -207,76 +204,53 @@ export type PermissionLocation =
   | EventPermissionLocation
   | NotificationPermissionLocation;
 
+type ResolvedLocation =
+  | { field: 'users' | 'events' | 'notifications'; subKey: string }
+  | { field: keyof PowerLevels; subKey?: undefined };
+
+// Maps a PermissionLocation to its position in the PowerLevels object:
+// either a top-level field (e.g. "ban") or a nested record entry (e.g. events["m.room.message"]).
+const resolveLocation = (location: PermissionLocation): ResolvedLocation => {
+  if ('user' in location) {
+    if (typeof location.key === 'string') return { field: 'users', subKey: location.key };
+    return { field: 'users_default' };
+  }
+  if ('action' in location) return { field: location.key };
+  if ('notification' in location) return { field: 'notifications', subKey: location.key };
+  if ('state' in location) {
+    if (typeof location.key === 'string') return { field: 'events', subKey: location.key };
+    return { field: 'state_default' };
+  }
+  if (typeof location.key === 'string') return { field: 'events', subKey: location.key };
+  return { field: 'events_default' };
+};
+
 export const getPermissionPower = (
-  powerLevels: IPowerLevels,
+  powerLevels: PowerLevels,
   location: PermissionLocation
 ): number => {
-  if ('user' in location) {
-    return readPowerLevel.user(powerLevels, location.key);
+  const { field, subKey } = resolveLocation(location);
+  if (subKey !== undefined) {
+    return (
+      (powerLevels[field] as Record<string, number> | undefined)?.[subKey] ??
+      (DEFAULT_POWER_LEVELS[field] as Record<string, number>)[subKey] ??
+      0
+    );
   }
-  if ('action' in location) {
-    return readPowerLevel.action(powerLevels, location.key);
-  }
-  if ('notification' in location) {
-    return readPowerLevel.notification(powerLevels, location.key);
-  }
-  if ('state' in location) {
-    return readPowerLevel.state(powerLevels, location.key);
-  }
-
-  return readPowerLevel.event(powerLevels, location.key);
+  return (powerLevels[field] as number | undefined) ?? (DEFAULT_POWER_LEVELS[field] as number);
 };
 
 export const applyPermissionPower = (
-  powerLevels: IPowerLevels,
+  powerLevels: PowerLevels,
   location: PermissionLocation,
   power: number
-): IPowerLevels => {
-  if ('user' in location) {
-    if (typeof location.key === 'string') {
-      const users = powerLevels.users ?? {};
-      users[location.key] = power;
-      // eslint-disable-next-line no-param-reassign
-      powerLevels.users = users;
-      return powerLevels;
-    }
-    // eslint-disable-next-line no-param-reassign
-    powerLevels.users_default = power;
-    return powerLevels;
+): PowerLevels => {
+  const { field, subKey } = resolveLocation(location);
+  if (subKey !== undefined) {
+    return {
+      ...powerLevels,
+      [field]: { ...(powerLevels[field] as Record<string, number>), [subKey]: power },
+    };
   }
-  if ('action' in location) {
-    // eslint-disable-next-line no-param-reassign
-    powerLevels[location.key] = power;
-    return powerLevels;
-  }
-  if ('notification' in location) {
-    const notifications = powerLevels.notifications ?? {};
-    notifications[location.key] = power;
-    // eslint-disable-next-line no-param-reassign
-    powerLevels.notifications = notifications;
-    return powerLevels;
-  }
-  if ('state' in location) {
-    if (typeof location.key === 'string') {
-      const events = powerLevels.events ?? {};
-      events[location.key] = power;
-      // eslint-disable-next-line no-param-reassign
-      powerLevels.events = events;
-      return powerLevels;
-    }
-    // eslint-disable-next-line no-param-reassign
-    powerLevels.state_default = power;
-    return powerLevels;
-  }
-
-  if (typeof location.key === 'string') {
-    const events = powerLevels.events ?? {};
-    events[location.key] = power;
-    // eslint-disable-next-line no-param-reassign
-    powerLevels.events = events;
-    return powerLevels;
-  }
-  // eslint-disable-next-line no-param-reassign
-  powerLevels.events_default = power;
-  return powerLevels;
+  return { ...powerLevels, [field]: power };
 };

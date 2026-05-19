@@ -20,6 +20,8 @@ export interface Settings {
   isMarkdown: boolean;
   editorToolbar: boolean;
   twitterEmoji: boolean;
+  emojiSearchAutoFocusMobile: boolean;
+  emojiSearchAutoFocusDesktop: boolean;
   pageZoom: number;
   hideActivity: boolean;
 
@@ -33,6 +35,11 @@ export interface Settings {
   mediaAutoLoad: boolean;
   urlPreview: boolean;
   encUrlPreview: boolean;
+  embedYouTube: boolean;
+  embedSpotify: boolean;
+  embedSoundCloud: boolean;
+  embedNitter: boolean;
+  embedLinks: boolean;
   showHiddenEvents: boolean;
   legacyUsernameColor: boolean;
   unfocusedAutoScroll: boolean;
@@ -45,11 +52,11 @@ export interface Settings {
   hour24Clock: boolean;
   dateFormatString: string;
 
-  alternateInput: boolean;
-
   developerTools: boolean;
 
   swipeGestures: boolean;
+
+  altMobileKeyboardAdjustment: boolean;
 
   pwaMode: boolean;
 
@@ -65,6 +72,8 @@ const defaultSettings: Settings = {
   isMarkdown: true,
   editorToolbar: false,
   twitterEmoji: false,
+  emojiSearchAutoFocusMobile: false,
+  emojiSearchAutoFocusDesktop: true,
   pageZoom: 100,
   hideActivity: true,
 
@@ -78,6 +87,11 @@ const defaultSettings: Settings = {
   mediaAutoLoad: true,
   urlPreview: true,
   encUrlPreview: false,
+  embedYouTube: true,
+  embedSpotify: true,
+  embedSoundCloud: true,
+  embedNitter: true,
+  embedLinks: true,
   showHiddenEvents: false,
   legacyUsernameColor: false,
   unfocusedAutoScroll: false,
@@ -90,11 +104,11 @@ const defaultSettings: Settings = {
   hour24Clock: false,
   dateFormatString: 'D MMM YYYY',
 
-  alternateInput: false,
-
   developerTools: false,
 
   swipeGestures: true,
+
+  altMobileKeyboardAdjustment: false,
 
   pwaMode: false,
 

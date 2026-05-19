@@ -1,18 +1,8 @@
-import {
-  Box,
-  Button,
-  config,
-  Icon,
-  Icons,
-  Menu,
-  MenuItem,
-  PopOut,
-  RectCords,
-  Spinner,
-  Text,
-} from 'folds';
-import { IPushRule } from 'matrix-js-sdk';
-import React, { MouseEventHandler, useMemo, useState } from 'react';
+import type { RectCords } from 'folds';
+import { Box, Button, config, Icon, Icons, Menu, MenuItem, PopOut, Spinner, Text } from 'folds';
+import type { IPushRule } from 'matrix-js-sdk';
+import type { MouseEventHandler } from 'react';
+import React, { useMemo, useState } from 'react';
 import FocusTrap from 'focus-trap-react';
 import { NotificationMode, useNotificationActionsMode } from '../../../hooks/useNotificationMode';
 import { stopPropagation } from '../../../utils/keyboard';

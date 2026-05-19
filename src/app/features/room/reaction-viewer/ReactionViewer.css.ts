@@ -1,9 +1,7 @@
 import { style } from '@vanilla-extract/css';
 import { DefaultReset, color, config } from 'folds';
 
-export const ReactionViewer = style([
-  DefaultReset,
-]);
+export const ReactionViewer = style([DefaultReset]);
 
 export const Sidebar = style({
   backgroundColor: color.Background.Container,

@@ -1,21 +1,15 @@
-import React, {
-  RefObject,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
-import { RoomMember } from 'matrix-js-sdk';
+import type { RefObject } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { RoomMember } from 'matrix-js-sdk';
+import { SearchOrderBy } from 'matrix-js-sdk';
 import { Text, Box, Icon, Icons, config, Spinner, IconButton, Line, toRem } from 'folds';
 import { useAtomValue } from 'jotai';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
-import { SearchOrderBy } from 'matrix-js-sdk';
 import { PageHero, PageHeroEmpty, PageHeroSection } from '../../components/page';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
-import { _SearchPathSearchParams } from '../../pages/paths';
+import type { _SearchPathSearchParams } from '../../pages/paths';
 import { useSetting } from '../../state/hooks/settings';
 import { settingsAtom } from '../../state/settings';
 import { SequenceCard } from '../../components/sequence-card';
@@ -26,7 +20,8 @@ import { decodeSearchParamValueArray, encodeSearchParamValueArray } from '../../
 import { useRooms } from '../../state/hooks/roomList';
 import { allRoomsAtom } from '../../state/room-list/roomList';
 import { mDirectAtom } from '../../state/mDirectList';
-import { ResultGroup, localResultsToGroups, useServerSearch } from './useMessageSearch';
+import type { ResultGroup } from './useMessageSearch';
+import { localResultsToGroups, useServerSearch } from './useMessageSearch';
 import { SearchResultGroup } from './SearchResultGroup';
 import { SearchInput } from './SearchInput';
 import { SearchFilters } from './SearchFilters';
@@ -63,14 +58,12 @@ type MessageSearchProps = {
   defaultRoomsFilterName: string;
   allowGlobal?: boolean;
   rooms: string[];
-  senders?: string[];
   scrollRef: RefObject<HTMLDivElement>;
 };
 export function MessageSearch({
   defaultRoomsFilterName,
   allowGlobal,
   rooms,
-  senders,
   scrollRef,
 }: MessageSearchProps) {
   const mx = useMatrixClient();
@@ -124,11 +117,10 @@ export function MessageSearch({
 
   const isGlobal = searchPathSearchParams.global === 'true';
   const effectiveRooms: string[] | undefined = searchParamRooms ?? (isGlobal ? undefined : rooms);
-  const term = searchPathSearchParams.term;
+  const { term } = searchPathSearchParams;
   const order = searchPathSearchParams.order ?? SearchOrderBy.Recent;
 
-  const hasActiveSearch =
-    !!term || hasItems(searchParamsSenders) || hasItems(searchParamsHas);
+  const hasActiveSearch = !!term || hasItems(searchParamsSenders) || hasItems(searchParamsHas);
 
   // Split effective rooms into encrypted / unencrypted
   const [encryptedRoomIds, unencryptedRoomIds] = useMemo(() => {
@@ -233,8 +225,7 @@ export function MessageSearch({
     [serverSearch]
   );
 
-  const serverEnabled =
-    !!term && (unencryptedRoomIds.length > 0 || !effectiveRooms);
+  const serverEnabled = !!term && (unencryptedRoomIds.length > 0 || !effectiveRooms);
 
   const {
     status: serverStatus,
@@ -533,7 +524,13 @@ export function MessageSearch({
         >
           <Icon size="200" src={Icons.Info} />
           <Text>
-            No results found{term ? <> for <b>{`"${term}"`}</b></> : null}
+            No results found
+            {term ? (
+              <>
+                {' '}
+                for <b>{`"${term}"`}</b>
+              </>
+            ) : null}
           </Text>
         </Box>
       )}

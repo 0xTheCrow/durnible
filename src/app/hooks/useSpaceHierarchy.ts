@@ -1,14 +1,18 @@
 import { atom, useAtom, useAtomValue } from 'jotai';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { MatrixError, Room } from 'matrix-js-sdk';
-import { IHierarchyRoom } from 'matrix-js-sdk/lib/@types/spaces';
-import { QueryFunction, useInfiniteQuery } from '@tanstack/react-query';
+import type { Room } from 'matrix-js-sdk';
+import { MatrixError } from 'matrix-js-sdk';
+import type { IHierarchyRoom } from 'matrix-js-sdk/lib/@types/spaces';
+import type { QueryFunction } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { useMatrixClient } from './useMatrixClient';
 import { roomToParentsAtom } from '../state/room/roomToParents';
-import { MSpaceChildContent, StateEvent } from '../../types/matrix/room';
+import type { MSpaceChildContent } from '../../types/matrix/room';
+import { StateEvent } from '../../types/matrix/room';
 import { getAllParents, getStateEvents, isValidChild } from '../utils/room';
 import { isRoomId } from '../utils/matrix';
-import { SortFunc, byOrderKey, byTsOldToNew, factoryRoomIdByActivity } from '../utils/sort';
+import type { SortFunc } from '../utils/sort';
+import { byOrderKey, byTsOldToNew, factoryRoomIdByActivity } from '../utils/sort';
 import { useStateEventCallback } from './useStateEventCallback';
 import { ErrorCode } from '../cs-errorcode';
 

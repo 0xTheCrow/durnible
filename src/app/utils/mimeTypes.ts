@@ -7,7 +7,16 @@ export const IMAGE_MIME_TYPES = [
   'image/avif',
 ];
 
-export const VIDEO_MIME_TYPES = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime', 'video/x-matroska'];
+export const isAnimatedImageMimetype = (mimetype?: string): boolean =>
+  mimetype === 'image/gif' || mimetype === 'image/apng';
+
+export const VIDEO_MIME_TYPES = [
+  'video/mp4',
+  'video/webm',
+  'video/ogg',
+  'video/quicktime',
+  'video/x-matroska',
+];
 
 export const AUDIO_MIME_TYPES = [
   'audio/mp4',

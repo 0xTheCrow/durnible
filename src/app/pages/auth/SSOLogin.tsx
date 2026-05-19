@@ -1,5 +1,6 @@
 import { Avatar, AvatarImage, Box, Button, Text } from 'folds';
-import { IIdentityProvider, SSOAction, createClient } from 'matrix-js-sdk';
+import type { IIdentityProvider, SSOAction } from 'matrix-js-sdk';
+import { createClient } from 'matrix-js-sdk';
 import React, { useMemo } from 'react';
 import { useAutoDiscoveryInfo } from '../../hooks/useAutoDiscoveryInfo';
 
@@ -34,7 +35,7 @@ export function SSOLogin({ providers, redirectUrl, action, saveScreenSpace }: SS
 
           const buttonTitle = `Continue with ${name}`;
 
-          if (renderAsIcons) {
+          if (renderAsIcons && iconUrl) {
             return (
               <Avatar
                 style={{ cursor: 'pointer' }}
@@ -45,7 +46,7 @@ export function SSOLogin({ providers, redirectUrl, action, saveScreenSpace }: SS
                 size="300"
                 radii="300"
               >
-                <AvatarImage src={iconUrl!} alt={name} title={buttonTitle} />
+                <AvatarImage src={iconUrl} alt={name} title={buttonTitle} />
               </Avatar>
             );
           }

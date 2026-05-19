@@ -1,21 +1,16 @@
-import {
-  EncryptedAttachmentInfo,
-  decryptAttachment,
-  encryptAttachment,
-} from 'browser-encrypt-attachment';
-import {
-  EventTimeline,
+import type { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
+import { decryptAttachment, encryptAttachment } from 'browser-encrypt-attachment';
+import type {
   MatrixClient,
-  MatrixError,
   MatrixEvent,
   Room,
   RoomMember,
   UploadProgress,
   UploadResponse,
 } from 'matrix-js-sdk';
+import { EventTimeline, EventType, MatrixError } from 'matrix-js-sdk';
 import to from 'await-to-js';
-import { IImageInfo, IThumbnailContent, IVideoInfo } from '../../types/matrix/common';
-import { AccountDataEvent } from '../../types/matrix/accountData';
+import type { ImageInfo, ThumbnailContent, VideoInfo } from '../../types/matrix/common';
 import { getStateEvent } from './room';
 import { Membership, StateEvent } from '../../types/matrix/room';
 
@@ -57,8 +52,8 @@ export const getCanonicalAliasOrRoomId = (mx: MatrixClient, roomId: string): str
   return roomId;
 };
 
-export const getImageInfo = (img: HTMLImageElement, fileOrBlob: File | Blob): IImageInfo => {
-  const info: IImageInfo = {};
+export const getImageInfo = (img: HTMLImageElement, fileOrBlob: File | Blob): ImageInfo => {
+  const info: ImageInfo = {};
   info.w = img.width;
   info.h = img.height;
   info.mimetype = fileOrBlob.type;
@@ -66,8 +61,8 @@ export const getImageInfo = (img: HTMLImageElement, fileOrBlob: File | Blob): II
   return info;
 };
 
-export const getVideoInfo = (video: HTMLVideoElement, fileOrBlob: File | Blob): IVideoInfo => {
-  const info: IVideoInfo = {};
+export const getVideoInfo = (video: HTMLVideoElement, fileOrBlob: File | Blob): VideoInfo => {
+  const info: VideoInfo = {};
   info.duration = Number.isNaN(video.duration) ? undefined : Math.floor(video.duration * 1000);
   info.w = video.videoWidth;
   info.h = video.videoHeight;
@@ -78,14 +73,14 @@ export const getVideoInfo = (video: HTMLVideoElement, fileOrBlob: File | Blob): 
 
 export const getThumbnailContent = (thumbnailInfo: {
   thumbnail: File | Blob;
-  encInfo: EncryptedAttachmentInfo | undefined;
+  encryptionInfo: EncryptedAttachmentInfo | undefined;
   mxc: string;
   width: number;
   height: number;
-}): IThumbnailContent => {
-  const { thumbnail, encInfo, mxc, width, height } = thumbnailInfo;
+}): ThumbnailContent => {
+  const { thumbnail, encryptionInfo, mxc, width, height } = thumbnailInfo;
 
-  const content: IThumbnailContent = {
+  const content: ThumbnailContent = {
     thumbnail_info: {
       mimetype: thumbnail.type,
       size: thumbnail.size,
@@ -93,9 +88,9 @@ export const getThumbnailContent = (thumbnailInfo: {
       h: height,
     },
   };
-  if (encInfo) {
+  if (encryptionInfo) {
     content.thumbnail_file = {
-      ...encInfo,
+      ...encryptionInfo,
       url: mxc,
     };
   } else {
@@ -107,7 +102,7 @@ export const getThumbnailContent = (thumbnailInfo: {
 export const encryptFile = async (
   file: File | Blob
 ): Promise<{
-  encInfo: EncryptedAttachmentInfo;
+  encryptionInfo: EncryptedAttachmentInfo;
   file: File;
   originalFile: File | Blob;
 }> => {
@@ -117,7 +112,7 @@ export const encryptFile = async (
     type: file.type,
   });
   return {
-    encInfo: encryptedAttachment.info,
+    encryptionInfo: encryptedAttachment.info,
     file: encFile,
     originalFile: file,
   };
@@ -126,14 +121,14 @@ export const encryptFile = async (
 export const decryptFile = async (
   dataBuffer: ArrayBuffer,
   type: string,
-  encInfo: EncryptedAttachmentInfo
+  encryptionInfo: EncryptedAttachmentInfo
 ): Promise<Blob> => {
-  const dataArray = await decryptAttachment(dataBuffer, encInfo);
+  const dataArray = await decryptAttachment(dataBuffer, encryptionInfo);
   const blob = new Blob([dataArray], { type });
   return blob;
 };
 
-export type TUploadContent = File | Blob;
+export type UploadContent = File | Blob;
 
 export type ContentUploadOptions = {
   name?: string;
@@ -147,7 +142,7 @@ export type ContentUploadOptions = {
 
 export const uploadContent = async (
   mx: MatrixClient,
-  file: TUploadContent,
+  file: UploadContent,
   options: ContentUploadOptions
 ) => {
   const { name, fileType, hideFilename, onProgress, onPromise, onSuccess, onError } = options;
@@ -164,9 +159,10 @@ export const uploadContent = async (
     const mxc = data.content_uri;
     if (mxc) onSuccess(mxc);
     else onError(new MatrixError(data));
-  } catch (e: any) {
-    const error = typeof e?.message === 'string' ? e.message : undefined;
-    const errcode = typeof e?.name === 'string' ? e.message : undefined;
+  } catch (e) {
+    const isObj = typeof e === 'object' && e !== null;
+    const error = isObj && 'message' in e && typeof e.message === 'string' ? e.message : undefined;
+    const errcode = isObj && 'name' in e && typeof e.name === 'string' ? e.name : undefined;
     onError(new MatrixError({ error, errcode }));
   }
 };
@@ -230,7 +226,7 @@ export const addRoomIdToMDirect = async (
   roomId: string,
   userId: string
 ): Promise<void> => {
-  const mDirectsEvent = mx.getAccountData(AccountDataEvent.Direct as any);
+  const mDirectsEvent = mx.getAccountData(EventType.Direct);
   let userIdToRoomIds: Record<string, string[]> = {};
 
   if (typeof mDirectsEvent !== 'undefined')
@@ -255,11 +251,11 @@ export const addRoomIdToMDirect = async (
   }
   userIdToRoomIds[userId] = roomIds;
 
-  await mx.setAccountData(AccountDataEvent.Direct as any, userIdToRoomIds as any);
+  await mx.setAccountData(EventType.Direct, userIdToRoomIds);
 };
 
 export const removeRoomIdFromMDirect = async (mx: MatrixClient, roomId: string): Promise<void> => {
-  const mDirectsEvent = mx.getAccountData(AccountDataEvent.Direct as any);
+  const mDirectsEvent = mx.getAccountData(EventType.Direct);
   let userIdToRoomIds: Record<string, string[]> = {};
 
   if (typeof mDirectsEvent !== 'undefined')
@@ -273,7 +269,7 @@ export const removeRoomIdFromMDirect = async (mx: MatrixClient, roomId: string):
     }
   });
 
-  await mx.setAccountData(AccountDataEvent.Direct as any, userIdToRoomIds as any);
+  await mx.setAccountData(EventType.Direct, userIdToRoomIds);
 };
 
 export const mxcUrlToHttp = (
@@ -347,10 +343,8 @@ export const rateLimitedActions = async <T, R = void>(
   for (let i = 0; i < data.length; i += 1) {
     const dataItem = data[i];
     retryCount = 0;
-    // eslint-disable-next-line no-await-in-loop
     await performAction(dataItem, i);
     if (actionInterval > 0) {
-      // eslint-disable-next-line no-await-in-loop
       await sleepForMs(actionInterval);
     }
   }

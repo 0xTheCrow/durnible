@@ -1,15 +1,17 @@
-import { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
+import type { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
 
 let worker: Worker | null = null;
-type PendingEntry = { resolve: (v: any) => void; reject: (e: any) => void };
+type PendingEntry = {
+  resolve: (v: { data: ArrayBuffer; info: EncryptedAttachmentInfo }) => void;
+  reject: (e: unknown) => void;
+};
 const pending = new Map<string, PendingEntry>();
 
 function getWorker(): Worker {
   if (!worker) {
-    worker = new Worker(
-      new URL('../workers/encryptAttachment.worker.ts', import.meta.url),
-      { type: 'module' }
-    );
+    worker = new Worker(new URL('../workers/encryptAttachment.worker.ts', import.meta.url), {
+      type: 'module',
+    });
     worker.onmessage = ({ data }) => {
       const entry = pending.get(data.id);
       if (!entry) return;
@@ -32,10 +34,10 @@ function encryptBufferInWorker(
 }
 
 export async function encryptFileInWorker(
-  file: File | Blob
-): Promise<{ encInfo: EncryptedAttachmentInfo; file: File; originalFile: File | Blob }> {
+  file: File
+): Promise<{ encryptionInfo: EncryptedAttachmentInfo; file: File; originalFile: File }> {
   const buffer = await file.arrayBuffer();
   const { data, info } = await encryptBufferInWorker(buffer);
-  const encFile = new File([data], (file as File).name ?? 'encrypted', { type: file.type });
-  return { encInfo: info, file: encFile, originalFile: file };
+  const encFile = new File([data], file.name, { type: file.type });
+  return { encryptionInfo: info, file: encFile, originalFile: file };
 }

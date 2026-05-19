@@ -10,26 +10,24 @@ import { tryDecodeURIComponent } from '../../utils/dom';
 
 const linkStyles = { color: color.Success.Main };
 
-export const UrlPreviewCard = as<'div', { url: string; ts: number }>(
-  ({ url, ts, ...props }, ref) => (
-    <UrlPreview {...props} ref={ref}>
-      <UrlPreviewContent>
-        <Text
-          style={linkStyles}
-          truncate
-          as="a"
-          href={url}
-          target="_blank"
-          rel="no-referrer"
-          size="T200"
-          priority="300"
-        >
-          {tryDecodeURIComponent(url)}
-        </Text>
-      </UrlPreviewContent>
-    </UrlPreview>
-  )
-);
+export const UrlPreviewCard = as<'div', { url: string }>(({ url, ...props }, ref) => (
+  <UrlPreview {...props} ref={ref}>
+    <UrlPreviewContent>
+      <Text
+        style={linkStyles}
+        truncate
+        as="a"
+        href={url}
+        target="_blank"
+        rel="no-referrer"
+        size="T200"
+        priority="300"
+      >
+        {tryDecodeURIComponent(url)}
+      </Text>
+    </UrlPreviewContent>
+  </UrlPreview>
+));
 
 export const UrlPreviewHolder = as<'div'>(({ children, ...props }, ref) => {
   const scrollRef = useRef<HTMLDivElement>(null);

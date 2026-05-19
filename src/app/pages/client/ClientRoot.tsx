@@ -1,3 +1,4 @@
+import type { RectCords } from 'folds';
 import {
   Box,
   Button,
@@ -9,13 +10,14 @@ import {
   Menu,
   MenuItem,
   PopOut,
-  RectCords,
   Spinner,
   Text,
 } from 'folds';
-import { HttpApiEvent, HttpApiEventHandlerMap, MatrixClient } from 'matrix-js-sdk';
+import type { HttpApiEventHandlerMap, MatrixClient } from 'matrix-js-sdk';
+import { HttpApiEvent } from 'matrix-js-sdk';
 import FocusTrap from 'focus-trap-react';
-import React, { MouseEventHandler, ReactNode, useCallback, useEffect, useState } from 'react';
+import type { MouseEventHandler, ReactNode } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   clearCacheAndReload,
   clearLoginData,
@@ -34,6 +36,7 @@ import { useSyncState } from '../../hooks/useSyncState';
 import { stopPropagation } from '../../utils/keyboard';
 import { AuthMetadataProvider } from '../../hooks/useAuthMetadata';
 import { getFallbackSession } from '../../state/sessions';
+import { logStartupSummary, startupMark } from '../../utils/startupPerf';
 
 function ClientRootLoading() {
   return (
@@ -140,8 +143,13 @@ const useLogoutListener = (mx?: MatrixClient) => {
 type ClientRootProps = {
   children: ReactNode;
 };
+export const isChunkLoadError = (err: Error) =>
+  err.message.includes('Failed to fetch dynamically imported module') ||
+  err.message.includes('error loading dynamically imported module');
+
 export function ClientRoot({ children }: ClientRootProps) {
   const [loading, setLoading] = useState(true);
+  const startupLoggedRef = useRef(false);
   const { baseUrl } = getFallbackSession() ?? {};
 
   const [loadState, loadMatrix] = useAsyncCallback<MatrixClient, Error, []>(
@@ -162,7 +170,7 @@ export function ClientRoot({ children }: ClientRootProps) {
 
   useEffect(() => {
     if (loadState.status === AsyncStatus.Idle) {
-      loadMatrix();
+      loadMatrix().catch((err) => console.error('ClientRoot: failed to load matrix client', err));
     }
   }, [loadState, loadMatrix]);
 
@@ -176,28 +184,56 @@ export function ClientRoot({ children }: ClientRootProps) {
     mx,
     useCallback((state) => {
       if (state === 'PREPARED') {
+        if (!startupLoggedRef.current) {
+          startupLoggedRef.current = true;
+          startupMark('sync-prepared');
+          logStartupSummary();
+        }
         setLoading(false);
       }
     }, [])
   );
 
+  if (!baseUrl) return null;
+
   return (
-    <SpecVersions baseUrl={baseUrl!}>
+    <SpecVersions baseUrl={baseUrl}>
       {loading && <ClientRootOptions mx={mx} />}
       {(loadState.status === AsyncStatus.Error || startState.status === AsyncStatus.Error) && (
         <SplashScreen>
           <Box direction="Column" grow="Yes" alignItems="Center" justifyContent="Center" gap="400">
-            <Dialog>
+            <Dialog data-testid="client-root-error-dialog">
               <Box direction="Column" gap="400" style={{ padding: config.space.S400 }}>
-                {loadState.status === AsyncStatus.Error && (
-                  <Text>{`Failed to load. ${loadState.error.message}`}</Text>
-                )}
+                {loadState.status === AsyncStatus.Error &&
+                  (isChunkLoadError(loadState.error) ? (
+                    <Text data-testid="client-root-load-error-chunk">
+                      Failed to load. The app was updated — please reload.
+                    </Text>
+                  ) : (
+                    <Text data-testid="client-root-load-error-generic">
+                      {`Failed to load. ${loadState.error.message}`}
+                    </Text>
+                  ))}
                 {startState.status === AsyncStatus.Error && (
-                  <Text>{`Failed to start. ${startState.error.message}`}</Text>
+                  <Text data-testid="client-root-start-error">
+                    {`Failed to start. ${startState.error.message}`}
+                  </Text>
                 )}
-                <Button variant="Critical" onClick={mx ? () => startMatrix(mx) : loadMatrix}>
+                <Button
+                  data-testid="client-root-error-action"
+                  data-variant={loadState.status === AsyncStatus.Error ? 'reload' : 'retry'}
+                  variant="Critical"
+                  onClick={
+                    loadState.status === AsyncStatus.Error || !mx
+                      ? () => window.location.reload()
+                      : () =>
+                          startMatrix(mx).catch((err) =>
+                            console.error('ClientRoot: failed to start matrix client', err)
+                          )
+                  }
+                >
                   <Text as="span" size="B400">
-                    Retry
+                    {loadState.status === AsyncStatus.Error ? 'Reload' : 'Retry'}
                   </Text>
                 </Button>
               </Box>

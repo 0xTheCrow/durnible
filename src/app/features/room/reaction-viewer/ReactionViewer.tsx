@@ -14,8 +14,8 @@ import {
   as,
   config,
 } from 'folds';
-import { MatrixEvent, Room, RoomMember } from 'matrix-js-sdk';
-import { Relations } from 'matrix-js-sdk/lib/models/relations';
+import type { MatrixEvent, Room, RoomMember } from 'matrix-js-sdk';
+import type { Relations } from 'matrix-js-sdk/lib/models/relations';
 import { getMemberDisplayName } from '../../../utils/room';
 import { eventWithShortcode, getMxIdLocalPart } from '../../../utils/matrix';
 import * as css from './ReactionViewer.css';
@@ -33,10 +33,10 @@ export type ReactionViewerProps = {
   room: Room;
   initialKey?: string;
   relations: Relations;
-  requestClose: () => void;
+  onClose: () => void;
 };
 export const ReactionViewer = as<'div', ReactionViewerProps>(
-  ({ className, room, initialKey, relations, requestClose, ...props }, ref) => {
+  ({ className, room, initialKey, relations, onClose, ...props }, ref) => {
     const mx = useMatrixClient();
     const useAuthentication = useMediaAuthentication();
     const reactions = useRelations(
@@ -82,6 +82,7 @@ export const ReactionViewer = as<'div', ReactionViewerProps>(
             <Box className={css.SidebarContent} direction="Column" gap="200">
               {reactions.map(([key, evts]) => {
                 if (typeof key !== 'string') return null;
+                if (evts.size === 0) return null;
                 return (
                   <Reaction
                     key={key}
@@ -103,12 +104,15 @@ export const ReactionViewer = as<'div', ReactionViewerProps>(
             <Box grow="Yes">
               <Text size="H3" truncate>{`Reacted with :${selectedShortcode}:`}</Text>
             </Box>
-            <IconButton size="300" onClick={requestClose}>
+            <IconButton size="300" onClick={onClose}>
               <Icon src={Icons.Cross} />
             </IconButton>
           </Header>
 
-          <Box grow="Yes" style={{ minHeight: `calc(${maxUserCount} * 2.5rem + ${config.space.S400})` }}>
+          <Box
+            grow="Yes"
+            style={{ minHeight: `calc(${maxUserCount} * 2.5rem + ${config.space.S400})` }}
+          >
             <Scroll visibility="Hover" hideTrack size="300">
               <Box className={css.Content} direction="Column">
                 {selectedReactions.map((mEvent) => {
