@@ -9,11 +9,13 @@ import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import type { AudioInfo } from '../../../../types/matrix/common';
 import type { PlayTimeCallback } from '../../../hooks/media';
 import {
+  AUDIO_VOLUME_STORAGE_KEY,
   useMediaLoading,
   useMediaPlay,
   useMediaPlayTimeCallback,
   useMediaSeek,
   useMediaVolume,
+  useMediaVolumePersistence,
 } from '../../../hooks/media';
 import { useThrottle } from '../../../hooks/useThrottle';
 import { secondsToMinutesAndSeconds } from '../../../utils/common';
@@ -77,6 +79,7 @@ export function AudioContent({
   const { playing, setPlaying } = useMediaPlay(getAudioRef);
   const { seek } = useMediaSeek(getAudioRef);
   const { volume, mute, setMute, setVolume } = useMediaVolume(getAudioRef);
+  useMediaVolumePersistence(audioRef, AUDIO_VOLUME_STORAGE_KEY);
   const handlePlayTimeCallback: PlayTimeCallback = useCallback((d, ct) => {
     setDuration(d);
     setCurrentTime(ct);
