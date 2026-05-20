@@ -25,6 +25,7 @@ import {
 } from 'folds';
 import type { GifItem, GifListResponse, GifMetaPatch, GifVisibility } from '../../utils/gifServer';
 import {
+  GIF_MAX_UPLOAD_SIZE_BYTES,
   GifAuthError,
   addFavorite,
   addHidden,
@@ -292,6 +293,8 @@ function GifGrid({
 const isGifFile = (file: File) =>
   file.type === 'image/gif' || file.name.toLowerCase().endsWith('.gif');
 
+const formatMiB = (bytes: number) => `${(bytes / (1024 * 1024)).toFixed(1)} MiB`;
+
 function GifUploadForm() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useAtom(gifUploadFormAtom);
@@ -320,6 +323,14 @@ function GifUploadForm() {
       if (!next) return;
       if (!isGifFile(next)) {
         setError('Only GIF files can be uploaded.');
+        return;
+      }
+      if (next.size > GIF_MAX_UPLOAD_SIZE_BYTES) {
+        setError(
+          `GIF is ${formatMiB(next.size)} — exceeds the ${formatMiB(
+            GIF_MAX_UPLOAD_SIZE_BYTES
+          )} upload limit.`
+        );
         return;
       }
       setForm((s) => ({ ...s, file: next }));

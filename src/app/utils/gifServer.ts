@@ -2,6 +2,7 @@ import type { MatrixClient } from 'matrix-js-sdk';
 
 export const GIF_SERVER_URL = import.meta.env.VITE_GIF_SERVER_URL || '';
 export const gifServerEnabled = !!GIF_SERVER_URL;
+export const GIF_MAX_UPLOAD_SIZE_BYTES = 50 * 1024 * 1024;
 
 export type GifRendition = {
   url: string;
