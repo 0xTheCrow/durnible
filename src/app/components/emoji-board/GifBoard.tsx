@@ -1,5 +1,7 @@
 import type { ChangeEvent, ChangeEventHandler, MouseEventHandler } from 'react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useAtom, useSetAtom } from 'jotai';
+import FileSaver from 'file-saver';
 import FocusTrap from 'focus-trap-react';
 import type { RectCords } from 'folds';
 import {
@@ -14,6 +16,7 @@ import {
   MenuItem,
   PopOut,
   Scroll,
+  Spinner,
   Switch,
   Text,
   color,
@@ -24,15 +27,18 @@ import type { GifItem, GifListResponse, GifMetaPatch, GifVisibility } from '../.
 import {
   GifAuthError,
   addFavorite,
+  addHidden,
   deleteGif,
   fetchGifBlob,
   getFavoriteGifs,
   getFeaturedGifs,
+  getHiddenGifs,
   getHistoryGifs,
   getMyGifs,
   patchGifMeta,
   recordGifSelect,
   removeFavorite,
+  removeHidden,
   replaceGifTags,
   searchGifs,
   uploadGif,
@@ -48,6 +54,10 @@ import { mobileOrTablet } from '../../utils/user-agent';
 import { useSetting } from '../../state/hooks/settings';
 import { settingsAtom } from '../../state/settings';
 import { stopPropagation } from '../../utils/keyboard';
+import { gifUploadFormAtom, gifUploadFormInitialState } from '../../state/gifUploadForm';
+import { fileDropOverrideAtom } from '../../state/fileDropOverride';
+import { FloppyIcon } from '../icons/FloppyIcon';
+import { UploadIcon } from '../icons/UploadIcon';
 
 type GifSection = 'all' | 'favorites' | 'recents' | 'mine' | 'upload';
 
@@ -57,15 +67,30 @@ const FAVORITE_ID_PAGE = 50;
 const FAVORITE_ID_MAX_PAGES = 10;
 
 async function collectFavoriteIds(
-  nsfw: boolean,
+  showNsfw: boolean,
+  showHidden: boolean,
   acc: Set<string>,
   pos: string | undefined,
   depth: number
 ): Promise<Set<string>> {
-  const res = await getFavoriteGifs(FAVORITE_ID_PAGE, pos, nsfw);
+  const res = await getFavoriteGifs(FAVORITE_ID_PAGE, pos, showNsfw, showHidden);
   res.results.forEach((g) => acc.add(g.id));
   if (res.next && depth + 1 < FAVORITE_ID_MAX_PAGES) {
-    return collectFavoriteIds(nsfw, acc, res.next, depth + 1);
+    return collectFavoriteIds(showNsfw, showHidden, acc, res.next, depth + 1);
+  }
+  return acc;
+}
+
+async function collectHiddenIds(
+  showNsfw: boolean,
+  acc: Set<string>,
+  pos: string | undefined,
+  depth: number
+): Promise<Set<string>> {
+  const res = await getHiddenGifs(FAVORITE_ID_PAGE, pos, showNsfw);
+  res.results.forEach((g) => acc.add(g.id));
+  if (res.next && depth + 1 < FAVORITE_ID_MAX_PAGES) {
+    return collectHiddenIds(showNsfw, acc, res.next, depth + 1);
   }
   return acc;
 }
@@ -73,20 +98,22 @@ async function collectFavoriteIds(
 function loadSection(
   section: GifSection,
   query: string,
-  nsfw: boolean,
+  showNsfw: boolean,
+  showHidden: boolean,
   cursor?: string
 ): Promise<GifListResponse> {
-  if (section === 'favorites') return getFavoriteGifs(PAGE_SIZE, cursor, nsfw);
-  if (section === 'recents') return getHistoryGifs(PAGE_SIZE, cursor, nsfw);
-  if (section === 'mine') return getMyGifs(PAGE_SIZE, cursor, nsfw);
-  if (query) return searchGifs(query, PAGE_SIZE, cursor, nsfw);
-  return getFeaturedGifs(PAGE_SIZE, cursor, nsfw);
+  if (section === 'favorites') return getFavoriteGifs(PAGE_SIZE, cursor, showNsfw, showHidden);
+  if (section === 'recents') return getHistoryGifs(PAGE_SIZE, cursor, showNsfw, showHidden);
+  if (section === 'mine') return getMyGifs(PAGE_SIZE, cursor, showNsfw, showHidden);
+  if (query) return searchGifs(query, PAGE_SIZE, cursor, showNsfw, showHidden);
+  return getFeaturedGifs(PAGE_SIZE, cursor, showNsfw, showHidden);
 }
 
 function GifGridItem({
   gif,
   editable,
   favorited,
+  hidden,
   onSelect,
   onEdit,
   onToggleFavorite,
@@ -95,6 +122,7 @@ function GifGridItem({
   gif: GifItem;
   editable: boolean;
   favorited: boolean;
+  hidden: boolean;
   onSelect: (gif: GifItem) => void;
   onEdit: (gif: GifItem) => void;
   onToggleFavorite: (gif: GifItem) => void;
@@ -196,6 +224,18 @@ function GifGridItem({
           <Icon size="100" src={Icons.Star} filled={favorited} />
         </IconButton>
       </Box>
+      {hidden && (
+        <IconButton
+          as="div"
+          className={css.GifItemHiddenBadge}
+          size="300"
+          radii="300"
+          variant="Secondary"
+          aria-hidden
+        >
+          <Icon size="100" src={Icons.EyeBlind} />
+        </IconButton>
+      )}
     </Box>
   );
 }
@@ -205,6 +245,7 @@ function GifGrid({
   myUserId,
   showEditButton,
   favoriteIds,
+  hiddenIds,
   onSelect,
   onEdit,
   onToggleFavorite,
@@ -215,6 +256,7 @@ function GifGrid({
   myUserId: string | null;
   showEditButton: boolean;
   favoriteIds: Set<string>;
+  hiddenIds: Set<string>;
   onSelect: (gif: GifItem) => void;
   onEdit: (gif: GifItem) => void;
   onToggleFavorite: (gif: GifItem) => void;
@@ -236,6 +278,7 @@ function GifGrid({
           gif={gif}
           editable={showEditButton && !!myUserId && gif.uploader_id === myUserId}
           favorited={favoriteIds.has(gif.id)}
+          hidden={hiddenIds.has(gif.id)}
           onSelect={onSelect}
           onEdit={onEdit}
           onToggleFavorite={onToggleFavorite}
@@ -246,13 +289,18 @@ function GifGrid({
   );
 }
 
+const isGifFile = (file: File) =>
+  file.type === 'image/gif' || file.name.toLowerCase().endsWith('.gif');
+
 function GifUploadForm() {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [file, setFile] = useState<File | null>(null);
+  const [form, setForm] = useAtom(gifUploadFormAtom);
+  const setFileDropOverride = useSetAtom(fileDropOverrideAtom);
+  const { file, tags, isPrivate, nsfw } = form;
+  const setTags = (value: string) => setForm((s) => ({ ...s, tags: value }));
+  const setIsPrivate = (value: boolean) => setForm((s) => ({ ...s, isPrivate: value }));
+  const setNsfw = (value: boolean) => setForm((s) => ({ ...s, nsfw: value }));
   const [previewUrl, setPreviewUrl] = useState<string | undefined>(undefined);
-  const [tags, setTags] = useState('');
-  const [isPrivate, setIsPrivate] = useState(false);
-  const [nsfw, setNsfw] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | undefined>(undefined);
   const [uploaded, setUploaded] = useState<GifItem | undefined>(undefined);
@@ -267,10 +315,45 @@ function GifUploadForm() {
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
+  const stageFile = useCallback(
+    (next: File | undefined) => {
+      if (!next) return;
+      if (!isGifFile(next)) {
+        setError('Only GIF files can be uploaded.');
+        return;
+      }
+      setForm((s) => ({ ...s, file: next }));
+      setError(undefined);
+      setUploaded(undefined);
+    },
+    [setForm]
+  );
+
+  const handleDrop = useCallback(
+    (files: File[]) => {
+      stageFile(files.find(isGifFile) ?? files[0]);
+    },
+    [stageFile]
+  );
+
+  useEffect(() => {
+    setFileDropOverride({
+      title: 'Drop a GIF to upload',
+      description: 'Drop a .gif here to add it to the upload form',
+      onDrop: handleDrop,
+    });
+    return () => setFileDropOverride(undefined);
+  }, [setFileDropOverride, handleDrop]);
+
   const handleFileChange: ChangeEventHandler<HTMLInputElement> = (e) => {
-    setFile(e.target.files?.[0] ?? null);
+    stageFile(e.target.files?.[0]);
+  };
+
+  const handleClear = () => {
+    setForm(gifUploadFormInitialState);
     setError(undefined);
     setUploaded(undefined);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleUpload = async () => {
@@ -284,8 +367,7 @@ function GifUploadForm() {
         nsfw,
       });
       setUploaded(gif);
-      setFile(null);
-      setTags('');
+      setForm((s) => ({ ...s, file: null, tags: '' }));
       if (fileInputRef.current) fileInputRef.current.value = '';
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Upload failed');
@@ -295,7 +377,11 @@ function GifUploadForm() {
   };
 
   return (
-    <Box direction="Column" gap="300" style={{ padding: config.space.S400, maxWidth: toRem(420) }}>
+    <Box
+      direction="Column"
+      gap="300"
+      style={{ padding: config.space.S400, paddingRight: config.space.S100 }}
+    >
       <input
         ref={fileInputRef}
         type="file"
@@ -303,46 +389,68 @@ function GifUploadForm() {
         onChange={handleFileChange}
         style={{ display: 'none' }}
       />
-      <Button
-        variant="Secondary"
-        fill="Soft"
-        size="400"
-        radii="300"
-        onClick={() => fileInputRef.current?.click()}
-        before={<Icon size="100" src={Icons.Plus} />}
-      >
-        <Text size="B400">{file ? file.name : 'Choose a GIF'}</Text>
-      </Button>
-
-      {previewUrl && (
-        <Box justifyContent="Center">
-          <img
-            src={previewUrl}
-            alt="GIF preview"
-            style={{ maxHeight: toRem(160), maxWidth: '100%', borderRadius: config.radii.R300 }}
-          />
-        </Box>
-      )}
+      <Box className={css.GifItemWrap}>
+        <button
+          type="button"
+          className={css.GifUploadDropzone}
+          onClick={() => fileInputRef.current?.click()}
+          aria-label={file ? `Selected ${file.name}` : 'Choose a GIF'}
+          disabled={uploading}
+        >
+          {previewUrl ? (
+            <img src={previewUrl} alt="GIF preview" className={css.GifUploadDropzoneImg} />
+          ) : (
+            <Box direction="Column" alignItems="Center" gap="100">
+              <Icon size="400" src={Icons.Plus} />
+              <Text size="B400">Choose a GIF</Text>
+            </Box>
+          )}
+        </button>
+        {file && (
+          <Box className={css.GifItemActions} alignItems="Center">
+            <IconButton
+              className={css.GifItemActionBtn}
+              size="300"
+              radii="300"
+              variant="Secondary"
+              aria-label="Remove selected GIF"
+              onClick={handleClear}
+              disabled={uploading}
+            >
+              <Icon size="100" src={Icons.Cross} />
+            </IconButton>
+          </Box>
+        )}
+      </Box>
 
       <Box direction="Column" gap="100">
         <Text size="L400">Tags</Text>
         <Input
           variant="Surface"
           size="400"
+          outlined
           placeholder="comma, separated, tags"
           maxLength={500}
           value={tags}
           onChange={(e: ChangeEvent<HTMLInputElement>) => setTags(e.target.value)}
+          disabled={uploading}
         />
       </Box>
 
-      <Box alignItems="Center" justifyContent="SpaceBetween">
-        <Text size="T300">Private (only you can see it)</Text>
-        <Switch variant="Primary" value={isPrivate} onChange={setIsPrivate} />
-      </Box>
-      <Box alignItems="Center" justifyContent="SpaceBetween">
-        <Text size="T300">Mark as NSFW</Text>
-        <Switch variant="Primary" value={nsfw} onChange={setNsfw} />
+      <Box alignItems="Center" gap="500">
+        <Box alignItems="Center" gap="200">
+          <Switch
+            variant="Primary"
+            value={isPrivate}
+            onChange={setIsPrivate}
+            disabled={uploading}
+          />
+          <Text size="T300">Private</Text>
+        </Box>
+        <Box alignItems="Center" gap="200">
+          <Switch variant="Primary" value={nsfw} onChange={setNsfw} disabled={uploading} />
+          <Text size="T300">NSFW</Text>
+        </Box>
       </Box>
 
       <Button
@@ -351,6 +459,13 @@ function GifUploadForm() {
         radii="300"
         disabled={!file || uploading}
         onClick={handleUpload}
+        before={
+          uploading ? (
+            <Spinner size="100" variant="Primary" fill="Solid" />
+          ) : (
+            <Icon size="100" src={UploadIcon} />
+          )
+        }
       >
         <Text size="B400">{uploading ? 'Uploading...' : 'Upload GIF'}</Text>
       </Button>
@@ -386,24 +501,57 @@ function GifEditModal({
   const [busy, setBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | undefined>(undefined);
+  const [previewSrc, setPreviewSrc] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    let active = true;
+    let objectUrl: string | undefined;
+    fetchGifBlob(gif.renditions.preview.url)
+      .then((blob) => {
+        if (!active) return;
+        objectUrl = URL.createObjectURL(blob);
+        setPreviewSrc(objectUrl);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [gif.renditions.preview.url]);
+
+  const previewWrapRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!confirmDelete) return undefined;
+    const handlePointerDown = (evt: MouseEvent) => {
+      if (previewWrapRef.current && !previewWrapRef.current.contains(evt.target as Node)) {
+        setConfirmDelete(false);
+      }
+    };
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => document.removeEventListener('mousedown', handlePointerDown);
+  }, [confirmDelete]);
+
+  const nextTags = tags
+    .split(',')
+    .map((t) => t.trim().toLowerCase())
+    .filter(Boolean);
+  const nextVisibility: GifVisibility = isPrivate ? 'private' : 'shared';
+  const tagsChanged =
+    nextTags.length !== gif.tags.length || nextTags.some((t, i) => t !== gif.tags[i]);
+  const visibilityChanged = nextVisibility !== gif.visibility;
+  const nsfwChanged = nsfw !== gif.is_nsfw;
+  const hasChanges = tagsChanged || visibilityChanged || nsfwChanged;
 
   const handleSave = async () => {
-    if (busy) return;
+    if (busy || !hasChanges) return;
     setBusy(true);
     setError(undefined);
-    const nextTags = tags
-      .split(',')
-      .map((t) => t.trim().toLowerCase())
-      .filter(Boolean);
-    const nextVisibility: GifVisibility = isPrivate ? 'private' : 'shared';
     try {
-      const tagsChanged =
-        nextTags.length !== gif.tags.length || nextTags.some((t, i) => t !== gif.tags[i]);
       if (tagsChanged) await replaceGifTags(gif.id, nextTags);
 
       const metaPatch: GifMetaPatch = {};
-      if (nextVisibility !== gif.visibility) metaPatch.visibility = nextVisibility;
-      if (nsfw !== gif.is_nsfw) metaPatch.is_nsfw = nsfw;
+      if (visibilityChanged) metaPatch.visibility = nextVisibility;
+      if (nsfwChanged) metaPatch.is_nsfw = nsfw;
       if (metaPatch.visibility !== undefined || metaPatch.is_nsfw !== undefined) {
         await patchGifMeta(gif.id, metaPatch);
       }
@@ -436,15 +584,86 @@ function GifEditModal({
         <Box
           style={{ padding: config.space.S400, maxWidth: toRem(420) }}
           direction="Column"
-          gap="400"
+          gap="300"
         >
-          <Text size="H4">Edit GIF</Text>
+          <Box alignItems="Center" justifyContent="SpaceBetween" gap="200">
+            <Text size="H4">Edit GIF</Text>
+            <IconButton
+              className={css.GifEditBtnTransition}
+              variant="Background"
+              aria-label="Close"
+              onClick={onClose}
+            >
+              <Icon src={Icons.Cross} />
+            </IconButton>
+          </Box>
+
+          <Box ref={previewWrapRef} className={css.GifItemWrap}>
+            <Box className={css.GifPreviewBox}>
+              {previewSrc && (
+                <img
+                  src={previewSrc}
+                  alt={gif.tags[0] || gif.filename}
+                  className={css.GifUploadDropzoneImg}
+                />
+              )}
+            </Box>
+            {confirmDelete ? (
+              <Box className={css.GifPreviewConfirm}>
+                <Text size="H4" align="Center" style={{ color: color.Surface.OnContainer }}>
+                  Delete this GIF?
+                </Text>
+                <Box gap="200" alignItems="Center" style={{ alignSelf: 'stretch' }}>
+                  <Button
+                    className={css.GifPreviewDeleteBtn}
+                    variant="Critical"
+                    size="400"
+                    radii="300"
+                    fill="Soft"
+                    disabled={busy}
+                    onClick={handleDelete}
+                    style={{ flexGrow: 1, flexBasis: 0 }}
+                  >
+                    <Text size="B400">Yes</Text>
+                  </Button>
+                  <Button
+                    className={css.GifEditBtnTransition}
+                    variant="Secondary"
+                    size="400"
+                    radii="300"
+                    fill="Soft"
+                    disabled={busy}
+                    onClick={() => setConfirmDelete(false)}
+                    style={{ flexGrow: 1, flexBasis: 0 }}
+                  >
+                    <Text size="B400">No</Text>
+                  </Button>
+                </Box>
+              </Box>
+            ) : (
+              <Box className={css.GifPreviewActions} alignItems="Center">
+                <IconButton
+                  className={css.GifPreviewDeleteBtn}
+                  size="400"
+                  radii="300"
+                  variant="Critical"
+                  fill="Soft"
+                  aria-label="Delete GIF"
+                  disabled={busy}
+                  onClick={() => setConfirmDelete(true)}
+                >
+                  <Icon size="200" src={Icons.Delete} />
+                </IconButton>
+              </Box>
+            )}
+          </Box>
 
           <Box direction="Column" gap="100">
             <Text size="L400">Tags</Text>
             <Input
               variant="Surface"
               size="400"
+              outlined
               placeholder="comma, separated, tags"
               maxLength={500}
               value={tags}
@@ -452,13 +671,15 @@ function GifEditModal({
             />
           </Box>
 
-          <Box alignItems="Center" justifyContent="SpaceBetween">
-            <Text size="T300">Private (only you can see it)</Text>
-            <Switch variant="Primary" value={isPrivate} onChange={setIsPrivate} />
-          </Box>
-          <Box alignItems="Center" justifyContent="SpaceBetween">
-            <Text size="T300">Mark as NSFW</Text>
-            <Switch variant="Primary" value={nsfw} onChange={setNsfw} />
+          <Box alignItems="Center" gap="500">
+            <Box alignItems="Center" gap="200">
+              <Switch variant="Primary" value={isPrivate} onChange={setIsPrivate} />
+              <Text size="T300">Private</Text>
+            </Box>
+            <Box alignItems="Center" gap="200">
+              <Switch variant="Primary" value={nsfw} onChange={setNsfw} />
+              <Text size="T300">NSFW</Text>
+            </Box>
           </Box>
 
           {error && (
@@ -467,66 +688,32 @@ function GifEditModal({
             </Text>
           )}
 
-          <Box gap="200">
+          <Box gap="200" style={{ alignSelf: 'stretch' }}>
             <Button
+              className={css.GifEditBtnTransition}
               variant="Primary"
               size="400"
               radii="300"
               fill="Solid"
-              disabled={busy}
+              disabled={busy || !hasChanges}
               onClick={handleSave}
+              before={<Icon size="100" src={FloppyIcon} />}
+              style={{ flexGrow: 1, flexBasis: 0 }}
             >
               <Text size="B400">Save</Text>
             </Button>
             <Button
+              className={css.GifEditBtnTransition}
               variant="Secondary"
               size="400"
               radii="300"
               fill="Soft"
               disabled={busy}
               onClick={onClose}
+              style={{ flexGrow: 1, flexBasis: 0 }}
             >
               <Text size="B400">Cancel</Text>
             </Button>
-          </Box>
-
-          <Box gap="200" alignItems="Center">
-            {confirmDelete ? (
-              <>
-                <Button
-                  variant="Critical"
-                  size="400"
-                  radii="300"
-                  fill="Solid"
-                  disabled={busy}
-                  onClick={handleDelete}
-                >
-                  <Text size="B400">Confirm delete</Text>
-                </Button>
-                <Button
-                  variant="Secondary"
-                  size="400"
-                  radii="300"
-                  fill="None"
-                  disabled={busy}
-                  onClick={() => setConfirmDelete(false)}
-                >
-                  <Text size="B400">Keep</Text>
-                </Button>
-              </>
-            ) : (
-              <Button
-                variant="Critical"
-                size="400"
-                radii="300"
-                fill="Soft"
-                disabled={busy}
-                onClick={() => setConfirmDelete(true)}
-                before={<Icon size="100" src={Icons.Delete} />}
-              >
-                <Text size="B400">Delete GIF</Text>
-              </Button>
-            )}
           </Box>
         </Box>
       </Dialog>
@@ -545,6 +732,7 @@ export function GifBoard({ tab, onTabChange, onGifSelect, requestClose }: GifBoa
   const mx = useMatrixClient();
   const myUserId = mx.getUserId();
   const [showNsfw, setShowNsfw] = useSetting(settingsAtom, 'gifShowNsfw');
+  const [showHidden, setShowHidden] = useSetting(settingsAtom, 'gifShowHidden');
   const [editingGif, setEditingGif] = useState<GifItem | undefined>(undefined);
 
   const [activeSection, setActiveSection] = useState<GifSection>('all');
@@ -555,6 +743,7 @@ export function GifBoard({ tab, onTabChange, onGifSelect, requestClose }: GifBoa
   const [showLoading, setShowLoading] = useState(false);
   const [authError, setAuthError] = useState(false);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(() => new Set());
+  const [hiddenIds, setHiddenIds] = useState<Set<string>>(() => new Set());
 
   const sectionRef = useRef(activeSection);
   sectionRef.current = activeSection;
@@ -562,6 +751,8 @@ export function GifBoard({ tab, onTabChange, onGifSelect, requestClose }: GifBoa
   queryRef.current = query;
   const nsfwRef = useRef(showNsfw);
   nsfwRef.current = showNsfw;
+  const hiddenRef = useRef(showHidden);
+  hiddenRef.current = showHidden;
 
   const [contextMenuAnchor, setContextMenuAnchor] = useState<RectCords | undefined>(undefined);
   const [contextMenuGif, setContextMenuGif] = useState<GifItem | undefined>(undefined);
@@ -575,10 +766,16 @@ export function GifBoard({ tab, onTabChange, onGifSelect, requestClose }: GifBoa
   }, []);
 
   const loadGifs = useCallback(
-    async (section: GifSection, q: string, nsfw: boolean, cursor?: string) => {
+    async (
+      section: GifSection,
+      q: string,
+      nextShowNsfw: boolean,
+      nextShowHidden: boolean,
+      cursor?: string
+    ) => {
       setLoading(true);
       try {
-        const res = await loadSection(section, q, nsfw, cursor);
+        const res = await loadSection(section, q, nextShowNsfw, nextShowHidden, cursor);
         setAuthError(false);
         if (cursor) {
           setGifs((prev) => [...prev, ...res.results]);
@@ -607,14 +804,26 @@ export function GifBoard({ tab, onTabChange, onGifSelect, requestClose }: GifBoa
 
   useEffect(() => {
     if (activeSection === 'upload') return;
-    loadGifs(activeSection, query, showNsfw);
-  }, [activeSection, query, showNsfw, loadGifs]);
+    loadGifs(activeSection, query, showNsfw, showHidden);
+  }, [activeSection, query, showNsfw, showHidden, loadGifs]);
 
   useEffect(() => {
     let cancelled = false;
-    collectFavoriteIds(showNsfw, new Set<string>(), undefined, 0)
+    collectFavoriteIds(showNsfw, showHidden, new Set<string>(), undefined, 0)
       .then((ids) => {
         if (!cancelled) setFavoriteIds(ids);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [showNsfw, showHidden]);
+
+  useEffect(() => {
+    let cancelled = false;
+    collectHiddenIds(showNsfw, new Set<string>(), undefined, 0)
+      .then((ids) => {
+        if (!cancelled) setHiddenIds(ids);
       })
       .catch(() => {});
     return () => {
@@ -641,7 +850,13 @@ export function GifBoard({ tab, onTabChange, onGifSelect, requestClose }: GifBoa
 
   const handleLoadMore = useCallback(() => {
     if (nextCursor) {
-      loadGifs(sectionRef.current, queryRef.current, nsfwRef.current, nextCursor);
+      loadGifs(
+        sectionRef.current,
+        queryRef.current,
+        nsfwRef.current,
+        hiddenRef.current,
+        nextCursor
+      );
     }
   }, [nextCursor, loadGifs]);
 
@@ -688,6 +903,49 @@ export function GifBoard({ tab, onTabChange, onGifSelect, requestClose }: GifBoa
     setContextMenuGif(undefined);
   }, [contextMenuGif, toggleFavorite]);
 
+  const toggleHidden = useCallback(
+    (gif: GifItem) => {
+      const { id } = gif;
+      const wasHidden = hiddenIds.has(id);
+      setHiddenIds((prev) => {
+        const next = new Set(prev);
+        if (wasHidden) next.delete(id);
+        else next.add(id);
+        return next;
+      });
+      const action = wasHidden ? removeHidden(id) : addHidden(id);
+      action.catch((e) => {
+        console.error('GIF hide toggle failed', e);
+        setHiddenIds((prev) => {
+          const next = new Set(prev);
+          if (wasHidden) next.add(id);
+          else next.delete(id);
+          return next;
+        });
+      });
+      if (!wasHidden && !hiddenRef.current) {
+        setGifs((prev) => prev.filter((g) => g.id !== id));
+      }
+    },
+    [hiddenIds]
+  );
+
+  const handleToggleHidden: MouseEventHandler = useCallback(() => {
+    if (contextMenuGif) toggleHidden(contextMenuGif);
+    setContextMenuAnchor(undefined);
+    setContextMenuGif(undefined);
+  }, [contextMenuGif, toggleHidden]);
+
+  const handleDownloadFromMenu: MouseEventHandler = useCallback(() => {
+    const gif = contextMenuGif;
+    setContextMenuAnchor(undefined);
+    setContextMenuGif(undefined);
+    if (!gif) return;
+    fetchGifBlob(gif.renditions.original.url)
+      .then((blob) => FileSaver.saveAs(blob, gif.filename))
+      .catch((e) => console.error('GIF download failed', e));
+  }, [contextMenuGif]);
+
   const handleEditFromMenu: MouseEventHandler = useCallback(() => {
     if (contextMenuGif) setEditingGif(contextMenuGif);
     setContextMenuAnchor(undefined);
@@ -709,6 +967,12 @@ export function GifBoard({ tab, onTabChange, onGifSelect, requestClose }: GifBoa
   const handleEditDeleted = useCallback((id: string) => {
     setGifs((prev) => prev.filter((g) => g.id !== id));
     setFavoriteIds((prev) => {
+      if (!prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+    setHiddenIds((prev) => {
       if (!prev.has(id)) return prev;
       const next = new Set(prev);
       next.delete(id);
@@ -740,6 +1004,7 @@ export function GifBoard({ tab, onTabChange, onGifSelect, requestClose }: GifBoa
           myUserId={myUserId}
           showEditButton={activeSection === 'mine'}
           favoriteIds={favoriteIds}
+          hiddenIds={hiddenIds}
           onSelect={handleSelect}
           onEdit={setEditingGif}
           onToggleFavorite={toggleFavorite}
@@ -792,10 +1057,10 @@ export function GifBoard({ tab, onTabChange, onGifSelect, requestClose }: GifBoa
                   size="500"
                   radii="400"
                   aria-label="Filters"
-                  aria-pressed={showNsfw}
+                  aria-pressed={showNsfw || showHidden}
                   onClick={handleOpenFilter}
                 >
-                  <Icon src={Icons.Filter} size="100" filled={showNsfw} />
+                  <Icon src={Icons.Filter} size="100" filled={showNsfw || showHidden} />
                 </IconButton>
               </Box>
             )}
@@ -876,14 +1141,25 @@ export function GifBoard({ tab, onTabChange, onGifSelect, requestClose }: GifBoa
               }}
             >
               <Menu style={{ maxWidth: toRem(250), width: '100vw' }}>
-                <Box
-                  alignItems="Center"
-                  justifyContent="SpaceBetween"
-                  gap="200"
-                  style={{ padding: config.space.S200 }}
-                >
-                  <Text size="T300">Show NSFW</Text>
-                  <Switch variant="Primary" value={showNsfw} onChange={setShowNsfw} />
+                <Box direction="Column">
+                  <Box
+                    alignItems="Center"
+                    justifyContent="SpaceBetween"
+                    gap="200"
+                    style={{ padding: config.space.S200 }}
+                  >
+                    <Text size="T300">Show NSFW</Text>
+                    <Switch variant="Primary" value={showNsfw} onChange={setShowNsfw} />
+                  </Box>
+                  <Box
+                    alignItems="Center"
+                    justifyContent="SpaceBetween"
+                    gap="200"
+                    style={{ padding: config.space.S200 }}
+                  >
+                    <Text size="T300">Show hidden</Text>
+                    <Switch variant="Primary" value={showHidden} onChange={setShowHidden} />
+                  </Box>
                 </Box>
               </Menu>
             </FocusTrap>
@@ -922,6 +1198,33 @@ export function GifBoard({ tab, onTabChange, onGifSelect, requestClose }: GifBoa
                       {contextMenuGif && favoriteIds.has(contextMenuGif.id)
                         ? 'Remove from Favorites'
                         : 'Add to Favorites'}
+                    </Text>
+                  </MenuItem>
+                  <MenuItem
+                    onClick={handleDownloadFromMenu}
+                    size="300"
+                    radii="300"
+                    before={<Icon size="100" src={Icons.Download} />}
+                  >
+                    <Text size="T300">Download</Text>
+                  </MenuItem>
+                  <MenuItem
+                    onClick={handleToggleHidden}
+                    size="300"
+                    radii="300"
+                    before={
+                      <Icon
+                        size="100"
+                        src={
+                          contextMenuGif && hiddenIds.has(contextMenuGif.id)
+                            ? Icons.Eye
+                            : Icons.EyeBlind
+                        }
+                      />
+                    }
+                  >
+                    <Text size="T300">
+                      {contextMenuGif && hiddenIds.has(contextMenuGif.id) ? 'Unhide' : 'Hide'}
                     </Text>
                   </MenuItem>
                   {contextMenuEditable && (

@@ -62,20 +62,16 @@ export const useFileDropZone = (
       };
     }
 
-    // Expanded behavior: zone triggers activation, document is the drop target
-    const handleZoneDragEnter = (evt: DragEvent) => {
+    // Expanded behavior: a file drag anywhere on the document activates the
+    // overlay, so it works even when a portaled element (popout, modal) sits
+    // on top of and outside the zone subtree.
+    let counter = 0;
+    const handleDocDragEnter = (evt: DragEvent) => {
+      counter++;
       if (evt.dataTransfer?.types.includes('Files') && !activeRef.current) {
         activeRef.current = true;
         setActive(true);
       }
-    };
-    target?.addEventListener('dragenter', handleZoneDragEnter);
-
-    // Counter tracks nested dragenter/dragleave pairs on document
-    // to reliably detect when the drag leaves the browser window
-    let counter = 0;
-    const handleDocDragEnter = () => {
-      counter++;
     };
     const handleDocDragLeave = () => {
       counter--;
@@ -107,7 +103,6 @@ export const useFileDropZone = (
     document.addEventListener('drop', handleDocDrop);
 
     return () => {
-      target?.removeEventListener('dragenter', handleZoneDragEnter);
       document.removeEventListener('dragenter', handleDocDragEnter);
       document.removeEventListener('dragleave', handleDocDragLeave);
       document.removeEventListener('dragover', handleDocDragOver);

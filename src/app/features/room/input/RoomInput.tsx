@@ -90,6 +90,7 @@ import { mobileOrTablet } from '../../../utils/user-agent';
 import { useElementSizeObserver } from '../../../hooks/useElementSizeObserver';
 import { ReplyLayout, ThreadIndicator } from '../../../components/message';
 import { roomToParentsAtom } from '../../../state/room/roomToParents';
+import { fileDropOverrideAtom } from '../../../state/fileDropOverride';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
 import { useImagePackRooms } from '../../../hooks/useImagePackRooms';
 import { useRelevantImagePacks } from '../../../hooks/useImagePacks';
@@ -207,8 +208,20 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       [handleFiles]
     );
 
+    const fileDropOverride = useAtomValue(fileDropOverrideAtom);
+    const handleDrop = useCallback(
+      (files: File[]) => {
+        if (fileDropOverride) {
+          fileDropOverride.onDrop(files);
+          return;
+        }
+        handleFiles(files);
+      },
+      [fileDropOverride, handleFiles]
+    );
+
     const pickFile = useFilePicker(handleFiles, true);
-    const dropZoneVisible = useFileDropZone(fileDropContainerRef, handleFiles, true);
+    const dropZoneVisible = useFileDropZone(fileDropContainerRef, handleDrop, true);
     const [hideStickerBtn, setHideStickerBtn] = useState(document.body.clientWidth < 500);
 
     const isComposing = useComposingCheck();
@@ -584,27 +597,8 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
         return null;
       });
       if (!blob) return;
-
       const file = new File([blob], gif.filename, { type: 'image/gif' });
-      const uploadResult = await mx.uploadContent(file, { type: 'image/gif' }).catch((e) => {
-        console.error('Failed to upload GIF to homeserver', e);
-        return null;
-      });
-      const mxcUrl = uploadResult?.content_uri;
-      if (!mxcUrl) return;
-
-      const content: RoomMessageEventContent = {
-        msgtype: MsgType.Image,
-        body: gif.filename,
-        url: mxcUrl,
-        info: {
-          mimetype: 'image/gif',
-          w: gif.renditions.original.width,
-          h: gif.renditions.original.height,
-          size: gif.renditions.original.size_bytes,
-        },
-      };
-      mx.sendMessage(roomId, content);
+      handleFiles([file]);
     };
 
     return (
@@ -625,9 +619,14 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
               >
                 <Icon size="600" src={Icons.File} />
                 <Text size="H4" align="Center">
-                  {`Drop Files in "${room?.name || 'Room'}"`}
+                  {fileDropOverride
+                    ? fileDropOverride.title
+                    : `Drop Files in "${room?.name || 'Room'}"`}
                 </Text>
-                <Text align="Center">Drag and drop files here or click for selection dialog</Text>
+                <Text align="Center">
+                  {fileDropOverride?.description ??
+                    'Drag and drop files here or click for selection dialog'}
+                </Text>
               </Box>
             </Dialog>
           </OverlayCenter>

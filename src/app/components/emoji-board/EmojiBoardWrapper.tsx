@@ -113,10 +113,12 @@ export const EmojiBoardWrapper = forwardRef<EmojiBoardWrapperHandle, EmojiBoardW
 
     const isMobile = useScreenSizeContext() === ScreenSize.Mobile;
 
+    const tabsEnabled = !!onStickerSelect || !!onGifSelect;
+
     const renderEmojiBoard = (inModal: boolean) => (
       <EmojiBoard
         tab={tab}
-        onTabChange={setTab}
+        onTabChange={tabsEnabled ? setTab : undefined}
         imagePackRooms={imagePackRooms ?? []}
         returnFocusOnDeactivate={returnFocusOnDeactivate}
         allowTextCustomEmoji={allowTextCustomEmoji}

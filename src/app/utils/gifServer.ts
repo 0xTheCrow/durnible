@@ -107,13 +107,15 @@ function listUrl(
   path: string,
   limit: number,
   pos?: string,
-  nsfw?: boolean,
+  showNsfw?: boolean,
+  showHidden?: boolean,
   mine?: boolean
 ): string {
   const url = new URL(`${GIF_SERVER_URL}${path}`);
   url.searchParams.set('limit', String(limit));
   if (pos) url.searchParams.set('pos', pos);
-  if (nsfw) url.searchParams.set('grab_nsfw', 'true');
+  if (showNsfw) url.searchParams.set('grab_nsfw', 'true');
+  if (showHidden) url.searchParams.set('grab_hidden', 'true');
   if (mine) url.searchParams.set('mine', 'true');
   return url.toString();
 }
@@ -122,13 +124,15 @@ export async function searchGifs(
   query: string,
   limit: number,
   pos?: string,
-  nsfw?: boolean
+  showNsfw?: boolean,
+  showHidden?: boolean
 ): Promise<GifListResponse> {
   const url = new URL(`${GIF_SERVER_URL}/gifs/search`);
   if (query) url.searchParams.set('q', query);
   url.searchParams.set('limit', String(limit));
   if (pos) url.searchParams.set('pos', pos);
-  if (nsfw) url.searchParams.set('grab_nsfw', 'true');
+  if (showNsfw) url.searchParams.set('grab_nsfw', 'true');
+  if (showHidden) url.searchParams.set('grab_hidden', 'true');
   const res = await gifFetch(url.toString());
   if (!res.ok) throw new Error(`GIF search failed: ${res.status}`);
   return res.json();
@@ -137,9 +141,10 @@ export async function searchGifs(
 export async function getFeaturedGifs(
   limit: number,
   pos?: string,
-  nsfw?: boolean
+  showNsfw?: boolean,
+  showHidden?: boolean
 ): Promise<GifListResponse> {
-  const res = await gifFetch(listUrl('/gifs/featured', limit, pos, nsfw));
+  const res = await gifFetch(listUrl('/gifs/featured', limit, pos, showNsfw, showHidden));
   if (!res.ok) throw new Error(`GIF featured failed: ${res.status}`);
   return res.json();
 }
@@ -147,9 +152,10 @@ export async function getFeaturedGifs(
 export async function getFavoriteGifs(
   limit: number,
   pos?: string,
-  nsfw?: boolean
+  showNsfw?: boolean,
+  showHidden?: boolean
 ): Promise<GifListResponse> {
-  const res = await gifFetch(listUrl('/gifs/favorites', limit, pos, nsfw));
+  const res = await gifFetch(listUrl('/gifs/favorites', limit, pos, showNsfw, showHidden));
   if (!res.ok) throw new Error(`GIF favorites failed: ${res.status}`);
   return res.json();
 }
@@ -157,9 +163,10 @@ export async function getFavoriteGifs(
 export async function getHistoryGifs(
   limit: number,
   pos?: string,
-  nsfw?: boolean
+  showNsfw?: boolean,
+  showHidden?: boolean
 ): Promise<GifListResponse> {
-  const res = await gifFetch(listUrl('/gifs/history', limit, pos, nsfw));
+  const res = await gifFetch(listUrl('/gifs/history', limit, pos, showNsfw, showHidden));
   if (!res.ok) throw new Error(`GIF history failed: ${res.status}`);
   return res.json();
 }
@@ -167,10 +174,21 @@ export async function getHistoryGifs(
 export async function getMyGifs(
   limit: number,
   pos?: string,
-  nsfw?: boolean
+  showNsfw?: boolean,
+  showHidden?: boolean
 ): Promise<GifListResponse> {
-  const res = await gifFetch(listUrl('/gifs/recent', limit, pos, nsfw, true));
+  const res = await gifFetch(listUrl('/gifs/recent', limit, pos, showNsfw, showHidden, true));
   if (!res.ok) throw new Error(`GIF mine failed: ${res.status}`);
+  return res.json();
+}
+
+export async function getHiddenGifs(
+  limit: number,
+  pos?: string,
+  showNsfw?: boolean
+): Promise<GifListResponse> {
+  const res = await gifFetch(listUrl('/gifs/hidden', limit, pos, showNsfw));
+  if (!res.ok) throw new Error(`GIF hidden failed: ${res.status}`);
   return res.json();
 }
 
@@ -182,6 +200,16 @@ export async function addFavorite(gifId: string): Promise<void> {
 export async function removeFavorite(gifId: string): Promise<void> {
   const res = await gifFetch(`${GIF_SERVER_URL}/gifs/${gifId}/favorite`, { method: 'DELETE' });
   if (!res.ok) throw new Error(`GIF unfavorite failed: ${res.status}`);
+}
+
+export async function addHidden(gifId: string): Promise<void> {
+  const res = await gifFetch(`${GIF_SERVER_URL}/gifs/${gifId}/hide`, { method: 'PUT' });
+  if (!res.ok) throw new Error(`GIF hide failed: ${res.status}`);
+}
+
+export async function removeHidden(gifId: string): Promise<void> {
+  const res = await gifFetch(`${GIF_SERVER_URL}/gifs/${gifId}/hide`, { method: 'DELETE' });
+  if (!res.ok) throw new Error(`GIF unhide failed: ${res.status}`);
 }
 
 export type GifMetaPatch = {

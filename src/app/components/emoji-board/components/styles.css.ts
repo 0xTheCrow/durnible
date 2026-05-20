@@ -215,6 +215,22 @@ export const StickerImg = style([
 ]);
 
 /**
+ * Tabs
+ */
+
+export const EmojiBoardTabBtn = style({
+  transition: 'background-color 80ms ease',
+  selectors: {
+    '&[data-tab-active="false"]:hover': {
+      backgroundColor: color.Secondary.ContainerHover,
+    },
+    '&[data-tab-active="true"]:hover': {
+      backgroundColor: color.Secondary.MainHover,
+    },
+  },
+});
+
+/**
  * GIF
  */
 
@@ -240,6 +256,86 @@ export const GifItem = style([
     ':hover': {
       outline: `${config.borderWidth.B300} solid ${color.Primary.Main}`,
     },
+  },
+]);
+
+export const GifUploadDropzone = style([
+  DefaultReset,
+  FocusOutline,
+  {
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    height: toRem(160),
+    overflow: 'hidden',
+    borderRadius: config.radii.R300,
+    border: `${config.borderWidth.B300} dashed ${color.Surface.ContainerLine}`,
+    backgroundColor: color.SurfaceVariant.Container,
+    color: color.SurfaceVariant.OnContainer,
+    ':hover': {
+      borderColor: color.Primary.Main,
+      color: color.Primary.Main,
+    },
+  },
+]);
+
+export const GifPreviewBox = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: '100%',
+  height: toRem(160),
+  overflow: 'hidden',
+  borderRadius: config.radii.R300,
+  border: `${config.borderWidth.B300} solid ${color.Surface.ContainerLine}`,
+  backgroundColor: color.SurfaceVariant.Container,
+});
+
+export const GifPreviewActions = style({
+  position: 'absolute',
+  bottom: config.space.S100,
+  right: config.space.S100,
+  zIndex: 1,
+  display: 'flex',
+  gap: config.space.S100,
+});
+
+const gifEditBtnBgTransition = 'background-color 80ms ease';
+
+export const GifEditBtnTransition = style({
+  transition: gifEditBtnBgTransition,
+});
+
+export const GifPreviewDeleteBtn = style({
+  backgroundColor: color.Critical.ContainerHover,
+  transition: gifEditBtnBgTransition,
+  ':hover': {
+    backgroundColor: color.Critical.Container,
+  },
+});
+
+export const GifPreviewConfirm = style({
+  position: 'absolute',
+  inset: 0,
+  zIndex: 2,
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: config.space.S500,
+  padding: config.space.S300,
+  borderRadius: config.radii.R300,
+  backgroundColor: 'rgba(0, 0, 0, 0.55)',
+});
+
+export const GifUploadDropzoneImg = style([
+  DefaultReset,
+  {
+    maxWidth: '100%',
+    maxHeight: '100%',
+    display: 'block',
   },
 ]);
 
@@ -273,4 +369,14 @@ export const GifItemActionBtn = style({
       opacity: 1,
     },
   },
+});
+
+export const GifItemHiddenBadge = style({
+  position: 'absolute',
+  bottom: config.space.S100,
+  right: config.space.S100,
+  zIndex: 1,
+  pointerEvents: 'none',
+  backgroundColor: color.Surface.Container,
+  opacity: 0.6,
 });
