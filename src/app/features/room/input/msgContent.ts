@@ -19,6 +19,7 @@ import {
   getImageInfo,
   getThumbnailContent,
   getVideoInfo,
+  probeAudioDurationMs,
 } from '../../../utils/matrix';
 import type { UploadItem } from '../../../state/room/roomInputDrafts';
 import { encodeBlurHash } from '../../../utils/blurHash';
@@ -132,8 +133,14 @@ export const getVideoMsgContent = async (
   return content;
 };
 
-export const getAudioMsgContent = (item: UploadItem, mxc: string): IContent => {
-  const { file, encryptionInfo } = item;
+export const getAudioMsgContent = async (item: UploadItem, mxc: string): Promise<IContent> => {
+  const { file, originalFile, encryptionInfo, mediaInfo } = item;
+  const audioInfo = mediaInfo?.audio;
+  const preset =
+    audioInfo?.durationMs !== undefined && Number.isFinite(audioInfo.durationMs)
+      ? Math.max(0, Math.round(audioInfo.durationMs))
+      : undefined;
+  const durationMs = preset ?? (await probeAudioDurationMs(originalFile));
   const content: IContent = {
     msgtype: MsgType.Audio,
     filename: file.name,
@@ -141,7 +148,14 @@ export const getAudioMsgContent = (item: UploadItem, mxc: string): IContent => {
     info: {
       mimetype: file.type,
       size: file.size,
+      ...(durationMs !== undefined && { duration: durationMs }),
     },
+    ...(durationMs !== undefined && {
+      'org.matrix.msc1767.audio': { duration: durationMs },
+    }),
+    ...(audioInfo?.isVoiceMessage && {
+      'org.matrix.msc3245.voice': {},
+    }),
   };
   if (encryptionInfo) {
     content.file = {

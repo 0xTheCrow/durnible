@@ -20,6 +20,7 @@ export const useMediaSeek = (
     (time: number) => {
       const targetEl = getTargetElement();
       if (!targetEl) return;
+      if (!Number.isFinite(time)) return;
       targetEl.currentTime = time;
     },
     [getTargetElement]

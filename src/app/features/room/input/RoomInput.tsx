@@ -64,7 +64,7 @@ import { UploadQueue } from '../../../components/upload-queue';
 import type { Upload, UploadSuccess } from '../../../state/upload';
 import { UploadStatus, createUploadFamilyObserverAtom } from '../../../state/upload';
 import { getImageUrlBlob, loadImageElement } from '../../../utils/dom';
-import { handleUploadFiles } from './handleUploadFiles';
+import { handleUploadFiles, type UploadFileInput } from './handleUploadFiles';
 import { encryptAndReplace } from './encryptAndReplace';
 import { safeFile } from '../../../utils/mimeTypes';
 import { fulfilledPromiseSettledResult } from '../../../utils/common';
@@ -181,7 +181,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     const sendTypingStatus = useTypingStatusUpdater(mx, roomId);
 
     const handleFiles = useCallback(
-      (files: File[]) => {
+      (files: UploadFileInput[]) => {
         handleUploadFiles(files, {
           currentItemCount: selectedFiles.length,
           setItems: setSelectedFiles,
@@ -195,7 +195,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       [setSelectedFiles, room, selectedFiles.length, editorInputRef]
     );
     const handleVoiceSend = useCallback(
-      (blob: Blob, mimeType: string, _duration: number) => {
+      (blob: Blob, mimeType: string, duration: number) => {
         setIsVoiceRecording(false);
         const ext = mimeType.startsWith('audio/ogg')
           ? 'ogg'
@@ -203,7 +203,17 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
           ? 'm4a'
           : 'webm';
         const file = new File([blob], `voice-message.${ext}`, { type: mimeType });
-        handleFiles([file]);
+        handleFiles([
+          {
+            file,
+            mediaInfo: {
+              audio: {
+                durationMs: duration * 1000,
+                isVoiceMessage: true,
+              },
+            },
+          },
+        ]);
       },
       [handleFiles]
     );

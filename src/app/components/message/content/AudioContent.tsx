@@ -99,7 +99,7 @@ export function AudioContent({
       <Range
         step={1}
         min={0}
-        max={duration || 1}
+        max={Number.isFinite(duration) && duration > 0 ? duration : 1}
         values={[currentTime]}
         onChange={(values) => seek(values[0])}
         renderTrack={(params) => (

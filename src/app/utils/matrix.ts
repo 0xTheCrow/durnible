@@ -71,6 +71,64 @@ export const getVideoInfo = (video: HTMLVideoElement, fileOrBlob: File | Blob): 
   return info;
 };
 
+const AUDIO_PROBE_TIMEOUT_MS = 5000;
+const AUDIO_INFINITY_SEEK_TARGET = Number.MAX_SAFE_INTEGER;
+
+const readFiniteDurationMs = (durationSeconds: number): number | undefined => {
+  if (!Number.isFinite(durationSeconds) || durationSeconds <= 0) return undefined;
+  return Math.max(0, Math.round(durationSeconds * 1000));
+};
+
+export const probeAudioDurationMs = (file: File): Promise<number | undefined> =>
+  new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const audio = document.createElement('audio');
+    audio.preload = 'metadata';
+
+    let settled = false;
+    const cleanup = () => {
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      audio.removeEventListener('durationchange', handleDurationChange);
+      audio.removeEventListener('error', handleError);
+      clearTimeout(timeoutId);
+      URL.revokeObjectURL(url);
+    };
+    const finish = (result: number | undefined) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve(result);
+    };
+    function handleLoadedMetadata() {
+      const ms = readFiniteDurationMs(audio.duration);
+      if (ms !== undefined) {
+        finish(ms);
+        return;
+      }
+      if (audio.duration === Infinity) {
+        audio.currentTime = AUDIO_INFINITY_SEEK_TARGET;
+        return;
+      }
+      finish(undefined);
+    }
+    function handleDurationChange() {
+      const ms = readFiniteDurationMs(audio.duration);
+      if (ms !== undefined) finish(ms);
+    }
+    function handleError() {
+      finish(undefined);
+    }
+
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+    audio.addEventListener('durationchange', handleDurationChange);
+    audio.addEventListener('error', handleError);
+
+    const timeoutId = setTimeout(() => finish(undefined), AUDIO_PROBE_TIMEOUT_MS);
+
+    audio.src = url;
+    audio.load();
+  });
+
 export const getThumbnailContent = (thumbnailInfo: {
   thumbnail: File | Blob;
   encryptionInfo: EncryptedAttachmentInfo | undefined;

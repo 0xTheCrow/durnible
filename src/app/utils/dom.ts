@@ -172,6 +172,31 @@ export const loadVideoElement = (url: string): Promise<HTMLVideoElement> =>
     video.load();
   });
 
+export const loadAudioElement = (url: string): Promise<HTMLAudioElement> =>
+  new Promise((resolve, reject) => {
+    const audio = document.createElement('audio');
+    audio.preload = 'metadata';
+
+    const cleanup = () => {
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      audio.removeEventListener('error', handleError);
+    };
+    function handleLoadedMetadata() {
+      cleanup();
+      resolve(audio);
+    }
+    function handleError(e: Event) {
+      cleanup();
+      reject(e);
+    }
+
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+    audio.addEventListener('error', handleError);
+
+    audio.src = url;
+    audio.load();
+  });
+
 export const getThumbnailDimensions = (width: number, height: number): [number, number] => {
   const MAX_WIDTH = 400;
   const MAX_HEIGHT = 300;
