@@ -456,6 +456,89 @@ export const isEditorEmpty = (el: HTMLElement): boolean => {
   return true;
 };
 
+const ROOT_BLOCK_TAGS = new Set([
+  'DIV',
+  'P',
+  'H1',
+  'H2',
+  'H3',
+  'H4',
+  'H5',
+  'H6',
+  'BLOCKQUOTE',
+  'PRE',
+  'OL',
+  'UL',
+  'LI',
+]);
+
+const isRootBlock = (node: Node): boolean =>
+  node.nodeType === Node.ELEMENT_NODE && ROOT_BLOCK_TAGS.has((node as HTMLElement).tagName);
+
+// The serializer (domToPlainText / domToMatrixCustomHTML) emits a line separator
+// after a block element but nothing around a bare text or inline node. So a root
+// that mixes blocks with bare inline siblings — e.g. `<div>a</div>b<div>c</div>`,
+// which the browser's native contentEditable handling can produce — serializes
+// with the inline run silently joined to its neighbor. Wrapping each maximal run
+// of inline siblings in its own block restores a uniform structure. Returns true
+// if it mutated the DOM. Reparents existing nodes, so the caret is captured and
+// restored around the move.
+export const normalizeEditorRoot = (element: HTMLElement): boolean => {
+  const children = Array.from(element.childNodes);
+  const hasBlock = children.some(isRootBlock);
+  const hasInline = children.some((node) => !isRootBlock(node));
+  if (!hasBlock || !hasInline) return false;
+
+  const selection = window.getSelection();
+  let caret: { node: Node; offset: number } | null = null;
+  if (selection && selection.rangeCount > 0) {
+    const range = selection.getRangeAt(0);
+    if (
+      range.collapsed &&
+      range.startContainer !== element &&
+      element.contains(range.startContainer)
+    ) {
+      caret = { node: range.startContainer, offset: range.startOffset };
+    }
+  }
+
+  let run: Node[] = [];
+  const flushRun = () => {
+    if (run.length === 0) return;
+    const block = document.createElement('div');
+    element.insertBefore(block, run[0]);
+    run.forEach((node) => block.appendChild(node));
+    run = [];
+  };
+  children.forEach((child) => {
+    if (isRootBlock(child)) {
+      flushRun();
+    } else {
+      run.push(child);
+    }
+  });
+  flushRun();
+
+  if (caret && caret.node.isConnected) {
+    const range = document.createRange();
+    range.setStart(caret.node, caret.offset);
+    range.collapse(true);
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+  }
+
+  return true;
+};
+
+// Parse the draft as-is; routing it through htmlToEditorDom/sanitize strips the
+// internal void-node attributes and flattens mentions/emojis to text.
+export const restoreEditorDraft = (element: HTMLElement, html: string): void => {
+  const template = document.createElement('template');
+  template.innerHTML = html;
+  element.replaceChildren(template.content);
+  normalizeEditorRoot(element);
+};
+
 export const htmlToEditorDom = (html: string, ctx: HtmlToAltInputCtx): DocumentFragment => {
   const sanitized = sanitizeCustomHtml(html);
   const parsed = parse(sanitized) as ChildNode[];
