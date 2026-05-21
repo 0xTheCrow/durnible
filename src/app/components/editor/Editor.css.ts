@@ -65,8 +65,10 @@ export const AlternateInput = style([
   DefaultReset,
   {
     flexGrow: 1,
-    height: '100%',
+    minHeight: toRem(48),
     padding: `${toRem(13)} ${toRem(1)}`,
+    fontSize: toRem(16),
+    lineHeight: config.lineHeight.T400,
     whiteSpace: 'pre-wrap',
     wordBreak: 'break-word',
     selectors: {
