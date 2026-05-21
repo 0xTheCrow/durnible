@@ -40,6 +40,7 @@ import {
   replaceShortcodesInDom,
   getCommandFromDom,
   isEditorEmpty,
+  restoreEditorDraft,
   isInsideList,
   handleListEnter,
   isSubmitEnterHotkey,
@@ -167,6 +168,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     uploadsRef.current = useAtomValue(uploadFamilyObserverAtom);
     const sendingUploadsRef = useRef(false);
     const uploadsReplyDraftRef = useRef<typeof replyDraft>(undefined);
+    const latestDraftRef = useRef('');
 
     const imagePackRooms: Room[] = useImagePackRooms(roomId, roomToParents);
     const imagePacks = useRelevantImagePacks(ImageUsage.Emoticon, imagePackRooms);
@@ -219,21 +221,17 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     useEffect(() => {
       const el = editorInputRef.current?.el;
       if (el && editorDraft) {
-        el.innerHTML = editorDraft;
+        restoreEditorDraft(el, editorDraft);
         setHasEditorContent(!isEditorEmpty(el));
+        latestDraftRef.current = isEditorEmpty(el) ? '' : el.innerHTML;
       }
     }, [editorDraft, editorInputRef]);
 
     useEffect(
       () => () => {
-        const el = editorInputRef.current?.el;
-        if (el && !isEditorEmpty(el)) {
-          setEditorDraft(el.innerHTML);
-        } else {
-          setEditorDraft('');
-        }
+        setEditorDraft(latestDraftRef.current);
       },
-      [roomId, editorInputRef, setEditorDraft]
+      [setEditorDraft]
     );
 
     const handleFileMetadata = useCallback(
@@ -487,7 +485,9 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
 
     const handleEditorChange = useCallback(() => {
       const el = editorInputRef.current?.el;
-      setHasEditorContent(el ? !isEditorEmpty(el) : false);
+      const empty = el ? isEditorEmpty(el) : true;
+      setHasEditorContent(!empty);
+      latestDraftRef.current = el && !empty ? el.innerHTML : '';
     }, [editorInputRef]);
 
     const editorAutocomplete = useEditorAutocomplete({

@@ -13,6 +13,7 @@ import {
   htmlToEditorDom,
   insertNodeAtRange,
   isEditorEmpty,
+  normalizeEditorRoot,
 } from './editorInput';
 import { handleEditorShortcut } from './editorKeyboard';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
@@ -144,9 +145,16 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
       };
     }, []);
 
-    const handleInput: FormEventHandler<HTMLDivElement> = useCallback(() => {
-      syncEditorState();
-    }, [syncEditorState]);
+    const handleInput: FormEventHandler<HTMLDivElement> = useCallback(
+      (evt) => {
+        const el = inputRef.current;
+        if (el && !(evt.nativeEvent as InputEvent).isComposing) {
+          normalizeEditorRoot(el);
+        }
+        syncEditorState();
+      },
+      [syncEditorState]
+    );
 
     const fetchUrlAsFile = useCallback(
       (url: string) => {
