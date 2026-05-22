@@ -10,7 +10,7 @@ Build the app with `npm run build` and serve the files from `dist/` using your p
 
 * The default homeservers and explore pages are defined in [`config.json`](config.json).
 
-* You need to set up redirects to serve the assets. Example configurations: [netlify](netlify.toml), [nginx](contrib/nginx/durnible.domain.tld.conf), [caddy](contrib/caddy/caddyfile).
+* You need to set up redirects to serve the assets. Example configurations: [nginx](contrib/nginx/durnible.domain.tld.conf), [caddy](contrib/caddy/caddyfile).
     * If you have trouble configuring redirects you can [enable hash routing](config.json#L35) — the url in the browser will have a `/#/` between the domain and open channel (ie. `app.example.com/#/home/` instead of `app.example.com/home/`) but you won't have to configure your webserver.
 
 * To deploy on a subdirectory, rebuild the app after updating the `base` path in [`build.config.ts`](build.config.ts).

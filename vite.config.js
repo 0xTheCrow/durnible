@@ -14,16 +14,13 @@ import buildConfig from './build.config';
 const copyFiles = {
   targets: [
     {
-      src: 'netlify.toml',
-      dest: '',
-    },
-    {
       src: 'config.json',
       dest: '',
     },
     {
       src: 'public/manifest.json',
       dest: '',
+      rename: { stripBase: 1 },
     },
     {
       src: 'public/res/android',
