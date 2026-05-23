@@ -1,9 +1,28 @@
 /// <reference lib="WebWorker" />
 
 import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
+import { CacheExpiration } from 'workbox-expiration';
+import type { MediaCacheBucket } from './app/utils/mediaCache';
+import {
+  MEDIA_CACHE_PREFIX,
+  MEDIA_CACHE_BUCKETS,
+  getCachedMediaTarget,
+} from './app/utils/mediaCache';
 
 export type {};
 declare const self: ServiceWorkerGlobalScope;
+
+const expirationByBucket = new Map<MediaCacheBucket, CacheExpiration>();
+const getExpiration = (bucket: MediaCacheBucket): CacheExpiration => {
+  let expiration = expirationByBucket.get(bucket);
+  if (!expiration) {
+    expiration = new CacheExpiration(MEDIA_CACHE_BUCKETS[bucket].cacheName, {
+      maxEntries: MEDIA_CACHE_BUCKETS[bucket].maxEntries,
+    });
+    expirationByBucket.set(bucket, expiration);
+  }
+  return expiration;
+};
 
 // Precache all assets built by Vite (injected by vite-plugin-pwa at build time).
 // This ensures lazy-loaded chunks survive deploys.
@@ -38,8 +57,60 @@ function fetchConfig(token?: string): RequestInit | undefined {
   };
 }
 
+async function getAccessToken(event: FetchEvent): Promise<string | undefined> {
+  const client = await self.clients.get(event.clientId);
+  if (client) {
+    // Controlled client: ask for the live token and keep storedToken up to date.
+    const token = await askForAccessToken(client);
+    storedToken = token;
+    return token;
+  }
+  // Uncontrolled client (e.g. hard refresh): the bidirectional message channel
+  // between SW and page is unreliable, so use the token pushed by the page via
+  // the 'setToken' message sent from navigator.serviceWorker.ready.then().
+  return storedToken;
+}
+
+async function handleCachedMedia(
+  event: FetchEvent,
+  target: { cacheKey: string; bucket: MediaCacheBucket }
+): Promise<Response> {
+  const { cacheKey, bucket } = target;
+  const expiration = getExpiration(bucket);
+  const cache = await caches.open(MEDIA_CACHE_BUCKETS[bucket].cacheName);
+  const cached = await cache.match(cacheKey);
+  if (cached) {
+    event.waitUntil(expiration.updateTimestamp(cacheKey).then(() => expiration.expireEntries()));
+    return cached;
+  }
+
+  const token = await getAccessToken(event);
+  const response = await fetch(cacheKey, fetchConfig(token));
+  // cache.put() rejects on redirected responses (e.g. CDN-backed media), so skip those.
+  if (response.ok && !response.redirected) {
+    try {
+      await cache.put(cacheKey, response.clone());
+      event.waitUntil(expiration.updateTimestamp(cacheKey).then(() => expiration.expireEntries()));
+    } catch {
+      // Caching is best-effort; a write failure must not break image loading.
+    }
+  }
+  return response;
+}
+
 self.addEventListener('activate', (event: ExtendableEvent) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    (async () => {
+      const currentNames = Object.values(MEDIA_CACHE_BUCKETS).map((bucket) => bucket.cacheName);
+      const cacheNames = await caches.keys();
+      await Promise.all(
+        cacheNames
+          .filter((name) => name.startsWith(MEDIA_CACHE_PREFIX) && !currentNames.includes(name))
+          .map((name) => caches.delete(name))
+      );
+      await self.clients.claim();
+    })()
+  );
 });
 
 self.addEventListener('message', (event: ExtendableMessageEvent) => {
@@ -54,6 +125,13 @@ self.addEventListener('message', (event: ExtendableMessageEvent) => {
 self.addEventListener('fetch', (event: FetchEvent) => {
   const { url, method } = event.request;
   if (method !== 'GET') return;
+
+  const cachedMediaTarget = getCachedMediaTarget(url);
+  if (cachedMediaTarget) {
+    event.respondWith(handleCachedMedia(event, cachedMediaTarget));
+    return;
+  }
+
   if (
     !url.includes('/_matrix/client/v1/media/download') &&
     !url.includes('/_matrix/client/v1/media/thumbnail')
@@ -62,19 +140,7 @@ self.addEventListener('fetch', (event: FetchEvent) => {
   }
   event.respondWith(
     (async (): Promise<Response> => {
-      const client = await self.clients.get(event.clientId);
-      let token: string | undefined;
-      if (client) {
-        // Controlled client: ask for the live token and keep storedToken up to date.
-        token = await askForAccessToken(client);
-        storedToken = token;
-      } else {
-        // Uncontrolled client (e.g. hard refresh): the bidirectional message channel
-        // between SW and page is unreliable, so use the token pushed by the page via
-        // the 'setToken' message sent from navigator.serviceWorker.ready.then().
-        token = storedToken;
-      }
-
+      const token = await getAccessToken(event);
       return fetch(url, fetchConfig(token));
     })()
   );

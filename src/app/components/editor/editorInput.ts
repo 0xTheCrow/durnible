@@ -3,7 +3,7 @@ import parse from 'html-dom-parser';
 import type { ChildNode, Element } from 'domhandler';
 import { isText, isTag } from 'domhandler';
 import * as css from '../../styles/CustomHtml.css';
-import { mxcUrlToHttp } from '../../utils/matrix';
+import { mxcUrlToEmojiHttp } from '../../utils/matrix';
 import { sanitizeCustomHtml } from '../../utils/sanitize';
 import {
   parseMatrixToRoom,
@@ -53,7 +53,7 @@ export const createEmoticonNode = ({
   if (key.startsWith('mxc://')) {
     const img = document.createElement('img');
     img.className = css.EmoticonImg;
-    img.src = mxcUrlToHttp(mx, key, useAuthentication) ?? key;
+    img.src = mxcUrlToEmojiHttp(mx, key, useAuthentication) ?? key;
     img.alt = shortcode;
     wrapper.appendChild(img);
   } else {

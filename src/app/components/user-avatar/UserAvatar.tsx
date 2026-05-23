@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import classNames from 'classnames';
 import * as css from './UserAvatar.css';
 import colorMXID from '../../../util/colorMXID';
+import { markCachedMediaUrl } from '../../utils/mediaCache';
 
 type UserAvatarProps = {
   className?: string;
@@ -33,7 +34,7 @@ export function UserAvatar({ className, userId, src, alt, renderFallback }: User
   return (
     <AvatarImage
       className={classNames(css.UserAvatar, className)}
-      src={src}
+      src={markCachedMediaUrl(src, 'avatar')}
       alt={alt}
       onError={() => setError(true)}
       onLoad={handleLoad}
