@@ -1,11 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import { wasm } from '@rollup/plugin-wasm';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
-import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfill';
-import inject from '@rollup/plugin-inject';
-import topLevelAwait from 'vite-plugin-top-level-await';
 import { VitePWA } from 'vite-plugin-pwa';
 import fs from 'fs';
 import path from 'path';
@@ -14,16 +10,13 @@ import buildConfig from './build.config';
 const copyFiles = {
   targets: [
     {
-      src: 'netlify.toml',
-      dest: '',
-    },
-    {
       src: 'config.json',
       dest: '',
     },
     {
       src: 'public/manifest.json',
       dest: '',
+      rename: { stripBase: 1 },
     },
     {
       src: 'public/res/android',
@@ -69,6 +62,9 @@ export default defineConfig({
   appType: 'spa',
   publicDir: false,
   base: buildConfig.base,
+  define: {
+    global: 'globalThis',
+  },
   server: {
     port: 8080,
     host: true,
@@ -79,15 +75,8 @@ export default defineConfig({
   },
   plugins: [
     serverMatrixSdkCryptoWasm('/node_modules/.vite/deps/pkg/matrix_sdk_crypto_wasm_bg.wasm'),
-    topLevelAwait({
-      // The export name of top-level await promise for each chunk module
-      promiseExportName: '__tla',
-      // The function to generate import names of top-level await promise in each chunk module
-      promiseImportName: (i) => `__tla_${i}`,
-    }),
     viteStaticCopy(copyFiles),
     vanillaExtractPlugin({ identifiers: 'debug' }),
-    wasm(),
     react(),
     VitePWA({
       srcDir: 'src',
@@ -105,26 +94,13 @@ export default defineConfig({
       },
     }),
   ],
-  optimizeDeps: {
-    esbuildOptions: {
-      define: {
-        global: 'globalThis',
-      },
-      plugins: [
-        // Enable esbuild polyfill plugins
-        NodeGlobalsPolyfillPlugin({
-          process: false,
-          buffer: true,
-        }),
-      ],
-    },
-  },
   build: {
     outDir: 'dist',
+    target: 'es2022',
     sourcemap: true,
     copyPublicDir: false,
     rollupOptions: {
-      plugins: [inject({ Buffer: ['buffer', 'Buffer'] })],
+      inject: { Buffer: ['buffer', 'Buffer'] },
     },
   },
 });

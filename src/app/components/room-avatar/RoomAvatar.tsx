@@ -5,6 +5,7 @@ import React, { forwardRef, useState } from 'react';
 import * as css from './RoomAvatar.css';
 import { joinRuleToIconSrc } from '../../utils/room';
 import colorMXID from '../../../util/colorMXID';
+import { markCachedMediaUrl } from '../../utils/mediaCache';
 
 type RoomAvatarProps = {
   roomId: string;
@@ -33,7 +34,7 @@ export function RoomAvatar({ roomId, src, alt, renderFallback }: RoomAvatarProps
   return (
     <AvatarImage
       className={css.RoomAvatar}
-      src={src}
+      src={markCachedMediaUrl(src, 'avatar')}
       alt={alt}
       onError={() => setError(true)}
       onLoad={handleLoad}

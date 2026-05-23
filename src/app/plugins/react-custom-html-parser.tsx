@@ -18,6 +18,7 @@ import {
   getCanonicalAliasRoomId,
   isRoomAlias,
   mxcUrlToHttp,
+  mxcUrlToEmojiHttp,
 } from '../utils/matrix';
 import { getMemberDisplayName } from '../utils/room';
 import { EMOJI_PATTERN, sanitizeForRegex, URL_NEG_LB } from '../utils/regex';
@@ -521,7 +522,7 @@ export const getReactCustomHtmlParser = (
                 <AnimatedEmojiOverlay
                   {...props}
                   className={css.EmoticonImg}
-                  src={htmlSrc}
+                  src={mxcUrlToEmojiHttp(mx, props.src, params.useAuthentication) ?? htmlSrc}
                   pauseGifs={params.pauseGifs ?? false}
                 />
               </span>

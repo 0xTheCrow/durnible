@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { MatrixClient } from 'matrix-js-sdk';
 import type * as MatrixUtils from '../../utils/matrix';
+import type * as MediaCacheUtils from '../../utils/mediaCache';
 import {
   createEmoticonNode,
   createMentionNode,
@@ -15,13 +16,22 @@ import {
   EMOTICON_NODE,
 } from './editorInput';
 import { domToPlainText } from './editorOutput';
+import { markCachedMediaUrl } from '../../utils/mediaCache';
 
 vi.mock('../../utils/matrix', async () => {
   const actual = (await vi.importActual('../../utils/matrix')) as typeof MatrixUtils;
+  const { markCachedMediaUrl: mark } = await vi.importActual<typeof MediaCacheUtils>(
+    '../../utils/mediaCache'
+  );
+  const mockHttp = (key: string): string | null =>
+    key.startsWith('mxc://') ? `https://example.com/${key.slice(6)}` : null;
   return {
     ...actual,
-    mxcUrlToHttp: (_mx: unknown, key: string) =>
-      key.startsWith('mxc://') ? `https://example.com/${key.slice(6)}` : null,
+    mxcUrlToHttp: (_mx: unknown, key: string) => mockHttp(key),
+    mxcUrlToEmojiHttp: (_mx: unknown, key: string) => {
+      const httpUrl = mockHttp(key);
+      return httpUrl ? mark(httpUrl, 'emoji') : null;
+    },
   };
 });
 
@@ -44,7 +54,9 @@ describe('createEmoticonNode', () => {
 
     const img = node.querySelector('img');
     expect(img).not.toBeNull();
-    expect(img?.getAttribute('src')).toBe('https://example.com/example.com/abc');
+    expect(img?.getAttribute('src')).toBe(
+      markCachedMediaUrl('https://example.com/example.com/abc', 'emoji')
+    );
     expect(img?.getAttribute('alt')).toBe('wave');
   });
 

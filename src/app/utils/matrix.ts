@@ -13,6 +13,7 @@ import to from 'await-to-js';
 import type { ImageInfo, ThumbnailContent, VideoInfo } from '../../types/matrix/common';
 import { getStateEvent } from './room';
 import { Membership, StateEvent } from '../../types/matrix/room';
+import { markCachedMediaUrl } from './mediaCache';
 
 const DOMAIN_REGEX = /\b(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}\b/;
 
@@ -349,6 +350,15 @@ export const mxcUrlToHttp = (
     allowRedirects,
     useAuthentication
   );
+
+export const mxcUrlToEmojiHttp = (
+  mx: MatrixClient,
+  mxcUrl: string,
+  useAuthentication?: boolean
+): string | null => {
+  const httpUrl = mxcUrlToHttp(mx, mxcUrl, useAuthentication);
+  return httpUrl ? markCachedMediaUrl(httpUrl, 'emoji') : null;
+};
 
 export const downloadMedia = async (src: string): Promise<Blob> => {
   // this request is authenticated by service worker

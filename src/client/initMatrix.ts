@@ -5,6 +5,15 @@ import { logger } from 'matrix-js-sdk/lib/logger';
 import { cryptoCallbacks } from './secretStorageKeys';
 import { clearNavToActivePathStore } from '../app/state/navToActivePath';
 import { startupMark } from '../app/utils/startupPerf';
+import { MEDIA_CACHE_BUCKETS } from '../app/utils/mediaCache';
+
+const clearCachedMedia = async (): Promise<void> => {
+  if ('caches' in window) {
+    await Promise.all(
+      Object.values(MEDIA_CACHE_BUCKETS).map((bucket) => caches.delete(bucket.cacheName))
+    );
+  }
+};
 
 (logger as unknown as { setLevel: (level: string) => void }).setLevel('warn');
 
@@ -75,6 +84,7 @@ export const logoutClient = async (mx: MatrixClient) => {
     // ignore if failed to logout
   }
   await mx.clearStores();
+  await clearCachedMedia();
   window.localStorage.clear();
   window.location.reload();
 };
@@ -89,6 +99,7 @@ export const clearLoginData = async () => {
     }
   });
 
+  await clearCachedMedia();
   window.localStorage.clear();
   window.location.reload();
 };
