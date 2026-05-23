@@ -91,6 +91,7 @@ export type MessageProps = {
   mentionHighlight?: boolean;
   edit?: boolean;
   canDelete?: boolean;
+  groupedEventIds?: string[];
   canSendReaction?: boolean;
   canPinEvent?: boolean;
   imagePackRooms?: Room[];
@@ -126,6 +127,7 @@ export const Message = as<'div', MessageProps>(
       mentionHighlight,
       edit,
       canDelete,
+      groupedEventIds,
       canSendReaction,
       canPinEvent,
       imagePackRooms,
@@ -607,6 +609,7 @@ export const Message = as<'div', MessageProps>(
                                 <MessageDeleteItem
                                   room={room}
                                   mEvent={mEvent}
+                                  groupedEventIds={groupedEventIds}
                                   onClose={closeMenu}
                                 />
                               )}

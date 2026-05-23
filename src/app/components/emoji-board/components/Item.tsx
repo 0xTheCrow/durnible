@@ -6,7 +6,7 @@ import { EmojiType } from '../types';
 import * as css from './styles.css';
 import type { PackImageReader } from '../../../plugins/custom-emoji';
 import type { Emoji } from '../../../plugins/emoji';
-import { mxcUrlToHttp } from '../../../utils/matrix';
+import { mxcUrlToEmojiHttp } from '../../../utils/matrix';
 
 const handleImgLoad: ReactEventHandler<HTMLImageElement> = (evt) => {
   evt.currentTarget.setAttribute('data-image-loaded', 'true');
@@ -73,7 +73,7 @@ export function CustomEmojiItem({ mx, useAuthentication, image }: CustomEmojiIte
         loading="lazy"
         className={css.CustomEmojiImg}
         alt={image.body || image.shortcode}
-        src={mxcUrlToHttp(mx, image.url, useAuthentication) ?? image.url}
+        src={mxcUrlToEmojiHttp(mx, image.url, useAuthentication) ?? image.url}
         onLoad={handleImgLoad}
         draggable={false}
       />
@@ -105,7 +105,7 @@ export function StickerItem({ mx, useAuthentication, image }: StickerItemProps) 
         loading="lazy"
         className={css.StickerImg}
         alt={image.body || image.shortcode}
-        src={mxcUrlToHttp(mx, image.url, useAuthentication) ?? image.url}
+        src={mxcUrlToEmojiHttp(mx, image.url, useAuthentication) ?? image.url}
         onLoad={handleImgLoad}
         draggable={false}
       />

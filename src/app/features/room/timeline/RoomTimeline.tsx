@@ -1026,6 +1026,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
                   item={d.item}
                   collapsed={d.collapsed}
                   groupedImages={d.groupedImages}
+                  groupedEventIds={d.groupedEventIds}
                   isHighlighted={focusItem?.eventId === d.mEventId && !!focusItem.highlight}
                   isEditing={editId === d.mEventId}
                   reactionRelations={getEventReactions(d.timelineSet, d.mEventId)}

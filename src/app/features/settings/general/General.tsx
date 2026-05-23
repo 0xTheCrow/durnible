@@ -493,6 +493,10 @@ function Messages() {
 function Advanced() {
   const [pwaMode, setPwaMode] = useSetting(settingsAtom, 'pwaMode');
   const [swipeGestures, setSwipeGestures] = useSetting(settingsAtom, 'swipeGestures');
+  const [altMobileKeyboardAdjustment, setAltMobileKeyboardAdjustment] = useSetting(
+    settingsAtom,
+    'altMobileKeyboardAdjustment'
+  );
 
   return (
     <Box direction="Column" gap="100">
@@ -502,6 +506,19 @@ function Advanced() {
           title="Swipe Gestures"
           description="Enable swipe gestures on mobile and tablet, such as swiping to open the room drawer."
           after={<Switch variant="Primary" value={swipeGestures} onChange={setSwipeGestures} />}
+        />
+      </SequenceCard>
+      <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
+        <SettingTile
+          title="Alt Mobile Keyboard Adjustment"
+          description="Disables the keyboard height adjustment on iOS and lets the browser handle it natively. Try this if you see a large empty space when the keyboard opens on iPhone or iPad."
+          after={
+            <Switch
+              variant="Primary"
+              value={altMobileKeyboardAdjustment}
+              onChange={setAltMobileKeyboardAdjustment}
+            />
+          }
         />
       </SequenceCard>
       <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">

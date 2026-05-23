@@ -1,15 +1,13 @@
 import { MsgType } from 'matrix-js-sdk';
 import type { EventTimelineSet, MatrixEvent } from 'matrix-js-sdk';
 import type { ImageContent } from '../../types/matrix/common';
+import {
+  MATRIX_BATCH_ID_PROPERTY_NAME,
+  MATRIX_BATCH_INDEX_PROPERTY_NAME,
+} from '../../types/matrix/common';
 import { MessageEvent } from '../../types/matrix/room';
 import { reactionOrEditEvent } from './room';
 import { inSameDay, minuteDifference } from './time';
-
-/**
- * Maximum time gap (ms) between two consecutive image messages from the same
- * sender that still allows them to be merged into a single image-grid message.
- */
-export const IMAGE_GROUP_WINDOW_MS = 1000;
 
 /**
  * Maximum number of images that can be merged into a single image-grid
@@ -45,17 +43,19 @@ export type TimelineItem =
       /**
        * When set, this event is the anchor of an image group and the array
        * contains the image contents of every event in the group (including
-       * the anchor's own content) in chronological order. The anchor renders
+       * the anchor's own content) in batch_index order. The anchor renders
        * the entire grid; the other events in the group are filtered out of
        * the timeline output.
        */
       groupedImages?: ImageContent[];
+      groupedEventIds?: string[];
     }
   | { type: 'new-messages'; key: string }
   | { type: 'day-divider'; key: string; ts: number };
 
 export type ImageGroupsSnapshot = {
   imageGroups: Map<string, ImageContent[]>;
+  groupEventIds: Map<string, string[]>;
   absorbedToAnchor: Map<string, string>;
 };
 
@@ -83,6 +83,7 @@ export const computeImageGroups = (
   willRender: (mEvent: MatrixEvent) => boolean = (mEvent) => !reactionOrEditEvent(mEvent)
 ): ImageGroupsSnapshot => {
   const imageGroups = new Map<string, ImageContent[]>();
+  const groupEventIds = new Map<string, string[]>();
   const absorbedToAnchor = new Map<string, string>();
 
   for (let i = 0; i < events.length; i += 1) {
@@ -91,40 +92,74 @@ export const computeImageGroups = (
     if (!willRender(anchor.mEvent)) continue;
     if (!isPlainImageEvent(anchor.mEvent)) continue;
 
-    const groupContents: ImageContent[] = [anchor.mEvent.getContent() as ImageContent];
-    const groupIds: string[] = [];
+    const anchorContent = anchor.mEvent.getContent() as ImageContent;
+    const anchorBatchId = anchorContent[MATRIX_BATCH_ID_PROPERTY_NAME];
+    if (typeof anchorBatchId !== 'string') continue;
+
+    type GroupMember = { content: ImageContent; eventId: string };
+    const members: GroupMember[] = [{ content: anchorContent, eventId: anchor.mEventId }];
+    const absorbedIds: string[] = [];
     let lastTs = anchor.mEvent.getTs();
     const sender = anchor.mEvent.getSender();
 
-    for (let j = i + 1; j < events.length && groupContents.length < IMAGE_GROUP_MAX_SIZE; j += 1) {
+    for (let j = i + 1; j < events.length && members.length < IMAGE_GROUP_MAX_SIZE; j += 1) {
       const next = events[j];
       // Invisible events (reactions, edits) don't break a run.
       if (!willRender(next.mEvent)) continue;
       if (!isPlainImageEvent(next.mEvent)) break;
       if (next.mEvent.getSender() !== sender) break;
       const nextTs = next.mEvent.getTs();
-      if (nextTs - lastTs > IMAGE_GROUP_WINDOW_MS) break;
       // Day-boundary merges would hide the day-divider inside the group.
       if (!inSameDay(lastTs, nextTs)) break;
-      groupContents.push(next.mEvent.getContent() as ImageContent);
-      groupIds.push(next.mEventId);
+      const nextContent = next.mEvent.getContent() as ImageContent;
+      if (nextContent[MATRIX_BATCH_ID_PROPERTY_NAME] !== anchorBatchId) break;
+      members.push({ content: nextContent, eventId: next.mEventId });
+      absorbedIds.push(next.mEventId);
       lastTs = nextTs;
     }
 
-    if (groupContents.length > 1) {
-      imageGroups.set(anchor.mEventId, groupContents);
-      groupIds.forEach((id) => absorbedToAnchor.set(id, anchor.mEventId));
+    if (members.length > 1) {
+      // Render order follows batch_index, not timeline order — a homeserver
+      // tie-break on identical origin_server_ts would otherwise scramble the grid.
+      members.sort(
+        (a, b) =>
+          (a.content[MATRIX_BATCH_INDEX_PROPERTY_NAME] ?? 0) -
+          (b.content[MATRIX_BATCH_INDEX_PROPERTY_NAME] ?? 0)
+      );
+      imageGroups.set(
+        anchor.mEventId,
+        members.map((m) => m.content)
+      );
+      groupEventIds.set(
+        anchor.mEventId,
+        members.map((m) => m.eventId)
+      );
+      absorbedIds.forEach((id) => absorbedToAnchor.set(id, anchor.mEventId));
     }
   }
 
-  return { imageGroups, absorbedToAnchor };
+  return { imageGroups, groupEventIds, absorbedToAnchor };
+};
+
+const sameStringArray = (a: string[] | undefined, b: string[] | undefined): boolean => {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
 };
 
 export const groupsEqual = (a: ImageGroupsSnapshot, b: ImageGroupsSnapshot): boolean => {
   if (a.imageGroups.size !== b.imageGroups.size) return false;
+  if (a.groupEventIds.size !== b.groupEventIds.size) return false;
   if (a.absorbedToAnchor.size !== b.absorbedToAnchor.size) return false;
   for (const [k, v] of a.imageGroups) {
     if (!sameGroupedImages(v, b.imageGroups.get(k))) return false;
+  }
+  for (const [k, v] of a.groupEventIds) {
+    if (!sameStringArray(v, b.groupEventIds.get(k))) return false;
   }
   for (const [k, v] of a.absorbedToAnchor) {
     if (b.absorbedToAnchor.get(k) !== v) return false;
@@ -158,7 +193,7 @@ export function buildTimelineDescriptors(
   precomputedGroups?: ImageGroupsSnapshot
 ): TimelineItem[] {
   const effectiveWillRender = willRender ?? ((mEvent: MatrixEvent) => !reactionOrEditEvent(mEvent));
-  const { imageGroups, absorbedToAnchor } =
+  const { imageGroups, groupEventIds, absorbedToAnchor } =
     precomputedGroups ?? computeImageGroups(events, effectiveWillRender);
 
   // If readUpto points to an absorbed image, redirect it to that group's
@@ -219,6 +254,7 @@ export function buildTimelineDescriptors(
         dayDividerPending = false;
       }
       const groupedImages = imageGroups.get(mEventId);
+      const groupedEventIds = groupEventIds.get(mEventId);
       result.push({
         type: 'event',
         key: mEventId,
@@ -228,6 +264,7 @@ export function buildTimelineDescriptors(
         timelineSet,
         collapsed,
         groupedImages,
+        groupedEventIds,
       });
       prevRenderedEvent = mEvent;
     }

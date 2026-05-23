@@ -23,18 +23,15 @@ export function UploadQueue({
 }: UploadQueueProps) {
   return (
     <Box className={css.UploadQueue}>
-      {items
-        .slice()
-        .reverse()
-        .map((fileItem) => (
-          <UploadQueueCard
-            key={`upload-queue-card-${fileItem.id}`}
-            fileItem={fileItem}
-            setMetadata={setMetadata}
-            onRemove={onRemove}
-            onReplaceFile={onReplaceFile}
-          />
-        ))}
+      {items.map((fileItem) => (
+        <UploadQueueCard
+          key={`upload-queue-card-${fileItem.id}`}
+          fileItem={fileItem}
+          setMetadata={setMetadata}
+          onRemove={onRemove}
+          onReplaceFile={onReplaceFile}
+        />
+      ))}
       {items.length >= 2 && (
         <button
           type="button"

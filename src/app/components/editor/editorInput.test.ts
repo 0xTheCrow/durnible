@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { MatrixClient } from 'matrix-js-sdk';
 import type * as MatrixUtils from '../../utils/matrix';
+import type * as MediaCacheUtils from '../../utils/mediaCache';
 import {
   createEmoticonNode,
   createMentionNode,
@@ -9,16 +10,28 @@ import {
   replaceRangeWithNode,
   htmlToEditorDom,
   isEditorEmpty,
+  normalizeEditorRoot,
+  restoreEditorDraft,
   NODE_TYPE_ATTR,
   EMOTICON_NODE,
 } from './editorInput';
+import { domToPlainText } from './editorOutput';
+import { markCachedMediaUrl } from '../../utils/mediaCache';
 
 vi.mock('../../utils/matrix', async () => {
   const actual = (await vi.importActual('../../utils/matrix')) as typeof MatrixUtils;
+  const { markCachedMediaUrl: mark } = await vi.importActual<typeof MediaCacheUtils>(
+    '../../utils/mediaCache'
+  );
+  const mockHttp = (key: string): string | null =>
+    key.startsWith('mxc://') ? `https://example.com/${key.slice(6)}` : null;
   return {
     ...actual,
-    mxcUrlToHttp: (_mx: unknown, key: string) =>
-      key.startsWith('mxc://') ? `https://example.com/${key.slice(6)}` : null,
+    mxcUrlToHttp: (_mx: unknown, key: string) => mockHttp(key),
+    mxcUrlToEmojiHttp: (_mx: unknown, key: string) => {
+      const httpUrl = mockHttp(key);
+      return httpUrl ? mark(httpUrl, 'emoji') : null;
+    },
   };
 });
 
@@ -41,7 +54,9 @@ describe('createEmoticonNode', () => {
 
     const img = node.querySelector('img');
     expect(img).not.toBeNull();
-    expect(img?.getAttribute('src')).toBe('https://example.com/example.com/abc');
+    expect(img?.getAttribute('src')).toBe(
+      markCachedMediaUrl('https://example.com/example.com/abc', 'emoji')
+    );
     expect(img?.getAttribute('alt')).toBe('wave');
   });
 
@@ -136,6 +151,12 @@ describe('inline void leading anchor', () => {
 });
 
 const ctx = { mx: mockMx, useAuthentication: false };
+
+const blockDiv = (text: string): HTMLDivElement => {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div;
+};
 
 describe('htmlToEditorDom formatting preservation', () => {
   it('converts <strong> to <b>', () => {
@@ -267,5 +288,91 @@ describe('isEditorEmpty', () => {
     const el = document.createElement('div');
     el.textContent = '   \n  ';
     expect(isEditorEmpty(el)).toBe(true);
+  });
+});
+
+describe('normalizeEditorRoot', () => {
+  it.each([
+    ['pure inline root', 'hello'],
+    ['all-block root', '<div>a</div><div>b</div>'],
+  ])('leaves a uniform root untouched (%s)', (_label, html) => {
+    const el = document.createElement('div');
+    el.innerHTML = html;
+    const before = el.innerHTML;
+
+    expect(normalizeEditorRoot(el)).toBe(false);
+    expect(el.innerHTML).toBe(before);
+  });
+
+  it('wraps an inline node sandwiched between blocks so lines do not join', () => {
+    const el = document.createElement('div');
+    el.append(blockDiv('a'), document.createTextNode('b'), blockDiv('c'));
+
+    expect(normalizeEditorRoot(el)).toBe(true);
+    expect(domToPlainText(el)).toBe('a\nb\nc\n');
+  });
+
+  it('wraps a leading inline node before a block', () => {
+    const el = document.createElement('div');
+    el.append(document.createTextNode('a'), blockDiv('b'));
+
+    expect(normalizeEditorRoot(el)).toBe(true);
+    expect(domToPlainText(el)).toBe('a\nb\n');
+  });
+
+  it('groups a consecutive inline run into a single block', () => {
+    const el = document.createElement('div');
+    el.append(
+      blockDiv('a'),
+      document.createTextNode('b'),
+      document.createElement('br'),
+      document.createTextNode('c'),
+      blockDiv('d')
+    );
+
+    expect(normalizeEditorRoot(el)).toBe(true);
+    // The b/br/c run becomes one block (b\nc), not three (which would add a
+    // blank line from the lone <br>).
+    expect(domToPlainText(el)).toBe('a\nb\nc\nd\n');
+  });
+
+  it('preserves the collapsed caret across the reparenting', () => {
+    const el = document.createElement('div');
+    const inlineText = document.createTextNode('bee');
+    el.append(blockDiv('a'), inlineText, blockDiv('c'));
+    document.body.appendChild(el);
+
+    const selection = window.getSelection();
+    const range = document.createRange();
+    range.setStart(inlineText, 2);
+    range.collapse(true);
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+
+    expect(normalizeEditorRoot(el)).toBe(true);
+    expect(selection?.anchorNode).toBe(inlineText);
+    expect(selection?.anchorOffset).toBe(2);
+
+    el.remove();
+  });
+});
+
+describe('restoreEditorDraft', () => {
+  it('preserves a mention node across a save/restore round-trip', () => {
+    const source = document.createElement('div');
+    source.appendChild(
+      createMentionNode({ id: '@alice:server.com', name: 'Alice', highlight: false })
+    );
+    const savedDraft = source.innerHTML;
+
+    const restored = document.createElement('div');
+    restoreEditorDraft(restored, savedDraft);
+
+    const mention = restored.querySelector<HTMLElement>(`[${NODE_TYPE_ATTR}="mention"]`);
+    expect(mention).not.toBeNull();
+    expect(mention?.dataset.id).toBe('@alice:server.com');
+    // A live mention serializes to its id; a flattened one would serialize to
+    // the display name 'Alice'.
+    expect(domToPlainText(restored)).toBe('@alice:server.com');
   });
 });

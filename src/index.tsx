@@ -11,7 +11,7 @@ enableMapSet();
 import './index.css';
 
 import { trimTrailingSlash } from './app/utils/common';
-import { mobileOrTablet } from './app/utils/user-agent';
+import { isIOS, mobileOrTablet } from './app/utils/user-agent';
 import { getSettings } from './app/state/settings';
 import App from './app/pages/App';
 
@@ -174,12 +174,20 @@ const setupVirtualKeyboard = () => {
   // Brave handles keyboard resize natively via interactive-widget=resizes-content;
   // our JS adjustment interferes and causes a black content area.
   const isBrave = (navigator as unknown as { brave?: unknown }).brave !== undefined;
+  // iOS WebKit (all iOS browsers — Safari, Brave iOS, Chrome iOS) handles keyboard
+  // by scrolling the focused input into view; vv.height can report a much smaller
+  // value than the actual visible area above the keyboard, which collapses #root.
+  const isIOSDevice = isIOS();
   const vv = window.visualViewport;
   if (!vv) return;
   // Tracks the natural (no-keyboard) height for the current orientation.
   let maxSeenHeight = vv.height;
   const update = () => {
     if (vv.height > maxSeenHeight) maxSeenHeight = vv.height;
+    if (getSettings().altMobileKeyboardAdjustment && isIOSDevice) {
+      document.documentElement.style.removeProperty('--app-height');
+      return;
+    }
     const keyboardOpen = vv.height < window.innerHeight || vv.height < maxSeenHeight;
     if (keyboardOpen) {
       // Skip if Brave (explicit check), or if the layout viewport already shrank
