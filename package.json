@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "module",
   "engines": {
-    "node": ">=16.0.0"
+    "node": "^20.19.0 || >=22.12.0"
   },
   "scripts": {
     "start": "vite",
@@ -29,9 +29,9 @@
     "@tanstack/react-query": "5.24.1",
     "@tanstack/react-query-devtools": "5.24.1",
     "@tanstack/react-virtual": "3.2.0",
-    "@vanilla-extract/css": "1.9.3",
-    "@vanilla-extract/recipes": "0.3.0",
-    "@vanilla-extract/vite-plugin": "3.7.1",
+    "@vanilla-extract/css": "1.20.1",
+    "@vanilla-extract/recipes": "0.5.7",
+    "@vanilla-extract/vite-plugin": "5.2.2",
     "await-to-js": "3.0.0",
     "badwords-list": "2.0.1-4",
     "blurhash": "2.0.4",
@@ -75,9 +75,6 @@
     "ua-parser-js": "1.0.35"
   },
   "devDependencies": {
-    "@esbuild-plugins/node-globals-polyfill": "0.2.3",
-    "@rollup/plugin-inject": "5.0.3",
-    "@rollup/plugin-wasm": "6.1.1",
     "@testing-library/dom": "10.4.1",
     "@testing-library/jest-dom": "6.9.1",
     "@testing-library/react": "16.3.2",
@@ -93,7 +90,7 @@
     "@types/ua-parser-js": "0.7.36",
     "@typescript-eslint/eslint-plugin": "5.46.1",
     "@typescript-eslint/parser": "5.46.1",
-    "@vitejs/plugin-react": "4.2.0",
+    "@vitejs/plugin-react": "6.0.2",
     "buffer": "6.0.3",
     "eslint": "8.29.0",
     "eslint-config-airbnb": "19.0.4",
@@ -108,10 +105,9 @@
     "lint-staged": "16.4.0",
     "prettier": "2.8.1",
     "typescript": "5.7.3",
-    "vite": "5.4.21",
-    "vite-plugin-pwa": "0.19.8",
-    "vite-plugin-static-copy": "4.0.1",
-    "vite-plugin-top-level-await": "1.4.4",
+    "vite": "8.0.14",
+    "vite-plugin-pwa": "1.3.0",
+    "vite-plugin-static-copy": "4.1.0",
     "vitest": "4.1.0",
     "workbox-expiration": "7.4.0",
     "workbox-precaching": "7.4.0"
