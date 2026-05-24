@@ -1,9 +1,11 @@
 import React from 'react';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import type { MatrixClient } from 'matrix-js-sdk';
 import { ClientRoot, isChunkLoadError } from './ClientRoot';
 import { initClient } from '../../../client/initMatrix';
 import { getFallbackSession } from '../../state/sessions';
+import { checkSessionLockFree, getSessionLock } from '../../utils/sessionLock';
 
 // ── Module mocks ─────────────────────────────────────────────────────────────
 
@@ -23,8 +25,15 @@ vi.mock('./SpecVersions', () => ({
   SpecVersions: ({ children }: { children: React.ReactNode }): React.ReactNode => children,
 }));
 
+vi.mock('../../utils/sessionLock', () => ({
+  checkSessionLockFree: vi.fn(() => true),
+  getSessionLock: vi.fn(async () => true),
+}));
+
 const mockInitClient = vi.mocked(initClient);
 const mockGetFallbackSession = vi.mocked(getFallbackSession);
+const mockCheckSessionLockFree = vi.mocked(checkSessionLockFree);
+const mockGetSessionLock = vi.mocked(getSessionLock);
 
 const MOCK_SESSION = {
   baseUrl: 'https://matrix.example.com',
@@ -169,5 +178,65 @@ describe('ClientRoot error dialog', () => {
 
       expect(reloadSpy).toHaveBeenCalledOnce();
     });
+  });
+});
+
+// ── ClientRoot single-tab session lock ────────────────────────────────────────
+
+describe('ClientRoot single-tab session lock', () => {
+  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    mockGetFallbackSession.mockReturnValue(MOCK_SESSION as ReturnType<typeof getFallbackSession>);
+    mockCheckSessionLockFree.mockReset().mockReturnValue(true);
+    mockGetSessionLock.mockReset().mockResolvedValue(true);
+    mockInitClient.mockReset();
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    consoleErrorSpy.mockRestore();
+    vi.clearAllMocks();
+  });
+
+  it('shows the takeover-confirm view and defers initClient until confirmed', async () => {
+    mockCheckSessionLockFree.mockReturnValue(false);
+    mockInitClient.mockImplementation(() => new Promise<MatrixClient>(() => {}));
+
+    render(<ClientRoot>loaded</ClientRoot>);
+
+    expect(await screen.findByTestId('client-root-takeover-confirm')).toBeInTheDocument();
+    expect(mockInitClient).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByTestId('client-root-takeover-confirm-action'));
+
+    await waitFor(() => expect(mockInitClient).toHaveBeenCalledTimes(1));
+  });
+
+  it('stops the client and shows the other-tab view when the lock is taken over', async () => {
+    const fakeMx = {
+      on: vi.fn(),
+      removeListener: vi.fn(),
+      stopClient: vi.fn(),
+      clientRunning: false,
+    };
+    let capturedOnNewInstance: (() => void | Promise<void>) | undefined;
+    mockGetSessionLock.mockImplementation(async (onNewInstance) => {
+      capturedOnNewInstance = onNewInstance;
+      return true;
+    });
+    mockInitClient.mockResolvedValue(fakeMx as unknown as MatrixClient);
+
+    render(<ClientRoot>loaded</ClientRoot>);
+
+    // mx is mounted (its listeners are bound) once initClient resolves and mxRef is set.
+    await waitFor(() => expect(fakeMx.on).toHaveBeenCalled());
+
+    await act(async () => {
+      await capturedOnNewInstance!();
+    });
+
+    expect(await screen.findByTestId('client-root-other-tab-active')).toBeInTheDocument();
+    expect(fakeMx.stopClient).toHaveBeenCalledTimes(1);
   });
 });

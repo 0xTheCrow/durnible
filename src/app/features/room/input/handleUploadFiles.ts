@@ -1,5 +1,5 @@
 import type { ListAction } from '../../../state/list';
-import type { UploadItem } from '../../../state/room/roomInputDrafts';
+import type { UploadItem, UploadMediaInfo } from '../../../state/room/roomInputDrafts';
 import { safeFile } from '../../../utils/mimeTypes';
 import { applyUploadQueueCap } from '../../../utils/uploadQueueCap';
 import type { EncryptFn } from './encryptAndReplace';
@@ -9,6 +9,8 @@ export type { EncryptedFileResult } from './encryptAndReplace';
 
 let nextUploadId = 0;
 export const createUploadId = (): string => String(nextUploadId++);
+
+export type UploadFileInput = File | { file: File; mediaInfo?: UploadMediaInfo };
 
 export type HandleUploadFilesContext = {
   /** Number of items currently in the upload queue. Read once at call time. */
@@ -49,23 +51,28 @@ export type HandleUploadFilesResult = {
  * component is a thin adapter that wires its hooks/refs into the context.
  */
 export function handleUploadFiles(
-  files: File[],
+  inputs: UploadFileInput[],
   ctx: HandleUploadFilesContext
 ): HandleUploadFilesResult {
-  const accepted = applyUploadQueueCap(ctx.currentItemCount, files);
+  const normalized = inputs.map((input) => (input instanceof File ? { file: input } : input));
+  const accepted = applyUploadQueueCap(ctx.currentItemCount, normalized);
   if (accepted.length === 0) {
     return { acceptedCount: 0, encryptionDone: Promise.resolve() };
   }
 
-  const safeFiles = accepted.map(safeFile);
+  const safeEntries = accepted.map((entry) => ({
+    file: safeFile(entry.file),
+    mediaInfo: entry.mediaInfo,
+  }));
 
   if (ctx.isEncrypted) {
-    const placeholders: UploadItem[] = safeFiles.map((f) => ({
+    const placeholders: UploadItem[] = safeEntries.map((entry) => ({
       id: createUploadId(),
-      file: f,
-      originalFile: f,
+      file: entry.file,
+      originalFile: entry.file,
       encryptionInfo: undefined,
       metadata: { markedAsSpoiler: false },
+      mediaInfo: entry.mediaInfo,
       isEncrypting: true,
     }));
     ctx.setItems({ type: 'PUT', item: placeholders });
@@ -76,19 +83,20 @@ export function handleUploadFiles(
 
     ctx.onAccepted?.();
     return {
-      acceptedCount: safeFiles.length,
+      acceptedCount: safeEntries.length,
       encryptionDone: Promise.all(encryptionTasks).then(() => undefined),
     };
   }
 
-  const fileItems: UploadItem[] = safeFiles.map((f) => ({
+  const fileItems: UploadItem[] = safeEntries.map((entry) => ({
     id: createUploadId(),
-    file: f,
-    originalFile: f,
+    file: entry.file,
+    originalFile: entry.file,
     encryptionInfo: undefined,
     metadata: { markedAsSpoiler: false },
+    mediaInfo: entry.mediaInfo,
   }));
   ctx.setItems({ type: 'PUT', item: fileItems });
   ctx.onAccepted?.();
-  return { acceptedCount: safeFiles.length, encryptionDone: Promise.resolve() };
+  return { acceptedCount: safeEntries.length, encryptionDone: Promise.resolve() };
 }

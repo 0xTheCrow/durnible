@@ -194,6 +194,8 @@ describe('handleUploadFiles', () => {
         .map((c) => replacementOf(c[0] as ListAction<UploadItem>));
       replacements.forEach((replacement) => {
         expect(replacement.isEncryptionSuccessful).toBe(true);
+        expect(replacement.isEncrypting).toBeUndefined();
+        expect(replacement.encryptError).toBeUndefined();
         expect(replacement.encryptionInfo).toBe(FAKE_ENCRYPTION_INFO);
         expect(replacement.metadata.markedAsSpoiler).toBe(false);
       });
@@ -261,6 +263,71 @@ describe('handleUploadFiles', () => {
       await result.encryptionDone;
       // 5 incoming, 4 already queued → only 2 fit → only 2 encrypt calls.
       expect(encrypt).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('mediaInfo propagation', () => {
+    it('preserves mediaInfo through the plain branch', () => {
+      const { ctx, setItems } = setup({ isEncrypted: false });
+      const file = makeFile('voice.ogg', 'audio/ogg');
+      handleUploadFiles(
+        [{ file, mediaInfo: { audio: { durationMs: 5000, isVoiceMessage: true } } }],
+        ctx
+      );
+      const [item] = itemsFromPut(setItems.mock.calls[0][0]);
+      expect(item.mediaInfo).toEqual({
+        audio: { durationMs: 5000, isVoiceMessage: true },
+      });
+    });
+
+    it('preserves mediaInfo on the encrypted placeholder', () => {
+      const { ctx, setItems } = setup({ isEncrypted: true });
+      const file = makeFile('voice.ogg', 'audio/ogg');
+      handleUploadFiles(
+        [{ file, mediaInfo: { audio: { durationMs: 5000, isVoiceMessage: true } } }],
+        ctx
+      );
+      const [placeholder] = itemsFromPut(setItems.mock.calls[0][0]);
+      expect(placeholder.isEncrypting).toBe(true);
+      expect(placeholder.mediaInfo).toEqual({
+        audio: { durationMs: 5000, isVoiceMessage: true },
+      });
+    });
+
+    it('preserves mediaInfo through encryption replacement', async () => {
+      const { ctx, setItems } = setup({ isEncrypted: true });
+      const file = makeFile('voice.ogg', 'audio/ogg');
+      const result = handleUploadFiles(
+        [{ file, mediaInfo: { audio: { durationMs: 5000, isVoiceMessage: true } } }],
+        ctx
+      );
+      await result.encryptionDone;
+      const replacement = replacementOf(setItems.mock.calls[1][0] as ListAction<UploadItem>);
+      expect(replacement.mediaInfo).toEqual({
+        audio: { durationMs: 5000, isVoiceMessage: true },
+      });
+    });
+
+    it('leaves mediaInfo undefined when input is a bare File', () => {
+      const { ctx, setItems } = setup({ isEncrypted: false });
+      handleUploadFiles([makeFile('photo.png')], ctx);
+      const [item] = itemsFromPut(setItems.mock.calls[0][0]);
+      expect(item.mediaInfo).toBeUndefined();
+    });
+
+    it('accepts a mixed batch of bare Files and wrapped inputs', () => {
+      const { ctx, setItems } = setup({ isEncrypted: false });
+      handleUploadFiles(
+        [
+          makeFile('photo.png'),
+          { file: makeFile('voice.ogg', 'audio/ogg'), mediaInfo: { audio: { durationMs: 3000 } } },
+        ],
+        ctx
+      );
+      const items = itemsFromPut(setItems.mock.calls[0][0]);
+      expect(items).toHaveLength(2);
+      expect(items[0].mediaInfo).toBeUndefined();
+      expect(items[1].mediaInfo).toEqual({ audio: { durationMs: 3000 } });
     });
   });
 });

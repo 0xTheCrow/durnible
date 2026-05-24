@@ -10,7 +10,8 @@ export const useMediaPlayTimeCallback = (
     const targetEl = getTargetElement();
     const handleChange = () => {
       if (!targetEl) return;
-      onPlayTimeCallback(targetEl.duration, targetEl.currentTime);
+      const duration = Number.isFinite(targetEl.duration) ? targetEl.duration : 0;
+      onPlayTimeCallback(duration, targetEl.currentTime);
     };
     targetEl?.addEventListener('timeupdate', handleChange);
     targetEl?.addEventListener('loadedmetadata', handleChange);

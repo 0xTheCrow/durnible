@@ -22,10 +22,11 @@ export async function encryptAndReplace(
       type: 'REPLACE',
       item: placeholder,
       replacement: {
+        ...placeholder,
         ...encrypted,
-        id: placeholder.id,
-        metadata: placeholder.metadata,
+        isEncrypting: undefined,
         isEncryptionSuccessful: true,
+        encryptError: undefined,
       },
     });
   } catch (e) {

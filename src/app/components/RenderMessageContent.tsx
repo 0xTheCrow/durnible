@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useRef } from 'react';
 import { useAtomValue } from 'jotai';
 import type { IContent } from 'matrix-js-sdk';
 import { MsgType } from 'matrix-js-sdk';
@@ -29,6 +29,10 @@ import {
 } from './message';
 import { YouTubeEmbed, SpotifyEmbed, SoundCloudEmbed, NitterEmbed } from './url-preview';
 import { Image, MediaControl, Video } from './media';
+import {
+  useMediaVolumePersistence,
+  VIDEO_VOLUME_STORAGE_KEY,
+} from '../hooks/media/useMediaVolumePersistence';
 import { PdfViewer } from './Pdf-viewer';
 import { TextViewer } from './text-viewer';
 import { testMatrixTo } from '../plugins/matrix-to';
@@ -52,26 +56,9 @@ import type {
 import { getBlobSafeMimeType } from '../utils/mimeTypes';
 import { sameGroupedImages } from '../utils/buildTimelineDescriptors';
 
-const MEDIA_VOLUME_KEY = 'cinny_media_volume';
-
 function VideoWithPersistedVolume(props: React.VideoHTMLAttributes<HTMLVideoElement>) {
   const ref = useRef<HTMLVideoElement>(null);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return undefined;
-
-    const stored = localStorage.getItem(MEDIA_VOLUME_KEY);
-    el.volume = stored !== null ? Math.max(0, Math.min(1, parseFloat(stored))) : 0.5;
-
-    const handleVolumeChange = () => {
-      localStorage.setItem(MEDIA_VOLUME_KEY, String(el.volume));
-    };
-
-    el.addEventListener('volumechange', handleVolumeChange);
-    return () => el.removeEventListener('volumechange', handleVolumeChange);
-  }, []);
-
+  useMediaVolumePersistence(ref, VIDEO_VOLUME_STORAGE_KEY);
   return <Video {...props} ref={ref} />;
 }
 

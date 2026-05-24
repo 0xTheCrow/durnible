@@ -44,6 +44,8 @@ export interface Settings {
   legacyUsernameColor: boolean;
   unfocusedAutoScroll: boolean;
   pauseGifs: boolean;
+  gifShowNsfw: boolean;
+  gifShowHidden: boolean;
   replyHighlight: boolean;
 
   showNotifications: boolean;
@@ -100,6 +102,8 @@ const defaultSettings: Settings = {
   legacyUsernameColor: false,
   unfocusedAutoScroll: false,
   pauseGifs: false,
+  gifShowNsfw: false,
+  gifShowHidden: false,
   replyHighlight: true,
 
   showNotifications: true,
