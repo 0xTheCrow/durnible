@@ -5,6 +5,7 @@ import React, { forwardRef, useCallback, useImperativeHandle, useRef, useState }
 import type { Room } from 'matrix-js-sdk';
 import { EmojiBoard } from './EmojiBoard';
 import { EmojiBoardTab } from './types';
+import type { GifItem } from '../../utils/gifServer';
 import { useVisualViewportHeight } from '../../hooks/useVisualViewportHeight';
 import { OverlayModal } from '../OverlayModal';
 import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
@@ -45,6 +46,7 @@ export type EmojiBoardWrapperProps = {
   onEmojiSelect?: (unicode: string, shortcode: string) => void;
   onCustomEmojiSelect?: (mxc: string, shortcode: string) => void;
   onStickerSelect?: (mxc: string, shortcode: string, label: string) => void;
+  onGifSelect?: (gif: GifItem) => void;
 
   onClose?: () => void;
   onOpenChange?: (isOpen: boolean) => void;
@@ -66,6 +68,7 @@ export const EmojiBoardWrapper = forwardRef<EmojiBoardWrapperHandle, EmojiBoardW
       onEmojiSelect,
       onCustomEmojiSelect,
       onStickerSelect,
+      onGifSelect,
       onClose,
       onOpenChange,
       children,
@@ -110,10 +113,12 @@ export const EmojiBoardWrapper = forwardRef<EmojiBoardWrapperHandle, EmojiBoardW
 
     const isMobile = useScreenSizeContext() === ScreenSize.Mobile;
 
+    const tabsEnabled = !!onStickerSelect || !!onGifSelect;
+
     const renderEmojiBoard = (inModal: boolean) => (
       <EmojiBoard
         tab={tab}
-        onTabChange={setTab}
+        onTabChange={tabsEnabled ? setTab : undefined}
         imagePackRooms={imagePackRooms ?? []}
         returnFocusOnDeactivate={returnFocusOnDeactivate}
         allowTextCustomEmoji={allowTextCustomEmoji}
@@ -121,6 +126,7 @@ export const EmojiBoardWrapper = forwardRef<EmojiBoardWrapperHandle, EmojiBoardW
         onEmojiSelect={onEmojiSelect}
         onCustomEmojiSelect={onCustomEmojiSelect}
         onStickerSelect={onStickerSelect}
+        onGifSelect={onGifSelect}
         onClose={close}
         onBackClick={inModal ? close : undefined}
         handleOutsideClick={!inModal}

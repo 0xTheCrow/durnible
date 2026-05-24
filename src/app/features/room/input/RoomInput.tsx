@@ -46,6 +46,8 @@ import {
   isSubmitEnterHotkey,
 } from '../../../components/editor';
 import { EmojiBoardWrapper, EmojiBoardTab } from '../../../components/emoji-board';
+import type { GifItem } from '../../../utils/gifServer';
+import { fetchGifBlob } from '../../../utils/gifServer';
 import type { UploadContent } from '../../../utils/matrix';
 import { getImageInfo, getMxIdLocalPart, mxcUrlToHttp } from '../../../utils/matrix';
 import { encryptFileInWorker } from '../../../utils/encryptWorker';
@@ -63,7 +65,7 @@ import { UploadQueue } from '../../../components/upload-queue';
 import type { Upload, UploadSuccess } from '../../../state/upload';
 import { UploadStatus, createUploadFamilyObserverAtom } from '../../../state/upload';
 import { getImageUrlBlob, loadImageElement } from '../../../utils/dom';
-import { handleUploadFiles } from './handleUploadFiles';
+import { handleUploadFiles, type UploadFileInput } from './handleUploadFiles';
 import { encryptAndReplace } from './encryptAndReplace';
 import { safeFile } from '../../../utils/mimeTypes';
 import { fulfilledPromiseSettledResult } from '../../../utils/common';
@@ -89,6 +91,7 @@ import { mobileOrTablet } from '../../../utils/user-agent';
 import { useElementSizeObserver } from '../../../hooks/useElementSizeObserver';
 import { ReplyLayout, ThreadIndicator } from '../../../components/message';
 import { roomToParentsAtom } from '../../../state/room/roomToParents';
+import { fileDropOverrideAtom } from '../../../state/fileDropOverride';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
 import { useImagePackRooms } from '../../../hooks/useImagePackRooms';
 import { useRelevantImagePacks } from '../../../hooks/useImagePacks';
@@ -180,7 +183,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     const sendTypingStatus = useTypingStatusUpdater(mx, roomId);
 
     const handleFiles = useCallback(
-      (files: File[]) => {
+      (files: UploadFileInput[]) => {
         handleUploadFiles(files, {
           currentItemCount: selectedFiles.length,
           setItems: setSelectedFiles,
@@ -194,7 +197,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       [setSelectedFiles, room, selectedFiles.length, editorInputRef]
     );
     const handleVoiceSend = useCallback(
-      (blob: Blob, mimeType: string, _duration: number) => {
+      (blob: Blob, mimeType: string, duration: number) => {
         setIsVoiceRecording(false);
         const ext = mimeType.startsWith('audio/ogg')
           ? 'ogg'
@@ -202,13 +205,35 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
           ? 'm4a'
           : 'webm';
         const file = new File([blob], `voice-message.${ext}`, { type: mimeType });
-        handleFiles([file]);
+        handleFiles([
+          {
+            file,
+            mediaInfo: {
+              audio: {
+                durationMs: duration * 1000,
+                isVoiceMessage: true,
+              },
+            },
+          },
+        ]);
       },
       [handleFiles]
     );
 
+    const fileDropOverride = useAtomValue(fileDropOverrideAtom);
+    const handleDrop = useCallback(
+      (files: File[]) => {
+        if (fileDropOverride) {
+          fileDropOverride.onDrop(files);
+          return;
+        }
+        handleFiles(files);
+      },
+      [fileDropOverride, handleFiles]
+    );
+
     const pickFile = useFilePicker(handleFiles, true);
-    const dropZoneVisible = useFileDropZone(fileDropContainerRef, handleFiles, true);
+    const dropZoneVisible = useFileDropZone(fileDropContainerRef, handleDrop, true);
     const [hideStickerBtn, setHideStickerBtn] = useState(document.body.clientWidth < 500);
 
     const isComposing = useComposingCheck();
@@ -576,6 +601,16 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       mx.sendEvent(roomId, EventType.Sticker, content);
     };
 
+    const handleGifSelect = async (gif: GifItem) => {
+      const blob = await fetchGifBlob(gif.renditions.original.url).catch((e) => {
+        console.error('Failed to fetch GIF from server', e);
+        return null;
+      });
+      if (!blob) return;
+      const file = new File([blob], gif.filename, { type: 'image/gif' });
+      handleFiles([file]);
+    };
+
     return (
       <div ref={ref}>
         <Overlay
@@ -594,9 +629,14 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
               >
                 <Icon size="600" src={Icons.File} />
                 <Text size="H4" align="Center">
-                  {`Drop Files in "${room?.name || 'Room'}"`}
+                  {fileDropOverride
+                    ? fileDropOverride.title
+                    : `Drop Files in "${room?.name || 'Room'}"`}
                 </Text>
-                <Text align="Center">Drag and drop files here or click for selection dialog</Text>
+                <Text align="Center">
+                  {fileDropOverride?.description ??
+                    'Drag and drop files here or click for selection dialog'}
+                </Text>
               </Box>
             </Dialog>
           </OverlayCenter>
@@ -729,6 +769,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
                   onEmojiSelect={handleEmoticonSelect}
                   onCustomEmojiSelect={handleEmoticonSelect}
                   onStickerSelect={handleStickerSelect}
+                  onGifSelect={handleGifSelect}
                   onClose={() => editorInputRef.current?.focus()}
                 >
                   {({ triggerRef, open, isOpen, tab: emojiBoardTab }) => (
