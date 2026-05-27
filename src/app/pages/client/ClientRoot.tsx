@@ -34,9 +34,13 @@ import { SpecVersions } from './SpecVersions';
 import { AsyncStatus, useAsyncCallback } from '../../hooks/useAsyncCallback';
 import { useSyncState } from '../../hooks/useSyncState';
 import { stopPropagation } from '../../utils/keyboard';
+import { setGifServerClient } from '../../utils/gifServer';
 import { AuthMetadataProvider } from '../../hooks/useAuthMetadata';
 import { getFallbackSession } from '../../state/sessions';
 import { logStartupSummary, startupMark } from '../../utils/startupPerf';
+import { checkSessionLockFree, getSessionLock } from '../../utils/sessionLock';
+
+class OtherTabActiveError extends Error {}
 
 function ClientRootLoading() {
   return (
@@ -149,17 +153,35 @@ export const isChunkLoadError = (err: Error) =>
 
 export function ClientRoot({ children }: ClientRootProps) {
   const [loading, setLoading] = useState(true);
+  const [needsTakeoverConfirm, setNeedsTakeoverConfirm] = useState(() => !checkSessionLockFree());
+  const [sessionActiveInOtherTab, setSessionActiveInOtherTab] = useState(false);
   const startupLoggedRef = useRef(false);
+  const mxRef = useRef<MatrixClient | undefined>(undefined);
   const { baseUrl } = getFallbackSession() ?? {};
 
+  const handleOtherTabTakeover = useCallback(async () => {
+    setSessionActiveInOtherTab(true);
+    mxRef.current?.stopClient();
+  }, []);
+
+  const handleTakeoverConfirm = useCallback(() => {
+    setNeedsTakeoverConfirm(false);
+  }, []);
+
   const [loadState, loadMatrix] = useAsyncCallback<MatrixClient, Error, []>(
-    useCallback(() => {
+    useCallback(async () => {
       const session = getFallbackSession();
       if (!session) {
         throw new Error('No session Found!');
       }
-      return initClient(session);
-    }, [])
+      const acquired = await getSessionLock(handleOtherTabTakeover);
+      if (!acquired) {
+        throw new OtherTabActiveError();
+      }
+      const mx = await initClient(session);
+      mxRef.current = mx;
+      return mx;
+    }, [handleOtherTabTakeover])
   );
   const mx = loadState.status === AsyncStatus.Success ? loadState.data : undefined;
   const [startState, startMatrix] = useAsyncCallback<void, Error, [MatrixClient]>(
@@ -169,16 +191,24 @@ export function ClientRoot({ children }: ClientRootProps) {
   useLogoutListener(mx);
 
   useEffect(() => {
-    if (loadState.status === AsyncStatus.Idle) {
-      loadMatrix().catch((err) => console.error('ClientRoot: failed to load matrix client', err));
+    if (loadState.status === AsyncStatus.Idle && !needsTakeoverConfirm) {
+      loadMatrix().catch((err) => {
+        if (err instanceof OtherTabActiveError) return;
+        console.error('ClientRoot: failed to load matrix client', err);
+      });
     }
-  }, [loadState, loadMatrix]);
+  }, [loadState, loadMatrix, needsTakeoverConfirm]);
 
   useEffect(() => {
-    if (mx && !mx.clientRunning) {
+    if (mx && !mx.clientRunning && !sessionActiveInOtherTab) {
       startMatrix(mx);
     }
-  }, [mx, startMatrix]);
+  }, [mx, startMatrix, sessionActiveInOtherTab]);
+
+  useEffect(() => {
+    setGifServerClient(mx ?? null);
+    return () => setGifServerClient(null);
+  }, [mx]);
 
   useSyncState(
     mx,
@@ -195,6 +225,53 @@ export function ClientRoot({ children }: ClientRootProps) {
   );
 
   if (!baseUrl) return null;
+
+  if (sessionActiveInOtherTab) {
+    return (
+      <SplashScreen>
+        <Box
+          direction="Column"
+          grow="Yes"
+          alignItems="Center"
+          justifyContent="Center"
+          gap="400"
+          data-testid="client-root-other-tab-active"
+        >
+          <Text>Durnible is open in another tab.</Text>
+          <Text>Switch to the other tab to use Durnible. This tab can now be closed.</Text>
+        </Box>
+      </SplashScreen>
+    );
+  }
+
+  if (needsTakeoverConfirm) {
+    return (
+      <SplashScreen>
+        <Box
+          direction="Column"
+          grow="Yes"
+          alignItems="Center"
+          justifyContent="Center"
+          gap="400"
+          data-testid="client-root-takeover-confirm"
+        >
+          <Text>
+            Durnible is open in another tab. Continue to use Durnible here and disconnect the other
+            tab.
+          </Text>
+          <Button
+            data-testid="client-root-takeover-confirm-action"
+            variant="Primary"
+            onClick={handleTakeoverConfirm}
+          >
+            <Text as="span" size="B400">
+              Continue
+            </Text>
+          </Button>
+        </Box>
+      </SplashScreen>
+    );
+  }
 
   return (
     <SpecVersions baseUrl={baseUrl}>

@@ -10,11 +10,19 @@ export type UploadMetadata = {
   markedAsSpoiler: boolean;
 };
 
+export type UploadMediaInfo = {
+  audio?: {
+    durationMs?: number;
+    isVoiceMessage?: boolean;
+  };
+};
+
 export type UploadItem = {
   id: string;
   file: UploadContent;
   originalFile: File;
   metadata: UploadMetadata;
+  mediaInfo?: UploadMediaInfo;
   encryptionInfo: EncryptedAttachmentInfo | undefined;
   isEncrypting?: boolean;
   isEncryptionSuccessful?: boolean;
