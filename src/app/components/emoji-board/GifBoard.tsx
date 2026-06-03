@@ -557,6 +557,7 @@ function GifEditModal({
   const [error, setError] = useState<string | undefined>(undefined);
   const [previewSrc, setPreviewSrc] = useState<string | undefined>(undefined);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const localPreviewUrlRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     let active = true;
@@ -573,6 +574,13 @@ function GifEditModal({
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
   }, [gif.renditions.preview.url]);
+
+  useEffect(
+    () => () => {
+      if (localPreviewUrlRef.current) URL.revokeObjectURL(localPreviewUrlRef.current);
+    },
+    []
+  );
 
   const previewWrapRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -652,6 +660,9 @@ function GifEditModal({
     setError(undefined);
     try {
       const updated = await replaceGifFile(gif.id, replacement);
+      if (localPreviewUrlRef.current) URL.revokeObjectURL(localPreviewUrlRef.current);
+      localPreviewUrlRef.current = URL.createObjectURL(replacement);
+      setPreviewSrc(localPreviewUrlRef.current);
       onSaved(updated);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Replace failed');
