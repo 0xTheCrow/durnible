@@ -33,6 +33,7 @@ import {
   fetchGifBlob,
   getFavoriteGifs,
   getFeaturedGifs,
+  getGifAdminStatus,
   getHiddenGifs,
   getHistoryGifs,
   getMyGifs,
@@ -261,6 +262,7 @@ function GifGrid({
   observeBackAnchor,
   observeFrontAnchor,
   myUserId,
+  isAdmin,
   showEditButton,
   favoriteIds,
   hiddenIds,
@@ -275,6 +277,7 @@ function GifGrid({
   observeBackAnchor: ObserveAnchor;
   observeFrontAnchor: ObserveAnchor;
   myUserId: string | null;
+  isAdmin: boolean;
   showEditButton: boolean;
   favoriteIds: Set<string>;
   hiddenIds: Set<string>;
@@ -299,19 +302,23 @@ function GifGrid({
         if (!row) return null;
         return (
           <Box key={rowIndex} className={css.GifRow} data-gif-row={rowIndex}>
-            {row.map((gif) => (
-              <GifGridItem
-                key={gif.id}
-                gif={gif}
-                editable={showEditButton && !!myUserId && gif.uploader_id === myUserId}
-                favorited={favoriteIds.has(gif.id)}
-                hidden={hiddenIds.has(gif.id)}
-                onSelect={onSelect}
-                onEdit={onEdit}
-                onToggleFavorite={onToggleFavorite}
-                onContextMenu={onContextMenu}
-              />
-            ))}
+            {row.map((gif) => {
+              const isOwnGif = !!myUserId && gif.uploader_id === myUserId;
+              const showEditHere = isOwnGif ? showEditButton : true;
+              return (
+                <GifGridItem
+                  key={gif.id}
+                  gif={gif}
+                  editable={canEditGif(gif, myUserId, isAdmin) && showEditHere}
+                  favorited={favoriteIds.has(gif.id)}
+                  hidden={hiddenIds.has(gif.id)}
+                  onSelect={onSelect}
+                  onEdit={onEdit}
+                  onToggleFavorite={onToggleFavorite}
+                  onContextMenu={onContextMenu}
+                />
+              );
+            })}
           </Box>
         );
       })}
@@ -324,6 +331,11 @@ const isGifFile = (file: File) =>
   file.type === 'image/gif' || file.name.toLowerCase().endsWith('.gif');
 
 const formatMiB = (bytes: number) => `${(bytes / (1024 * 1024)).toFixed(1)} MiB`;
+
+// Mirrors the server's can_mutate: the uploader, or an admin on a shared GIF.
+const canEditGif = (gif: GifItem, myUserId: string | null, isAdmin: boolean): boolean =>
+  (!!myUserId && gif.uploader_id === myUserId) ||
+  (isAdmin && gif.uploader_id !== myUserId && gif.visibility === 'shared');
 
 function GifUploadForm() {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -540,6 +552,7 @@ function GifEditModal({
   const [isPrivate, setIsPrivate] = useState(gif.visibility === 'private');
   const [nsfw, setNsfw] = useState(gif.is_nsfw);
   const [busy, setBusy] = useState(false);
+  const [replacing, setReplacing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | undefined>(undefined);
   const [previewSrc, setPreviewSrc] = useState<string | undefined>(undefined);
@@ -635,6 +648,7 @@ function GifEditModal({
       return;
     }
     setBusy(true);
+    setReplacing(true);
     setError(undefined);
     try {
       const updated = await replaceGifFile(gif.id, replacement);
@@ -642,6 +656,7 @@ function GifEditModal({
       onClose();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Replace failed');
+      setReplacing(false);
       setBusy(false);
     }
   };
@@ -682,7 +697,14 @@ function GifEditModal({
                 />
               )}
             </Box>
-            {confirmDelete ? (
+            {replacing ? (
+              <Box className={css.GifPreviewConfirm}>
+                <Spinner size="400" variant="Secondary" />
+                <Text size="H4" align="Center" style={{ color: color.Surface.OnContainer }}>
+                  Replacing GIF
+                </Text>
+              </Box>
+            ) : confirmDelete ? (
               <Box className={css.GifPreviewConfirm}>
                 <Text size="H4" align="Center" style={{ color: color.Surface.OnContainer }}>
                   Delete this GIF?
@@ -715,22 +737,46 @@ function GifEditModal({
                 </Box>
               </Box>
             ) : (
-              <Box className={css.GifPreviewActions} alignItems="Center">
-                <IconButton
-                  className={css.GifPreviewDeleteBtn}
-                  size="400"
-                  radii="300"
-                  variant="Critical"
-                  fill="Soft"
-                  aria-label="Delete GIF"
-                  disabled={busy}
-                  onClick={() => setConfirmDelete(true)}
-                >
-                  <Icon size="200" src={Icons.Delete} />
-                </IconButton>
-              </Box>
+              <>
+                <Box className={css.GifPreviewActionsLeft} alignItems="Center">
+                  <IconButton
+                    className={css.GifPreviewDeleteBtn}
+                    size="400"
+                    radii="300"
+                    variant="Critical"
+                    fill="Soft"
+                    aria-label="Delete GIF"
+                    disabled={busy}
+                    onClick={() => setConfirmDelete(true)}
+                  >
+                    <Icon size="200" src={Icons.Delete} />
+                  </IconButton>
+                </Box>
+                <Box className={css.GifPreviewActions} alignItems="Center">
+                  <Button
+                    className={css.GifPreviewReplaceBtn}
+                    size="400"
+                    radii="300"
+                    variant="Secondary"
+                    fill="Soft"
+                    disabled={busy}
+                    onClick={() => fileInputRef.current?.click()}
+                    before={<Icon size="100" src={UploadIcon} />}
+                  >
+                    <Text size="B400">Replace</Text>
+                  </Button>
+                </Box>
+              </>
             )}
           </Box>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/gif"
+            style={{ display: 'none' }}
+            onChange={handleReplaceChange}
+          />
 
           <Box direction="Column" gap="100">
             <Text size="L400">Tags</Text>
@@ -755,26 +801,6 @@ function GifEditModal({
               <Text size="T300">NSFW</Text>
             </Box>
           </Box>
-
-          <Button
-            className={css.GifEditBtnTransition}
-            variant="Secondary"
-            size="400"
-            radii="300"
-            fill="Soft"
-            disabled={busy}
-            onClick={() => fileInputRef.current?.click()}
-            before={<Icon size="100" src={UploadIcon} />}
-          >
-            <Text size="B400">Replace GIF file</Text>
-          </Button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/gif"
-            style={{ display: 'none' }}
-            onChange={handleReplaceChange}
-          />
 
           {error && (
             <Text size="T300" style={{ color: color.Critical.Main }}>
@@ -832,6 +858,7 @@ export function GifBoard({
 }: GifBoardProps) {
   const mx = useMatrixClient();
   const myUserId = mx.getUserId();
+  const [isAdmin, setIsAdmin] = useState(false);
   const [showNsfw, setShowNsfw] = useSetting(settingsAtom, 'gifShowNsfw');
   const [showHidden, setShowHidden] = useSetting(settingsAtom, 'gifShowHidden');
   const [editingGif, setEditingGif] = useState<GifItem | undefined>(undefined);
@@ -972,6 +999,18 @@ export function GifBoard({
 
   useEffect(() => {
     let cancelled = false;
+    getGifAdminStatus()
+      .then((admin) => {
+        if (!cancelled) setIsAdmin(admin);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
     collectFavoriteIds(showNsfw, showHidden, new Set<string>(), undefined, 0)
       .then((ids) => {
         if (!cancelled) setFavoriteIds(ids);
@@ -1103,8 +1142,7 @@ export function GifBoard({
     setContextMenuGif(undefined);
   }, [contextMenuGif]);
 
-  const contextMenuEditable =
-    !!myUserId && !!contextMenuGif && contextMenuGif.uploader_id === myUserId;
+  const contextMenuEditable = !!contextMenuGif && canEditGif(contextMenuGif, myUserId, isAdmin);
 
   const handleSectionClick = useCallback((section: GifSection) => {
     setActiveSection(section);
@@ -1156,6 +1194,7 @@ export function GifBoard({
           observeBackAnchor={observeBackAnchor}
           observeFrontAnchor={observeFrontAnchor}
           myUserId={myUserId}
+          isAdmin={isAdmin}
           showEditButton={activeSection === 'mine'}
           favoriteIds={favoriteIds}
           hiddenIds={hiddenIds}
