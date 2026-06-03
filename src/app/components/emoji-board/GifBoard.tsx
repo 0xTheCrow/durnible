@@ -304,7 +304,7 @@ function GifGrid({
           <Box key={rowIndex} className={css.GifRow} data-gif-row={rowIndex}>
             {row.map((gif) => {
               const isOwnGif = !!myUserId && gif.uploader_id === myUserId;
-              const showEditHere = isOwnGif ? showEditButton : true;
+              const showEditHere = isOwnGif && !isAdmin ? showEditButton : true;
               return (
                 <GifGridItem
                   key={gif.id}
