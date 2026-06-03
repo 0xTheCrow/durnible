@@ -1,5 +1,5 @@
 import type { ChangeEvent, ChangeEventHandler, MouseEventHandler } from 'react';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAtom, useSetAtom } from 'jotai';
 import FileSaver from 'file-saver';
 import FocusTrap from 'focus-trap-react';
@@ -33,6 +33,7 @@ import {
   fetchGifBlob,
   getFavoriteGifs,
   getFeaturedGifs,
+  getGifAdminStatus,
   getHiddenGifs,
   getHistoryGifs,
   getMyGifs,
@@ -40,15 +41,24 @@ import {
   recordGifSelect,
   removeFavorite,
   removeHidden,
+  replaceGifFile,
   replaceGifTags,
   searchGifs,
   uploadGif,
 } from '../../utils/gifServer';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
+import type { ItemRange } from '../../hooks/useVirtualPaginator';
+import { useVirtualPaginator } from '../../hooks/useVirtualPaginator';
 import { OverlayModal } from '../OverlayModal';
 import type { EmojiBoardTab } from './types';
-import { EmojiBoardTabs } from './components/Tabs';
-import { EmojiBoardLayout, GroupIcon, Sidebar, SidebarDivider, SidebarStack } from './components';
+import {
+  EmojiBoardHeaderRow,
+  EmojiBoardLayout,
+  GroupIcon,
+  Sidebar,
+  SidebarDivider,
+  SidebarStack,
+} from './components';
 import * as css from './components/styles.css';
 import { useDebounce } from '../../hooks/useDebounce';
 import { mobileOrTablet } from '../../utils/user-agent';
@@ -64,6 +74,9 @@ type GifSection = 'all' | 'favorites' | 'recents' | 'mine' | 'upload';
 
 const PAGE_SIZE = 20;
 const LOADING_INDICATOR_DELAY = 250;
+const COLUMNS = 2;
+const ROW_PAGE_LIMIT = PAGE_SIZE / COLUMNS;
+const INITIAL_ROWS = ROW_PAGE_LIMIT;
 const FAVORITE_ID_PAGE = 50;
 const FAVORITE_ID_MAX_PAGES = 10;
 
@@ -241,9 +254,15 @@ function GifGridItem({
   );
 }
 
+type ObserveAnchor = (element: HTMLElement | null) => void;
+
 function GifGrid({
-  gifs,
+  rows,
+  getItems,
+  observeBackAnchor,
+  observeFrontAnchor,
   myUserId,
+  isAdmin,
   showEditButton,
   favoriteIds,
   hiddenIds,
@@ -253,8 +272,12 @@ function GifGrid({
   onContextMenu,
   emptyMsg,
 }: {
-  gifs: GifItem[];
+  rows: GifItem[][];
+  getItems: () => number[];
+  observeBackAnchor: ObserveAnchor;
+  observeFrontAnchor: ObserveAnchor;
   myUserId: string | null;
+  isAdmin: boolean;
   showEditButton: boolean;
   favoriteIds: Set<string>;
   hiddenIds: Set<string>;
@@ -264,7 +287,7 @@ function GifGrid({
   onContextMenu: (gif: GifItem, evt: React.MouseEvent<HTMLButtonElement>) => void;
   emptyMsg?: string;
 }) {
-  if (gifs.length === 0 && emptyMsg) {
+  if (rows.length === 0 && emptyMsg) {
     return (
       <Box justifyContent="Center" style={{ padding: config.space.S300 }}>
         <Text size="T300">{emptyMsg}</Text>
@@ -272,20 +295,34 @@ function GifGrid({
     );
   }
   return (
-    <Box className={css.GifGrid}>
-      {gifs.map((gif) => (
-        <GifGridItem
-          key={gif.id}
-          gif={gif}
-          editable={showEditButton && !!myUserId && gif.uploader_id === myUserId}
-          favorited={favoriteIds.has(gif.id)}
-          hidden={hiddenIds.has(gif.id)}
-          onSelect={onSelect}
-          onEdit={onEdit}
-          onToggleFavorite={onToggleFavorite}
-          onContextMenu={onContextMenu}
-        />
-      ))}
+    <Box className={css.GifGrid} direction="Column">
+      <div ref={observeBackAnchor} />
+      {getItems().map((rowIndex) => {
+        const row = rows[rowIndex];
+        if (!row) return null;
+        return (
+          <Box key={rowIndex} className={css.GifRow} data-gif-row={rowIndex}>
+            {row.map((gif) => {
+              const isOwnGif = !!myUserId && gif.uploader_id === myUserId;
+              const showEditHere = isOwnGif && !isAdmin ? showEditButton : true;
+              return (
+                <GifGridItem
+                  key={gif.id}
+                  gif={gif}
+                  editable={canEditGif(gif, myUserId, isAdmin) && showEditHere}
+                  favorited={favoriteIds.has(gif.id)}
+                  hidden={hiddenIds.has(gif.id)}
+                  onSelect={onSelect}
+                  onEdit={onEdit}
+                  onToggleFavorite={onToggleFavorite}
+                  onContextMenu={onContextMenu}
+                />
+              );
+            })}
+          </Box>
+        );
+      })}
+      <div ref={observeFrontAnchor} />
     </Box>
   );
 }
@@ -294,6 +331,11 @@ const isGifFile = (file: File) =>
   file.type === 'image/gif' || file.name.toLowerCase().endsWith('.gif');
 
 const formatMiB = (bytes: number) => `${(bytes / (1024 * 1024)).toFixed(1)} MiB`;
+
+// Mirrors the server's can_mutate: the uploader, or an admin on a shared GIF.
+const canEditGif = (gif: GifItem, myUserId: string | null, isAdmin: boolean): boolean =>
+  (!!myUserId && gif.uploader_id === myUserId) ||
+  (isAdmin && gif.uploader_id !== myUserId && gif.visibility === 'shared');
 
 function GifUploadForm() {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -510,9 +552,12 @@ function GifEditModal({
   const [isPrivate, setIsPrivate] = useState(gif.visibility === 'private');
   const [nsfw, setNsfw] = useState(gif.is_nsfw);
   const [busy, setBusy] = useState(false);
+  const [replacing, setReplacing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | undefined>(undefined);
   const [previewSrc, setPreviewSrc] = useState<string | undefined>(undefined);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const localPreviewUrlRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     let active = true;
@@ -529,6 +574,13 @@ function GifEditModal({
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
   }, [gif.renditions.preview.url]);
+
+  useEffect(
+    () => () => {
+      if (localPreviewUrlRef.current) URL.revokeObjectURL(localPreviewUrlRef.current);
+    },
+    []
+  );
 
   const previewWrapRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -589,6 +641,43 @@ function GifEditModal({
     }
   };
 
+  const handleReplaceFile = async (replacement: File) => {
+    if (busy) return;
+    if (!isGifFile(replacement)) {
+      setError('Only GIF files can be used.');
+      return;
+    }
+    if (replacement.size > GIF_MAX_UPLOAD_SIZE_BYTES) {
+      setError(
+        `GIF is ${formatMiB(replacement.size)} — exceeds the ${formatMiB(
+          GIF_MAX_UPLOAD_SIZE_BYTES
+        )} upload limit.`
+      );
+      return;
+    }
+    setBusy(true);
+    setReplacing(true);
+    setError(undefined);
+    try {
+      const updated = await replaceGifFile(gif.id, replacement);
+      if (localPreviewUrlRef.current) URL.revokeObjectURL(localPreviewUrlRef.current);
+      localPreviewUrlRef.current = URL.createObjectURL(replacement);
+      setPreviewSrc(localPreviewUrlRef.current);
+      onSaved(updated);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Replace failed');
+    } finally {
+      setReplacing(false);
+      setBusy(false);
+    }
+  };
+
+  const handleReplaceChange: ChangeEventHandler<HTMLInputElement> = (e) => {
+    const next = e.target.files?.[0];
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (next) handleReplaceFile(next);
+  };
+
   return (
     <OverlayModal open onClose={onClose}>
       <Dialog variant="Surface">
@@ -619,7 +708,14 @@ function GifEditModal({
                 />
               )}
             </Box>
-            {confirmDelete ? (
+            {replacing ? (
+              <Box className={css.GifPreviewConfirm}>
+                <Spinner size="400" variant="Secondary" />
+                <Text size="H4" align="Center" style={{ color: color.Surface.OnContainer }}>
+                  Replacing GIF
+                </Text>
+              </Box>
+            ) : confirmDelete ? (
               <Box className={css.GifPreviewConfirm}>
                 <Text size="H4" align="Center" style={{ color: color.Surface.OnContainer }}>
                   Delete this GIF?
@@ -652,22 +748,46 @@ function GifEditModal({
                 </Box>
               </Box>
             ) : (
-              <Box className={css.GifPreviewActions} alignItems="Center">
-                <IconButton
-                  className={css.GifPreviewDeleteBtn}
-                  size="400"
-                  radii="300"
-                  variant="Critical"
-                  fill="Soft"
-                  aria-label="Delete GIF"
-                  disabled={busy}
-                  onClick={() => setConfirmDelete(true)}
-                >
-                  <Icon size="200" src={Icons.Delete} />
-                </IconButton>
-              </Box>
+              <>
+                <Box className={css.GifPreviewActionsLeft} alignItems="Center">
+                  <IconButton
+                    className={css.GifPreviewDeleteBtn}
+                    size="400"
+                    radii="300"
+                    variant="Critical"
+                    fill="Soft"
+                    aria-label="Delete GIF"
+                    disabled={busy}
+                    onClick={() => setConfirmDelete(true)}
+                  >
+                    <Icon size="200" src={Icons.Delete} />
+                  </IconButton>
+                </Box>
+                <Box className={css.GifPreviewActions} alignItems="Center">
+                  <Button
+                    className={css.GifPreviewReplaceBtn}
+                    size="400"
+                    radii="300"
+                    variant="Secondary"
+                    fill="Soft"
+                    disabled={busy}
+                    onClick={() => fileInputRef.current?.click()}
+                    before={<Icon size="100" src={UploadIcon} />}
+                  >
+                    <Text size="B400">Replace</Text>
+                  </Button>
+                </Box>
+              </>
             )}
           </Box>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/gif"
+            style={{ display: 'none' }}
+            onChange={handleReplaceChange}
+          />
 
           <Box direction="Column" gap="100">
             <Text size="L400">Tags</Text>
@@ -735,13 +855,21 @@ function GifEditModal({
 type GifBoardProps = {
   tab: EmojiBoardTab;
   onTabChange?: (tab: EmojiBoardTab) => void;
+  onBackClick?: () => void;
   onGifSelect?: (gif: GifItem) => void;
   requestClose: () => void;
 };
 
-export function GifBoard({ tab, onTabChange, onGifSelect, requestClose }: GifBoardProps) {
+export function GifBoard({
+  tab,
+  onTabChange,
+  onBackClick,
+  onGifSelect,
+  requestClose,
+}: GifBoardProps) {
   const mx = useMatrixClient();
   const myUserId = mx.getUserId();
+  const [isAdmin, setIsAdmin] = useState(false);
   const [showNsfw, setShowNsfw] = useSetting(settingsAtom, 'gifShowNsfw');
   const [showHidden, setShowHidden] = useSetting(settingsAtom, 'gifShowHidden');
   const [editingGif, setEditingGif] = useState<GifItem | undefined>(undefined);
@@ -764,6 +892,36 @@ export function GifBoard({ tab, onTabChange, onGifSelect, requestClose }: GifBoa
   nsfwRef.current = showNsfw;
   const hiddenRef = useRef(showHidden);
   hiddenRef.current = showHidden;
+  const loadingRef = useRef(loading);
+  loadingRef.current = loading;
+  const nextCursorRef = useRef(nextCursor);
+  nextCursorRef.current = nextCursor;
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [range, setRange] = useState<ItemRange>({ start: 0, end: INITIAL_ROWS });
+
+  const rows = useMemo(() => {
+    const grouped: GifItem[][] = [];
+    for (let i = 0; i < gifs.length; i += COLUMNS) {
+      grouped.push(gifs.slice(i, i + COLUMNS));
+    }
+    return grouped;
+  }, [gifs]);
+
+  const [prevRowCount, setPrevRowCount] = useState(rows.length);
+  if (rows.length !== prevRowCount) {
+    setPrevRowCount(rows.length);
+    if (range.end > rows.length) {
+      setRange({ start: Math.min(range.start, rows.length), end: rows.length });
+    }
+  }
+
+  const getScrollElement = useCallback(() => scrollRef.current, []);
+  const getItemElement = useCallback(
+    (index: number) =>
+      (scrollRef.current?.querySelector(`[data-gif-row="${index}"]`) as HTMLElement) ?? undefined,
+    []
+  );
 
   const [contextMenuAnchor, setContextMenuAnchor] = useState<RectCords | undefined>(undefined);
   const [contextMenuGif, setContextMenuGif] = useState<GifItem | undefined>(undefined);
@@ -790,8 +948,16 @@ export function GifBoard({ tab, onTabChange, onGifSelect, requestClose }: GifBoa
         setAuthError(false);
         if (cursor) {
           setGifs((prev) => [...prev, ...res.results]);
+          // Re-trigger the paginator's fill-view effect (keyed on range identity)
+          // so the window grows into the newly appended rows; the front anchor is
+          // still intersecting, so IntersectionObserver alone won't re-fire.
+          // TODO: this identity-only state write is a workaround for useVirtualPaginator
+          // not re-evaluating on `count` change. Fix in the hook so consumers don't
+          // need to poke `range`. Same pattern in timelineState.ts recalibratePagination.
+          setRange((prev) => ({ ...prev }));
         } else {
           setGifs(res.results);
+          setRange({ start: 0, end: INITIAL_ROWS });
         }
         setNextCursor(res.next);
       } catch (e) {
@@ -803,6 +969,30 @@ export function GifBoard({ tab, onTabChange, onGifSelect, requestClose }: GifBoa
     },
     []
   );
+
+  const handlePaginatorEnd = useCallback(
+    (back: boolean) => {
+      if (back || loadingRef.current || !nextCursorRef.current) return;
+      loadGifs(
+        sectionRef.current,
+        queryRef.current,
+        nsfwRef.current,
+        hiddenRef.current,
+        nextCursorRef.current
+      );
+    },
+    [loadGifs]
+  );
+
+  const { getItems, observeBackAnchor, observeFrontAnchor } = useVirtualPaginator({
+    count: rows.length,
+    limit: ROW_PAGE_LIMIT,
+    range,
+    onRangeChange: setRange,
+    getScrollElement,
+    getItemElement,
+    onEnd: handlePaginatorEnd,
+  });
 
   useEffect(() => {
     if (!loading) {
@@ -817,6 +1007,18 @@ export function GifBoard({ tab, onTabChange, onGifSelect, requestClose }: GifBoa
     if (activeSection === 'upload') return;
     loadGifs(activeSection, query, showNsfw, showHidden);
   }, [activeSection, query, showNsfw, showHidden, loadGifs]);
+
+  useEffect(() => {
+    let cancelled = false;
+    getGifAdminStatus()
+      .then((admin) => {
+        if (!cancelled) setIsAdmin(admin);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -858,18 +1060,6 @@ export function GifBoard({ tab, onTabChange, onGifSelect, requestClose }: GifBoa
     },
     [onGifSelect, requestClose]
   );
-
-  const handleLoadMore = useCallback(() => {
-    if (nextCursor) {
-      loadGifs(
-        sectionRef.current,
-        queryRef.current,
-        nsfwRef.current,
-        hiddenRef.current,
-        nextCursor
-      );
-    }
-  }, [nextCursor, loadGifs]);
 
   const handleContextMenu = useCallback(
     (gif: GifItem, evt: React.MouseEvent<HTMLButtonElement>) => {
@@ -963,8 +1153,7 @@ export function GifBoard({ tab, onTabChange, onGifSelect, requestClose }: GifBoa
     setContextMenuGif(undefined);
   }, [contextMenuGif]);
 
-  const contextMenuEditable =
-    !!myUserId && !!contextMenuGif && contextMenuGif.uploader_id === myUserId;
+  const contextMenuEditable = !!contextMenuGif && canEditGif(contextMenuGif, myUserId, isAdmin);
 
   const handleSectionClick = useCallback((section: GifSection) => {
     setActiveSection(section);
@@ -973,6 +1162,7 @@ export function GifBoard({ tab, onTabChange, onGifSelect, requestClose }: GifBoa
 
   const handleEditSaved = useCallback((updated: GifItem) => {
     setGifs((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
+    setEditingGif((prev) => (prev && prev.id === updated.id ? updated : prev));
   }, []);
 
   const handleEditDeleted = useCallback((id: string) => {
@@ -1011,8 +1201,12 @@ export function GifBoard({ tab, onTabChange, onGifSelect, requestClose }: GifBoa
     return (
       <>
         <GifGrid
-          gifs={gifs}
+          rows={rows}
+          getItems={getItems}
+          observeBackAnchor={observeBackAnchor}
+          observeFrontAnchor={observeFrontAnchor}
           myUserId={myUserId}
+          isAdmin={isAdmin}
           showEditButton={activeSection === 'mine'}
           favoriteIds={favoriteIds}
           hiddenIds={hiddenIds}
@@ -1032,13 +1226,6 @@ export function GifBoard({ tab, onTabChange, onGifSelect, requestClose }: GifBoa
             <Text size="T300">No GIFs found</Text>
           </Box>
         )}
-        {nextCursor && !loading && (
-          <Box justifyContent="Center" style={{ padding: config.space.S200 }}>
-            <button type="button" onClick={handleLoadMore} style={{ cursor: 'pointer' }}>
-              <Text size="T300">Load more</Text>
-            </button>
-          </Box>
-        )}
       </>
     );
   };
@@ -1048,7 +1235,7 @@ export function GifBoard({ tab, onTabChange, onGifSelect, requestClose }: GifBoa
       <EmojiBoardLayout
         header={
           <Box direction="Column" gap="200">
-            {onTabChange && <EmojiBoardTabs tab={tab} onTabChange={onTabChange} />}
+            <EmojiBoardHeaderRow tab={tab} onTabChange={onTabChange} onBack={onBackClick} />
             {activeSection !== 'upload' && (
               <Box gap="200" alignItems="Center">
                 <Box grow="Yes">
@@ -1123,7 +1310,7 @@ export function GifBoard({ tab, onTabChange, onGifSelect, requestClose }: GifBoa
         }
       >
         <Box grow="Yes" style={{ overflow: 'hidden' }}>
-          <Scroll size="300" hideTrack>
+          <Scroll ref={scrollRef} size="300" hideTrack>
             {renderContent()}
           </Scroll>
         </Box>

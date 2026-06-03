@@ -237,8 +237,10 @@ export function ClientRoot({ children }: ClientRootProps) {
           gap="400"
           data-testid="client-root-other-tab-active"
         >
-          <Text>Durnible is open in another tab.</Text>
-          <Text>Switch to the other tab to use Durnible. This tab can now be closed.</Text>
+          <Text align="Center">Durnible is open in another tab.</Text>
+          <Text align="Center">
+            Switch to the other tab to use Durnible. This tab can now be closed.
+          </Text>
         </Box>
       </SplashScreen>
     );
@@ -255,7 +257,7 @@ export function ClientRoot({ children }: ClientRootProps) {
           gap="400"
           data-testid="client-root-takeover-confirm"
         >
-          <Text>
+          <Text align="Center">
             Durnible is open in another tab. Continue to use Durnible here and disconnect the other
             tab.
           </Text>

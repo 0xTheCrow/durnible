@@ -125,7 +125,11 @@ export const useTimelinePagination = (
                 oldest: currentTimeline.range.oldest + offsetRange,
                 newest: currentTimeline.range.newest + offsetRange,
               }
-            : { ...currentTimeline.range },
+            : // TODO: identity-only range write to re-trigger useVirtualPaginator's
+              // fill-view effect after the item count grows. Workaround for the hook
+              // not re-evaluating on `count` change; fix in the hook. Same pattern in
+              // GifBoard.tsx loadGifs append branch.
+              { ...currentTimeline.range },
       }));
     };
 

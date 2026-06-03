@@ -49,6 +49,7 @@ export function setGifServerClient(mx: MatrixClient | null): void {
 const EXPIRY_SKEW_MS = 60_000;
 let sessionToken: string | null = null;
 let sessionExpiresAt = 0;
+let sessionIsAdmin = false;
 let mintPromise: Promise<string> | null = null;
 
 function clearGifSession(): void {
@@ -70,9 +71,14 @@ async function mintSession(): Promise<string> {
     body: JSON.stringify(openIdToken),
   });
   if (!res.ok) throw new GifAuthError(`GIF auth failed: ${res.status}`);
-  const data = (await res.json()) as { token: string; expires_in: number };
+  const data = (await res.json()) as {
+    token: string;
+    expires_in: number;
+    is_admin: boolean;
+  };
   sessionToken = data.token;
   sessionExpiresAt = Date.now() + data.expires_in * 1000;
+  sessionIsAdmin = data.is_admin;
   return data.token;
 }
 
@@ -102,6 +108,11 @@ async function gifFetch(url: string, options?: RequestInit, retry = true): Promi
     return gifFetch(url, options, false);
   }
   return res;
+}
+
+export async function getGifAdminStatus(): Promise<boolean> {
+  await ensureSession();
+  return sessionIsAdmin;
 }
 
 function listUrl(
@@ -257,6 +268,24 @@ export async function uploadGif(file: File, params: UploadGifParams = {}): Promi
   if (res.status === 507) throw new Error('The GIF server is out of storage');
   if (!res.ok) {
     let message = `GIF upload failed: ${res.status}`;
+    try {
+      const body = (await res.json()) as { message?: string };
+      if (body?.message) message = body.message;
+    } catch {
+      /* keep status-based message */
+    }
+    throw new Error(message);
+  }
+  return res.json();
+}
+
+export async function replaceGifFile(gifId: string, file: File): Promise<GifItem> {
+  const form = new FormData();
+  form.append('file', file);
+  const res = await gifFetch(`${GIF_SERVER_URL}/gifs/${gifId}/file`, { method: 'PUT', body: form });
+  if (res.status === 507) throw new Error('The GIF server is out of storage');
+  if (!res.ok) {
+    let message = `GIF replace failed: ${res.status}`;
     try {
       const body = (await res.json()) as { message?: string };
       if (body?.message) message = body.message;

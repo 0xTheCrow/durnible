@@ -235,12 +235,16 @@ export const EmojiBoardTabBtn = style({
  */
 
 export const GifGrid = style({
-  display: 'grid',
-  gridTemplateColumns: '1fr 1fr',
-  gap: config.space.S200,
   padding: config.space.S200,
   paddingLeft: config.space.S300,
   paddingRight: config.space.S100,
+});
+
+export const GifRow = style({
+  display: 'grid',
+  gridTemplateColumns: '1fr 1fr',
+  gap: config.space.S200,
+  marginBottom: config.space.S200,
 });
 
 export const GifItem = style([
@@ -252,6 +256,7 @@ export const GifItem = style([
     overflow: 'hidden',
     display: 'block',
     width: '100%',
+    maxHeight: toRem(200),
     backgroundColor: color.SurfaceVariant.Container,
     ':hover': {
       outline: `${config.borderWidth.B300} solid ${color.Primary.Main}`,
@@ -302,6 +307,15 @@ export const GifPreviewActions = style({
   gap: config.space.S100,
 });
 
+export const GifPreviewActionsLeft = style({
+  position: 'absolute',
+  bottom: config.space.S100,
+  left: config.space.S100,
+  zIndex: 1,
+  display: 'flex',
+  gap: config.space.S100,
+});
+
 const gifEditBtnBgTransition = 'background-color 80ms ease';
 
 export const GifEditBtnTransition = style({
@@ -314,6 +328,11 @@ export const GifPreviewDeleteBtn = style({
   ':hover': {
     backgroundColor: color.Critical.Container,
   },
+});
+
+export const GifPreviewReplaceBtn = style({
+  backgroundColor: color.Surface.Container,
+  transition: gifEditBtnBgTransition,
 });
 
 export const GifPreviewConfirm = style({
@@ -343,7 +362,8 @@ export const GifItemImg = style([
   DefaultReset,
   {
     width: '100%',
-    height: 'auto',
+    height: '100%',
+    objectFit: 'contain',
     display: 'block',
   },
 ]);
