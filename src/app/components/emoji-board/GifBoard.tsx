@@ -1,5 +1,5 @@
 import type { ChangeEvent, ChangeEventHandler, MouseEventHandler } from 'react';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAtom, useSetAtom } from 'jotai';
 import FileSaver from 'file-saver';
 import FocusTrap from 'focus-trap-react';
@@ -45,6 +45,8 @@ import {
   uploadGif,
 } from '../../utils/gifServer';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
+import type { ItemRange } from '../../hooks/useVirtualPaginator';
+import { useVirtualPaginator } from '../../hooks/useVirtualPaginator';
 import { OverlayModal } from '../OverlayModal';
 import type { EmojiBoardTab } from './types';
 import { EmojiBoardTabs } from './components/Tabs';
@@ -64,6 +66,9 @@ type GifSection = 'all' | 'favorites' | 'recents' | 'mine' | 'upload';
 
 const PAGE_SIZE = 20;
 const LOADING_INDICATOR_DELAY = 250;
+const COLUMNS = 2;
+const ROW_PAGE_LIMIT = PAGE_SIZE / COLUMNS;
+const INITIAL_ROWS = ROW_PAGE_LIMIT;
 const FAVORITE_ID_PAGE = 50;
 const FAVORITE_ID_MAX_PAGES = 10;
 
@@ -241,8 +246,13 @@ function GifGridItem({
   );
 }
 
+type ObserveAnchor = (element: HTMLElement | null) => void;
+
 function GifGrid({
-  gifs,
+  rows,
+  getItems,
+  observeBackAnchor,
+  observeFrontAnchor,
   myUserId,
   showEditButton,
   favoriteIds,
@@ -253,7 +263,10 @@ function GifGrid({
   onContextMenu,
   emptyMsg,
 }: {
-  gifs: GifItem[];
+  rows: GifItem[][];
+  getItems: () => number[];
+  observeBackAnchor: ObserveAnchor;
+  observeFrontAnchor: ObserveAnchor;
   myUserId: string | null;
   showEditButton: boolean;
   favoriteIds: Set<string>;
@@ -264,7 +277,7 @@ function GifGrid({
   onContextMenu: (gif: GifItem, evt: React.MouseEvent<HTMLButtonElement>) => void;
   emptyMsg?: string;
 }) {
-  if (gifs.length === 0 && emptyMsg) {
+  if (rows.length === 0 && emptyMsg) {
     return (
       <Box justifyContent="Center" style={{ padding: config.space.S300 }}>
         <Text size="T300">{emptyMsg}</Text>
@@ -272,20 +285,30 @@ function GifGrid({
     );
   }
   return (
-    <Box className={css.GifGrid}>
-      {gifs.map((gif) => (
-        <GifGridItem
-          key={gif.id}
-          gif={gif}
-          editable={showEditButton && !!myUserId && gif.uploader_id === myUserId}
-          favorited={favoriteIds.has(gif.id)}
-          hidden={hiddenIds.has(gif.id)}
-          onSelect={onSelect}
-          onEdit={onEdit}
-          onToggleFavorite={onToggleFavorite}
-          onContextMenu={onContextMenu}
-        />
-      ))}
+    <Box className={css.GifGrid} direction="Column">
+      <div ref={observeBackAnchor} />
+      {getItems().map((rowIndex) => {
+        const row = rows[rowIndex];
+        if (!row) return null;
+        return (
+          <Box key={rowIndex} className={css.GifRow} data-gif-row={rowIndex}>
+            {row.map((gif) => (
+              <GifGridItem
+                key={gif.id}
+                gif={gif}
+                editable={showEditButton && !!myUserId && gif.uploader_id === myUserId}
+                favorited={favoriteIds.has(gif.id)}
+                hidden={hiddenIds.has(gif.id)}
+                onSelect={onSelect}
+                onEdit={onEdit}
+                onToggleFavorite={onToggleFavorite}
+                onContextMenu={onContextMenu}
+              />
+            ))}
+          </Box>
+        );
+      })}
+      <div ref={observeFrontAnchor} />
     </Box>
   );
 }
@@ -764,6 +787,36 @@ export function GifBoard({ tab, onTabChange, onGifSelect, requestClose }: GifBoa
   nsfwRef.current = showNsfw;
   const hiddenRef = useRef(showHidden);
   hiddenRef.current = showHidden;
+  const loadingRef = useRef(loading);
+  loadingRef.current = loading;
+  const nextCursorRef = useRef(nextCursor);
+  nextCursorRef.current = nextCursor;
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [range, setRange] = useState<ItemRange>({ start: 0, end: INITIAL_ROWS });
+
+  const rows = useMemo(() => {
+    const grouped: GifItem[][] = [];
+    for (let i = 0; i < gifs.length; i += COLUMNS) {
+      grouped.push(gifs.slice(i, i + COLUMNS));
+    }
+    return grouped;
+  }, [gifs]);
+
+  const [prevRowCount, setPrevRowCount] = useState(rows.length);
+  if (rows.length !== prevRowCount) {
+    setPrevRowCount(rows.length);
+    if (range.end > rows.length) {
+      setRange({ start: Math.min(range.start, rows.length), end: rows.length });
+    }
+  }
+
+  const getScrollElement = useCallback(() => scrollRef.current, []);
+  const getItemElement = useCallback(
+    (index: number) =>
+      (scrollRef.current?.querySelector(`[data-gif-row="${index}"]`) as HTMLElement) ?? undefined,
+    []
+  );
 
   const [contextMenuAnchor, setContextMenuAnchor] = useState<RectCords | undefined>(undefined);
   const [contextMenuGif, setContextMenuGif] = useState<GifItem | undefined>(undefined);
@@ -790,8 +843,16 @@ export function GifBoard({ tab, onTabChange, onGifSelect, requestClose }: GifBoa
         setAuthError(false);
         if (cursor) {
           setGifs((prev) => [...prev, ...res.results]);
+          // Re-trigger the paginator's fill-view effect (keyed on range identity)
+          // so the window grows into the newly appended rows; the front anchor is
+          // still intersecting, so IntersectionObserver alone won't re-fire.
+          // TODO: this identity-only state write is a workaround for useVirtualPaginator
+          // not re-evaluating on `count` change. Fix in the hook so consumers don't
+          // need to poke `range`. Same pattern in timelineState.ts recalibratePagination.
+          setRange((prev) => ({ ...prev }));
         } else {
           setGifs(res.results);
+          setRange({ start: 0, end: INITIAL_ROWS });
         }
         setNextCursor(res.next);
       } catch (e) {
@@ -803,6 +864,30 @@ export function GifBoard({ tab, onTabChange, onGifSelect, requestClose }: GifBoa
     },
     []
   );
+
+  const handlePaginatorEnd = useCallback(
+    (back: boolean) => {
+      if (back || loadingRef.current || !nextCursorRef.current) return;
+      loadGifs(
+        sectionRef.current,
+        queryRef.current,
+        nsfwRef.current,
+        hiddenRef.current,
+        nextCursorRef.current
+      );
+    },
+    [loadGifs]
+  );
+
+  const { getItems, observeBackAnchor, observeFrontAnchor } = useVirtualPaginator({
+    count: rows.length,
+    limit: ROW_PAGE_LIMIT,
+    range,
+    onRangeChange: setRange,
+    getScrollElement,
+    getItemElement,
+    onEnd: handlePaginatorEnd,
+  });
 
   useEffect(() => {
     if (!loading) {
@@ -858,18 +943,6 @@ export function GifBoard({ tab, onTabChange, onGifSelect, requestClose }: GifBoa
     },
     [onGifSelect, requestClose]
   );
-
-  const handleLoadMore = useCallback(() => {
-    if (nextCursor) {
-      loadGifs(
-        sectionRef.current,
-        queryRef.current,
-        nsfwRef.current,
-        hiddenRef.current,
-        nextCursor
-      );
-    }
-  }, [nextCursor, loadGifs]);
 
   const handleContextMenu = useCallback(
     (gif: GifItem, evt: React.MouseEvent<HTMLButtonElement>) => {
@@ -1011,7 +1084,10 @@ export function GifBoard({ tab, onTabChange, onGifSelect, requestClose }: GifBoa
     return (
       <>
         <GifGrid
-          gifs={gifs}
+          rows={rows}
+          getItems={getItems}
+          observeBackAnchor={observeBackAnchor}
+          observeFrontAnchor={observeFrontAnchor}
           myUserId={myUserId}
           showEditButton={activeSection === 'mine'}
           favoriteIds={favoriteIds}
@@ -1030,13 +1106,6 @@ export function GifBoard({ tab, onTabChange, onGifSelect, requestClose }: GifBoa
         {!loading && gifs.length === 0 && activeSection === 'all' && query && (
           <Box justifyContent="Center" style={{ padding: config.space.S300 }}>
             <Text size="T300">No GIFs found</Text>
-          </Box>
-        )}
-        {nextCursor && !loading && (
-          <Box justifyContent="Center" style={{ padding: config.space.S200 }}>
-            <button type="button" onClick={handleLoadMore} style={{ cursor: 'pointer' }}>
-              <Text size="T300">Load more</Text>
-            </button>
           </Box>
         )}
       </>
@@ -1123,7 +1192,7 @@ export function GifBoard({ tab, onTabChange, onGifSelect, requestClose }: GifBoa
         }
       >
         <Box grow="Yes" style={{ overflow: 'hidden' }}>
-          <Scroll size="300" hideTrack>
+          <Scroll ref={scrollRef} size="300" hideTrack>
             {renderContent()}
           </Scroll>
         </Box>
