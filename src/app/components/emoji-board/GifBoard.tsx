@@ -40,6 +40,7 @@ import {
   recordGifSelect,
   removeFavorite,
   removeHidden,
+  replaceGifFile,
   replaceGifTags,
   searchGifs,
   uploadGif,
@@ -49,8 +50,14 @@ import type { ItemRange } from '../../hooks/useVirtualPaginator';
 import { useVirtualPaginator } from '../../hooks/useVirtualPaginator';
 import { OverlayModal } from '../OverlayModal';
 import type { EmojiBoardTab } from './types';
-import { EmojiBoardTabs } from './components/Tabs';
-import { EmojiBoardLayout, GroupIcon, Sidebar, SidebarDivider, SidebarStack } from './components';
+import {
+  EmojiBoardHeaderRow,
+  EmojiBoardLayout,
+  GroupIcon,
+  Sidebar,
+  SidebarDivider,
+  SidebarStack,
+} from './components';
 import * as css from './components/styles.css';
 import { useDebounce } from '../../hooks/useDebounce';
 import { mobileOrTablet } from '../../utils/user-agent';
@@ -536,6 +543,7 @@ function GifEditModal({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | undefined>(undefined);
   const [previewSrc, setPreviewSrc] = useState<string | undefined>(undefined);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let active = true;
@@ -610,6 +618,38 @@ function GifEditModal({
       setError(e instanceof Error ? e.message : 'Delete failed');
       setBusy(false);
     }
+  };
+
+  const handleReplaceFile = async (replacement: File) => {
+    if (busy) return;
+    if (!isGifFile(replacement)) {
+      setError('Only GIF files can be used.');
+      return;
+    }
+    if (replacement.size > GIF_MAX_UPLOAD_SIZE_BYTES) {
+      setError(
+        `GIF is ${formatMiB(replacement.size)} — exceeds the ${formatMiB(
+          GIF_MAX_UPLOAD_SIZE_BYTES
+        )} upload limit.`
+      );
+      return;
+    }
+    setBusy(true);
+    setError(undefined);
+    try {
+      const updated = await replaceGifFile(gif.id, replacement);
+      onSaved(updated);
+      onClose();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Replace failed');
+      setBusy(false);
+    }
+  };
+
+  const handleReplaceChange: ChangeEventHandler<HTMLInputElement> = (e) => {
+    const next = e.target.files?.[0];
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (next) handleReplaceFile(next);
   };
 
   return (
@@ -716,6 +756,26 @@ function GifEditModal({
             </Box>
           </Box>
 
+          <Button
+            className={css.GifEditBtnTransition}
+            variant="Secondary"
+            size="400"
+            radii="300"
+            fill="Soft"
+            disabled={busy}
+            onClick={() => fileInputRef.current?.click()}
+            before={<Icon size="100" src={UploadIcon} />}
+          >
+            <Text size="B400">Replace GIF file</Text>
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/gif"
+            style={{ display: 'none' }}
+            onChange={handleReplaceChange}
+          />
+
           {error && (
             <Text size="T300" style={{ color: color.Critical.Main }}>
               {error}
@@ -758,11 +818,18 @@ function GifEditModal({
 type GifBoardProps = {
   tab: EmojiBoardTab;
   onTabChange?: (tab: EmojiBoardTab) => void;
+  onBackClick?: () => void;
   onGifSelect?: (gif: GifItem) => void;
   requestClose: () => void;
 };
 
-export function GifBoard({ tab, onTabChange, onGifSelect, requestClose }: GifBoardProps) {
+export function GifBoard({
+  tab,
+  onTabChange,
+  onBackClick,
+  onGifSelect,
+  requestClose,
+}: GifBoardProps) {
   const mx = useMatrixClient();
   const myUserId = mx.getUserId();
   const [showNsfw, setShowNsfw] = useSetting(settingsAtom, 'gifShowNsfw');
@@ -1117,7 +1184,7 @@ export function GifBoard({ tab, onTabChange, onGifSelect, requestClose }: GifBoa
       <EmojiBoardLayout
         header={
           <Box direction="Column" gap="200">
-            {onTabChange && <EmojiBoardTabs tab={tab} onTabChange={onTabChange} />}
+            <EmojiBoardHeaderRow tab={tab} onTabChange={onTabChange} onBack={onBackClick} />
             {activeSection !== 'upload' && (
               <Box gap="200" alignItems="Center">
                 <Box grow="Yes">

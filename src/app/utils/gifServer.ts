@@ -268,6 +268,24 @@ export async function uploadGif(file: File, params: UploadGifParams = {}): Promi
   return res.json();
 }
 
+export async function replaceGifFile(gifId: string, file: File): Promise<GifItem> {
+  const form = new FormData();
+  form.append('file', file);
+  const res = await gifFetch(`${GIF_SERVER_URL}/gifs/${gifId}/file`, { method: 'PUT', body: form });
+  if (res.status === 507) throw new Error('The GIF server is out of storage');
+  if (!res.ok) {
+    let message = `GIF replace failed: ${res.status}`;
+    try {
+      const body = (await res.json()) as { message?: string };
+      if (body?.message) message = body.message;
+    } catch {
+      /* keep status-based message */
+    }
+    throw new Error(message);
+  }
+  return res.json();
+}
+
 export async function fetchGifBlob(renditionUrl: string): Promise<Blob> {
   const res = await gifFetch(renditionUrl);
   if (!res.ok) throw new Error(`GIF blob fetch failed: ${res.status}`);
