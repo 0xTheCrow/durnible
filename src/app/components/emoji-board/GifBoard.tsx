@@ -653,9 +653,9 @@ function GifEditModal({
     try {
       const updated = await replaceGifFile(gif.id, replacement);
       onSaved(updated);
-      onClose();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Replace failed');
+    } finally {
       setReplacing(false);
       setBusy(false);
     }
@@ -1151,6 +1151,7 @@ export function GifBoard({
 
   const handleEditSaved = useCallback((updated: GifItem) => {
     setGifs((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
+    setEditingGif((prev) => (prev && prev.id === updated.id ? updated : prev));
   }, []);
 
   const handleEditDeleted = useCallback((id: string) => {
