@@ -40,6 +40,7 @@ import {
   recordGifSelect,
   removeFavorite,
   removeHidden,
+  replaceGifFile,
   replaceGifTags,
   searchGifs,
   uploadGif,
@@ -542,6 +543,7 @@ function GifEditModal({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | undefined>(undefined);
   const [previewSrc, setPreviewSrc] = useState<string | undefined>(undefined);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let active = true;
@@ -616,6 +618,38 @@ function GifEditModal({
       setError(e instanceof Error ? e.message : 'Delete failed');
       setBusy(false);
     }
+  };
+
+  const handleReplaceFile = async (replacement: File) => {
+    if (busy) return;
+    if (!isGifFile(replacement)) {
+      setError('Only GIF files can be used.');
+      return;
+    }
+    if (replacement.size > GIF_MAX_UPLOAD_SIZE_BYTES) {
+      setError(
+        `GIF is ${formatMiB(replacement.size)} — exceeds the ${formatMiB(
+          GIF_MAX_UPLOAD_SIZE_BYTES
+        )} upload limit.`
+      );
+      return;
+    }
+    setBusy(true);
+    setError(undefined);
+    try {
+      const updated = await replaceGifFile(gif.id, replacement);
+      onSaved(updated);
+      onClose();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Replace failed');
+      setBusy(false);
+    }
+  };
+
+  const handleReplaceChange: ChangeEventHandler<HTMLInputElement> = (e) => {
+    const next = e.target.files?.[0];
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (next) handleReplaceFile(next);
   };
 
   return (
@@ -721,6 +755,26 @@ function GifEditModal({
               <Text size="T300">NSFW</Text>
             </Box>
           </Box>
+
+          <Button
+            className={css.GifEditBtnTransition}
+            variant="Secondary"
+            size="400"
+            radii="300"
+            fill="Soft"
+            disabled={busy}
+            onClick={() => fileInputRef.current?.click()}
+            before={<Icon size="100" src={UploadIcon} />}
+          >
+            <Text size="B400">Replace GIF file</Text>
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/gif"
+            style={{ display: 'none' }}
+            onChange={handleReplaceChange}
+          />
 
           {error && (
             <Text size="T300" style={{ color: color.Critical.Main }}>
