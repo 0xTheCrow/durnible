@@ -235,12 +235,16 @@ export const EmojiBoardTabBtn = style({
  */
 
 export const GifGrid = style({
-  display: 'grid',
-  gridTemplateColumns: '1fr 1fr',
-  gap: config.space.S200,
   padding: config.space.S200,
   paddingLeft: config.space.S300,
   paddingRight: config.space.S100,
+});
+
+export const GifRow = style({
+  display: 'grid',
+  gridTemplateColumns: '1fr 1fr',
+  gap: config.space.S200,
+  marginBottom: config.space.S200,
 });
 
 export const GifItem = style([
