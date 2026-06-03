@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 import React from 'react';
-import { Badge, Box, Text } from 'folds';
+import { Badge, Box, Icon, Icons, Text } from 'folds';
 import { EmojiBoardTab } from '../types';
 import { gifServerEnabled } from '../../../utils/gifServer';
 import * as css from './styles.css';
@@ -67,6 +67,38 @@ export function EmojiBoardTabs({
           Stickers
         </Text>
       </Badge>
+    </Box>
+  );
+}
+
+export function EmojiBoardHeaderRow({
+  tab,
+  onTabChange,
+  onBack,
+}: {
+  tab: EmojiBoardTab;
+  onTabChange?: (tab: EmojiBoardTab) => void;
+  onBack?: () => void;
+}) {
+  if (!onBack && !onTabChange) return null;
+  return (
+    <Box direction="Row" gap="100" alignItems="Center">
+      {onBack && (
+        <Badge
+          className={css.EmojiBoardTabBtn}
+          data-tab-active={false}
+          style={{ cursor: 'pointer' }}
+          as="button"
+          variant="Secondary"
+          fill="None"
+          size="500"
+          aria-label="Back"
+          onClick={onBack}
+        >
+          <Icon src={Icons.ArrowLeft} size="100" />
+        </Badge>
+      )}
+      {onTabChange && <EmojiBoardTabs tab={tab} onTabChange={onTabChange} />}
     </Box>
   );
 }
