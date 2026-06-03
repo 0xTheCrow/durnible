@@ -55,7 +55,7 @@ import {
 import type { PreviewData } from './components';
 import {
   SearchInput,
-  EmojiBoardTabs,
+  EmojiBoardHeaderRow,
   SidebarStack,
   SidebarDivider,
   Sidebar,
@@ -1049,6 +1049,7 @@ export function EmojiBoard({
             <GifBoard
               tab={tab}
               onTabChange={onTabChange}
+              onBackClick={onBackClick}
               onGifSelect={onGifSelect}
               requestClose={onClose}
             />
@@ -1056,22 +1057,7 @@ export function EmojiBoard({
             <EmojiBoardLayout
               header={
                 <Box direction="Column" gap="200">
-                  {(onBackClick || onTabChange) && (
-                    <Box direction="Row" gap="200" alignItems="Center">
-                      {onBackClick && (
-                        <IconButton
-                          onClick={onBackClick}
-                          aria-label="Close"
-                          variant="SurfaceVariant"
-                          size="300"
-                          radii="300"
-                        >
-                          <Icon src={Icons.ArrowLeft} />
-                        </IconButton>
-                      )}
-                      {onTabChange && <EmojiBoardTabs tab={tab} onTabChange={onTabChange} />}
-                    </Box>
-                  )}
+                  <EmojiBoardHeaderRow tab={tab} onTabChange={onTabChange} onBack={onBackClick} />
                   <SearchInput
                     key={tab}
                     query={result?.query}

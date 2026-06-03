@@ -256,6 +256,7 @@ export const GifItem = style([
     overflow: 'hidden',
     display: 'block',
     width: '100%',
+    maxHeight: toRem(200),
     backgroundColor: color.SurfaceVariant.Container,
     ':hover': {
       outline: `${config.borderWidth.B300} solid ${color.Primary.Main}`,
@@ -347,7 +348,8 @@ export const GifItemImg = style([
   DefaultReset,
   {
     width: '100%',
-    height: 'auto',
+    height: '100%',
+    objectFit: 'contain',
     display: 'block',
   },
 ]);

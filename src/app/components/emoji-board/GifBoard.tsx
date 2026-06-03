@@ -49,8 +49,14 @@ import type { ItemRange } from '../../hooks/useVirtualPaginator';
 import { useVirtualPaginator } from '../../hooks/useVirtualPaginator';
 import { OverlayModal } from '../OverlayModal';
 import type { EmojiBoardTab } from './types';
-import { EmojiBoardTabs } from './components/Tabs';
-import { EmojiBoardLayout, GroupIcon, Sidebar, SidebarDivider, SidebarStack } from './components';
+import {
+  EmojiBoardHeaderRow,
+  EmojiBoardLayout,
+  GroupIcon,
+  Sidebar,
+  SidebarDivider,
+  SidebarStack,
+} from './components';
 import * as css from './components/styles.css';
 import { useDebounce } from '../../hooks/useDebounce';
 import { mobileOrTablet } from '../../utils/user-agent';
@@ -758,11 +764,18 @@ function GifEditModal({
 type GifBoardProps = {
   tab: EmojiBoardTab;
   onTabChange?: (tab: EmojiBoardTab) => void;
+  onBackClick?: () => void;
   onGifSelect?: (gif: GifItem) => void;
   requestClose: () => void;
 };
 
-export function GifBoard({ tab, onTabChange, onGifSelect, requestClose }: GifBoardProps) {
+export function GifBoard({
+  tab,
+  onTabChange,
+  onBackClick,
+  onGifSelect,
+  requestClose,
+}: GifBoardProps) {
   const mx = useMatrixClient();
   const myUserId = mx.getUserId();
   const [showNsfw, setShowNsfw] = useSetting(settingsAtom, 'gifShowNsfw');
@@ -1117,7 +1130,7 @@ export function GifBoard({ tab, onTabChange, onGifSelect, requestClose }: GifBoa
       <EmojiBoardLayout
         header={
           <Box direction="Column" gap="200">
-            {onTabChange && <EmojiBoardTabs tab={tab} onTabChange={onTabChange} />}
+            <EmojiBoardHeaderRow tab={tab} onTabChange={onTabChange} onBack={onBackClick} />
             {activeSection !== 'upload' && (
               <Box gap="200" alignItems="Center">
                 <Box grow="Yes">
