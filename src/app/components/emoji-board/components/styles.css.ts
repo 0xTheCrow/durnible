@@ -307,6 +307,15 @@ export const GifPreviewActions = style({
   gap: config.space.S100,
 });
 
+export const GifPreviewActionsLeft = style({
+  position: 'absolute',
+  bottom: config.space.S100,
+  left: config.space.S100,
+  zIndex: 1,
+  display: 'flex',
+  gap: config.space.S100,
+});
+
 const gifEditBtnBgTransition = 'background-color 80ms ease';
 
 export const GifEditBtnTransition = style({
@@ -319,6 +328,11 @@ export const GifPreviewDeleteBtn = style({
   ':hover': {
     backgroundColor: color.Critical.Container,
   },
+});
+
+export const GifPreviewReplaceBtn = style({
+  backgroundColor: color.Surface.Container,
+  transition: gifEditBtnBgTransition,
 });
 
 export const GifPreviewConfirm = style({
