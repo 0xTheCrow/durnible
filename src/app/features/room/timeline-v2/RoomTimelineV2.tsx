@@ -1,17 +1,21 @@
 import type { MouseEventHandler, RefObject } from 'react';
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { Room } from 'matrix-js-sdk';
+import { useSetAtom } from 'jotai';
 import { Box, Chip, Icon, Icons, Scroll, Spinner, Text, config } from 'folds';
 import type { EditorController } from '../../../components/editor';
 import { TimelineMessageContext } from '../timeline/TimelineMessageContext';
 import { MemoizedTimelineEvent } from '../timeline/MemoizedTimelineEvent';
 import { TimelineOverlay } from '../timeline/TimelineOverlay';
+import { JumpToLatestButton } from '../timeline/JumpToLatestButton';
+import { timelineSliderPositionAtom } from '../timeline/TimelineSlider';
 import type { Timeline } from '../timeline/timelineState';
 import { getInitialTimeline, loadEventContext, PAGINATION_LIMIT } from '../timeline/timelineState';
 import { getTimelinesEventsCount } from '../timeline/timelineUtils';
 import { willEventRender } from '../timeline/willEventRender';
 import { useVirtualPaginator } from '../../../hooks/useVirtualPaginator';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
+import { useRoomNavigate } from '../../../hooks/useRoomNavigate';
 import { getEditedEvent, getEventReactions } from '../../../utils/room';
 import { markAsRead } from '../../../utils/notifications';
 import { useSetting } from '../../../state/hooks/settings';
@@ -47,6 +51,8 @@ export function RoomTimelineV2({
   editorInputRef,
 }: RoomTimelineV2Props) {
   const mx = useMatrixClient();
+  const { navigateRoom } = useRoomNavigate();
+  const setSliderPosition = useSetAtom(timelineSliderPositionAtom);
   const scrollRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [timeline, setTimeline] = useState<Timeline>(() => getInitialTimeline(room));
@@ -57,7 +63,7 @@ export function RoomTimelineV2({
   const [dividerEl, setDividerEl] = useState<HTMLDivElement | null>(null);
   const [dividerInView, setDividerInView] = useState(true);
   const [pendingJumpToDivider, setPendingJumpToDivider] = useState(false);
-  const [focusEventId, setFocusEventId] = useState<string | undefined>();
+  const [focusRequest, setFocusRequest] = useState<{ eventId: string; nonce: number }>();
   const [highlightFocus, setHighlightFocus] = useState(false);
   const [isJumpLoading, setIsJumpLoading] = useState(false);
   const eventIdAtMountRef = useRef(eventId);
@@ -144,7 +150,7 @@ export function RoomTimelineV2({
           newest: Math.min(totalCount, result.absoluteIndex + contextSize),
         },
       });
-      setFocusEventId(targetEventId);
+      setFocusRequest({ eventId: targetEventId, nonce: requestId });
       setHighlightFocus(highlight);
     },
     [mx, room]
@@ -174,19 +180,20 @@ export function RoomTimelineV2({
     prevEditIdRef.current = editId;
   }, [editId, scrollController]);
 
-  const prevFocusEventIdRef = useRef<string>();
+  const hadFocusRef = useRef(false);
   useLayoutEffect(() => {
-    if (focusEventId) {
+    if (focusRequest) {
       scrollController.pinToAnchor(
-        `[data-message-id="${CSS.escape(focusEventId)}"]`,
+        `[data-message-id="${CSS.escape(focusRequest.eventId)}"]`,
         { align: 'start', offsetFraction: 0.12 },
         { animate: true }
       );
-    } else if (prevFocusEventIdRef.current) {
+      hadFocusRef.current = true;
+    } else if (hadFocusRef.current) {
       scrollController.release();
+      hadFocusRef.current = false;
     }
-    prevFocusEventIdRef.current = focusEventId;
-  }, [focusEventId, scrollController]);
+  }, [focusRequest, scrollController]);
 
   useLiveTimelineUpdates({ room, setTimeline, nearBottomRef, unfocusedAutoScroll });
 
@@ -320,6 +327,21 @@ export function RoomTimelineV2({
     willRender
   );
 
+  const lastRenderedEventId = (() => {
+    for (let i = timelineItems.length - 1; i >= 0; i -= 1) {
+      const descriptor = timelineItems[i];
+      if (descriptor.type === 'event') return descriptor.mEventId;
+    }
+    return null;
+  })();
+
+  const handleJumpToLatest = () => {
+    if (eventId) navigateRoom(room.roomId, undefined, { replace: true });
+    setTimeline(getInitialTimeline(room));
+    scrollController.pinToBottom();
+    setSliderPosition(1);
+  };
+
   const showBackSkeletons = canPaginateBack || !rangeAtOldest;
 
   return (
@@ -390,7 +412,7 @@ export function RoomTimelineV2({
                   item={descriptor.item}
                   collapsed={descriptor.collapsed}
                   groupedImages={descriptor.groupedImages}
-                  isHighlighted={highlightFocus && descriptor.mEventId === focusEventId}
+                  isHighlighted={highlightFocus && descriptor.mEventId === focusRequest?.eventId}
                   isEditing={editId === descriptor.mEventId}
                   reactionRelations={getEventReactions(descriptor.timelineSet, descriptor.mEventId)}
                   editedEvent={getEditedEvent(
@@ -411,6 +433,13 @@ export function RoomTimelineV2({
             <span ref={atBottomAnchorRef} />
           </Box>
         </Scroll>
+        <JumpToLatestButton
+          scrollRef={scrollRef}
+          lastMessageId={liveTimelineLinked && rangeAtNewest ? lastRenderedEventId : null}
+          atBottom={atBottom}
+          autoScrolling={false}
+          onClick={handleJumpToLatest}
+        />
       </Box>
     </TimelineMessageContext.Provider>
   );

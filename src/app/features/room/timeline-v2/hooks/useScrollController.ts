@@ -73,9 +73,10 @@ export const useScrollController = ({
       if (!targetElement || !targetElement.isConnected) return;
       const targetRect = targetElement.getBoundingClientRect();
       const scrollRect = scrollElement.getBoundingClientRect();
-      const fullyVisible =
-        targetRect.top >= scrollRect.top && targetRect.bottom <= scrollRect.bottom;
-      if (fullyVisible) return;
+      const topInView = targetRect.top >= scrollRect.top && targetRect.top <= scrollRect.bottom;
+      const satisfied =
+        intent.align === 'start' ? topInView : topInView && targetRect.bottom <= scrollRect.bottom;
+      if (satisfied) return;
       scrollElement.scrollTo({
         top: computeAnchorScrollTop(
           scrollElement,
@@ -147,9 +148,6 @@ export const useScrollController = ({
       autoScrollingRef.current = false;
       window.clearTimeout(autoScrollTimerRef.current);
     };
-    // Genuine user input both releases a tracked anchor and ends any programmatic
-    // scroll guard — a smooth scroll we initiated never emits these events, so their
-    // arrival unambiguously means the user has taken over.
     const handleUserInput = () => {
       if (intentRef.current.kind === 'anchor') intentRef.current = { kind: 'free' };
       endAutoScroll();
