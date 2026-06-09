@@ -4,6 +4,8 @@ import { Chip, Icon, Icons, Text } from 'folds';
 import * as css from './RoomTimeline.css';
 import { TimelineOverlay } from './TimelineOverlay';
 
+export const SCROLL_AWAY_RESET_PX = 300;
+
 export type JumpToLatestButtonProps = {
   scrollRef: RefObject<HTMLDivElement>;
   // null when the caller has nothing to track (not live-linked, range not at
@@ -25,6 +27,26 @@ export function JumpToLatestButton({
   onClick,
 }: JumpToLatestButtonProps) {
   const [lastMsgVisible, setLastMsgVisible] = useState(true);
+  const [dismissed, setDismissed] = useState(false);
+
+  const handleClick = () => {
+    setDismissed(true);
+    onClick();
+  };
+
+  useEffect(() => {
+    if (!dismissed) return undefined;
+    const scrollEl = scrollRef.current;
+    if (!scrollEl) return undefined;
+    const handleScroll = () => {
+      const distanceFromBottom = scrollEl.scrollHeight - scrollEl.scrollTop - scrollEl.clientHeight;
+      if (distanceFromBottom > SCROLL_AWAY_RESET_PX) {
+        setDismissed(false);
+      }
+    };
+    scrollEl.addEventListener('scroll', handleScroll, { passive: true });
+    return () => scrollEl.removeEventListener('scroll', handleScroll);
+  }, [dismissed, scrollRef]);
 
   useEffect(() => {
     const scrollEl = scrollRef.current;
@@ -57,7 +79,7 @@ export function JumpToLatestButton({
     <TimelineOverlay
       className={css.JumpToLatestOverlay}
       position="Bottom"
-      data-visible={!atBottom && !lastMsgVisible && !autoScrolling}
+      data-visible={!atBottom && !lastMsgVisible && !autoScrolling && !dismissed}
       data-testid="jump-to-latest-overlay"
     >
       <Chip
@@ -65,7 +87,7 @@ export function JumpToLatestButton({
         radii="Pill"
         outlined
         before={<Icon size="50" src={Icons.ArrowBottom} />}
-        onClick={onClick}
+        onClick={handleClick}
         data-testid="jump-to-latest-button"
       >
         <Text size="L400">Jump to Latest</Text>
