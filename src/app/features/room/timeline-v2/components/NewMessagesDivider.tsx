@@ -24,9 +24,9 @@ export const NewMessagesDivider = forwardRef<HTMLDivElement, NewMessagesDividerP
         tabIndex={0}
         aria-label="Mark all messages as read"
         onClick={onClick}
-        onKeyDown={(evt) => {
-          if (evt.key === 'Enter' || evt.key === ' ') {
-            evt.preventDefault();
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
             onClick();
           }
         }}

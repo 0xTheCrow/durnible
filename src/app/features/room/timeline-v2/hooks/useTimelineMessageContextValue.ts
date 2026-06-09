@@ -138,7 +138,9 @@ export const useTimelineMessageContextValue = ({
 
   const handleDecryptRetry = useCallback(async () => {
     const linkedTimelines = getLinkedTimelines(getLiveTimeline(room));
-    await Promise.allSettled(linkedTimelines.map((tl) => decryptAllTimelineEvent(mx, tl)));
+    await Promise.allSettled(
+      linkedTimelines.map((eventTimeline) => decryptAllTimelineEvent(mx, eventTimeline))
+    );
   }, [mx, room]);
 
   return useMemo(

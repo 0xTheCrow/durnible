@@ -43,8 +43,9 @@ export const useAutoMarkAsRead = ({
       markAsRead(mx, room.roomId, hideActivity);
       return;
     }
-    const evtTimeline = getEventTimeline(room, readReceiptEventId);
-    const latestTimeline = evtTimeline && getFirstLinkedTimeline(evtTimeline, Direction.Forward);
+    const eventTimeline = getEventTimeline(room, readReceiptEventId);
+    const latestTimeline =
+      eventTimeline && getFirstLinkedTimeline(eventTimeline, Direction.Forward);
     if (latestTimeline === room.getLiveTimeline()) {
       markAsRead(mx, room.roomId, hideActivity);
     }
@@ -68,8 +69,9 @@ export const useAutoMarkAsRead = ({
   const readReceiptEventId = room.getEventReadUpTo(room.client.getUserId() ?? '') || undefined;
   const readReceiptLoaded = (() => {
     if (!readReceiptEventId) return true;
-    const evtTimeline = getEventTimeline(room, readReceiptEventId);
-    const latestTimeline = evtTimeline && getFirstLinkedTimeline(evtTimeline, Direction.Forward);
+    const eventTimeline = getEventTimeline(room, readReceiptEventId);
+    const latestTimeline =
+      eventTimeline && getFirstLinkedTimeline(eventTimeline, Direction.Forward);
     return latestTimeline === room.getLiveTimeline();
   })();
 

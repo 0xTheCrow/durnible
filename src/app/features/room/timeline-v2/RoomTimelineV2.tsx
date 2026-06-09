@@ -13,7 +13,6 @@ import { willEventRender } from '../timeline/willEventRender';
 import { useVirtualPaginator } from '../../../hooks/useVirtualPaginator';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { getEditedEvent, getEventReactions } from '../../../utils/room';
-import { computeAnchorScrollTop, scrollToBottom } from '../../../utils/dom';
 import { markAsRead } from '../../../utils/notifications';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
@@ -28,8 +27,7 @@ import { DayDivider } from './components/DayDivider';
 import { useAtBottom } from './hooks/useAtBottom';
 import { useNearBottom } from './hooks/useNearBottom';
 import { useLiveTimelineUpdates } from './hooks/useLiveTimelineUpdates';
-import { useScrollAnchor } from './hooks/useScrollAnchor';
-import { useStickyBottom } from './hooks/useStickyBottom';
+import { useScrollController } from './hooks/useScrollController';
 import { useTimelineMessageContextValue } from './hooks/useTimelineMessageContextValue';
 import { usePaginationState } from './hooks/usePaginationState';
 import { useAutoMarkAsRead } from './hooks/useAutoMarkAsRead';
@@ -81,7 +79,12 @@ export function RoomTimelineV2({
     rangeAtNewest,
   } = usePaginationState(room, timeline, setTimeline);
 
-  const { atBottom, atBottomRef, atBottomAnchorRef } = useAtBottom({ scrollRef });
+  const scrollController = useScrollController({ scrollRef, contentRef });
+
+  const { atBottom, atBottomRef, atBottomAnchorRef } = useAtBottom({
+    scrollRef,
+    onChange: scrollController.notifyAtBottomChange,
+  });
   const { nearBottomRef, nearBottomAnchorRef } = useNearBottom({ scrollRef });
 
   const { readReceiptEventId, readReceiptLoaded, roomIsUnread } = useAutoMarkAsRead({
@@ -93,26 +96,26 @@ export function RoomTimelineV2({
   });
 
   useLayoutEffect(() => {
-    const scrollEl = scrollRef.current;
-    if (!scrollEl) return;
-    if (!eventIdAtMountRef.current) {
-      const mountDivider = scrollEl.querySelector<HTMLElement>(
-        `[data-anchor-id="${NEW_MESSAGES_DIVIDER_ANCHOR_ID}"]`
-      );
-      if (mountDivider) {
-        const offset = Math.round(scrollEl.clientHeight * 0.12);
-        scrollEl.scrollTo({
-          top: computeAnchorScrollTop(scrollEl, mountDivider, 'start', offset),
-          behavior: 'instant',
-        });
-        return;
-      }
+    const scrollElement = scrollRef.current;
+    if (!scrollElement) return;
+    // A deep-link eventId is owned by handleOpenEvent below — don't place at mount,
+    // or we'd flash to the bottom before the async context load jumps to the target.
+    if (eventIdAtMountRef.current) return;
+    const mountDivider = scrollElement.querySelector<HTMLElement>(
+      `[data-anchor-id="${NEW_MESSAGES_DIVIDER_ANCHOR_ID}"]`
+    );
+    if (mountDivider) {
+      scrollController.pinToAnchor(`[data-anchor-id="${NEW_MESSAGES_DIVIDER_ANCHOR_ID}"]`, {
+        align: 'start',
+        offsetFraction: 0.12,
+      });
+      return;
     }
-    scrollToBottom(scrollEl);
-  }, []);
+    scrollController.pinToBottom();
+  }, [scrollController]);
 
   const handleOpenEvent = useCallback(
-    async (evtId: string, { highlight = true }: { highlight?: boolean } = {}) => {
+    async (targetEventId: string, { highlight = true }: { highlight?: boolean } = {}) => {
       const requestId = openEventRequestRef.current + 1;
       openEventRequestRef.current = requestId;
 
@@ -122,7 +125,7 @@ export function RoomTimelineV2({
       }, 1500);
 
       const contextSize = Math.floor(PAGINATION_LIMIT / 2);
-      const result = await loadEventContext(mx, room, evtId, contextSize);
+      const result = await loadEventContext(mx, room, targetEventId, contextSize);
       // A newer handleOpenEvent call superseded this one — drop the stale result
       // so it doesn't overwrite the in-flight target with a previously-clicked one.
       if (openEventRequestRef.current !== requestId) {
@@ -141,7 +144,7 @@ export function RoomTimelineV2({
           newest: Math.min(totalCount, result.absoluteIndex + contextSize),
         },
       });
-      setFocusEventId(evtId);
+      setFocusEventId(targetEventId);
       setHighlightFocus(highlight);
     },
     [mx, room]
@@ -157,58 +160,58 @@ export function RoomTimelineV2({
     return () => window.clearTimeout(timer);
   }, [highlightFocus]);
 
-  const setScrollAnchor = useScrollAnchor({ scrollRef, contentRef });
-
+  const prevEditIdRef = useRef<string>();
   useLayoutEffect(() => {
-    setScrollAnchor(editId ? `[data-message-id="${CSS.escape(editId)}"]` : null, {
-      align: 'center',
-    });
-  }, [editId, setScrollAnchor]);
+    if (editId) {
+      scrollController.pinToAnchor(
+        `[data-message-id="${CSS.escape(editId)}"]`,
+        { align: 'center' },
+        { animate: true }
+      );
+    } else if (prevEditIdRef.current) {
+      scrollController.release();
+    }
+    prevEditIdRef.current = editId;
+  }, [editId, scrollController]);
 
+  const prevFocusEventIdRef = useRef<string>();
   useLayoutEffect(() => {
-    setScrollAnchor(focusEventId ? `[data-message-id="${CSS.escape(focusEventId)}"]` : null, {
-      align: 'start',
-      offsetFraction: 0.12,
-    });
-  }, [focusEventId, setScrollAnchor]);
-
-  useStickyBottom({ scrollRef, contentRef });
+    if (focusEventId) {
+      scrollController.pinToAnchor(
+        `[data-message-id="${CSS.escape(focusEventId)}"]`,
+        { align: 'start', offsetFraction: 0.12 },
+        { animate: true }
+      );
+    } else if (prevFocusEventIdRef.current) {
+      scrollController.release();
+    }
+    prevFocusEventIdRef.current = focusEventId;
+  }, [focusEventId, scrollController]);
 
   useLiveTimelineUpdates({ room, setTimeline, nearBottomRef, unfocusedAutoScroll });
 
   useEffect(() => {
-    const scrollEl = scrollRef.current;
-    if (!dividerEl || !scrollEl) {
+    const scrollElement = scrollRef.current;
+    if (!dividerEl || !scrollElement) {
       setDividerInView(true);
       return undefined;
     }
-    const io = new IntersectionObserver(
+    const intersectionObserver = new IntersectionObserver(
       ([entry]) => setDividerInView(entry?.isIntersecting ?? false),
-      { root: scrollEl, threshold: 0 }
+      { root: scrollElement, threshold: 0 }
     );
-    io.observe(dividerEl);
-    return () => io.disconnect();
+    intersectionObserver.observe(dividerEl);
+    return () => intersectionObserver.disconnect();
   }, [dividerEl]);
 
   useLayoutEffect(() => {
     if (!pendingJumpToDivider) return;
-    const scrollEl = scrollRef.current;
-    if (!scrollEl) {
-      setPendingJumpToDivider(false);
-      return;
-    }
-    const dividerElement = scrollEl.querySelector<HTMLElement>(
-      `[data-anchor-id="${NEW_MESSAGES_DIVIDER_ANCHOR_ID}"]`
-    );
-    if (dividerElement) {
-      const offset = Math.round(scrollEl.clientHeight * 0.12);
-      scrollEl.scrollTo({
-        top: computeAnchorScrollTop(scrollEl, dividerElement, 'start', offset),
-        behavior: 'instant',
-      });
-    }
+    scrollController.pinToAnchor(`[data-anchor-id="${NEW_MESSAGES_DIVIDER_ANCHOR_ID}"]`, {
+      align: 'start',
+      offsetFraction: 0.12,
+    });
     setPendingJumpToDivider(false);
-  }, [pendingJumpToDivider]);
+  }, [pendingJumpToDivider, scrollController]);
 
   const handleMarkAsRead = () => {
     setDividerReadUptoEventId(undefined);
@@ -216,14 +219,12 @@ export function RoomTimelineV2({
   };
 
   const handleJumpToUnread = async () => {
-    const scrollEl = scrollRef.current;
-    if (!scrollEl) return;
     if (dividerEl) {
-      const offset = Math.round(scrollEl.clientHeight * 0.12);
-      scrollEl.scrollTo({
-        top: computeAnchorScrollTop(scrollEl, dividerEl, 'start', offset),
-        behavior: 'smooth',
-      });
+      scrollController.pinToAnchor(
+        `[data-anchor-id="${NEW_MESSAGES_DIVIDER_ANCHOR_ID}"]`,
+        { align: 'start', offsetFraction: 0.12 },
+        { animate: true }
+      );
       return;
     }
     if (!readReceiptEventId) return;
@@ -259,18 +260,26 @@ export function RoomTimelineV2({
     limit: PAGINATION_LIMIT,
     range: { start: timeline.range.oldest, end: timeline.range.newest },
     onRangeChange: useCallback(
-      (r) => setTimeline((cs) => ({ ...cs, range: { oldest: r.start, newest: r.end } })),
+      (range) =>
+        setTimeline((current) => ({
+          ...current,
+          range: { oldest: range.start, newest: range.end },
+        })),
       []
     ),
     getScrollElement,
     getItemElement,
     onEnd: handleTimelinePagination,
+    shouldRestoreScroll: useCallback(
+      () => scrollController.intentRef.current?.kind === 'free',
+      [scrollController]
+    ),
   });
 
   const handleEdit = useCallback(
-    (editEvtId?: string) => {
-      if (editEvtId) {
-        setEditId(editEvtId);
+    (editEventId?: string) => {
+      if (editEventId) {
+        setEditId(editEventId);
         return;
       }
       setEditId(undefined);
@@ -280,8 +289,8 @@ export function RoomTimelineV2({
   );
 
   const handleOpenReply = useCallback<MouseEventHandler<HTMLButtonElement>>(
-    (evt) => {
-      const targetId = evt.currentTarget.getAttribute('data-event-id');
+    (event) => {
+      const targetId = event.currentTarget.getAttribute('data-event-id');
       if (!targetId) return;
       handleOpenEvent(targetId);
     },
@@ -359,30 +368,38 @@ export function RoomTimelineV2({
               <BackPaginationSkeletons layout={messageLayout} anchorRef={observeBackAnchor} />
             )}
 
-            {timelineItems.map((d) => {
-              if (d.type === 'new-messages') {
+            {timelineItems.map((descriptor) => {
+              if (descriptor.type === 'new-messages') {
                 return (
-                  <NewMessagesDivider key={d.key} ref={setDividerEl} onClick={handleMarkAsRead} />
+                  <NewMessagesDivider
+                    key={descriptor.key}
+                    ref={setDividerEl}
+                    onClick={handleMarkAsRead}
+                  />
                 );
               }
-              if (d.type === 'day-divider') {
-                return <DayDivider key={d.key} ts={d.ts} />;
+              if (descriptor.type === 'day-divider') {
+                return <DayDivider key={descriptor.key} ts={descriptor.ts} />;
               }
               return (
                 <MemoizedTimelineEvent
-                  key={d.mEventId}
-                  mEvent={d.mEvent}
-                  mEventId={d.mEventId}
-                  timelineSet={d.timelineSet}
-                  item={d.item}
-                  collapsed={d.collapsed}
-                  groupedImages={d.groupedImages}
-                  isHighlighted={highlightFocus && d.mEventId === focusEventId}
-                  isEditing={editId === d.mEventId}
-                  reactionRelations={getEventReactions(d.timelineSet, d.mEventId)}
-                  editedEvent={getEditedEvent(d.mEventId, d.mEvent, d.timelineSet)}
-                  isRedacted={d.mEvent.isRedacted()}
-                  eventStatus={d.mEvent.status}
+                  key={descriptor.mEventId}
+                  mEvent={descriptor.mEvent}
+                  mEventId={descriptor.mEventId}
+                  timelineSet={descriptor.timelineSet}
+                  item={descriptor.item}
+                  collapsed={descriptor.collapsed}
+                  groupedImages={descriptor.groupedImages}
+                  isHighlighted={highlightFocus && descriptor.mEventId === focusEventId}
+                  isEditing={editId === descriptor.mEventId}
+                  reactionRelations={getEventReactions(descriptor.timelineSet, descriptor.mEventId)}
+                  editedEvent={getEditedEvent(
+                    descriptor.mEventId,
+                    descriptor.mEvent,
+                    descriptor.timelineSet
+                  )}
+                  isRedacted={descriptor.mEvent.isRedacted()}
+                  eventStatus={descriptor.mEvent.status}
                 />
               );
             })}

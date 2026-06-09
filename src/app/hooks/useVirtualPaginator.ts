@@ -25,6 +25,7 @@ type VirtualPaginatorOptions<TScrollElement extends HTMLElement> = {
   getScrollElement: () => TScrollElement | null;
   getItemElement: (index: number) => HTMLElement | undefined;
   onEnd?: (back: boolean) => void;
+  shouldRestoreScroll?: () => boolean;
 };
 
 type VirtualPaginator = {
@@ -131,7 +132,16 @@ const useObserveAnchorHandle = (
 export const useVirtualPaginator = <TScrollElement extends HTMLElement>(
   options: VirtualPaginatorOptions<TScrollElement>
 ): VirtualPaginator => {
-  const { count, limit, range, onRangeChange, getScrollElement, getItemElement, onEnd } = options;
+  const {
+    count,
+    limit,
+    range,
+    onRangeChange,
+    getScrollElement,
+    getItemElement,
+    onEnd,
+    shouldRestoreScroll,
+  } = options;
 
   const initialRenderRef = useRef(true);
 
@@ -252,6 +262,10 @@ export const useVirtualPaginator = <TScrollElement extends HTMLElement>(
   useLayoutEffect(() => {
     const scrollEl = getScrollElement();
     if (!restoreScrollRef.current || !scrollEl) return;
+    if (shouldRestoreScroll && !shouldRestoreScroll()) {
+      restoreScrollRef.current = undefined;
+      return;
+    }
     const {
       anchorOffsetTop: oldOffsetTop,
       anchorItem,
@@ -269,7 +283,7 @@ export const useVirtualPaginator = <TScrollElement extends HTMLElement>(
       behavior: 'instant',
     });
     restoreScrollRef.current = undefined;
-  }, [range, getScrollElement, getItemElement]);
+  }, [range, getScrollElement, getItemElement, shouldRestoreScroll]);
 
   // Continue pagination to fill view height with scroll items
   // check if pagination anchor are in visible view height

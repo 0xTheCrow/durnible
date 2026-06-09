@@ -52,10 +52,10 @@ export const usePaginationState = (
   const rangeAtNewest = (() => {
     if (timeline.range.newest >= eventsLength) return true;
     for (let i = timeline.range.newest; i < eventsLength; i += 1) {
-      const [tl, base] = getTimelineAndBaseIndex(timeline.linkedTimelines, i);
-      if (!tl) continue;
-      const evt = getTimelineEvent(tl, getTimelineRelativeIndex(i, base));
-      if (evt && !isModifierTimelineEvent(evt)) return false;
+      const [eventTimeline, base] = getTimelineAndBaseIndex(timeline.linkedTimelines, i);
+      if (!eventTimeline) continue;
+      const matrixEvent = getTimelineEvent(eventTimeline, getTimelineRelativeIndex(i, base));
+      if (matrixEvent && !isModifierTimelineEvent(matrixEvent)) return false;
     }
     return true;
   })();

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 
 type UseAtBottomParams = {
   scrollRef: RefObject<HTMLDivElement>;
+  onChange?: (atBottom: boolean) => void;
 };
 
 type UseAtBottomResult = {
@@ -11,7 +12,7 @@ type UseAtBottomResult = {
   atBottomAnchorRef: RefObject<HTMLSpanElement>;
 };
 
-export const useAtBottom = ({ scrollRef }: UseAtBottomParams): UseAtBottomResult => {
+export const useAtBottom = ({ scrollRef, onChange }: UseAtBottomParams): UseAtBottomResult => {
   const [atBottom, setAtBottom] = useState(false);
   const atBottomRef = useRef(false);
   const atBottomAnchorRef = useRef<HTMLSpanElement>(null);
@@ -26,6 +27,7 @@ export const useAtBottom = ({ scrollRef }: UseAtBottomParams): UseAtBottomResult
         const isIntersecting = entry.isIntersecting;
         atBottomRef.current = isIntersecting;
         setAtBottom(isIntersecting);
+        onChange?.(isIntersecting);
       },
       { root, rootMargin: '0px', threshold: 0 }
     );
@@ -34,7 +36,7 @@ export const useAtBottom = ({ scrollRef }: UseAtBottomParams): UseAtBottomResult
     return () => {
       observer.disconnect();
     };
-  }, [scrollRef]);
+  }, [scrollRef, onChange]);
 
   return { atBottom, atBottomRef, atBottomAnchorRef };
 };
