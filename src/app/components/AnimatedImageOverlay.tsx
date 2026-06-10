@@ -38,14 +38,12 @@ export function AnimatedImageOverlay({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [hovered, setHovered] = useState(false);
-  const [canvasObjectFit, setCanvasObjectFit] = useState<CSSProperties['objectFit']>();
 
   usePausedFirstFrameCanvas(imgRef, canvasRef, loaded, true);
 
   const handleImgLoad = (evt: SyntheticEvent<HTMLImageElement>) => {
     imgRef.current = evt.currentTarget;
     setLoaded(true);
-    setCanvasObjectFit(getComputedStyle(evt.currentTarget).objectFit as CSSProperties['objectFit']);
     if (onLoad) onLoad(evt);
   };
 
@@ -98,9 +96,10 @@ export function AnimatedImageOverlay({
             position: 'absolute',
             top: 0,
             left: 0,
-            width: '100%',
-            height: '100%',
-            objectFit: canvasObjectFit,
+            width: 'auto',
+            height: 'auto',
+            maxWidth: '100%',
+            maxHeight: '100%',
             pointerEvents: 'none',
             visibility: hovered ? 'hidden' : 'visible',
           }}
