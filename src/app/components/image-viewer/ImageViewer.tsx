@@ -37,7 +37,7 @@ export const ImageViewer = as<'div', ImageViewerProps>(
   ({ className, alt, src, onClose, gallery, ...props }, ref) => {
     const { zoom, zoomIn, zoomOut, setZoom, onWheel } = useZoom(IMAGE_VIEWER_ZOOM_STEP);
     const { pan, setPan, cursor, onMouseDown } = usePan(zoom !== 1, zoom);
-    const { onTouchStart, onTouchMove, onTouchEnd } = useTouchGesture(setZoom, setPan);
+    const { onTouchStart, onTouchMove, onTouchEnd } = useTouchGesture(zoom, setZoom, setPan);
 
     // Cache of resolved http srcs by gallery index. The first item is seeded
     // with the src the viewer was opened on; the rest are filled in lazily as
@@ -110,8 +110,11 @@ export const ImageViewer = as<'div', ImageViewerProps>(
     const hasNext = !!gallery && gallery.index < gallery.items.length - 1;
 
     const lastClickRef = useRef<{ time: number; x: number; y: number } | null>(null);
+    const lastPointerTypeRef = useRef<string>('mouse');
     const handleClick = useCallback(
       (evt: React.MouseEvent) => {
+        // Ignore the compatibility click synthesized from a touch tap; touch double-tap is handled by useTouchGesture.
+        if (lastPointerTypeRef.current === 'touch') return;
         const now = Date.now();
         const last = lastClickRef.current;
         if (
@@ -253,6 +256,9 @@ export const ImageViewer = as<'div', ImageViewerProps>(
             src={src}
             alt={alt}
             draggable={false}
+            onPointerDown={(evt) => {
+              lastPointerTypeRef.current = evt.pointerType;
+            }}
             onMouseDown={(evt) => {
               evt.preventDefault();
               onMouseDown(evt);

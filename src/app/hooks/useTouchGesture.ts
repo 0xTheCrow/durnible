@@ -19,13 +19,15 @@ const getDistance = (t1: React.Touch, t2: React.Touch): number =>
   Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
 
 export const useTouchGesture = (
+  zoom: number,
   setZoom: Dispatch<SetStateAction<number>>,
   setPan: Dispatch<SetStateAction<Pan>>,
   zoomMin = 0.1,
   zoomMax = 5
 ) => {
   const gestureRef = useRef<TouchGestureState | null>(null);
-  const zoomRef = useRef(1);
+  const zoomRef = useRef(zoom);
+  zoomRef.current = zoom;
   const lastTapRef = useRef<TapState | null>(null);
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
 
