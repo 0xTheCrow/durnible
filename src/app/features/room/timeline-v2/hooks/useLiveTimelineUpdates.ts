@@ -9,6 +9,7 @@ type UseLiveTimelineUpdatesParams = {
   room: Room;
   setTimeline: Dispatch<SetStateAction<Timeline>>;
   nearBottomRef: RefObject<boolean>;
+  isInLivePaginationWindowRef: RefObject<boolean>;
   unfocusedAutoScroll: boolean;
 };
 
@@ -16,6 +17,7 @@ export const useLiveTimelineUpdates = ({
   room,
   setTimeline,
   nearBottomRef,
+  isInLivePaginationWindowRef,
   unfocusedAutoScroll,
 }: UseLiveTimelineUpdatesParams): void => {
   const handleArrive = useCallback(
@@ -30,7 +32,7 @@ export const useLiveTimelineUpdates = ({
       const focused = typeof document !== 'undefined' && document.hasFocus();
       const autoPinEnabled = focused || unfocusedAutoScroll;
 
-      if (nearBottomRef.current && autoPinEnabled) {
+      if (nearBottomRef.current && isInLivePaginationWindowRef.current && autoPinEnabled) {
         setTimeline((current) => ({
           ...current,
           range: {
@@ -43,7 +45,7 @@ export const useLiveTimelineUpdates = ({
 
       setTimeline((current) => ({ ...current }));
     },
-    [setTimeline, nearBottomRef, unfocusedAutoScroll]
+    [setTimeline, nearBottomRef, isInLivePaginationWindowRef, unfocusedAutoScroll]
   );
 
   useLiveEventArrive(room, handleArrive);

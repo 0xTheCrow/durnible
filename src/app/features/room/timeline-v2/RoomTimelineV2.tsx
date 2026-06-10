@@ -85,12 +85,17 @@ export function RoomTimelineV2({
     rangeAtNewest,
   } = usePaginationState(room, timeline, setTimeline);
 
-  const scrollController = useScrollController({ scrollRef, contentRef });
+  const isInLivePaginationWindow = liveTimelineLinked && rangeAtNewest;
+  const isInLivePaginationWindowRef = useRef(isInLivePaginationWindow);
+  isInLivePaginationWindowRef.current = isInLivePaginationWindow;
 
-  const { atBottom, atBottomRef, atBottomAnchorRef } = useAtBottom({
+  const scrollController = useScrollController({
     scrollRef,
-    onChange: scrollController.notifyAtBottomChange,
+    contentRef,
+    isInLivePaginationWindowRef,
   });
+
+  const { atBottom, atBottomRef, atBottomAnchorRef } = useAtBottom({ scrollRef });
   const { nearBottomRef, nearBottomAnchorRef } = useNearBottom({ scrollRef });
 
   const { readReceiptEventId, readReceiptLoaded, roomIsUnread } = useAutoMarkAsRead({
@@ -117,7 +122,7 @@ export function RoomTimelineV2({
       });
       return;
     }
-    scrollController.pinToBottom();
+    scrollController.pinToLiveEnd();
   }, [scrollController]);
 
   const handleOpenEvent = useCallback(
@@ -195,7 +200,13 @@ export function RoomTimelineV2({
     }
   }, [focusRequest, scrollController]);
 
-  useLiveTimelineUpdates({ room, setTimeline, nearBottomRef, unfocusedAutoScroll });
+  useLiveTimelineUpdates({
+    room,
+    setTimeline,
+    nearBottomRef,
+    isInLivePaginationWindowRef,
+    unfocusedAutoScroll,
+  });
 
   useEffect(() => {
     const scrollElement = scrollRef.current;
@@ -338,7 +349,7 @@ export function RoomTimelineV2({
   const handleJumpToLatest = () => {
     if (eventId) navigateRoom(room.roomId, undefined, { replace: true });
     setTimeline(getInitialTimeline(room));
-    scrollController.pinToBottom();
+    scrollController.pinToLiveEnd();
     setSliderPosition(1);
   };
 
@@ -426,7 +437,7 @@ export function RoomTimelineV2({
               );
             })}
 
-            {!(liveTimelineLinked && rangeAtNewest) && <div ref={observeFrontAnchor} />}
+            {!isInLivePaginationWindow && <div ref={observeFrontAnchor} />}
             {isForwardPaginating && <ForwardPaginationSkeletons layout={messageLayout} />}
 
             <span ref={nearBottomAnchorRef} />
@@ -435,7 +446,7 @@ export function RoomTimelineV2({
         </Scroll>
         <JumpToLatestButton
           scrollRef={scrollRef}
-          lastMessageId={liveTimelineLinked && rangeAtNewest ? lastRenderedEventId : null}
+          lastMessageId={isInLivePaginationWindow ? lastRenderedEventId : null}
           atBottom={atBottom}
           autoScrolling={false}
           onClick={handleJumpToLatest}
