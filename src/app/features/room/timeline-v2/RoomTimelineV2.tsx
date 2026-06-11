@@ -95,7 +95,10 @@ export function RoomTimelineV2({
     isInLivePaginationWindowRef,
   });
 
-  const { atBottom, atBottomRef, atBottomAnchorRef } = useAtBottom({ scrollRef });
+  const { atBottom, atBottomRef, atBottomAnchorRef } = useAtBottom({
+    scrollRef,
+    onChange: scrollController.syncFollowLive,
+  });
   const { nearBottomRef, nearBottomAnchorRef } = useNearBottom({ scrollRef });
 
   const { readReceiptEventId, readReceiptLoaded, roomIsUnread } = useAutoMarkAsRead({
@@ -205,6 +208,7 @@ export function RoomTimelineV2({
     setTimeline,
     nearBottomRef,
     isInLivePaginationWindowRef,
+    pinToLiveEnd: scrollController.pinToLiveEnd,
     unfocusedAutoScroll,
   });
 
