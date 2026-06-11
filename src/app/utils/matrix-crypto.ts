@@ -12,3 +12,8 @@ export const verifiedDevice = async (
   const verified = status.crossSigningVerified;
   return verified;
 };
+
+export const verifiedUser = async (api: CryptoApi, userId: string): Promise<boolean> => {
+  const status = await api.getUserVerificationStatus(userId);
+  return status.isCrossSigningVerified();
+};

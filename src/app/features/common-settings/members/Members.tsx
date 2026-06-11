@@ -23,7 +23,7 @@ import { useRoomMembers } from '../../../hooks/useRoomMembers';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { useGetMemberPowerLevel, usePowerLevels } from '../../../hooks/usePowerLevels';
 import { VirtualTile } from '../../../components/virtualizer';
-import { MemberTile } from '../../../components/member-tile';
+import { MemberTile, MemberVerificationBadge } from '../../../components/member-tile';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
 import { getMxIdLocalPart, getMxIdServer } from '../../../utils/matrix';
 import { ServerBadge } from '../../../components/server-badge';
@@ -57,6 +57,8 @@ const SEARCH_OPTIONS: UseAsyncSearchOptions = {
   },
 };
 
+const ADMIN_POWER_LEVEL = 100;
+
 const mxIdToName = (mxId: string) => getMxIdLocalPart(mxId) ?? mxId;
 const getRoomMemberStr: SearchItemStrGetter<RoomMember> = (m, query) =>
   getMemberSearchStr(m, query, mxIdToName);
@@ -78,6 +80,11 @@ export function Members({ onClose }: MembersProps) {
   const creators = useRoomCreators(room);
   const getPowerTag = useGetMemberPowerTag(room, creators, powerLevels);
   const getPowerLevel = useGetMemberPowerLevel(powerLevels);
+
+  const myUserId = mx.getUserId() ?? undefined;
+  const viewerIsAdmin =
+    (myUserId !== undefined && creators.has(myUserId)) ||
+    getPowerLevel(myUserId) >= ADMIN_POWER_LEVEL;
 
   const [membershipFilterIndex, setMembershipFilterIndex] = useState(0);
   const [sortFilterIndex, setSortFilterIndex] = useSetting(settingsAtom, 'memberSortFilterIndex');
@@ -314,6 +321,11 @@ export function Members({ onClose }: MembersProps) {
                             room={room}
                             member={tagOrMember}
                             useAuthentication={useAuthentication}
+                            nameBadge={
+                              viewerIsAdmin && (
+                                <MemberVerificationBadge mx={mx} userId={tagOrMember.userId} />
+                              )
+                            }
                             after={
                               server && (
                                 <Box as="span" shrink="No" alignSelf="End">

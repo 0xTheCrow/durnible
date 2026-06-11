@@ -80,7 +80,7 @@ Durnible is a Matrix chat client built with React, TypeScript, and Vite. Forked 
 
 ## Git
 
-- Never run `git commit` (or `git push`, `git reset --hard`, or any other history-rewriting or publishing command). The user owns every commit on this repo and reviews the diff before recording it. Stage work if asked, but stop before `commit`. This holds even when tests and lint pass, and even when an earlier plan appeared to include a commit step.
+- The user is the only one who commits to this repo. No one and nothing else commits on their behalf — not you, not a script, not a hook. Never run `git commit` (or `git push`, `git reset --hard`, or any other history-rewriting or publishing command). The user owns every commit and reviews the diff before recording it. Stage work if asked, but stop before `commit`. This holds even when tests and lint pass, and even when an earlier plan appeared to include a commit step.
 
 ## Git Hooks
 
