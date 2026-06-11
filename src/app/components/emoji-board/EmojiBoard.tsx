@@ -1134,7 +1134,7 @@ export function EmojiBoard({
                   {tab === EmojiBoardTab.Sticker && groups.length === 0 && <NoStickerPacks />}
                 </EmojiGroupHolder>
               </Box>
-              <Preview previewAtom={previewAtom} />
+              {!isMobile && <Preview previewAtom={previewAtom} />}
             </EmojiBoardLayout>
           )}
         </div>
