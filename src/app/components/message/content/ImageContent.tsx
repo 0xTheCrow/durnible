@@ -48,6 +48,7 @@ export type ImageContentProps = {
    * uses this to open the viewer with gallery context instead.
    */
   onView?: (src: string, alt: string) => void;
+  onLoadNaturalSize?: (width: number, height: number) => void;
   renderImage: (props: RenderImageProps) => ReactNode;
 };
 export const ImageContent = as<'div', ImageContentProps>(
@@ -64,6 +65,7 @@ export const ImageContent = as<'div', ImageContentProps>(
       markedAsSpoiler,
       spoilerReason,
       onView,
+      onLoadNaturalSize,
       renderImage,
       ...props
     },
@@ -102,8 +104,12 @@ export const ImageContent = as<'div', ImageContentProps>(
       !!(autoPlay || isForceHidden)
     );
 
-    const handleLoad = () => {
+    const handleLoad = (evt: React.SyntheticEvent<HTMLImageElement>) => {
       setLoad(true);
+      const { naturalWidth, naturalHeight } = evt.currentTarget;
+      if (onLoadNaturalSize && naturalWidth > 0 && naturalHeight > 0) {
+        onLoadNaturalSize(naturalWidth, naturalHeight);
+      }
     };
 
     const handleError = () => {
