@@ -59,12 +59,14 @@ import {
 } from './reactions';
 import {
   MessageCopyLinkItem,
+  MessageCopyTextItem,
   MessageDeleteItem,
   MessagePinItem,
   MessageReadReceiptItem,
   MessageReportItem,
   MessageSourceCodeItem,
 } from './menu';
+import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
 
 export type { ReactionHandler } from './reactions';
 export {
@@ -186,6 +188,23 @@ export const Message = as<'div', MessageProps>(
     const msgType = mEvent.getContent().msgtype;
     const isImageMessage = msgType === MsgType.Image || msgType === MsgType.Video;
     const isImageHidden = isImageMessage && hiddenImages.has(eventId);
+    const isTextMessage =
+      msgType === MsgType.Text || msgType === MsgType.Emote || msgType === MsgType.Notice;
+    const isMobile = useScreenSizeContext() === ScreenSize.Mobile;
+    const contentRef = useRef<HTMLDivElement>(null);
+
+    const handleSelectText = () => {
+      const contentElement = contentRef.current;
+      skipMenuReturnFocusRef.current = true;
+      closeMenu();
+      if (!contentElement) return;
+      const selection = window.getSelection();
+      if (!selection) return;
+      const range = document.createRange();
+      range.selectNodeContents(contentElement);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    };
 
     const toggleImageHidden = useCallback(() => {
       setHiddenImages((prev: Set<string>) => {
@@ -338,7 +357,9 @@ export const Message = as<'div', MessageProps>(
           />
         ) : (
           <MessageEventIdContext.Provider value={eventId}>
-            {children}
+            <div ref={contentRef} style={{ display: 'contents' }}>
+              {children}
+            </div>
           </MessageEventIdContext.Provider>
         )}
         {reactions}
@@ -572,6 +593,27 @@ export const Message = as<'div', MessageProps>(
                               mEvent={mEvent}
                               onClose={closeMenu}
                             />
+                          )}
+                          {isTextMessage && (
+                            <MessageCopyTextItem room={room} mEvent={mEvent} onClose={closeMenu} />
+                          )}
+                          {isTextMessage && isMobile && (
+                            <MenuItem
+                              size="300"
+                              after={<Icon size="100" src={Icons.Alphabet} />}
+                              radii="300"
+                              onClick={handleSelectText}
+                              data-testid="message-select-text-btn"
+                            >
+                              <Text
+                                className={css.MessageMenuItemText}
+                                as="span"
+                                size="T300"
+                                truncate
+                              >
+                                Select Text
+                              </Text>
+                            </MenuItem>
                           )}
                           <MessageCopyLinkItem room={room} mEvent={mEvent} onClose={closeMenu} />
                           {canPinEvent && (
