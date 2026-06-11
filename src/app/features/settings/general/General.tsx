@@ -562,12 +562,12 @@ export function General({ onBack, onClose }: GeneralProps) {
         <Scroll hideTrack visibility="Hover">
           <PageContent>
             <Box direction="Column" gap="700">
-              <ExperimentalTimelineToggle />
               <Appearance />
               <DateAndTime />
               <Editor />
               <Messages />
               <Advanced />
+              <ExperimentalTimelineToggle />
             </Box>
           </PageContent>
         </Scroll>
