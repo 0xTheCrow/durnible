@@ -55,7 +55,9 @@ export function UploadQueueCard({
 
   const isImage = originalFile.type.startsWith('image');
   const isVideo = originalFile.type.startsWith('video');
-  const previewUrl = useObjectURL(isImage || isVideo ? originalFile : undefined);
+  const previewUrl = useObjectURL(
+    (isImage || isVideo) && !fileItem.isDownloadingGif ? originalFile : undefined
+  );
 
   const [editOpen, setEditOpen] = useState(false);
 
@@ -63,6 +65,7 @@ export function UploadQueueCard({
     if (
       upload.status === UploadStatus.Idle &&
       !fileSizeExceeded &&
+      !fileItem.isDownloadingGif &&
       !fileItem.isEncrypting &&
       fileItem.isEncryptionSuccessful !== false
     ) {
@@ -71,6 +74,7 @@ export function UploadQueueCard({
   }, [
     upload.status,
     fileSizeExceeded,
+    fileItem.isDownloadingGif,
     fileItem.isEncrypting,
     fileItem.isEncryptionSuccessful,
     startUpload,
@@ -109,9 +113,11 @@ export function UploadQueueCard({
     !showErrorOverlay &&
     (upload.status === UploadStatus.Loading ||
       upload.status === UploadStatus.Idle ||
+      fileItem.isDownloadingGif ||
       fileItem.isEncrypting);
 
-  const canEdit = isImage && !showErrorOverlay && !fileItem.isEncrypting;
+  const canEdit =
+    isImage && !showErrorOverlay && !fileItem.isDownloadingGif && !fileItem.isEncrypting;
   const canSpoiler = (isImage || isVideo) && !showErrorOverlay && !showProgress;
 
   return (
@@ -138,11 +144,11 @@ export function UploadQueueCard({
 
         {showProgress && (
           <Box className={css.UploadQueueOverlay}>
-            {fileItem.isEncrypting ? (
+            {fileItem.isDownloadingGif || fileItem.isEncrypting ? (
               <>
                 <Spinner variant="Secondary" size="400" />
                 <Text size="L400" align="Center">
-                  Encrypting…
+                  {fileItem.isDownloadingGif ? 'Loading GIF…' : 'Encrypting…'}
                 </Text>
               </>
             ) : (

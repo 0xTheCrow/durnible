@@ -24,6 +24,7 @@ export type UploadItem = {
   metadata: UploadMetadata;
   mediaInfo?: UploadMediaInfo;
   encryptionInfo: EncryptedAttachmentInfo | undefined;
+  isDownloadingGif?: boolean;
   isEncrypting?: boolean;
   isEncryptionSuccessful?: boolean;
   encryptError?: string;
