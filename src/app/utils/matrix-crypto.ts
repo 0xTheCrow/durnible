@@ -13,7 +13,16 @@ export const verifiedDevice = async (
   return verified;
 };
 
-export const verifiedUser = async (api: CryptoApi, userId: string): Promise<boolean> => {
-  const status = await api.getUserVerificationStatus(userId);
-  return status.isCrossSigningVerified();
+export const isUserFullyCrossSigned = async (api: CryptoApi, userId: string): Promise<boolean> => {
+  const hasCrossSigning = await api.userHasCrossSigningKeys(userId, true);
+  if (!hasCrossSigning) return false;
+
+  const deviceMap = await api.getUserDeviceInfo([userId], true);
+  const devices = deviceMap.get(userId);
+  if (!devices || devices.size === 0) return true;
+
+  const statuses = await Promise.all(
+    Array.from(devices.keys()).map((deviceId) => api.getDeviceVerificationStatus(userId, deviceId))
+  );
+  return statuses.every((status) => status?.signedByOwner ?? false);
 };

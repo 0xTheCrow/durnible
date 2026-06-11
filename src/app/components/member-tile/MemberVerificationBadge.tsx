@@ -1,17 +1,19 @@
 import React from 'react';
 import { Box, color, Icon, Icons } from 'folds';
 import type { MatrixClient } from 'matrix-js-sdk';
-import { useUserVerificationStatus } from '../../hooks/useUserVerificationStatus';
-import { VerificationStatus } from '../../hooks/useDeviceVerificationStatus';
+import {
+  CrossSigningStatus,
+  useUserCrossSigningStatus,
+} from '../../hooks/useUserCrossSigningStatus';
 
 type MemberVerificationBadgeProps = {
   mx: MatrixClient;
   userId: string;
 };
 export function MemberVerificationBadge({ mx, userId }: MemberVerificationBadgeProps) {
-  const status = useUserVerificationStatus(mx.getCrypto(), userId);
+  const status = useUserCrossSigningStatus(mx.getCrypto(), userId);
 
-  if (status === VerificationStatus.Verified) {
+  if (status === CrossSigningStatus.Complete) {
     return (
       <Box as="span" shrink="No" alignItems="Center" aria-label="Verified" title="Verified">
         <Icon size="50" src={Icons.ShieldUser} style={{ color: color.Success.Main }} />
@@ -19,7 +21,7 @@ export function MemberVerificationBadge({ mx, userId }: MemberVerificationBadgeP
     );
   }
 
-  if (status === VerificationStatus.Unverified) {
+  if (status === CrossSigningStatus.Incomplete) {
     return (
       <Box as="span" shrink="No" alignItems="Center" aria-label="Not verified" title="Not verified">
         <Icon size="50" src={Icons.Shield} style={{ color: color.Critical.Main }} />
