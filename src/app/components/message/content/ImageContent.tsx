@@ -48,7 +48,6 @@ export type ImageContentProps = {
    * uses this to open the viewer with gallery context instead.
    */
   onView?: (src: string, alt: string) => void;
-  onLoadNaturalSize?: (width: number, height: number) => void;
   renderImage: (props: RenderImageProps) => ReactNode;
 };
 export const ImageContent = as<'div', ImageContentProps>(
@@ -65,7 +64,6 @@ export const ImageContent = as<'div', ImageContentProps>(
       markedAsSpoiler,
       spoilerReason,
       onView,
-      onLoadNaturalSize,
       renderImage,
       ...props
     },
@@ -104,12 +102,8 @@ export const ImageContent = as<'div', ImageContentProps>(
       !!(autoPlay || isForceHidden)
     );
 
-    const handleLoad = (evt: React.SyntheticEvent<HTMLImageElement>) => {
+    const handleLoad = () => {
       setLoad(true);
-      const { naturalWidth, naturalHeight } = evt.currentTarget;
-      if (onLoadNaturalSize && naturalWidth > 0 && naturalHeight > 0) {
-        onLoadNaturalSize(naturalWidth, naturalHeight);
-      }
     };
 
     const handleError = () => {
@@ -176,10 +170,9 @@ export const ImageContent = as<'div', ImageContentProps>(
                 alt={body}
                 title={body}
                 imgStyle={{
-                  width: 'auto',
-                  height: 'auto',
-                  maxWidth: '100%',
-                  maxHeight: '100%',
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
                 }}
                 onLoad={handleLoad}
                 onError={handleError}
@@ -192,10 +185,9 @@ export const ImageContent = as<'div', ImageContentProps>(
                 title: body,
                 src: srcState.data,
                 style: {
-                  width: 'auto',
-                  height: 'auto',
-                  maxWidth: '100%',
-                  maxHeight: '100%',
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
                   cursor: 'pointer',
                 },
                 onLoad: handleLoad,

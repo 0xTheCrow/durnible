@@ -96,10 +96,9 @@ export function AnimatedImageOverlay({
             position: 'absolute',
             top: 0,
             left: 0,
-            width: 'auto',
-            height: 'auto',
-            maxWidth: '100%',
-            maxHeight: '100%',
+            width: '100%',
+            height: '100%',
+            objectFit: 'contain',
             pointerEvents: 'none',
             visibility: hovered ? 'hidden' : 'visible',
           }}

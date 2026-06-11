@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
-import React, { useState } from 'react';
+import React from 'react';
 import { Box, Chip, Icon, Icons, Text, toRem } from 'folds';
 import type { IContent } from 'matrix-js-sdk';
 import { JUMBO_EMOJI_REG, URL_REG } from '../../utils/regex';
@@ -186,22 +186,20 @@ type RenderImageContentProps = {
   encryptionInfo?: EncryptedFile;
   markedAsSpoiler?: boolean;
   spoilerReason?: string;
-  onLoadNaturalSize?: (width: number, height: number) => void;
 };
 type MImageProps = {
   content: ImageContent;
   renderImageContent: (props: RenderImageContentProps) => ReactNode;
 };
 export function MImage({ content, renderImageContent }: MImageProps) {
-  const [naturalSize, setNaturalSize] = useState<{ width: number; height: number }>();
   const imgInfo = content?.info;
   const mxcUrl = content.file?.url ?? content.url;
   if (typeof mxcUrl !== 'string') {
     return <BrokenContent />;
   }
   const MAX_HEIGHT = 400;
-  const w = naturalSize?.width ?? imgInfo?.w ?? 400;
-  const h = naturalSize?.height ?? imgInfo?.h ?? 400;
+  const w = imgInfo?.w || 400;
+  const h = imgInfo?.h || 400;
   const imgWidth = h > MAX_HEIGHT ? Math.round(w * (MAX_HEIGHT / h)) : w;
   return (
     <Attachment media style={{ width: toRem(imgWidth) }}>
@@ -221,7 +219,6 @@ export function MImage({ content, renderImageContent }: MImageProps) {
           encryptionInfo: content.file,
           markedAsSpoiler: content[MATRIX_SPOILER_PROPERTY_NAME],
           spoilerReason: content[MATRIX_SPOILER_REASON_PROPERTY_NAME],
-          onLoadNaturalSize: (width, height) => setNaturalSize({ width, height }),
         })}
       </AttachmentBox>
     </Attachment>
