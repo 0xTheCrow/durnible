@@ -10,6 +10,7 @@ import {
   getRoomImagePack,
   getRoomImagePacks,
   getUserImagePack,
+  packOrderKey,
 } from '../plugins/custom-emoji';
 import { useMatrixClient } from './useMatrixClient';
 import { useAccountDataCallback } from './useAccountDataCallback';
@@ -142,9 +143,6 @@ export const useRoomsImagePacks = (rooms: Room[]) => {
   return roomPacks;
 };
 
-const packAddressKey = (pack: ImagePack): string =>
-  pack.address ? `${pack.address.roomId}:${pack.address.stateKey}` : pack.id;
-
 export const useRelevantImagePacks = (usage: ImageUsage, rooms: Room[]): ImagePack[] => {
   const userPack = useUserImagePack();
   const globalPacks = useGlobalImagePacks();
@@ -154,10 +152,10 @@ export const useRelevantImagePacks = (usage: ImageUsage, rooms: Room[]): ImagePa
   const relevantPacks = useMemo(() => {
     const packs = userPack ? [userPack] : [];
     const seenKeys = new Set<string>();
-    const globalPackIds = new Set(globalPacks.map((pack) => pack.id));
+    const globalPackKeys = new Set(globalPacks.map(packOrderKey));
 
     const pushUnique = (pack: ImagePack) => {
-      const key = packAddressKey(pack);
+      const key = packOrderKey(pack);
       if (seenKeys.has(key)) return;
       seenKeys.add(key);
       packs.push(pack);
@@ -165,7 +163,7 @@ export const useRelevantImagePacks = (usage: ImageUsage, rooms: Room[]): ImagePa
 
     globalPacks.forEach(pushUnique);
     roomsPacks.forEach((pack) => {
-      if (globalPackIds.has(pack.id)) return;
+      if (globalPackKeys.has(packOrderKey(pack))) return;
       pushUnique(pack);
     });
     portablePacksMap.forEach(pushUnique);
