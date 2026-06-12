@@ -7,6 +7,7 @@ import type { EditorController } from '../../../components/editor';
 import { createMentionNode } from '../../../components/editor';
 import { eventWithShortcode, factoryEventSentBy, getMxIdLocalPart } from '../../../utils/matrix';
 import {
+  computeReactionBucketCreatedAt,
   getEditedEvent,
   getEventReactions,
   getMemberDisplayName,
@@ -135,10 +136,11 @@ export const useTimelineClickHandlers = ({
       const rShortcode =
         shortcode ||
         (reactions.find(eventWithShortcode)?.getContent().shortcode as string | undefined);
+      const bucketCreatedAt = computeReactionBucketCreatedAt(room, targetEventId, key);
       mx.sendEvent(
         room.roomId,
         EventType.Reaction,
-        getReactionContent(targetEventId, key, rShortcode)
+        getReactionContent(targetEventId, key, rShortcode, bucketCreatedAt)
       );
     },
     [mx, room]

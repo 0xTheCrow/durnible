@@ -7,6 +7,8 @@ export const MATRIX_SPOILER_REASON_PROPERTY_NAME =
   'page.codeberg.everypizza.msc4193.spoiler.reason';
 export const MATRIX_BATCH_ID_PROPERTY_NAME = 'com.durnible.batch_id';
 export const MATRIX_BATCH_INDEX_PROPERTY_NAME = 'com.durnible.batch_index';
+export const MATRIX_REACTION_BUCKET_CREATED_AT_PROPERTY_NAME =
+  'com.durnible.reaction_bucket_created_at';
 
 export type ImageInfo = {
   w?: number;
