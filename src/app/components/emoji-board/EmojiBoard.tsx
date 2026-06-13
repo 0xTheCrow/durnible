@@ -75,6 +75,7 @@ import {
   EmojiGroup,
   EmojiBoardLayout,
 } from './components';
+import * as css from './components/styles.css';
 import { useScreenSize, ScreenSize } from '../../hooks/useScreenSize';
 import { useSetting } from '../../state/hooks/settings';
 import { settingsAtom } from '../../state/settings';
@@ -781,6 +782,7 @@ function EmojiGroupHolder({
 
   const handleEmojiFocus: FocusEventHandler = (evt) => {
     const targetEl = evt.target as HTMLButtonElement;
+    if (!targetEl.matches(':focus-visible')) return;
     const emojiInfo = getEmojiItemInfo(targetEl);
     if (!emojiInfo) return;
     setPreviewData({
@@ -794,7 +796,13 @@ function EmojiGroupHolder({
   };
 
   return (
-    <Scroll ref={contentScrollRef} size="300" onKeyDown={preventScrollWithArrowKey} hideTrack>
+    <Scroll
+      ref={contentScrollRef}
+      className={css.PreviewScroll}
+      size="300"
+      onKeyDown={preventScrollWithArrowKey}
+      hideTrack
+    >
       <Box
         onClick={onGroupItemClick}
         onContextMenu={onGroupItemContextMenu}
@@ -1105,7 +1113,7 @@ export function EmojiBoard({
                 )
               }
             >
-              <Box grow="Yes">
+              <Box grow="Yes" className={css.PreviewArea}>
                 <EmojiGroupHolder
                   key={tab}
                   contentScrollRef={contentScrollRef}
@@ -1147,8 +1155,8 @@ export function EmojiBoard({
                   </div>
                   {tab === EmojiBoardTab.Sticker && groups.length === 0 && <NoStickerPacks />}
                 </EmojiGroupHolder>
+                {!isMobile && <Preview previewAtom={previewAtom} />}
               </Box>
-              {!isMobile && <Preview previewAtom={previewAtom} />}
             </EmojiBoardLayout>
           )}
         </div>

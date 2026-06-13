@@ -83,15 +83,29 @@ export const SidebarDropTarget = style({
  * Preview
  */
 
+const PreviewHeight = toRem(56);
+const PreviewScrollReserve = `calc(${PreviewHeight} + ${config.space.S300})`;
+
 export const Preview = style({
+  position: 'absolute',
+  bottom: config.space.S300,
+  left: config.space.S300,
+  right: config.space.S300,
+
   padding: config.space.S200,
-  margin: config.space.S300,
-  marginTop: 0,
   minHeight: toRem(40),
 
   borderRadius: config.radii.R400,
   backgroundColor: color.SurfaceVariant.Container,
   color: color.SurfaceVariant.OnContainer,
+});
+
+export const PreviewArea = style({
+  position: 'relative',
+});
+
+export const PreviewScroll = style({
+  scrollPaddingBottom: PreviewScrollReserve,
 });
 
 export const PreviewEmoji = style([
