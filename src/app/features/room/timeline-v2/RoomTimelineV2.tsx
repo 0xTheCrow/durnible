@@ -90,10 +90,14 @@ export function RoomTimelineV2({
   const isInLivePaginationWindowRef = useRef(isInLivePaginationWindow);
   isInLivePaginationWindowRef.current = isInLivePaginationWindow;
 
+  const unfocusedAutoScrollRef = useRef(unfocusedAutoScroll);
+  unfocusedAutoScrollRef.current = unfocusedAutoScroll;
+
   const scrollController = useScrollController({
     scrollRef,
     contentRef,
     isInLivePaginationWindowRef,
+    unfocusedAutoScrollRef,
   });
 
   const { atBottom, atBottomRef, atBottomAnchorRef } = useAtBottom({

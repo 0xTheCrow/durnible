@@ -26,6 +26,7 @@ type UseScrollControllerParams = {
   scrollRef: RefObject<HTMLDivElement>;
   contentRef: RefObject<HTMLDivElement>;
   isInLivePaginationWindowRef: RefObject<boolean>;
+  unfocusedAutoScrollRef: RefObject<boolean>;
 };
 
 export type ScrollController = {
@@ -47,6 +48,7 @@ export const useScrollController = ({
   scrollRef,
   contentRef,
   isInLivePaginationWindowRef,
+  unfocusedAutoScrollRef,
 }: UseScrollControllerParams): ScrollController => {
   const intentRef = useRef<ScrollIntent>({ kind: 'free' });
   const autoScrollingRef = useRef(false);
@@ -137,13 +139,20 @@ export const useScrollController = ({
     if (!scrollElement || !contentElement) return undefined;
     const maintainPosition = () => {
       if (intentRef.current.kind === 'free') return;
+      if (
+        intentRef.current.kind === 'followLive' &&
+        !document.hasFocus() &&
+        !unfocusedAutoScrollRef.current
+      ) {
+        return;
+      }
       apply('instant');
     };
     const resizeObserver = new ResizeObserver(maintainPosition);
     resizeObserver.observe(contentElement);
     resizeObserver.observe(scrollElement);
     return () => resizeObserver.disconnect();
-  }, [scrollRef, contentRef, apply]);
+  }, [scrollRef, contentRef, apply, unfocusedAutoScrollRef]);
 
   useEffect(() => {
     const scrollElement = scrollRef.current;
