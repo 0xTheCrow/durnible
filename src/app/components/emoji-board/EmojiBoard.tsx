@@ -43,7 +43,7 @@ import { useAsyncSearch } from '../../hooks/useAsyncSearch';
 import { addRecentEmoji } from '../../plugins/recent-emoji';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
 import type { ImagePack, PackImageReader } from '../../plugins/custom-emoji';
-import { ImageUsage } from '../../plugins/custom-emoji';
+import { ImageUsage, packOrderKey } from '../../plugins/custom-emoji';
 import { getEmoticonSearchStr } from '../../plugins/utils';
 import { useStickerPackOrder } from '../../hooks/useStickerPackOrder';
 import { useFavoriteEmoji, useFavoriteEntries } from '../../hooks/useFavoriteEmoji';
@@ -75,6 +75,7 @@ import {
   EmojiGroup,
   EmojiBoardLayout,
 } from './components';
+import * as css from './components/styles.css';
 import { useScreenSize, ScreenSize } from '../../hooks/useScreenSize';
 import { useSetting } from '../../state/hooks/settings';
 import { settingsAtom } from '../../state/settings';
@@ -137,9 +138,11 @@ const useGroups = (
 
     const packGroups: EmojiGroupItem[] = imagePacks.map((pack) => {
       let label = pack.meta.name;
-      if (!label) label = isUserId(pack.id) ? 'Personal Pack' : mx.getRoom(pack.id)?.name;
+      if (!label) {
+        label = isUserId(pack.id) ? 'Personal Pack' : mx.getRoom(pack.address?.roomId ?? '')?.name;
+      }
       return {
-        id: pack.id,
+        id: packOrderKey(pack),
         name: label ?? 'Unknown',
         items: pack
           .getImages(ImageUsage.Emoticon)
@@ -191,10 +194,12 @@ const useGroups = (
 
     imagePacks.forEach((pack) => {
       let label = pack.meta.name;
-      if (!label) label = isUserId(pack.id) ? 'Personal Pack' : mx.getRoom(pack.id)?.name;
+      if (!label) {
+        label = isUserId(pack.id) ? 'Personal Pack' : mx.getRoom(pack.address?.roomId ?? '')?.name;
+      }
 
       g.push({
-        id: pack.id,
+        id: packOrderKey(pack),
         name: label ?? 'Unknown',
         items: pack
           .getImages(ImageUsage.Sticker)
@@ -280,7 +285,7 @@ function EmojiSidebar({
   };
 
   const reorderableIds = useMemo(() => {
-    const packIds = packs.map((p) => p.id);
+    const packIds = packs.map(packOrderKey);
     const specialIds = hasFavorites ? [RECENT_GROUP_ID, FAVORITES_GROUP_ID] : [RECENT_GROUP_ID];
     // Insert each special ID at its correct position per packOrder
     for (const specialId of specialIds) {
@@ -368,13 +373,13 @@ function EmojiSidebar({
             ? RECENT_GROUP_ID
             : a.type === 'favorites'
             ? FAVORITES_GROUP_ID
-            : a.pack.id;
+            : packOrderKey(a.pack);
         const bId =
           b.type === 'recent'
             ? RECENT_GROUP_ID
             : b.type === 'favorites'
             ? FAVORITES_GROUP_ID
-            : b.pack.id;
+            : packOrderKey(b.pack);
         return compareByPackOrder(orderMap, aId, bId);
       });
     }
@@ -401,7 +406,7 @@ function EmojiSidebar({
               ? RECENT_GROUP_ID
               : item.type === 'favorites'
               ? FAVORITES_GROUP_ID
-              : item.pack.id;
+              : packOrderKey(item.pack);
           const idx = reorderableIds.indexOf(id);
 
           if (item.type === 'recent') {
@@ -466,7 +471,11 @@ function EmojiSidebar({
           }
           const { pack } = item;
           let label = pack.meta.name;
-          if (!label) label = isUserId(pack.id) ? 'Personal Pack' : mx.getRoom(pack.id)?.name;
+          if (!label) {
+            label = isUserId(pack.id)
+              ? 'Personal Pack'
+              : mx.getRoom(pack.address?.roomId ?? '')?.name;
+          }
 
           const url =
             mxcUrlToHttp(mx, pack.getAvatarUrl(usage) ?? '', useAuthentication) || pack.meta.avatar;
@@ -474,9 +483,9 @@ function EmojiSidebar({
           if (isMobile) {
             return (
               <MobileSortableImageGroupIcon
-                key={pack.id}
-                active={activeGroupId === pack.id}
-                id={pack.id}
+                key={id}
+                active={activeGroupId === id}
+                id={id}
                 label={label ?? 'Unknown Pack'}
                 url={url}
                 reorderMode={reorderMode}
@@ -484,16 +493,16 @@ function EmojiSidebar({
                 canMoveDown={idx < reorderableIds.length - 1}
                 onClick={handleScrollToGroup}
                 onLongPress={() => setReorderMode(true)}
-                onMoveUp={() => handleMoveUp(pack.id)}
-                onMoveDown={() => handleMoveDown(pack.id)}
+                onMoveUp={() => handleMoveUp(id)}
+                onMoveDown={() => handleMoveDown(id)}
               />
             );
           }
           return (
             <DraggableImageGroupIcon
-              key={pack.id}
-              active={activeGroupId === pack.id}
-              id={pack.id}
+              key={id}
+              active={activeGroupId === id}
+              id={id}
               label={label ?? 'Unknown Pack'}
               url={url}
               onClick={handleScrollToGroup}
@@ -554,7 +563,7 @@ function StickerSidebar({
   };
 
   const reorderableIds = useMemo(() => {
-    const ids = packs.map((p) => p.id);
+    const ids = packs.map(packOrderKey);
     if (hasFavorites) {
       const favIdx = packOrder.indexOf(FAVORITES_GROUP_ID);
       if (favIdx < 0) {
@@ -626,8 +635,8 @@ function StickerSidebar({
     if (packOrder.length > 0) {
       const orderMap = new Map(packOrder.map((id, i) => [id, i]));
       items.sort((a, b) => {
-        const aId = a.type === 'favorites' ? FAVORITES_GROUP_ID : a.pack.id;
-        const bId = b.type === 'favorites' ? FAVORITES_GROUP_ID : b.pack.id;
+        const aId = a.type === 'favorites' ? FAVORITES_GROUP_ID : packOrderKey(a.pack);
+        const bId = b.type === 'favorites' ? FAVORITES_GROUP_ID : packOrderKey(b.pack);
         return compareByPackOrder(orderMap, aId, bId);
       });
     }
@@ -649,7 +658,7 @@ function StickerSidebar({
           </IconButton>
         )}
         {sortedItems.map((item) => {
-          const id = item.type === 'favorites' ? FAVORITES_GROUP_ID : item.pack.id;
+          const id = item.type === 'favorites' ? FAVORITES_GROUP_ID : packOrderKey(item.pack);
           const idx = reorderableIds.indexOf(id);
 
           if (item.type === 'favorites') {
@@ -684,7 +693,11 @@ function StickerSidebar({
           }
           const { pack } = item;
           let label = pack.meta.name;
-          if (!label) label = isUserId(pack.id) ? 'Personal Pack' : mx.getRoom(pack.id)?.name;
+          if (!label) {
+            label = isUserId(pack.id)
+              ? 'Personal Pack'
+              : mx.getRoom(pack.address?.roomId ?? '')?.name;
+          }
 
           const url =
             mxcUrlToHttp(mx, pack.getAvatarUrl(usage) ?? '', useAuthentication) || pack.meta.avatar;
@@ -692,9 +705,9 @@ function StickerSidebar({
           if (isMobile) {
             return (
               <MobileSortableImageGroupIcon
-                key={pack.id}
-                active={activeGroupId === pack.id}
-                id={pack.id}
+                key={id}
+                active={activeGroupId === id}
+                id={id}
                 label={label ?? 'Unknown Pack'}
                 url={url}
                 reorderMode={reorderMode}
@@ -702,16 +715,16 @@ function StickerSidebar({
                 canMoveDown={idx < reorderableIds.length - 1}
                 onClick={handleScrollToGroup}
                 onLongPress={() => setReorderMode(true)}
-                onMoveUp={() => handleMoveUp(pack.id)}
-                onMoveDown={() => handleMoveDown(pack.id)}
+                onMoveUp={() => handleMoveUp(id)}
+                onMoveDown={() => handleMoveDown(id)}
               />
             );
           }
           return (
             <DraggableImageGroupIcon
-              key={pack.id}
-              active={activeGroupId === pack.id}
-              id={pack.id}
+              key={id}
+              active={activeGroupId === id}
+              id={id}
               label={label ?? 'Unknown Pack'}
               url={url}
               onClick={handleScrollToGroup}
@@ -769,6 +782,7 @@ function EmojiGroupHolder({
 
   const handleEmojiFocus: FocusEventHandler = (evt) => {
     const targetEl = evt.target as HTMLButtonElement;
+    if (!targetEl.matches(':focus-visible')) return;
     const emojiInfo = getEmojiItemInfo(targetEl);
     if (!emojiInfo) return;
     setPreviewData({
@@ -782,8 +796,15 @@ function EmojiGroupHolder({
   };
 
   return (
-    <Scroll ref={contentScrollRef} size="300" onKeyDown={preventScrollWithArrowKey} hideTrack>
+    <Scroll
+      ref={contentScrollRef}
+      className={css.PreviewScroll}
+      size="300"
+      onKeyDown={preventScrollWithArrowKey}
+      hideTrack
+    >
       <Box
+        className={css.PreviewSpacer}
         onClick={onGroupItemClick}
         onContextMenu={onGroupItemContextMenu}
         onMouseMove={handleEmojiHover}
@@ -860,7 +881,9 @@ export function EmojiBoard({
   const imagePacks = useMemo(() => {
     if (packOrder.length === 0) return rawImagePacks;
     const orderMap = new Map(packOrder.map((id, i) => [id, i]));
-    return [...rawImagePacks].sort((a, b) => compareByPackOrder(orderMap, a.id, b.id));
+    return [...rawImagePacks].sort((a, b) =>
+      compareByPackOrder(orderMap, packOrderKey(a), packOrderKey(b))
+    );
   }, [rawImagePacks, packOrder]);
 
   const [emojiGroupItems, stickerGroupItems] = useGroups(
@@ -1091,7 +1114,7 @@ export function EmojiBoard({
                 )
               }
             >
-              <Box grow="Yes">
+              <Box grow="Yes" className={css.PreviewArea}>
                 <EmojiGroupHolder
                   key={tab}
                   contentScrollRef={contentScrollRef}
@@ -1133,8 +1156,8 @@ export function EmojiBoard({
                   </div>
                   {tab === EmojiBoardTab.Sticker && groups.length === 0 && <NoStickerPacks />}
                 </EmojiGroupHolder>
+                {!isMobile && <Preview previewAtom={previewAtom} />}
               </Box>
-              <Preview previewAtom={previewAtom} />
             </EmojiBoardLayout>
           )}
         </div>

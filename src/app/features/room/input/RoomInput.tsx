@@ -65,7 +65,8 @@ import { UploadQueue } from '../../../components/upload-queue';
 import type { Upload, UploadSuccess } from '../../../state/upload';
 import { UploadStatus, createUploadFamilyObserverAtom } from '../../../state/upload';
 import { getImageUrlBlob, loadImageElement } from '../../../utils/dom';
-import { handleUploadFiles, type UploadFileInput } from './handleUploadFiles';
+import { createUploadId, handleUploadFiles, type UploadFileInput } from './handleUploadFiles';
+import { MAX_UPLOAD_QUEUE_SIZE } from '../../../utils/uploadQueueCap';
 import { encryptAndReplace } from './encryptAndReplace';
 import { safeFile } from '../../../utils/mimeTypes';
 import { fulfilledPromiseSettledResult } from '../../../utils/common';
@@ -602,13 +603,28 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     };
 
     const handleGifSelect = async (gif: GifItem) => {
+      if (selectedFiles.length >= MAX_UPLOAD_QUEUE_SIZE) return;
+      const placeholderFile = new File([], gif.filename, { type: 'image/gif' });
+      const placeholder: UploadItem = {
+        id: createUploadId(),
+        file: placeholderFile,
+        originalFile: placeholderFile,
+        encryptionInfo: undefined,
+        metadata: { markedAsSpoiler: false },
+        isDownloadingGif: true,
+      };
+      setSelectedFiles({ type: 'PUT', item: placeholder });
+
       const blob = await fetchGifBlob(gif.renditions.original.url).catch((e) => {
         console.error('Failed to fetch GIF from server', e);
         return null;
       });
-      if (!blob) return;
+      if (!blob) {
+        handleRemoveUpload(placeholderFile);
+        return;
+      }
       const file = new File([blob], gif.filename, { type: 'image/gif' });
-      handleFiles([file]);
+      handleReplaceUpload(placeholder, file);
     };
 
     return (

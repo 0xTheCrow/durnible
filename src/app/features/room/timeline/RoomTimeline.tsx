@@ -5,7 +5,21 @@ import { Direction, RoomEvent } from 'matrix-js-sdk';
 import type { HTMLReactParserOptions } from 'html-react-parser';
 import { useAtomValue, useSetAtom } from 'jotai';
 import type { ContainerColor } from 'folds';
-import { Badge, Box, Chip, Icon, Icons, Line, Scroll, Text, as, color, config, toRem } from 'folds';
+import {
+  Badge,
+  Box,
+  Chip,
+  Icon,
+  Icons,
+  Line,
+  Scroll,
+  Spinner,
+  Text,
+  as,
+  color,
+  config,
+  toRem,
+} from 'folds';
 import type { Opts as LinkifyOpts } from 'linkifyjs';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { useVirtualPaginator } from '../../../hooks/useVirtualPaginator';
@@ -14,7 +28,7 @@ import {
   PAGINATION_LIMIT,
   getEmptyTimeline,
   getInitialTimeline,
-  useEventTimelineLoader,
+  loadEventContext,
   useLiveEventArrive,
   useLiveEventDecryption,
   useLiveTimelineRefresh,
@@ -34,14 +48,12 @@ import {
   decryptAllTimelineEvent,
   getEditedEvent,
   getEventReactions,
-  isInvisibleTimelineEvent,
+  isModifierTimelineEvent,
 } from '../../../utils/room';
 import { willEventRender } from './willEventRender';
 import { getRoomUnreadInfo, useTimelineReadMarker } from './useTimelineReadMarker';
 import { useTimelineClickHandlers } from './useTimelineClickHandlers';
 import {
-  getEventIdAbsoluteIndex,
-  getEventTimeline,
   getLinkedTimelines,
   getLiveTimeline,
   getTimelineAndBaseIndex,
@@ -96,7 +108,11 @@ import {
 import { useTheme } from '../../../hooks/useTheme';
 import { useRoomCreatorsTag } from '../../../hooks/useRoomCreatorsTag';
 import { usePowerLevelTags } from '../../../hooks/usePowerLevelTags';
-import { useTimelineAutoScroll } from './useTimelineAutoScroll';
+import {
+  getMarkerAnchorId,
+  NEW_MESSAGES_DIVIDER_TOP_OFFSET_FRACTION,
+  useTimelineAutoScroll,
+} from './useTimelineAutoScroll';
 import { JumpToLatestButton } from './JumpToLatestButton';
 import { TimelineOverlay } from './TimelineOverlay';
 
@@ -183,6 +199,8 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
     readUptoEventIdRef,
     willScrollToReadMarker,
     tryAutoMarkAsRead,
+    dividerReadUptoEventId,
+    clearDivider,
   } = useTimelineReadMarker(mx, room, hideActivity, !!unread);
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -239,7 +257,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
       const [tl, base] = getTimelineAndBaseIndex(timeline.linkedTimelines, i);
       if (!tl) continue;
       const evt = getTimelineEvent(tl, getTimelineRelativeIndex(i, base));
-      if (evt && !isInvisibleTimelineEvent(evt)) return false;
+      if (evt && !isModifierTimelineEvent(evt)) return false;
     }
     return true;
   })();
@@ -254,11 +272,13 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
     autoScrolling,
     setAtBottom,
     requestScrollToBottom,
+    setAnchor,
   } = useTimelineAutoScroll({
     room,
     viewingLatest: viewingLatestRef.current,
     autoPinEnabled: docFocused || unfocusedAutoScroll,
     initiallyAtBottom: !willScrollToReadMarker,
+    getContentElement: useCallback(() => contentRef.current, []),
   });
 
   // Ref so that stable callbacks (handleOpenEvent, handleDecryptRetry) can
@@ -279,74 +299,38 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
 
   const getScrollElement = useCallback(() => scrollRef.current, [scrollRef]);
 
-  const { getItems, scrollToItem, scrollToElement, observeBackAnchor, observeFrontAnchor } =
-    useVirtualPaginator({
-      count: eventsLength,
-      limit: PAGINATION_LIMIT,
-      range: { start: timeline.range.oldest, end: timeline.range.newest },
-      onRangeChange: useCallback(
-        (r) => setTimeline((cs) => ({ ...cs, range: { oldest: r.start, newest: r.end } })),
-        []
-      ),
-      getScrollElement,
-      getItemElement: useCallback(
-        (index: number) =>
-          (scrollRef.current?.querySelector(`[data-message-item="${index}"]`) as HTMLElement) ??
-          undefined,
-        [scrollRef]
-      ),
-      onEnd: handleTimelinePagination,
-    });
-
-  const loadEventTimeline = useEventTimelineLoader(
-    mx,
-    room,
-    useCallback(
-      (evtId, lTimelines, evtAbsIndex) => {
-        if (!alive()) return;
-        const evLength = getTimelinesEventsCount(lTimelines);
-
-        // Batch both updates together so React commits them in one render pass.
-        // useLayoutEffect fires after that single commit — elements are in the
-        // DOM and we can scroll before any paint, eliminating the flash of the
-        // unscrolled position.
-        setTimeline({
-          linkedTimelines: lTimelines,
-          range: {
-            oldest: Math.max(evtAbsIndex - PAGINATION_LIMIT, 0),
-            newest: Math.min(evtAbsIndex + PAGINATION_LIMIT, evLength),
-          },
-        });
-        setFocusItem({
-          index: evtAbsIndex,
-          eventId: evtId,
-          scrollTo: true,
-          highlight: evtId !== readUptoEventIdRef.current,
-        });
-      },
-      [alive, readUptoEventIdRef]
+  const { getItems, observeBackAnchor, observeFrontAnchor } = useVirtualPaginator({
+    count: eventsLength,
+    limit: PAGINATION_LIMIT,
+    range: { start: timeline.range.oldest, end: timeline.range.newest },
+    onRangeChange: useCallback(
+      (r) => setTimeline((cs) => ({ ...cs, range: { oldest: r.start, newest: r.end } })),
+      []
     ),
-    useCallback(() => {
-      if (!alive()) return;
-      setTimeline(getInitialTimeline(room));
-      requestScrollToBottom(false);
-      setSliderPosition(1);
-    }, [alive, room, setSliderPosition, requestScrollToBottom])
-  );
+    getScrollElement,
+    getItemElement: useCallback(
+      (index: number) =>
+        (scrollRef.current?.querySelector(`[data-message-item="${index}"]`) as HTMLElement) ??
+        undefined,
+      [scrollRef]
+    ),
+    onEnd: handleTimelinePagination,
+  });
 
   useLiveEventArrive(
     room,
     useCallback(
       (mEvt: MatrixEvent) => {
-        // Invisible events (reactions, edits, redactions) produce no visible
-        // output. Shifting the range window for them drops an item from the top
+        // Modifier events (reactions, edits, redactions) don't take their own
+        // row in the rendered list — they update existing messages in place.
+        // Shifting the range window for them drops an item from the top
         // of the rendered list without adding anything at the bottom, causing
         // images to unmount and messages to jump upward. Skip the range shift
         // for these events; a plain re-render is enough to update relation data.
-        const isInvisible = isInvisibleTimelineEvent(mEvt);
+        const isModifier = isModifierTimelineEvent(mEvt);
 
         if (atBottomRef.current) {
-          if (!isInvisible) {
+          if (!isModifier) {
             if (document.hasFocus() && (!unreadInfo || mEvt.getSender() === mx.getUserId())) {
               const evtRoomId = mEvt.getRoomId();
               if (evtRoomId) {
@@ -407,40 +391,79 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
     };
   }, [room, setTimeline]);
 
+  const openEventRequestRef = useRef(0);
+  const loadingIndicatorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [isJumpLoading, setIsJumpLoading] = useState(false);
+  useEffect(
+    () => () => {
+      if (loadingIndicatorTimeoutRef.current) clearTimeout(loadingIndicatorTimeoutRef.current);
+    },
+    []
+  );
+
   const handleOpenEvent = useCallback(
     async (
       evtId: string,
       highlight = true,
       onScroll: ((scrolled: boolean) => void) | undefined = undefined
     ) => {
-      // Immediately mark as not at bottom to prevent auto-scroll-to-bottom
-      // from firing during the smooth scroll animation (race with IntersectionObserver)
+      const requestId = openEventRequestRef.current + 1;
+      openEventRequestRef.current = requestId;
+
+      // Only show the loading indicator if loadEventContext takes longer than
+      // 1.5 seconds — fast loads stay invisible to avoid flashing the spinner.
+      if (loadingIndicatorTimeoutRef.current) clearTimeout(loadingIndicatorTimeoutRef.current);
+      loadingIndicatorTimeoutRef.current = setTimeout(() => {
+        loadingIndicatorTimeoutRef.current = null;
+        if (!alive()) return;
+        if (openEventRequestRef.current !== requestId) return;
+        setIsJumpLoading(true);
+      }, 1500);
+
       setAtBottom(false);
 
-      const evtTimeline = getEventTimeline(room, evtId);
-      const absoluteIndex =
-        evtTimeline && getEventIdAbsoluteIndex(linkedTimelinesRef.current, evtTimeline, evtId);
+      const result = await loadEventContext(mx, room, evtId, PAGINATION_LIMIT);
+      if (!alive()) return;
+      // A newer handleOpenEvent call superseded this one — drop the result.
+      if (openEventRequestRef.current !== requestId) return;
 
-      if (typeof absoluteIndex === 'number') {
-        const scrolled = scrollToItem(absoluteIndex, {
-          behavior: 'smooth',
-          align: 'start',
-          stopInView: true,
-          offset: Math.round(window.innerHeight * 0.12),
-        });
-        if (onScroll) onScroll(scrolled);
-        setFocusItem({
-          index: absoluteIndex,
-          eventId: evtId,
-          scrollTo: false,
-          highlight,
-        });
-      } else {
-        setTimeline(getEmptyTimeline());
-        loadEventTimeline(evtId);
+      if (loadingIndicatorTimeoutRef.current) {
+        clearTimeout(loadingIndicatorTimeoutRef.current);
+        loadingIndicatorTimeoutRef.current = null;
       }
+      setIsJumpLoading(false);
+
+      if (!result) return;
+
+      const { linkedTimelines, absoluteIndex } = result;
+      const linkedLength = getTimelinesEventsCount(linkedTimelines);
+
+      setTimeline({
+        linkedTimelines,
+        range: {
+          oldest: Math.max(absoluteIndex - PAGINATION_LIMIT, 0),
+          newest: Math.min(absoluteIndex + PAGINATION_LIMIT, linkedLength),
+        },
+      });
+
+      const scrolled = setAnchor(
+        {
+          kind: 'event',
+          eventId: evtId,
+          align: 'start',
+          offset: Math.round(window.innerHeight * 0.12),
+        },
+        { behavior: 'smooth', skipIfVisible: true }
+      );
+      if (onScroll) onScroll(scrolled);
+      setFocusItem({
+        index: absoluteIndex,
+        eventId: evtId,
+        scrollTo: false,
+        highlight,
+      });
     },
-    [room, scrollToItem, loadEventTimeline, setAtBottom]
+    [mx, room, alive, setAnchor, setAtBottom]
   );
 
   useLiveTimelineRefresh(
@@ -569,22 +592,22 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
     )
   );
 
-  useEffect(() => {
-    if (!eventId) return;
-    setAtBottom(false);
-    setTimeline(getEmptyTimeline());
-    loadEventTimeline(eventId);
-  }, [eventId, loadEventTimeline, setAtBottom]);
+  const willScrollToReadMarkerRef = useRef(willScrollToReadMarker);
+  willScrollToReadMarkerRef.current = willScrollToReadMarker;
 
-  const prevEventIdRef = useRef(eventId);
   useEffect(() => {
-    const prev = prevEventIdRef.current;
-    prevEventIdRef.current = eventId;
-    if (prev && !eventId) {
+    if (eventId) {
+      handleOpenEvent(eventId, eventId !== readUptoEventIdRef.current);
+    } else {
       setTimeline(getInitialTimeline(room));
-      requestScrollToBottom(false);
+      // The new-messages anchor effect handles scroll placement when there's
+      // an unread divider. Skipping requestScrollToBottom here prevents that
+      // anchor from being silently overridden in the next commit.
+      if (!willScrollToReadMarkerRef.current) {
+        requestScrollToBottom(false);
+      }
     }
-  }, [eventId, room, requestScrollToBottom]);
+  }, [eventId, handleOpenEvent, room, requestScrollToBottom, readUptoEventIdRef]);
 
   useLayoutEffect(() => {
     const scrollEl = scrollRef.current;
@@ -593,25 +616,16 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
     }
   }, [scrollRef]);
 
-  // On initial open of an unread room, place the last-read event at the
-  // bottom of the viewport so the new-messages divider sits at the end of
-  // the view.
   useLayoutEffect(() => {
     const { readUptoEventId, inLiveTimeline, scrollTo } = unreadInfo ?? {};
-    if (readUptoEventId && inLiveTimeline && scrollTo) {
-      const linkedTimelines = getLinkedTimelines(getLiveTimeline(room));
-      const evtTimeline = getEventTimeline(room, readUptoEventId);
-      const absoluteIndex =
-        evtTimeline && getEventIdAbsoluteIndex(linkedTimelines, evtTimeline, readUptoEventId);
-      if (absoluteIndex) {
-        scrollToItem(absoluteIndex, {
-          behavior: 'instant',
-          align: 'end',
-          stopInView: true,
-        });
-      }
-    }
-  }, [room, unreadInfo, scrollToItem]);
+    if (!readUptoEventId || !inLiveTimeline || !scrollTo) return;
+    setAnchor({
+      kind: 'marker',
+      markerId: 'unread',
+      align: 'start',
+      offset: Math.round(window.innerHeight * NEW_MESSAGES_DIVIDER_TOP_OFFSET_FRACTION),
+    });
+  }, [unreadInfo, setAnchor]);
 
   // Look up by eventId so stale indices (from recalibratePagination) never land
   // on the wrong element. getBoundingClientRect gives the true current position
@@ -663,19 +677,12 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
 
   // When edit mode opens on a message, scroll it into view so the inline editor is visible.
   useEffect(() => {
-    if (editId) {
-      const editMsgElement =
-        (scrollRef.current?.querySelector(`[data-message-id="${editId}"]`) as HTMLElement) ??
-        undefined;
-      if (editMsgElement) {
-        scrollToElement(editMsgElement, {
-          align: 'center',
-          behavior: 'smooth',
-          stopInView: true,
-        });
-      }
-    }
-  }, [scrollToElement, editId, scrollRef]);
+    if (!editId) return;
+    setAnchor(
+      { kind: 'event', eventId: editId, align: 'center' },
+      { behavior: 'smooth', skipIfVisible: true }
+    );
+  }, [editId, setAnchor]);
 
   const handleJumpToLatest = () => {
     if (eventId) {
@@ -687,15 +694,12 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
   };
 
   const handleJumpToUnread = () => {
-    if (unreadInfo?.readUptoEventId) {
-      setAtBottom(false);
-      setTimeline(getEmptyTimeline());
-      loadEventTimeline(unreadInfo.readUptoEventId);
-    }
+    if (unreadInfo?.readUptoEventId) handleOpenEvent(unreadInfo.readUptoEventId, false);
   };
 
   const handleMarkAsRead = () => {
     setUnreadInfo(undefined);
+    clearDivider();
     markAsRead(mx, room.roomId, hideActivity);
   };
 
@@ -775,7 +779,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
 
     return buildTimelineDescriptors(
       events,
-      readUptoEventIdRef.current ?? undefined,
+      dividerReadUptoEventId,
       mx.getSafeUserId(),
       willRender,
       groups
@@ -783,6 +787,14 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
   };
 
   const timelineItems = buildTimelineItems();
+
+  const lastRenderedEventId = (() => {
+    for (let i = timelineItems.length - 1; i >= 0; i -= 1) {
+      const item = timelineItems[i];
+      if (item.type === 'event') return item.mEventId;
+    }
+    return null;
+  })();
 
   // Unused value; setter call forces a rerender after grouping changes.
   const [, setLastDecryptedId] = useState<string | null>(null);
@@ -875,6 +887,13 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
   return (
     <TimelineMessageContext.Provider value={contextValue}>
       <Box grow="Yes" style={{ position: 'relative' }}>
+        {isJumpLoading && (
+          <TimelineOverlay position="Top">
+            <Chip variant="SurfaceVariant" radii="Pill" outlined before={<Spinner size="50" />}>
+              <Text size="L400">Loading…</Text>
+            </Chip>
+          </TimelineOverlay>
+        )}
         {unreadInfo?.readUptoEventId && !unreadInfo?.inLiveTimeline && (
           <TimelineOverlay position="Top">
             <Chip
@@ -957,7 +976,22 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
             {timelineItems.map((d) => {
               if (d.type === 'new-messages') {
                 return (
-                  <MessageBase key={d.key} space={messageSpacing}>
+                  <MessageBase
+                    key={d.key}
+                    space={messageSpacing}
+                    data-anchor-id={getMarkerAnchorId('unread')}
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Mark all messages as read"
+                    onClick={handleMarkAsRead}
+                    onKeyDown={(evt) => {
+                      if (evt.key === 'Enter' || evt.key === ' ') {
+                        evt.preventDefault();
+                        handleMarkAsRead();
+                      }
+                    }}
+                    style={{ cursor: 'pointer' }}
+                  >
                     <TimelineDivider style={{ color: color.Success.Main }} variant="Inherit">
                       <Badge as="span" size="500" variant="Success" fill="Solid" radii="300">
                         <Text size="L400">New Messages</Text>
@@ -983,15 +1017,6 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
                   </MessageBase>
                 );
               }
-              const { replyEventId } = d.mEvent;
-              // Use room.findEventById (broader — searches all timelineSets in
-              // the room) instead of d.timelineSet.findEventById (limited to
-              // one timelineSet). The Reply component does the same fallback,
-              // which is why the quoted preview can render even when the
-              // narrow lookup fails.
-              const replyToMe =
-                !!replyEventId &&
-                room.findEventById(replyEventId)?.getSender() === mx.getSafeUserId();
               return (
                 <MemoizedTimelineEvent
                   key={d.mEventId}
@@ -1008,7 +1033,6 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
                   editedEvent={getEditedEvent(d.mEventId, d.mEvent, d.timelineSet)}
                   isRedacted={d.mEvent.isRedacted()}
                   eventStatus={d.mEvent.status}
-                  replyToMe={replyToMe}
                 />
               );
             })}
@@ -1054,13 +1078,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
         </Scroll>
         <JumpToLatestButton
           scrollRef={scrollRef}
-          lastMessageIndex={
-            liveTimelineLinked &&
-            rangeAtNewest &&
-            timeline.range.newest - 1 >= timeline.range.oldest
-              ? timeline.range.newest - 1
-              : null
-          }
+          lastMessageId={liveTimelineLinked && rangeAtNewest ? lastRenderedEventId : null}
           atBottom={atBottom}
           autoScrolling={autoScrolling}
           onClick={handleJumpToLatest}

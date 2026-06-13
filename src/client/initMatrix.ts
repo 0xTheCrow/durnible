@@ -1,6 +1,6 @@
 import type { MatrixClient } from 'matrix-js-sdk';
 import { createClient, IndexedDBStore, IndexedDBCryptoStore } from 'matrix-js-sdk';
-import { logger } from 'matrix-js-sdk/lib/logger';
+import { logger as sdkModuleLogger, type Logger } from 'matrix-js-sdk/lib/logger';
 
 import { cryptoCallbacks } from './secretStorageKeys';
 import { clearNavToActivePathStore } from '../app/state/navToActivePath';
@@ -15,7 +15,20 @@ const clearCachedMedia = async (): Promise<void> => {
   }
 };
 
-(logger as unknown as { setLevel: (level: string) => void }).setLevel('warn');
+(sdkModuleLogger as unknown as { setLevel: (level: string) => void }).setLevel('warn');
+
+const createFilteredLogger = (prefix = ''): Logger => {
+  const tag = prefix ? `[${prefix}]` : '';
+  return {
+    trace: () => {},
+    debug: () => {},
+    info: () => {},
+    warn: (...args: unknown[]) => (tag ? console.warn(tag, ...args) : console.warn(...args)),
+    error: (...args: unknown[]) => (tag ? console.error(tag, ...args) : console.error(...args)),
+    getChild: (namespace: string) =>
+      createFilteredLogger(prefix ? `${prefix} ${namespace}` : namespace),
+  };
+};
 
 type Session = {
   baseUrl: string;
@@ -44,6 +57,7 @@ export const initClient = async (session: Session): Promise<MatrixClient> => {
     timelineSupport: true,
     cryptoCallbacks,
     verificationMethods: ['m.sas.v1'],
+    logger: createFilteredLogger(),
   });
 
   startupMark('store-startup-start');
@@ -55,7 +69,6 @@ export const initClient = async (session: Session): Promise<MatrixClient> => {
   startupMark('crypto-init-end');
 
   mx.setMaxListeners(50);
-  (mx as unknown as { logger: { setLevel: (level: string) => void } }).logger.setLevel('warn');
 
   startupMark('init-client-end');
   return mx;

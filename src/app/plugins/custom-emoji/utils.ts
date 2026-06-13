@@ -17,6 +17,10 @@ export function imageUsageEqual(u1: ImageUsage[], u2: ImageUsage[]) {
   return u1.length === u2.length && u1.every((u) => u2.includes(u));
 }
 
+export function packOrderKey(pack: ImagePack): string {
+  return pack.address ? `${pack.address.roomId}:${pack.address.stateKey}` : pack.id;
+}
+
 export function packMetaEqual(a: PackMetaReader, b: PackMetaReader): boolean {
   return (
     a.name === b.name &&

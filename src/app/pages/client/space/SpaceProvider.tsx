@@ -8,6 +8,7 @@ import { useSelectedSpace } from '../../../hooks/router/useSelectedSpace';
 import { SpaceProvider } from '../../../hooks/useSpace';
 import { JoinBeforeNavigate } from '../../../features/join-before-navigate';
 import { useSearchParamsViaServers } from '../../../hooks/router/useSearchParamsViaServers';
+import { ROUTE_GATE_DEADLINE_MS, useReadinessGate } from '../../../state/readiness';
 
 type RouteSpaceProviderProps = {
   children: ReactNode;
@@ -22,7 +23,10 @@ export function RouteSpaceProvider({ children }: RouteSpaceProviderProps) {
   const selectedSpaceId = useSelectedSpace();
   const space = mx.getRoom(selectedSpaceId);
 
-  if (!space || !joinedSpaces.includes(space.roomId)) {
+  const isJoinedSpace = !!space && joinedSpaces.includes(space.roomId);
+  useReadinessGate('route', isJoinedSpace, ROUTE_GATE_DEADLINE_MS);
+
+  if (!isJoinedSpace) {
     return <JoinBeforeNavigate roomIdOrAlias={spaceIdOrAlias ?? ''} viaServers={viaServers} />;
   }
 

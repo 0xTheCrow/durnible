@@ -45,6 +45,7 @@ Durnible is a Matrix chat client built with React, TypeScript, and Vite. Forked 
 - Functional components only, with typed props via TypeScript interfaces
 - `useState` setters follow the `set[Name]` convention — e.g. `const [count, setCount]`, never `const [count, updateCount]` or `const [selected, selectItem]`. Rename violations when editing nearby code.
 - Named exports preferred over default exports for utilities
+- Don't abbreviate identifiers. Spell names out in full unless the abbreviation is the canonical term (a Web/DOM API name like `rect` from `getBoundingClientRect`, a math notation like `dx`/`dy`, a widely understood unit like `id`, or a loop counter like `i`). Avoid `el` for `element`, `scrollEl` for `scrollElement`, `sRect` for `scrollRect`, `ro` for `resizeObserver`, `io` for `intersectionObserver`, `max` for `maxScrollTop`, `top` for `targetScrollTop`, etc. Readability over keystrokes — if the name describes what the value is, don't shorten it.
 - Prettier: 100 char line width, single quotes
 - ESLint extends airbnb + prettier + TypeScript rules
 - `react-hooks/exhaustive-deps` is set to **error** — don't skip deps
@@ -79,7 +80,7 @@ Durnible is a Matrix chat client built with React, TypeScript, and Vite. Forked 
 
 ## Git
 
-- Never run `git commit` (or `git push`, `git reset --hard`, or any other history-rewriting or publishing command). The user owns every commit on this repo and reviews the diff before recording it. Stage work if asked, but stop before `commit`. This holds even when tests and lint pass, and even when an earlier plan appeared to include a commit step.
+- The user is the only one who commits to this repo. No one and nothing else commits on their behalf — not you, not a script, not a hook. Never run `git commit` (or `git push`, `git reset --hard`, or any other history-rewriting or publishing command). The user owns every commit and reviews the diff before recording it. Stage work if asked, but stop before `commit`. This holds even when tests and lint pass, and even when an earlier plan appeared to include a commit step.
 
 ## Git Hooks
 

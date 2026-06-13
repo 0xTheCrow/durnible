@@ -10,3 +10,17 @@ export const SplashScreen = style({
 export const SplashScreenFooter = style({
   padding: config.space.S400,
 });
+
+export const SplashScreenOverlay = style({
+  position: 'fixed',
+  inset: 0,
+  zIndex: config.zIndex.Max,
+  opacity: 1,
+  transition: 'opacity 100ms ease-out',
+  selectors: {
+    '&[data-visible="false"]': {
+      opacity: 0,
+      pointerEvents: 'none',
+    },
+  },
+});

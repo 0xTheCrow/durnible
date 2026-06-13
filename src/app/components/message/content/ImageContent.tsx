@@ -170,10 +170,9 @@ export const ImageContent = as<'div', ImageContentProps>(
                 alt={body}
                 title={body}
                 imgStyle={{
-                  width: 'auto',
-                  height: 'auto',
-                  maxWidth: '100%',
-                  maxHeight: '100%',
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
                 }}
                 onLoad={handleLoad}
                 onError={handleError}
@@ -186,10 +185,9 @@ export const ImageContent = as<'div', ImageContentProps>(
                 title: body,
                 src: srcState.data,
                 style: {
-                  width: 'auto',
-                  height: 'auto',
-                  maxWidth: '100%',
-                  maxHeight: '100%',
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
                   cursor: 'pointer',
                 },
                 onLoad: handleLoad,

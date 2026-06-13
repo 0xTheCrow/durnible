@@ -63,6 +63,10 @@ export interface Settings {
   pwaMode: boolean;
 
   timelineSliderRange: TimelineSliderRange;
+
+  // TEMPORARY: toggles RoomTimelineV2 (in-progress rewrite). Remove this
+  // setting and the V1 RoomTimeline once V2 reaches parity.
+  useTimelineV2: boolean;
 }
 
 const defaultSettings: Settings = {
@@ -117,6 +121,8 @@ const defaultSettings: Settings = {
   pwaMode: false,
 
   timelineSliderRange: 'day',
+
+  useTimelineV2: false,
 };
 
 export const getSettings = () => {

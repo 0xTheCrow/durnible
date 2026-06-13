@@ -7,6 +7,7 @@ import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { JoinBeforeNavigate } from '../../../features/join-before-navigate';
 import { useHomeRooms } from './useHomeRooms';
 import { useSearchParamsViaServers } from '../../../hooks/router/useSearchParamsViaServers';
+import { ROUTE_GATE_DEADLINE_MS, useReadinessGate } from '../../../state/readiness';
 
 export function HomeRouteRoomProvider({ children }: { children: ReactNode }) {
   const mx = useMatrixClient();
@@ -17,9 +18,12 @@ export function HomeRouteRoomProvider({ children }: { children: ReactNode }) {
   const roomId = useSelectedRoom();
   const room = mx.getRoom(roomId);
 
+  const isJoinedRoom = !!room && rooms.includes(room.roomId);
+  useReadinessGate('route', !roomIdOrAlias || isJoinedRoom, ROUTE_GATE_DEADLINE_MS);
+
   if (!roomIdOrAlias) return null;
 
-  if (!room || !rooms.includes(room.roomId)) {
+  if (!isJoinedRoom) {
     return (
       <JoinBeforeNavigate roomIdOrAlias={roomIdOrAlias} eventId={eventId} viaServers={viaServers} />
     );

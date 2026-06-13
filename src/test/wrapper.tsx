@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import type { MatrixClient } from 'matrix-js-sdk';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ClientConfig } from '../app/hooks/useClientConfig';
 import { ClientConfigProvider } from '../app/hooks/useClientConfig';
 import { ScreenSize, ScreenSizeProvider } from '../app/hooks/useScreenSize';
@@ -32,13 +33,19 @@ export function TestWrapper({
   clientConfig = DEFAULT_CLIENT_CONFIG,
   screenSize = ScreenSize.Desktop,
 }: TestWrapperProps) {
+  const queryClient = React.useMemo(
+    () => new QueryClient({ defaultOptions: { queries: { retry: false } } }),
+    []
+  );
   return (
     <MemoryRouter
       initialEntries={[route]}
       future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
     >
       <ScreenSizeProvider value={screenSize}>
-        <ClientConfigProvider value={clientConfig}>{children}</ClientConfigProvider>
+        <ClientConfigProvider value={clientConfig}>
+          <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+        </ClientConfigProvider>
       </ScreenSizeProvider>
     </MemoryRouter>
   );
