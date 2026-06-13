@@ -804,6 +804,7 @@ function EmojiGroupHolder({
       hideTrack
     >
       <Box
+        className={css.PreviewSpacer}
         onClick={onGroupItemClick}
         onContextMenu={onGroupItemContextMenu}
         onMouseMove={handleEmojiHover}

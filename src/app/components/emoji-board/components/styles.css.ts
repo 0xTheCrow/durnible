@@ -108,6 +108,10 @@ export const PreviewScroll = style({
   scrollPaddingBottom: PreviewScrollReserve,
 });
 
+export const PreviewSpacer = style({
+  paddingBottom: PreviewScrollReserve,
+});
+
 export const PreviewEmoji = style([
   DefaultReset,
   {
