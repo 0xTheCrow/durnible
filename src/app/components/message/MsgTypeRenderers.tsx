@@ -276,10 +276,10 @@ export function MVideo({ content, renderAsFile, renderVideoContent, outlined }: 
         />
       </AttachmentHeader>
       <AttachmentBox
+        video
         style={{
           aspectRatio: `${w} / ${h}`,
           width: toRem(videoWidth),
-          minHeight: toRem(48),
         }}
       >
         {renderVideoContent({
