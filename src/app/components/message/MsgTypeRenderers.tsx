@@ -252,12 +252,15 @@ export function MVideo({ content, renderAsFile, renderVideoContent, outlined }: 
     return <BrokenContent />;
   }
 
-  const height = scaleYDimension(videoInfo.w || 400, 400, videoInfo.h || 400);
+  const MAX_HEIGHT = 500;
+  const w = videoInfo.w || 400;
+  const h = videoInfo.h || 400;
+  const videoWidth = h > MAX_HEIGHT ? Math.round(w * (MAX_HEIGHT / h)) : w;
 
   const filename = content.filename ?? content.body ?? 'Video';
 
   return (
-    <Attachment outlined={outlined}>
+    <Attachment outlined={outlined} style={{ width: toRem(videoWidth) }}>
       <AttachmentHeader>
         <FileHeader
           body={filename}
@@ -274,7 +277,9 @@ export function MVideo({ content, renderAsFile, renderVideoContent, outlined }: 
       </AttachmentHeader>
       <AttachmentBox
         style={{
-          height: toRem(height < 48 ? 48 : height),
+          aspectRatio: `${w} / ${h}`,
+          width: toRem(videoWidth),
+          minHeight: toRem(48),
         }}
       >
         {renderVideoContent({
