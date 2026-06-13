@@ -12,12 +12,21 @@ export type ResolvedTimelineEvent = {
   item: number;
 };
 
+export type ResolvedTimeline = {
+  events: ResolvedTimelineEvent[];
+  firstUnreadEventId: string | undefined;
+};
+
 export const resolveTimelineEvents = (
   linkedTimelines: EventTimeline[],
   items: number[],
-  willRender: (mEvent: MatrixEvent) => boolean
-): ResolvedTimelineEvent[] => {
+  willRender: (mEvent: MatrixEvent) => boolean,
+  readUptoEventId: string | undefined,
+  myUserId: string
+): ResolvedTimeline => {
   const events: ResolvedTimelineEvent[] = [];
+  let firstUnreadEventId: string | undefined;
+  let passedReadUpto = false;
   for (const item of items) {
     const [eventTimeline, baseIndex] = getTimelineAndBaseIndex(linkedTimelines, item);
     if (!eventTimeline) continue;
@@ -25,13 +34,18 @@ export const resolveTimelineEvents = (
     if (!mEvent) continue;
     const mEventId = mEvent.getId();
     if (!mEventId) continue;
-    if (!willRender(mEvent)) continue;
-    events.push({
-      mEvent,
-      mEventId,
-      timelineSet: eventTimeline.getTimelineSet(),
-      item,
-    });
+    if (willRender(mEvent)) {
+      if (passedReadUpto && !firstUnreadEventId && mEvent.getSender() !== myUserId) {
+        firstUnreadEventId = mEventId;
+      }
+      events.push({
+        mEvent,
+        mEventId,
+        timelineSet: eventTimeline.getTimelineSet(),
+        item,
+      });
+    }
+    if (mEventId === readUptoEventId) passedReadUpto = true;
   }
-  return events;
+  return { events, firstUnreadEventId };
 };

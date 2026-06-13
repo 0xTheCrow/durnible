@@ -6,6 +6,7 @@ import { useDocumentFocusChange } from '../../../../hooks/useDocumentFocusChange
 import { useRoomUnread } from '../../../../state/hooks/unread';
 import { roomToUnreadAtom } from '../../../../state/room/roomToUnread';
 import { markAsRead } from '../../../../utils/notifications';
+import { getReadReceiptEventId } from '../../../../utils/room/receipts';
 import { useLiveEventArrive } from '../../timeline/timelineState';
 import { getEventTimeline, getFirstLinkedTimeline } from '../../timeline/timelineUtils';
 
@@ -19,7 +20,6 @@ type UseAutoMarkAsReadParams = {
 
 type UseAutoMarkAsReadResult = {
   readReceiptEventId: string | undefined;
-  readReceiptLoaded: boolean;
   roomIsUnread: boolean;
 };
 
@@ -66,18 +66,10 @@ export const useAutoMarkAsRead = ({
     }, [atBottomRef, tryAutoMarkAsRead])
   );
 
-  const readReceiptEventId = room.getEventReadUpTo(room.client.getUserId() ?? '') || undefined;
-  const readReceiptLoaded = (() => {
-    if (!readReceiptEventId) return true;
-    const eventTimeline = getEventTimeline(room, readReceiptEventId);
-    const latestTimeline =
-      eventTimeline && getFirstLinkedTimeline(eventTimeline, Direction.Forward);
-    return latestTimeline === room.getLiveTimeline();
-  })();
+  const readReceiptEventId = getReadReceiptEventId(room, mx.getSafeUserId());
 
   return {
     readReceiptEventId,
-    readReceiptLoaded,
     roomIsUnread: !!roomUnread,
   };
 };

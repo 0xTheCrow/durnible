@@ -16,11 +16,13 @@ import { willEventRender } from '../timeline/willEventRender';
 import { useVirtualPaginator } from '../../../hooks/useVirtualPaginator';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { useRoomNavigate } from '../../../hooks/useRoomNavigate';
+import { useAlive } from '../../../hooks/useAlive';
 import { getEditedEvent, getEventReactions } from '../../../utils/room';
+import { getReadReceiptEventId } from '../../../utils/room/receipts';
 import { markAsRead } from '../../../utils/notifications';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
-import { buildTimelineDescriptors } from '../../../utils/buildTimelineDescriptors';
+import { buildTimelineDescriptors } from './utils/buildTimelineDescriptors';
 import { BackPaginationSkeletons } from './components/BackPaginationSkeletons';
 import { ForwardPaginationSkeletons } from './components/ForwardPaginationSkeletons';
 import {
@@ -57,16 +59,15 @@ export function RoomTimelineV2({
   const contentRef = useRef<HTMLDivElement>(null);
   const [timeline, setTimeline] = useState<Timeline>(() => getInitialTimeline(room));
   const [editId, setEditId] = useState<string>();
-  const [dividerReadUptoEventId, setDividerReadUptoEventId] = useState<string | undefined>(
-    () => room.getEventReadUpTo(room.client.getUserId() ?? '') ?? undefined
+  const [dividerReadUptoEventId, setDividerReadUptoEventId] = useState<string | undefined>(() =>
+    getReadReceiptEventId(room, mx.getSafeUserId())
   );
-  const [dividerEl, setDividerEl] = useState<HTMLDivElement | null>(null);
+  const [dividerElement, setDividerElement] = useState<HTMLDivElement | null>(null);
   const [dividerInView, setDividerInView] = useState(true);
   const [pendingJumpToDivider, setPendingJumpToDivider] = useState(false);
   const [focusRequest, setFocusRequest] = useState<{ eventId: string; nonce: number }>();
   const [highlightFocus, setHighlightFocus] = useState(false);
   const [isJumpLoading, setIsJumpLoading] = useState(false);
-  const eventIdAtMountRef = useRef(eventId);
   const openEventRequestRef = useRef(0);
 
   const [messageLayout] = useSetting(settingsAtom, 'messageLayout');
@@ -101,7 +102,7 @@ export function RoomTimelineV2({
   });
   const { nearBottomRef, nearBottomAnchorRef } = useNearBottom({ scrollRef });
 
-  const { readReceiptEventId, readReceiptLoaded, roomIsUnread } = useAutoMarkAsRead({
+  const { readReceiptEventId, roomIsUnread } = useAutoMarkAsRead({
     mx,
     room,
     hideActivity,
@@ -109,24 +110,22 @@ export function RoomTimelineV2({
     atBottomRef,
   });
 
-  useLayoutEffect(() => {
-    const scrollElement = scrollRef.current;
-    if (!scrollElement) return;
-    // A deep-link eventId is owned by handleOpenEvent below — don't place at mount,
-    // or we'd flash to the bottom before the async context load jumps to the target.
-    if (eventIdAtMountRef.current) return;
-    const mountDivider = scrollElement.querySelector<HTMLElement>(
-      `[data-anchor-id="${NEW_MESSAGES_DIVIDER_ANCHOR_ID}"]`
-    );
-    if (mountDivider) {
-      scrollController.pinToAnchor(`[data-anchor-id="${NEW_MESSAGES_DIVIDER_ANCHOR_ID}"]`, {
-        align: 'start',
-        offsetFraction: 0.12,
-      });
-      return;
-    }
-    scrollController.pinToLiveEnd();
-  }, [scrollController]);
+  const alive = useAlive();
+  const mountSnapshotRef = useRef<{
+    eventId: string | undefined;
+    readReceiptEventId: string | undefined;
+    roomIsUnread: boolean;
+  }>();
+  if (!mountSnapshotRef.current) {
+    mountSnapshotRef.current = { eventId, readReceiptEventId, roomIsUnread };
+  }
+  const mountSnapshot = mountSnapshotRef.current;
+  const [mountResolved, setMountResolved] = useState(
+    () =>
+      !mountSnapshot.eventId && !(mountSnapshot.roomIsUnread && mountSnapshot.readReceiptEventId)
+  );
+  const [pendingMountPlacement, setPendingMountPlacement] = useState(false);
+  const didResolveMountRef = useRef(false);
 
   const handleOpenEvent = useCallback(
     async (targetEventId: string, { highlight = true }: { highlight?: boolean } = {}) => {
@@ -148,6 +147,7 @@ export function RoomTimelineV2({
       }
       window.clearTimeout(loadingTimer);
       setIsJumpLoading(false);
+      setMountResolved(true);
       if (!result) return;
 
       const totalCount = getTimelinesEventsCount(result.linkedTimelines);
@@ -214,7 +214,7 @@ export function RoomTimelineV2({
 
   useEffect(() => {
     const scrollElement = scrollRef.current;
-    if (!dividerEl || !scrollElement) {
+    if (!dividerElement || !scrollElement) {
       setDividerInView(true);
       return undefined;
     }
@@ -222,9 +222,9 @@ export function RoomTimelineV2({
       ([entry]) => setDividerInView(entry?.isIntersecting ?? false),
       { root: scrollElement, threshold: 0 }
     );
-    intersectionObserver.observe(dividerEl);
+    intersectionObserver.observe(dividerElement);
     return () => intersectionObserver.disconnect();
-  }, [dividerEl]);
+  }, [dividerElement]);
 
   useLayoutEffect(() => {
     if (!pendingJumpToDivider) return;
@@ -241,7 +241,7 @@ export function RoomTimelineV2({
   };
 
   const handleJumpToUnread = async () => {
-    if (dividerEl) {
+    if (dividerElement) {
       scrollController.pinToAnchor(
         `[data-anchor-id="${NEW_MESSAGES_DIVIDER_ANCHOR_ID}"]`,
         { align: 'start', offsetFraction: 0.12 },
@@ -263,9 +263,6 @@ export function RoomTimelineV2({
     });
     setPendingJumpToDivider(true);
   };
-
-  const showCaseB = roomIsUnread && !!readReceiptEventId && !readReceiptLoaded;
-  const showChips = (!!dividerEl && !dividerInView) || showCaseB;
 
   const eventsLength = getTimelinesEventsCount(timeline.linkedTimelines);
 
@@ -334,13 +331,80 @@ export function RoomTimelineV2({
       hideNickAvatarEvents,
     });
 
-  const events = resolveTimelineEvents(timeline.linkedTimelines, getItems(), willRender);
-  const timelineItems = buildTimelineDescriptors(
-    events,
+  const { events, firstUnreadEventId } = resolveTimelineEvents(
+    timeline.linkedTimelines,
+    getItems(),
+    willRender,
     dividerReadUptoEventId,
-    mx.getSafeUserId(),
-    willRender
+    mx.getSafeUserId()
   );
+  const timelineItems = buildTimelineDescriptors(events, firstUnreadEventId);
+
+  const isDividerOffscreen = !!dividerElement && !dividerInView;
+  const isUnreadDividerMissing =
+    mountResolved && roomIsUnread && !!readReceiptEventId && !firstUnreadEventId;
+  const showUnreadChips = mountResolved && (isDividerOffscreen || isUnreadDividerMissing);
+
+  useLayoutEffect(() => {
+    if (didResolveMountRef.current) return;
+    didResolveMountRef.current = true;
+    const scrollElement = scrollRef.current;
+    if (!scrollElement) return;
+    if (mountSnapshot.eventId) return;
+    if (!(mountSnapshot.roomIsUnread && mountSnapshot.readReceiptEventId)) {
+      scrollController.pinToLiveEnd();
+      setMountResolved(true);
+      return;
+    }
+    if (firstUnreadEventId) {
+      setPendingMountPlacement(true);
+      return;
+    }
+    const boundaryEventId = mountSnapshot.readReceiptEventId;
+    (async () => {
+      const contextSize = Math.floor(PAGINATION_LIMIT / 2);
+      const result = await loadEventContext(mx, room, boundaryEventId, contextSize);
+      if (!alive()) return;
+      if (!result) {
+        setMountResolved(true);
+        return;
+      }
+      const totalCount = getTimelinesEventsCount(result.linkedTimelines);
+      setTimeline({
+        linkedTimelines: result.linkedTimelines,
+        range: {
+          oldest: Math.max(0, result.absoluteIndex - contextSize),
+          newest: Math.min(totalCount, result.absoluteIndex + contextSize),
+        },
+      });
+      setPendingMountPlacement(true);
+    })();
+  }, [firstUnreadEventId, mountSnapshot, scrollController, mx, room, alive]);
+
+  useLayoutEffect(() => {
+    if (!pendingMountPlacement) return;
+    setPendingMountPlacement(false);
+    const scrollElement = scrollRef.current;
+    if (scrollElement && firstUnreadEventId) {
+      const dividerSelector = `[data-anchor-id="${NEW_MESSAGES_DIVIDER_ANCHOR_ID}"]`;
+      const dividerNode = scrollElement.querySelector<HTMLElement>(dividerSelector);
+      const firstUnreadNode = scrollElement.querySelector<HTMLElement>(
+        `[data-message-id="${CSS.escape(firstUnreadEventId)}"]`
+      );
+      if (dividerNode && firstUnreadNode) {
+        const fitsViewport =
+          firstUnreadNode.offsetHeight + dividerNode.offsetHeight <= scrollElement.clientHeight;
+        if (fitsViewport) {
+          scrollController.pinToAnchor(`[data-message-id="${CSS.escape(firstUnreadEventId)}"]`, {
+            align: 'end',
+          });
+        } else {
+          scrollController.pinToAnchor(dividerSelector, { align: 'start', offsetFraction: 0.12 });
+        }
+      }
+    }
+    setMountResolved(true);
+  }, [pendingMountPlacement, firstUnreadEventId, scrollController]);
 
   const lastRenderedEventId = (() => {
     for (let i = timelineItems.length - 1; i >= 0; i -= 1) {
@@ -369,7 +433,7 @@ export function RoomTimelineV2({
             </Chip>
           </TimelineOverlay>
         )}
-        {showChips && (
+        {showUnreadChips && (
           <TimelineOverlay position="Top">
             <Chip
               variant="Primary"
@@ -399,6 +463,7 @@ export function RoomTimelineV2({
             style={{
               minHeight: '100%',
               padding: `${config.space.S600} 0`,
+              visibility: mountResolved ? undefined : 'hidden',
             }}
           >
             {showBackSkeletons && (
@@ -410,7 +475,7 @@ export function RoomTimelineV2({
                 return (
                   <NewMessagesDivider
                     key={descriptor.key}
-                    ref={setDividerEl}
+                    ref={setDividerElement}
                     onClick={handleMarkAsRead}
                   />
                 );
@@ -448,13 +513,15 @@ export function RoomTimelineV2({
             <span ref={atBottomAnchorRef} />
           </Box>
         </Scroll>
-        <JumpToLatestButton
-          scrollRef={scrollRef}
-          lastMessageId={isInLivePaginationWindow ? lastRenderedEventId : null}
-          atBottom={atBottom}
-          autoScrolling={false}
-          onClick={handleJumpToLatest}
-        />
+        {mountResolved && (
+          <JumpToLatestButton
+            scrollRef={scrollRef}
+            lastMessageId={isInLivePaginationWindow ? lastRenderedEventId : null}
+            atBottom={atBottom}
+            autoScrolling={false}
+            onClick={handleJumpToLatest}
+          />
+        )}
       </Box>
     </TimelineMessageContext.Provider>
   );
