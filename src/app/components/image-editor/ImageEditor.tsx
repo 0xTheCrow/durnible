@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import classNames from 'classnames';
 import { Box, Header, Icon, Icons, Text } from 'folds';
 import type { CropperRef } from 'react-advanced-cropper';
@@ -50,7 +50,7 @@ const renderRotatedCanvas = async (
   canvas.height = canvasHeight;
   const ctx = canvas.getContext('2d');
   if (!ctx) return null;
-  ctx.translate(canvasWidth / 2, imageHeight / 2);
+  ctx.translate(canvasWidth / 2, canvasHeight / 2);
   ctx.rotate((rotation * Math.PI) / 180);
   ctx.drawImage(img, -imageWidth / 2, -imageHeight / 2);
   return canvas;
@@ -66,12 +66,68 @@ export type ImageEditorProps = {
 
 export function ImageEditor({ name, url, mimeType, onClose, onSave }: ImageEditorProps) {
   const cropperRef = useRef<CropperRef>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const previewRef = useRef<HTMLImageElement>(null);
   const [cropMode, setCropMode] = useState(false);
   const [rotation, setRotation] = useState(0);
+  const [quarterTurnScale, setQuarterTurnScale] = useState(1);
+
+  const measureQuarterTurnScale = useCallback(() => {
+    const preview = previewRef.current;
+    const content = contentRef.current;
+    if (!preview || !content) return;
+    const { offsetWidth: previewWidth, offsetHeight: previewHeight } = preview;
+    if (previewWidth === 0 || previewHeight === 0) return;
+    const scale = Math.min(
+      content.clientWidth / previewHeight,
+      content.clientHeight / previewWidth,
+      1
+    );
+    setQuarterTurnScale(scale);
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!cropMode) measureQuarterTurnScale();
+  }, [cropMode, measureQuarterTurnScale]);
+
+  useEffect(() => {
+    const content = contentRef.current;
+    if (!content) return undefined;
+    const observer = new ResizeObserver(measureQuarterTurnScale);
+    observer.observe(content);
+    return () => observer.disconnect();
+  }, [measureQuarterTurnScale]);
+
+  const rotateCropImage = (angle: number) => {
+    const before = cropperRef.current?.getCoordinates();
+    const image = cropperRef.current?.getImage();
+    const state = cropperRef.current?.getState();
+    if (!before || !image || !state) {
+      cropperRef.current?.rotateImage(angle, { transitions: false });
+      return;
+    }
+    const quarterTurned = Math.abs(Math.round(state.transforms.rotate / 90)) % 2 === 1;
+    const transformedWidth = quarterTurned ? image.height : image.width;
+    const transformedHeight = quarterTurned ? image.width : image.height;
+    const centerX = before.left + before.width / 2;
+    const centerY = before.top + before.height / 2;
+    const rotatedCenterX = angle > 0 ? transformedHeight - centerY : centerY;
+    const rotatedCenterY = angle > 0 ? centerX : transformedWidth - centerX;
+    cropperRef.current?.rotateImage(angle, { transitions: false });
+    cropperRef.current?.setCoordinates(
+      {
+        left: rotatedCenterX - before.height / 2,
+        top: rotatedCenterY - before.width / 2,
+        width: before.height,
+        height: before.width,
+      },
+      { transitions: false }
+    );
+  };
 
   const rotateCounterClockwise = () => {
     if (cropMode) {
-      cropperRef.current?.rotateImage(90, { transitions: false });
+      rotateCropImage(90);
     } else {
       setRotation((r) => (r + 90) % 360);
     }
@@ -79,7 +135,7 @@ export function ImageEditor({ name, url, mimeType, onClose, onSave }: ImageEdito
 
   const rotateClockwise = () => {
     if (cropMode) {
-      cropperRef.current?.rotateImage(-90, { transitions: false });
+      rotateCropImage(-90);
     } else {
       setRotation((r) => (r - 90 + 360) % 360);
     }
@@ -89,20 +145,21 @@ export function ImageEditor({ name, url, mimeType, onClose, onSave }: ImageEdito
   const exitCropMode = () => setCropMode(false);
 
   const handleCropperReady = () => {
+    if (rotation !== 0) {
+      cropperRef.current?.rotateImage(rotation, { transitions: false });
+    }
     const image = cropperRef.current?.getImage();
     if (image) {
+      const quarterTurn = rotation === 90 || rotation === 270;
       cropperRef.current?.setCoordinates(
         {
           left: 0,
           top: 0,
-          width: image.width,
-          height: image.height,
+          width: quarterTurn ? image.height : image.width,
+          height: quarterTurn ? image.width : image.height,
         },
         { transitions: false }
       );
-    }
-    if (rotation !== 0) {
-      cropperRef.current?.rotateImage(rotation, { transitions: false });
     }
   };
 
@@ -194,6 +251,7 @@ export function ImageEditor({ name, url, mimeType, onClose, onSave }: ImageEdito
         className={css.ImageEditorContent}
         alignItems="Center"
         justifyContent="Center"
+        ref={contentRef}
       >
         {cropMode ? (
           <Cropper
@@ -204,11 +262,17 @@ export function ImageEditor({ name, url, mimeType, onClose, onSave }: ImageEdito
           />
         ) : (
           <img
+            ref={previewRef}
             className={css.ImageEditorPreview}
             src={url}
             alt={name}
             draggable={false}
-            style={{ transform: `rotate(${rotation}deg)` }}
+            onLoad={measureQuarterTurnScale}
+            style={{
+              transform: `rotate(${rotation}deg) scale(${
+                rotation % 180 === 0 ? 1 : quarterTurnScale
+              })`,
+            }}
           />
         )}
       </Box>

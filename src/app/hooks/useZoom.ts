@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 
-export const useZoom = (step: number, min = 0.1, max = 5) => {
+export const useZoom = (step: number, min = 0.1, max = 20) => {
   const [zoom, setZoom] = useState<number>(1);
 
   const zoomIn = () => {
