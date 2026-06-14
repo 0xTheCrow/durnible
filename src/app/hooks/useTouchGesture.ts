@@ -23,7 +23,7 @@ export const useTouchGesture = (
   setZoom: Dispatch<SetStateAction<number>>,
   setPan: Dispatch<SetStateAction<Pan>>,
   zoomMin = 0.1,
-  zoomMax = 5
+  zoomMax = 20
 ) => {
   const gestureRef = useRef<TouchGestureState | null>(null);
   const zoomRef = useRef(zoom);

@@ -162,7 +162,7 @@ describe('useTouchGesture', () => {
       expect(result.current.zoom).toBeGreaterThanOrEqual(0.1);
     });
 
-    it('clamps zoom to max (5)', () => {
+    it('clamps zoom to max (20)', () => {
       const { result } = renderGesture();
       act(() => {
         result.current.onTouchStart(
@@ -174,11 +174,11 @@ describe('useTouchGesture', () => {
         result.current.onTouchMove(
           mockTouchEvent([
             { clientX: 0, clientY: 0 },
-            { clientX: 10000, clientY: 0 },
+            { clientX: 50000, clientY: 0 },
           ])
         );
       });
-      expect(result.current.zoom).toBeLessThanOrEqual(5);
+      expect(result.current.zoom).toBeLessThanOrEqual(20);
     });
   });
 

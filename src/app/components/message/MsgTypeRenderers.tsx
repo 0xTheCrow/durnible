@@ -279,6 +279,7 @@ export function MVideo({ content, renderAsFile, renderVideoContent, outlined }: 
         style={{
           aspectRatio: `${w} / ${h}`,
           width: toRem(videoWidth),
+          maxHeight: toRem(MAX_HEIGHT),
           minHeight: toRem(48),
         }}
       >
