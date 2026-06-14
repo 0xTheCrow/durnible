@@ -2,7 +2,7 @@ import type { Dispatch, SetStateAction, RefObject } from 'react';
 import { useCallback, useEffect } from 'react';
 import type { MatrixEvent, Room, RoomEventHandlerMap } from 'matrix-js-sdk';
 import { RoomEvent } from 'matrix-js-sdk';
-import { useLiveEventArrive } from '../../timeline/timelineState';
+import { useLiveEventArrive, useLiveEventDecryption } from '../../timeline/timelineState';
 import type { Timeline } from '../../timeline/timelineState';
 import { isModifierTimelineEvent } from '../../../../utils/room';
 
@@ -53,6 +53,12 @@ export const useLiveTimelineUpdates = ({
   );
 
   useLiveEventArrive(room, handleArrive);
+
+  const handleDecrypted = useCallback(() => {
+    setTimeline((current) => ({ ...current }));
+  }, [setTimeline]);
+
+  useLiveEventDecryption(room, handleDecrypted);
 
   // Re-render when a local echo status changes (QUEUED → SENDING → sent / NOT_SENT).
   // RoomEvent.Timeline only fires for new events, so echoes updating in-place are missed.

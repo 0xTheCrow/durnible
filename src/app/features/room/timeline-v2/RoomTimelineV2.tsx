@@ -1,8 +1,8 @@
 import type { MouseEventHandler, RefObject } from 'react';
-import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { Room } from 'matrix-js-sdk';
-import { useSetAtom } from 'jotai';
-import { Box, Chip, Icon, Icons, Scroll, Spinner, Text, config } from 'folds';
+import { useAtomValue, useSetAtom } from 'jotai';
+import { Box, Chip, Icon, Icons, Scroll, Spinner, Text, config, toRem } from 'folds';
 import type { EditorController } from '../../../components/editor';
 import { TimelineMessageContext } from '../timeline/TimelineMessageContext';
 import { MemoizedTimelineEvent } from '../timeline/MemoizedTimelineEvent';
@@ -10,20 +10,27 @@ import { TimelineOverlay } from '../timeline/TimelineOverlay';
 import { JumpToLatestButton } from '../timeline/JumpToLatestButton';
 import { SelectionActionBar } from '../timeline/SelectionActionBar';
 import { useBulkSelection } from '../timeline/useBulkSelection';
-import { timelineSliderPositionAtom } from '../timeline/TimelineSlider';
+import { timelineSliderPositionAtom, timelineSliderVisibleAtom } from '../timeline/TimelineSlider';
 import type { Timeline } from '../timeline/timelineState';
-import { getInitialTimeline, loadEventContext, PAGINATION_LIMIT } from '../timeline/timelineState';
+import {
+  getInitialTimeline,
+  loadEventContext,
+  useLiveTimelineRefresh,
+  PAGINATION_LIMIT,
+} from '../timeline/timelineState';
 import { getTimelinesEventsCount } from '../timeline/timelineUtils';
 import { willEventRender } from '../timeline/willEventRender';
 import { useVirtualPaginator } from '../../../hooks/useVirtualPaginator';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { useRoomNavigate } from '../../../hooks/useRoomNavigate';
 import { useAlive } from '../../../hooks/useAlive';
+import { useIgnoredUsers } from '../../../hooks/useIgnoredUsers';
+import { RoomIntro } from '../../../components/room-intro';
 import { getEditedEvent, getEventReactions } from '../../../utils/room';
 import { getReadReceiptEventId } from '../../../utils/room/receipts';
 import { markAsRead } from '../../../utils/notifications';
 import { useSetting } from '../../../state/hooks/settings';
-import { settingsAtom } from '../../../state/settings';
+import { MessageLayout, settingsAtom } from '../../../state/settings';
 import { buildTimelineDescriptors } from './utils/buildTimelineDescriptors';
 import { BackPaginationSkeletons } from './components/BackPaginationSkeletons';
 import { ForwardPaginationSkeletons } from './components/ForwardPaginationSkeletons';
@@ -78,6 +85,10 @@ export function RoomTimelineV2({
   const [hideNickAvatarEvents] = useSetting(settingsAtom, 'hideNickAvatarEvents');
   const [unfocusedAutoScroll] = useSetting(settingsAtom, 'unfocusedAutoScroll');
   const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
+
+  const ignoredUsersList = useIgnoredUsers();
+  const ignoredUsersSet = useMemo(() => new Set(ignoredUsersList), [ignoredUsersList]);
+  const sliderVisible = useAtomValue(timelineSliderVisibleAtom);
 
   const {
     handleTimelinePagination,
@@ -227,6 +238,15 @@ export function RoomTimelineV2({
     unfocusedAutoScroll,
   });
 
+  useLiveTimelineRefresh(
+    room,
+    useCallback(() => {
+      if (liveTimelineLinked) {
+        setTimeline(getInitialTimeline(room));
+      }
+    }, [room, liveTimelineLinked])
+  );
+
   useEffect(() => {
     const scrollElement = scrollRef.current;
     if (!dividerElement || !scrollElement) {
@@ -339,12 +359,16 @@ export function RoomTimelineV2({
     handleOpenReply,
   });
 
-  const willRender = (mEvent: Parameters<typeof willEventRender>[0]) =>
-    willEventRender(mEvent, {
+  const willRender = (mEvent: Parameters<typeof willEventRender>[0]) => {
+    const sender = mEvent.getSender();
+    if (sender && ignoredUsersSet.has(sender)) return false;
+    if (mEvent.isRedacted() && !showHiddenEvents) return false;
+    return willEventRender(mEvent, {
       showHiddenEvents,
       hideMembershipEvents,
       hideNickAvatarEvents,
     });
+  };
 
   const { events, firstUnreadEventId } = resolveTimelineEvents(
     timeline.linkedTimelines,
@@ -477,10 +501,23 @@ export function RoomTimelineV2({
             justifyContent="End"
             style={{
               minHeight: '100%',
-              padding: `${config.space.S600} 0`,
+              padding: `${config.space.S600} ${sliderVisible ? toRem(48) : '0'} ${
+                config.space.S600
+              } 0`,
               visibility: mountResolved ? undefined : 'hidden',
             }}
           >
+            {!canPaginateBack && rangeAtOldest && getItems().length > 0 && (
+              <div
+                style={{
+                  padding: `${config.space.S700} ${config.space.S400} ${config.space.S600} ${
+                    messageLayout === MessageLayout.Compact ? config.space.S400 : toRem(64)
+                  }`,
+                }}
+              >
+                <RoomIntro room={room} />
+              </div>
+            )}
             {showBackSkeletons && (
               <BackPaginationSkeletons layout={messageLayout} anchorRef={observeBackAnchor} />
             )}
