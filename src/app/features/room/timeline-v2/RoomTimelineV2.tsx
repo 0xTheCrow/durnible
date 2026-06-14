@@ -110,12 +110,14 @@ export function RoomTimelineV2({
     if (!isInLivePaginationWindow) scrollController.releaseFollowLive();
   }, [isInLivePaginationWindow, scrollController]);
 
+  const clearNewMessagesDivider = useCallback(() => setDividerReadUptoEventId(undefined), []);
   const { readReceiptEventId, roomIsUnread } = useAutoMarkAsRead({
     mx,
     room,
     hideActivity,
     atBottom,
     atBottomRef,
+    onMarkAsRead: clearNewMessagesDivider,
   });
 
   const alive = useAlive();
