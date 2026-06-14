@@ -106,6 +106,10 @@ export function RoomTimelineV2({
   });
   const { nearBottomRef, nearBottomAnchorRef } = useNearBottom({ scrollRef });
 
+  useEffect(() => {
+    if (!isInLivePaginationWindow) scrollController.releaseFollowLive();
+  }, [isInLivePaginationWindow, scrollController]);
+
   const { readReceiptEventId, roomIsUnread } = useAutoMarkAsRead({
     mx,
     room,
