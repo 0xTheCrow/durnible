@@ -1,6 +1,6 @@
 import type { MouseEventHandler, RefObject } from 'react';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import type { Room } from 'matrix-js-sdk';
+import type { MatrixEvent, Room } from 'matrix-js-sdk';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { Box, Chip, Icon, Icons, Scroll, Spinner, Text, config, toRem } from 'folds';
 import type { EditorController } from '../../../components/editor';
@@ -19,7 +19,6 @@ import {
   PAGINATION_LIMIT,
 } from '../timeline/timelineState';
 import { getTimelinesEventsCount } from '../timeline/timelineUtils';
-import { willEventRender } from '../timeline/willEventRender';
 import { useVirtualPaginator } from '../../../hooks/useVirtualPaginator';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { useRoomNavigate } from '../../../hooks/useRoomNavigate';
@@ -47,6 +46,7 @@ import { useTimelineMessageContextValue } from './hooks/useTimelineMessageContex
 import { usePaginationState } from './hooks/usePaginationState';
 import { useAutoMarkAsRead } from './hooks/useAutoMarkAsRead';
 import { resolveTimelineEvents } from './utils/resolveTimelineEvents';
+import { willRenderTimelineEvent } from './utils/willRenderTimelineEvent';
 
 type RoomTimelineV2Props = {
   room: Room;
@@ -359,16 +359,13 @@ export function RoomTimelineV2({
     handleOpenReply,
   });
 
-  const willRender = (mEvent: Parameters<typeof willEventRender>[0]) => {
-    const sender = mEvent.getSender();
-    if (sender && ignoredUsersSet.has(sender)) return false;
-    if (mEvent.isRedacted() && !showHiddenEvents) return false;
-    return willEventRender(mEvent, {
+  const willRender = (mEvent: MatrixEvent) =>
+    willRenderTimelineEvent(mEvent, {
+      ignoredUsersSet,
       showHiddenEvents,
       hideMembershipEvents,
       hideNickAvatarEvents,
     });
-  };
 
   const { events, firstUnreadEventId } = resolveTimelineEvents(
     timeline.linkedTimelines,
