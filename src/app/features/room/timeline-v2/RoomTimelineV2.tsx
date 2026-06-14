@@ -8,6 +8,8 @@ import { TimelineMessageContext } from '../timeline/TimelineMessageContext';
 import { MemoizedTimelineEvent } from '../timeline/MemoizedTimelineEvent';
 import { TimelineOverlay } from '../timeline/TimelineOverlay';
 import { JumpToLatestButton } from '../timeline/JumpToLatestButton';
+import { SelectionActionBar } from '../timeline/SelectionActionBar';
+import { useBulkSelection } from '../timeline/useBulkSelection';
 import { timelineSliderPositionAtom } from '../timeline/TimelineSlider';
 import type { Timeline } from '../timeline/timelineState';
 import { getInitialTimeline, loadEventContext, PAGINATION_LIMIT } from '../timeline/timelineState';
@@ -85,6 +87,9 @@ export function RoomTimelineV2({
     liveTimelineLinked,
     rangeAtNewest,
   } = usePaginationState(room, timeline, setTimeline);
+
+  const { selectionMode, selectedIds, bulkDeleting, handleBulkDelete, handleCancelSelection } =
+    useBulkSelection(mx, room);
 
   const isInLivePaginationWindow = liveTimelineLinked && rangeAtNewest;
   const isInLivePaginationWindowRef = useRef(isInLivePaginationWindow);
@@ -531,6 +536,16 @@ export function RoomTimelineV2({
             autoScrolling={false}
             onClick={handleJumpToLatest}
           />
+        )}
+        {selectionMode && (
+          <TimelineOverlay position="Bottom">
+            <SelectionActionBar
+              selectedCount={selectedIds.size}
+              onDelete={handleBulkDelete}
+              onCancel={handleCancelSelection}
+              deleting={bulkDeleting}
+            />
+          </TimelineOverlay>
         )}
       </Box>
     </TimelineMessageContext.Provider>
