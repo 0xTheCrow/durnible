@@ -11,13 +11,21 @@ const INITIAL_PAN = {
   translateY: 0,
 };
 
-export const usePan = (active: boolean, zoom = 1) => {
+const identityClamp = (pan: Pan): Pan => pan;
+
+export const usePan = (
+  active: boolean,
+  zoom = 1,
+  clampPan: (pan: Pan, zoom: number) => Pan = identityClamp
+) => {
   const [pan, setPan] = useState<Pan>(INITIAL_PAN);
   const [cursor, setCursor] = useState<'grab' | 'grabbing' | 'initial'>(
     active ? 'grab' : 'initial'
   );
   const zoomRef = useRef(zoom);
   zoomRef.current = zoom;
+  const clampPanRef = useRef(clampPan);
+  clampPanRef.current = clampPan;
 
   useEffect(() => {
     setCursor(active ? 'grab' : 'initial');
@@ -28,11 +36,11 @@ export const usePan = (active: boolean, zoom = 1) => {
     evt.stopPropagation();
 
     setPan((p) => {
-      const { translateX, translateY } = p;
-      const mX = translateX + evt.movementX / zoomRef.current;
-      const mY = translateY + evt.movementY / zoomRef.current;
-
-      return { translateX: mX, translateY: mY };
+      const next = {
+        translateX: p.translateX + evt.movementX / zoomRef.current,
+        translateY: p.translateY + evt.movementY / zoomRef.current,
+      };
+      return clampPanRef.current(next, zoomRef.current);
     });
   };
 

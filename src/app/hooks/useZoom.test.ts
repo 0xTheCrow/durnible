@@ -39,38 +39,4 @@ describe('useZoom', () => {
     act(() => result.current.setZoom(3));
     expect(result.current.zoom).toBe(3);
   });
-
-  it('onWheel zooms in when scrolling up (deltaY < 0)', () => {
-    const { result } = renderHook(() => useZoom(0.2));
-    act(() => {
-      result.current.onWheel({ deltaY: -1, preventDefault: () => {} } as React.WheelEvent);
-    });
-    expect(result.current.zoom).toBeCloseTo(1.25);
-  });
-
-  it('onWheel zooms out when scrolling down (deltaY > 0)', () => {
-    const { result } = renderHook(() => useZoom(0.2));
-    act(() => {
-      result.current.onWheel({ deltaY: 1, preventDefault: () => {} } as React.WheelEvent);
-    });
-    expect(result.current.zoom).toBeCloseTo(0.75);
-  });
-
-  it('onWheel clamps to min', () => {
-    const { result } = renderHook(() => useZoom(0.2, 0.1, 5));
-    act(() => result.current.setZoom(0.1));
-    act(() => {
-      result.current.onWheel({ deltaY: 1, preventDefault: () => {} } as React.WheelEvent);
-    });
-    expect(result.current.zoom).toBe(0.1);
-  });
-
-  it('onWheel clamps to max', () => {
-    const { result } = renderHook(() => useZoom(0.2, 0.1, 5));
-    act(() => result.current.setZoom(5));
-    act(() => {
-      result.current.onWheel({ deltaY: -1, preventDefault: () => {} } as React.WheelEvent);
-    });
-    expect(result.current.zoom).toBe(5);
-  });
 });

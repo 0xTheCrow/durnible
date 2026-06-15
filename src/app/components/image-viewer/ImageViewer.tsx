@@ -6,8 +6,10 @@ import { Box, Header, Icon, Icons, Spinner, Text, as } from 'folds';
 import * as css from './ImageViewer.css';
 import { useZoom } from '../../hooks/useZoom';
 import { usePan } from '../../hooks/usePan';
+import type { Pan } from '../../hooks/usePan';
 import { useTouchGesture } from '../../hooks/useTouchGesture';
 import { downloadMedia } from '../../utils/matrix';
+import { clampPanWithinBounds, clampZoom, panToKeepPointFixed } from '../../utils/zoom';
 import type { ImageViewerGalleryItem } from '../../state/imageViewer';
 
 export const IMAGE_VIEWER_ZOOM_STEP = 0.2;
@@ -35,9 +37,73 @@ export type ImageViewerProps = {
 
 export const ImageViewer = as<'div', ImageViewerProps>(
   ({ className, alt, src, onClose, gallery, ...props }, ref) => {
-    const { zoom, zoomIn, zoomOut, setZoom, onWheel } = useZoom(IMAGE_VIEWER_ZOOM_STEP);
-    const { pan, setPan, cursor, onMouseDown } = usePan(zoom !== 1, zoom);
-    const { onTouchStart, onTouchMove, onTouchEnd } = useTouchGesture(zoom, setZoom, setPan);
+    const { zoom, zoomIn, zoomOut, setZoom } = useZoom(IMAGE_VIEWER_ZOOM_STEP);
+
+    const imgRef = useRef<HTMLImageElement>(null);
+    const contentRef = useRef<HTMLDivElement>(null);
+
+    const clampPan = useCallback((panValue: Pan, zoomLevel: number): Pan => {
+      const img = imgRef.current;
+      const content = contentRef.current;
+      if (!img || !content) return panValue;
+      return clampPanWithinBounds(
+        panValue,
+        zoomLevel,
+        content.getBoundingClientRect(),
+        img.offsetWidth,
+        img.offsetHeight
+      );
+    }, []);
+
+    const { pan, setPan, cursor, onMouseDown } = usePan(zoom !== 1, zoom, clampPan);
+
+    const zoomRef = useRef(zoom);
+    zoomRef.current = zoom;
+    const panRef = useRef(pan);
+    panRef.current = pan;
+
+    const applyZoomAtPoint = useCallback(
+      (nextZoomRaw: number, pointX: number, pointY: number) => {
+        const currentZoom = zoomRef.current;
+        const nextZoom = clampZoom(nextZoomRaw);
+        if (nextZoom === currentZoom) return;
+        const img = imgRef.current;
+        const rawPan =
+          nextZoom === 1 || !img
+            ? { translateX: 0, translateY: 0 }
+            : panToKeepPointFixed(
+                img.getBoundingClientRect(),
+                currentZoom,
+                panRef.current,
+                nextZoom,
+                pointX,
+                pointY
+              );
+        const nextPan = clampPan(rawPan, nextZoom);
+        zoomRef.current = nextZoom;
+        panRef.current = nextPan;
+        setZoom(nextZoom);
+        setPan(nextPan);
+      },
+      [setZoom, setPan, clampPan]
+    );
+
+    const { onTouchStart, onTouchMove, onTouchEnd } = useTouchGesture(
+      zoom,
+      setZoom,
+      setPan,
+      applyZoomAtPoint,
+      clampPan
+    );
+
+    const handleWheel = useCallback(
+      (evt: React.WheelEvent) => {
+        evt.preventDefault();
+        const step = evt.deltaY < 0 ? IMAGE_VIEWER_ZOOM_STEP : -IMAGE_VIEWER_ZOOM_STEP;
+        applyZoomAtPoint(zoomRef.current + step, evt.clientX, evt.clientY);
+      },
+      [applyZoomAtPoint]
+    );
 
     // Cache of resolved http srcs by gallery index. The first item is seeded
     // with the src the viewer was opened on; the rest are filled in lazily as
@@ -123,17 +189,12 @@ export const ImageViewer = as<'div', ImageViewerProps>(
           Math.hypot(evt.clientX - last.x, evt.clientY - last.y) < 10
         ) {
           lastClickRef.current = null;
-          if (zoom === 1) {
-            setZoom(2);
-          } else {
-            setZoom(1);
-            setPan({ translateX: 0, translateY: 0 });
-          }
+          applyZoomAtPoint(zoom === 1 ? 2 : 1, evt.clientX, evt.clientY);
         } else {
           lastClickRef.current = { time: now, x: evt.clientX, y: evt.clientY };
         }
       },
-      [zoom, setZoom, setPan]
+      [zoom, applyZoomAtPoint]
     );
 
     const handleDownload = async () => {
@@ -213,19 +274,40 @@ export const ImageViewer = as<'div', ImageViewerProps>(
             </Text>
           </button>
         </Header>
+        {/* Pointer-driven gesture surface spanning the whole body so panning
+            can start outside the image. Modal-level Escape handling closes the
+            viewer; there is no meaningful keyboard equivalent for "click to
+            zoom". */}
+        {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
         <Box
+          ref={contentRef}
           grow="Yes"
           className={css.ImageViewerContent}
           justifyContent="Center"
           alignItems="Center"
-          onWheel={onWheel}
+          style={{ cursor, touchAction: 'none' }}
+          onWheel={handleWheel}
+          onPointerDown={(evt) => {
+            lastPointerTypeRef.current = evt.pointerType;
+          }}
+          onMouseDown={(evt) => {
+            evt.preventDefault();
+            onMouseDown(evt);
+          }}
+          onClick={handleClick}
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
         >
           {inGallery && (
             <>
               <button
                 type="button"
                 className={classNames(css.ImageViewerNavButton, css.ImageViewerNavButtonPrev)}
-                onClick={goPrev}
+                onClick={(evt) => {
+                  evt.stopPropagation();
+                  goPrev();
+                }}
                 disabled={!hasPrev || navLoading}
                 aria-label="Previous image"
               >
@@ -234,7 +316,10 @@ export const ImageViewer = as<'div', ImageViewerProps>(
               <button
                 type="button"
                 className={classNames(css.ImageViewerNavButton, css.ImageViewerNavButtonNext)}
-                onClick={goNext}
+                onClick={(evt) => {
+                  evt.stopPropagation();
+                  goNext();
+                }}
                 disabled={!hasNext || navLoading}
                 aria-label="Next image"
               >
@@ -242,31 +327,16 @@ export const ImageViewer = as<'div', ImageViewerProps>(
               </button>
             </>
           )}
-          {/* Pointer-driven gesture surface (drag-to-pan, double-click to
-              zoom). Modal-level Escape handling closes the viewer; there is
-              no meaningful keyboard equivalent for "click on image to zoom". */}
-          {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
           <img
+            ref={imgRef}
             data-testid="image-viewer-img"
             className={classNames(css.ImageViewerImg, inGallery && css.ImageViewerImgGallery)}
             style={{
-              cursor,
               transform: `scale(${zoom}) translate(${pan.translateX}px, ${pan.translateY}px)`,
             }}
             src={src}
             alt={alt}
             draggable={false}
-            onPointerDown={(evt) => {
-              lastPointerTypeRef.current = evt.pointerType;
-            }}
-            onMouseDown={(evt) => {
-              evt.preventDefault();
-              onMouseDown(evt);
-            }}
-            onClick={handleClick}
-            onTouchStart={onTouchStart}
-            onTouchMove={onTouchMove}
-            onTouchEnd={onTouchEnd}
           />
           {navLoading && (
             <div className={css.ImageViewerLoadingOverlay}>

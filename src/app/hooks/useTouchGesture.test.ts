@@ -25,7 +25,11 @@ const renderGesture = () =>
   renderHook(() => {
     const [zoom, setZoom] = React.useState(1);
     const [pan, setPan] = React.useState({ translateX: 0, translateY: 0 });
-    const handlers = useTouchGesture(zoom, setZoom, setPan);
+    const zoomToPoint = (nextZoom: number) => {
+      setZoom(nextZoom);
+      if (nextZoom === 1) setPan({ translateX: 0, translateY: 0 });
+    };
+    const handlers = useTouchGesture(zoom, setZoom, setPan, zoomToPoint);
     return { zoom, pan, ...handlers };
   });
 
