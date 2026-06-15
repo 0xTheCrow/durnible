@@ -25,7 +25,7 @@ import { useRoomNavigate } from '../../../hooks/useRoomNavigate';
 import { useAlive } from '../../../hooks/useAlive';
 import { useIgnoredUsers } from '../../../hooks/useIgnoredUsers';
 import { RoomIntro } from '../../../components/room-intro';
-import { getEditedEvent, getEventReactions } from '../../../utils/room';
+import { getEditedEvent } from '../../../utils/room';
 import { getReadReceiptEventId } from '../../../utils/room/receipts';
 import { markAsRead } from '../../../utils/notifications';
 import { useSetting } from '../../../state/hooks/settings';
@@ -543,7 +543,6 @@ export function RoomTimelineV2({
                   groupedImages={descriptor.groupedImages}
                   isHighlighted={highlightFocus && descriptor.mEventId === focusRequest?.eventId}
                   isEditing={editId === descriptor.mEventId}
-                  reactionRelations={getEventReactions(descriptor.timelineSet, descriptor.mEventId)}
                   editedEvent={getEditedEvent(
                     descriptor.mEventId,
                     descriptor.mEvent,

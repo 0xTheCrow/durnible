@@ -97,7 +97,7 @@ export type MessageProps = {
   canSendReaction?: boolean;
   canPinEvent?: boolean;
   imagePackRooms?: Room[];
-  relations?: Relations;
+  getRelations?: () => Relations | undefined;
   messageLayout: MessageLayout;
   messageSpacing: MessageSpacing;
   onUserClick: MouseEventHandler<HTMLButtonElement>;
@@ -133,7 +133,7 @@ export const Message = as<'div', MessageProps>(
       canSendReaction,
       canPinEvent,
       imagePackRooms,
-      relations,
+      getRelations,
       messageLayout,
       messageSpacing,
       onUserClick,
@@ -160,6 +160,7 @@ export const Message = as<'div', MessageProps>(
     const senderId = mEvent.getSender() ?? '';
 
     const eventId = mEvent.getId() ?? '';
+    const relations = getRelations?.();
     const selectionMode = useAtomValue(selectionModeAtom);
     const [selectedIds, setSelectedIds] = useAtom(selectedIdsAtom);
     const isSelected = selectionMode && selectedIds.has(eventId);

@@ -410,8 +410,8 @@ function RenderMessageContentInner({
 
 // Inner of two memo boundaries paired with MemoizedTimelineEvent. Several of
 // MemoizedTimelineEvent's props only affect the wrapper around the message
-// body (collapsed, isHighlighted, eventStatus, replyToMe, reactionRelations,
-// item), but a change to any of them still bails the outer memo. Without this
+// body (collapsed, isHighlighted, eventStatus, replyToMe, item), but a change
+// to any of them still bails the outer memo. Without this
 // inner memo those bails cascade through Message and re-render the entire
 // content subtree, which visibly reflows images and other media.
 //

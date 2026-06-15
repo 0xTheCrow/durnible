@@ -284,15 +284,18 @@ describe('emoji reactions (Reactions)', () => {
     timeline.getEvents.mockReturnValue(reactionEvents);
 
     const relations = createMockRelations(reactionEvents);
+    const mEvent = { on: vi.fn(), removeListener: vi.fn() };
+    const timelineSet = { relations: { getChildEventsForEvent: () => relations } };
     const onReactionToggle = vi.fn();
 
     const { container } = render(
       <MatrixTestWrapper matrixClient={mx}>
         <Reactions
           room={room as any}
+          mEvent={mEvent as any}
+          timelineSet={timelineSet as any}
           mEventId={EVENT_ID}
           canSendReaction={opts.canSendReaction ?? true}
-          relations={relations as any}
           onReactionToggle={onReactionToggle}
         />
       </MatrixTestWrapper>

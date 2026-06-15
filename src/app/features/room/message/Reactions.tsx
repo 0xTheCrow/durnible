@@ -1,15 +1,16 @@
 import type { MouseEventHandler } from 'react';
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Box, Text, Tooltip, as, toRem } from 'folds';
 import classNames from 'classnames';
-import type { Room } from 'matrix-js-sdk';
+import { EventType, MatrixEventEvent, RelationType } from 'matrix-js-sdk';
+import type { EventTimelineSet, MatrixEvent, Room } from 'matrix-js-sdk';
 import { type Relations } from 'matrix-js-sdk/lib/models/relations';
 import { TooltipProvider } from '../../../components/TooltipProvider';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { factoryEventSentBy } from '../../../utils/matrix';
 import { Reaction, ReactionTooltipMsg } from '../../../components/message';
 import { useRelations } from '../../../hooks/useRelations';
-import { sortReactionBuckets } from '../../../utils/room';
+import { getEventReactions, sortReactionBuckets } from '../../../utils/room';
 import * as css from './styles.css';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
 import { useSetting } from '../../../state/hooks/settings';
@@ -17,14 +18,14 @@ import { settingsAtom } from '../../../state/settings';
 import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
 import { useOpenReactionViewer } from '../../../state/hooks/reactionViewer';
 
-export type ReactionsProps = {
+type ReactionBucketsProps = {
   room: Room;
   mEventId: string;
   canSendReaction?: boolean;
   relations: Relations;
   onReactionToggle: (targetEventId: string, key: string, shortcode?: string) => void;
 };
-export const Reactions = as<'div', ReactionsProps>(
+const ReactionBuckets = as<'div', ReactionBucketsProps>(
   ({ className, room, relations, mEventId, canSendReaction, onReactionToggle, ...props }, ref) => {
     const mx = useMatrixClient();
     const useAuthentication = useMediaAuthentication();
@@ -93,6 +94,53 @@ export const Reactions = as<'div', ReactionsProps>(
           );
         })}
       </Box>
+    );
+  }
+);
+
+export type ReactionsProps = {
+  room: Room;
+  mEvent: MatrixEvent;
+  timelineSet: EventTimelineSet;
+  mEventId: string;
+  canSendReaction?: boolean;
+  onReactionToggle: (targetEventId: string, key: string, shortcode?: string) => void;
+};
+export const Reactions = as<'div', ReactionsProps>(
+  ({ room, mEvent, timelineSet, mEventId, canSendReaction, onReactionToggle, ...props }, ref) => {
+    const [relations, setRelations] = useState<Relations | undefined>(() =>
+      getEventReactions(timelineSet, mEventId)
+    );
+
+    useEffect(() => {
+      if (relations) return undefined;
+      const current = getEventReactions(timelineSet, mEventId);
+      if (current) {
+        setRelations(current);
+        return undefined;
+      }
+      const handleRelationsCreated = (relationType: string, eventType: string) => {
+        if (relationType !== RelationType.Annotation || eventType !== EventType.Reaction) return;
+        setRelations(getEventReactions(timelineSet, mEventId));
+      };
+      mEvent.on(MatrixEventEvent.RelationsCreated, handleRelationsCreated);
+      return () => {
+        mEvent.removeListener(MatrixEventEvent.RelationsCreated, handleRelationsCreated);
+      };
+    }, [relations, mEvent, timelineSet, mEventId]);
+
+    if (!relations) return null;
+
+    return (
+      <ReactionBuckets
+        room={room}
+        relations={relations}
+        mEventId={mEventId}
+        canSendReaction={canSendReaction}
+        onReactionToggle={onReactionToggle}
+        {...props}
+        ref={ref}
+      />
     );
   }
 );
