@@ -1,13 +1,17 @@
 import React, { useRef, useState } from 'react';
 import { render, act } from '@testing-library/react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import type { MatrixEvent, Room } from 'matrix-js-sdk';
+import type { EventTimeline, MatrixEvent, Room } from 'matrix-js-sdk';
 import { RoomEvent, RelationType } from 'matrix-js-sdk';
 import { createEventEmitterRoom } from '../../timeline/timelineTestHelpers';
 import type { Timeline } from '../../timeline/timelineState';
 import { useLiveTimelineUpdates } from './useLiveTimelineUpdates';
 
 const INITIAL_RANGE = { oldest: 5, newest: 10 };
+const WINDOW_SIZE = INITIAL_RANGE.newest - INITIAL_RANGE.oldest;
+
+const linkedTimelinesWithCount = (count: number): EventTimeline[] =>
+  [{ getEvents: () => new Array(count) }] as unknown as EventTimeline[];
 
 const liveMessage = (): MatrixEvent =>
   ({
@@ -32,6 +36,7 @@ type HarnessProps = {
   nearBottom: boolean;
   inWindow: boolean;
   unfocusedAutoScroll: boolean;
+  totalEvents: number;
   pinToLiveEnd: () => void;
   onState: (timeline: Timeline) => void;
 };
@@ -41,11 +46,12 @@ function Harness({
   nearBottom,
   inWindow,
   unfocusedAutoScroll,
+  totalEvents,
   pinToLiveEnd,
   onState,
 }: HarnessProps) {
   const [timeline, setTimeline] = useState<Timeline>({
-    linkedTimelines: [],
+    linkedTimelines: linkedTimelinesWithCount(totalEvents),
     range: { ...INITIAL_RANGE },
   });
   const nearBottomRef = useRef(nearBottom);
@@ -64,7 +70,9 @@ function Harness({
   return null;
 }
 
-type Setup = Partial<Pick<HarnessProps, 'nearBottom' | 'inWindow' | 'unfocusedAutoScroll'>> & {
+type Setup = Partial<
+  Pick<HarnessProps, 'nearBottom' | 'inWindow' | 'unfocusedAutoScroll' | 'totalEvents'>
+> & {
   focused?: boolean;
 };
 
@@ -79,6 +87,7 @@ const setup = (overrides: Setup = {}) => {
       nearBottom={overrides.nearBottom ?? true}
       inWindow={overrides.inWindow ?? true}
       unfocusedAutoScroll={overrides.unfocusedAutoScroll ?? false}
+      totalEvents={overrides.totalEvents ?? INITIAL_RANGE.newest}
       pinToLiveEnd={pinToLiveEnd}
       onState={(timeline) => {
         state.current = timeline;
@@ -109,16 +118,34 @@ describe('useLiveTimelineUpdates', () => {
     expect(pinToLiveEnd).not.toHaveBeenCalled();
   });
 
-  it('shifts the range and pins live when at the bottom of the live window while focused', () => {
+  it('anchors the range to the live edge and pins live when at the bottom while focused', () => {
+    const totalEvents = INITIAL_RANGE.newest + 1;
     const { room, pinToLiveEnd, state } = setup({
       nearBottom: true,
       inWindow: true,
       focused: true,
+      totalEvents,
     });
     emit(room, liveMessage());
     expect(state.current?.range).toEqual({
-      oldest: INITIAL_RANGE.oldest + 1,
-      newest: INITIAL_RANGE.newest + 1,
+      oldest: totalEvents - WINDOW_SIZE,
+      newest: totalEvents,
+    });
+    expect(pinToLiveEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it('anchors past a trailing modifier gap so the new message stays in the window', () => {
+    const totalEvents = INITIAL_RANGE.newest + 2;
+    const { room, pinToLiveEnd, state } = setup({
+      nearBottom: true,
+      inWindow: true,
+      focused: true,
+      totalEvents,
+    });
+    emit(room, liveMessage());
+    expect(state.current?.range).toEqual({
+      oldest: totalEvents - WINDOW_SIZE,
+      newest: totalEvents,
     });
     expect(pinToLiveEnd).toHaveBeenCalledTimes(1);
   });

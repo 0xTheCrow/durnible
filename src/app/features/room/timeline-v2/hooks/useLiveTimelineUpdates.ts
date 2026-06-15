@@ -4,6 +4,7 @@ import type { MatrixEvent, Room, RoomEventHandlerMap } from 'matrix-js-sdk';
 import { RoomEvent } from 'matrix-js-sdk';
 import { useLiveEventArrive, useLiveEventDecryption } from '../../timeline/timelineState';
 import type { Timeline } from '../../timeline/timelineState';
+import { getTimelinesEventsCount } from '../../timeline/timelineUtils';
 import { isModifierTimelineEvent } from '../../../../utils/room';
 
 type UseLiveTimelineUpdatesParams = {
@@ -37,13 +38,17 @@ export const useLiveTimelineUpdates = ({
 
       if (nearBottomRef.current && isInLivePaginationWindowRef.current && autoPinEnabled) {
         pinToLiveEnd();
-        setTimeline((current) => ({
-          ...current,
-          range: {
-            oldest: current.range.oldest + 1,
-            newest: current.range.newest + 1,
-          },
-        }));
+        setTimeline((current) => {
+          const total = getTimelinesEventsCount(current.linkedTimelines);
+          const windowSize = current.range.newest - current.range.oldest;
+          return {
+            ...current,
+            range: {
+              oldest: Math.max(0, total - windowSize),
+              newest: total,
+            },
+          };
+        });
         return;
       }
 
