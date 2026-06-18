@@ -33,6 +33,7 @@ export type ScrollController = {
   pinToLiveEnd: (options?: BehaviorOptions) => void;
   pinToAnchor: (selector: string, options?: AnchorOptions, behavior?: BehaviorOptions) => void;
   release: () => void;
+  releaseFollowLive: () => void;
   syncFollowLive: (atBottom: boolean) => void;
   intentRef: RefObject<ScrollIntent>;
 };
@@ -121,6 +122,10 @@ export const useScrollController = ({
     intentRef.current = { kind: 'free' };
   }, []);
 
+  const releaseFollowLive = useCallback(() => {
+    if (intentRef.current.kind === 'followLive') intentRef.current = { kind: 'free' };
+  }, []);
+
   const syncFollowLive = useCallback(
     (atBottom: boolean) => {
       if (autoScrollingRef.current) return;
@@ -180,7 +185,7 @@ export const useScrollController = ({
   }, [scrollRef]);
 
   return useMemo(
-    () => ({ pinToLiveEnd, pinToAnchor, release, syncFollowLive, intentRef }),
-    [pinToLiveEnd, pinToAnchor, release, syncFollowLive]
+    () => ({ pinToLiveEnd, pinToAnchor, release, releaseFollowLive, syncFollowLive, intentRef }),
+    [pinToLiveEnd, pinToAnchor, release, releaseFollowLive, syncFollowLive]
   );
 };

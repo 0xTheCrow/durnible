@@ -47,7 +47,6 @@ import {
 import {
   decryptAllTimelineEvent,
   getEditedEvent,
-  getEventReactions,
   isModifierTimelineEvent,
 } from '../../../utils/room';
 import { willEventRender } from './willEventRender';
@@ -1029,7 +1028,6 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
                   groupedEventIds={d.groupedEventIds}
                   isHighlighted={focusItem?.eventId === d.mEventId && !!focusItem.highlight}
                   isEditing={editId === d.mEventId}
-                  reactionRelations={getEventReactions(d.timelineSet, d.mEventId)}
                   editedEvent={getEditedEvent(d.mEventId, d.mEvent, d.timelineSet)}
                   isRedacted={d.mEvent.isRedacted()}
                   eventStatus={d.mEvent.status}

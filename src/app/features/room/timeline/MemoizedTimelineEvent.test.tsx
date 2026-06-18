@@ -66,6 +66,7 @@ function makeContext(
 function makeTimelineSet() {
   return {
     findEventById: vi.fn(() => undefined),
+    relations: { getChildEventsForEvent: vi.fn(() => undefined) },
   } as any;
 }
 
@@ -92,7 +93,6 @@ describe('MemoizedTimelineEvent edit mode', () => {
       item: 0,
       collapsed: false,
       isHighlighted: false,
-      reactionRelations: undefined,
       editedEvent: undefined,
       isRedacted: false,
       eventStatus: null,
@@ -150,7 +150,6 @@ describe('MemoizedTimelineEvent edit mode', () => {
       item: 0,
       collapsed: false,
       isHighlighted: false,
-      reactionRelations: undefined,
       editedEvent: undefined,
       isRedacted: false,
       eventStatus: null,
@@ -219,7 +218,6 @@ describe('MemoizedTimelineEvent reply-to-me highlight', () => {
             collapsed={false}
             isHighlighted={false}
             isEditing={false}
-            reactionRelations={undefined}
             editedEvent={undefined}
             isRedacted={false}
             eventStatus={null}
@@ -270,7 +268,6 @@ describe('MemoizedTimelineEvent reply-to-me highlight', () => {
             collapsed={false}
             isHighlighted={false}
             isEditing={false}
-            reactionRelations={undefined}
             editedEvent={undefined}
             isRedacted={false}
             eventStatus={null}
@@ -310,7 +307,6 @@ describe('MemoizedTimelineEvent reply-to-me highlight', () => {
             collapsed={false}
             isHighlighted={false}
             isEditing={false}
-            reactionRelations={undefined}
             editedEvent={undefined}
             isRedacted={false}
             eventStatus={null}
@@ -401,12 +397,16 @@ describe('MemoizedTimelineEvent edit — full handleEdit chain', () => {
           <MemoizedTimelineEvent
             mEvent={mEvent}
             mEventId="$event-chain-test"
-            timelineSet={{ findEventById: vi.fn(() => undefined) } as any}
+            timelineSet={
+              {
+                findEventById: vi.fn(() => undefined),
+                relations: { getChildEventsForEvent: vi.fn(() => undefined) },
+              } as any
+            }
             item={0}
             collapsed={false}
             isHighlighted={false}
             isEditing={editId === '$event-chain-test'}
-            reactionRelations={undefined}
             editedEvent={undefined}
             isRedacted={false}
             eventStatus={null}

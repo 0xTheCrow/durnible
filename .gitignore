@@ -8,3 +8,5 @@ devAssets
 
 .env
 .env.local
+
+.claude

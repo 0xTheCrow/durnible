@@ -1,6 +1,7 @@
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
+import { ZOOM_MAX, ZOOM_MIN } from '../utils/zoom';
 
-export const useZoom = (step: number, min = 0.1, max = 20) => {
+export const useZoom = (step: number, min = ZOOM_MIN, max = ZOOM_MAX) => {
   const [zoom, setZoom] = useState<number>(1);
 
   const zoomIn = () => {
@@ -17,23 +18,10 @@ export const useZoom = (step: number, min = 0.1, max = 20) => {
     });
   };
 
-  const scrollStep = 0.25;
-  const onWheel = useCallback(
-    (event: React.WheelEvent) => {
-      event.preventDefault();
-      setZoom((z) => {
-        const newZ = event.deltaY < 0 ? z + scrollStep : z - scrollStep;
-        return Math.min(max, Math.max(min, newZ));
-      });
-    },
-    [scrollStep, min, max]
-  );
-
   return {
     zoom,
     setZoom,
     zoomIn,
     zoomOut,
-    onWheel,
   };
 };

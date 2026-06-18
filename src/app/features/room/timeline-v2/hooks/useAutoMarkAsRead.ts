@@ -16,6 +16,7 @@ type UseAutoMarkAsReadParams = {
   hideActivity: boolean;
   atBottom: boolean;
   atBottomRef: RefObject<boolean>;
+  onMarkAsRead?: () => void;
 };
 
 type UseAutoMarkAsReadResult = {
@@ -29,6 +30,7 @@ export const useAutoMarkAsRead = ({
   hideActivity,
   atBottom,
   atBottomRef,
+  onMarkAsRead,
 }: UseAutoMarkAsReadParams): UseAutoMarkAsReadResult => {
   const [docFocused, setDocFocused] = useState(() =>
     typeof document !== 'undefined' ? document.hasFocus() : true
@@ -39,17 +41,21 @@ export const useAutoMarkAsRead = ({
 
   const tryAutoMarkAsRead = useCallback(() => {
     const readReceiptEventId = room.getEventReadUpTo(room.client.getUserId() ?? '');
-    if (!readReceiptEventId) {
+    const markRead = () => {
       markAsRead(mx, room.roomId, hideActivity);
+      onMarkAsRead?.();
+    };
+    if (!readReceiptEventId) {
+      markRead();
       return;
     }
     const eventTimeline = getEventTimeline(room, readReceiptEventId);
     const latestTimeline =
       eventTimeline && getFirstLinkedTimeline(eventTimeline, Direction.Forward);
     if (latestTimeline === room.getLiveTimeline()) {
-      markAsRead(mx, room.roomId, hideActivity);
+      markRead();
     }
-  }, [mx, room, hideActivity]);
+  }, [mx, room, hideActivity, onMarkAsRead]);
 
   useEffect(() => {
     if (!docFocused) return;

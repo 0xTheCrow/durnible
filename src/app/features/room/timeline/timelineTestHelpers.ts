@@ -75,6 +75,47 @@ export function findObserverOf(target: Element): FakeIntersectionObserver | unde
   return ioInstances.find((io) => io.observed.has(target));
 }
 
+export type FakeResizeObserver = {
+  callback: ResizeObserverCallback;
+  observed: Set<Element>;
+  observe: (target: Element) => void;
+  unobserve: (target: Element) => void;
+  disconnect: () => void;
+  trigger: () => void;
+};
+
+export const resizeObserverInstances: FakeResizeObserver[] = [];
+
+export function createFakeResizeObserver(cb: ResizeObserverCallback): FakeResizeObserver {
+  const instance: FakeResizeObserver = {
+    callback: cb,
+    observed: new Set(),
+    observe(target) {
+      instance.observed.add(target);
+    },
+    unobserve(target) {
+      instance.observed.delete(target);
+    },
+    disconnect() {
+      instance.observed.clear();
+    },
+    trigger() {
+      instance.callback([], instance as unknown as ResizeObserver);
+    },
+  };
+  return instance;
+}
+
+export function installResizeObserverStub(): void {
+  resizeObserverInstances.length = 0;
+  const ctor = function StubResizeObserver(this: ResizeObserver, cb: ResizeObserverCallback) {
+    const instance = createFakeResizeObserver(cb);
+    resizeObserverInstances.push(instance);
+    return instance as unknown as ResizeObserver;
+  } as unknown as typeof ResizeObserver;
+  (globalThis as unknown as { ResizeObserver: typeof ResizeObserver }).ResizeObserver = ctor;
+}
+
 export function createEventEmitterRoom(roomId: string): Room & {
   emit: (event: string, ...args: unknown[]) => boolean;
 } {

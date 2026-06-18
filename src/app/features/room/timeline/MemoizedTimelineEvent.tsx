@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import type { EventTimelineSet, MatrixEvent, Relations } from 'matrix-js-sdk';
+import type { EventTimelineSet, MatrixEvent } from 'matrix-js-sdk';
 import { Box, Chip, Icon, Icons, Text, config, color, toRem } from 'folds';
 import { useTranslation } from 'react-i18next';
 import type { ImageContent } from '../../../../types/matrix/common';
@@ -15,7 +15,12 @@ import {
   MPoll,
   LinePlaceholder,
 } from '../../../components/message';
-import { getEditedEvent, getMemberDisplayName, isMembershipChanged } from '../../../utils/room';
+import {
+  getEditedEvent,
+  getEventReactions,
+  getMemberDisplayName,
+  isMembershipChanged,
+} from '../../../utils/room';
 import { MessageEvent, StateEvent } from '../../../../types/matrix/room';
 import { MessageLayout } from '../../../state/settings';
 import { getMxIdLocalPart } from '../../../utils/matrix';
@@ -65,10 +70,6 @@ type MemoizedTimelineEventProps = {
   groupedEventIds?: string[];
   isHighlighted: boolean;
   isEditing: boolean;
-  // Passed from parent so the comparator can detect the undefined→Relations
-  // transition (first reaction added) and trigger a re-render to mount Reactions.
-  // Subsequent reaction changes are handled internally by useRelations.
-  reactionRelations: Relations | undefined;
   // Passed from parent so edits and redactions (invisible events that don't
   // change range deps) still trigger a re-render via the comparator.
   editedEvent: MatrixEvent | undefined;
@@ -90,7 +91,6 @@ function TimelineEventComponent({
   groupedEventIds,
   isHighlighted,
   isEditing: isEditingProp,
-  reactionRelations,
   editedEvent,
   isRedacted,
 }: MemoizedTimelineEventProps) {
@@ -165,8 +165,6 @@ function TimelineEventComponent({
     eventType === MessageEvent.PollStart ||
     eventType === 'm.poll.start'
   ) {
-    const reactions = reactionRelations && reactionRelations.getSortedAnnotationsByKey();
-    const hasReactions = reactions && reactions.length > 0;
     const { threadRootId } = mEvent;
     const senderId = mEvent.getSender() ?? '';
 
@@ -183,16 +181,17 @@ function TimelineEventComponent({
       />
     ) : undefined;
 
-    const reactionsJSX = reactionRelations ? (
+    const reactionsJSX = (
       <Reactions
         style={{ marginTop: config.space.S200 }}
         room={room}
-        relations={reactionRelations}
+        mEvent={mEvent}
+        timelineSet={timelineSet}
         mEventId={mEventId}
         canSendReaction={canSendReaction}
         onReactionToggle={handleReactionToggle}
       />
-    ) : undefined;
+    );
 
     const baseMessageProps = {
       'data-message-item': item,
@@ -208,7 +207,12 @@ function TimelineEventComponent({
       canSendReaction,
       canPinEvent,
       imagePackRooms,
-      relations: hasReactions ? reactionRelations : undefined,
+      getRelations: () => {
+        const eventRelations = getEventReactions(timelineSet, mEventId);
+        const buckets = eventRelations?.getSortedAnnotationsByKey();
+        const hasReactions = buckets?.some(([, events]) => events.size > 0) ?? false;
+        return hasReactions ? eventRelations : undefined;
+      },
       onUserClick: handleUserClick,
       onUsernameClick: handleUsernameClick,
       onReplyClick: handleReplyClick,
@@ -519,9 +523,9 @@ function TimelineEventComponent({
 // would rebuild its JSX on every parent render.
 //
 // Wrapper-only prop changes (collapsed, isHighlighted, eventStatus, replyToMe,
-// reactionRelations, item) still bail this memo because they affect the
-// MessageBase wrapper, header, avatar, or reactions footer. RenderMessageContent
-// has its own memo so those bails don't cascade into the message body.
+// item) still bail this memo because they affect the MessageBase wrapper,
+// header, or avatar. RenderMessageContent has its own memo so those bails don't
+// cascade into the message body.
 export const MemoizedTimelineEvent = React.memo(TimelineEventComponent, (prev, next) => {
   const result =
     prev.mEventId === next.mEventId &&
@@ -530,10 +534,6 @@ export const MemoizedTimelineEvent = React.memo(TimelineEventComponent, (prev, n
     sameGroupedImages(prev.groupedImages, next.groupedImages) &&
     prev.isHighlighted === next.isHighlighted &&
     prev.isEditing === next.isEditing &&
-    // Detects the undefined→Relations transition (first reaction added/removed)
-    // so the component re-renders and mounts/unmounts the Reactions child.
-    // Subsequent reaction count changes are handled by useRelations internally.
-    prev.reactionRelations === next.reactionRelations &&
     // Detects edits and redactions (invisible events that don't change range deps).
     // getEditedEvent returns a new MatrixEvent ref when an edit arrives;
     // isRedacted flips to true when a redaction arrives.

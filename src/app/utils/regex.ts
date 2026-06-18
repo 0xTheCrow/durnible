@@ -24,3 +24,8 @@ export const EMOJI_PATTERN = `[#*0-9]\uFE0F?\u20E3|[\xA9\xAE\u203C\u2049\u2122\u
 export const JUMBO_EMOJI_REG = new RegExp(
   `^(((${EMOJI_PATTERN})|(:.+?:))(${VARIATION_SELECTOR_PATTERN}|\\s)*){1,10}$`
 );
+
+const ZERO_WIDTH_FORMAT_REG = /[\u200B\u200C\u2060\uFEFF]/g;
+
+export const isJumboEmoji = (text: string): boolean =>
+  JUMBO_EMOJI_REG.test(text.replace(ZERO_WIDTH_FORMAT_REG, '').trim());

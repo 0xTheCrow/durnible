@@ -1,27 +1,35 @@
 import type { MouseEventHandler, RefObject } from 'react';
-import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import type { Room } from 'matrix-js-sdk';
-import { useSetAtom } from 'jotai';
-import { Box, Chip, Icon, Icons, Scroll, Spinner, Text, config } from 'folds';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import type { MatrixEvent, Room } from 'matrix-js-sdk';
+import { useAtomValue, useSetAtom } from 'jotai';
+import { Box, Chip, Icon, Icons, Scroll, Spinner, Text, config, toRem } from 'folds';
 import type { EditorController } from '../../../components/editor';
 import { TimelineMessageContext } from '../timeline/TimelineMessageContext';
 import { MemoizedTimelineEvent } from '../timeline/MemoizedTimelineEvent';
 import { TimelineOverlay } from '../timeline/TimelineOverlay';
 import { JumpToLatestButton } from '../timeline/JumpToLatestButton';
-import { timelineSliderPositionAtom } from '../timeline/TimelineSlider';
+import { SelectionActionBar } from '../timeline/SelectionActionBar';
+import { useBulkSelection } from '../timeline/useBulkSelection';
+import { timelineSliderPositionAtom, timelineSliderVisibleAtom } from '../timeline/TimelineSlider';
 import type { Timeline } from '../timeline/timelineState';
-import { getInitialTimeline, loadEventContext, PAGINATION_LIMIT } from '../timeline/timelineState';
+import {
+  getInitialTimeline,
+  loadEventContext,
+  useLiveTimelineRefresh,
+  PAGINATION_LIMIT,
+} from '../timeline/timelineState';
 import { getTimelinesEventsCount } from '../timeline/timelineUtils';
-import { willEventRender } from '../timeline/willEventRender';
 import { useVirtualPaginator } from '../../../hooks/useVirtualPaginator';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { useRoomNavigate } from '../../../hooks/useRoomNavigate';
 import { useAlive } from '../../../hooks/useAlive';
-import { getEditedEvent, getEventReactions } from '../../../utils/room';
+import { useIgnoredUsers } from '../../../hooks/useIgnoredUsers';
+import { RoomIntro } from '../../../components/room-intro';
+import { getEditedEvent } from '../../../utils/room';
 import { getReadReceiptEventId } from '../../../utils/room/receipts';
 import { markAsRead } from '../../../utils/notifications';
 import { useSetting } from '../../../state/hooks/settings';
-import { settingsAtom } from '../../../state/settings';
+import { MessageLayout, settingsAtom } from '../../../state/settings';
 import { buildTimelineDescriptors } from './utils/buildTimelineDescriptors';
 import { BackPaginationSkeletons } from './components/BackPaginationSkeletons';
 import { ForwardPaginationSkeletons } from './components/ForwardPaginationSkeletons';
@@ -31,13 +39,13 @@ import {
 } from './components/NewMessagesDivider';
 import { DayDivider } from './components/DayDivider';
 import { useAtBottom } from './hooks/useAtBottom';
-import { useNearBottom } from './hooks/useNearBottom';
 import { useLiveTimelineUpdates } from './hooks/useLiveTimelineUpdates';
 import { useScrollController } from './hooks/useScrollController';
 import { useTimelineMessageContextValue } from './hooks/useTimelineMessageContextValue';
 import { usePaginationState } from './hooks/usePaginationState';
 import { useAutoMarkAsRead } from './hooks/useAutoMarkAsRead';
 import { resolveTimelineEvents } from './utils/resolveTimelineEvents';
+import { willRenderTimelineEvent } from './utils/willRenderTimelineEvent';
 
 type RoomTimelineV2Props = {
   room: Room;
@@ -77,6 +85,10 @@ export function RoomTimelineV2({
   const [unfocusedAutoScroll] = useSetting(settingsAtom, 'unfocusedAutoScroll');
   const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
 
+  const ignoredUsersList = useIgnoredUsers();
+  const ignoredUsersSet = useMemo(() => new Set(ignoredUsersList), [ignoredUsersList]);
+  const sliderVisible = useAtomValue(timelineSliderVisibleAtom);
+
   const {
     handleTimelinePagination,
     canPaginateBack,
@@ -85,6 +97,9 @@ export function RoomTimelineV2({
     liveTimelineLinked,
     rangeAtNewest,
   } = usePaginationState(room, timeline, setTimeline);
+
+  const { selectionMode, selectedIds, bulkDeleting, handleBulkDelete, handleCancelSelection } =
+    useBulkSelection(mx, room);
 
   const isInLivePaginationWindow = liveTimelineLinked && rangeAtNewest;
   const isInLivePaginationWindowRef = useRef(isInLivePaginationWindow);
@@ -104,14 +119,18 @@ export function RoomTimelineV2({
     scrollRef,
     onChange: scrollController.syncFollowLive,
   });
-  const { nearBottomRef, nearBottomAnchorRef } = useNearBottom({ scrollRef });
+  useEffect(() => {
+    if (!isInLivePaginationWindow) scrollController.releaseFollowLive();
+  }, [isInLivePaginationWindow, scrollController]);
 
+  const clearNewMessagesDivider = useCallback(() => setDividerReadUptoEventId(undefined), []);
   const { readReceiptEventId, roomIsUnread } = useAutoMarkAsRead({
     mx,
     room,
     hideActivity,
     atBottom,
     atBottomRef,
+    onMarkAsRead: clearNewMessagesDivider,
   });
 
   const alive = useAlive();
@@ -210,11 +229,20 @@ export function RoomTimelineV2({
   useLiveTimelineUpdates({
     room,
     setTimeline,
-    nearBottomRef,
+    scrollRef,
     isInLivePaginationWindowRef,
     pinToLiveEnd: scrollController.pinToLiveEnd,
     unfocusedAutoScroll,
   });
+
+  useLiveTimelineRefresh(
+    room,
+    useCallback(() => {
+      if (liveTimelineLinked) {
+        setTimeline(getInitialTimeline(room));
+      }
+    }, [room, liveTimelineLinked])
+  );
 
   useEffect(() => {
     const scrollElement = scrollRef.current;
@@ -328,8 +356,9 @@ export function RoomTimelineV2({
     handleOpenReply,
   });
 
-  const willRender = (mEvent: Parameters<typeof willEventRender>[0]) =>
-    willEventRender(mEvent, {
+  const willRender = (mEvent: MatrixEvent) =>
+    willRenderTimelineEvent(mEvent, {
+      ignoredUsersSet,
       showHiddenEvents,
       hideMembershipEvents,
       hideNickAvatarEvents,
@@ -466,10 +495,23 @@ export function RoomTimelineV2({
             justifyContent="End"
             style={{
               minHeight: '100%',
-              padding: `${config.space.S600} 0`,
+              padding: `${config.space.S600} ${sliderVisible ? toRem(48) : '0'} ${
+                config.space.S600
+              } 0`,
               visibility: mountResolved ? undefined : 'hidden',
             }}
           >
+            {!canPaginateBack && rangeAtOldest && getItems().length > 0 && (
+              <div
+                style={{
+                  padding: `${config.space.S700} ${config.space.S400} ${config.space.S600} ${
+                    messageLayout === MessageLayout.Compact ? config.space.S400 : toRem(64)
+                  }`,
+                }}
+              >
+                <RoomIntro room={room} />
+              </div>
+            )}
             {showBackSkeletons && (
               <BackPaginationSkeletons layout={messageLayout} anchorRef={observeBackAnchor} />
             )}
@@ -498,7 +540,6 @@ export function RoomTimelineV2({
                   groupedImages={descriptor.groupedImages}
                   isHighlighted={highlightFocus && descriptor.mEventId === focusRequest?.eventId}
                   isEditing={editId === descriptor.mEventId}
-                  reactionRelations={getEventReactions(descriptor.timelineSet, descriptor.mEventId)}
                   editedEvent={getEditedEvent(
                     descriptor.mEventId,
                     descriptor.mEvent,
@@ -513,7 +554,6 @@ export function RoomTimelineV2({
             {!isInLivePaginationWindow && <div ref={observeFrontAnchor} />}
             {isForwardPaginating && <ForwardPaginationSkeletons layout={messageLayout} />}
 
-            <span ref={nearBottomAnchorRef} />
             <span ref={atBottomAnchorRef} />
           </Box>
         </Scroll>
@@ -525,6 +565,16 @@ export function RoomTimelineV2({
             autoScrolling={false}
             onClick={handleJumpToLatest}
           />
+        )}
+        {selectionMode && (
+          <TimelineOverlay position="Bottom">
+            <SelectionActionBar
+              selectedCount={selectedIds.size}
+              onDelete={handleBulkDelete}
+              onCancel={handleCancelSelection}
+              deleting={bulkDeleting}
+            />
+          </TimelineOverlay>
         )}
       </Box>
     </TimelineMessageContext.Provider>

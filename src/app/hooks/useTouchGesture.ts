@@ -1,6 +1,7 @@
 import type { Dispatch, SetStateAction, TouchEventHandler } from 'react';
 import { useRef } from 'react';
 import type { Pan } from './usePan';
+import { ZOOM_MAX, ZOOM_MIN } from '../utils/zoom';
 
 type TouchGestureState = {
   initialDistance: number;
@@ -22,8 +23,10 @@ export const useTouchGesture = (
   zoom: number,
   setZoom: Dispatch<SetStateAction<number>>,
   setPan: Dispatch<SetStateAction<Pan>>,
-  zoomMin = 0.1,
-  zoomMax = 20
+  zoomToPoint: (nextZoom: number, pointX: number, pointY: number) => void,
+  clampPan: (pan: Pan, zoom: number) => Pan = (pan) => pan,
+  zoomMin = ZOOM_MIN,
+  zoomMax = ZOOM_MAX
 ) => {
   const gestureRef = useRef<TouchGestureState | null>(null);
   const zoomRef = useRef(zoom);
@@ -83,10 +86,9 @@ export const useTouchGesture = (
       const dy = midY - gestureRef.current.lastTouchY;
       if (dx !== 0 || dy !== 0) {
         const z = zoomRef.current;
-        setPan((p) => ({
-          translateX: p.translateX + dx / z,
-          translateY: p.translateY + dy / z,
-        }));
+        setPan((p) =>
+          clampPan({ translateX: p.translateX + dx / z, translateY: p.translateY + dy / z }, z)
+        );
       }
       gestureRef.current.lastTouchX = midX;
       gestureRef.current.lastTouchY = midY;
@@ -94,10 +96,9 @@ export const useTouchGesture = (
       const dx = e.touches[0].clientX - gestureRef.current.lastTouchX;
       const dy = e.touches[0].clientY - gestureRef.current.lastTouchY;
       const z = zoomRef.current;
-      setPan((p) => ({
-        translateX: p.translateX + dx / z,
-        translateY: p.translateY + dy / z,
-      }));
+      setPan((p) =>
+        clampPan({ translateX: p.translateX + dx / z, translateY: p.translateY + dy / z }, z)
+      );
       gestureRef.current.lastTouchX = e.touches[0].clientX;
       gestureRef.current.lastTouchY = e.touches[0].clientY;
     }
@@ -125,12 +126,9 @@ export const useTouchGesture = (
           ) {
             // Double tap detected — prevent synthesized dblclick from also firing
             e.preventDefault();
-            if (zoomRef.current === 1) {
-              setZoomTracked(2);
-            } else {
-              setZoomTracked(1);
-              setPan({ translateX: 0, translateY: 0 });
-            }
+            const target = zoomRef.current === 1 ? 2 : 1;
+            zoomRef.current = target;
+            zoomToPoint(target, ct.clientX, ct.clientY);
             lastTapRef.current = null;
           } else {
             lastTapRef.current = { time: now, x: ct.clientX, y: ct.clientY };

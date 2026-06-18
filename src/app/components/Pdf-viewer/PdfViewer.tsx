@@ -105,6 +105,22 @@ export const PdfViewer = as<'div', PdfViewerProps>(
       setJumpAnchor(evt.currentTarget.getBoundingClientRect());
     };
 
+    useEffect(() => {
+      if (docState.status !== AsyncStatus.Success) return undefined;
+      const { numPages } = docState.data;
+      const handleKeyDown = (evt: KeyboardEvent) => {
+        const target = evt.target as HTMLElement | null;
+        if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA') return;
+        if (evt.key === 'ArrowRight') {
+          setPageNo((n) => Math.min(n + 1, numPages));
+        } else if (evt.key === 'ArrowLeft') {
+          setPageNo((n) => Math.max(n - 1, 1));
+        }
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [docState]);
+
     return (
       <Box className={classNames(css.PdfViewer, className)} direction="Column" {...props} ref={ref}>
         <Header className={css.PdfViewerHeader} size="400">
