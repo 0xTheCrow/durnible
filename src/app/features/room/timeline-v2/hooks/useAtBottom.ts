@@ -12,6 +12,8 @@ type UseAtBottomResult = {
   atBottomAnchorRef: RefObject<HTMLSpanElement>;
 };
 
+export const AT_BOTTOM_TOLERANCE_PX = 8;
+
 export const useAtBottom = ({ scrollRef, onChange }: UseAtBottomParams): UseAtBottomResult => {
   const [atBottom, setAtBottom] = useState(false);
   const atBottomRef = useRef(false);
@@ -29,7 +31,7 @@ export const useAtBottom = ({ scrollRef, onChange }: UseAtBottomParams): UseAtBo
         setAtBottom(isIntersecting);
         onChange?.(isIntersecting);
       },
-      { root, rootMargin: '0px', threshold: 0 }
+      { root, rootMargin: `0px 0px ${AT_BOTTOM_TOLERANCE_PX}px 0px`, threshold: 0 }
     );
     observer.observe(sentinel);
 

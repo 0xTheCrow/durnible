@@ -40,6 +40,8 @@ export type ScrollController = {
 
 const AUTO_SCROLL_FALLBACK_MS = 1000;
 
+const ANCHOR_SATISFIED_TOLERANCE_PX = 2;
+
 const anchorOffsetPx = (intent: AnchorIntent, scrollElement: HTMLElement): number =>
   intent.offsetFraction !== undefined
     ? Math.round(scrollElement.clientHeight * intent.offsetFraction)
@@ -77,17 +79,15 @@ export const useScrollController = ({
       if (!targetElement || !targetElement.isConnected) return;
       const targetRect = targetElement.getBoundingClientRect();
       const scrollRect = scrollElement.getBoundingClientRect();
+      const offset = anchorOffsetPx(intent, scrollElement);
       const topInView = targetRect.top >= scrollRect.top && targetRect.top <= scrollRect.bottom;
       const satisfied =
-        intent.align === 'start' ? topInView : topInView && targetRect.bottom <= scrollRect.bottom;
+        intent.align === 'start'
+          ? Math.abs(targetRect.top - (scrollRect.top + offset)) <= ANCHOR_SATISFIED_TOLERANCE_PX
+          : topInView && targetRect.bottom <= scrollRect.bottom;
       if (satisfied) return;
       scrollElement.scrollTo({
-        top: computeAnchorScrollTop(
-          scrollElement,
-          targetElement,
-          intent.align,
-          anchorOffsetPx(intent, scrollElement)
-        ),
+        top: computeAnchorScrollTop(scrollElement, targetElement, intent.align, offset),
         behavior,
       });
     },
