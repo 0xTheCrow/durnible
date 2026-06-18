@@ -5,7 +5,7 @@ import type { EventTimeline, MatrixEvent, Room } from 'matrix-js-sdk';
 import { RoomEvent, RelationType } from 'matrix-js-sdk';
 import { createEventEmitterRoom } from '../../timeline/timelineTestHelpers';
 import type { Timeline } from '../../timeline/timelineState';
-import { useLiveTimelineUpdates } from './useLiveTimelineUpdates';
+import { useLiveTimelineUpdates, NEAR_BOTTOM_THRESHOLD_PX } from './useLiveTimelineUpdates';
 
 const INITIAL_RANGE = { oldest: 5, newest: 10 };
 const WINDOW_SIZE = INITIAL_RANGE.newest - INITIAL_RANGE.oldest;
@@ -54,14 +54,20 @@ function Harness({
     linkedTimelines: linkedTimelinesWithCount(totalEvents),
     range: { ...INITIAL_RANGE },
   });
-  const nearBottomRef = useRef(nearBottom);
-  nearBottomRef.current = nearBottom;
+  const bottomDistance = nearBottom ? 0 : NEAR_BOTTOM_THRESHOLD_PX + 1;
+  const scrollElement = {
+    scrollHeight: bottomDistance,
+    offsetHeight: 0,
+    scrollTop: 0,
+  } as unknown as HTMLDivElement;
+  const scrollRef = useRef(scrollElement);
+  scrollRef.current = scrollElement;
   const inWindowRef = useRef(inWindow);
   inWindowRef.current = inWindow;
   useLiveTimelineUpdates({
     room,
     setTimeline,
-    nearBottomRef,
+    scrollRef,
     isInLivePaginationWindowRef: inWindowRef,
     pinToLiveEnd,
     unfocusedAutoScroll,

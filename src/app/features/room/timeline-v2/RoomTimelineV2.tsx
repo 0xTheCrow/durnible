@@ -39,7 +39,6 @@ import {
 } from './components/NewMessagesDivider';
 import { DayDivider } from './components/DayDivider';
 import { useAtBottom } from './hooks/useAtBottom';
-import { useNearBottom } from './hooks/useNearBottom';
 import { useLiveTimelineUpdates } from './hooks/useLiveTimelineUpdates';
 import { useScrollController } from './hooks/useScrollController';
 import { useTimelineMessageContextValue } from './hooks/useTimelineMessageContextValue';
@@ -120,8 +119,6 @@ export function RoomTimelineV2({
     scrollRef,
     onChange: scrollController.syncFollowLive,
   });
-  const { nearBottomRef, nearBottomAnchorRef } = useNearBottom({ scrollRef });
-
   useEffect(() => {
     if (!isInLivePaginationWindow) scrollController.releaseFollowLive();
   }, [isInLivePaginationWindow, scrollController]);
@@ -232,7 +229,7 @@ export function RoomTimelineV2({
   useLiveTimelineUpdates({
     room,
     setTimeline,
-    nearBottomRef,
+    scrollRef,
     isInLivePaginationWindowRef,
     pinToLiveEnd: scrollController.pinToLiveEnd,
     unfocusedAutoScroll,
@@ -557,7 +554,6 @@ export function RoomTimelineV2({
             {!isInLivePaginationWindow && <div ref={observeFrontAnchor} />}
             {isForwardPaginating && <ForwardPaginationSkeletons layout={messageLayout} />}
 
-            <span ref={nearBottomAnchorRef} />
             <span ref={atBottomAnchorRef} />
           </Box>
         </Scroll>
