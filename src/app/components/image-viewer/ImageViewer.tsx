@@ -18,15 +18,6 @@ export type ImageViewerProps = {
   alt: string;
   src: string;
   onClose: () => void;
-  /**
-   * When set, enables gallery navigation. The viewer renders prev/next
-   * controls (and binds arrow keys), and on navigation calls `resolveSrc`
-   * for items that haven't been loaded yet, then `onNavigate` with the
-   * resolved src/alt and the new index.
-   *
-   * Resolution lives outside the viewer so this component stays free of
-   * matrix-client dependencies (and existing tests don't need a provider).
-   */
   gallery?: {
     items: ImageViewerGalleryItem[];
     index: number;
@@ -105,9 +96,6 @@ export const ImageViewer = as<'div', ImageViewerProps>(
       [applyZoomAtPoint]
     );
 
-    // Cache of resolved http srcs by gallery index. The first item is seeded
-    // with the src the viewer was opened on; the rest are filled in lazily as
-    // the user navigates.
     const resolvedSrcCacheRef = useRef<Map<number, string>>(new Map());
     if (gallery && !resolvedSrcCacheRef.current.has(gallery.index)) {
       resolvedSrcCacheRef.current.set(gallery.index, src);
@@ -274,10 +262,6 @@ export const ImageViewer = as<'div', ImageViewerProps>(
             </Text>
           </button>
         </Header>
-        {/* Pointer-driven gesture surface spanning the whole body so panning
-            can start outside the image. Modal-level Escape handling closes the
-            viewer; there is no meaningful keyboard equivalent for "click to
-            zoom". */}
         {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
         <Box
           ref={contentRef}
