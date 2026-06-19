@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
 import type { EventTimelineSet, MatrixEvent } from 'matrix-js-sdk';
-import { Box, Chip, Icon, Icons, Text, config, color, toRem } from 'folds';
+import { Box, Icons, Text, config, color, toRem } from 'folds';
 import { useTranslation } from 'react-i18next';
 import type { ImageContent } from '../../../../types/matrix/common';
 import { sameGroupedImages } from '../../../utils/buildTimelineDescriptors';
@@ -26,34 +26,17 @@ import { MessageLayout } from '../../../state/settings';
 import { getMxIdLocalPart } from '../../../utils/matrix';
 import { RenderMessageContent } from '../../../components/RenderMessageContent';
 import { Image } from '../../../components/media';
-import { Reactions, Message, TimelineSystemEvent, EncryptedContent } from '../message';
+import {
+  Reactions,
+  Message,
+  TimelineSystemEvent,
+  EncryptedContent,
+  DecryptionFailedContent,
+} from '../message';
 import * as customHtmlCss from '../../../styles/CustomHtml.css';
 import { useMemberEventParser } from '../../../hooks/useMemberEventParser';
 import { useRoomEvent } from '../../../hooks/useRoomEvent';
 import { useTimelineMessageContext } from './TimelineMessageContext';
-
-const warningStyle = { color: color.Warning.Main, opacity: config.opacity.P300 };
-
-function DecryptRetry({ retrying, onRetry }: { retrying: boolean; onRetry: () => void }) {
-  return (
-    <Text>
-      <Box as="span" alignItems="Center" gap="200" style={warningStyle}>
-        <Icon size="50" src={Icons.Lock} />
-        <i>Unable to decrypt message</i>
-        <Chip
-          as="button"
-          radii="300"
-          variant="SurfaceVariant"
-          size="400"
-          disabled={retrying}
-          onClick={onRetry}
-        >
-          <Text size="T200">{retrying ? 'Retrying…' : 'Retry'}</Text>
-        </Chip>
-      </Box>
-    </Text>
-  );
-}
 
 type MemoizedTimelineEventProps = {
   mEvent: MatrixEvent;
@@ -297,7 +280,8 @@ function TimelineEventComponent({
 
                 if (content.msgtype === 'm.bad.encrypted') {
                   return (
-                    <DecryptRetry
+                    <DecryptionFailedContent
+                      mEvent={mEvent}
                       retrying={retrying}
                       onRetry={async () => {
                         setRetrying(true);
