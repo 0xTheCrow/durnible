@@ -15,6 +15,7 @@ import { General } from './general';
 import { Members } from '../common-settings/members';
 import { EmojisStickers } from '../common-settings/emojis-stickers';
 import { Permissions } from './permissions';
+import { Encryption } from './encryption';
 import { RoomSettingsPage } from '../../state/roomSettings';
 import { useRoom } from '../../hooks/useRoom';
 import { DeveloperTools } from '../common-settings/developer-tools';
@@ -25,7 +26,7 @@ type RoomSettingsMenuItem = {
   icon: IconSrc;
 };
 
-const useRoomSettingsMenuItems = (): RoomSettingsMenuItem[] =>
+const useRoomSettingsMenuItems = (isEncrypted: boolean): RoomSettingsMenuItem[] =>
   useMemo(
     () => [
       {
@@ -48,13 +49,22 @@ const useRoomSettingsMenuItems = (): RoomSettingsMenuItem[] =>
         name: 'Emojis & Stickers',
         icon: Icons.Smile,
       },
+      ...(isEncrypted
+        ? [
+            {
+              page: RoomSettingsPage.EncryptionPage,
+              name: 'Encryption',
+              icon: Icons.ShieldLock,
+            },
+          ]
+        : []),
       {
         page: RoomSettingsPage.DeveloperToolsPage,
         name: 'Developer Tools',
         icon: Icons.Terminal,
       },
     ],
-    []
+    [isEncrypted]
   );
 
 type RoomSettingsProps = {
@@ -80,7 +90,7 @@ export function RoomSettings({ initialPage, onClose }: RoomSettingsProps) {
     if (initialPage) return initialPage;
     return screenSize === ScreenSize.Mobile ? undefined : RoomSettingsPage.GeneralPage;
   });
-  const menuItems = useRoomSettingsMenuItems();
+  const menuItems = useRoomSettingsMenuItems(room.hasEncryptionStateEvent());
 
   const handlePageRequestClose = () => {
     if (screenSize === ScreenSize.Mobile) {
@@ -160,6 +170,9 @@ export function RoomSettings({ initialPage, onClose }: RoomSettingsProps) {
       )}
       {activePage === RoomSettingsPage.EmojisStickersPage && (
         <EmojisStickers onClose={handlePageRequestClose} />
+      )}
+      {activePage === RoomSettingsPage.EncryptionPage && (
+        <Encryption onClose={handlePageRequestClose} />
       )}
       {activePage === RoomSettingsPage.DeveloperToolsPage && (
         <DeveloperTools onClose={handlePageRequestClose} />
