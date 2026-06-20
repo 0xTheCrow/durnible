@@ -376,7 +376,8 @@ export function RoomTimelineV2({
   const isDividerOffscreen = !!dividerElement && !dividerInView;
   const isUnreadDividerMissing =
     mountResolved && roomIsUnread && !!readReceiptEventId && !firstUnreadEventId;
-  const showUnreadChips = mountResolved && (isDividerOffscreen || isUnreadDividerMissing);
+  const showUnreadChips =
+    mountResolved && !atBottom && (isDividerOffscreen || isUnreadDividerMissing);
 
   useLayoutEffect(() => {
     if (didResolveMountRef.current) return;
