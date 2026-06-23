@@ -11,8 +11,8 @@ enableMapSet();
 import './index.css';
 
 import { trimTrailingSlash } from './app/utils/common';
-import { isIOS, mobileOrTablet } from './app/utils/user-agent';
 import { getSettings } from './app/state/settings';
+import { isIOS, mobileOrTablet } from './app/utils/user-agent';
 import App from './app/pages/App';
 
 document.body.classList.add(configClass, varsClass);
@@ -171,43 +171,33 @@ if ('serviceWorker' in navigator) {
 
 const setupVirtualKeyboard = () => {
   if (!mobileOrTablet()) return;
-  // Brave handles keyboard resize natively via interactive-widget=resizes-content;
-  // our JS adjustment interferes and causes a black content area.
   const isBrave = (navigator as unknown as { brave?: unknown }).brave !== undefined;
-  // iOS WebKit (all iOS browsers — Safari, Brave iOS, Chrome iOS) handles keyboard
-  // by scrolling the focused input into view; vv.height can report a much smaller
-  // value than the actual visible area above the keyboard, which collapses #root.
   const isIOSDevice = isIOS();
-  const vv = window.visualViewport;
-  if (!vv) return;
-  // Tracks the natural (no-keyboard) height for the current orientation.
-  let maxSeenHeight = vv.height;
+  const visualViewport = window.visualViewport;
+  if (!visualViewport) return;
+  let visualViewportHeight = visualViewport.height;
   const update = () => {
-    if (vv.height > maxSeenHeight) maxSeenHeight = vv.height;
-    if (getSettings().altMobileKeyboardAdjustment && isIOSDevice) {
+    if (visualViewport.height > visualViewportHeight) visualViewportHeight = visualViewport.height;
+    if (isIOSDevice) {
       document.documentElement.style.removeProperty('--app-height');
       return;
     }
-    const keyboardOpen = vv.height < window.innerHeight || vv.height < maxSeenHeight;
+    const keyboardOpen =
+      visualViewport.height < window.innerHeight || visualViewport.height < visualViewportHeight;
     if (keyboardOpen) {
-      // Skip if Brave (explicit check), or if the layout viewport already shrank
-      // to match the visual viewport — both mean the browser handled the resize
-      // natively and setting --app-height would cause a black content area.
-      if (isBrave || vv.height === window.innerHeight) {
+      if (isBrave || visualViewport.height === window.innerHeight) {
         document.documentElement.style.removeProperty('--app-height');
       } else {
-        document.documentElement.style.setProperty('--app-height', `${vv.height}px`);
+        document.documentElement.style.setProperty('--app-height', `${visualViewport.height}px`);
       }
     } else {
       document.documentElement.style.removeProperty('--app-height');
     }
   };
   update();
-  vv.addEventListener('resize', update);
-  // Zero out maxSeenHeight on orientation change so the next vv resize
-  // recalibrates it to the new orientation's natural height.
+  visualViewport.addEventListener('resize', update);
   window.screen.orientation?.addEventListener('change', () => {
-    maxSeenHeight = 0;
+    visualViewportHeight = 0;
   });
 };
 

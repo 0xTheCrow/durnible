@@ -153,12 +153,12 @@ export const useScrollController = ({
     };
     scrollElement.addEventListener('wheel', releaseIntent, { passive: true });
     scrollElement.addEventListener('touchmove', releaseIntent, { passive: true });
-    scrollElement.addEventListener('keydown', releaseIntent);
+    scrollElement.addEventListener('keydown', releaseAnchor);
     scrollElement.addEventListener('mousedown', releaseAnchor);
     return () => {
       scrollElement.removeEventListener('wheel', releaseIntent);
       scrollElement.removeEventListener('touchmove', releaseIntent);
-      scrollElement.removeEventListener('keydown', releaseIntent);
+      scrollElement.removeEventListener('keydown', releaseAnchor);
       scrollElement.removeEventListener('mousedown', releaseAnchor);
     };
   }, [scrollRef]);

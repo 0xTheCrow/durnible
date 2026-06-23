@@ -58,8 +58,6 @@ export interface Settings {
 
   swipeGestures: boolean;
 
-  altMobileKeyboardAdjustment: boolean;
-
   pwaMode: boolean;
 
   timelineSliderRange: TimelineSliderRange;
@@ -115,8 +113,6 @@ const defaultSettings: Settings = {
   developerTools: false,
 
   swipeGestures: true,
-
-  altMobileKeyboardAdjustment: false,
 
   pwaMode: false,
 
