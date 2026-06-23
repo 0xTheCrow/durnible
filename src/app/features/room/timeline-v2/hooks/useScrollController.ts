@@ -38,6 +38,8 @@ export type ScrollController = {
   intentRef: RefObject<ScrollIntent>;
 };
 
+const AUTO_SCROLL_FALLBACK_MS = 1000;
+
 const ANCHOR_SATISFIED_TOLERANCE_PX = 2;
 
 const anchorOffsetPx = (intent: AnchorIntent, scrollElement: HTMLElement): number =>
@@ -52,6 +54,16 @@ export const useScrollController = ({
   unfocusedAutoScrollRef,
 }: UseScrollControllerParams): ScrollController => {
   const intentRef = useRef<ScrollIntent>({ kind: 'free' });
+  const autoScrollingRef = useRef(false);
+  const autoScrollTimerRef = useRef(0);
+
+  const beginAutoScroll = useCallback(() => {
+    autoScrollingRef.current = true;
+    window.clearTimeout(autoScrollTimerRef.current);
+    autoScrollTimerRef.current = window.setTimeout(() => {
+      autoScrollingRef.current = false;
+    }, AUTO_SCROLL_FALLBACK_MS);
+  }, []);
 
   const apply = useCallback(
     (behavior: 'instant' | 'smooth') => {
@@ -85,9 +97,10 @@ export const useScrollController = ({
   const pinToLiveEnd = useCallback(
     ({ animate = false }: BehaviorOptions = {}) => {
       intentRef.current = { kind: 'followLive' };
+      beginAutoScroll();
       apply(animate ? 'smooth' : 'instant');
     },
-    [apply]
+    [apply, beginAutoScroll]
   );
 
   const pinToAnchor = useCallback(
@@ -99,9 +112,10 @@ export const useScrollController = ({
         offset: options.offset ?? 0,
         offsetFraction: options.offsetFraction,
       };
+      if (animate) beginAutoScroll();
       apply(animate ? 'smooth' : 'instant');
     },
-    [apply]
+    [apply, beginAutoScroll]
   );
 
   const release = useCallback(() => {
@@ -114,8 +128,11 @@ export const useScrollController = ({
 
   const syncFollowLive = useCallback(
     (atBottom: boolean) => {
+      if (autoScrollingRef.current) return;
       if (atBottom && isInLivePaginationWindowRef.current) {
         intentRef.current = { kind: 'followLive' };
+      } else if (intentRef.current.kind === 'followLive') {
+        intentRef.current = { kind: 'free' };
       }
     },
     [isInLivePaginationWindowRef]
@@ -145,21 +162,25 @@ export const useScrollController = ({
   useEffect(() => {
     const scrollElement = scrollRef.current;
     if (!scrollElement) return undefined;
-    const releaseIntent = () => {
-      if (intentRef.current.kind !== 'free') intentRef.current = { kind: 'free' };
+    const endAutoScroll = () => {
+      autoScrollingRef.current = false;
+      window.clearTimeout(autoScrollTimerRef.current);
     };
-    const releaseAnchor = () => {
+    const handleUserInput = () => {
       if (intentRef.current.kind === 'anchor') intentRef.current = { kind: 'free' };
+      endAutoScroll();
     };
-    scrollElement.addEventListener('wheel', releaseIntent, { passive: true });
-    scrollElement.addEventListener('touchmove', releaseIntent, { passive: true });
-    scrollElement.addEventListener('keydown', releaseAnchor);
-    scrollElement.addEventListener('mousedown', releaseAnchor);
+    scrollElement.addEventListener('wheel', handleUserInput, { passive: true });
+    scrollElement.addEventListener('touchmove', handleUserInput, { passive: true });
+    scrollElement.addEventListener('mousedown', handleUserInput);
+    scrollElement.addEventListener('keydown', handleUserInput);
+    scrollElement.addEventListener('scrollend', endAutoScroll);
     return () => {
-      scrollElement.removeEventListener('wheel', releaseIntent);
-      scrollElement.removeEventListener('touchmove', releaseIntent);
-      scrollElement.removeEventListener('keydown', releaseAnchor);
-      scrollElement.removeEventListener('mousedown', releaseAnchor);
+      scrollElement.removeEventListener('wheel', handleUserInput);
+      scrollElement.removeEventListener('touchmove', handleUserInput);
+      scrollElement.removeEventListener('mousedown', handleUserInput);
+      scrollElement.removeEventListener('keydown', handleUserInput);
+      scrollElement.removeEventListener('scrollend', endAutoScroll);
     };
   }, [scrollRef]);
 

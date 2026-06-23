@@ -82,6 +82,15 @@ describe('useScrollController', () => {
       act(() => controller().syncFollowLive(true));
       expect(controller().intentRef.current?.kind).toBe('followLive');
     });
+
+    it('demotes followLive to free when leaving the bottom', () => {
+      const inWindowRef = ref(true);
+      const { controller } = renderController(inWindowRef);
+      act(() => controller().syncFollowLive(true));
+      expect(controller().intentRef.current?.kind).toBe('followLive');
+      act(() => controller().syncFollowLive(false));
+      expect(controller().intentRef.current?.kind).toBe('free');
+    });
   });
 
   describe('maintainPosition on resize', () => {
