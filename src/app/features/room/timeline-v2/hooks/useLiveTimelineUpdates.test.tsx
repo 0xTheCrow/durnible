@@ -6,6 +6,7 @@ import { RoomEvent, RelationType } from 'matrix-js-sdk';
 import { createEventEmitterRoom } from '../../timeline/timelineTestHelpers';
 import type { Timeline } from '../../timeline/timelineState';
 import { useLiveTimelineUpdates, NEAR_BOTTOM_THRESHOLD_PX } from './useLiveTimelineUpdates';
+import type { ScrollIntent } from './useScrollController';
 
 const INITIAL_RANGE = { oldest: 5, newest: 10 };
 const WINDOW_SIZE = INITIAL_RANGE.newest - INITIAL_RANGE.oldest;
@@ -34,6 +35,7 @@ const reaction = (): MatrixEvent =>
 type HarnessProps = {
   room: Room;
   nearBottom: boolean;
+  followingLive: boolean;
   inWindow: boolean;
   unfocusedAutoScroll: boolean;
   totalEvents: number;
@@ -44,6 +46,7 @@ type HarnessProps = {
 function Harness({
   room,
   nearBottom,
+  followingLive,
   inWindow,
   unfocusedAutoScroll,
   totalEvents,
@@ -64,11 +67,14 @@ function Harness({
   scrollRef.current = scrollElement;
   const inWindowRef = useRef(inWindow);
   inWindowRef.current = inWindow;
+  const intentRef = useRef<ScrollIntent>({ kind: 'free' });
+  intentRef.current = followingLive ? { kind: 'followLive' } : { kind: 'free' };
   useLiveTimelineUpdates({
     room,
     setTimeline,
     scrollRef,
     isInLivePaginationWindowRef: inWindowRef,
+    intentRef,
     pinToLiveEnd,
     unfocusedAutoScroll,
   });
@@ -77,7 +83,10 @@ function Harness({
 }
 
 type Setup = Partial<
-  Pick<HarnessProps, 'nearBottom' | 'inWindow' | 'unfocusedAutoScroll' | 'totalEvents'>
+  Pick<
+    HarnessProps,
+    'nearBottom' | 'followingLive' | 'inWindow' | 'unfocusedAutoScroll' | 'totalEvents'
+  >
 > & {
   focused?: boolean;
 };
@@ -91,6 +100,7 @@ const setup = (overrides: Setup = {}) => {
     <Harness
       room={room}
       nearBottom={overrides.nearBottom ?? true}
+      followingLive={overrides.followingLive ?? false}
       inWindow={overrides.inWindow ?? true}
       unfocusedAutoScroll={overrides.unfocusedAutoScroll ?? false}
       totalEvents={overrides.totalEvents ?? INITIAL_RANGE.newest}
@@ -156,11 +166,28 @@ describe('useLiveTimelineUpdates', () => {
     expect(pinToLiveEnd).toHaveBeenCalledTimes(1);
   });
 
-  it('does not shift the range when not near the bottom', () => {
-    const { room, pinToLiveEnd, state } = setup({ nearBottom: false });
+  it('does not shift the range when not near the bottom and not following live', () => {
+    const { room, pinToLiveEnd, state } = setup({ nearBottom: false, followingLive: false });
     emit(room, liveMessage());
     expect(state.current?.range).toEqual(INITIAL_RANGE);
     expect(pinToLiveEnd).not.toHaveBeenCalled();
+  });
+
+  it('anchors to the live edge when following live even if geometry reads not-near-bottom', () => {
+    const totalEvents = INITIAL_RANGE.newest + 1;
+    const { room, pinToLiveEnd, state } = setup({
+      nearBottom: false,
+      followingLive: true,
+      inWindow: true,
+      focused: true,
+      totalEvents,
+    });
+    emit(room, liveMessage());
+    expect(state.current?.range).toEqual({
+      oldest: totalEvents - WINDOW_SIZE,
+      newest: totalEvents,
+    });
+    expect(pinToLiveEnd).toHaveBeenCalledTimes(1);
   });
 
   it('does not shift the range while unfocused with unfocusedAutoScroll off', () => {

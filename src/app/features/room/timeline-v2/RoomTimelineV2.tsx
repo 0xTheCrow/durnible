@@ -231,6 +231,7 @@ export function RoomTimelineV2({
     setTimeline,
     scrollRef,
     isInLivePaginationWindowRef,
+    intentRef: scrollController.intentRef,
     pinToLiveEnd: scrollController.pinToLiveEnd,
     unfocusedAutoScroll,
   });
