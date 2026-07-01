@@ -49,6 +49,7 @@ import { UserAvatar } from '../../../components/user-avatar';
 import { stopPropagation } from '../../../utils/keyboard';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
 import type { MemberPowerTag } from '../../../../types/matrix/room';
+import { MessageEvent } from '../../../../types/matrix/room';
 import { PowerIcon } from '../../../components/power';
 import colorMXID from '../../../../util/colorMXID';
 import { getPowerTagIconSrc } from '../../../hooks/useMemberPowerTag';
@@ -187,8 +188,11 @@ export const Message = as<'div', MessageProps>(
     const [hiddenImages, setHiddenImages] = useAtom(hiddenImagesAtom);
 
     const msgType = mEvent.getContent().msgtype;
-    const isImageMessage = msgType === MsgType.Image || msgType === MsgType.Video;
-    const isImageHidden = isImageMessage && hiddenImages.has(eventId);
+    const isStickerMessage = mEvent.getType() === MessageEvent.Sticker;
+    const isHideableMedia =
+      msgType === MsgType.Image || msgType === MsgType.Video || isStickerMessage;
+    const isMediaHidden = isHideableMedia && hiddenImages.has(eventId);
+    const hideableMediaLabel = isStickerMessage ? 'Sticker' : 'Image';
     const isTextMessage =
       msgType === MsgType.Text || msgType === MsgType.Emote || msgType === MsgType.Notice;
     const isMobile = useScreenSizeContext() === ScreenSize.Mobile;
@@ -207,7 +211,7 @@ export const Message = as<'div', MessageProps>(
       selection.addRange(range);
     };
 
-    const toggleImageHidden = useCallback(() => {
+    const toggleMediaHidden = useCallback(() => {
       setHiddenImages((prev: Set<string>) => {
         const next = new Set(prev);
         if (next.has(eventId)) {
@@ -620,15 +624,15 @@ export const Message = as<'div', MessageProps>(
                           {canPinEvent && (
                             <MessagePinItem room={room} mEvent={mEvent} onClose={closeMenu} />
                           )}
-                          {isImageMessage && (
+                          {isHideableMedia && (
                             <MenuItem
                               size="300"
                               after={
-                                <Icon size="100" src={isImageHidden ? Icons.Eye : Icons.EyeBlind} />
+                                <Icon size="100" src={isMediaHidden ? Icons.Eye : Icons.EyeBlind} />
                               }
                               radii="300"
                               onClick={() => {
-                                toggleImageHidden();
+                                toggleMediaHidden();
                                 closeMenu();
                               }}
                             >
@@ -638,7 +642,9 @@ export const Message = as<'div', MessageProps>(
                                 size="T300"
                                 truncate
                               >
-                                {isImageHidden ? 'Show Image' : 'Hide Image'}
+                                {isMediaHidden
+                                  ? `Show ${hideableMediaLabel}`
+                                  : `Hide ${hideableMediaLabel}`}
                               </Text>
                             </MenuItem>
                           )}

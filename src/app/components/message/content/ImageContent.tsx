@@ -40,6 +40,7 @@ export type ImageContentProps = {
   info?: ImageInfo;
   encryptionInfo?: EncryptedAttachmentInfo;
   autoPlay?: boolean;
+  treatAsAnimated?: boolean;
   markedAsSpoiler?: boolean;
   spoilerReason?: string;
   /**
@@ -61,6 +62,7 @@ export const ImageContent = as<'div', ImageContentProps>(
       info,
       encryptionInfo,
       autoPlay,
+      treatAsAnimated,
       markedAsSpoiler,
       spoilerReason,
       onView,
@@ -74,8 +76,8 @@ export const ImageContent = as<'div', ImageContentProps>(
     const blurHash = validBlurHash(info?.[MATRIX_BLUR_HASH_PROPERTY_NAME]);
 
     const [pauseGifs] = useSetting(settingsAtom, 'pauseGifs');
-    const isGif = isAnimatedImageMimetype(mimeType);
-    const shouldPauseGif = pauseGifs && isGif;
+    const isAnimatedImage = isAnimatedImageMimetype(mimeType) || !!treatAsAnimated;
+    const shouldPauseAnimatedImage = pauseGifs && isAnimatedImage;
 
     const setViewerState = useSetAtom(imageViewerAtom);
 
@@ -85,6 +87,7 @@ export const ImageContent = as<'div', ImageContentProps>(
 
     const [load, setLoad] = useState(false);
     const [error, setError] = useState(false);
+    const [hovered, setHovered] = useState(false);
     const [blurred, setBlurred] = useState(markedAsSpoiler ?? false);
     const effectiveBlurred = blurred || isForceHidden;
 
@@ -126,7 +129,14 @@ export const ImageContent = as<'div', ImageContentProps>(
     );
 
     return (
-      <Box className={classNames(css.RelativeBase, className)} {...props} ref={ref}>
+      <Box
+        data-testid="image-content"
+        className={classNames(css.RelativeBase, className)}
+        {...props}
+        ref={ref}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+      >
         {typeof blurHash === 'string' && !load && (
           <Box className={css.AbsoluteContainer}>
             <BlurhashCanvas
@@ -164,11 +174,13 @@ export const ImageContent = as<'div', ImageContentProps>(
             className={classNames(css.AbsoluteContainer, effectiveBlurred && css.Blur)}
             style={effectiveBlurred ? { opacity: 0.6 } : undefined}
           >
-            {shouldPauseGif && !effectiveBlurred ? (
+            {shouldPauseAnimatedImage || (effectiveBlurred && isAnimatedImage) ? (
               <AnimatedImageOverlay
                 src={srcState.data}
                 alt={body}
                 title={body}
+                frozen={effectiveBlurred}
+                hovered={hovered}
                 imgStyle={{
                   width: '100%',
                   height: '100%',

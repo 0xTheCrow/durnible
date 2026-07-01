@@ -46,6 +46,7 @@ export interface Settings {
   pauseGifs: boolean;
   gifShowNsfw: boolean;
   gifShowHidden: boolean;
+  gifRandomFeatured: boolean;
   replyHighlight: boolean;
 
   showNotifications: boolean;
@@ -102,6 +103,7 @@ const defaultSettings: Settings = {
   pauseGifs: false,
   gifShowNsfw: false,
   gifShowHidden: false,
+  gifRandomFeatured: false,
   replyHighlight: true,
 
   showNotifications: true,
