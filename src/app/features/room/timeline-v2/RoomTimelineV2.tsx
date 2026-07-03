@@ -230,6 +230,7 @@ export function RoomTimelineV2({
   useLiveTimelineUpdates({
     room,
     setTimeline,
+    scrollRef,
     intentRef: scrollController.intentRef,
     pinToLiveEnd: scrollController.pinToLiveEnd,
     unfocusedAutoScroll,

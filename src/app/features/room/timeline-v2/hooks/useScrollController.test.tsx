@@ -6,7 +6,7 @@ import {
   resizeObserverInstances,
   stubScrollGeometry,
 } from '../../timeline/timelineTestHelpers';
-import { useScrollController, FOLLOW_LIVE_RELEASE_THRESHOLD_PX } from './useScrollController';
+import { useScrollController, LIVE_EDGE_THRESHOLD_PX } from './useScrollController';
 import type { ScrollController } from './useScrollController';
 
 type HarnessProps = {
@@ -90,7 +90,7 @@ describe('useScrollController', () => {
       act(() => controller().syncFollowLive(true));
       expect(controller().intentRef.current?.kind).toBe('followLive');
 
-      geometry.setScrollTop(100 - (FOLLOW_LIVE_RELEASE_THRESHOLD_PX + 10));
+      geometry.setScrollTop(100 - (LIVE_EDGE_THRESHOLD_PX + 10));
       act(() => controller().syncFollowLive(false));
       expect(controller().intentRef.current?.kind).toBe('free');
     });
@@ -102,7 +102,7 @@ describe('useScrollController', () => {
       act(() => controller().syncFollowLive(true));
       expect(controller().intentRef.current?.kind).toBe('followLive');
 
-      geometry.setScrollTop(100 - (FOLLOW_LIVE_RELEASE_THRESHOLD_PX - 10));
+      geometry.setScrollTop(100 - (LIVE_EDGE_THRESHOLD_PX - 10));
       act(() => controller().syncFollowLive(false));
       expect(controller().intentRef.current?.kind).toBe('followLive');
     });

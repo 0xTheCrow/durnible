@@ -6,11 +6,13 @@ import { useLiveEventArrive, useLiveEventDecryption } from '../../timeline/timel
 import type { Timeline } from '../../timeline/timelineState';
 import { getTimelinesEventsCount } from '../../timeline/timelineUtils';
 import { isModifierTimelineEvent } from '../../../../utils/room';
-import type { ScrollIntent } from './useScrollController';
+import { getScrollBottomDistance } from '../../../../utils/dom';
+import { LIVE_EDGE_THRESHOLD_PX, type ScrollIntent } from './useScrollController';
 
 type UseLiveTimelineUpdatesParams = {
   room: Room;
   setTimeline: Dispatch<SetStateAction<Timeline>>;
+  scrollRef: RefObject<HTMLDivElement>;
   intentRef: RefObject<ScrollIntent>;
   pinToLiveEnd: () => void;
   unfocusedAutoScroll: boolean;
@@ -19,6 +21,7 @@ type UseLiveTimelineUpdatesParams = {
 export const useLiveTimelineUpdates = ({
   room,
   setTimeline,
+  scrollRef,
   intentRef,
   pinToLiveEnd,
   unfocusedAutoScroll,
@@ -35,8 +38,11 @@ export const useLiveTimelineUpdates = ({
       const focused = typeof document !== 'undefined' && document.hasFocus();
       const autoPinEnabled = focused || unfocusedAutoScroll;
       const followingLive = intentRef.current?.kind === 'followLive';
+      const scrollElement = scrollRef.current;
+      const atLiveEdge =
+        !!scrollElement && getScrollBottomDistance(scrollElement) <= LIVE_EDGE_THRESHOLD_PX;
 
-      if (followingLive && autoPinEnabled) {
+      if ((followingLive || atLiveEdge) && autoPinEnabled) {
         pinToLiveEnd();
         setTimeline((current) => {
           const total = getTimelinesEventsCount(current.linkedTimelines);
@@ -54,7 +60,7 @@ export const useLiveTimelineUpdates = ({
 
       setTimeline((current) => ({ ...current }));
     },
-    [setTimeline, intentRef, pinToLiveEnd, unfocusedAutoScroll]
+    [setTimeline, scrollRef, intentRef, pinToLiveEnd, unfocusedAutoScroll]
   );
 
   useLiveEventArrive(room, handleLiveEventArrive);

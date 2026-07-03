@@ -6,7 +6,7 @@ import { RoomEvent, RelationType } from 'matrix-js-sdk';
 import { createEventEmitterRoom } from '../../timeline/timelineTestHelpers';
 import type { Timeline } from '../../timeline/timelineState';
 import { useLiveTimelineUpdates } from './useLiveTimelineUpdates';
-import type { ScrollIntent } from './useScrollController';
+import { LIVE_EDGE_THRESHOLD_PX, type ScrollIntent } from './useScrollController';
 
 const INITIAL_RANGE = { oldest: 5, newest: 10 };
 const WINDOW_SIZE = INITIAL_RANGE.newest - INITIAL_RANGE.oldest;
@@ -35,6 +35,7 @@ const reaction = (): MatrixEvent =>
 type HarnessProps = {
   room: Room;
   followingLive: boolean;
+  atLiveEdge: boolean;
   unfocusedAutoScroll: boolean;
   totalEvents: number;
   pinToLiveEnd: () => void;
@@ -44,6 +45,7 @@ type HarnessProps = {
 function Harness({
   room,
   followingLive,
+  atLiveEdge,
   unfocusedAutoScroll,
   totalEvents,
   pinToLiveEnd,
@@ -53,11 +55,19 @@ function Harness({
     linkedTimelines: linkedTimelinesWithCount(totalEvents),
     range: { ...INITIAL_RANGE },
   });
+  const scrollElement = {
+    scrollHeight: atLiveEdge ? LIVE_EDGE_THRESHOLD_PX : LIVE_EDGE_THRESHOLD_PX + 50,
+    offsetHeight: 0,
+    scrollTop: 0,
+  } as unknown as HTMLDivElement;
+  const scrollRef = useRef(scrollElement);
+  scrollRef.current = scrollElement;
   const intentRef = useRef<ScrollIntent>({ kind: 'free' });
   intentRef.current = followingLive ? { kind: 'followLive' } : { kind: 'free' };
   useLiveTimelineUpdates({
     room,
     setTimeline,
+    scrollRef,
     intentRef,
     pinToLiveEnd,
     unfocusedAutoScroll,
@@ -67,7 +77,7 @@ function Harness({
 }
 
 type Setup = Partial<
-  Pick<HarnessProps, 'followingLive' | 'unfocusedAutoScroll' | 'totalEvents'>
+  Pick<HarnessProps, 'followingLive' | 'atLiveEdge' | 'unfocusedAutoScroll' | 'totalEvents'>
 > & {
   focused?: boolean;
 };
@@ -81,6 +91,7 @@ const setup = (overrides: Setup = {}) => {
     <Harness
       room={room}
       followingLive={overrides.followingLive ?? false}
+      atLiveEdge={overrides.atLiveEdge ?? false}
       unfocusedAutoScroll={overrides.unfocusedAutoScroll ?? false}
       totalEvents={overrides.totalEvents ?? INITIAL_RANGE.newest}
       pinToLiveEnd={pinToLiveEnd}
@@ -128,9 +139,26 @@ describe('useLiveTimelineUpdates', () => {
     expect(pinToLiveEnd).toHaveBeenCalledTimes(1);
   });
 
-  it('does not shift the range when not following live', () => {
+  it('anchors the range to the live edge when at the live edge even without the followLive intent', () => {
+    const totalEvents = INITIAL_RANGE.newest + 1;
     const { room, pinToLiveEnd, state } = setup({
       followingLive: false,
+      atLiveEdge: true,
+      focused: true,
+      totalEvents,
+    });
+    emit(room, liveMessage());
+    expect(state.current?.range).toEqual({
+      oldest: totalEvents - WINDOW_SIZE,
+      newest: totalEvents,
+    });
+    expect(pinToLiveEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not shift the range when neither following live nor at the live edge', () => {
+    const { room, pinToLiveEnd, state } = setup({
+      followingLive: false,
+      atLiveEdge: false,
       focused: true,
       totalEvents: INITIAL_RANGE.newest + 1,
     });

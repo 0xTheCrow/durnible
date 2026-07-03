@@ -47,7 +47,7 @@ const AUTO_SCROLL_FALLBACK_MS = 1000;
 
 const ANCHOR_SATISFIED_TOLERANCE_PX = 2;
 
-export const FOLLOW_LIVE_RELEASE_THRESHOLD_PX = 20;
+export const LIVE_EDGE_THRESHOLD_PX = 20;
 
 const anchorOffsetPx = (intent: AnchorIntent, scrollElement: HTMLElement): number =>
   intent.offsetFraction !== undefined
@@ -140,10 +140,7 @@ export const useScrollController = ({
         intentRef.current = { kind: 'followLive' };
       } else if (intentRef.current.kind === 'followLive') {
         const scrollElement = scrollRef.current;
-        if (
-          !scrollElement ||
-          getScrollBottomDistance(scrollElement) > FOLLOW_LIVE_RELEASE_THRESHOLD_PX
-        ) {
+        if (!scrollElement || getScrollBottomDistance(scrollElement) > LIVE_EDGE_THRESHOLD_PX) {
           intentRef.current = { kind: 'free' };
         }
       }
