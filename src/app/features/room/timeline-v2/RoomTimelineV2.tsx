@@ -102,8 +102,9 @@ export function RoomTimelineV2({
     useBulkSelection(mx, room);
 
   const isInLivePaginationWindow = liveTimelineLinked && rangeAtNewest;
-  const isInLivePaginationWindowRef = useRef(isInLivePaginationWindow);
-  isInLivePaginationWindowRef.current = isInLivePaginationWindow;
+
+  const liveTimelineLinkedRef = useRef(liveTimelineLinked);
+  liveTimelineLinkedRef.current = liveTimelineLinked;
 
   const unfocusedAutoScrollRef = useRef(unfocusedAutoScroll);
   unfocusedAutoScrollRef.current = unfocusedAutoScroll;
@@ -111,7 +112,7 @@ export function RoomTimelineV2({
   const scrollController = useScrollController({
     scrollRef,
     contentRef,
-    isInLivePaginationWindowRef,
+    liveTimelineLinkedRef,
     unfocusedAutoScrollRef,
   });
 
@@ -120,8 +121,8 @@ export function RoomTimelineV2({
     onChange: scrollController.syncFollowLive,
   });
   useLayoutEffect(() => {
-    if (!isInLivePaginationWindow) scrollController.releaseFollowLive();
-  }, [isInLivePaginationWindow, scrollController]);
+    if (!liveTimelineLinked) scrollController.releaseFollowLive();
+  }, [liveTimelineLinked, scrollController]);
 
   const clearNewMessagesDivider = useCallback(() => setDividerReadUptoEventId(undefined), []);
   const { readReceiptEventId, roomIsUnread } = useAutoMarkAsRead({
@@ -229,8 +230,6 @@ export function RoomTimelineV2({
   useLiveTimelineUpdates({
     room,
     setTimeline,
-    scrollRef,
-    isInLivePaginationWindowRef,
     intentRef: scrollController.intentRef,
     pinToLiveEnd: scrollController.pinToLiveEnd,
     unfocusedAutoScroll,

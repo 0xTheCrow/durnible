@@ -30,7 +30,7 @@ type BehaviorOptions = {
 type UseScrollControllerParams = {
   scrollRef: RefObject<HTMLDivElement>;
   contentRef: RefObject<HTMLDivElement>;
-  isInLivePaginationWindowRef: RefObject<boolean>;
+  liveTimelineLinkedRef: RefObject<boolean>;
   unfocusedAutoScrollRef: RefObject<boolean>;
 };
 
@@ -57,7 +57,7 @@ const anchorOffsetPx = (intent: AnchorIntent, scrollElement: HTMLElement): numbe
 export const useScrollController = ({
   scrollRef,
   contentRef,
-  isInLivePaginationWindowRef,
+  liveTimelineLinkedRef,
   unfocusedAutoScrollRef,
 }: UseScrollControllerParams): ScrollController => {
   const intentRef = useRef<ScrollIntent>({ kind: 'free' });
@@ -136,7 +136,7 @@ export const useScrollController = ({
   const syncFollowLive = useCallback(
     (atBottom: boolean) => {
       if (autoScrollingRef.current) return;
-      if (atBottom && isInLivePaginationWindowRef.current) {
+      if (atBottom && liveTimelineLinkedRef.current) {
         intentRef.current = { kind: 'followLive' };
       } else if (intentRef.current.kind === 'followLive') {
         const scrollElement = scrollRef.current;
@@ -148,7 +148,7 @@ export const useScrollController = ({
         }
       }
     },
-    [isInLivePaginationWindowRef, scrollRef]
+    [liveTimelineLinkedRef, scrollRef]
   );
 
   useEffect(() => {

@@ -6,16 +6,11 @@ import { useLiveEventArrive, useLiveEventDecryption } from '../../timeline/timel
 import type { Timeline } from '../../timeline/timelineState';
 import { getTimelinesEventsCount } from '../../timeline/timelineUtils';
 import { isModifierTimelineEvent } from '../../../../utils/room';
-import { getScrollBottomDistance } from '../../../../utils/dom';
 import type { ScrollIntent } from './useScrollController';
-
-export const NEAR_BOTTOM_THRESHOLD_PX = 20;
 
 type UseLiveTimelineUpdatesParams = {
   room: Room;
   setTimeline: Dispatch<SetStateAction<Timeline>>;
-  scrollRef: RefObject<HTMLDivElement>;
-  isInLivePaginationWindowRef: RefObject<boolean>;
   intentRef: RefObject<ScrollIntent>;
   pinToLiveEnd: () => void;
   unfocusedAutoScroll: boolean;
@@ -24,8 +19,6 @@ type UseLiveTimelineUpdatesParams = {
 export const useLiveTimelineUpdates = ({
   room,
   setTimeline,
-  scrollRef,
-  isInLivePaginationWindowRef,
   intentRef,
   pinToLiveEnd,
   unfocusedAutoScroll,
@@ -41,17 +34,9 @@ export const useLiveTimelineUpdates = ({
 
       const focused = typeof document !== 'undefined' && document.hasFocus();
       const autoPinEnabled = focused || unfocusedAutoScroll;
-
-      const scrollElement = scrollRef.current;
       const followingLive = intentRef.current?.kind === 'followLive';
-      const isNearBottom =
-        !!scrollElement && getScrollBottomDistance(scrollElement) <= NEAR_BOTTOM_THRESHOLD_PX;
 
-      if (
-        (followingLive || isNearBottom) &&
-        isInLivePaginationWindowRef.current &&
-        autoPinEnabled
-      ) {
+      if (followingLive && autoPinEnabled) {
         pinToLiveEnd();
         setTimeline((current) => {
           const total = getTimelinesEventsCount(current.linkedTimelines);
@@ -69,14 +54,7 @@ export const useLiveTimelineUpdates = ({
 
       setTimeline((current) => ({ ...current }));
     },
-    [
-      setTimeline,
-      scrollRef,
-      isInLivePaginationWindowRef,
-      intentRef,
-      pinToLiveEnd,
-      unfocusedAutoScroll,
-    ]
+    [setTimeline, intentRef, pinToLiveEnd, unfocusedAutoScroll]
   );
 
   useLiveEventArrive(room, handleLiveEventArrive);

@@ -10,18 +10,18 @@ import { useScrollController, FOLLOW_LIVE_RELEASE_THRESHOLD_PX } from './useScro
 import type { ScrollController } from './useScrollController';
 
 type HarnessProps = {
-  inWindowRef: React.RefObject<boolean>;
+  liveLinkedRef: React.RefObject<boolean>;
   unfocusedAutoScrollRef: React.RefObject<boolean>;
   onHook: (controller: ScrollController) => void;
 };
 
-function Harness({ inWindowRef, unfocusedAutoScrollRef, onHook }: HarnessProps) {
+function Harness({ liveLinkedRef, unfocusedAutoScrollRef, onHook }: HarnessProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const controller = useScrollController({
     scrollRef,
     contentRef,
-    isInLivePaginationWindowRef: inWindowRef,
+    liveTimelineLinkedRef: liveLinkedRef,
     unfocusedAutoScrollRef,
   });
   onHook(controller);
@@ -35,13 +35,13 @@ function Harness({ inWindowRef, unfocusedAutoScrollRef, onHook }: HarnessProps) 
 const ref = (value: boolean): React.RefObject<boolean> => ({ current: value });
 
 const renderController = (
-  inWindowRef: React.RefObject<boolean>,
+  liveLinkedRef: React.RefObject<boolean>,
   unfocusedAutoScrollRef: React.RefObject<boolean> = ref(false)
 ) => {
   const hookRef: { current: ScrollController | null } = { current: null };
   const { container } = render(
     <Harness
-      inWindowRef={inWindowRef}
+      liveLinkedRef={liveLinkedRef}
       unfocusedAutoScrollRef={unfocusedAutoScrollRef}
       onHook={(controller) => {
         hookRef.current = controller;
@@ -71,21 +71,21 @@ afterEach(() => {
 
 describe('useScrollController', () => {
   describe('syncFollowLive', () => {
-    it('does not enter followLive at the bottom outside the live pagination window', () => {
+    it('does not enter followLive at the bottom when the live timeline is not linked', () => {
       const { controller } = renderController(ref(false));
       act(() => controller().syncFollowLive(true));
       expect(controller().intentRef.current?.kind).toBe('free');
     });
 
-    it('enters followLive at the bottom inside the live pagination window', () => {
+    it('enters followLive at the bottom when the live timeline is linked', () => {
       const { controller } = renderController(ref(true));
       act(() => controller().syncFollowLive(true));
       expect(controller().intentRef.current?.kind).toBe('followLive');
     });
 
     it('demotes followLive to free when scrolled away beyond the release threshold', () => {
-      const inWindowRef = ref(true);
-      const { controller, scrollElement } = renderController(inWindowRef);
+      const liveLinkedRef = ref(true);
+      const { controller, scrollElement } = renderController(liveLinkedRef);
       const geometry = stubScrollGeometry(scrollElement, { scrollHeight: 500, offsetHeight: 400 });
       act(() => controller().syncFollowLive(true));
       expect(controller().intentRef.current?.kind).toBe('followLive');
@@ -96,8 +96,8 @@ describe('useScrollController', () => {
     });
 
     it('keeps followLive when the bottom sentinel leaves view within the release threshold', () => {
-      const inWindowRef = ref(true);
-      const { controller, scrollElement } = renderController(inWindowRef);
+      const liveLinkedRef = ref(true);
+      const { controller, scrollElement } = renderController(liveLinkedRef);
       const geometry = stubScrollGeometry(scrollElement, { scrollHeight: 500, offsetHeight: 400 });
       act(() => controller().syncFollowLive(true));
       expect(controller().intentRef.current?.kind).toBe('followLive');
