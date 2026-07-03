@@ -119,7 +119,7 @@ export function RoomTimelineV2({
     scrollRef,
     onChange: scrollController.syncFollowLive,
   });
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!isInLivePaginationWindow) scrollController.releaseFollowLive();
   }, [isInLivePaginationWindow, scrollController]);
 

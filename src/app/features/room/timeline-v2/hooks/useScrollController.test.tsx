@@ -6,7 +6,7 @@ import {
   resizeObserverInstances,
   stubScrollGeometry,
 } from '../../timeline/timelineTestHelpers';
-import { useScrollController } from './useScrollController';
+import { useScrollController, FOLLOW_LIVE_RELEASE_THRESHOLD_PX } from './useScrollController';
 import type { ScrollController } from './useScrollController';
 
 type HarnessProps = {
@@ -83,13 +83,28 @@ describe('useScrollController', () => {
       expect(controller().intentRef.current?.kind).toBe('followLive');
     });
 
-    it('demotes followLive to free when leaving the bottom', () => {
+    it('demotes followLive to free when scrolled away beyond the release threshold', () => {
       const inWindowRef = ref(true);
-      const { controller } = renderController(inWindowRef);
+      const { controller, scrollElement } = renderController(inWindowRef);
+      const geometry = stubScrollGeometry(scrollElement, { scrollHeight: 500, offsetHeight: 400 });
       act(() => controller().syncFollowLive(true));
       expect(controller().intentRef.current?.kind).toBe('followLive');
+
+      geometry.setScrollTop(100 - (FOLLOW_LIVE_RELEASE_THRESHOLD_PX + 10));
       act(() => controller().syncFollowLive(false));
       expect(controller().intentRef.current?.kind).toBe('free');
+    });
+
+    it('keeps followLive when the bottom sentinel leaves view within the release threshold', () => {
+      const inWindowRef = ref(true);
+      const { controller, scrollElement } = renderController(inWindowRef);
+      const geometry = stubScrollGeometry(scrollElement, { scrollHeight: 500, offsetHeight: 400 });
+      act(() => controller().syncFollowLive(true));
+      expect(controller().intentRef.current?.kind).toBe('followLive');
+
+      geometry.setScrollTop(100 - (FOLLOW_LIVE_RELEASE_THRESHOLD_PX - 10));
+      act(() => controller().syncFollowLive(false));
+      expect(controller().intentRef.current?.kind).toBe('followLive');
     });
   });
 

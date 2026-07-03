@@ -30,7 +30,7 @@ export const useLiveTimelineUpdates = ({
   pinToLiveEnd,
   unfocusedAutoScroll,
 }: UseLiveTimelineUpdatesParams): void => {
-  const handleArrive = useCallback(
+  const handleLiveEventArrive = useCallback(
     (mEvent: MatrixEvent) => {
       const isModifier = isModifierTimelineEvent(mEvent);
 
@@ -79,7 +79,7 @@ export const useLiveTimelineUpdates = ({
     ]
   );
 
-  useLiveEventArrive(room, handleArrive);
+  useLiveEventArrive(room, handleLiveEventArrive);
 
   const handleDecrypted = useCallback(() => {
     setTimeline((current) => ({ ...current }));
