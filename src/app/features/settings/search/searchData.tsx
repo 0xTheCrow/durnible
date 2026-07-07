@@ -1,8 +1,10 @@
 import React from 'react';
-import { Switch } from 'folds';
+import { Switch, Button, Text } from 'folds';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
 import { SettingTile } from '../../../components/setting-tile';
+import { clearCacheAndReload } from '../../../../client/initMatrix';
+import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { SettingsPages } from '../settingsPages';
 import {
   SelectTheme,
@@ -293,6 +295,29 @@ function NotificationSoundSetting() {
       title="Notification Sound"
       description="Play sound when new messages arrive."
       after={<Switch variant="Primary" value={value} onChange={setValue} />}
+    />
+  );
+}
+
+// --- About ---
+function ClearCacheSetting() {
+  const mx = useMatrixClient();
+  return (
+    <SettingTile
+      title="Clear Cache & Reload"
+      description="Clear all your locally stored data and reload from server."
+      after={
+        <Button
+          onClick={() => clearCacheAndReload(mx)}
+          variant="Secondary"
+          fill="Soft"
+          size="300"
+          radii="300"
+          outlined
+        >
+          <Text size="B300">Clear Cache</Text>
+        </Button>
+      }
     />
   );
 }
@@ -703,5 +728,27 @@ export const settingsSearchData: SearchEntry[] = [
     page: SettingsPages.KeybindsPage,
     pageName: 'Keybinds',
     sectionName: 'Customize',
+  },
+  // About
+  {
+    id: 'clear-cache',
+    title: 'Clear Cache & Reload',
+    description: 'Clear all your locally stored data and reload from server.',
+    keywords: [
+      'cache',
+      'clear',
+      'reload',
+      'reset',
+      'storage',
+      'data',
+      'refresh',
+      'sync',
+      'stuck',
+      'unread',
+    ],
+    page: SettingsPages.AboutPage,
+    pageName: 'About',
+    sectionName: 'Options',
+    Render: ClearCacheSetting,
   },
 ];
