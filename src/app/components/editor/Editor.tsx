@@ -8,6 +8,7 @@ import React, {
   useState,
 } from 'react';
 import { Box, Scroll } from 'folds';
+import type { HtmlToEditorDomOptions } from './editorInput';
 import {
   handleEditorBackspace,
   htmlToEditorDom,
@@ -27,7 +28,7 @@ export type EditorController = {
   focus: () => void;
   insertText: (text: string) => void;
   insertNode: (node: Node) => void;
-  setContent: (html: string) => void;
+  setContent: (html: string, options?: HtmlToEditorDomOptions) => void;
 };
 
 export type EditorChangeHandler = () => void;
@@ -117,10 +118,10 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
           savedRangeRef.current = insertNodeAtRange(el, savedRangeRef.current, node);
           syncEditorState();
         },
-        setContent: (html: string) => {
+        setContent: (html: string, options?: HtmlToEditorDomOptions) => {
           const el = inputRef.current;
           if (!el) return;
-          const fragment = htmlToEditorDom(html, { mx, useAuthentication });
+          const fragment = htmlToEditorDom(html, { mx, useAuthentication, ...options });
           el.replaceChildren(fragment);
           savedRangeRef.current = null;
           syncEditorState();
