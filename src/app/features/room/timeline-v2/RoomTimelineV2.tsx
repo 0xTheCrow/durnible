@@ -102,6 +102,7 @@ export function RoomTimelineV2({
     useBulkSelection(mx, room);
 
   const isInLivePaginationWindow = liveTimelineLinked && rangeAtNewest;
+
   const isInLivePaginationWindowRef = useRef(isInLivePaginationWindow);
   isInLivePaginationWindowRef.current = isInLivePaginationWindow;
 
@@ -119,9 +120,9 @@ export function RoomTimelineV2({
     scrollRef,
     onChange: scrollController.syncFollowLive,
   });
-  useEffect(() => {
-    if (!isInLivePaginationWindow) scrollController.releaseFollowLive();
-  }, [isInLivePaginationWindow, scrollController]);
+  useLayoutEffect(() => {
+    if (!liveTimelineLinked) scrollController.releaseFollowLive();
+  }, [liveTimelineLinked, scrollController]);
 
   const clearNewMessagesDivider = useCallback(() => setDividerReadUptoEventId(undefined), []);
   const { readReceiptEventId, roomIsUnread } = useAutoMarkAsRead({
@@ -230,7 +231,9 @@ export function RoomTimelineV2({
     room,
     setTimeline,
     scrollRef,
+    atBottomRef,
     isInLivePaginationWindowRef,
+    intentRef: scrollController.intentRef,
     pinToLiveEnd: scrollController.pinToLiveEnd,
     unfocusedAutoScroll,
   });
@@ -376,7 +379,8 @@ export function RoomTimelineV2({
   const isDividerOffscreen = !!dividerElement && !dividerInView;
   const isUnreadDividerMissing =
     mountResolved && roomIsUnread && !!readReceiptEventId && !firstUnreadEventId;
-  const showUnreadChips = mountResolved && (isDividerOffscreen || isUnreadDividerMissing);
+  const showUnreadChips =
+    mountResolved && !atBottom && (isDividerOffscreen || isUnreadDividerMissing);
 
   useLayoutEffect(() => {
     if (didResolveMountRef.current) return;
@@ -421,19 +425,8 @@ export function RoomTimelineV2({
     if (scrollElement && firstUnreadEventId) {
       const dividerSelector = `[data-anchor-id="${NEW_MESSAGES_DIVIDER_ANCHOR_ID}"]`;
       const dividerNode = scrollElement.querySelector<HTMLElement>(dividerSelector);
-      const firstUnreadNode = scrollElement.querySelector<HTMLElement>(
-        `[data-message-id="${CSS.escape(firstUnreadEventId)}"]`
-      );
-      if (dividerNode && firstUnreadNode) {
-        const fitsViewport =
-          firstUnreadNode.offsetHeight + dividerNode.offsetHeight <= scrollElement.clientHeight;
-        if (fitsViewport) {
-          scrollController.pinToAnchor(`[data-message-id="${CSS.escape(firstUnreadEventId)}"]`, {
-            align: 'end',
-          });
-        } else {
-          scrollController.pinToAnchor(dividerSelector, { align: 'start', offsetFraction: 0.12 });
-        }
+      if (dividerNode) {
+        scrollController.pinToAnchor(dividerSelector, { align: 'start', offsetFraction: 0.12 });
       }
     }
     setMountResolved(true);

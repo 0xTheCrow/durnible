@@ -46,6 +46,7 @@ export interface Settings {
   pauseGifs: boolean;
   gifShowNsfw: boolean;
   gifShowHidden: boolean;
+  gifRandomFeatured: boolean;
   replyHighlight: boolean;
 
   showNotifications: boolean;
@@ -57,8 +58,6 @@ export interface Settings {
   developerTools: boolean;
 
   swipeGestures: boolean;
-
-  altMobileKeyboardAdjustment: boolean;
 
   pwaMode: boolean;
 
@@ -104,6 +103,7 @@ const defaultSettings: Settings = {
   pauseGifs: false,
   gifShowNsfw: false,
   gifShowHidden: false,
+  gifRandomFeatured: false,
   replyHighlight: true,
 
   showNotifications: true,
@@ -115,8 +115,6 @@ const defaultSettings: Settings = {
   developerTools: false,
 
   swipeGestures: true,
-
-  altMobileKeyboardAdjustment: false,
 
   pwaMode: false,
 

@@ -18,6 +18,8 @@ type AnimatedImageOverlayProps = {
   alt: string;
   title?: string;
   imgStyle?: CSSProperties;
+  frozen?: boolean;
+  hovered?: boolean;
   onLoad?: (evt: SyntheticEvent<HTMLImageElement>) => void;
   onError?: () => void;
   onView: () => void;
@@ -29,6 +31,8 @@ export function AnimatedImageOverlay({
   alt,
   title,
   imgStyle,
+  frozen,
+  hovered: hoveredProp,
   onLoad,
   onError,
   onView,
@@ -37,7 +41,9 @@ export function AnimatedImageOverlay({
   const imgRef = useRef<HTMLImageElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [loaded, setLoaded] = useState(false);
-  const [hovered, setHovered] = useState(false);
+  const [hoveredSelf, setHoveredSelf] = useState(false);
+  const selfManaged = hoveredProp === undefined;
+  const hovered = !frozen && (hoveredProp ?? hoveredSelf);
 
   usePausedFirstFrameCanvas(imgRef, canvasRef, loaded, true);
 
@@ -65,8 +71,8 @@ export function AnimatedImageOverlay({
         height: '100%',
         cursor: 'pointer',
       }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseEnter={selfManaged && !frozen ? () => setHoveredSelf(true) : undefined}
+      onMouseLeave={selfManaged && !frozen ? () => setHoveredSelf(false) : undefined}
       onClick={onView}
       onKeyDown={(evt) => {
         if (evt.key === 'Enter' || evt.key === ' ') {

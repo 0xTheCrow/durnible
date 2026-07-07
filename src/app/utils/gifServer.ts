@@ -121,7 +121,8 @@ function listUrl(
   pos?: string,
   showNsfw?: boolean,
   showHidden?: boolean,
-  mine?: boolean
+  mine?: boolean,
+  random?: boolean
 ): string {
   const url = new URL(`${GIF_SERVER_URL}${path}`);
   url.searchParams.set('limit', String(limit));
@@ -129,6 +130,7 @@ function listUrl(
   if (showNsfw) url.searchParams.set('grab_nsfw', 'true');
   if (showHidden) url.searchParams.set('grab_hidden', 'true');
   if (mine) url.searchParams.set('mine', 'true');
+  if (random) url.searchParams.set('random', 'true');
   return url.toString();
 }
 
@@ -154,9 +156,12 @@ export async function getFeaturedGifs(
   limit: number,
   pos?: string,
   showNsfw?: boolean,
-  showHidden?: boolean
+  showHidden?: boolean,
+  random?: boolean
 ): Promise<GifListResponse> {
-  const res = await gifFetch(listUrl('/gifs/featured', limit, pos, showNsfw, showHidden));
+  const res = await gifFetch(
+    listUrl('/gifs/featured', limit, pos, showNsfw, showHidden, false, random)
+  );
   if (!res.ok) throw new Error(`GIF featured failed: ${res.status}`);
   return res.json();
 }

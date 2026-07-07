@@ -184,31 +184,64 @@ describe('ImageContent', () => {
       await act(async () => {});
       fireEvent.load(screen.getByTestId('test-image'));
       const canvas = screen.getByTestId('animated-image-overlay-canvas');
-      const overlay = screen.getByTestId('animated-image-overlay');
+      const container = screen.getByTestId('image-content');
 
       // Frozen frame visible before hover
       expect(canvas).toHaveStyle({ visibility: 'visible' });
 
-      fireEvent.mouseEnter(overlay);
+      fireEvent.mouseEnter(container);
       expect(canvas).toHaveStyle({ visibility: 'hidden' });
 
       // Leave: frozen frame returns
-      fireEvent.mouseLeave(overlay);
+      fireEvent.mouseLeave(container);
       expect(canvas).toHaveStyle({ visibility: 'visible' });
     });
 
-    it('does not show canvas overlay when the image is a spoiler (blurred)', async () => {
+    it('freezes an animated spoiler to its first frame and ignores hover', async () => {
       render(
         <MatrixTestWrapper>
           <ImageContent {...gifProps} markedAsSpoiler />
         </MatrixTestWrapper>
       );
       await act(async () => {});
-      // The <img> is not rendered when blurred — try to find it defensively.
-      const img = screen.queryByTestId('test-image');
-      if (img) fireEvent.load(img);
-      // Canvas requires !effectiveBlurred — spoiler keeps it suppressed
-      expect(screen.queryByTestId('animated-image-overlay-canvas')).not.toBeInTheDocument();
+      fireEvent.load(screen.getByTestId('test-image'));
+      const canvas = screen.getByTestId('animated-image-overlay-canvas');
+      expect(canvas).toHaveStyle({ visibility: 'visible' });
+
+      // Frozen: hovering must not reveal the animation behind the blur
+      fireEvent.mouseEnter(screen.getByTestId('image-content'));
+      expect(canvas).toHaveStyle({ visibility: 'visible' });
+    });
+
+    it('animates immediately when unhidden while still hovered', async () => {
+      render(
+        <MatrixTestWrapper>
+          <ImageContent {...gifProps} markedAsSpoiler />
+        </MatrixTestWrapper>
+      );
+      await act(async () => {});
+      fireEvent.load(screen.getByTestId('test-image'));
+      const canvas = screen.getByTestId('animated-image-overlay-canvas');
+
+      // Hover the blurred sticker, then reveal it without moving the pointer
+      fireEvent.mouseEnter(screen.getByTestId('image-content'));
+      expect(canvas).toHaveStyle({ visibility: 'visible' });
+
+      fireEvent.click(screen.getByTestId('image-content-spoiler-chip'));
+      // No longer frozen and still hovered — the GIF should animate
+      expect(canvas).toHaveStyle({ visibility: 'hidden' });
+    });
+
+    it('freezes an animated spoiler even when pauseGifs is disabled', async () => {
+      vi.mocked(useSetting).mockReturnValue([false, vi.fn()] as any);
+      render(
+        <MatrixTestWrapper>
+          <ImageContent {...gifProps} markedAsSpoiler />
+        </MatrixTestWrapper>
+      );
+      await act(async () => {});
+      fireEvent.load(screen.getByTestId('test-image'));
+      expect(screen.getByTestId('animated-image-overlay-canvas')).toBeInTheDocument();
     });
   });
 });

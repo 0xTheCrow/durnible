@@ -61,6 +61,25 @@ const hasFormattingAncestor = (node: Node, el: HTMLElement): boolean => {
   return false;
 };
 
+const LINE_CONTAINER_TAGS = new Set(['DIV', 'P']);
+
+const hasOnlyLineContainerAncestors = (node: Node, root: HTMLElement): boolean => {
+  let current: Node | null = node.parentNode;
+  while (current && current !== root) {
+    if (
+      current.nodeType !== Node.ELEMENT_NODE ||
+      !LINE_CONTAINER_TAGS.has((current as HTMLElement).tagName)
+    ) {
+      return false;
+    }
+    current = current.parentNode;
+  }
+  return current === root;
+};
+
+const isBlockMarkdownLineBreak = (node: Node, root: HTMLElement, opts: DomOutputOptions): boolean =>
+  Boolean(opts.allowBlockMarkdown) && hasOnlyLineContainerAncestors(node, root);
+
 const HTML_TAG_RE = /<([\w-]+)(?: [^>]*)?(?:(?:\/>)|(?:>.*?<\/\1>))/g;
 const ignoreHTMLParseInlineMD = (text: string): string =>
   findAndReplace(
@@ -152,7 +171,9 @@ const nodeToCustomHtml = (node: Node, root: HTMLElement, opts: DomOutputOptions)
 
   const tag = element.tagName;
 
-  if (tag === 'BR') return '<br/>';
+  if (tag === 'BR') {
+    return isBlockMarkdownLineBreak(element, root, opts) ? '\n' : '<br/>';
+  }
 
   const childHtml = childrenToCustomHtml(element, root, opts);
 
@@ -178,7 +199,9 @@ const nodeToCustomHtml = (node: Node, root: HTMLElement, opts: DomOutputOptions)
   if (tag === 'UL') return `<ul>${childHtml}</ul>`;
   if (tag === 'LI') return `<li><p>${childHtml}</p></li>`;
 
-  if (tag === 'DIV' || tag === 'P') return `${childHtml}<br/>`;
+  if (tag === 'DIV' || tag === 'P') {
+    return isBlockMarkdownLineBreak(element, root, opts) ? `${childHtml}\n` : `${childHtml}<br/>`;
+  }
 
   return childHtml;
 };

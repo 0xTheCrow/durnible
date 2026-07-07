@@ -114,13 +114,14 @@ function loadSection(
   query: string,
   showNsfw: boolean,
   showHidden: boolean,
+  randomFeatured: boolean,
   cursor?: string
 ): Promise<GifListResponse> {
   if (section === 'favorites') return getFavoriteGifs(PAGE_SIZE, cursor, showNsfw, showHidden);
   if (section === 'recents') return getHistoryGifs(PAGE_SIZE, cursor, showNsfw, showHidden);
   if (section === 'mine') return getMyGifs(PAGE_SIZE, cursor, showNsfw, showHidden);
   if (query) return searchGifs(query, PAGE_SIZE, cursor, showNsfw, showHidden);
-  return getFeaturedGifs(PAGE_SIZE, cursor, showNsfw, showHidden);
+  return getFeaturedGifs(PAGE_SIZE, cursor, showNsfw, showHidden, randomFeatured);
 }
 
 function GifGridItem({
@@ -872,6 +873,7 @@ export function GifBoard({
   const [isAdmin, setIsAdmin] = useState(false);
   const [showNsfw, setShowNsfw] = useSetting(settingsAtom, 'gifShowNsfw');
   const [showHidden, setShowHidden] = useSetting(settingsAtom, 'gifShowHidden');
+  const [randomFeatured, setRandomFeatured] = useSetting(settingsAtom, 'gifRandomFeatured');
   const [editingGif, setEditingGif] = useState<GifItem | undefined>(undefined);
 
   const [activeSection, setActiveSection] = useState<GifSection>('all');
@@ -892,6 +894,8 @@ export function GifBoard({
   nsfwRef.current = showNsfw;
   const hiddenRef = useRef(showHidden);
   hiddenRef.current = showHidden;
+  const randomFeaturedRef = useRef(randomFeatured);
+  randomFeaturedRef.current = randomFeatured;
   const loadingRef = useRef(loading);
   loadingRef.current = loading;
   const nextCursorRef = useRef(nextCursor);
@@ -938,13 +942,21 @@ export function GifBoard({
     async (
       section: GifSection,
       q: string,
-      nextShowNsfw: boolean,
-      nextShowHidden: boolean,
+      requestedShowNsfw: boolean,
+      requestedShowHidden: boolean,
+      requestedRandomFeatured: boolean,
       cursor?: string
     ) => {
       setLoading(true);
       try {
-        const res = await loadSection(section, q, nextShowNsfw, nextShowHidden, cursor);
+        const res = await loadSection(
+          section,
+          q,
+          requestedShowNsfw,
+          requestedShowHidden,
+          requestedRandomFeatured,
+          cursor
+        );
         setAuthError(false);
         if (cursor) {
           setGifs((prev) => [...prev, ...res.results]);
@@ -978,6 +990,7 @@ export function GifBoard({
         queryRef.current,
         nsfwRef.current,
         hiddenRef.current,
+        randomFeaturedRef.current,
         nextCursorRef.current
       );
     },
@@ -1005,8 +1018,8 @@ export function GifBoard({
 
   useEffect(() => {
     if (activeSection === 'upload') return;
-    loadGifs(activeSection, query, showNsfw, showHidden);
-  }, [activeSection, query, showNsfw, showHidden, loadGifs]);
+    loadGifs(activeSection, query, showNsfw, showHidden, randomFeatured);
+  }, [activeSection, query, showNsfw, showHidden, randomFeatured, loadGifs]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1255,10 +1268,14 @@ export function GifBoard({
                   size="500"
                   radii="400"
                   aria-label="Filters"
-                  aria-pressed={showNsfw || showHidden}
+                  aria-pressed={showNsfw || showHidden || randomFeatured}
                   onClick={handleOpenFilter}
                 >
-                  <Icon src={Icons.Filter} size="100" filled={showNsfw || showHidden} />
+                  <Icon
+                    src={Icons.Filter}
+                    size="100"
+                    filled={showNsfw || showHidden || randomFeatured}
+                  />
                 </IconButton>
               </Box>
             )}
@@ -1357,6 +1374,15 @@ export function GifBoard({
                   >
                     <Text size="T300">Show hidden</Text>
                     <Switch variant="Primary" value={showHidden} onChange={setShowHidden} />
+                  </Box>
+                  <Box
+                    alignItems="Center"
+                    justifyContent="SpaceBetween"
+                    gap="200"
+                    style={{ padding: config.space.S200 }}
+                  >
+                    <Text size="T300">Random initial GIFs</Text>
+                    <Switch variant="Primary" value={randomFeatured} onChange={setRandomFeatured} />
                   </Box>
                 </Box>
               </Menu>

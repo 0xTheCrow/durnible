@@ -242,7 +242,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
         typeof customHtml === 'string'
           ? customHtml
           : sanitizeText(plainBody).replace(/\n/g, '<br>');
-      controller.setContent(html);
+      controller.setContent(html, { convertListsToMarkdown: isMarkdown });
       const el = controller.el;
       if (el) {
         el.focus();
@@ -261,7 +261,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
         sel?.removeAllRanges();
         sel?.addRange(range);
       }
-    }, [getPrevBodyAndFormattedBody]);
+    }, [getPrevBodyAndFormattedBody, isMarkdown]);
 
     useEffect(() => {
       if (saveState.status === AsyncStatus.Success) {
