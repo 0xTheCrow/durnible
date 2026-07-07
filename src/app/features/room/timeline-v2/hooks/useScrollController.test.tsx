@@ -10,18 +10,18 @@ import { useScrollController, LIVE_EDGE_THRESHOLD_PX } from './useScrollControll
 import type { ScrollController } from './useScrollController';
 
 type HarnessProps = {
-  liveLinkedRef: React.RefObject<boolean>;
+  isInLivePaginationWindowRef: React.RefObject<boolean>;
   unfocusedAutoScrollRef: React.RefObject<boolean>;
   onHook: (controller: ScrollController) => void;
 };
 
-function Harness({ liveLinkedRef, unfocusedAutoScrollRef, onHook }: HarnessProps) {
+function Harness({ isInLivePaginationWindowRef, unfocusedAutoScrollRef, onHook }: HarnessProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const controller = useScrollController({
     scrollRef,
     contentRef,
-    liveTimelineLinkedRef: liveLinkedRef,
+    isInLivePaginationWindowRef,
     unfocusedAutoScrollRef,
   });
   onHook(controller);
@@ -35,13 +35,13 @@ function Harness({ liveLinkedRef, unfocusedAutoScrollRef, onHook }: HarnessProps
 const ref = (value: boolean): React.RefObject<boolean> => ({ current: value });
 
 const renderController = (
-  liveLinkedRef: React.RefObject<boolean>,
+  isInLivePaginationWindowRef: React.RefObject<boolean>,
   unfocusedAutoScrollRef: React.RefObject<boolean> = ref(false)
 ) => {
   const hookRef: { current: ScrollController | null } = { current: null };
   const { container } = render(
     <Harness
-      liveLinkedRef={liveLinkedRef}
+      isInLivePaginationWindowRef={isInLivePaginationWindowRef}
       unfocusedAutoScrollRef={unfocusedAutoScrollRef}
       onHook={(controller) => {
         hookRef.current = controller;
@@ -71,21 +71,22 @@ afterEach(() => {
 
 describe('useScrollController', () => {
   describe('syncFollowLive', () => {
-    it('does not enter followLive at the bottom when the live timeline is not linked', () => {
+    it('does not enter followLive at the bottom when not in the live pagination window', () => {
       const { controller } = renderController(ref(false));
       act(() => controller().syncFollowLive(true));
       expect(controller().intentRef.current?.kind).toBe('free');
     });
 
-    it('enters followLive at the bottom when the live timeline is linked', () => {
+    it('enters followLive at the bottom when in the live pagination window', () => {
       const { controller } = renderController(ref(true));
       act(() => controller().syncFollowLive(true));
       expect(controller().intentRef.current?.kind).toBe('followLive');
     });
 
-    it('demotes followLive to free when scrolled away beyond the release threshold', () => {
-      const liveLinkedRef = ref(true);
-      const { controller, scrollElement } = renderController(liveLinkedRef);
+    it('demotes followLive to free when scrolled away beyond the release threshold while focused', () => {
+      vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+      const isInLivePaginationWindowRef = ref(true);
+      const { controller, scrollElement } = renderController(isInLivePaginationWindowRef);
       const geometry = stubScrollGeometry(scrollElement, { scrollHeight: 500, offsetHeight: 400 });
       act(() => controller().syncFollowLive(true));
       expect(controller().intentRef.current?.kind).toBe('followLive');
@@ -96,8 +97,9 @@ describe('useScrollController', () => {
     });
 
     it('keeps followLive when the bottom sentinel leaves view within the release threshold', () => {
-      const liveLinkedRef = ref(true);
-      const { controller, scrollElement } = renderController(liveLinkedRef);
+      vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+      const isInLivePaginationWindowRef = ref(true);
+      const { controller, scrollElement } = renderController(isInLivePaginationWindowRef);
       const geometry = stubScrollGeometry(scrollElement, { scrollHeight: 500, offsetHeight: 400 });
       act(() => controller().syncFollowLive(true));
       expect(controller().intentRef.current?.kind).toBe('followLive');
@@ -105,6 +107,35 @@ describe('useScrollController', () => {
       geometry.setScrollTop(100 - (LIVE_EDGE_THRESHOLD_PX - 10));
       act(() => controller().syncFollowLive(false));
       expect(controller().intentRef.current?.kind).toBe('followLive');
+    });
+
+    it('keeps followLive when drift happens unfocused without user scrolling', () => {
+      vi.spyOn(document, 'hasFocus').mockReturnValue(false);
+      const isInLivePaginationWindowRef = ref(true);
+      const { controller, scrollElement } = renderController(isInLivePaginationWindowRef);
+      const geometry = stubScrollGeometry(scrollElement, { scrollHeight: 500, offsetHeight: 400 });
+      act(() => controller().syncFollowLive(true));
+      expect(controller().intentRef.current?.kind).toBe('followLive');
+
+      geometry.setScrollTop(100 - (LIVE_EDGE_THRESHOLD_PX + 200));
+      act(() => controller().syncFollowLive(false));
+      expect(controller().intentRef.current?.kind).toBe('followLive');
+    });
+
+    it('demotes followLive on drift after the user scrolls while unfocused', () => {
+      vi.spyOn(document, 'hasFocus').mockReturnValue(false);
+      const isInLivePaginationWindowRef = ref(true);
+      const { controller, scrollElement } = renderController(isInLivePaginationWindowRef);
+      const geometry = stubScrollGeometry(scrollElement, { scrollHeight: 500, offsetHeight: 400 });
+      act(() => controller().syncFollowLive(true));
+      expect(controller().intentRef.current?.kind).toBe('followLive');
+
+      act(() => {
+        scrollElement.dispatchEvent(new Event('wheel'));
+      });
+      geometry.setScrollTop(100 - (LIVE_EDGE_THRESHOLD_PX + 10));
+      act(() => controller().syncFollowLive(false));
+      expect(controller().intentRef.current?.kind).toBe('free');
     });
   });
 

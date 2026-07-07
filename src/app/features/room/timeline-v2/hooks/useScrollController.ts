@@ -6,6 +6,7 @@ import {
   scrollToBottom,
   type ScrollAlign,
 } from '../../../../utils/dom';
+import { traceTimelineScroll } from '../utils/scrollTrace';
 
 type AnchorIntent = {
   kind: 'anchor';
@@ -30,7 +31,7 @@ type BehaviorOptions = {
 type UseScrollControllerParams = {
   scrollRef: RefObject<HTMLDivElement>;
   contentRef: RefObject<HTMLDivElement>;
-  liveTimelineLinkedRef: RefObject<boolean>;
+  isInLivePaginationWindowRef: RefObject<boolean>;
   unfocusedAutoScrollRef: RefObject<boolean>;
 };
 
@@ -57,12 +58,14 @@ const anchorOffsetPx = (intent: AnchorIntent, scrollElement: HTMLElement): numbe
 export const useScrollController = ({
   scrollRef,
   contentRef,
-  liveTimelineLinkedRef,
+  isInLivePaginationWindowRef,
   unfocusedAutoScrollRef,
 }: UseScrollControllerParams): ScrollController => {
   const intentRef = useRef<ScrollIntent>({ kind: 'free' });
   const autoScrollingRef = useRef(false);
   const autoScrollTimerRef = useRef(0);
+  const lastReportedAtBottomRef = useRef(false);
+  const unfocusedUserScrollRef = useRef(false);
 
   const beginAutoScroll = useCallback(() => {
     autoScrollingRef.current = true;
@@ -104,7 +107,9 @@ export const useScrollController = ({
   const pinToLiveEnd = useCallback(
     ({ animate = false }: BehaviorOptions = {}) => {
       intentRef.current = { kind: 'followLive' };
+      unfocusedUserScrollRef.current = false;
       beginAutoScroll();
+      traceTimelineScroll('pinToLiveEnd', { animate });
       apply(animate ? 'smooth' : 'instant');
     },
     [apply, beginAutoScroll]
@@ -120,32 +125,57 @@ export const useScrollController = ({
         offsetFraction: options.offsetFraction,
       };
       if (animate) beginAutoScroll();
+      traceTimelineScroll('pinToAnchor', { selector, align: intentRef.current.align, animate });
       apply(animate ? 'smooth' : 'instant');
     },
     [apply, beginAutoScroll]
   );
 
   const release = useCallback(() => {
+    traceTimelineScroll('release', { from: intentRef.current.kind });
     intentRef.current = { kind: 'free' };
   }, []);
 
   const releaseFollowLive = useCallback(() => {
-    if (intentRef.current.kind === 'followLive') intentRef.current = { kind: 'free' };
+    if (intentRef.current.kind === 'followLive') {
+      traceTimelineScroll('releaseFollowLive');
+      intentRef.current = { kind: 'free' };
+    }
   }, []);
 
   const syncFollowLive = useCallback(
     (atBottom: boolean) => {
-      if (autoScrollingRef.current) return;
-      if (atBottom && liveTimelineLinkedRef.current) {
-        intentRef.current = { kind: 'followLive' };
+      lastReportedAtBottomRef.current = atBottom;
+      if (atBottom) unfocusedUserScrollRef.current = false;
+      if (autoScrollingRef.current) {
+        traceTimelineScroll('syncFollowLive:autoScrolling-skip', { atBottom });
+        return;
+      }
+      if (atBottom && isInLivePaginationWindowRef.current) {
+        if (intentRef.current.kind !== 'followLive') {
+          traceTimelineScroll('followLive:set');
+          intentRef.current = { kind: 'followLive' };
+        }
       } else if (intentRef.current.kind === 'followLive') {
         const scrollElement = scrollRef.current;
-        if (!scrollElement || getScrollBottomDistance(scrollElement) > LIVE_EDGE_THRESHOLD_PX) {
+        const scrollBottomDistance = scrollElement ? getScrollBottomDistance(scrollElement) : null;
+        const isDriftUserDriven = document.hasFocus() || unfocusedUserScrollRef.current;
+        if (
+          isDriftUserDriven &&
+          (scrollBottomDistance === null || scrollBottomDistance > LIVE_EDGE_THRESHOLD_PX)
+        ) {
+          traceTimelineScroll('followLive:release', { atBottom, scrollBottomDistance });
           intentRef.current = { kind: 'free' };
+        } else {
+          traceTimelineScroll('followLive:release-skipped', {
+            atBottom,
+            scrollBottomDistance,
+            isDriftUserDriven,
+          });
         }
       }
     },
-    [liveTimelineLinkedRef, scrollRef]
+    [isInLivePaginationWindowRef, scrollRef]
   );
 
   useEffect(() => {
@@ -159,8 +189,10 @@ export const useScrollController = ({
         !document.hasFocus() &&
         !unfocusedAutoScrollRef.current
       ) {
+        traceTimelineScroll('maintainPosition:unfocused-skip');
         return;
       }
+      traceTimelineScroll('maintainPosition:apply', { intent: intentRef.current.kind });
       apply('instant');
     };
     const resizeObserver = new ResizeObserver(maintainPosition);
@@ -177,22 +209,31 @@ export const useScrollController = ({
       window.clearTimeout(autoScrollTimerRef.current);
     };
     const handleUserInput = () => {
-      if (intentRef.current.kind === 'anchor') intentRef.current = { kind: 'free' };
+      if (intentRef.current.kind === 'anchor') {
+        const resumeFollowLive =
+          lastReportedAtBottomRef.current && isInLivePaginationWindowRef.current;
+        traceTimelineScroll('anchor:user-release', { resumeFollowLive });
+        intentRef.current = resumeFollowLive ? { kind: 'followLive' } : { kind: 'free' };
+      }
       endAutoScroll();
     };
-    scrollElement.addEventListener('wheel', handleUserInput, { passive: true });
-    scrollElement.addEventListener('touchmove', handleUserInput, { passive: true });
+    const handleUserScrollInput = () => {
+      if (!document.hasFocus()) unfocusedUserScrollRef.current = true;
+      handleUserInput();
+    };
+    scrollElement.addEventListener('wheel', handleUserScrollInput, { passive: true });
+    scrollElement.addEventListener('touchmove', handleUserScrollInput, { passive: true });
     scrollElement.addEventListener('mousedown', handleUserInput);
     scrollElement.addEventListener('keydown', handleUserInput);
     scrollElement.addEventListener('scrollend', endAutoScroll);
     return () => {
-      scrollElement.removeEventListener('wheel', handleUserInput);
-      scrollElement.removeEventListener('touchmove', handleUserInput);
+      scrollElement.removeEventListener('wheel', handleUserScrollInput);
+      scrollElement.removeEventListener('touchmove', handleUserScrollInput);
       scrollElement.removeEventListener('mousedown', handleUserInput);
       scrollElement.removeEventListener('keydown', handleUserInput);
       scrollElement.removeEventListener('scrollend', endAutoScroll);
     };
-  }, [scrollRef]);
+  }, [scrollRef, isInLivePaginationWindowRef]);
 
   return useMemo(
     () => ({ pinToLiveEnd, pinToAnchor, release, releaseFollowLive, syncFollowLive, intentRef }),

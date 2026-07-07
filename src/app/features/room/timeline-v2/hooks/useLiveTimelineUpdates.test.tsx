@@ -6,7 +6,7 @@ import { RoomEvent, RelationType } from 'matrix-js-sdk';
 import { createEventEmitterRoom } from '../../timeline/timelineTestHelpers';
 import type { Timeline } from '../../timeline/timelineState';
 import { useLiveTimelineUpdates } from './useLiveTimelineUpdates';
-import { LIVE_EDGE_THRESHOLD_PX, type ScrollIntent } from './useScrollController';
+import type { ScrollIntent } from './useScrollController';
 
 const INITIAL_RANGE = { oldest: 5, newest: 10 };
 const WINDOW_SIZE = INITIAL_RANGE.newest - INITIAL_RANGE.oldest;
@@ -35,7 +35,8 @@ const reaction = (): MatrixEvent =>
 type HarnessProps = {
   room: Room;
   followingLive: boolean;
-  atLiveEdge: boolean;
+  atBottom: boolean;
+  isInLivePaginationWindow: boolean;
   unfocusedAutoScroll: boolean;
   totalEvents: number;
   pinToLiveEnd: () => void;
@@ -45,7 +46,8 @@ type HarnessProps = {
 function Harness({
   room,
   followingLive,
-  atLiveEdge,
+  atBottom,
+  isInLivePaginationWindow,
   unfocusedAutoScroll,
   totalEvents,
   pinToLiveEnd,
@@ -56,18 +58,24 @@ function Harness({
     range: { ...INITIAL_RANGE },
   });
   const scrollElement = {
-    scrollHeight: atLiveEdge ? LIVE_EDGE_THRESHOLD_PX : LIVE_EDGE_THRESHOLD_PX + 50,
+    scrollHeight: 0,
     offsetHeight: 0,
     scrollTop: 0,
   } as unknown as HTMLDivElement;
   const scrollRef = useRef(scrollElement);
   scrollRef.current = scrollElement;
+  const atBottomRef = useRef(atBottom);
+  atBottomRef.current = atBottom;
+  const isInLivePaginationWindowRef = useRef(isInLivePaginationWindow);
+  isInLivePaginationWindowRef.current = isInLivePaginationWindow;
   const intentRef = useRef<ScrollIntent>({ kind: 'free' });
   intentRef.current = followingLive ? { kind: 'followLive' } : { kind: 'free' };
   useLiveTimelineUpdates({
     room,
     setTimeline,
     scrollRef,
+    atBottomRef,
+    isInLivePaginationWindowRef,
     intentRef,
     pinToLiveEnd,
     unfocusedAutoScroll,
@@ -77,7 +85,14 @@ function Harness({
 }
 
 type Setup = Partial<
-  Pick<HarnessProps, 'followingLive' | 'atLiveEdge' | 'unfocusedAutoScroll' | 'totalEvents'>
+  Pick<
+    HarnessProps,
+    | 'followingLive'
+    | 'atBottom'
+    | 'isInLivePaginationWindow'
+    | 'unfocusedAutoScroll'
+    | 'totalEvents'
+  >
 > & {
   focused?: boolean;
 };
@@ -91,7 +106,8 @@ const setup = (overrides: Setup = {}) => {
     <Harness
       room={room}
       followingLive={overrides.followingLive ?? false}
-      atLiveEdge={overrides.atLiveEdge ?? false}
+      atBottom={overrides.atBottom ?? false}
+      isInLivePaginationWindow={overrides.isInLivePaginationWindow ?? false}
       unfocusedAutoScroll={overrides.unfocusedAutoScroll ?? false}
       totalEvents={overrides.totalEvents ?? INITIAL_RANGE.newest}
       pinToLiveEnd={pinToLiveEnd}
@@ -139,11 +155,12 @@ describe('useLiveTimelineUpdates', () => {
     expect(pinToLiveEnd).toHaveBeenCalledTimes(1);
   });
 
-  it('anchors the range to the live edge when at the live edge even without the followLive intent', () => {
+  it('anchors the range to the live edge when at the bottom of the live window without the followLive intent', () => {
     const totalEvents = INITIAL_RANGE.newest + 1;
     const { room, pinToLiveEnd, state } = setup({
       followingLive: false,
-      atLiveEdge: true,
+      atBottom: true,
+      isInLivePaginationWindow: true,
       focused: true,
       totalEvents,
     });
@@ -155,10 +172,11 @@ describe('useLiveTimelineUpdates', () => {
     expect(pinToLiveEnd).toHaveBeenCalledTimes(1);
   });
 
-  it('does not shift the range when neither following live nor at the live edge', () => {
+  it('does not shift the range when at the bottom of a window that is behind the live edge', () => {
     const { room, pinToLiveEnd, state } = setup({
       followingLive: false,
-      atLiveEdge: false,
+      atBottom: true,
+      isInLivePaginationWindow: false,
       focused: true,
       totalEvents: INITIAL_RANGE.newest + 1,
     });
@@ -167,15 +185,32 @@ describe('useLiveTimelineUpdates', () => {
     expect(pinToLiveEnd).not.toHaveBeenCalled();
   });
 
-  it('does not shift the range while unfocused with unfocusedAutoScroll off, even when following live', () => {
+  it('does not shift the range when neither following live nor at the bottom', () => {
     const { room, pinToLiveEnd, state } = setup({
-      followingLive: true,
-      focused: false,
-      unfocusedAutoScroll: false,
+      followingLive: false,
+      atBottom: false,
+      isInLivePaginationWindow: true,
+      focused: true,
       totalEvents: INITIAL_RANGE.newest + 1,
     });
     emit(room, liveMessage());
     expect(state.current?.range).toEqual(INITIAL_RANGE);
+    expect(pinToLiveEnd).not.toHaveBeenCalled();
+  });
+
+  it('advances the range without pinning while unfocused with unfocusedAutoScroll off', () => {
+    const totalEvents = INITIAL_RANGE.newest + 1;
+    const { room, pinToLiveEnd, state } = setup({
+      followingLive: true,
+      focused: false,
+      unfocusedAutoScroll: false,
+      totalEvents,
+    });
+    emit(room, liveMessage());
+    expect(state.current?.range).toEqual({
+      oldest: totalEvents - WINDOW_SIZE,
+      newest: totalEvents,
+    });
     expect(pinToLiveEnd).not.toHaveBeenCalled();
   });
 

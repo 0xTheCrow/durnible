@@ -103,8 +103,8 @@ export function RoomTimelineV2({
 
   const isInLivePaginationWindow = liveTimelineLinked && rangeAtNewest;
 
-  const liveTimelineLinkedRef = useRef(liveTimelineLinked);
-  liveTimelineLinkedRef.current = liveTimelineLinked;
+  const isInLivePaginationWindowRef = useRef(isInLivePaginationWindow);
+  isInLivePaginationWindowRef.current = isInLivePaginationWindow;
 
   const unfocusedAutoScrollRef = useRef(unfocusedAutoScroll);
   unfocusedAutoScrollRef.current = unfocusedAutoScroll;
@@ -112,7 +112,7 @@ export function RoomTimelineV2({
   const scrollController = useScrollController({
     scrollRef,
     contentRef,
-    liveTimelineLinkedRef,
+    isInLivePaginationWindowRef,
     unfocusedAutoScrollRef,
   });
 
@@ -231,6 +231,8 @@ export function RoomTimelineV2({
     room,
     setTimeline,
     scrollRef,
+    atBottomRef,
+    isInLivePaginationWindowRef,
     intentRef: scrollController.intentRef,
     pinToLiveEnd: scrollController.pinToLiveEnd,
     unfocusedAutoScroll,
