@@ -177,30 +177,31 @@ export const useBindRoomToUnreadAtom = (mx: MatrixClient, unreadAtom: typeof roo
   );
 
   useEffect(() => {
+    const unreadInfos = getUnreadInfos(mx);
     setUnreadAtom({
       type: 'RESET',
-      unreadInfos: getUnreadInfos(mx),
+      unreadInfos,
     });
+    if (unreadInfos.length > 0) {
+      syncRoomReceiptsFromServer(
+        mx,
+        unreadInfos.map((unreadInfo) => unreadInfo.roomId)
+      ).catch(() => undefined);
+    }
   }, [mx, setUnreadAtom]);
 
   useSyncState(
     mx,
     useCallback(
       (state, prevState) => {
-        const isPrepared = state === SyncState.Prepared && prevState === null;
-        const isResumed = state === SyncState.Syncing && prevState !== SyncState.Syncing;
-        if (isPrepared || isResumed) {
-          const unreadInfos = getUnreadInfos(mx);
+        if (
+          (state === SyncState.Prepared && prevState === null) ||
+          (state === SyncState.Syncing && prevState !== SyncState.Syncing)
+        ) {
           setUnreadAtom({
             type: 'RESET',
-            unreadInfos,
+            unreadInfos: getUnreadInfos(mx),
           });
-          if (isPrepared && unreadInfos.length > 0) {
-            syncRoomReceiptsFromServer(
-              mx,
-              unreadInfos.map((unreadInfo) => unreadInfo.roomId)
-            ).catch(() => undefined);
-          }
         }
       },
       [mx, setUnreadAtom]
