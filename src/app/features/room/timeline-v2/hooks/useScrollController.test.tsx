@@ -83,47 +83,7 @@ describe('useScrollController', () => {
       expect(controller().intentRef.current?.kind).toBe('followLive');
     });
 
-    it('demotes followLive to free when scrolled away beyond the release threshold while focused', () => {
-      vi.spyOn(document, 'hasFocus').mockReturnValue(true);
-      const isInLivePaginationWindowRef = ref(true);
-      const { controller, scrollElement } = renderController(isInLivePaginationWindowRef);
-      const geometry = stubScrollGeometry(scrollElement, { scrollHeight: 500, offsetHeight: 400 });
-      act(() => controller().syncFollowLive(true));
-      expect(controller().intentRef.current?.kind).toBe('followLive');
-
-      geometry.setScrollTop(100 - (LIVE_EDGE_THRESHOLD_PX + 10));
-      act(() => controller().syncFollowLive(false));
-      expect(controller().intentRef.current?.kind).toBe('free');
-    });
-
-    it('keeps followLive when the bottom sentinel leaves view within the release threshold', () => {
-      vi.spyOn(document, 'hasFocus').mockReturnValue(true);
-      const isInLivePaginationWindowRef = ref(true);
-      const { controller, scrollElement } = renderController(isInLivePaginationWindowRef);
-      const geometry = stubScrollGeometry(scrollElement, { scrollHeight: 500, offsetHeight: 400 });
-      act(() => controller().syncFollowLive(true));
-      expect(controller().intentRef.current?.kind).toBe('followLive');
-
-      geometry.setScrollTop(100 - (LIVE_EDGE_THRESHOLD_PX - 10));
-      act(() => controller().syncFollowLive(false));
-      expect(controller().intentRef.current?.kind).toBe('followLive');
-    });
-
-    it('keeps followLive when drift happens unfocused without user scrolling', () => {
-      vi.spyOn(document, 'hasFocus').mockReturnValue(false);
-      const isInLivePaginationWindowRef = ref(true);
-      const { controller, scrollElement } = renderController(isInLivePaginationWindowRef);
-      const geometry = stubScrollGeometry(scrollElement, { scrollHeight: 500, offsetHeight: 400 });
-      act(() => controller().syncFollowLive(true));
-      expect(controller().intentRef.current?.kind).toBe('followLive');
-
-      geometry.setScrollTop(100 - (LIVE_EDGE_THRESHOLD_PX + 200));
-      act(() => controller().syncFollowLive(false));
-      expect(controller().intentRef.current?.kind).toBe('followLive');
-    });
-
-    it('demotes followLive on drift after the user scrolls while unfocused', () => {
-      vi.spyOn(document, 'hasFocus').mockReturnValue(false);
+    it('demotes followLive when drift exceeds the release threshold after user scroll input', () => {
       const isInLivePaginationWindowRef = ref(true);
       const { controller, scrollElement } = renderController(isInLivePaginationWindowRef);
       const geometry = stubScrollGeometry(scrollElement, { scrollHeight: 500, offsetHeight: 400 });
@@ -136,6 +96,33 @@ describe('useScrollController', () => {
       geometry.setScrollTop(100 - (LIVE_EDGE_THRESHOLD_PX + 10));
       act(() => controller().syncFollowLive(false));
       expect(controller().intentRef.current?.kind).toBe('free');
+    });
+
+    it('keeps followLive after user scroll input when drift stays within the release threshold', () => {
+      const isInLivePaginationWindowRef = ref(true);
+      const { controller, scrollElement } = renderController(isInLivePaginationWindowRef);
+      const geometry = stubScrollGeometry(scrollElement, { scrollHeight: 500, offsetHeight: 400 });
+      act(() => controller().syncFollowLive(true));
+      expect(controller().intentRef.current?.kind).toBe('followLive');
+
+      act(() => {
+        scrollElement.dispatchEvent(new Event('wheel'));
+      });
+      geometry.setScrollTop(100 - (LIVE_EDGE_THRESHOLD_PX - 10));
+      act(() => controller().syncFollowLive(false));
+      expect(controller().intentRef.current?.kind).toBe('followLive');
+    });
+
+    it('keeps followLive on drift without user scroll input', () => {
+      const isInLivePaginationWindowRef = ref(true);
+      const { controller, scrollElement } = renderController(isInLivePaginationWindowRef);
+      const geometry = stubScrollGeometry(scrollElement, { scrollHeight: 500, offsetHeight: 400 });
+      act(() => controller().syncFollowLive(true));
+      expect(controller().intentRef.current?.kind).toBe('followLive');
+
+      geometry.setScrollTop(100 - (LIVE_EDGE_THRESHOLD_PX + 200));
+      act(() => controller().syncFollowLive(false));
+      expect(controller().intentRef.current?.kind).toBe('followLive');
     });
   });
 

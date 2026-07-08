@@ -65,7 +65,7 @@ export const useScrollController = ({
   const autoScrollingRef = useRef(false);
   const autoScrollTimerRef = useRef(0);
   const lastReportedAtBottomRef = useRef(false);
-  const unfocusedUserScrollRef = useRef(false);
+  const userScrollSinceBottomRef = useRef(false);
 
   const beginAutoScroll = useCallback(() => {
     autoScrollingRef.current = true;
@@ -118,7 +118,7 @@ export const useScrollController = ({
   const pinToLiveEnd = useCallback(
     ({ animate = false }: BehaviorOptions = {}) => {
       intentRef.current = { kind: 'followLive' };
-      unfocusedUserScrollRef.current = false;
+      userScrollSinceBottomRef.current = false;
       beginAutoScroll();
       traceTimelineScroll('pinToLiveEnd', { animate });
       apply(animate ? 'smooth' : 'instant');
@@ -157,7 +157,7 @@ export const useScrollController = ({
   const syncFollowLive = useCallback(
     (atBottom: boolean) => {
       lastReportedAtBottomRef.current = atBottom;
-      if (atBottom) unfocusedUserScrollRef.current = false;
+      if (atBottom) userScrollSinceBottomRef.current = false;
       const reportScrollElement = scrollRef.current;
       traceTimelineScroll('atBottom:report', {
         atBottom,
@@ -178,7 +178,7 @@ export const useScrollController = ({
       } else if (intentRef.current.kind === 'followLive') {
         const scrollElement = scrollRef.current;
         const scrollBottomDistance = scrollElement ? getScrollBottomDistance(scrollElement) : null;
-        const isDriftUserDriven = document.hasFocus() || unfocusedUserScrollRef.current;
+        const isDriftUserDriven = userScrollSinceBottomRef.current;
         if (
           isDriftUserDriven &&
           (scrollBottomDistance === null || scrollBottomDistance > LIVE_EDGE_THRESHOLD_PX)
@@ -228,6 +228,7 @@ export const useScrollController = ({
       window.clearTimeout(autoScrollTimerRef.current);
     };
     const handleUserInput = (event: Event) => {
+      userScrollSinceBottomRef.current = true;
       traceTimelineScroll('userInput', { type: event.type, focused: document.hasFocus() });
       if (intentRef.current.kind === 'anchor') {
         const resumeFollowLive =
@@ -237,18 +238,14 @@ export const useScrollController = ({
       }
       endAutoScroll();
     };
-    const handleUserScrollInput = (event: Event) => {
-      if (!document.hasFocus()) unfocusedUserScrollRef.current = true;
-      handleUserInput(event);
-    };
-    scrollElement.addEventListener('wheel', handleUserScrollInput, { passive: true });
-    scrollElement.addEventListener('touchmove', handleUserScrollInput, { passive: true });
+    scrollElement.addEventListener('wheel', handleUserInput, { passive: true });
+    scrollElement.addEventListener('touchmove', handleUserInput, { passive: true });
     scrollElement.addEventListener('mousedown', handleUserInput);
     scrollElement.addEventListener('keydown', handleUserInput);
     scrollElement.addEventListener('scrollend', endAutoScroll);
     return () => {
-      scrollElement.removeEventListener('wheel', handleUserScrollInput);
-      scrollElement.removeEventListener('touchmove', handleUserScrollInput);
+      scrollElement.removeEventListener('wheel', handleUserInput);
+      scrollElement.removeEventListener('touchmove', handleUserInput);
       scrollElement.removeEventListener('mousedown', handleUserInput);
       scrollElement.removeEventListener('keydown', handleUserInput);
       scrollElement.removeEventListener('scrollend', endAutoScroll);
