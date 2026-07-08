@@ -17,6 +17,7 @@ import {
   roomHaveNotification,
   roomHaveUnread,
 } from '../../utils/room';
+import { syncRoomReceiptsFromServer } from '../../utils/room/receipts';
 import { roomToParentsAtom } from './roomToParents';
 import { useStateEventCallback } from '../../hooks/useStateEventCallback';
 import { useSyncState } from '../../hooks/useSyncState';
@@ -160,6 +161,21 @@ export const useBindRoomToUnreadAtom = (mx: MatrixClient, unreadAtom: typeof roo
   const setUnreadAtom = useSetAtom(unreadAtom);
   const roomsNotificationPreferences = useRoomsNotificationPreferencesContext();
 
+  const refreshRoomUnread = useCallback(
+    (room: Room) => {
+      if (
+        getNotificationType(mx, room.roomId) !== NotificationType.Mute &&
+        (roomHaveNotification(room) || roomHaveUnread(mx, room)) &&
+        !isRoomReadByReceiptTimestamp(mx, room)
+      ) {
+        setUnreadAtom({ type: 'PUT', unreadInfo: getUnreadInfo(room) });
+      } else {
+        setUnreadAtom({ type: 'DELETE', roomId: room.roomId });
+      }
+    },
+    [mx, setUnreadAtom]
+  );
+
   useEffect(() => {
     setUnreadAtom({
       type: 'RESET',
@@ -171,14 +187,20 @@ export const useBindRoomToUnreadAtom = (mx: MatrixClient, unreadAtom: typeof roo
     mx,
     useCallback(
       (state, prevState) => {
-        if (
-          (state === SyncState.Prepared && prevState === null) ||
-          (state === SyncState.Syncing && prevState !== SyncState.Syncing)
-        ) {
+        const isPrepared = state === SyncState.Prepared && prevState === null;
+        const isResumed = state === SyncState.Syncing && prevState !== SyncState.Syncing;
+        if (isPrepared || isResumed) {
+          const unreadInfos = getUnreadInfos(mx);
           setUnreadAtom({
             type: 'RESET',
-            unreadInfos: getUnreadInfos(mx),
+            unreadInfos,
           });
+          if (isPrepared && unreadInfos.length > 0) {
+            syncRoomReceiptsFromServer(
+              mx,
+              unreadInfos.map((unreadInfo) => unreadInfo.roomId)
+            ).catch(() => undefined);
+          }
         }
       },
       [mx, setUnreadAtom]
@@ -217,24 +239,13 @@ export const useBindRoomToUnreadAtom = (mx: MatrixClient, unreadAtom: typeof roo
       const room = roomId ? mx.getRoom(roomId) : null;
       if (!room || room.isSpaceRoom()) return;
       if (!reconcileEncryptedRoomNotificationCounts(mx, room)) return;
-      if (getNotificationType(mx, room.roomId) === NotificationType.Mute) {
-        setUnreadAtom({ type: 'DELETE', roomId: room.roomId });
-        return;
-      }
-      if (
-        (roomHaveNotification(room) || roomHaveUnread(mx, room)) &&
-        !isRoomReadByReceiptTimestamp(mx, room)
-      ) {
-        setUnreadAtom({ type: 'PUT', unreadInfo: getUnreadInfo(room) });
-      } else {
-        setUnreadAtom({ type: 'DELETE', roomId: room.roomId });
-      }
+      refreshRoomUnread(room);
     };
     mx.on(MatrixEventEvent.Decrypted, handleEventDecrypted);
     return () => {
       mx.removeListener(MatrixEventEvent.Decrypted, handleEventDecrypted);
     };
-  }, [mx, setUnreadAtom]);
+  }, [mx, refreshRoomUnread]);
 
   useEffect(() => {
     const handleReceipt = (mEvent: MatrixEvent, room: Room) => {
@@ -250,14 +261,14 @@ export const useBindRoomToUnreadAtom = (mx: MatrixClient, unreadAtom: typeof roo
       );
       if (isMyReceipt) {
         reconcileEncryptedRoomNotificationCounts(mx, room);
-        setUnreadAtom({ type: 'DELETE', roomId: room.roomId });
+        refreshRoomUnread(room);
       }
     };
     mx.on(RoomEvent.Receipt, handleReceipt);
     return () => {
       mx.removeListener(RoomEvent.Receipt, handleReceipt);
     };
-  }, [mx, setUnreadAtom]);
+  }, [mx, refreshRoomUnread]);
 
   useEffect(() => {
     setUnreadAtom({
