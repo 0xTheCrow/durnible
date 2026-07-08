@@ -1,7 +1,7 @@
 import produce from 'immer';
 import { atom, useSetAtom } from 'jotai';
 import type { IRoomTimelineData, MatrixClient, MatrixEvent, Room } from 'matrix-js-sdk';
-import { RoomEvent, SyncState } from 'matrix-js-sdk';
+import { MatrixEventEvent, RoomEvent, SyncState } from 'matrix-js-sdk';
 import type { ReceiptContent, ReceiptType } from 'matrix-js-sdk/lib/@types/read_receipts';
 import { useCallback, useEffect } from 'react';
 import type { RoomToUnread, UnreadInfo, Unread } from '../../../types/matrix/room';
@@ -12,6 +12,10 @@ import {
   getUnreadInfo,
   getUnreadInfos,
   isNotificationEvent,
+  isRoomReadByReceiptTimestamp,
+  reconcileEncryptedRoomNotificationCounts,
+  roomHaveNotification,
+  roomHaveUnread,
 } from '../../utils/room';
 import { roomToParentsAtom } from './roomToParents';
 import { useStateEventCallback } from '../../hooks/useStateEventCallback';
@@ -208,6 +212,31 @@ export const useBindRoomToUnreadAtom = (mx: MatrixClient, unreadAtom: typeof roo
   }, [mx, setUnreadAtom]);
 
   useEffect(() => {
+    const handleEventDecrypted = (mEvent: MatrixEvent) => {
+      const roomId = mEvent.getRoomId();
+      const room = roomId ? mx.getRoom(roomId) : null;
+      if (!room || room.isSpaceRoom()) return;
+      if (!reconcileEncryptedRoomNotificationCounts(mx, room)) return;
+      if (getNotificationType(mx, room.roomId) === NotificationType.Mute) {
+        setUnreadAtom({ type: 'DELETE', roomId: room.roomId });
+        return;
+      }
+      if (
+        (roomHaveNotification(room) || roomHaveUnread(mx, room)) &&
+        !isRoomReadByReceiptTimestamp(mx, room)
+      ) {
+        setUnreadAtom({ type: 'PUT', unreadInfo: getUnreadInfo(room) });
+      } else {
+        setUnreadAtom({ type: 'DELETE', roomId: room.roomId });
+      }
+    };
+    mx.on(MatrixEventEvent.Decrypted, handleEventDecrypted);
+    return () => {
+      mx.removeListener(MatrixEventEvent.Decrypted, handleEventDecrypted);
+    };
+  }, [mx, setUnreadAtom]);
+
+  useEffect(() => {
     const handleReceipt = (mEvent: MatrixEvent, room: Room) => {
       const myUserId = mx.getUserId();
       if (!myUserId) return;
@@ -220,6 +249,7 @@ export const useBindRoomToUnreadAtom = (mx: MatrixClient, unreadAtom: typeof roo
         )
       );
       if (isMyReceipt) {
+        reconcileEncryptedRoomNotificationCounts(mx, room);
         setUnreadAtom({ type: 'DELETE', roomId: room.roomId });
       }
     };

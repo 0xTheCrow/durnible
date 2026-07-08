@@ -1,6 +1,12 @@
 import type { Room } from 'matrix-js-sdk';
 import { ReceiptType } from 'matrix-js-sdk';
 
+export const getMyLatestReadReceiptTs = (room: Room, userId: string): number => {
+  const publicReceipt = room.getReadReceiptForUserId(userId, false, ReceiptType.Read);
+  const privateReceipt = room.getReadReceiptForUserId(userId, false, ReceiptType.ReadPrivate);
+  return Math.max(publicReceipt?.data.ts ?? 0, privateReceipt?.data.ts ?? 0);
+};
+
 export const getReadReceiptEventId = (room: Room, userId: string): string | undefined => {
   const publicReceipt = room.getReadReceiptForUserId(userId, false, ReceiptType.Read);
   const privateReceipt = room.getReadReceiptForUserId(userId, false, ReceiptType.ReadPrivate);

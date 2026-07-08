@@ -2,6 +2,7 @@ import type { IPushRule, IPushRules, MatrixClient, MatrixEvent, Room } from 'mat
 import { EventType, NotificationCountType, PushRuleActionName } from 'matrix-js-sdk';
 import type { UnreadInfo } from '../../../types/matrix/room';
 import { NotificationType } from '../../../types/matrix/room';
+import { getMyLatestReadReceiptTs } from './receipts';
 
 export const isMutedRule = (rule: IPushRule) => {
   const hasRoomIdCondition = rule.conditions?.some(
@@ -83,6 +84,55 @@ export const roomHaveUnread = (mx: MatrixClient, room: Room) => {
   return true;
 };
 
+export const isRoomReadByReceiptTimestamp = (mx: MatrixClient, room: Room): boolean => {
+  const userId = mx.getUserId();
+  if (!userId) return false;
+  const receiptTs = getMyLatestReadReceiptTs(room, userId);
+  if (receiptTs === 0) return false;
+
+  const liveEvents = room.getLiveTimeline().getEvents();
+  for (let i = liveEvents.length - 1; i >= 0; i -= 1) {
+    const event = liveEvents[i];
+    if (event.getSender() !== userId && isNotificationEvent(event)) {
+      return event.getTs() <= receiptTs;
+    }
+  }
+  return true;
+};
+
+export const reconcileEncryptedRoomNotificationCounts = (mx: MatrixClient, room: Room): boolean => {
+  const userId = mx.getUserId();
+  if (!userId) return false;
+  if (!room.hasEncryptionStateEvent()) return false;
+  const receiptTs = getMyLatestReadReceiptTs(room, userId);
+  if (receiptTs === 0) return false;
+
+  let total = 0;
+  let highlight = 0;
+  room
+    .getLiveTimeline()
+    .getEvents()
+    .forEach((event) => {
+      if (event.getTs() <= receiptTs) return;
+      if (event.getSender() === userId) return;
+      if (!isNotificationEvent(event)) return;
+      const pushActions = mx.getPushActionsForEvent(event);
+      if (pushActions?.notify) total += 1;
+      if (pushActions?.tweaks?.highlight) highlight += 1;
+    });
+
+  let changed = false;
+  if (room.getRoomUnreadNotificationCount(NotificationCountType.Total) !== total) {
+    room.setUnreadNotificationCount(NotificationCountType.Total, total);
+    changed = true;
+  }
+  if (room.getRoomUnreadNotificationCount(NotificationCountType.Highlight) !== highlight) {
+    room.setUnreadNotificationCount(NotificationCountType.Highlight, highlight);
+    changed = true;
+  }
+  return changed;
+};
+
 export const getUnreadInfo = (room: Room): UnreadInfo => {
   const total = room.getUnreadNotificationCount(NotificationCountType.Total);
   const highlight = room.getUnreadNotificationCount(NotificationCountType.Highlight);
@@ -99,7 +149,10 @@ export const getUnreadInfos = (mx: MatrixClient): UnreadInfo[] => {
     if (room.getMyMembership() !== 'join') return unread;
     if (getNotificationType(mx, room.roomId) === NotificationType.Mute) return unread;
 
-    if (roomHaveNotification(room) || roomHaveUnread(mx, room)) {
+    if (
+      (roomHaveNotification(room) || roomHaveUnread(mx, room)) &&
+      !isRoomReadByReceiptTimestamp(mx, room)
+    ) {
       unread.push(getUnreadInfo(room));
     }
 
