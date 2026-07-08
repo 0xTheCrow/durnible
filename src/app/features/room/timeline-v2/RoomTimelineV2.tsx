@@ -497,7 +497,11 @@ export function RoomTimelineV2({
             </Chip>
           </TimelineOverlay>
         )}
-        <Scroll ref={scrollRef} visibility="Hover" style={{ overscrollBehavior: 'none' }}>
+        <Scroll
+          ref={scrollRef}
+          visibility="Hover"
+          style={{ overscrollBehavior: 'none', overflowAnchor: 'none' }}
+        >
           <Box
             ref={contentRef}
             direction="Column"
