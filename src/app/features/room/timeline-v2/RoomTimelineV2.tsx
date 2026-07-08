@@ -46,6 +46,7 @@ import { usePaginationState } from './hooks/usePaginationState';
 import { useAutoMarkAsRead } from './hooks/useAutoMarkAsRead';
 import { resolveTimelineEvents } from './utils/resolveTimelineEvents';
 import { willRenderTimelineEvent } from './utils/willRenderTimelineEvent';
+import { traceTimelineScroll } from './utils/scrollTrace';
 
 type RoomTimelineV2Props = {
   room: Room;
@@ -102,6 +103,19 @@ export function RoomTimelineV2({
     useBulkSelection(mx, room);
 
   const isInLivePaginationWindow = liveTimelineLinked && rangeAtNewest;
+
+  useEffect(() => {
+    traceTimelineScroll('timeline:mount', { roomId: room.roomId });
+    return () => traceTimelineScroll('timeline:unmount', { roomId: room.roomId });
+  }, [room.roomId]);
+
+  useEffect(() => {
+    traceTimelineScroll('livePaginationWindow:change', {
+      isInLivePaginationWindow,
+      liveTimelineLinked,
+      rangeAtNewest,
+    });
+  }, [isInLivePaginationWindow, liveTimelineLinked, rangeAtNewest]);
 
   const isInLivePaginationWindowRef = useRef(isInLivePaginationWindow);
   isInLivePaginationWindowRef.current = isInLivePaginationWindow;
@@ -324,10 +338,11 @@ export function RoomTimelineV2({
     getScrollElement,
     getItemElement,
     onEnd: handleTimelinePagination,
-    shouldRestoreScroll: useCallback(
-      () => scrollController.intentRef.current?.kind === 'free',
-      [scrollController]
-    ),
+    shouldRestoreScroll: useCallback(() => {
+      const isIntentFree = scrollController.intentRef.current?.kind === 'free';
+      traceTimelineScroll('paginator:shouldRestoreScroll', { isIntentFree });
+      return isIntentFree;
+    }, [scrollController]),
   });
 
   const handleEdit = useCallback(
@@ -441,6 +456,7 @@ export function RoomTimelineV2({
   })();
 
   const handleJumpToLatest = () => {
+    traceTimelineScroll('jumpToLatest:click');
     if (eventId) navigateRoom(room.roomId, undefined, { replace: true });
     setTimeline(getInitialTimeline(room));
     scrollController.pinToLiveEnd();

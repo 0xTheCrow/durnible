@@ -82,11 +82,22 @@ export const useScrollController = ({
       const intent = intentRef.current;
       if (intent.kind === 'free') return;
       if (intent.kind === 'followLive') {
+        const scrollTopBefore = scrollElement.scrollTop;
         scrollToBottom(scrollElement, behavior);
+        traceTimelineScroll('apply:scrollToBottom', {
+          behavior,
+          scrollTopBefore: Math.round(scrollTopBefore),
+          scrollTopAfter: Math.round(scrollElement.scrollTop),
+          scrollHeight: scrollElement.scrollHeight,
+          offsetHeight: scrollElement.offsetHeight,
+        });
         return;
       }
       const targetElement = scrollElement.querySelector<HTMLElement>(intent.selector);
-      if (!targetElement || !targetElement.isConnected) return;
+      if (!targetElement || !targetElement.isConnected) {
+        traceTimelineScroll('apply:anchor-missing', { selector: intent.selector });
+        return;
+      }
       const targetRect = targetElement.getBoundingClientRect();
       const scrollRect = scrollElement.getBoundingClientRect();
       const offset = anchorOffsetPx(intent, scrollElement);
@@ -147,6 +158,14 @@ export const useScrollController = ({
     (atBottom: boolean) => {
       lastReportedAtBottomRef.current = atBottom;
       if (atBottom) unfocusedUserScrollRef.current = false;
+      const reportScrollElement = scrollRef.current;
+      traceTimelineScroll('atBottom:report', {
+        atBottom,
+        intent: intentRef.current.kind,
+        scrollBottomDistance: reportScrollElement
+          ? getScrollBottomDistance(reportScrollElement)
+          : null,
+      });
       if (autoScrollingRef.current) {
         traceTimelineScroll('syncFollowLive:autoScrolling-skip', { atBottom });
         return;
@@ -208,7 +227,8 @@ export const useScrollController = ({
       autoScrollingRef.current = false;
       window.clearTimeout(autoScrollTimerRef.current);
     };
-    const handleUserInput = () => {
+    const handleUserInput = (event: Event) => {
+      traceTimelineScroll('userInput', { type: event.type, focused: document.hasFocus() });
       if (intentRef.current.kind === 'anchor') {
         const resumeFollowLive =
           lastReportedAtBottomRef.current && isInLivePaginationWindowRef.current;
@@ -217,9 +237,9 @@ export const useScrollController = ({
       }
       endAutoScroll();
     };
-    const handleUserScrollInput = () => {
+    const handleUserScrollInput = (event: Event) => {
       if (!document.hasFocus()) unfocusedUserScrollRef.current = true;
-      handleUserInput();
+      handleUserInput(event);
     };
     scrollElement.addEventListener('wheel', handleUserScrollInput, { passive: true });
     scrollElement.addEventListener('touchmove', handleUserScrollInput, { passive: true });
