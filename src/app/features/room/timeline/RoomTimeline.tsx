@@ -609,9 +609,9 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
   }, [eventId, handleOpenEvent, room, requestScrollToBottom, readUptoEventIdRef]);
 
   useLayoutEffect(() => {
-    const scrollEl = scrollRef.current;
-    if (scrollEl) {
-      scrollToBottom(scrollEl);
+    const scrollElement = scrollRef.current;
+    if (scrollElement) {
+      scrollToBottom(scrollElement);
     }
   }, [scrollRef]);
 
@@ -631,18 +631,18 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
   // after all image containers have applied their aspect-ratio heights.
   useLayoutEffect(() => {
     if (!focusItem?.scrollTo) return;
-    const scrollEl = scrollRef.current;
-    if (!scrollEl) return;
-    let el = scrollEl.querySelector(
+    const scrollElement = scrollRef.current;
+    if (!scrollElement) return;
+    let anchorElement = scrollElement.querySelector(
       `[data-message-id="${focusItem.eventId}"]`
     ) as HTMLElement | null;
-    if (!el) {
+    if (!anchorElement) {
       // Target event is not rendered (e.g. reaction, edit, state event).
       // Find the nearest rendered item by index.
       const idx = focusItem.index;
       let nearest: HTMLElement | null = null;
       let bestDist = Infinity;
-      scrollEl.querySelectorAll<HTMLElement>('[data-message-item]').forEach((candidate) => {
+      scrollElement.querySelectorAll<HTMLElement>('[data-message-item]').forEach((candidate) => {
         const itemIdx = Number(candidate.getAttribute('data-message-item'));
         const dist = Math.abs(itemIdx - idx);
         if (dist < bestDist) {
@@ -650,16 +650,16 @@ export function RoomTimeline({ room, eventId, roomInputRef, editorInputRef }: Ro
           nearest = candidate;
         }
       });
-      el = nearest;
+      anchorElement = nearest;
     }
-    if (!el) return;
+    if (!anchorElement) return;
     const topOffset = Math.round(window.innerHeight * 0.12);
     const newScrollTop =
-      scrollEl.scrollTop +
-      el.getBoundingClientRect().top -
-      scrollEl.getBoundingClientRect().top -
+      scrollElement.scrollTop +
+      anchorElement.getBoundingClientRect().top -
+      scrollElement.getBoundingClientRect().top -
       topOffset;
-    scrollEl.scrollTo({ top: newScrollTop, behavior: 'instant' });
+    scrollElement.scrollTo({ top: newScrollTop, behavior: 'instant' });
   }, [focusItem, scrollRef]);
 
   useEffect(() => {

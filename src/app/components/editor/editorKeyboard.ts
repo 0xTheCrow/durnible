@@ -40,16 +40,16 @@ const HEADING_ACTIONS: ReadonlyArray<{ id: KeybindAction; tag: string }> = [
   { id: KeybindAction.FormatHeading3, tag: 'h3' },
 ];
 
-const isCaretAtBlockStart = (el: HTMLElement): boolean => {
+const isCaretAtBlockStart = (inputElement: HTMLElement): boolean => {
   const sel = window.getSelection();
   if (!sel || sel.rangeCount === 0) return false;
   const range = sel.getRangeAt(0);
   if (!range.collapsed) return false;
-  if (!el.contains(range.startContainer)) return false;
+  if (!inputElement.contains(range.startContainer)) return false;
   if (range.startOffset !== 0) return false;
 
   let node: Node | null = range.startContainer;
-  while (node && node !== el) {
+  while (node && node !== inputElement) {
     let prev: Node | null = node.previousSibling;
     while (prev) {
       if (prev.nodeType === Node.TEXT_NODE) {
@@ -65,27 +65,27 @@ const isCaretAtBlockStart = (el: HTMLElement): boolean => {
 };
 
 export const handleEditorShortcut = (
-  el: HTMLDivElement,
+  inputElement: HTMLDivElement,
   evt: KeyboardEvent<Element>,
   keybinds: KeybindMap = defaultKeybinds
 ): boolean => {
   if (isKeyHotkey('backspace', evt)) {
-    if (isExitableBlock(el) && isCaretAtBlockStart(el)) {
-      exitBlock(el);
+    if (isExitableBlock(inputElement) && isCaretAtBlockStart(inputElement)) {
+      exitBlock(inputElement);
       return true;
     }
     return false;
   }
 
   if (isKeyHotkey(keybinds[KeybindAction.FormatExitBlock], evt) || isKeyHotkey('escape', evt)) {
-    if (isExitableBlock(el)) {
-      exitBlock(el);
+    if (isExitableBlock(inputElement)) {
+      exitBlock(inputElement);
       return true;
     }
     return false;
   }
 
-  const insideCodeBlock = isBlockFormatActive(el, 'pre');
+  const insideCodeBlock = isBlockFormatActive(inputElement, 'pre');
 
   for (const { id, command } of INLINE_MARK_ACTIONS) {
     if (isKeyHotkey(keybinds[id], evt)) {
@@ -97,13 +97,13 @@ export const handleEditorShortcut = (
 
   if (isKeyHotkey(keybinds[KeybindAction.FormatInlineCode], evt)) {
     if (insideCodeBlock) return false;
-    toggleInlineCode(el);
+    toggleInlineCode(inputElement);
     return true;
   }
 
   if (isKeyHotkey(keybinds[KeybindAction.FormatSpoiler], evt)) {
     if (insideCodeBlock) return false;
-    toggleSpoiler(el);
+    toggleSpoiler(inputElement);
     return true;
   }
 
@@ -115,18 +115,18 @@ export const handleEditorShortcut = (
   }
 
   if (isKeyHotkey(keybinds[KeybindAction.FormatBlockquote], evt)) {
-    toggleBlockFormat(el, 'blockquote');
+    toggleBlockFormat(inputElement, 'blockquote');
     return true;
   }
 
   if (isKeyHotkey(keybinds[KeybindAction.FormatCodeBlock], evt)) {
-    toggleCodeBlock(el);
+    toggleCodeBlock(inputElement);
     return true;
   }
 
   for (const { id, tag } of HEADING_ACTIONS) {
     if (isKeyHotkey(keybinds[id], evt)) {
-      toggleBlockFormat(el, tag);
+      toggleBlockFormat(inputElement, tag);
       return true;
     }
   }

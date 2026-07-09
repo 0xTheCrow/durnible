@@ -162,11 +162,11 @@ export function useTimelineAutoScroll({
 
   useLayoutEffect(() => {
     if (!scrollRequest) return;
-    const scrollEl = scrollRef.current;
-    if (!scrollEl) return;
-    const target = scrollEl.scrollHeight - scrollEl.offsetHeight;
-    const needsScroll = Math.abs(scrollEl.scrollTop - target) > 1;
-    scrollToBottom(scrollEl, scrollRequest.smooth ? 'smooth' : 'instant');
+    const scrollElement = scrollRef.current;
+    if (!scrollElement) return;
+    const target = scrollElement.scrollHeight - scrollElement.offsetHeight;
+    const needsScroll = Math.abs(scrollElement.scrollTop - target) > 1;
+    scrollToBottom(scrollElement, scrollRequest.smooth ? 'smooth' : 'instant');
     // While a smooth scroll is animating, IntersectionObserver-derived state
     // (atBottom, lastMsgVisible in the consumer) can transiently flip, causing
     // UI like the "Jump to Latest" button to flash. Mark autoScrolling true
@@ -183,18 +183,18 @@ export function useTimelineAutoScroll({
   // element).
   const applyAnchor = useEvent(
     (anchor: ScrollAnchor, behavior: ScrollBehavior, skipIfVisible: boolean): boolean => {
-      const scrollEl = scrollRef.current;
-      if (!scrollEl) return false;
+      const scrollElement = scrollRef.current;
+      if (!scrollElement) return false;
       if (anchor.kind === 'free') return false;
       if (anchor.kind === 'bottom') {
-        scrollToBottom(scrollEl, behavior);
+        scrollToBottom(scrollElement, behavior);
         return true;
       }
-      const el = findAnchorElement(scrollEl, anchor);
-      if (!el) return true;
-      if (skipIfVisible && isFullyVisible(scrollEl, el)) return false;
-      scrollEl.scrollTo({
-        top: computeAnchorScrollTop(scrollEl, el, anchor.align, anchor.offset ?? 0),
+      const anchorElement = findAnchorElement(scrollElement, anchor);
+      if (!anchorElement) return true;
+      if (skipIfVisible && isFullyVisible(scrollElement, anchorElement)) return false;
+      scrollElement.scrollTo({
+        top: computeAnchorScrollTop(scrollElement, anchorElement, anchor.align, anchor.offset ?? 0),
         behavior,
       });
       return true;
@@ -221,33 +221,33 @@ export function useTimelineAutoScroll({
   // User input releases tracked anchor so subsequent layout shifts don't
   // snap back over a manual scroll.
   useEffect(() => {
-    const scrollEl = scrollRef.current;
-    if (!scrollEl) return undefined;
+    const scrollElement = scrollRef.current;
+    if (!scrollElement) return undefined;
     const release = () => {
       const anchor = trackedAnchorRef.current;
       if (anchor.kind === 'event' || anchor.kind === 'marker') {
         trackedAnchorRef.current = { kind: 'free' };
       }
     };
-    scrollEl.addEventListener('wheel', release, { passive: true });
-    scrollEl.addEventListener('touchmove', release, { passive: true });
-    scrollEl.addEventListener('mousedown', release);
-    scrollEl.addEventListener('keydown', release);
+    scrollElement.addEventListener('wheel', release, { passive: true });
+    scrollElement.addEventListener('touchmove', release, { passive: true });
+    scrollElement.addEventListener('mousedown', release);
+    scrollElement.addEventListener('keydown', release);
     return () => {
-      scrollEl.removeEventListener('wheel', release);
-      scrollEl.removeEventListener('touchmove', release);
-      scrollEl.removeEventListener('mousedown', release);
-      scrollEl.removeEventListener('keydown', release);
+      scrollElement.removeEventListener('wheel', release);
+      scrollElement.removeEventListener('touchmove', release);
+      scrollElement.removeEventListener('mousedown', release);
+      scrollElement.removeEventListener('keydown', release);
     };
   }, []);
 
   useEffect(() => {
-    const scrollEl = scrollRef.current;
-    if (!scrollEl) return undefined;
+    const scrollElement = scrollRef.current;
+    if (!scrollElement) return undefined;
     const handleScrollEnd = () => setAutoScrolling(false);
-    scrollEl.addEventListener('scrollend', handleScrollEnd);
+    scrollElement.addEventListener('scrollend', handleScrollEnd);
     return () => {
-      scrollEl.removeEventListener('scrollend', handleScrollEnd);
+      scrollElement.removeEventListener('scrollend', handleScrollEnd);
     };
   }, []);
 

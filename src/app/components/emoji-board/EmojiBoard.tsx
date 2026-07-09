@@ -765,25 +765,27 @@ function EmojiGroupHolder({
   };
 
   const handleEmojiHover: MouseEventHandler = (evt) => {
-    const targetEl = targetFromEvent(evt.nativeEvent, 'button') as HTMLButtonElement | undefined;
-    if (!targetEl) {
+    const targetButton = targetFromEvent(evt.nativeEvent, 'button') as
+      | HTMLButtonElement
+      | undefined;
+    if (!targetButton) {
       clearHover();
       return;
     }
-    if (lastHoverTargetRef.current === targetEl) return;
-    const emojiInfo = getEmojiItemInfo(targetEl);
+    if (lastHoverTargetRef.current === targetButton) return;
+    const emojiInfo = getEmojiItemInfo(targetButton);
     if (!emojiInfo) return;
-    lastHoverTargetRef.current = targetEl;
+    lastHoverTargetRef.current = targetButton;
     setHoverState({
       shortcode: emojiInfo.shortcode,
-      rect: targetEl.getBoundingClientRect(),
+      rect: targetButton.getBoundingClientRect(),
     });
   };
 
   const handleEmojiFocus: FocusEventHandler = (evt) => {
-    const targetEl = evt.target as HTMLButtonElement;
-    if (!targetEl.matches(':focus-visible')) return;
-    const emojiInfo = getEmojiItemInfo(targetEl);
+    const targetButton = evt.target as HTMLButtonElement;
+    if (!targetButton.matches(':focus-visible')) return;
+    const emojiInfo = getEmojiItemInfo(targetButton);
     if (!emojiInfo) return;
     setPreviewData({
       key: emojiInfo.data,
@@ -934,10 +936,10 @@ export function EmojiBoard({
 
   const handleGroupItemContextMenu: MouseEventHandler = (evt) => {
     evt.preventDefault();
-    const targetEl = targetFromEvent(evt.nativeEvent, 'button');
-    const emojiInfo = targetEl && getEmojiItemInfo(targetEl);
+    const targetButton = targetFromEvent(evt.nativeEvent, 'button');
+    const emojiInfo = targetButton && getEmojiItemInfo(targetButton);
     if (!emojiInfo) return;
-    const rect = (targetEl as HTMLElement).getBoundingClientRect();
+    const rect = (targetButton as HTMLElement).getBoundingClientRect();
     setContextMenuAnchor({
       x: rect.x,
       y: rect.y,
@@ -981,8 +983,8 @@ export function EmojiBoard({
   };
 
   const handleGroupItemClick: MouseEventHandler = (evt) => {
-    const targetEl = targetFromEvent(evt.nativeEvent, 'button');
-    const emojiInfo = targetEl && getEmojiItemInfo(targetEl);
+    const targetButton = targetFromEvent(evt.nativeEvent, 'button');
+    const emojiInfo = targetButton && getEmojiItemInfo(targetButton);
     if (!emojiInfo) return;
     selectEmojiInfo(emojiInfo, evt.altKey, evt.shiftKey);
   };

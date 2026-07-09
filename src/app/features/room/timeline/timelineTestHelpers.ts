@@ -161,7 +161,7 @@ export type ScrollGeometry = {
 };
 
 export function stubScrollGeometry(
-  el: HTMLElement,
+  scrollElement: HTMLElement,
   initial: { scrollHeight: number; offsetHeight: number }
 ): ScrollGeometry {
   let scrollTop = 0;
@@ -169,26 +169,26 @@ export function stubScrollGeometry(
   let lastBehavior: string | undefined;
   const { offsetHeight } = initial;
 
-  Object.defineProperty(el, 'scrollHeight', {
+  Object.defineProperty(scrollElement, 'scrollHeight', {
     configurable: true,
     get: () => scrollHeight,
   });
-  Object.defineProperty(el, 'offsetHeight', {
+  Object.defineProperty(scrollElement, 'offsetHeight', {
     configurable: true,
     get: () => offsetHeight,
   });
-  Object.defineProperty(el, 'clientHeight', {
+  Object.defineProperty(scrollElement, 'clientHeight', {
     configurable: true,
     get: () => offsetHeight,
   });
-  Object.defineProperty(el, 'scrollTop', {
+  Object.defineProperty(scrollElement, 'scrollTop', {
     configurable: true,
     get: () => scrollTop,
     set: (v: number) => {
       scrollTop = v;
     },
   });
-  Object.defineProperty(el, 'scrollTo', {
+  Object.defineProperty(scrollElement, 'scrollTo', {
     configurable: true,
     writable: true,
     value: (arg: ScrollToOptions | number, y?: number) => {

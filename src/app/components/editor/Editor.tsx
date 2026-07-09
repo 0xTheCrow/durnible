@@ -24,7 +24,7 @@ import * as css from './Editor.css';
 import { getImageUrlBlob } from '../../utils/dom';
 
 export type EditorController = {
-  el: HTMLDivElement | null;
+  inputElement: HTMLDivElement | null;
   focus: () => void;
   insertText: (text: string) => void;
   insertNode: (node: Node) => void;
@@ -75,34 +75,34 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
     const savedRangeRef = useRef<Range | null>(null);
 
     const syncEditorState = useCallback(() => {
-      const el = inputRef.current;
-      if (!el) return;
-      setIsEmpty(isEditorEmpty(el));
+      const inputElement = inputRef.current;
+      if (!inputElement) return;
+      setIsEmpty(isEditorEmpty(inputElement));
       onChange?.();
     }, [onChange]);
 
     useImperativeHandle(
       editorInputRef,
       () => ({
-        get el() {
+        get inputElement() {
           return inputRef.current;
         },
         focus: () => {
-          const el = inputRef.current;
-          if (!el) return;
-          el.focus();
+          const inputElement = inputRef.current;
+          if (!inputElement) return;
+          inputElement.focus();
           const saved = savedRangeRef.current;
-          if (saved && el.contains(saved.startContainer)) {
+          if (saved && inputElement.contains(saved.startContainer)) {
             const sel = window.getSelection();
             sel?.removeAllRanges();
             sel?.addRange(saved.cloneRange());
           }
         },
         insertText: (text: string) => {
-          const el = inputRef.current;
-          if (!el) return;
+          const inputElement = inputRef.current;
+          if (!inputElement) return;
           const textNode = document.createTextNode(text);
-          savedRangeRef.current = insertNodeAtRange(el, savedRangeRef.current, textNode);
+          savedRangeRef.current = insertNodeAtRange(inputElement, savedRangeRef.current, textNode);
           const range = document.createRange();
           range.setStart(textNode, text.length);
           range.collapse(true);
@@ -113,16 +113,16 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
           syncEditorState();
         },
         insertNode: (node: Node) => {
-          const el = inputRef.current;
-          if (!el) return;
-          savedRangeRef.current = insertNodeAtRange(el, savedRangeRef.current, node);
+          const inputElement = inputRef.current;
+          if (!inputElement) return;
+          savedRangeRef.current = insertNodeAtRange(inputElement, savedRangeRef.current, node);
           syncEditorState();
         },
         setContent: (html: string, options?: HtmlToEditorDomOptions) => {
-          const el = inputRef.current;
-          if (!el) return;
+          const inputElement = inputRef.current;
+          if (!inputElement) return;
           const fragment = htmlToEditorDom(html, { mx, useAuthentication, ...options });
-          el.replaceChildren(fragment);
+          inputElement.replaceChildren(fragment);
           savedRangeRef.current = null;
           syncEditorState();
         },
@@ -132,12 +132,12 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
 
     useEffect(() => {
       const handleSelectionChange = () => {
-        const el = inputRef.current;
-        if (!el) return;
+        const inputElement = inputRef.current;
+        if (!inputElement) return;
         const sel = document.getSelection();
         if (!sel || sel.rangeCount === 0) return;
         const range = sel.getRangeAt(0);
-        if (!el.contains(range.startContainer)) return;
+        if (!inputElement.contains(range.startContainer)) return;
         savedRangeRef.current = range.cloneRange();
       };
       document.addEventListener('selectionchange', handleSelectionChange);
@@ -148,9 +148,9 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
 
     const handleInput: FormEventHandler<HTMLDivElement> = useCallback(
       (evt) => {
-        const el = inputRef.current;
-        if (el && !(evt.nativeEvent as InputEvent).isComposing) {
-          normalizeEditorRoot(el);
+        const inputElement = inputRef.current;
+        if (inputElement && !(evt.nativeEvent as InputEvent).isComposing) {
+          normalizeEditorRoot(inputElement);
         }
         syncEditorState();
       },
@@ -205,8 +205,13 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
 
         if (ie.inputType === 'deleteContentBackward') {
           const sel = window.getSelection();
-          const el = inputRef.current;
-          if (sel && sel.rangeCount > 0 && el && handleEditorBackspace(el, sel.getRangeAt(0))) {
+          const inputElement = inputRef.current;
+          if (
+            sel &&
+            sel.rangeCount > 0 &&
+            inputElement &&
+            handleEditorBackspace(inputElement, sel.getRangeAt(0))
+          ) {
             e.preventDefault();
             syncEditorState();
           }
@@ -246,12 +251,12 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
       (evt) => {
         onKeyDown?.(evt);
         if (evt.defaultPrevented) return;
-        const el = inputRef.current;
-        if (!el) return;
-        if (handleEditorShortcut(el, evt, keybinds)) {
+        const inputElement = inputRef.current;
+        if (!inputElement) return;
+        if (handleEditorShortcut(inputElement, evt, keybinds)) {
           evt.preventDefault();
           evt.stopPropagation();
-          el.dispatchEvent(new Event('input', { bubbles: true }));
+          inputElement.dispatchEvent(new Event('input', { bubbles: true }));
         }
       },
       [onKeyDown, keybinds]

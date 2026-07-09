@@ -1,16 +1,16 @@
-const getSelectionInElement = (el: HTMLElement): Range | null => {
+const getSelectionInElement = (inputElement: HTMLElement): Range | null => {
   const sel = window.getSelection();
   if (!sel || sel.rangeCount === 0) return null;
   const range = sel.getRangeAt(0);
-  if (!el.contains(range.startContainer)) return null;
+  if (!inputElement.contains(range.startContainer)) return null;
   return range;
 };
 
-const selectionInsideTag = (el: HTMLElement, tagName: string): boolean => {
-  const range = getSelectionInElement(el);
+const selectionInsideTag = (inputElement: HTMLElement, tagName: string): boolean => {
+  const range = getSelectionInElement(inputElement);
   if (!range) return false;
   let node: Node | null = range.startContainer;
-  while (node && node !== el) {
+  while (node && node !== inputElement) {
     if (node.nodeType === Node.ELEMENT_NODE && (node as HTMLElement).tagName === tagName) {
       return true;
     }
@@ -19,11 +19,11 @@ const selectionInsideTag = (el: HTMLElement, tagName: string): boolean => {
   return false;
 };
 
-const selectionInsideSelector = (el: HTMLElement, selector: string): boolean => {
-  const range = getSelectionInElement(el);
+const selectionInsideSelector = (inputElement: HTMLElement, selector: string): boolean => {
+  const range = getSelectionInElement(inputElement);
   if (!range) return false;
   let node: Node | null = range.startContainer;
-  while (node && node !== el) {
+  while (node && node !== inputElement) {
     if (node.nodeType === Node.ELEMENT_NODE && (node as HTMLElement).matches(selector)) {
       return true;
     }
@@ -32,8 +32,12 @@ const selectionInsideSelector = (el: HTMLElement, selector: string): boolean => 
   return false;
 };
 
-const wrapSelectionWithElement = (el: HTMLElement, tag: string, attrs?: Record<string, string>) => {
-  const range = getSelectionInElement(el);
+const wrapSelectionWithElement = (
+  inputElement: HTMLElement,
+  tag: string,
+  attrs?: Record<string, string>
+) => {
+  const range = getSelectionInElement(inputElement);
   if (!range) return;
 
   const wrapper = document.createElement(tag);
@@ -66,11 +70,11 @@ const wrapSelectionWithElement = (el: HTMLElement, tag: string, attrs?: Record<s
   sel?.addRange(r);
 };
 
-const unwrapSelection = (el: HTMLElement, selector: string) => {
-  const range = getSelectionInElement(el);
+const unwrapSelection = (inputElement: HTMLElement, selector: string) => {
+  const range = getSelectionInElement(inputElement);
   if (!range) return;
   let node: Node | null = range.startContainer;
-  while (node && node !== el) {
+  while (node && node !== inputElement) {
     if (node.nodeType === Node.ELEMENT_NODE && (node as HTMLElement).matches(selector)) {
       const parent = node.parentNode;
       if (!parent) return;
@@ -88,32 +92,32 @@ export const toggleExecFormat = (command: string) => {
   document.execCommand(command, false);
 };
 
-export const toggleInlineCode = (el: HTMLElement) => {
-  if (selectionInsideTag(el, 'CODE')) {
-    unwrapSelection(el, 'code');
+export const toggleInlineCode = (inputElement: HTMLElement) => {
+  if (selectionInsideTag(inputElement, 'CODE')) {
+    unwrapSelection(inputElement, 'code');
   } else {
-    wrapSelectionWithElement(el, 'code');
+    wrapSelectionWithElement(inputElement, 'code');
   }
 };
 
-export const toggleSpoiler = (el: HTMLElement) => {
-  if (selectionInsideSelector(el, '[data-mx-spoiler]')) {
-    unwrapSelection(el, '[data-mx-spoiler]');
+export const toggleSpoiler = (inputElement: HTMLElement) => {
+  if (selectionInsideSelector(inputElement, '[data-mx-spoiler]')) {
+    unwrapSelection(inputElement, '[data-mx-spoiler]');
   } else {
-    wrapSelectionWithElement(el, 'span', { 'data-mx-spoiler': '' });
+    wrapSelectionWithElement(inputElement, 'span', { 'data-mx-spoiler': '' });
   }
 };
 
-export const toggleBlockFormat = (el: HTMLElement, tag: string) => {
-  if (selectionInsideTag(el, tag.toUpperCase())) {
+export const toggleBlockFormat = (inputElement: HTMLElement, tag: string) => {
+  if (selectionInsideTag(inputElement, tag.toUpperCase())) {
     document.execCommand('formatBlock', false, 'div');
   } else {
     document.execCommand('formatBlock', false, tag);
   }
 };
 
-export const toggleCodeBlock = (el: HTMLElement) => {
-  if (selectionInsideTag(el, 'PRE')) {
+export const toggleCodeBlock = (inputElement: HTMLElement) => {
+  if (selectionInsideTag(inputElement, 'PRE')) {
     document.execCommand('formatBlock', false, 'div');
   } else {
     document.execCommand('formatBlock', false, 'pre');
@@ -122,24 +126,25 @@ export const toggleCodeBlock = (el: HTMLElement) => {
 
 export const isFormatActive = (command: string): boolean => document.queryCommandState(command);
 
-export const isCodeActive = (el: HTMLElement): boolean => selectionInsideTag(el, 'CODE');
+export const isCodeActive = (inputElement: HTMLElement): boolean =>
+  selectionInsideTag(inputElement, 'CODE');
 
-export const isSpoilerActive = (el: HTMLElement): boolean =>
-  selectionInsideSelector(el, '[data-mx-spoiler]');
+export const isSpoilerActive = (inputElement: HTMLElement): boolean =>
+  selectionInsideSelector(inputElement, '[data-mx-spoiler]');
 
-export const isBlockFormatActive = (el: HTMLElement, tag: string): boolean =>
-  selectionInsideTag(el, tag.toUpperCase());
+export const isBlockFormatActive = (inputElement: HTMLElement, tag: string): boolean =>
+  selectionInsideTag(inputElement, tag.toUpperCase());
 
-export const isInsideList = (el: HTMLElement): boolean =>
-  selectionInsideTag(el, 'OL') || selectionInsideTag(el, 'UL');
+export const isInsideList = (inputElement: HTMLElement): boolean =>
+  selectionInsideTag(inputElement, 'OL') || selectionInsideTag(inputElement, 'UL');
 
-export const handleListEnter = (el: HTMLElement) => {
+export const handleListEnter = (inputElement: HTMLElement) => {
   const sel = window.getSelection();
   if (!sel || sel.rangeCount === 0) return;
 
   let node: Node | null = sel.getRangeAt(0).startContainer;
   let currentLi: HTMLElement | null = null;
-  while (node && node !== el) {
+  while (node && node !== inputElement) {
     if (node.nodeType === Node.ELEMENT_NODE && (node as HTMLElement).tagName === 'LI') {
       currentLi = node as HTMLElement;
       break;
@@ -163,28 +168,28 @@ export const handleListEnter = (el: HTMLElement) => {
   sel.addRange(range);
 };
 
-export const isExitableBlock = (el: HTMLElement): boolean => {
-  if (isBlockFormatActive(el, 'blockquote')) return true;
-  if (isBlockFormatActive(el, 'pre')) return true;
-  if (isBlockFormatActive(el, 'ol')) return true;
-  if (isBlockFormatActive(el, 'ul')) return true;
-  if (isBlockFormatActive(el, 'h1')) return true;
-  if (isBlockFormatActive(el, 'h2')) return true;
-  if (isBlockFormatActive(el, 'h3')) return true;
+export const isExitableBlock = (inputElement: HTMLElement): boolean => {
+  if (isBlockFormatActive(inputElement, 'blockquote')) return true;
+  if (isBlockFormatActive(inputElement, 'pre')) return true;
+  if (isBlockFormatActive(inputElement, 'ol')) return true;
+  if (isBlockFormatActive(inputElement, 'ul')) return true;
+  if (isBlockFormatActive(inputElement, 'h1')) return true;
+  if (isBlockFormatActive(inputElement, 'h2')) return true;
+  if (isBlockFormatActive(inputElement, 'h3')) return true;
   return false;
 };
 
-export const exitBlock = (el: HTMLElement) => {
-  if (isInsideList(el)) {
-    if (isBlockFormatActive(el, 'ol')) document.execCommand('insertOrderedList', false);
-    if (isBlockFormatActive(el, 'ul')) document.execCommand('insertUnorderedList', false);
+export const exitBlock = (inputElement: HTMLElement) => {
+  if (isInsideList(inputElement)) {
+    if (isBlockFormatActive(inputElement, 'ol')) document.execCommand('insertOrderedList', false);
+    if (isBlockFormatActive(inputElement, 'ul')) document.execCommand('insertUnorderedList', false);
   }
   if (
-    isBlockFormatActive(el, 'blockquote') ||
-    isBlockFormatActive(el, 'pre') ||
-    isBlockFormatActive(el, 'h1') ||
-    isBlockFormatActive(el, 'h2') ||
-    isBlockFormatActive(el, 'h3')
+    isBlockFormatActive(inputElement, 'blockquote') ||
+    isBlockFormatActive(inputElement, 'pre') ||
+    isBlockFormatActive(inputElement, 'h1') ||
+    isBlockFormatActive(inputElement, 'h2') ||
+    isBlockFormatActive(inputElement, 'h3')
   ) {
     document.execCommand('formatBlock', false, 'div');
   }

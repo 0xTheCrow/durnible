@@ -346,13 +346,13 @@ describe('Message component', () => {
 
       const bodies = screen.getAllByTestId('message-body');
       const senderNames = screen.getAllByTestId('message-sender-name');
-      expect(bodies.map((el) => el.textContent)).toEqual(
+      expect(bodies.map((body) => body.textContent)).toEqual(
         expect.arrayContaining([
           expect.stringContaining('Hi Bob!'),
           expect.stringContaining('Hey Alice!'),
         ])
       );
-      expect(senderNames.map((el) => el.textContent)).toEqual(
+      expect(senderNames.map((senderName) => senderName.textContent)).toEqual(
         expect.arrayContaining(['Alice', 'Bob'])
       );
     });

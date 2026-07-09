@@ -20,35 +20,35 @@ export const useMediaVolume = (
 
   const setMute = useCallback(
     (mute: boolean) => {
-      const targetEl = getTargetElement();
-      if (!targetEl) return;
-      targetEl.muted = mute;
+      const mediaElement = getTargetElement();
+      if (!mediaElement) return;
+      mediaElement.muted = mute;
     },
     [getTargetElement]
   );
 
   const setVolume = useCallback(
     (volume: number) => {
-      const targetEl = getTargetElement();
-      if (!targetEl) return;
-      targetEl.volume = volume;
+      const mediaElement = getTargetElement();
+      if (!mediaElement) return;
+      mediaElement.volume = volume;
     },
     [getTargetElement]
   );
 
   useEffect(() => {
-    const targetEl = getTargetElement();
+    const mediaElement = getTargetElement();
     const handleChange = () => {
-      if (!targetEl) return;
+      if (!mediaElement) return;
 
       setVolumeData({
-        mute: targetEl.muted,
-        volume: Math.max(0, Math.min(targetEl.volume, 1)),
+        mute: mediaElement.muted,
+        volume: Math.max(0, Math.min(mediaElement.volume, 1)),
       });
     };
-    targetEl?.addEventListener('volumechange', handleChange);
+    mediaElement?.addEventListener('volumechange', handleChange);
     return () => {
-      targetEl?.removeEventListener('volumechange', handleChange);
+      mediaElement?.removeEventListener('volumechange', handleChange);
     };
   }, [getTargetElement]);
 

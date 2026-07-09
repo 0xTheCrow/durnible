@@ -73,12 +73,14 @@ describe('useTimelineAutoScroll', () => {
 
     const { container } = render(<Harness room={room} viewingLatest />);
 
-    const scrollEl = container.querySelector('[data-testid="timeline-scroll"]') as HTMLDivElement;
-    expect(scrollEl).not.toBeNull();
+    const scrollElement = container.querySelector(
+      '[data-testid="timeline-scroll"]'
+    ) as HTMLDivElement;
+    expect(scrollElement).not.toBeNull();
     // Initial layout: content fits in a 400px viewport with 500px of content.
     // scrollTop at 100 means the sentinel is visible and the user is at the
     // bottom of the scroll container.
-    const geometry = stubScrollGeometry(scrollEl, { scrollHeight: 500, offsetHeight: 400 });
+    const geometry = stubScrollGeometry(scrollElement, { scrollHeight: 500, offsetHeight: 400 });
     geometry.setScrollTop(100);
 
     // The IntersectionObserver reports the sentinel as visible — the hook
@@ -109,12 +111,14 @@ describe('useTimelineAutoScroll', () => {
 
     const { container } = render(<Harness room={room} viewingLatest renderDivider />);
 
-    const scrollEl = container.querySelector('[data-testid="timeline-scroll"]') as HTMLDivElement;
+    const scrollElement = container.querySelector(
+      '[data-testid="timeline-scroll"]'
+    ) as HTMLDivElement;
     const divider = container.querySelector('[data-testid="new-messages-divider"]');
-    expect(scrollEl).not.toBeNull();
+    expect(scrollElement).not.toBeNull();
     expect(divider).not.toBeNull();
 
-    const geometry = stubScrollGeometry(scrollEl, { scrollHeight: 600, offsetHeight: 400 });
+    const geometry = stubScrollGeometry(scrollElement, { scrollHeight: 600, offsetHeight: 400 });
     geometry.setScrollTop(200);
 
     act(() => {
@@ -146,8 +150,10 @@ describe('useTimelineAutoScroll', () => {
       />
     );
 
-    const scrollEl = container.querySelector('[data-testid="timeline-scroll"]') as HTMLDivElement;
-    const geometry = stubScrollGeometry(scrollEl, { scrollHeight: 500, offsetHeight: 400 });
+    const scrollElement = container.querySelector(
+      '[data-testid="timeline-scroll"]'
+    ) as HTMLDivElement;
+    const geometry = stubScrollGeometry(scrollElement, { scrollHeight: 500, offsetHeight: 400 });
     geometry.setScrollTop(0);
 
     act(() => {
@@ -171,8 +177,10 @@ describe('useTimelineAutoScroll', () => {
       />
     );
 
-    const scrollEl = container.querySelector('[data-testid="timeline-scroll"]') as HTMLDivElement;
-    const geometry = stubScrollGeometry(scrollEl, { scrollHeight: 500, offsetHeight: 400 });
+    const scrollElement = container.querySelector(
+      '[data-testid="timeline-scroll"]'
+    ) as HTMLDivElement;
+    const geometry = stubScrollGeometry(scrollElement, { scrollHeight: 500, offsetHeight: 400 });
     geometry.setScrollTop(0);
 
     act(() => {
@@ -187,8 +195,10 @@ describe('useTimelineAutoScroll', () => {
 
     const { container } = render(<Harness room={room} viewingLatest />);
 
-    const scrollEl = container.querySelector('[data-testid="timeline-scroll"]') as HTMLDivElement;
-    const geometry = stubScrollGeometry(scrollEl, { scrollHeight: 1000, offsetHeight: 400 });
+    const scrollElement = container.querySelector(
+      '[data-testid="timeline-scroll"]'
+    ) as HTMLDivElement;
+    const geometry = stubScrollGeometry(scrollElement, { scrollHeight: 1000, offsetHeight: 400 });
     geometry.setScrollTop(200);
 
     act(() => {
@@ -210,8 +220,10 @@ describe('useTimelineAutoScroll', () => {
 
     const { container } = render(<Harness room={room} viewingLatest={false} />);
 
-    const scrollEl = container.querySelector('[data-testid="timeline-scroll"]') as HTMLDivElement;
-    const geometry = stubScrollGeometry(scrollEl, { scrollHeight: 500, offsetHeight: 400 });
+    const scrollElement = container.querySelector(
+      '[data-testid="timeline-scroll"]'
+    ) as HTMLDivElement;
+    const geometry = stubScrollGeometry(scrollElement, { scrollHeight: 500, offsetHeight: 400 });
     geometry.setScrollTop(100);
 
     act(() => {
@@ -233,8 +245,10 @@ describe('useTimelineAutoScroll', () => {
 
     const { container } = render(<Harness room={room} viewingLatest />);
 
-    const scrollEl = container.querySelector('[data-testid="timeline-scroll"]') as HTMLDivElement;
-    const geometry = stubScrollGeometry(scrollEl, { scrollHeight: 500, offsetHeight: 400 });
+    const scrollElement = container.querySelector(
+      '[data-testid="timeline-scroll"]'
+    ) as HTMLDivElement;
+    const geometry = stubScrollGeometry(scrollElement, { scrollHeight: 500, offsetHeight: 400 });
     geometry.setScrollTop(100);
 
     act(() => {
@@ -263,8 +277,10 @@ describe('useTimelineAutoScroll', () => {
       />
     );
 
-    const scrollEl = container.querySelector('[data-testid="timeline-scroll"]') as HTMLDivElement;
-    stubScrollGeometry(scrollEl, { scrollHeight: 500, offsetHeight: 400 });
+    const scrollElement = container.querySelector(
+      '[data-testid="timeline-scroll"]'
+    ) as HTMLDivElement;
+    stubScrollGeometry(scrollElement, { scrollHeight: 500, offsetHeight: 400 });
 
     act(() => {
       ioInstances[0].trigger(true);
@@ -292,8 +308,10 @@ describe('useTimelineAutoScroll', () => {
       />
     );
 
-    const scrollEl = container.querySelector('[data-testid="timeline-scroll"]') as HTMLDivElement;
-    stubScrollGeometry(scrollEl, { scrollHeight: 500, offsetHeight: 400 });
+    const scrollElement = container.querySelector(
+      '[data-testid="timeline-scroll"]'
+    ) as HTMLDivElement;
+    stubScrollGeometry(scrollElement, { scrollHeight: 500, offsetHeight: 400 });
 
     act(() => {
       ioInstances[0].trigger(true);
@@ -315,8 +333,10 @@ describe('useTimelineAutoScroll', () => {
       />
     );
 
-    const scrollEl = container.querySelector('[data-testid="timeline-scroll"]') as HTMLDivElement;
-    const geometry = stubScrollGeometry(scrollEl, { scrollHeight: 500, offsetHeight: 400 });
+    const scrollElement = container.querySelector(
+      '[data-testid="timeline-scroll"]'
+    ) as HTMLDivElement;
+    const geometry = stubScrollGeometry(scrollElement, { scrollHeight: 500, offsetHeight: 400 });
     geometry.setScrollTop(100);
 
     act(() => {
@@ -335,7 +355,7 @@ describe('useTimelineAutoScroll', () => {
     expect(hookState.current!.autoScrolling).toBe(true);
 
     act(() => {
-      scrollEl.dispatchEvent(new Event('scrollend'));
+      scrollElement.dispatchEvent(new Event('scrollend'));
     });
 
     expect(hookState.current!.autoScrolling).toBe(false);
@@ -355,8 +375,10 @@ describe('useTimelineAutoScroll', () => {
       />
     );
 
-    const scrollEl = container.querySelector('[data-testid="timeline-scroll"]') as HTMLDivElement;
-    stubScrollGeometry(scrollEl, { scrollHeight: 1000, offsetHeight: 400 });
+    const scrollElement = container.querySelector(
+      '[data-testid="timeline-scroll"]'
+    ) as HTMLDivElement;
+    stubScrollGeometry(scrollElement, { scrollHeight: 1000, offsetHeight: 400 });
 
     act(() => {
       hookState.current!.requestScrollToBottom(false);

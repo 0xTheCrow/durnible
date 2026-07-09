@@ -111,18 +111,18 @@ export const VideoContent = as<'div', VideoContentProps>(
     }, [ref]);
 
     useEffect(() => {
-      const el = containerRef.current;
-      if (!el) return undefined;
+      const containerElement = containerRef.current;
+      if (!containerElement) return undefined;
 
       const observer = new IntersectionObserver(
         ([entry]) => {
           if (!entry.isIntersecting) {
-            el.querySelectorAll('video').forEach((v) => v.pause());
+            containerElement.querySelectorAll('video').forEach((v) => v.pause());
           }
         },
         { threshold: 0 }
       );
-      observer.observe(el);
+      observer.observe(containerElement);
 
       return () => observer.disconnect();
     }, []);

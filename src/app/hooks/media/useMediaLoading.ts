@@ -14,7 +14,7 @@ export const useMediaLoading = (
   });
 
   useEffect(() => {
-    const targetEl = getTargetElement();
+    const mediaElement = getTargetElement();
     const handleStart = () => {
       setLoadingData({
         loading: true,
@@ -33,17 +33,17 @@ export const useMediaLoading = (
         error: true,
       });
     };
-    targetEl?.addEventListener('loadstart', handleStart);
-    targetEl?.addEventListener('loadeddata', handleStop);
-    targetEl?.addEventListener('stalled', handleStop);
-    targetEl?.addEventListener('suspend', handleStop);
-    targetEl?.addEventListener('error', handleError);
+    mediaElement?.addEventListener('loadstart', handleStart);
+    mediaElement?.addEventListener('loadeddata', handleStop);
+    mediaElement?.addEventListener('stalled', handleStop);
+    mediaElement?.addEventListener('suspend', handleStop);
+    mediaElement?.addEventListener('error', handleError);
     return () => {
-      targetEl?.removeEventListener('loadstart', handleStart);
-      targetEl?.removeEventListener('loadeddata', handleStop);
-      targetEl?.removeEventListener('stalled', handleStop);
-      targetEl?.removeEventListener('suspend', handleStop);
-      targetEl?.removeEventListener('error', handleError);
+      mediaElement?.removeEventListener('loadstart', handleStart);
+      mediaElement?.removeEventListener('loadeddata', handleStop);
+      mediaElement?.removeEventListener('stalled', handleStop);
+      mediaElement?.removeEventListener('suspend', handleStop);
+      mediaElement?.removeEventListener('error', handleError);
     };
   }, [getTargetElement]);
 

@@ -44,7 +44,7 @@ const generateItems = (range: ItemRange) => {
 };
 
 const getDropIndex = (
-  scrollEl: HTMLElement,
+  scrollElement: HTMLElement,
   range: ItemRange,
   dropDirection: Direction,
   getItemElement: (index: number) => HTMLElement | undefined,
@@ -53,8 +53,8 @@ const getDropIndex = (
   const fromBackward = dropDirection === Direction.Backward;
   const items = fromBackward ? generateItems(range) : generateItems(range).reverse();
 
-  const { viewHeight, top, height } = getScrollInfo(scrollEl);
-  const { offsetTop: sOffsetTop } = scrollEl;
+  const { viewHeight, top, height } = getScrollInfo(scrollElement);
+  const { offsetTop: sOffsetTop } = scrollElement;
   const bottom = top + viewHeight;
   const dropEdgePx = fromBackward
     ? Math.max(top - viewHeight * pageThreshold, 0)
@@ -64,13 +64,13 @@ const getDropIndex = (
   let dropIndex: number | undefined;
 
   items.find((item) => {
-    const el = getItemElement(item);
-    if (!el) {
+    const itemElement = getItemElement(item);
+    if (!itemElement) {
       dropIndex = item;
       return false;
     }
-    const { clientHeight } = el;
-    const offsetTop = el.offsetTop - sOffsetTop;
+    const { clientHeight } = itemElement;
+    const offsetTop = itemElement.offsetTop - sOffsetTop;
     const offsetBottom = offsetTop + clientHeight;
     const isInView = fromBackward ? offsetBottom > dropEdgePx : offsetTop < dropEdgePx;
     if (isInView) return true;
@@ -87,18 +87,18 @@ const getRestoreAnchor = (
   getItemElement: (index: number) => HTMLElement | undefined,
   direction: Direction
 ): RestoreAnchorData => {
-  let scrollAnchorEl: HTMLElement | undefined;
+  let scrollAnchorElement: HTMLElement | undefined;
   const scrollAnchorItem = (
     direction === Direction.Backward ? generateItems(range) : generateItems(range).reverse()
   ).find((i) => {
-    const el = getItemElement(i);
-    if (el) {
-      scrollAnchorEl = el;
+    const itemElement = getItemElement(i);
+    if (itemElement) {
+      scrollAnchorElement = itemElement;
       return true;
     }
     return false;
   });
-  return [scrollAnchorItem, scrollAnchorEl];
+  return [scrollAnchorItem, scrollAnchorElement];
 };
 
 const getRestoreScrollData = (scrollTop: number, restoreAnchorData: RestoreAnchorData) => {
@@ -174,7 +174,7 @@ export const useVirtualPaginator = <TScrollElement extends HTMLElement>(
 
   const paginate = useCallback(
     (direction: Direction) => {
-      const scrollEl = getScrollElement();
+      const scrollElement = getScrollElement();
       const { range: currentRange, limit: currentLimit, count: currentCount } = propRef.current;
       let { start, end } = currentRange;
 
@@ -184,15 +184,16 @@ export const useVirtualPaginator = <TScrollElement extends HTMLElement>(
           onEnd?.(true);
           return;
         }
-        if (scrollEl) {
+        if (scrollElement) {
           // Compute the drop boundary first so the restore anchor is chosen
           // from items that will still exist after the re-render. Without this,
           // the anchor could land on an item that gets dropped, causing
           // getItemElement to return undefined in useLayoutEffect and skipping
           // scroll restoration entirely (visible as a jump to old messages).
-          end = getDropIndex(scrollEl, currentRange, Direction.Forward, getItemElement, 2) ?? end;
+          end =
+            getDropIndex(scrollElement, currentRange, Direction.Forward, getItemElement, 2) ?? end;
           restoreScrollRef.current = getRestoreScrollData(
-            scrollEl.scrollTop,
+            scrollElement.scrollTop,
             getRestoreAnchor({ start, end }, getItemElement, Direction.Backward)
           );
         }
@@ -205,12 +206,13 @@ export const useVirtualPaginator = <TScrollElement extends HTMLElement>(
           onEnd?.(false);
           return;
         }
-        if (scrollEl) {
+        if (scrollElement) {
           // Same fix for forward: compute drop boundary before capturing anchor.
           start =
-            getDropIndex(scrollEl, currentRange, Direction.Backward, getItemElement, 2) ?? start;
+            getDropIndex(scrollElement, currentRange, Direction.Backward, getItemElement, 2) ??
+            start;
           restoreScrollRef.current = getRestoreScrollData(
-            scrollEl.scrollTop,
+            scrollElement.scrollTop,
             getRestoreAnchor({ start, end }, getItemElement, Direction.Forward)
           );
         }
@@ -260,8 +262,8 @@ export const useVirtualPaginator = <TScrollElement extends HTMLElement>(
   // restoreScrollRef.current only gets set
   // when paginate() changes range itself
   useLayoutEffect(() => {
-    const scrollEl = getScrollElement();
-    if (!restoreScrollRef.current || !scrollEl) return;
+    const scrollElement = getScrollElement();
+    if (!restoreScrollRef.current || !scrollElement) return;
     if (shouldRestoreScroll && !shouldRestoreScroll()) {
       restoreScrollRef.current = undefined;
       return;
@@ -271,14 +273,14 @@ export const useVirtualPaginator = <TScrollElement extends HTMLElement>(
       anchorItem,
       scrollTop: oldScrollTop,
     } = restoreScrollRef.current;
-    const anchorEl = getItemElement(anchorItem);
+    const anchorElement = getItemElement(anchorItem);
 
-    if (!anchorEl) return;
-    const { offsetTop } = anchorEl;
+    if (!anchorElement) return;
+    const { offsetTop } = anchorElement;
     const offsetAddition = offsetTop - oldOffsetTop;
     const restoreTop = oldScrollTop + offsetAddition;
 
-    scrollEl.scrollTo({
+    scrollElement.scrollTo({
       top: restoreTop,
       behavior: 'instant',
     });

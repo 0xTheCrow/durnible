@@ -7,19 +7,19 @@ export const useMediaPlayTimeCallback = (
   onPlayTimeCallback: PlayTimeCallback
 ): void => {
   useEffect(() => {
-    const targetEl = getTargetElement();
+    const mediaElement = getTargetElement();
     const handleChange = () => {
-      if (!targetEl) return;
-      const duration = Number.isFinite(targetEl.duration) ? targetEl.duration : 0;
-      onPlayTimeCallback(duration, targetEl.currentTime);
+      if (!mediaElement) return;
+      const duration = Number.isFinite(mediaElement.duration) ? mediaElement.duration : 0;
+      onPlayTimeCallback(duration, mediaElement.currentTime);
     };
-    targetEl?.addEventListener('timeupdate', handleChange);
-    targetEl?.addEventListener('loadedmetadata', handleChange);
-    targetEl?.addEventListener('ended', handleChange);
+    mediaElement?.addEventListener('timeupdate', handleChange);
+    mediaElement?.addEventListener('loadedmetadata', handleChange);
+    mediaElement?.addEventListener('ended', handleChange);
     return () => {
-      targetEl?.removeEventListener('timeupdate', handleChange);
-      targetEl?.removeEventListener('loadedmetadata', handleChange);
-      targetEl?.removeEventListener('ended', handleChange);
+      mediaElement?.removeEventListener('timeupdate', handleChange);
+      mediaElement?.removeEventListener('loadedmetadata', handleChange);
+      mediaElement?.removeEventListener('ended', handleChange);
     };
   }, [getTargetElement, onPlayTimeCallback]);
 };

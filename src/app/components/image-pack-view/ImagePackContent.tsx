@@ -124,10 +124,10 @@ export const ImagePackContent = as<'div', ImagePackContentProps>(
 
     const handleUploadComplete = useCallback(
       async (data: UploadSuccess) => {
-        const imgEl = await loadImageElement(getImageFileUrl(data.file));
+        const imageElement = await loadImageElement(getImageFileUrl(data.file));
         const packImage: PackImage = {
           url: data.mxc,
-          info: getImageInfo(imgEl, data.file),
+          info: getImageInfo(imageElement, data.file),
         };
         const image = PackImageReader.fromPackImage(
           getFileNameWithoutExt(data.file.name),

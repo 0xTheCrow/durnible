@@ -61,7 +61,11 @@ const getEditor = () => screen.getByTestId('editor') as HTMLDivElement;
 beforeEach(() => {
   mobileOrTabletMock.mockReturnValue(false);
   const store = getDefaultStore();
-  store.set(settingsAtom, { ...store.get(settingsAtom), enterForNewline: false, isMarkdown: true });
+  store.set(settingsAtom, {
+    ...store.get(settingsAtom),
+    enterForNewline: false,
+    isMarkdownEnabled: true,
+  });
 });
 
 describe('MessageEditor — mount & content hydration', () => {

@@ -267,7 +267,11 @@ function DateAndTime() {
 
 function Editor() {
   const [enterForNewline, setEnterForNewline] = useSetting(settingsAtom, 'enterForNewline');
-  const [isMarkdown, setIsMarkdown] = useSetting(settingsAtom, 'isMarkdown');
+  const [isMarkdownEnabled, setIsMarkdownEnabled] = useSetting(settingsAtom, 'isMarkdownEnabled');
+  const [isEditorToolbarGestureRequired, setIsEditorToolbarGestureRequired] = useSetting(
+    settingsAtom,
+    'isEditorToolbarGestureRequired'
+  );
   const [hideActivity, setHideActivity] = useSetting(settingsAtom, 'hideActivity');
   const sendKey = useFormattedKeybind(KeybindAction.ComposeSend);
 
@@ -284,7 +288,22 @@ function Editor() {
       <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
         <SettingTile
           title="Markdown Formatting"
-          after={<Switch variant="Primary" value={isMarkdown} onChange={setIsMarkdown} />}
+          after={
+            <Switch variant="Primary" value={isMarkdownEnabled} onChange={setIsMarkdownEnabled} />
+          }
+        />
+      </SequenceCard>
+      <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
+        <SettingTile
+          title="Aa Formatting Toolbar Long Press"
+          description="Require a long press or double tap on the Aa button to open the formatting toolbar. Touch input only."
+          after={
+            <Switch
+              variant="Primary"
+              value={isEditorToolbarGestureRequired}
+              onChange={setIsEditorToolbarGestureRequired}
+            />
+          }
         />
       </SequenceCard>
       <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
