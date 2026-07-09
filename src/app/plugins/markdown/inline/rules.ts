@@ -77,7 +77,9 @@ export const StrikeRule: InlineMDRule = {
 const CODE_MD_1 = '`';
 const CODE_PREFIX_1 = `${ESC_NEG_LB}\``;
 const CODE_NEG_LA_1 = '(?!`)';
-const CODE_REG_1 = new RegExp(`${URL_NEG_LB}${CODE_PREFIX_1}(.+?)${CODE_PREFIX_1}${CODE_NEG_LA_1}`);
+const CODE_REG_1 = new RegExp(
+  `${URL_NEG_LB}${CODE_PREFIX_1}${CODE_NEG_LA_1}(.+?)${CODE_PREFIX_1}${CODE_NEG_LA_1}`
+);
 export const CodeRule: InlineMDRule = {
   match: (text) => text.match(CODE_REG_1),
   html: (parse, match) => {

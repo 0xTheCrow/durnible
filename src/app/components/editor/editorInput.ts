@@ -372,10 +372,12 @@ const getListLineMarkers = (list: Element, listItems: Element[]): string[] | nul
   if (listItems.length === 0) return null;
   if (!listItems.every(isSingleLineListItem)) return null;
 
-  if (list.name === 'ul') return listItems.map(() => '*');
-
   const dataMd = list.attribs['data-md'];
-  if (dataMd === '-') return listItems.map(() => '-');
+
+  if (list.name === 'ul') {
+    const bullet = dataMd === '-' ? '-' : '*';
+    return listItems.map(() => bullet);
+  }
 
   const letterMarker = [dataMd, list.attribs.type].find(
     (value) => value !== undefined && LETTER_MARKER.test(value)

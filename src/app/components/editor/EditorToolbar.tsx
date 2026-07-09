@@ -22,12 +22,11 @@ import { useSetting } from '../../state/hooks/settings';
 import { settingsAtom } from '../../state/settings';
 import { useFormattedKeybind } from '../../state/hooks/keybinds';
 import { KeybindAction } from '../../state/keybinds';
-import { KeySymbol } from '../../utils/key-symbol';
 import { stopPropagation } from '../../utils/keyboard';
 import { TooltipProvider } from '../TooltipProvider';
+import type { EditorController } from './Editor';
+import { domToMarkdown, domToMatrixCustomHTML, trimCustomHtml } from './editorOutput';
 import {
-  exitBlock,
-  isExitableBlock,
   isBlockFormatActive,
   isCodeActive,
   isFormatActive,
@@ -40,6 +39,16 @@ import {
 } from './editorFormatting';
 
 const preventFocusLoss = (e: React.MouseEvent | React.TouchEvent) => e.preventDefault();
+
+const focusEndOfContent = (target: HTMLElement) => {
+  target.focus();
+  const range = document.createRange();
+  range.selectNodeContents(target);
+  range.collapse(false);
+  const selection = window.getSelection();
+  selection?.removeAllRanges();
+  selection?.addRange(range);
+};
 
 type ToolbarTooltipProps = {
   text: string;
@@ -72,9 +81,10 @@ type InlineButtonProps = {
   active: boolean;
   onClick: () => void;
   disabled?: boolean;
+  testId?: string;
 };
 
-function InlineButton({ icon, tooltip, active, onClick, disabled }: InlineButtonProps) {
+function InlineButton({ icon, tooltip, active, onClick, disabled, testId }: InlineButtonProps) {
   return (
     <TooltipProvider tooltip={tooltip}>
       {(triggerRef) => (
@@ -88,6 +98,7 @@ function InlineButton({ icon, tooltip, active, onClick, disabled }: InlineButton
           size="400"
           radii="300"
           disabled={disabled}
+          data-testid={testId}
         >
           <Icon size="200" src={icon} />
         </IconButton>
@@ -101,9 +112,11 @@ type BlockButtonProps = {
   tooltip: ReactNode;
   active: boolean;
   onClick: () => void;
+  disabled?: boolean;
+  testId?: string;
 };
 
-function BlockButton({ icon, tooltip, active, onClick }: BlockButtonProps) {
+function BlockButton({ icon, tooltip, active, onClick, disabled, testId }: BlockButtonProps) {
   return (
     <TooltipProvider tooltip={tooltip}>
       {(triggerRef) => (
@@ -116,6 +129,8 @@ function BlockButton({ icon, tooltip, active, onClick }: BlockButtonProps) {
           aria-pressed={active}
           size="400"
           radii="300"
+          disabled={disabled}
+          data-testid={testId}
         >
           <Icon size="200" src={icon} />
         </IconButton>
@@ -127,30 +142,31 @@ function BlockButton({ icon, tooltip, active, onClick }: BlockButtonProps) {
 type HeadingButtonProps = {
   inputRef: RefObject<HTMLDivElement | null>;
   onFormat: () => void;
+  disabled?: boolean;
 };
 
-function HeadingButton({ inputRef, onFormat }: HeadingButtonProps) {
+function HeadingButton({ inputRef, onFormat, disabled }: HeadingButtonProps) {
   const [anchor, setAnchor] = useState<RectCords>();
-  const el = inputRef.current;
-  const activeLevel = el
-    ? (isBlockFormatActive(el, 'h1') && 1) ||
-      (isBlockFormatActive(el, 'h2') && 2) ||
-      (isBlockFormatActive(el, 'h3') && 3) ||
+  const inputElement = inputRef.current;
+  const activeLevel = inputElement
+    ? (isBlockFormatActive(inputElement, 'h1') && 1) ||
+      (isBlockFormatActive(inputElement, 'h2') && 2) ||
+      (isBlockFormatActive(inputElement, 'h3') && 3) ||
       0
     : 0;
   const isActive = activeLevel > 0;
 
   const handleSelect = (tag: string) => {
     setAnchor(undefined);
-    if (el) {
-      toggleBlockFormat(el, tag);
+    if (inputElement) {
+      toggleBlockFormat(inputElement, tag);
       onFormat();
     }
   };
 
   const handleOpen: MouseEventHandler<HTMLButtonElement> = (evt) => {
-    if (isActive && el) {
-      el.focus();
+    if (isActive && inputElement) {
+      inputElement.focus();
       document.execCommand('formatBlock', false, 'div');
       onFormat();
       return;
@@ -238,6 +254,7 @@ function HeadingButton({ inputRef, onFormat }: HeadingButtonProps) {
         aria-pressed={isActive}
         size="400"
         radii="300"
+        disabled={disabled}
       >
         {activeLevel ? (
           <Icon size="200" src={Icons[`Heading${activeLevel}` as keyof typeof Icons]} />
@@ -252,12 +269,12 @@ function HeadingButton({ inputRef, onFormat }: HeadingButtonProps) {
 
 type EditorToolbarProps = {
   inputRef: RefObject<HTMLDivElement | null>;
+  controllerRef?: RefObject<EditorController | null>;
   onFormat?: () => void;
 };
 
-export function EditorToolbar({ inputRef, onFormat }: EditorToolbarProps) {
-  const exitBlockKey = useFormattedKeybind(KeybindAction.FormatExitBlock);
-  const [isMarkdown, setIsMarkdown] = useSetting(settingsAtom, 'isMarkdown');
+export function EditorToolbar({ inputRef, controllerRef, onFormat }: EditorToolbarProps) {
+  const [isMarkdownEnabled, setIsMarkdownEnabled] = useSetting(settingsAtom, 'isMarkdownEnabled');
   const [, setTick] = useState(0);
 
   const rerender = useCallback(() => {
@@ -266,32 +283,26 @@ export function EditorToolbar({ inputRef, onFormat }: EditorToolbarProps) {
   }, [onFormat]);
 
   useEffect(() => {
-    const el = inputRef.current;
-    if (!el) return undefined;
+    const inputElement = inputRef.current;
+    if (!inputElement) return undefined;
     const sync = () => setTick((n) => n + 1);
-    el.addEventListener('input', sync);
-    el.addEventListener('keyup', sync);
+    inputElement.addEventListener('input', sync);
+    inputElement.addEventListener('keyup', sync);
     return () => {
-      el.removeEventListener('input', sync);
-      el.removeEventListener('keyup', sync);
+      inputElement.removeEventListener('input', sync);
+      inputElement.removeEventListener('keyup', sync);
     };
   }, [inputRef]);
 
-  const el = inputRef.current;
-  const insideCode = el ? isBlockFormatActive(el, 'pre') : false;
+  const inputElement = inputRef.current;
+  const isInsideCodeBlock = inputElement ? isBlockFormatActive(inputElement, 'pre') : false;
 
   const applyFormat = useCallback(
     (fn: (target: HTMLElement) => void) => {
       const target = inputRef.current;
       if (!target) return;
       if (document.activeElement !== target) {
-        target.focus();
-        const range = document.createRange();
-        range.selectNodeContents(target);
-        range.collapse(false);
-        const sel = window.getSelection();
-        sel?.removeAllRanges();
-        sel?.addRange(range);
+        focusEndOfContent(target);
       }
       fn(target);
       target.dispatchEvent(new Event('input', { bubbles: true }));
@@ -299,6 +310,26 @@ export function EditorToolbar({ inputRef, onFormat }: EditorToolbarProps) {
     },
     [inputRef, rerender]
   );
+
+  const toggleMarkdown = () => {
+    const target = inputRef.current;
+    const controller = controllerRef?.current;
+
+    if (target && controller && target.textContent) {
+      const html = isMarkdownEnabled
+        ? domToMarkdown(target)
+        : trimCustomHtml(
+            domToMatrixCustomHTML(target, {
+              allowMarkdown: true,
+            })
+          );
+      controller.setContent(html);
+      focusEndOfContent(target);
+    }
+
+    setIsMarkdownEnabled(!isMarkdownEnabled);
+    rerender();
+  };
 
   return (
     <Box className={css.EditorToolbarBase}>
@@ -310,21 +341,21 @@ export function EditorToolbar({ inputRef, onFormat }: EditorToolbarProps) {
               tooltip={<ToolbarTooltip text="Bold" keybind={KeybindAction.FormatBold} />}
               active={isFormatActive('bold')}
               onClick={() => applyFormat(() => toggleExecFormat('bold'))}
-              disabled={insideCode}
+              disabled={!isMarkdownEnabled || isInsideCodeBlock}
             />
             <InlineButton
               icon={Icons.Italic}
               tooltip={<ToolbarTooltip text="Italic" keybind={KeybindAction.FormatItalic} />}
               active={isFormatActive('italic')}
               onClick={() => applyFormat(() => toggleExecFormat('italic'))}
-              disabled={insideCode}
+              disabled={!isMarkdownEnabled || isInsideCodeBlock}
             />
             <InlineButton
               icon={Icons.Underline}
               tooltip={<ToolbarTooltip text="Underline" keybind={KeybindAction.FormatUnderline} />}
               active={isFormatActive('underline')}
               onClick={() => applyFormat(() => toggleExecFormat('underline'))}
-              disabled={insideCode}
+              disabled={!isMarkdownEnabled || isInsideCodeBlock}
             />
             <InlineButton
               icon={Icons.Strike}
@@ -333,23 +364,23 @@ export function EditorToolbar({ inputRef, onFormat }: EditorToolbarProps) {
               }
               active={isFormatActive('strikeThrough')}
               onClick={() => applyFormat(() => toggleExecFormat('strikeThrough'))}
-              disabled={insideCode}
+              disabled={!isMarkdownEnabled || isInsideCodeBlock}
             />
             <InlineButton
               icon={Icons.Code}
               tooltip={
                 <ToolbarTooltip text="Inline Code" keybind={KeybindAction.FormatInlineCode} />
               }
-              active={el ? isCodeActive(el) : false}
+              active={inputElement ? isCodeActive(inputElement) : false}
               onClick={() => applyFormat(toggleInlineCode)}
-              disabled={insideCode}
+              disabled={!isMarkdownEnabled || isInsideCodeBlock}
             />
             <InlineButton
               icon={Icons.EyeBlind}
               tooltip={<ToolbarTooltip text="Spoiler" keybind={KeybindAction.FormatSpoiler} />}
-              active={el ? isSpoilerActive(el) : false}
+              active={inputElement ? isSpoilerActive(inputElement) : false}
               onClick={() => applyFormat(toggleSpoiler)}
-              disabled={insideCode}
+              disabled={!isMarkdownEnabled || isInsideCodeBlock}
             />
           </Box>
           <Line variant="SurfaceVariant" direction="Vertical" style={{ height: toRem(12) }} />
@@ -359,64 +390,43 @@ export function EditorToolbar({ inputRef, onFormat }: EditorToolbarProps) {
               tooltip={
                 <ToolbarTooltip text="Block Quote" keybind={KeybindAction.FormatBlockquote} />
               }
-              active={el ? isBlockFormatActive(el, 'blockquote') : false}
+              active={inputElement ? isBlockFormatActive(inputElement, 'blockquote') : false}
               onClick={() => applyFormat((target) => toggleBlockFormat(target, 'blockquote'))}
+              disabled={!isMarkdownEnabled}
             />
             <BlockButton
               icon={Icons.BlockCode}
               tooltip={<ToolbarTooltip text="Block Code" keybind={KeybindAction.FormatCodeBlock} />}
-              active={el ? isBlockFormatActive(el, 'pre') : false}
+              active={inputElement ? isBlockFormatActive(inputElement, 'pre') : false}
               onClick={() => applyFormat(toggleCodeBlock)}
+              disabled={!isMarkdownEnabled}
             />
             <BlockButton
               icon={Icons.OrderList}
               tooltip={
                 <ToolbarTooltip text="Ordered List" keybind={KeybindAction.FormatOrderedList} />
               }
-              active={el ? isBlockFormatActive(el, 'ol') : false}
+              active={inputElement ? isBlockFormatActive(inputElement, 'ol') : false}
               onClick={() => applyFormat(() => toggleExecFormat('insertOrderedList'))}
+              disabled={!isMarkdownEnabled}
+              testId="editor-toolbar-ordered-list"
             />
             <BlockButton
               icon={Icons.UnorderList}
               tooltip={
                 <ToolbarTooltip text="Unordered List" keybind={KeybindAction.FormatUnorderedList} />
               }
-              active={el ? isBlockFormatActive(el, 'ul') : false}
+              active={inputElement ? isBlockFormatActive(inputElement, 'ul') : false}
               onClick={() => applyFormat(() => toggleExecFormat('insertUnorderedList'))}
+              disabled={!isMarkdownEnabled}
             />
-            <HeadingButton inputRef={inputRef} onFormat={rerender} />
+            <HeadingButton inputRef={inputRef} onFormat={rerender} disabled={!isMarkdownEnabled} />
           </Box>
-          {el && isExitableBlock(el) && (
-            <>
-              <Line variant="SurfaceVariant" direction="Vertical" style={{ height: toRem(12) }} />
-              <Box shrink="No" gap="100">
-                <TooltipProvider
-                  tooltip={
-                    <ToolbarTooltip text="Exit Formatting" shortCode={`Esc, ${exitBlockKey}`} />
-                  }
-                >
-                  {(triggerRef) => (
-                    <IconButton
-                      ref={triggerRef}
-                      variant="SurfaceVariant"
-                      onMouseDown={preventFocusLoss}
-                      onTouchStart={preventFocusLoss}
-                      onClick={() => applyFormat(exitBlock)}
-                      size="400"
-                      radii="300"
-                    >
-                      <Text size="B400">{`Exit ${KeySymbol.Hyper}`}</Text>
-                    </IconButton>
-                  )}
-                </TooltipProvider>
-              </Box>
-            </>
-          )}
           <Box className={css.MarkdownBtnBox} shrink="No" grow="Yes" justifyContent="End">
             <TooltipProvider
               align="End"
               tooltip={
-                <ToolbarTooltip text={isMarkdown ? 'Disable Markdown' : 'Enable Markdown'} />
+                <ToolbarTooltip text={isMarkdownEnabled ? 'Disable Markdown' : 'Enable Markdown'} />
               }
             >
               {(triggerRef) => (
@@ -425,12 +435,16 @@ export function EditorToolbar({ inputRef, onFormat }: EditorToolbarProps) {
                   variant="SurfaceVariant"
                   onMouseDown={preventFocusLoss}
                   onTouchStart={preventFocusLoss}
-                  onClick={() => setIsMarkdown(!isMarkdown)}
-                  aria-pressed={isMarkdown}
-                  size="300"
+                  onClick={toggleMarkdown}
+                  aria-pressed={isMarkdownEnabled}
+                  size="400"
                   radii="300"
                 >
-                  <Icon size="200" src={Icons.Markdown} filled={isMarkdown} />
+                  <Icon
+                    className={isMarkdownEnabled ? undefined : css.MarkdownIconInactive}
+                    size="200"
+                    src={Icons.Markdown}
+                  />
                 </IconButton>
               )}
             </TooltipProvider>

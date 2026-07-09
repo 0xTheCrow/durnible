@@ -78,10 +78,20 @@ function EnterForNewlineSetting() {
   );
 }
 function MarkdownSetting() {
-  const [value, setValue] = useSetting(settingsAtom, 'isMarkdown');
+  const [value, setValue] = useSetting(settingsAtom, 'isMarkdownEnabled');
   return (
     <SettingTile
       title="Markdown Formatting"
+      after={<Switch variant="Primary" value={value} onChange={setValue} />}
+    />
+  );
+}
+function EditorToolbarGestureSetting() {
+  const [value, setValue] = useSetting(settingsAtom, 'isEditorToolbarGestureRequired');
+  return (
+    <SettingTile
+      title="Aa Formatting Toolbar Long Press"
+      description="Require a long press or double tap on the Aa button to open the formatting toolbar. Touch input only."
       after={<Switch variant="Primary" value={value} onChange={setValue} />}
     />
   );
@@ -409,6 +419,26 @@ export const settingsSearchData: SearchEntry[] = [
     pageName: 'General',
     sectionName: 'Editor',
     Render: MarkdownSetting,
+  },
+  {
+    id: 'editor-toolbar-gesture',
+    title: 'Aa Formatting Toolbar Long Press',
+    description:
+      'Require a long press or double tap on the Aa button to open the formatting toolbar. Touch input only.',
+    keywords: [
+      'aa',
+      'toolbar',
+      'formatting',
+      'long press',
+      'double tap',
+      'gesture',
+      'touch',
+      'editor',
+    ],
+    page: SettingsPages.GeneralPage,
+    pageName: 'General',
+    sectionName: 'Editor',
+    Render: EditorToolbarGestureSetting,
   },
   {
     id: 'hide-activity',

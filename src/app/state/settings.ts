@@ -17,8 +17,9 @@ export interface Settings {
   lightThemeId?: string;
   darkThemeId?: string;
   monochromeMode?: boolean;
-  isMarkdown: boolean;
+  isMarkdownEnabled: boolean;
   editorToolbar: boolean;
+  isEditorToolbarGestureRequired: boolean;
   twitterEmoji: boolean;
   emojiSearchAutoFocusMobile: boolean;
   emojiSearchAutoFocusDesktop: boolean;
@@ -74,8 +75,9 @@ const defaultSettings: Settings = {
   lightThemeId: undefined,
   darkThemeId: undefined,
   monochromeMode: false,
-  isMarkdown: true,
+  isMarkdownEnabled: true,
   editorToolbar: false,
+  isEditorToolbarGestureRequired: false,
   twitterEmoji: false,
   emojiSearchAutoFocusMobile: false,
   emojiSearchAutoFocusDesktop: true,

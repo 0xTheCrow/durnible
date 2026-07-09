@@ -46,6 +46,7 @@ import {
   isSubmitEnterHotkey,
 } from '../../../components/editor';
 import { EmojiBoardWrapper, EmojiBoardTab } from '../../../components/emoji-board';
+import { ToolbarToggleButton } from './ToolbarToggleButton';
 import type { GifItem } from '../../../utils/gifServer';
 import { fetchGifBlob } from '../../../utils/gifServer';
 import type { UploadContent } from '../../../utils/matrix';
@@ -125,7 +126,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     const useAuthentication = useMediaAuthentication();
     const [enterForNewline] = useSetting(settingsAtom, 'enterForNewline');
     const keybinds = useKeybinds();
-    const [isMarkdown] = useSetting(settingsAtom, 'isMarkdown');
+    const [isMarkdownEnabled] = useSetting(settingsAtom, 'isMarkdownEnabled');
     const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
     const [legacyUsernameColor] = useSetting(settingsAtom, 'legacyUsernameColor');
     const direct = useIsDirectRoom();
@@ -245,11 +246,11 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     );
 
     useEffect(() => {
-      const el = editorInputRef.current?.el;
-      if (el && editorDraft) {
-        restoreEditorDraft(el, editorDraft);
-        setHasEditorContent(!isEditorEmpty(el));
-        latestDraftRef.current = isEditorEmpty(el) ? '' : el.innerHTML;
+      const inputElement = editorInputRef.current?.inputElement;
+      if (inputElement && editorDraft) {
+        restoreEditorDraft(inputElement, editorDraft);
+        setHasEditorContent(!isEditorEmpty(inputElement));
+        latestDraftRef.current = isEditorEmpty(inputElement) ? '' : inputElement.innerHTML;
       }
     }, [editorDraft, editorInputRef]);
 
@@ -380,21 +381,19 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     };
 
     const submit = () => {
-      const el = editorInputRef.current?.el;
-      if (!el) return;
+      const inputElement = editorInputRef.current?.inputElement;
+      if (!inputElement) return;
 
       const shortcodeMap = buildShortcodeMap(imagePacks, unicodeEmojis);
-      replaceShortcodesInDom(el, shortcodeMap, mx, useAuthentication);
+      replaceShortcodesInDom(inputElement, shortcodeMap, mx, useAuthentication);
 
-      let plainText = domToPlainText(el).trim();
+      let plainText = domToPlainText(inputElement).trim();
       let customHtml = trimCustomHtml(
-        domToMatrixCustomHTML(el, {
-          allowTextFormatting: true,
-          allowBlockMarkdown: isMarkdown,
-          allowInlineMarkdown: isMarkdown,
+        domToMatrixCustomHTML(inputElement, {
+          allowMarkdown: isMarkdownEnabled,
         })
       );
-      const commandName = getCommandFromDom(el);
+      const commandName = getCommandFromDom(inputElement);
       let msgType = MsgType.Text;
 
       if (commandName) {
@@ -419,8 +418,8 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
         if (commandContent) {
           commandContent.exe(plainText);
         }
-        el.textContent = '';
-        el.dispatchEvent(new Event('input', { bubbles: true }));
+        inputElement.textContent = '';
+        inputElement.dispatchEvent(new Event('input', { bubbles: true }));
         setHasEditorContent(false);
         sendTypingStatus(false);
         return;
@@ -432,7 +431,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
 
       if (plainText !== '') {
         const body = plainText;
-        const mentionData = getMentionsFromDom(el, mx);
+        const mentionData = getMentionsFromDom(inputElement, mx);
         const formattedBody = customHtml;
 
         const content: IContent = {
@@ -477,20 +476,20 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
         });
       }
 
-      el.textContent = '';
-      el.dispatchEvent(new Event('input', { bubbles: true }));
+      inputElement.textContent = '';
+      inputElement.dispatchEvent(new Event('input', { bubbles: true }));
       setHasEditorContent(false);
       setReplyDraft(undefined);
       sendTypingStatus(false);
     };
 
     const handleKeyDown: KeyboardEventHandler = (evt) => {
-      const el = editorInputRef.current?.el;
-      if (isKeyHotkey('shift+enter', evt) && el && isInsideList(el)) {
+      const inputElement = editorInputRef.current?.inputElement;
+      if (isKeyHotkey('shift+enter', evt) && inputElement && isInsideList(inputElement)) {
         evt.preventDefault();
         evt.stopPropagation();
-        handleListEnter(el);
-        el.dispatchEvent(new Event('input', { bubbles: true }));
+        handleListEnter(inputElement);
+        inputElement.dispatchEvent(new Event('input', { bubbles: true }));
         return;
       }
       if (isSubmitEnterHotkey(evt, enterForNewline, keybinds) && !isComposing(evt)) {
@@ -510,16 +509,16 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     };
 
     const handleEditorChange = useCallback(() => {
-      const el = editorInputRef.current?.el;
-      const empty = el ? isEditorEmpty(el) : true;
+      const inputElement = editorInputRef.current?.inputElement;
+      const empty = inputElement ? isEditorEmpty(inputElement) : true;
       setHasEditorContent(!empty);
-      latestDraftRef.current = el && !empty ? el.innerHTML : '';
+      latestDraftRef.current = inputElement && !empty ? inputElement.innerHTML : '';
     }, [editorInputRef]);
 
     const editorAutocomplete = useEditorAutocomplete({
       editorInputRef: {
         get current() {
-          return editorInputRef.current?.el ?? null;
+          return editorInputRef.current?.inputElement ?? null;
         },
       },
       mx,
@@ -541,11 +540,11 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
           return;
         }
 
-        const el = evt.currentTarget as HTMLDivElement;
+        const inputElement = evt.currentTarget as HTMLDivElement;
         if (!hideActivity) {
-          sendTypingStatus(!isEditorEmpty(el));
+          sendTypingStatus(!isEditorEmpty(inputElement));
         }
-        setAutocompleteQuery(editorAutocomplete.detectAutocompleteQuery(el));
+        setAutocompleteQuery(editorAutocomplete.detectAutocompleteQuery(inputElement));
       },
       [sendTypingStatus, hideActivity, editorAutocomplete]
     );
@@ -765,16 +764,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
             }
             after={
               <>
-                <IconButton
-                  variant="SurfaceVariant"
-                  size="300"
-                  radii="300"
-                  onMouseDown={(e: React.MouseEvent) => e.preventDefault()}
-                  onTouchStart={(e: React.TouchEvent) => e.preventDefault()}
-                  onClick={() => setToolbar(!toolbar)}
-                >
-                  <Icon src={toolbar ? Icons.AlphabetUnderline : Icons.Alphabet} />
-                </IconButton>
+                <ToolbarToggleButton toolbar={toolbar} onToggle={() => setToolbar(!toolbar)} />
                 <EmojiBoardWrapper
                   offset={16}
                   alignOffset={mobileOrTablet() ? 0 : -44}
@@ -831,9 +821,10 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
                   <EditorToolbar
                     inputRef={{
                       get current() {
-                        return editorInputRef.current?.el ?? null;
+                        return editorInputRef.current?.inputElement ?? null;
                       },
                     }}
+                    controllerRef={editorInputRef}
                   />
                 </div>
               )

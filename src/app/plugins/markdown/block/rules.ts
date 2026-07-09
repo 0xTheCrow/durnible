@@ -11,13 +11,24 @@ export const HeadingRule: BlockMDRule = {
 };
 
 const CODEBLOCK_MD_1 = '```';
-const CODEBLOCK_REG_1 = /^`{3}(\S*)\n((?:.*\n)+?)`{3} *(?!.)\n?/m;
+const CODEBLOCK_TRAILING_NEWLINE = /\n$/;
+const CODEBLOCK_REG_1 = /^`{3} *(\S*) *\n((?:.*\n)+?)`{3} *(?!.)\n?/m;
 export const CodeBlockRule: BlockMDRule = {
   match: (text) => text.match(CODEBLOCK_REG_1),
   html: (match) => {
     const [, g1, g2] = match;
     const classNameAtt = g1 ? ` class="language-${g1}"` : '';
-    return `<pre data-md="${CODEBLOCK_MD_1}"><code${classNameAtt}>${g2}</code></pre>`;
+    const code = g2.replace(CODEBLOCK_TRAILING_NEWLINE, '');
+    return `<pre data-md="${CODEBLOCK_MD_1}"><code${classNameAtt}>${code}</code></pre>`;
+  },
+};
+
+const CODEBLOCK_REG_2 = /^`{3} ?(.+?) ?`{3} *(?!.)\n?/m;
+export const SingleLineCodeBlockRule: BlockMDRule = {
+  match: (text) => text.match(CODEBLOCK_REG_2),
+  html: (match) => {
+    const [, g1] = match;
+    return `<pre data-md="${CODEBLOCK_MD_1}"><code>${g1}</code></pre>`;
   },
 };
 
@@ -35,20 +46,19 @@ export const BlockQuoteRule: BlockMDRule = {
       .split('\n')
       .map((lineText) => {
         const line = lineText.replace(QUOTE_LINE_PREFIX, '');
-        if (parseInline) return `${parseInline(line)}<br/>`;
-        return `${line}<br/>`;
+        return parseInline ? parseInline(line) : line;
       })
-      .join('');
+      .join('<br/>');
     return `<blockquote data-md="${BLOCKQUOTE_MD_1}">${lines}</blockquote>`;
   },
 };
 
-const ORDERED_LIST_MD_1 = '-';
-const O_LIST_ITEM_PREFIX = /^(-|\d+\.|[a-zA-Z]\.) */;
+const ORDERED_LIST_MD_1 = '1';
+const O_LIST_ITEM_PREFIX = /^(\d+\.|[a-zA-Z]\.) */;
 const O_LIST_START = /^(\d+)\./;
 const O_LIST_TYPE = /^([aAiI])\./;
 const O_LIST_TRAILING_NEWLINE = /\n$/;
-const ORDERED_LIST_REG_1 = /(^(?:-|\d+\.|[a-zA-Z]\.) +.+\n?)+/m;
+const ORDERED_LIST_REG_1 = /(^(?:\d+\.|[a-zA-Z]\.) +.+\n?)+/m;
 export const OrderedListRule: BlockMDRule = {
   match: (text) => text.match(ORDERED_LIST_REG_1),
   html: (match, parseInline) => {
@@ -73,14 +83,15 @@ export const OrderedListRule: BlockMDRule = {
   },
 };
 
-const UNORDERED_LIST_MD_1 = '*';
-const U_LIST_ITEM_PREFIX = /^\* */;
+const U_LIST_ITEM_PREFIX = /^[*-] */;
 const U_LIST_TRAILING_NEWLINE = /\n$/;
-const UNORDERED_LIST_REG_1 = /(^\* +.+\n?)+/m;
+const U_LIST_BULLET = /^([*-])/;
+const UNORDERED_LIST_REG_1 = /(^[*-] +.+\n?)+/m;
 export const UnorderedListRule: BlockMDRule = {
   match: (text) => text.match(UNORDERED_LIST_REG_1),
   html: (match, parseInline) => {
     const [listText] = match;
+    const [, bullet] = listText.match(U_LIST_BULLET) ?? [];
 
     const lines = listText
       .replace(U_LIST_TRAILING_NEWLINE, '')
@@ -92,7 +103,7 @@ export const UnorderedListRule: BlockMDRule = {
       })
       .join('');
 
-    return `<ul data-md="${UNORDERED_LIST_MD_1}">${lines}</ul>`;
+    return `<ul data-md="${bullet}">${lines}</ul>`;
   },
 };
 

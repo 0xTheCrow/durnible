@@ -54,12 +54,12 @@ export const MessageEditor = as<'div', MessageEditorProps>(
     const [enterForNewline] = useSetting(settingsAtom, 'enterForNewline');
     const keybinds = useKeybinds();
     const [globalToolbar] = useSetting(settingsAtom, 'editorToolbar');
-    const [isMarkdown] = useSetting(settingsAtom, 'isMarkdown');
+    const [isMarkdownEnabled] = useSetting(settingsAtom, 'isMarkdownEnabled');
     const [toolbar, setToolbar] = useState(globalToolbar);
     const isComposing = useComposingCheck();
     const editorInputRef = useRef<EditorController | null>(null);
-    const editableElRef = useRef<HTMLDivElement | null>(null);
-    editableElRef.current = editorInputRef.current?.el ?? null;
+    const editableElementRef = useRef<HTMLDivElement | null>(null);
+    editableElementRef.current = editorInputRef.current?.inputElement ?? null;
     const stableImagePackRooms = React.useMemo(() => imagePackRooms ?? [], [imagePackRooms]);
     const imagePacks = useRelevantImagePacks(ImageUsage.Emoticon, stableImagePackRooms);
 
@@ -69,7 +69,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
     const editorAutocomplete = useEditorAutocomplete({
       editorInputRef: {
         get current() {
-          return editorInputRef.current?.el ?? null;
+          return editorInputRef.current?.inputElement ?? null;
         },
       },
       mx,
@@ -109,19 +109,17 @@ export const MessageEditor = as<'div', MessageEditorProps>(
 
     const buildEditContent = useCallback((): IContent | undefined => {
       const shortcodeMap = buildShortcodeMap(imagePacks, unicodeEmojis);
-      const el = editorInputRef.current?.el;
-      if (!el) return undefined;
+      const inputElement = editorInputRef.current?.inputElement;
+      if (!inputElement) return undefined;
 
-      replaceShortcodesInDom(el, shortcodeMap, mx, useAuthentication);
-      const plainText = domToPlainText(el).trim();
+      replaceShortcodesInDom(inputElement, shortcodeMap, mx, useAuthentication);
+      const plainText = domToPlainText(inputElement).trim();
       const customHtml = trimCustomHtml(
-        domToMatrixCustomHTML(el, {
-          allowTextFormatting: true,
-          allowBlockMarkdown: isMarkdown,
-          allowInlineMarkdown: isMarkdown,
+        domToMatrixCustomHTML(inputElement, {
+          allowMarkdown: isMarkdownEnabled,
         })
       );
-      const mentionData = getMentionsFromDom(el, mx);
+      const mentionData = getMentionsFromDom(inputElement, mx);
 
       const [prevBody, prevCustomHtml, prevMentions] = getPrevBodyAndFormattedBody();
 
@@ -165,7 +163,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
           rel_type: RelationType.Replace,
         },
       };
-    }, [mx, mEvent, isMarkdown, getPrevBodyAndFormattedBody, imagePacks, useAuthentication]);
+    }, [mx, mEvent, isMarkdownEnabled, getPrevBodyAndFormattedBody, imagePacks, useAuthentication]);
 
     const [saveState, save] = useAsyncCallback(
       useCallback(async () => {
@@ -183,12 +181,12 @@ export const MessageEditor = as<'div', MessageEditorProps>(
 
     const handleKeyDown: KeyboardEventHandler = useCallback(
       (evt) => {
-        const el = editorInputRef.current?.el;
-        if (isKeyHotkey('shift+enter', evt) && el && isInsideList(el)) {
+        const inputElement = editorInputRef.current?.inputElement;
+        if (isKeyHotkey('shift+enter', evt) && inputElement && isInsideList(inputElement)) {
           evt.preventDefault();
           evt.stopPropagation();
-          handleListEnter(el);
-          el.dispatchEvent(new Event('input', { bubbles: true }));
+          handleListEnter(inputElement);
+          inputElement.dispatchEvent(new Event('input', { bubbles: true }));
           return;
         }
         if (isSubmitEnterHotkey(evt, enterForNewline, keybinds) && !isComposing(evt)) {
@@ -211,8 +209,8 @@ export const MessageEditor = as<'div', MessageEditorProps>(
           evt.preventDefault();
           return;
         }
-        const el = evt.currentTarget as HTMLDivElement;
-        setAutocompleteQuery(editorAutocomplete.detectAutocompleteQuery(el));
+        const inputElement = evt.currentTarget as HTMLDivElement;
+        setAutocompleteQuery(editorAutocomplete.detectAutocompleteQuery(inputElement));
       },
       [editorAutocomplete]
     );
@@ -242,11 +240,11 @@ export const MessageEditor = as<'div', MessageEditorProps>(
         typeof customHtml === 'string'
           ? customHtml
           : sanitizeText(plainBody).replace(/\n/g, '<br>');
-      controller.setContent(html, { convertListsToMarkdown: isMarkdown });
-      const el = controller.el;
-      if (el) {
-        el.focus();
-        let target: Node = el;
+      controller.setContent(html, { convertListsToMarkdown: isMarkdownEnabled });
+      const inputElement = controller.inputElement;
+      if (inputElement) {
+        inputElement.focus();
+        let target: Node = inputElement;
         while (target.lastChild) {
           target = target.lastChild;
         }
@@ -261,7 +259,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
         sel?.removeAllRanges();
         sel?.addRange(range);
       }
-    }, [getPrevBodyAndFormattedBody, isMarkdown]);
+    }, [getPrevBodyAndFormattedBody, isMarkdownEnabled]);
 
     useEffect(() => {
       if (saveState.status === AsyncStatus.Success) {
@@ -377,9 +375,10 @@ export const MessageEditor = as<'div', MessageEditorProps>(
                   <EditorToolbar
                     inputRef={{
                       get current() {
-                        return editorInputRef.current?.el ?? null;
+                        return editorInputRef.current?.inputElement ?? null;
                       },
                     }}
+                    controllerRef={editorInputRef}
                   />
                 </div>
               )}

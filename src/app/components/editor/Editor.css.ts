@@ -132,3 +132,7 @@ export const EditorToolbar = style({
 export const MarkdownBtnBox = style({
   paddingRight: config.space.S100,
 });
+
+export const MarkdownIconInactive = style({
+  opacity: config.opacity.Placeholder,
+});
