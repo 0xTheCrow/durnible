@@ -56,8 +56,8 @@ function Harness({
 }
 
 function getVisibility(container: HTMLElement): string | null {
-  const el = container.querySelector('[data-testid="jump-to-latest-overlay"]');
-  return el?.getAttribute('data-visible') ?? null;
+  const overlayElement = container.querySelector('[data-testid="jump-to-latest-overlay"]');
+  return overlayElement?.getAttribute('data-visible') ?? null;
 }
 
 describe('JumpToLatestButton', () => {
@@ -79,14 +79,16 @@ describe('JumpToLatestButton', () => {
   it('stays hidden when the user is at the bottom and the last message is visible', () => {
     const room = createEventEmitterRoom('!test:example.com');
     const { container } = render(<Harness room={room} />);
-    const scrollEl = container.querySelector('[data-testid="timeline-scroll"]') as HTMLDivElement;
-    const lastEl = container.querySelector('[data-testid="last-msg"]') as HTMLElement;
+    const scrollElement = container.querySelector(
+      '[data-testid="timeline-scroll"]'
+    ) as HTMLDivElement;
+    const lastItemElement = container.querySelector('[data-testid="last-msg"]') as HTMLElement;
     const sentinel = container.querySelector('[data-testid="bottom-sentinel"]') as HTMLElement;
-    stubScrollGeometry(scrollEl, { scrollHeight: 500, offsetHeight: 400 });
+    stubScrollGeometry(scrollElement, { scrollHeight: 500, offsetHeight: 400 });
 
     act(() => {
       findObserverOf(sentinel)?.trigger(true);
-      findObserverOf(lastEl)?.trigger(true);
+      findObserverOf(lastItemElement)?.trigger(true);
     });
 
     expect(getVisibility(container)).toBe('false');
@@ -95,15 +97,17 @@ describe('JumpToLatestButton', () => {
   it('stays hidden when a reaction arrives while the user is at the bottom, even if observer state transiently flips during the smooth scroll', () => {
     const room = createEventEmitterRoom('!test:example.com');
     const { container } = render(<Harness room={room} />);
-    const scrollEl = container.querySelector('[data-testid="timeline-scroll"]') as HTMLDivElement;
-    const lastEl = container.querySelector('[data-testid="last-msg"]') as HTMLElement;
+    const scrollElement = container.querySelector(
+      '[data-testid="timeline-scroll"]'
+    ) as HTMLDivElement;
+    const lastItemElement = container.querySelector('[data-testid="last-msg"]') as HTMLElement;
     const sentinel = container.querySelector('[data-testid="bottom-sentinel"]') as HTMLElement;
-    const geometry = stubScrollGeometry(scrollEl, { scrollHeight: 500, offsetHeight: 400 });
+    const geometry = stubScrollGeometry(scrollElement, { scrollHeight: 500, offsetHeight: 400 });
     geometry.setScrollTop(100);
 
     act(() => {
       findObserverOf(sentinel)?.trigger(true);
-      findObserverOf(lastEl)?.trigger(true);
+      findObserverOf(lastItemElement)?.trigger(true);
     });
     expect(getVisibility(container)).toBe('false');
 
@@ -122,15 +126,15 @@ describe('JumpToLatestButton', () => {
     // which observer flips.
     act(() => {
       findObserverOf(sentinel)?.trigger(false);
-      findObserverOf(lastEl)?.trigger(false);
+      findObserverOf(lastItemElement)?.trigger(false);
     });
     expect(getVisibility(container)).toBe('false');
 
     // Scroll settles: browser fires scrollend, observers intersect again.
     act(() => {
-      scrollEl.dispatchEvent(new Event('scrollend'));
+      scrollElement.dispatchEvent(new Event('scrollend'));
       findObserverOf(sentinel)?.trigger(true);
-      findObserverOf(lastEl)?.trigger(true);
+      findObserverOf(lastItemElement)?.trigger(true);
     });
     expect(getVisibility(container)).toBe('false');
   });
@@ -138,14 +142,16 @@ describe('JumpToLatestButton', () => {
   it('becomes visible when the user scrolls up and the last message leaves the viewport', () => {
     const room = createEventEmitterRoom('!test:example.com');
     const { container } = render(<Harness room={room} />);
-    const scrollEl = container.querySelector('[data-testid="timeline-scroll"]') as HTMLDivElement;
-    const lastEl = container.querySelector('[data-testid="last-msg"]') as HTMLElement;
+    const scrollElement = container.querySelector(
+      '[data-testid="timeline-scroll"]'
+    ) as HTMLDivElement;
+    const lastItemElement = container.querySelector('[data-testid="last-msg"]') as HTMLElement;
     const sentinel = container.querySelector('[data-testid="bottom-sentinel"]') as HTMLElement;
-    stubScrollGeometry(scrollEl, { scrollHeight: 1000, offsetHeight: 400 });
+    stubScrollGeometry(scrollElement, { scrollHeight: 1000, offsetHeight: 400 });
 
     act(() => {
       findObserverOf(sentinel)?.trigger(false);
-      findObserverOf(lastEl)?.trigger(false);
+      findObserverOf(lastItemElement)?.trigger(false);
     });
 
     expect(getVisibility(container)).toBe('true');
@@ -154,9 +160,11 @@ describe('JumpToLatestButton', () => {
   it('shows when lastMessageId is null and the user is not at the bottom', () => {
     const room = createEventEmitterRoom('!test:example.com');
     const { container } = render(<Harness room={room} lastMessageId={null} />);
-    const scrollEl = container.querySelector('[data-testid="timeline-scroll"]') as HTMLDivElement;
+    const scrollElement = container.querySelector(
+      '[data-testid="timeline-scroll"]'
+    ) as HTMLDivElement;
     const sentinel = container.querySelector('[data-testid="bottom-sentinel"]') as HTMLElement;
-    stubScrollGeometry(scrollEl, { scrollHeight: 1000, offsetHeight: 400 });
+    stubScrollGeometry(scrollElement, { scrollHeight: 1000, offsetHeight: 400 });
 
     act(() => {
       findObserverOf(sentinel)?.trigger(false);
@@ -168,20 +176,22 @@ describe('JumpToLatestButton', () => {
   it('hides again once the user returns to the bottom', () => {
     const room = createEventEmitterRoom('!test:example.com');
     const { container } = render(<Harness room={room} />);
-    const scrollEl = container.querySelector('[data-testid="timeline-scroll"]') as HTMLDivElement;
-    const lastEl = container.querySelector('[data-testid="last-msg"]') as HTMLElement;
+    const scrollElement = container.querySelector(
+      '[data-testid="timeline-scroll"]'
+    ) as HTMLDivElement;
+    const lastItemElement = container.querySelector('[data-testid="last-msg"]') as HTMLElement;
     const sentinel = container.querySelector('[data-testid="bottom-sentinel"]') as HTMLElement;
-    stubScrollGeometry(scrollEl, { scrollHeight: 1000, offsetHeight: 400 });
+    stubScrollGeometry(scrollElement, { scrollHeight: 1000, offsetHeight: 400 });
 
     act(() => {
       findObserverOf(sentinel)?.trigger(false);
-      findObserverOf(lastEl)?.trigger(false);
+      findObserverOf(lastItemElement)?.trigger(false);
     });
     expect(getVisibility(container)).toBe('true');
 
     act(() => {
       findObserverOf(sentinel)?.trigger(true);
-      findObserverOf(lastEl)?.trigger(true);
+      findObserverOf(lastItemElement)?.trigger(true);
     });
     expect(getVisibility(container)).toBe('false');
   });
@@ -194,10 +204,12 @@ describe('JumpToLatestButton', () => {
   it('rebinds to the new last message after the previous last is filtered out (redaction)', () => {
     const room = createEventEmitterRoom('!test:example.com');
     const { container, rerender } = render(<Harness room={room} />);
-    const scrollEl = container.querySelector('[data-testid="timeline-scroll"]') as HTMLDivElement;
+    const scrollElement = container.querySelector(
+      '[data-testid="timeline-scroll"]'
+    ) as HTMLDivElement;
     const originalLast = container.querySelector('[data-testid="last-msg"]') as HTMLElement;
     const sentinel = container.querySelector('[data-testid="bottom-sentinel"]') as HTMLElement;
-    stubScrollGeometry(scrollEl, { scrollHeight: 500, offsetHeight: 400 });
+    stubScrollGeometry(scrollElement, { scrollHeight: 500, offsetHeight: 400 });
 
     act(() => {
       findObserverOf(sentinel)?.trigger(true);

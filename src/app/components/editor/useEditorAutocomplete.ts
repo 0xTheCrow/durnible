@@ -33,7 +33,9 @@ const findAutocompleteTrigger = (
 };
 
 export type EditorAutocompleteHandlers = {
-  detectAutocompleteQuery: (el: HTMLElement) => AutocompleteQuery<AutocompletePrefix> | undefined;
+  detectAutocompleteQuery: (
+    inputElement: HTMLElement
+  ) => AutocompleteQuery<AutocompletePrefix> | undefined;
   handleMentionSelect: (userId: string, name: string) => void;
   handleRoomMentionSelect: (roomAliasOrId: string, name: string) => void;
   handleEmoticonSelect: (key: string, shortcode: string) => void;
@@ -93,13 +95,13 @@ export const useEditorAutocomplete = ({
   );
 
   const detectAutocompleteQuery = useCallback(
-    (el: HTMLElement): AutocompleteQuery<AutocompletePrefix> | undefined => {
+    (inputElement: HTMLElement): AutocompleteQuery<AutocompletePrefix> | undefined => {
       const domSel = window.getSelection();
       if (!domSel || domSel.rangeCount === 0) return undefined;
       const domRange = domSel.getRangeAt(0);
       if (
         !domRange.collapsed ||
-        !el.contains(domRange.startContainer) ||
+        !inputElement.contains(domRange.startContainer) ||
         domRange.startContainer.nodeType !== Node.TEXT_NODE
       ) {
         return undefined;

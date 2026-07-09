@@ -36,42 +36,43 @@ export function JumpToLatestButton({
 
   useEffect(() => {
     if (!dismissed) return undefined;
-    const scrollEl = scrollRef.current;
-    if (!scrollEl) return undefined;
+    const scrollElement = scrollRef.current;
+    if (!scrollElement) return undefined;
     const handleScroll = () => {
-      const distanceFromBottom = scrollEl.scrollHeight - scrollEl.scrollTop - scrollEl.clientHeight;
+      const distanceFromBottom =
+        scrollElement.scrollHeight - scrollElement.scrollTop - scrollElement.clientHeight;
       if (distanceFromBottom > SCROLL_AWAY_RESET_PX) {
         setDismissed(false);
       }
     };
-    scrollEl.addEventListener('scroll', handleScroll, { passive: true });
-    return () => scrollEl.removeEventListener('scroll', handleScroll);
+    scrollElement.addEventListener('scroll', handleScroll, { passive: true });
+    return () => scrollElement.removeEventListener('scroll', handleScroll);
   }, [dismissed, scrollRef]);
 
   useEffect(() => {
-    const scrollEl = scrollRef.current;
-    if (!scrollEl || lastMessageId === null) {
+    const scrollElement = scrollRef.current;
+    if (!scrollElement || lastMessageId === null) {
       setLastMsgVisible(false);
       return undefined;
     }
-    const lastEl = scrollEl.querySelector(
+    const lastItemElement = scrollElement.querySelector(
       `[data-message-id="${CSS.escape(lastMessageId)}"]`
     ) as HTMLElement | null;
-    if (!lastEl) {
+    if (!lastItemElement) {
       setLastMsgVisible(false);
       return undefined;
     }
 
     const observer = new IntersectionObserver(
       (entries) => {
-        const entry = entries.find((e) => e.target === lastEl);
+        const entry = entries.find((e) => e.target === lastItemElement);
         if (entry) {
           setLastMsgVisible(entry.isIntersecting);
         }
       },
-      { root: scrollEl }
+      { root: scrollElement }
     );
-    observer.observe(lastEl);
+    observer.observe(lastItemElement);
     return () => observer.disconnect();
   }, [lastMessageId, scrollRef]);
 

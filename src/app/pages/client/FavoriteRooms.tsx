@@ -107,16 +107,16 @@ function DraggableFavoriteItem({ roomId, children }: { roomId: string; children:
   const [dropState, setDropState] = useState<Instruction>();
 
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return undefined;
+    const roomElement = ref.current;
+    if (!roomElement) return undefined;
 
     return combine(
       draggable({
-        element: el,
+        element: roomElement,
         getInitialData: () => ({ roomId }),
       }),
       dropTargetForElements({
-        element: el,
+        element: roomElement,
         canDrop: ({ source }) => source.data.roomId !== roomId,
         getData: ({ input, element }) => {
           const insData = attachInstruction(

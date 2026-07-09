@@ -132,7 +132,7 @@ describe('replaceRangeWithNode', () => {
 
 describe('inline void leading anchor', () => {
   it('keeps a renderable text node before a void inserted at the start of the input', () => {
-    const el = document.createElement('div');
+    const rootElement = document.createElement('div');
     const replacement = createEmoticonNode({
       mx: mockMx,
       useAuthentication: false,
@@ -140,9 +140,9 @@ describe('inline void leading anchor', () => {
       shortcode: 'x',
     });
 
-    insertNodeAtRange(el, null, replacement);
+    insertNodeAtRange(rootElement, null, replacement);
 
-    const first = el.firstChild;
+    const first = rootElement.firstChild;
     expect(first).not.toBeNull();
     expect(first?.nodeType).toBe(Node.TEXT_NODE);
     expect((first as Text).data.length).toBeGreaterThan(0);
@@ -235,45 +235,47 @@ describe('htmlToEditorDom formatting preservation', () => {
 
 describe('isEditorEmpty', () => {
   it('returns true for empty div', () => {
-    const el = document.createElement('div');
-    expect(isEditorEmpty(el)).toBe(true);
+    const rootElement = document.createElement('div');
+    expect(isEditorEmpty(rootElement)).toBe(true);
   });
 
   it('returns false for text content', () => {
-    const el = document.createElement('div');
-    el.textContent = 'hello';
-    expect(isEditorEmpty(el)).toBe(false);
+    const rootElement = document.createElement('div');
+    rootElement.textContent = 'hello';
+    expect(isEditorEmpty(rootElement)).toBe(false);
   });
 
   it('returns true for only zero-width spaces', () => {
-    const el = document.createElement('div');
-    el.textContent = '\u200B\u200B';
-    expect(isEditorEmpty(el)).toBe(true);
+    const rootElement = document.createElement('div');
+    rootElement.textContent = '\u200B\u200B';
+    expect(isEditorEmpty(rootElement)).toBe(true);
   });
 
   it('returns true for empty formatting tag left behind', () => {
-    const el = document.createElement('div');
-    el.appendChild(document.createElement('b'));
-    expect(isEditorEmpty(el)).toBe(true);
+    const rootElement = document.createElement('div');
+    rootElement.appendChild(document.createElement('b'));
+    expect(isEditorEmpty(rootElement)).toBe(true);
   });
 
   it('returns false for list with no text', () => {
-    const el = document.createElement('div');
+    const rootElement = document.createElement('div');
     const ol = document.createElement('ol');
     ol.appendChild(document.createElement('li'));
-    el.appendChild(ol);
-    expect(isEditorEmpty(el)).toBe(false);
+    rootElement.appendChild(ol);
+    expect(isEditorEmpty(rootElement)).toBe(false);
   });
 
   it('returns false for void mention element', () => {
-    const el = document.createElement('div');
-    el.appendChild(createMentionNode({ id: '@alice:server.com', name: 'Alice', highlight: false }));
-    expect(isEditorEmpty(el)).toBe(false);
+    const rootElement = document.createElement('div');
+    rootElement.appendChild(
+      createMentionNode({ id: '@alice:server.com', name: 'Alice', highlight: false })
+    );
+    expect(isEditorEmpty(rootElement)).toBe(false);
   });
 
   it('returns false for void emoticon element', () => {
-    const el = document.createElement('div');
-    el.appendChild(
+    const rootElement = document.createElement('div');
+    rootElement.appendChild(
       createEmoticonNode({
         mx: mockMx,
         useAuthentication: false,
@@ -281,13 +283,13 @@ describe('isEditorEmpty', () => {
         shortcode: 'grinning',
       })
     );
-    expect(isEditorEmpty(el)).toBe(false);
+    expect(isEditorEmpty(rootElement)).toBe(false);
   });
 
   it('returns true for only whitespace', () => {
-    const el = document.createElement('div');
-    el.textContent = '   \n  ';
-    expect(isEditorEmpty(el)).toBe(true);
+    const rootElement = document.createElement('div');
+    rootElement.textContent = '   \n  ';
+    expect(isEditorEmpty(rootElement)).toBe(true);
   });
 });
 
@@ -296,33 +298,33 @@ describe('normalizeEditorRoot', () => {
     ['pure inline root', 'hello'],
     ['all-block root', '<div>a</div><div>b</div>'],
   ])('leaves a uniform root untouched (%s)', (_label, html) => {
-    const el = document.createElement('div');
-    el.innerHTML = html;
-    const before = el.innerHTML;
+    const rootElement = document.createElement('div');
+    rootElement.innerHTML = html;
+    const before = rootElement.innerHTML;
 
-    expect(normalizeEditorRoot(el)).toBe(false);
-    expect(el.innerHTML).toBe(before);
+    expect(normalizeEditorRoot(rootElement)).toBe(false);
+    expect(rootElement.innerHTML).toBe(before);
   });
 
   it('wraps an inline node sandwiched between blocks so lines do not join', () => {
-    const el = document.createElement('div');
-    el.append(blockDiv('a'), document.createTextNode('b'), blockDiv('c'));
+    const rootElement = document.createElement('div');
+    rootElement.append(blockDiv('a'), document.createTextNode('b'), blockDiv('c'));
 
-    expect(normalizeEditorRoot(el)).toBe(true);
-    expect(domToPlainText(el)).toBe('a\nb\nc\n');
+    expect(normalizeEditorRoot(rootElement)).toBe(true);
+    expect(domToPlainText(rootElement)).toBe('a\nb\nc\n');
   });
 
   it('wraps a leading inline node before a block', () => {
-    const el = document.createElement('div');
-    el.append(document.createTextNode('a'), blockDiv('b'));
+    const rootElement = document.createElement('div');
+    rootElement.append(document.createTextNode('a'), blockDiv('b'));
 
-    expect(normalizeEditorRoot(el)).toBe(true);
-    expect(domToPlainText(el)).toBe('a\nb\n');
+    expect(normalizeEditorRoot(rootElement)).toBe(true);
+    expect(domToPlainText(rootElement)).toBe('a\nb\n');
   });
 
   it('groups a consecutive inline run into a single block', () => {
-    const el = document.createElement('div');
-    el.append(
+    const rootElement = document.createElement('div');
+    rootElement.append(
       blockDiv('a'),
       document.createTextNode('b'),
       document.createElement('br'),
@@ -330,17 +332,17 @@ describe('normalizeEditorRoot', () => {
       blockDiv('d')
     );
 
-    expect(normalizeEditorRoot(el)).toBe(true);
+    expect(normalizeEditorRoot(rootElement)).toBe(true);
     // The b/br/c run becomes one block (b\nc), not three (which would add a
     // blank line from the lone <br>).
-    expect(domToPlainText(el)).toBe('a\nb\nc\nd\n');
+    expect(domToPlainText(rootElement)).toBe('a\nb\nc\nd\n');
   });
 
   it('preserves the collapsed caret across the reparenting', () => {
-    const el = document.createElement('div');
+    const rootElement = document.createElement('div');
     const inlineText = document.createTextNode('bee');
-    el.append(blockDiv('a'), inlineText, blockDiv('c'));
-    document.body.appendChild(el);
+    rootElement.append(blockDiv('a'), inlineText, blockDiv('c'));
+    document.body.appendChild(rootElement);
 
     const selection = window.getSelection();
     const range = document.createRange();
@@ -349,11 +351,11 @@ describe('normalizeEditorRoot', () => {
     selection?.removeAllRanges();
     selection?.addRange(range);
 
-    expect(normalizeEditorRoot(el)).toBe(true);
+    expect(normalizeEditorRoot(rootElement)).toBe(true);
     expect(selection?.anchorNode).toBe(inlineText);
     expect(selection?.anchorOffset).toBe(2);
 
-    el.remove();
+    rootElement.remove();
   });
 });
 

@@ -117,16 +117,16 @@ export function DraggableGroupIcon({ active, id, label, icon, onClick }: Draggab
   const [dropState, setDropState] = useState<Instruction>();
 
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return undefined;
+    const sidebarElement = ref.current;
+    if (!sidebarElement) return undefined;
 
     return combine(
       draggable({
-        element: el,
+        element: sidebarElement,
         getInitialData: () => ({ packId: id }),
       }),
       dropTargetForElements({
-        element: el,
+        element: sidebarElement,
         canDrop: ({ source }) => source.data.packId !== id,
         getData: ({ input, element }) => {
           const insData = attachInstruction(
@@ -208,16 +208,16 @@ export function DraggableImageGroupIcon({
   const [dropState, setDropState] = useState<Instruction>();
 
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return undefined;
+    const sidebarElement = ref.current;
+    if (!sidebarElement) return undefined;
 
     return combine(
       draggable({
-        element: el,
+        element: sidebarElement,
         getInitialData: () => ({ packId: id }),
       }),
       dropTargetForElements({
-        element: el,
+        element: sidebarElement,
         canDrop: ({ source }) => source.data.packId !== id,
         getData: ({ input, element }) => {
           const insData = attachInstruction(

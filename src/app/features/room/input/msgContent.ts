@@ -56,7 +56,7 @@ export const getImageMsgContent = async (
   mxc: string
 ): Promise<IContent> => {
   const { file, originalFile, encryptionInfo, metadata } = item;
-  const [imgError, imgEl] = await to(loadImageElement(getImageFileUrl(originalFile)));
+  const [imgError, imageElement] = await to(loadImageElement(getImageFileUrl(originalFile)));
   if (imgError) console.warn(imgError);
 
   const content: IContent = {
@@ -65,11 +65,15 @@ export const getImageMsgContent = async (
     body: file.name,
     [MATRIX_SPOILER_PROPERTY_NAME]: metadata.markedAsSpoiler,
   };
-  if (imgEl) {
-    const blurHash = encodeBlurHash(imgEl, 512, scaleYDimension(imgEl.width, 512, imgEl.height));
+  if (imageElement) {
+    const blurHash = encodeBlurHash(
+      imageElement,
+      512,
+      scaleYDimension(imageElement.width, 512, imageElement.height)
+    );
 
     content.info = {
-      ...getImageInfo(imgEl, file),
+      ...getImageInfo(imageElement, file),
       [MATRIX_BLUR_HASH_PROPERTY_NAME]: blurHash,
     };
   }
@@ -91,7 +95,7 @@ export const getVideoMsgContent = async (
 ): Promise<IContent> => {
   const { file, originalFile, encryptionInfo, metadata } = item;
 
-  const [videoError, videoEl] = await to(loadVideoElement(getVideoFileUrl(originalFile)));
+  const [videoError, videoElement] = await to(loadVideoElement(getVideoFileUrl(originalFile)));
   if (videoError) console.warn(videoError);
 
   const content: IContent = {
@@ -100,25 +104,25 @@ export const getVideoMsgContent = async (
     body: file.name,
     [MATRIX_SPOILER_PROPERTY_NAME]: metadata.markedAsSpoiler,
   };
-  if (videoEl) {
+  if (videoElement) {
     const [thumbError, thumbContent] = await to(
       generateThumbnailContent(
         mx,
-        videoEl,
-        getThumbnailDimensions(videoEl.videoWidth, videoEl.videoHeight),
+        videoElement,
+        getThumbnailDimensions(videoElement.videoWidth, videoElement.videoHeight),
         !!encryptionInfo
       )
     );
     if (thumbContent && thumbContent.thumbnail_info) {
       thumbContent.thumbnail_info[MATRIX_BLUR_HASH_PROPERTY_NAME] = encodeBlurHash(
-        videoEl,
+        videoElement,
         512,
-        scaleYDimension(videoEl.videoWidth, 512, videoEl.videoHeight)
+        scaleYDimension(videoElement.videoWidth, 512, videoElement.videoHeight)
       );
     }
     if (thumbError) console.warn(thumbError);
     content.info = {
-      ...getVideoInfo(videoEl, file),
+      ...getVideoInfo(videoElement, file),
       ...thumbContent,
     };
   }

@@ -15,27 +15,27 @@ export const useMediaPlay = (
 
   const setPlaying = useCallback(
     (play: boolean) => {
-      const targetEl = getTargetElement();
-      if (!targetEl) return;
-      if (play) targetEl.play();
-      else targetEl.pause();
+      const mediaElement = getTargetElement();
+      if (!mediaElement) return;
+      if (play) mediaElement.play();
+      else mediaElement.pause();
     },
     [getTargetElement]
   );
 
   useEffect(() => {
-    const targetEl = getTargetElement();
+    const mediaElement = getTargetElement();
     const handleChange = () => {
-      if (!targetEl) return;
-      setPlay(targetEl.paused === false);
+      if (!mediaElement) return;
+      setPlay(mediaElement.paused === false);
     };
-    targetEl?.addEventListener('playing', handleChange);
-    targetEl?.addEventListener('play', handleChange);
-    targetEl?.addEventListener('pause', handleChange);
+    mediaElement?.addEventListener('playing', handleChange);
+    mediaElement?.addEventListener('play', handleChange);
+    mediaElement?.addEventListener('pause', handleChange);
     return () => {
-      targetEl?.removeEventListener('playing', handleChange);
-      targetEl?.removeEventListener('play', handleChange);
-      targetEl?.removeEventListener('pause', handleChange);
+      mediaElement?.removeEventListener('playing', handleChange);
+      mediaElement?.removeEventListener('play', handleChange);
+      mediaElement?.removeEventListener('pause', handleChange);
     };
   }, [getTargetElement]);
 

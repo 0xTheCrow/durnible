@@ -58,9 +58,9 @@ describe('EditorController', () => {
     expect(document.activeElement).toBe(editable);
   });
 
-  it('.el exposes the current contenteditable element', () => {
+  it('.inputElement exposes the current contenteditable element', () => {
     const { ref, editable } = renderEditor();
-    expect(ref.current?.el).toBe(editable);
+    expect(ref.current?.inputElement).toBe(editable);
   });
 
   it('insertText appends text when caret has not been placed', () => {

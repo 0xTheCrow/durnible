@@ -126,29 +126,33 @@ const isVoidElement = (node: Node): boolean => {
   return (node as HTMLElement).hasAttribute(NODE_TYPE_ATTR);
 };
 
-export const handleEditorBackspace = (el: HTMLElement, range: Range): boolean => {
+export const handleEditorBackspace = (inputElement: HTMLElement, range: Range): boolean => {
   if (!range.collapsed) return false;
-  const textNode = el.firstChild;
+  const textNode = inputElement.firstChild;
   if (!textNode || textNode.nodeType !== Node.TEXT_NODE) return false;
   if ((textNode as Text).data !== INLINE_VOID_CARET_ANCHOR) return false;
 
   const { startContainer, startOffset } = range;
   const atAnchor =
     (startContainer === textNode && startOffset <= INLINE_VOID_CARET_ANCHOR.length) ||
-    (startContainer === el && startOffset === 0);
+    (startContainer === inputElement && startOffset === 0);
   if (!atAnchor) return false;
 
   const next = textNode.nextSibling;
   if (!next || !isVoidElement(next)) return false;
 
-  el.removeChild(next);
+  inputElement.removeChild(next);
   return true;
 };
 
-export const insertNodeAtRange = (el: HTMLElement, savedRange: Range | null, node: Node): Range => {
+export const insertNodeAtRange = (
+  inputElement: HTMLElement,
+  savedRange: Range | null,
+  node: Node
+): Range => {
   const range = savedRange ? savedRange.cloneRange() : document.createRange();
-  if (!savedRange || !el.contains(range.startContainer)) {
-    range.selectNodeContents(el);
+  if (!savedRange || !inputElement.contains(range.startContainer)) {
+    range.selectNodeContents(inputElement);
     range.collapse(false);
   }
   range.deleteContents();
@@ -280,7 +284,7 @@ const collectTextContent = (nodes: ChildNode[]): string =>
     .join('');
 
 const resolveMentionFromAnchor = (
-  el: Element,
+  anchorElement: Element,
   href: string
 ): {
   id: string;
@@ -289,7 +293,7 @@ const resolveMentionFromAnchor = (
   eventId?: string;
   viaServers?: string[];
 } | null => {
-  const name = collectTextContent(el.children).trim();
+  const name = collectTextContent(anchorElement.children).trim();
   const displayName = name.length > 0 ? name : href;
 
   const roomEvent = parseMatrixToRoomEvent(href);
@@ -503,9 +507,9 @@ const walkHtmlNodes = (
 
     if (PRESERVED_BLOCK_TAGS.has(tag)) {
       if (!isFirstBlockChild && tag !== 'li') emitBlockSeparator(parent);
-      const blockEl = document.createElement(tag);
-      walkHtmlNodes(element.children, blockEl, ctx, true, tag === 'pre');
-      parent.appendChild(blockEl);
+      const blockElement = document.createElement(tag);
+      walkHtmlNodes(element.children, blockElement, ctx, true, tag === 'pre');
+      parent.appendChild(blockElement);
       isFirstBlockChild = false;
       return;
     }
@@ -542,11 +546,11 @@ const NON_EMPTY_TAGS = new Set([
   'H6',
 ]);
 
-export const isEditorEmpty = (el: HTMLElement): boolean => {
-  const text = el.textContent ?? '';
+export const isEditorEmpty = (inputElement: HTMLElement): boolean => {
+  const text = inputElement.textContent ?? '';
   if (stripCaretAnchors(text).trim().length > 0) return false;
-  for (let i = 0; i < el.childNodes.length; i += 1) {
-    const child = el.childNodes[i];
+  for (let i = 0; i < inputElement.childNodes.length; i += 1) {
+    const child = inputElement.childNodes[i];
     if (child.nodeType === Node.ELEMENT_NODE) {
       const tag = (child as HTMLElement).tagName;
       if (NON_EMPTY_TAGS.has(tag)) return false;

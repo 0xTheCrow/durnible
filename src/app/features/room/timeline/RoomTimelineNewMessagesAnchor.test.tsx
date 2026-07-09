@@ -251,22 +251,29 @@ describe('RoomTimeline new-messages divider anchor on initial load', () => {
       <Harness scenario={lotsOfUnread} onRangeChange={onRangeChange} willScrollToReadMarker />
     );
 
-    const scrollEl = container.querySelector<HTMLDivElement>('[data-testid="timeline-scroll"]');
+    const scrollElement = container.querySelector<HTMLDivElement>(
+      '[data-testid="timeline-scroll"]'
+    );
     const divider = container.querySelector<HTMLDivElement>('[data-testid="new-messages-divider"]');
     const frontAnchor = container.querySelector<HTMLDivElement>('[data-testid="front-anchor"]');
-    expect(scrollEl).not.toBeNull();
+    expect(scrollElement).not.toBeNull();
     expect(divider).not.toBeNull();
     expect(frontAnchor).not.toBeNull();
 
     const expectedOffset = Math.round(VIEWPORT_HEIGHT * NEW_MESSAGES_DIVIDER_TOP_OFFSET_FRACTION);
-    const expectedScrollTop = computeAnchorScrollTop(scrollEl!, divider!, 'start', expectedOffset);
-    expect(scrollEl!.scrollTop).toBe(expectedScrollTop);
+    const expectedScrollTop = computeAnchorScrollTop(
+      scrollElement!,
+      divider!,
+      'start',
+      expectedOffset
+    );
+    expect(scrollElement!.scrollTop).toBe(expectedScrollTop);
 
     const dividerTopRelativeToViewport =
-      divider!.getBoundingClientRect().top - scrollEl!.getBoundingClientRect().top;
+      divider!.getBoundingClientRect().top - scrollElement!.getBoundingClientRect().top;
     expect(dividerTopRelativeToViewport).toBeCloseTo(expectedOffset, 0);
 
-    expect(isIntersectingScrollView(scrollEl!, frontAnchor!)).toBe(false);
+    expect(isIntersectingScrollView(scrollElement!, frontAnchor!)).toBe(false);
   });
 
   it('keeps the divider at the configured viewport-fraction offset for a single very-tall unread message', () => {
@@ -276,17 +283,24 @@ describe('RoomTimeline new-messages divider anchor on initial load', () => {
       <Harness scenario={oneLongUnread} onRangeChange={onRangeChange} willScrollToReadMarker />
     );
 
-    const scrollEl = container.querySelector<HTMLDivElement>('[data-testid="timeline-scroll"]');
+    const scrollElement = container.querySelector<HTMLDivElement>(
+      '[data-testid="timeline-scroll"]'
+    );
     const divider = container.querySelector<HTMLDivElement>('[data-testid="new-messages-divider"]');
-    expect(scrollEl).not.toBeNull();
+    expect(scrollElement).not.toBeNull();
     expect(divider).not.toBeNull();
 
     const expectedOffset = Math.round(VIEWPORT_HEIGHT * NEW_MESSAGES_DIVIDER_TOP_OFFSET_FRACTION);
-    const expectedScrollTop = computeAnchorScrollTop(scrollEl!, divider!, 'start', expectedOffset);
-    expect(scrollEl!.scrollTop).toBe(expectedScrollTop);
+    const expectedScrollTop = computeAnchorScrollTop(
+      scrollElement!,
+      divider!,
+      'start',
+      expectedOffset
+    );
+    expect(scrollElement!.scrollTop).toBe(expectedScrollTop);
 
     const dividerTopRelativeToViewport =
-      divider!.getBoundingClientRect().top - scrollEl!.getBoundingClientRect().top;
+      divider!.getBoundingClientRect().top - scrollElement!.getBoundingClientRect().top;
     expect(dividerTopRelativeToViewport).toBeCloseTo(expectedOffset, 0);
   });
 });

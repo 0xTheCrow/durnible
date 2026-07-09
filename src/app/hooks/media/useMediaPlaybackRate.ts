@@ -14,22 +14,22 @@ export const useMediaPlaybackRate = (
 
   const setPlaybackRate = useCallback(
     (playbackRate: number) => {
-      const targetEl = getTargetElement();
-      if (!targetEl) return;
-      targetEl.playbackRate = playbackRate;
+      const mediaElement = getTargetElement();
+      if (!mediaElement) return;
+      mediaElement.playbackRate = playbackRate;
     },
     [getTargetElement]
   );
 
   useEffect(() => {
-    const targetEl = getTargetElement();
+    const mediaElement = getTargetElement();
     const handleChange = () => {
-      if (!targetEl) return;
-      setRate(targetEl.playbackRate);
+      if (!mediaElement) return;
+      setRate(mediaElement.playbackRate);
     };
-    targetEl?.addEventListener('ratechange', handleChange);
+    mediaElement?.addEventListener('ratechange', handleChange);
     return () => {
-      targetEl?.removeEventListener('ratechange', handleChange);
+      mediaElement?.removeEventListener('ratechange', handleChange);
     };
   }, [getTargetElement]);
 

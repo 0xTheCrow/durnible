@@ -315,8 +315,8 @@ export default function ReactPrism({
   const codeRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    const el = codeRef.current;
-    if (el) Prism.highlightElement(el);
+    const codeElement = codeRef.current;
+    if (codeElement) Prism.highlightElement(codeElement);
   }, []);
 
   return <>{children(codeRef as MutableRefObject<null>)}</>;

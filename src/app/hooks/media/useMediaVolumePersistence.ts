@@ -11,18 +11,20 @@ export const useMediaVolumePersistence = (
   storageKey: string
 ): void => {
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return undefined;
+    const mediaElement = ref.current;
+    if (!mediaElement) return undefined;
 
     const stored = localStorage.getItem(storageKey);
     const parsed = stored !== null ? parseFloat(stored) : NaN;
-    el.volume = Number.isFinite(parsed) ? Math.max(0, Math.min(1, parsed)) : DEFAULT_VOLUME;
+    mediaElement.volume = Number.isFinite(parsed)
+      ? Math.max(0, Math.min(1, parsed))
+      : DEFAULT_VOLUME;
 
     const handleVolumeChange = () => {
-      localStorage.setItem(storageKey, String(el.volume));
+      localStorage.setItem(storageKey, String(mediaElement.volume));
     };
 
-    el.addEventListener('volumechange', handleVolumeChange);
-    return () => el.removeEventListener('volumechange', handleVolumeChange);
+    mediaElement.addEventListener('volumechange', handleVolumeChange);
+    return () => mediaElement.removeEventListener('volumechange', handleVolumeChange);
   }, [ref, storageKey]);
 };

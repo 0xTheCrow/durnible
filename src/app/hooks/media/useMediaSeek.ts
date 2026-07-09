@@ -18,30 +18,30 @@ export const useMediaSeek = (
 
   const seek = useCallback(
     (time: number) => {
-      const targetEl = getTargetElement();
-      if (!targetEl) return;
+      const mediaElement = getTargetElement();
+      if (!mediaElement) return;
       if (!Number.isFinite(time)) return;
-      targetEl.currentTime = time;
+      mediaElement.currentTime = time;
     },
     [getTargetElement]
   );
 
   useEffect(() => {
-    const targetEl = getTargetElement();
+    const mediaElement = getTargetElement();
     const handleChange = () => {
-      if (!targetEl) return;
+      if (!mediaElement) return;
       setSeekData({
-        seeking: targetEl.seeking,
-        seekable: targetEl.seekable,
+        seeking: mediaElement.seeking,
+        seekable: mediaElement.seekable,
       });
     };
-    targetEl?.addEventListener('loadedmetadata', handleChange);
-    targetEl?.addEventListener('seeked', handleChange);
-    targetEl?.addEventListener('seeking', handleChange);
+    mediaElement?.addEventListener('loadedmetadata', handleChange);
+    mediaElement?.addEventListener('seeked', handleChange);
+    mediaElement?.addEventListener('seeking', handleChange);
     return () => {
-      targetEl?.removeEventListener('loadedmetadata', handleChange);
-      targetEl?.removeEventListener('seeked', handleChange);
-      targetEl?.removeEventListener('seeking', handleChange);
+      mediaElement?.removeEventListener('loadedmetadata', handleChange);
+      mediaElement?.removeEventListener('seeked', handleChange);
+      mediaElement?.removeEventListener('seeking', handleChange);
     };
   }, [getTargetElement]);
 
