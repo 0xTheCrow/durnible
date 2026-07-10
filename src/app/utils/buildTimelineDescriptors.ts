@@ -2,9 +2,12 @@ import { MsgType } from 'matrix-js-sdk';
 import type { EventTimelineSet, MatrixEvent } from 'matrix-js-sdk';
 import type { ImageContent } from '../../types/matrix/common';
 import {
-  MATRIX_BATCH_ID_PROPERTY_NAME,
-  MATRIX_BATCH_INDEX_PROPERTY_NAME,
+  MATRIX_GALLERY_ID_PROPERTY_NAME,
+  MATRIX_GALLERY_INDEX_PROPERTY_NAME,
+  MATRIX_LEGACY_GALLERY_ID_PROPERTY_NAME,
+  MATRIX_LEGACY_GALLERY_INDEX_PROPERTY_NAME,
 } from '../../types/matrix/common';
+import { GRID_MAX_CELLS } from '../components/message/imageGridLayout';
 import { MessageEvent } from '../../types/matrix/room';
 import { reactionOrEditEvent } from './room';
 import { inSameDay, minuteDifference } from './time';
@@ -13,7 +16,13 @@ import { inSameDay, minuteDifference } from './time';
  * Maximum number of images that can be merged into a single image-grid
  * message (3 wide x 2 tall).
  */
-export const IMAGE_GROUP_MAX_SIZE = 6;
+export const IMAGE_GROUP_MAX_SIZE = GRID_MAX_CELLS;
+
+export const getGalleryId = (content: ImageContent): string | undefined =>
+  content[MATRIX_GALLERY_ID_PROPERTY_NAME] ?? content[MATRIX_LEGACY_GALLERY_ID_PROPERTY_NAME];
+
+export const getGalleryIndex = (content: ImageContent): number | undefined =>
+  content[MATRIX_GALLERY_INDEX_PROPERTY_NAME] ?? content[MATRIX_LEGACY_GALLERY_INDEX_PROPERTY_NAME];
 
 const isPlainImageEvent = (mEvent: MatrixEvent): boolean => {
   if (mEvent.getType() !== MessageEvent.RoomMessage) return false;
@@ -93,8 +102,8 @@ export const computeImageGroups = (
     if (!isPlainImageEvent(anchor.mEvent)) continue;
 
     const anchorContent = anchor.mEvent.getContent() as ImageContent;
-    const anchorBatchId = anchorContent[MATRIX_BATCH_ID_PROPERTY_NAME];
-    if (typeof anchorBatchId !== 'string') continue;
+    const anchorGalleryId = getGalleryId(anchorContent);
+    if (typeof anchorGalleryId !== 'string') continue;
 
     type GroupMember = { content: ImageContent; eventId: string };
     const members: GroupMember[] = [{ content: anchorContent, eventId: anchor.mEventId }];
@@ -112,20 +121,16 @@ export const computeImageGroups = (
       // Day-boundary merges would hide the day-divider inside the group.
       if (!inSameDay(lastTs, nextTs)) break;
       const nextContent = next.mEvent.getContent() as ImageContent;
-      if (nextContent[MATRIX_BATCH_ID_PROPERTY_NAME] !== anchorBatchId) break;
+      if (getGalleryId(nextContent) !== anchorGalleryId) break;
       members.push({ content: nextContent, eventId: next.mEventId });
       absorbedIds.push(next.mEventId);
       lastTs = nextTs;
     }
 
     if (members.length > 1) {
-      // Render order follows batch_index, not timeline order — a homeserver
+      // Render order follows gallery_index, not timeline order — a homeserver
       // tie-break on identical origin_server_ts would otherwise scramble the grid.
-      members.sort(
-        (a, b) =>
-          (a.content[MATRIX_BATCH_INDEX_PROPERTY_NAME] ?? 0) -
-          (b.content[MATRIX_BATCH_INDEX_PROPERTY_NAME] ?? 0)
-      );
+      members.sort((a, b) => (getGalleryIndex(a.content) ?? 0) - (getGalleryIndex(b.content) ?? 0));
       imageGroups.set(
         anchor.mEventId,
         members.map((m) => m.content)

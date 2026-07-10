@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useLayoutEffect, useMemo, useState } from 'react';
 import classNames from 'classnames';
 import { useSetAtom } from 'jotai';
 import { toRem } from 'folds';
@@ -15,23 +15,33 @@ import type { ImageViewerGalleryItem } from '../../state/imageViewer';
 import { imageViewerAtom } from '../../state/imageViewer';
 import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
 import { useElementSizeObserver } from '../../hooks/useElementSizeObserver';
+import type { Count } from './imageGridLayout';
+import {
+  GRID_GAP,
+  GRID_MAX_CELLS,
+  GRID_MIN_WIDTH,
+  MOBILE_STACK_MAX_WIDTH,
+  SINGLE_IMAGE_MAX_HEIGHT,
+  STACK_MAX_WIDTH,
+  gridColumnsForCount,
+  stackColumnsForCount,
+  stackRowsForCount,
+} from './imageGridLayout';
 
-// Mirrors MImage's MAX_HEIGHT.
-const SINGLE_IMAGE_MAX_HEIGHT = 400;
-const GRID_MIN_WIDTH = 400;
-// Must match `gap` in ImageGrid.css.ts.
-const GRID_GAP = 12;
-const DESKTOP_LAYOUT_INSET = 412;
-const DESKTOP_MIN_BUDGET = 200;
-const MOBILE_MAX_WIDTH = 500;
+const useAvailableWidth = (): [number | null, (element: HTMLDivElement | null) => void] => {
+  const [container, setContainer] = useState<HTMLDivElement | null>(null);
+  const [availableWidth, setAvailableWidth] = useState<number | null>(null);
 
-const useBodyWidth = (): number => {
-  const [width, setWidth] = useState(() => document.body.clientWidth);
+  useLayoutEffect(() => {
+    if (container) setAvailableWidth(container.clientWidth);
+  }, [container]);
+
   useElementSizeObserver(
-    useCallback(() => document.body, []),
-    useCallback((w) => setWidth(w), [])
+    useCallback(() => container, [container]),
+    useCallback((width) => setAvailableWidth(width), [])
   );
-  return width;
+
+  return [availableWidth, setContainer];
 };
 
 const singleImageWidth = (content: ImageContent): number => {
@@ -40,11 +50,10 @@ const singleImageWidth = (content: ImageContent): number => {
   return h > SINGLE_IMAGE_MAX_HEIGHT ? Math.round(w * (SINGLE_IMAGE_MAX_HEIGHT / h)) : w;
 };
 
-type Count = 2 | 3 | 4 | 5 | 6;
-
 const buildDesktopStyle = (count: Count, widthBudget: number): React.CSSProperties => {
   const gap = GRID_GAP;
   const maxHeight = SINGLE_IMAGE_MAX_HEIGHT;
+  const columns = gridColumnsForCount[count];
   const rem = (n: number) => toRem(n);
   const repeatTrack = (n: number, size: number) => Array(n).fill(rem(size)).join(' ');
 
@@ -54,7 +63,7 @@ const buildDesktopStyle = (count: Count, widthBudget: number): React.CSSProperti
       return {
         width: rem(2 * cellSize + gap),
         height: rem(cellSize),
-        gridTemplateColumns: repeatTrack(2, cellSize),
+        gridTemplateColumns: repeatTrack(columns, cellSize),
         gridTemplateRows: rem(cellSize),
       };
     }
@@ -64,7 +73,7 @@ const buildDesktopStyle = (count: Count, widthBudget: number): React.CSSProperti
       return {
         width: rem(3 * cellSize + 2 * gap),
         height: rem(heroSide),
-        gridTemplateColumns: `${rem(heroSide)} ${rem(cellSize)}`,
+        gridTemplateColumns: `${rem(heroSide)} ${repeatTrack(columns - 1, cellSize)}`,
         gridTemplateRows: repeatTrack(2, cellSize),
       };
     }
@@ -73,7 +82,7 @@ const buildDesktopStyle = (count: Count, widthBudget: number): React.CSSProperti
       return {
         width: rem(2 * cellSize + gap),
         height: rem(2 * cellSize + gap),
-        gridTemplateColumns: repeatTrack(2, cellSize),
+        gridTemplateColumns: repeatTrack(columns, cellSize),
         gridTemplateRows: repeatTrack(2, cellSize),
       };
     }
@@ -83,7 +92,7 @@ const buildDesktopStyle = (count: Count, widthBudget: number): React.CSSProperti
       return {
         width: rem(4 * cellSize + 3 * gap),
         height: rem(heroSide),
-        gridTemplateColumns: `${rem(heroSide)} ${rem(cellSize)} ${rem(cellSize)}`,
+        gridTemplateColumns: `${rem(heroSide)} ${repeatTrack(columns - 1, cellSize)}`,
         gridTemplateRows: repeatTrack(2, cellSize),
       };
     }
@@ -92,7 +101,7 @@ const buildDesktopStyle = (count: Count, widthBudget: number): React.CSSProperti
       return {
         width: rem(3 * cellSize + 2 * gap),
         height: rem(2 * cellSize + gap),
-        gridTemplateColumns: repeatTrack(3, cellSize),
+        gridTemplateColumns: repeatTrack(columns, cellSize),
         gridTemplateRows: repeatTrack(2, cellSize),
       };
     }
@@ -101,15 +110,12 @@ const buildDesktopStyle = (count: Count, widthBudget: number): React.CSSProperti
   }
 };
 
-const buildMobileStyle = (count: Count): React.CSSProperties => {
-  const rowsForCount: Record<Count, number> = { 2: 1, 3: 2, 4: 2, 5: 3, 6: 3 };
-  return {
-    width: '100vw',
-    maxWidth: `min(100%, ${toRem(MOBILE_MAX_WIDTH)})`,
-    gridTemplateColumns: '1fr 1fr',
-    gridTemplateRows: `repeat(${rowsForCount[count]}, auto)`,
-  };
-};
+const buildStackStyle = (count: Count, maxWidth: number): React.CSSProperties => ({
+  width: '100%',
+  maxWidth: toRem(maxWidth),
+  gridTemplateColumns: `repeat(${stackColumnsForCount[count]}, 1fr)`,
+  gridTemplateRows: `repeat(${stackRowsForCount[count]}, auto)`,
+});
 
 type ImageGridProps = {
   contents: ImageContent[];
@@ -117,22 +123,20 @@ type ImageGridProps = {
 };
 
 export function ImageGrid({ contents, autoPlay }: ImageGridProps) {
-  const cells = contents.slice(0, 6);
+  const cells = contents.slice(0, GRID_MAX_CELLS);
   const count = cells.length as Count;
   const firstIsHero = count === 3 || count === 5;
 
   const isMobile = useScreenSizeContext() === ScreenSize.Mobile;
-  const bodyWidth = useBodyWidth();
+  const [availableWidth, containerRef] = useAvailableWidth();
+  const isStackLayout = isMobile || availableWidth === null || availableWidth < GRID_MIN_WIDTH;
+
   let gridStyle: React.CSSProperties;
-  if (isMobile) {
-    gridStyle = buildMobileStyle(count);
+  if (isStackLayout) {
+    gridStyle = buildStackStyle(count, isMobile ? MOBILE_STACK_MAX_WIDTH : STACK_MAX_WIDTH);
   } else {
     const naturalBudget = Math.max(GRID_MIN_WIDTH, ...cells.map(singleImageWidth));
-    const desktopBudget = Math.min(
-      naturalBudget,
-      Math.max(DESKTOP_MIN_BUDGET, bodyWidth - DESKTOP_LAYOUT_INSET)
-    );
-    gridStyle = buildDesktopStyle(count, desktopBudget);
+    gridStyle = buildDesktopStyle(count, Math.min(naturalBudget, availableWidth));
   }
 
   const setViewerState = useSetAtom(imageViewerAtom);
@@ -160,52 +164,54 @@ export function ImageGrid({ contents, autoPlay }: ImageGridProps) {
   );
 
   return (
-    <div className={css.ImageGrid} style={gridStyle}>
-      {cells.map((content, idx) => {
-        const heroCell = firstIsHero && idx === 0;
-        const cellClassName = classNames(
-          css.ImageGridCell,
-          heroCell && (isMobile ? css.ImageGridCellSpanFullRow : css.ImageGridCellSpanFullColumn)
-        );
-        const mxcUrl = content.file?.url ?? content.url;
-        if (typeof mxcUrl !== 'string') {
+    <div ref={containerRef} className={css.ImageGridContainer} data-testid="image-grid-container">
+      <div className={css.ImageGrid} style={gridStyle} data-testid="image-grid">
+        {cells.map((content, idx) => {
+          const heroCell = firstIsHero && idx === 0;
+          const cellClassName = classNames(
+            css.ImageGridCell,
+            heroCell &&
+              (isStackLayout ? css.ImageGridCellSpanFullRow : css.ImageGridCellSpanFullColumn)
+          );
+          const mxcUrl = content.file?.url ?? content.url;
+          const cellKey = typeof mxcUrl === 'string' ? `image-grid-cell-${mxcUrl}` : undefined;
+          if (typeof mxcUrl !== 'string') {
+            return (
+              <div key={cellKey} className={cellClassName} data-testid="image-grid-cell">
+                <BrokenContent />
+              </div>
+            );
+          }
           return (
-            // eslint-disable-next-line react/no-array-index-key
-            <div key={idx} className={cellClassName}>
-              <BrokenContent />
+            <div key={cellKey} className={cellClassName} data-testid="image-grid-cell">
+              <ImageContentView
+                body={content.body || content.filename || 'Image'}
+                filename={content.filename}
+                info={content.info}
+                mimeType={content.info?.mimetype}
+                url={mxcUrl}
+                encryptionInfo={content.file}
+                autoPlay={autoPlay}
+                markedAsSpoiler={content[MATRIX_SPOILER_PROPERTY_NAME]}
+                spoilerReason={content[MATRIX_SPOILER_REASON_PROPERTY_NAME]}
+                onView={(resolvedSrc, alt) => handleViewCell(idx, resolvedSrc, alt)}
+                renderImage={(p) => (
+                  <Image
+                    {...p}
+                    loading="lazy"
+                    style={{
+                      ...p.style,
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                    }}
+                  />
+                )}
+              />
             </div>
           );
-        }
-        return (
-          // eslint-disable-next-line react/no-array-index-key
-          <div key={idx} className={cellClassName}>
-            <ImageContentView
-              body={content.body || content.filename || 'Image'}
-              filename={content.filename}
-              info={content.info}
-              mimeType={content.info?.mimetype}
-              url={mxcUrl}
-              encryptionInfo={content.file}
-              autoPlay={autoPlay}
-              markedAsSpoiler={content[MATRIX_SPOILER_PROPERTY_NAME]}
-              spoilerReason={content[MATRIX_SPOILER_REASON_PROPERTY_NAME]}
-              onView={(resolvedSrc, alt) => handleViewCell(idx, resolvedSrc, alt)}
-              renderImage={(p) => (
-                <Image
-                  {...p}
-                  loading="lazy"
-                  style={{
-                    ...p.style,
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                  }}
-                />
-              )}
-            />
-          </div>
-        );
-      })}
+        })}
+      </div>
     </div>
   );
 }

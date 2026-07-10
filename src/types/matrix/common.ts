@@ -5,8 +5,10 @@ export const MATRIX_BLUR_HASH_PROPERTY_NAME = 'xyz.amorgan.blurhash';
 export const MATRIX_SPOILER_PROPERTY_NAME = 'page.codeberg.everypizza.msc4193.spoiler';
 export const MATRIX_SPOILER_REASON_PROPERTY_NAME =
   'page.codeberg.everypizza.msc4193.spoiler.reason';
-export const MATRIX_BATCH_ID_PROPERTY_NAME = 'com.durnible.batch_id';
-export const MATRIX_BATCH_INDEX_PROPERTY_NAME = 'com.durnible.batch_index';
+export const MATRIX_GALLERY_ID_PROPERTY_NAME = 'com.durnible.gallery_id';
+export const MATRIX_GALLERY_INDEX_PROPERTY_NAME = 'com.durnible.gallery_index';
+export const MATRIX_LEGACY_GALLERY_ID_PROPERTY_NAME = 'com.durnible.batch_id';
+export const MATRIX_LEGACY_GALLERY_INDEX_PROPERTY_NAME = 'com.durnible.batch_index';
 export const MATRIX_REACTION_BUCKET_CREATED_AT_PROPERTY_NAME =
   'com.durnible.reaction_bucket_created_at';
 
@@ -56,8 +58,10 @@ export type ImageContent = {
   file?: EncryptedFile;
   [MATRIX_SPOILER_PROPERTY_NAME]?: boolean;
   [MATRIX_SPOILER_REASON_PROPERTY_NAME]?: string;
-  [MATRIX_BATCH_ID_PROPERTY_NAME]?: string;
-  [MATRIX_BATCH_INDEX_PROPERTY_NAME]?: number;
+  [MATRIX_GALLERY_ID_PROPERTY_NAME]?: string;
+  [MATRIX_GALLERY_INDEX_PROPERTY_NAME]?: number;
+  [MATRIX_LEGACY_GALLERY_ID_PROPERTY_NAME]?: string;
+  [MATRIX_LEGACY_GALLERY_INDEX_PROPERTY_NAME]?: number;
 };
 
 export type VideoContent = {
