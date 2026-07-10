@@ -79,12 +79,17 @@ export const ImageViewer = as<'div', ImageViewerProps>(
       [setZoom, setPan, clampPan]
     );
 
+    const swipeHandlersRef = useRef({ onSwipeLeft: () => {}, onSwipeRight: () => {} });
     const { onTouchStart, onTouchMove, onTouchEnd } = useTouchGesture(
       zoom,
       setZoom,
       setPan,
       applyZoomAtPoint,
-      clampPan
+      clampPan,
+      {
+        onSwipeLeft: () => swipeHandlersRef.current.onSwipeLeft(),
+        onSwipeRight: () => swipeHandlersRef.current.onSwipeRight(),
+      }
     );
 
     const handleWheel = useCallback(
@@ -144,6 +149,7 @@ export const ImageViewer = as<'div', ImageViewerProps>(
     const goNext = useCallback(() => {
       if (gallery) navigateTo(gallery.index + 1);
     }, [gallery, navigateTo]);
+    swipeHandlersRef.current = { onSwipeLeft: goNext, onSwipeRight: goPrev };
 
     useEffect(() => {
       if (!gallery) return undefined;
