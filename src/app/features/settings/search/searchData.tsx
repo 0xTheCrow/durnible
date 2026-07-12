@@ -688,8 +688,8 @@ export const settingsSearchData: SearchEntry[] = [
   {
     id: 'contact-info',
     title: 'Contact Information',
-    description: 'Manage your email and phone number.',
-    keywords: ['contact', 'email', 'phone', 'account', 'identity', 'address'],
+    description: 'Manage your email.',
+    keywords: ['contact', 'email', 'account', 'identity', 'address'],
     page: SettingsPages.AccountPage,
     pageName: 'Account',
     sectionName: 'Contact',
