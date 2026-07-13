@@ -68,6 +68,9 @@ export const connectToCall = async (
   );
   if (keyProvider) await livekitRoom.setE2EEEnabled(true);
   await livekitRoom.connect(url, jwt);
+  if (devicePreferences.audioOutputDeviceId) {
+    await livekitRoom.switchActiveDevice('audiooutput', devicePreferences.audioOutputDeviceId);
+  }
 
   return { matrixClient, matrixRoom, rtcSession, livekitRoom, keyProvider };
 };

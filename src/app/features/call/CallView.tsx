@@ -3,15 +3,17 @@ import { useAtomValue } from 'jotai';
 import type { Room } from 'matrix-js-sdk';
 import { Box, Text } from 'folds';
 import { useCallMemberships } from '../../hooks/useCallMemberships';
-import { activeCallConnectionAtom } from '../../state/call';
+import { callStateAtom } from '../../state/call';
 
 type CallViewProps = {
   room: Room;
 };
 export function CallView({ room }: CallViewProps) {
   const memberships = useCallMemberships(room);
-  const callConnection = useAtomValue(activeCallConnectionAtom);
-  const isConnectedToThisCall = callConnection?.matrixRoom.roomId === room.roomId;
+  const callState = useAtomValue(callStateAtom);
+  const isConnectedToThisCall =
+    (callState.status === 'connected' || callState.status === 'reconnecting') &&
+    callState.roomId === room.roomId;
 
   return (
     <Box direction="Column" gap="200">

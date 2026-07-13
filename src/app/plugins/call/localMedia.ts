@@ -1,6 +1,7 @@
 export type MediaDevicePreferences = {
   audioInputDeviceId?: string;
   videoInputDeviceId?: string;
+  audioOutputDeviceId?: string;
 };
 
 export const isScreenshareSupported = (): boolean =>
