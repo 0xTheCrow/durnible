@@ -55,11 +55,15 @@ export function DeveloperTools({ onClose }: DeveloperToolsProps) {
     setAccountDataType(undefined);
   }, []);
 
+  const mxRaw = mx as unknown as {
+    setRoomAccountData: (roomId: string, type: string, content: object) => Promise<void>;
+  };
+
   const submitAccountData: AccountDataSubmitCallback = useCallback(
     async (type, content) => {
-      await mx.setRoomAccountData(room.roomId, type, content);
+      await mxRaw.setRoomAccountData(room.roomId, type, content);
     },
-    [mx, room.roomId]
+    [mxRaw, room.roomId]
   );
 
   if (accountDataType !== undefined) {
