@@ -1,12 +1,22 @@
 import { style } from '@vanilla-extract/css';
 import { DefaultReset, color, toRem } from 'folds';
 
+export const ImageGridContainer = style([
+  DefaultReset,
+  {
+    width: '100vw',
+    maxWidth: '100%',
+    minWidth: 0,
+  },
+]);
+
 export const ImageGrid = style([
   DefaultReset,
   {
     display: 'grid',
     gap: toRem(12),
     maxWidth: '100%',
+    minWidth: 0,
   },
 ]);
 

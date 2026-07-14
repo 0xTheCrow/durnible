@@ -36,7 +36,7 @@ import { useTimeoutToggle } from '../hooks/useTimeoutToggle';
 
 const ReactPrism = lazy(() => import('./react-prism/ReactPrism'));
 
-const EMOJI_REG_G = new RegExp(`${URL_NEG_LB}(${EMOJI_PATTERN})`, 'g');
+const EMOJI_REG_G = new RegExp(`${URL_NEG_LB}(${EMOJI_PATTERN})`, 'gu');
 
 export const LINKIFY_OPTS: LinkifyOpts = {
   attributes: {

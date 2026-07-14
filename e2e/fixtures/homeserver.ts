@@ -1,4 +1,8 @@
 import type { BrowserContext, Page, Route } from '@playwright/test';
+import {
+  MATRIX_GALLERY_ID_PROPERTY_NAME,
+  MATRIX_GALLERY_INDEX_PROPERTY_NAME,
+} from '../../src/types/matrix/common';
 
 export const HOMESERVER_BASE_URL = 'https://matrix.test';
 export const TEST_USER_ID = '@tester:matrix.test';
@@ -25,7 +29,30 @@ const stateEvent = (
   origin_server_ts: 1700000000000,
 });
 
-const initialSync = (): Record<string, unknown> => ({
+export const IMAGE_GALLERY_ID = 'gallery_grid';
+
+export const imageEvent = (
+  index: number,
+  width: number,
+  height: number
+): Record<string, unknown> => ({
+  type: 'm.room.message',
+  sender: TEST_USER_ID,
+  content: {
+    msgtype: 'm.image',
+    body: `image-${index}.png`,
+    url: `mxc://matrix.test/image${index}`,
+    info: { w: width, h: height, mimetype: 'image/png' },
+    [MATRIX_GALLERY_ID_PROPERTY_NAME]: IMAGE_GALLERY_ID,
+    [MATRIX_GALLERY_INDEX_PROPERTY_NAME]: index,
+  },
+  event_id: `$image${index}`,
+  origin_server_ts: 1700000000002 + index,
+});
+
+const initialSync = (
+  extraTimelineEvents: Record<string, unknown>[] = []
+): Record<string, unknown> => ({
   next_batch: 's_1',
   device_one_time_keys_count: { signed_curve25519: 50 },
   account_data: { events: [] },
@@ -60,6 +87,7 @@ const initialSync = (): Record<string, unknown> => ({
               event_id: '$first',
               origin_server_ts: 1700000000001,
             },
+            ...extraTimelineEvents,
           ],
           prev_batch: 'p_0',
           limited: false,
@@ -104,7 +132,19 @@ export type HomeserverStub = {
   unmatched: string[];
 };
 
-export const stubHomeserver = async (page: Page): Promise<HomeserverStub> => {
+export type StubHomeserverOptions = {
+  timelineEvents?: Record<string, unknown>[];
+};
+
+const TRANSPARENT_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+  'base64'
+);
+
+export const stubHomeserver = async (
+  page: Page,
+  options: StubHomeserverOptions = {}
+): Promise<HomeserverStub> => {
   const stub: HomeserverStub = { sentEvents: [], unmatched: [] };
   let syncCount = 0;
 
@@ -121,7 +161,7 @@ export const stubHomeserver = async (page: Page): Promise<HomeserverStub> => {
 
     if (pathname.endsWith('/sync')) {
       syncCount += 1;
-      if (syncCount === 1) return json(route, initialSync());
+      if (syncCount === 1) return json(route, initialSync(options.timelineEvents));
       await new Promise((resolve) => {
         setTimeout(resolve, 30_000);
       });
@@ -147,6 +187,9 @@ export const stubHomeserver = async (page: Page): Promise<HomeserverStub> => {
     }
     if (pathname === '/_matrix/media/v3/config') {
       return json(route, { 'm.upload.size': 50_000_000 });
+    }
+    if (pathname.includes('/media/')) {
+      return route.fulfill({ status: 200, contentType: 'image/png', body: TRANSPARENT_PNG });
     }
     if (pathname.endsWith('/filter')) return json(route, { filter_id: '1' });
     if (pathname.endsWith('/capabilities')) return json(route, { capabilities: {} });

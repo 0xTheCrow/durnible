@@ -19,12 +19,20 @@ type TapState = {
 const getDistance = (t1: React.Touch, t2: React.Touch): number =>
   Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
 
+export type TouchSwipeHandlers = {
+  onSwipeLeft?: () => void;
+  onSwipeRight?: () => void;
+};
+
+const SWIPE_DISTANCE_THRESHOLD = 50;
+
 export const useTouchGesture = (
   zoom: number,
   setZoom: Dispatch<SetStateAction<number>>,
   setPan: Dispatch<SetStateAction<Pan>>,
   zoomToPoint: (nextZoom: number, pointX: number, pointY: number) => void,
   clampPan: (pan: Pan, zoom: number) => Pan = (pan) => pan,
+  swipeHandlers: TouchSwipeHandlers = {},
   zoomMin = ZOOM_MIN,
   zoomMax = ZOOM_MAX
 ) => {
@@ -115,7 +123,25 @@ export const useTouchGesture = (
         const now = Date.now();
         const elapsed = now - start.time;
         const ct = e.changedTouches[0];
-        const dist = Math.hypot(ct.clientX - start.x, ct.clientY - start.y);
+        const swipeX = ct.clientX - start.x;
+        const swipeY = ct.clientY - start.y;
+        const dist = Math.hypot(swipeX, swipeY);
+
+        if (
+          zoomRef.current === 1 &&
+          Math.abs(swipeX) > SWIPE_DISTANCE_THRESHOLD &&
+          Math.abs(swipeX) > Math.abs(swipeY)
+        ) {
+          if (swipeX < 0) {
+            swipeHandlers.onSwipeLeft?.();
+          } else {
+            swipeHandlers.onSwipeRight?.();
+          }
+          lastTapRef.current = null;
+          touchStartRef.current = null;
+          gestureRef.current = null;
+          return;
+        }
 
         if (elapsed < 300 && dist < TAP_MOVE_THRESHOLD) {
           const lastTap = lastTapRef.current;

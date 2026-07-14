@@ -72,8 +72,8 @@ import { encryptAndReplace } from './encryptAndReplace';
 import { safeFile } from '../../../utils/mimeTypes';
 import { fulfilledPromiseSettledResult } from '../../../utils/common';
 import {
-  MATRIX_BATCH_ID_PROPERTY_NAME,
-  MATRIX_BATCH_INDEX_PROPERTY_NAME,
+  MATRIX_GALLERY_ID_PROPERTY_NAME,
+  MATRIX_GALLERY_INDEX_PROPERTY_NAME,
 } from '../../../../types/matrix/common';
 import { IMAGE_GROUP_MAX_SIZE } from '../../../utils/buildTimelineDescriptors';
 import { useSetting } from '../../../state/hooks/settings';
@@ -360,8 +360,8 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       contents.forEach((rawContent, i) => {
         let content: IContent = {
           ...rawContent,
-          [MATRIX_BATCH_ID_PROPERTY_NAME]: sliceIds[Math.floor(i / IMAGE_GROUP_MAX_SIZE)],
-          [MATRIX_BATCH_INDEX_PROPERTY_NAME]: i % IMAGE_GROUP_MAX_SIZE,
+          [MATRIX_GALLERY_ID_PROPERTY_NAME]: sliceIds[Math.floor(i / IMAGE_GROUP_MAX_SIZE)],
+          [MATRIX_GALLERY_INDEX_PROPERTY_NAME]: i % IMAGE_GROUP_MAX_SIZE,
         };
         if (uploadReplyDraft) {
           const relatesTo: Record<string, unknown> = {

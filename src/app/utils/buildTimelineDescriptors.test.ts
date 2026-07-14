@@ -3,8 +3,10 @@ import { describe, it, expect, vi } from 'vitest';
 import type { TimelineEventInput, TimelineItem } from './buildTimelineDescriptors';
 import { buildTimelineDescriptors, IMAGE_GROUP_MAX_SIZE } from './buildTimelineDescriptors';
 import {
-  MATRIX_BATCH_ID_PROPERTY_NAME,
-  MATRIX_BATCH_INDEX_PROPERTY_NAME,
+  MATRIX_GALLERY_ID_PROPERTY_NAME,
+  MATRIX_GALLERY_INDEX_PROPERTY_NAME,
+  MATRIX_LEGACY_GALLERY_ID_PROPERTY_NAME,
+  MATRIX_LEGACY_GALLERY_INDEX_PROPERTY_NAME,
 } from '../../types/matrix/common';
 import { createMockMatrixEvent } from '../../test/mocks';
 
@@ -48,8 +50,9 @@ function makeImageEvent(opts: {
   id: string;
   sender?: string;
   ts?: number;
-  batchId?: string;
-  batchIndex?: number;
+  galleryId?: string;
+  galleryIndex?: number;
+  useLegacyProperties?: boolean;
 }): TimelineEventInput {
   const content: Record<string, unknown> = {
     msgtype: 'm.image',
@@ -57,8 +60,14 @@ function makeImageEvent(opts: {
     url: `mxc://example.com/${opts.id}`,
     info: { w: 800, h: 600, mimetype: 'image/png' },
   };
-  if (opts.batchId !== undefined) content[MATRIX_BATCH_ID_PROPERTY_NAME] = opts.batchId;
-  if (opts.batchIndex !== undefined) content[MATRIX_BATCH_INDEX_PROPERTY_NAME] = opts.batchIndex;
+  const idProperty = opts.useLegacyProperties
+    ? MATRIX_LEGACY_GALLERY_ID_PROPERTY_NAME
+    : MATRIX_GALLERY_ID_PROPERTY_NAME;
+  const indexProperty = opts.useLegacyProperties
+    ? MATRIX_LEGACY_GALLERY_INDEX_PROPERTY_NAME
+    : MATRIX_GALLERY_INDEX_PROPERTY_NAME;
+  if (opts.galleryId !== undefined) content[idProperty] = opts.galleryId;
+  if (opts.galleryIndex !== undefined) content[indexProperty] = opts.galleryIndex;
   return makeEvent({
     id: opts.id,
     sender: opts.sender,
@@ -401,11 +410,80 @@ describe('buildTimelineDescriptors', () => {
         | Extract<TimelineItem, { type: 'event' }>
         | undefined;
 
+    it('groups legacy images that carry only the pre-rename batch properties', () => {
+      const result = buildTimelineDescriptors(
+        [
+          makeImageEvent({
+            id: '$A',
+            sender: OTHER_USER,
+            ts: 1000,
+            galleryId: 'b1',
+            galleryIndex: 1,
+            useLegacyProperties: true,
+          }),
+          makeImageEvent({
+            id: '$B',
+            sender: OTHER_USER,
+            ts: 2000,
+            galleryId: 'b1',
+            galleryIndex: 0,
+            useLegacyProperties: true,
+          }),
+        ],
+        undefined,
+        MY_USER
+      );
+      expect(types(result)).toEqual(['event:$A']);
+      const anchor = findEvent(result, '$A');
+      expect(anchor?.groupedImages?.length).toBe(2);
+      expect(anchor?.groupedImages?.map((content) => content.url)).toEqual([
+        'mxc://example.com/$B',
+        'mxc://example.com/$A',
+      ]);
+    });
+
+    it('does not group images whose gallery ids differ across the rename boundary', () => {
+      const result = buildTimelineDescriptors(
+        [
+          makeImageEvent({
+            id: '$A',
+            sender: OTHER_USER,
+            ts: 1000,
+            galleryId: 'b1',
+            galleryIndex: 0,
+          }),
+          makeImageEvent({
+            id: '$B',
+            sender: OTHER_USER,
+            ts: 2000,
+            galleryId: 'b2',
+            galleryIndex: 1,
+            useLegacyProperties: true,
+          }),
+        ],
+        undefined,
+        MY_USER
+      );
+      expect(types(result)).toEqual(['event:$A', 'event:$B']);
+    });
+
     it('groups two images sharing a batch_id', () => {
       const result = buildTimelineDescriptors(
         [
-          makeImageEvent({ id: '$A', sender: OTHER_USER, ts: 1000, batchId: 'b1', batchIndex: 0 }),
-          makeImageEvent({ id: '$B', sender: OTHER_USER, ts: 2000, batchId: 'b1', batchIndex: 1 }),
+          makeImageEvent({
+            id: '$A',
+            sender: OTHER_USER,
+            ts: 1000,
+            galleryId: 'b1',
+            galleryIndex: 0,
+          }),
+          makeImageEvent({
+            id: '$B',
+            sender: OTHER_USER,
+            ts: 2000,
+            galleryId: 'b1',
+            galleryIndex: 1,
+          }),
         ],
         undefined,
         MY_USER
@@ -420,8 +498,20 @@ describe('buildTimelineDescriptors', () => {
     it('does not group images with different batch_ids', () => {
       const result = buildTimelineDescriptors(
         [
-          makeImageEvent({ id: '$A', sender: OTHER_USER, ts: 1000, batchId: 'b1', batchIndex: 0 }),
-          makeImageEvent({ id: '$B', sender: OTHER_USER, ts: 1001, batchId: 'b2', batchIndex: 0 }),
+          makeImageEvent({
+            id: '$A',
+            sender: OTHER_USER,
+            ts: 1000,
+            galleryId: 'b1',
+            galleryIndex: 0,
+          }),
+          makeImageEvent({
+            id: '$B',
+            sender: OTHER_USER,
+            ts: 1001,
+            galleryId: 'b2',
+            galleryIndex: 0,
+          }),
         ],
         undefined,
         MY_USER
@@ -451,13 +541,19 @@ describe('buildTimelineDescriptors', () => {
       // tagged both events with the same batch_id.
       const result = buildTimelineDescriptors(
         [
-          makeImageEvent({ id: '$A', sender: OTHER_USER, ts: 1000, batchId: 'b1', batchIndex: 0 }),
+          makeImageEvent({
+            id: '$A',
+            sender: OTHER_USER,
+            ts: 1000,
+            galleryId: 'b1',
+            galleryIndex: 0,
+          }),
           makeImageEvent({
             id: '$B',
             sender: OTHER_USER,
             ts: 1000 + 60_000, // 1 minute later
-            batchId: 'b1',
-            batchIndex: 1,
+            galleryId: 'b1',
+            galleryIndex: 1,
           }),
         ],
         undefined,
@@ -476,8 +572,8 @@ describe('buildTimelineDescriptors', () => {
             id: `$img${i}`,
             sender: OTHER_USER,
             ts: 1000 + i,
-            batchId: 'b1',
-            batchIndex: i,
+            galleryId: 'b1',
+            galleryIndex: i,
           })
         );
       }
@@ -495,8 +591,14 @@ describe('buildTimelineDescriptors', () => {
       // another user can never merge with the local user's batch.
       const result = buildTimelineDescriptors(
         [
-          makeImageEvent({ id: '$A', sender: OTHER_USER, ts: 1000, batchId: 'b1', batchIndex: 0 }),
-          makeImageEvent({ id: '$B', sender: MY_USER, ts: 1001, batchId: 'b1', batchIndex: 1 }),
+          makeImageEvent({
+            id: '$A',
+            sender: OTHER_USER,
+            ts: 1000,
+            galleryId: 'b1',
+            galleryIndex: 0,
+          }),
+          makeImageEvent({ id: '$B', sender: MY_USER, ts: 1001, galleryId: 'b1', galleryIndex: 1 }),
         ],
         undefined,
         MY_USER
@@ -509,9 +611,21 @@ describe('buildTimelineDescriptors', () => {
     it('a non-image message between same-batch images breaks the group', () => {
       const result = buildTimelineDescriptors(
         [
-          makeImageEvent({ id: '$A', sender: OTHER_USER, ts: 1000, batchId: 'b1', batchIndex: 0 }),
+          makeImageEvent({
+            id: '$A',
+            sender: OTHER_USER,
+            ts: 1000,
+            galleryId: 'b1',
+            galleryIndex: 0,
+          }),
           makeEvent({ id: '$txt', sender: OTHER_USER, ts: 1500 }),
-          makeImageEvent({ id: '$B', sender: OTHER_USER, ts: 2000, batchId: 'b1', batchIndex: 1 }),
+          makeImageEvent({
+            id: '$B',
+            sender: OTHER_USER,
+            ts: 2000,
+            galleryId: 'b1',
+            galleryIndex: 1,
+          }),
         ],
         undefined,
         MY_USER
@@ -524,9 +638,21 @@ describe('buildTimelineDescriptors', () => {
     it('a reaction between same-batch images is invisible and does not break the group', () => {
       const result = buildTimelineDescriptors(
         [
-          makeImageEvent({ id: '$A', sender: OTHER_USER, ts: 1000, batchId: 'b1', batchIndex: 0 }),
+          makeImageEvent({
+            id: '$A',
+            sender: OTHER_USER,
+            ts: 1000,
+            galleryId: 'b1',
+            galleryIndex: 0,
+          }),
           makeEvent({ id: '$reaction', isReaction: true, ts: 1500 }),
-          makeImageEvent({ id: '$B', sender: OTHER_USER, ts: 2000, batchId: 'b1', batchIndex: 1 }),
+          makeImageEvent({
+            id: '$B',
+            sender: OTHER_USER,
+            ts: 2000,
+            galleryId: 'b1',
+            galleryIndex: 1,
+          }),
         ],
         undefined,
         MY_USER
@@ -540,13 +666,19 @@ describe('buildTimelineDescriptors', () => {
       // UX problem regardless of how the group was formed.
       const result = buildTimelineDescriptors(
         [
-          makeImageEvent({ id: '$A', sender: OTHER_USER, ts: 1000, batchId: 'b1', batchIndex: 0 }),
+          makeImageEvent({
+            id: '$A',
+            sender: OTHER_USER,
+            ts: 1000,
+            galleryId: 'b1',
+            galleryIndex: 0,
+          }),
           makeImageEvent({
             id: '$B',
             sender: OTHER_USER,
             ts: 1000 + ONE_DAY_MS,
-            batchId: 'b1',
-            batchIndex: 1,
+            galleryId: 'b1',
+            galleryIndex: 1,
           }),
         ],
         undefined,
@@ -562,9 +694,27 @@ describe('buildTimelineDescriptors', () => {
       // them in any order. batch_index is the authority for visual ordering.
       const result = buildTimelineDescriptors(
         [
-          makeImageEvent({ id: '$A', sender: OTHER_USER, ts: 1000, batchId: 'b1', batchIndex: 2 }),
-          makeImageEvent({ id: '$B', sender: OTHER_USER, ts: 1000, batchId: 'b1', batchIndex: 0 }),
-          makeImageEvent({ id: '$C', sender: OTHER_USER, ts: 1000, batchId: 'b1', batchIndex: 1 }),
+          makeImageEvent({
+            id: '$A',
+            sender: OTHER_USER,
+            ts: 1000,
+            galleryId: 'b1',
+            galleryIndex: 2,
+          }),
+          makeImageEvent({
+            id: '$B',
+            sender: OTHER_USER,
+            ts: 1000,
+            galleryId: 'b1',
+            galleryIndex: 0,
+          }),
+          makeImageEvent({
+            id: '$C',
+            sender: OTHER_USER,
+            ts: 1000,
+            galleryId: 'b1',
+            galleryIndex: 1,
+          }),
         ],
         undefined,
         MY_USER
@@ -583,9 +733,27 @@ describe('buildTimelineDescriptors', () => {
       // has seen the entire grid, so the divider should fire after the anchor.
       const result = buildTimelineDescriptors(
         [
-          makeImageEvent({ id: '$A', sender: OTHER_USER, ts: 1000, batchId: 'b1', batchIndex: 0 }),
-          makeImageEvent({ id: '$B', sender: OTHER_USER, ts: 1100, batchId: 'b1', batchIndex: 1 }),
-          makeImageEvent({ id: '$C', sender: OTHER_USER, ts: 1200, batchId: 'b1', batchIndex: 2 }),
+          makeImageEvent({
+            id: '$A',
+            sender: OTHER_USER,
+            ts: 1000,
+            galleryId: 'b1',
+            galleryIndex: 0,
+          }),
+          makeImageEvent({
+            id: '$B',
+            sender: OTHER_USER,
+            ts: 1100,
+            galleryId: 'b1',
+            galleryIndex: 1,
+          }),
+          makeImageEvent({
+            id: '$C',
+            sender: OTHER_USER,
+            ts: 1200,
+            galleryId: 'b1',
+            galleryIndex: 2,
+          }),
           makeEvent({ id: '$D', sender: OTHER_USER, ts: 1200 + 60_000 }),
         ],
         '$B',
@@ -600,8 +768,20 @@ describe('buildTimelineDescriptors', () => {
       // a following text message.
       const result = buildTimelineDescriptors(
         [
-          makeImageEvent({ id: '$A', sender: OTHER_USER, ts: 1000, batchId: 'b1', batchIndex: 0 }),
-          makeImageEvent({ id: '$B', sender: OTHER_USER, ts: 1100, batchId: 'b1', batchIndex: 1 }),
+          makeImageEvent({
+            id: '$A',
+            sender: OTHER_USER,
+            ts: 1000,
+            galleryId: 'b1',
+            galleryIndex: 0,
+          }),
+          makeImageEvent({
+            id: '$B',
+            sender: OTHER_USER,
+            ts: 1100,
+            galleryId: 'b1',
+            galleryIndex: 1,
+          }),
           makeEvent({ id: '$txt', sender: OTHER_USER, ts: 1000 + 60_000 }),
         ],
         undefined,

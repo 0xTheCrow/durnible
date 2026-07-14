@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import type { EventTimelineSet } from 'matrix-js-sdk';
 import type { TimelineEventInput, TimelineItem } from '../../../../utils/buildTimelineDescriptors';
 import {
-  MATRIX_BATCH_ID_PROPERTY_NAME,
-  MATRIX_BATCH_INDEX_PROPERTY_NAME,
+  MATRIX_GALLERY_ID_PROPERTY_NAME,
+  MATRIX_GALLERY_INDEX_PROPERTY_NAME,
 } from '../../../../../types/matrix/common';
 import { createMockMatrixEvent } from '../../../../../test/mocks';
 import { buildTimelineDescriptors } from './buildTimelineDescriptors';
@@ -34,8 +34,8 @@ const makeEvent = (opts: {
 const makeImageEvent = (opts: {
   id: string;
   ts?: number;
-  batchId?: string;
-  batchIndex?: number;
+  galleryId?: string;
+  galleryIndex?: number;
 }): TimelineEventInput => {
   const content: Record<string, unknown> = {
     msgtype: 'm.image',
@@ -43,8 +43,9 @@ const makeImageEvent = (opts: {
     url: `mxc://example.com/${opts.id}`,
     info: { w: 800, h: 600, mimetype: 'image/png' },
   };
-  if (opts.batchId !== undefined) content[MATRIX_BATCH_ID_PROPERTY_NAME] = opts.batchId;
-  if (opts.batchIndex !== undefined) content[MATRIX_BATCH_INDEX_PROPERTY_NAME] = opts.batchIndex;
+  if (opts.galleryId !== undefined) content[MATRIX_GALLERY_ID_PROPERTY_NAME] = opts.galleryId;
+  if (opts.galleryIndex !== undefined)
+    content[MATRIX_GALLERY_INDEX_PROPERTY_NAME] = opts.galleryIndex;
   return makeEvent({ id: opts.id, ts: opts.ts, content });
 };
 
@@ -77,9 +78,9 @@ describe('buildTimelineDescriptors (v2)', () => {
   it('redirects the divider to the group anchor when the first-unread event is an absorbed image', () => {
     const events = [
       makeEvent({ id: '$msg', ts: 1000 }),
-      makeImageEvent({ id: '$img1', ts: 2000, batchId: 'B', batchIndex: 0 }),
-      makeImageEvent({ id: '$img2', ts: 2000, batchId: 'B', batchIndex: 1 }),
-      makeImageEvent({ id: '$img3', ts: 2000, batchId: 'B', batchIndex: 2 }),
+      makeImageEvent({ id: '$img1', ts: 2000, galleryId: 'B', galleryIndex: 0 }),
+      makeImageEvent({ id: '$img2', ts: 2000, galleryId: 'B', galleryIndex: 1 }),
+      makeImageEvent({ id: '$img3', ts: 2000, galleryId: 'B', galleryIndex: 2 }),
     ];
     const result = buildTimelineDescriptors(events, '$img2');
     expect(types(result)).toEqual(['event:$msg', 'new-messages', 'event:$img1']);
