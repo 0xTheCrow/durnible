@@ -57,20 +57,27 @@ export const connectToCall = async (
     { manageMediaKeys: keyProvider !== undefined }
   );
 
-  await rtcSession.initialMembershipCalculated;
-  const livekitServiceUrl = getActiveLivekitServiceUrl(rtcSession, preferredFoci);
-  if (!livekitServiceUrl) throw new Error('No LiveKit service url available for this call');
+  try {
+    await rtcSession.initialMembershipCalculated;
+    const livekitServiceUrl = getActiveLivekitServiceUrl(rtcSession, preferredFoci);
+    if (!livekitServiceUrl) throw new Error('No LiveKit service url available for this call');
 
-  const { url, jwt } = await getSfuConnectionDetails(
-    matrixClient,
-    livekitServiceUrl,
-    matrixRoom.roomId
-  );
-  if (keyProvider) await livekitRoom.setE2EEEnabled(true);
-  await livekitRoom.connect(url, jwt);
-  await livekitRoom.localParticipant.setMicrophoneEnabled(true).catch(() => undefined);
-  if (devicePreferences.audioOutputDeviceId) {
-    await livekitRoom.switchActiveDevice('audiooutput', devicePreferences.audioOutputDeviceId);
+    const { url, jwt } = await getSfuConnectionDetails(
+      matrixClient,
+      livekitServiceUrl,
+      matrixRoom.roomId
+    );
+    if (keyProvider) await livekitRoom.setE2EEEnabled(true);
+    await livekitRoom.connect(url, jwt);
+    await livekitRoom.localParticipant.setMicrophoneEnabled(true).catch(() => undefined);
+    if (devicePreferences.audioOutputDeviceId) {
+      await livekitRoom.switchActiveDevice('audiooutput', devicePreferences.audioOutputDeviceId);
+    }
+  } catch (error) {
+    keyProvider?.clearRtcSession();
+    await livekitRoom.disconnect().catch(() => undefined);
+    if (rtcSession.isJoined()) await rtcSession.leaveRoomSession(LEAVE_MEMBERSHIP_TIMEOUT_MS);
+    throw error;
   }
 
   return { matrixClient, matrixRoom, rtcSession, livekitRoom, keyProvider };
