@@ -18,6 +18,7 @@ import { TimelineSlider } from './timeline/TimelineSlider';
 import { /* RoomViewFollowing, */ RoomViewFollowingPlaceholder } from './layout/RoomViewFollowing';
 import { Page } from '../../components/page';
 import { RoomViewHeader } from './layout/RoomViewHeader';
+import { RoomCallBanner } from '../call';
 import { useKeyDown } from '../../hooks/useKeyDown';
 import { editableActiveElement } from '../../utils/dom';
 import { settingsAtom } from '../../state/settings';
@@ -160,6 +161,7 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
   return (
     <Page ref={roomViewRef} style={{ position: 'relative' }}>
       <RoomViewHeader />
+      <RoomCallBanner room={room} />
       <Box grow="Yes" direction="Column" style={{ position: 'relative' }}>
         {useTimelineV2 ? (
           <RoomTimelineV2

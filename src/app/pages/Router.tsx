@@ -1,4 +1,5 @@
 import React from 'react';
+import { Box } from 'folds';
 import {
   Outlet,
   Route,
@@ -72,6 +73,7 @@ import { CreateSpaceModalRenderer } from '../features/create-space';
 import { SearchModalRenderer } from '../features/search';
 import { ImageViewerRenderer } from '../components/image-viewer/ImageViewerRenderer';
 import { getFallbackSession } from '../state/sessions';
+import { CallBar, CallProvider } from '../features/call';
 
 export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize) => {
   const { hashRouter } = clientConfig;
@@ -127,25 +129,30 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
                 <ClientRoomsNotificationPreferences>
                   <ClientBindAtoms>
                     <ClientNonUIFeatures>
-                      <ClientLayout
-                        nav={
-                          <MobileFriendlyClientNav>
-                            <SidebarNav />
-                          </MobileFriendlyClientNav>
-                        }
-                      >
-                        <Outlet />
-                      </ClientLayout>
-                      <SearchModalRenderer />
-                      <ImageViewerRenderer />
-                      <UserRoomProfileRenderer />
-                      <ReactionViewerRenderer />
-                      <CreateRoomModalRenderer />
-                      <CreateSpaceModalRenderer />
-                      <RoomSettingsRenderer />
-                      <SpaceSettingsRenderer />
-                      <ReceiveSelfDeviceVerification />
-                      <AutoRestoreBackupOnVerification />
+                      <CallProvider>
+                        <Box grow="Yes" direction="Column">
+                          <CallBar />
+                          <ClientLayout
+                            nav={
+                              <MobileFriendlyClientNav>
+                                <SidebarNav />
+                              </MobileFriendlyClientNav>
+                            }
+                          >
+                            <Outlet />
+                          </ClientLayout>
+                        </Box>
+                        <SearchModalRenderer />
+                        <ImageViewerRenderer />
+                        <UserRoomProfileRenderer />
+                        <ReactionViewerRenderer />
+                        <CreateRoomModalRenderer />
+                        <CreateSpaceModalRenderer />
+                        <RoomSettingsRenderer />
+                        <SpaceSettingsRenderer />
+                        <ReceiveSelfDeviceVerification />
+                        <AutoRestoreBackupOnVerification />
+                      </CallProvider>
                     </ClientNonUIFeatures>
                   </ClientBindAtoms>
                 </ClientRoomsNotificationPreferences>

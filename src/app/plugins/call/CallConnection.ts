@@ -68,6 +68,7 @@ export const connectToCall = async (
   );
   if (keyProvider) await livekitRoom.setE2EEEnabled(true);
   await livekitRoom.connect(url, jwt);
+  await livekitRoom.localParticipant.setMicrophoneEnabled(true).catch(() => undefined);
   if (devicePreferences.audioOutputDeviceId) {
     await livekitRoom.switchActiveDevice('audiooutput', devicePreferences.audioOutputDeviceId);
   }
