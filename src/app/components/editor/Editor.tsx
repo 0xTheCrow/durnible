@@ -15,11 +15,15 @@ import {
   insertNodeAtRange,
   isEditorEmpty,
   normalizeEditorRoot,
+  stripDeadCaretAnchors,
 } from './editorInput';
 import { handleEditorShortcut } from './editorKeyboard';
+import { clearPendingInlineStyles, hasInlineStyleElement } from './editorFormatting';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
 import { useKeybinds } from '../../state/hooks/keybinds';
+import { useSetting } from '../../state/hooks/settings';
+import { settingsAtom } from '../../state/settings';
 import * as css from './Editor.css';
 import { getImageUrlBlob } from '../../utils/dom';
 
@@ -69,6 +73,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
     const mx = useMatrixClient();
     const useAuthentication = useMediaAuthentication();
     const keybinds = useKeybinds();
+    const [isMarkdownEnabled] = useSetting(settingsAtom, 'isMarkdownEnabled');
 
     const [isEmpty, setIsEmpty] = useState(true);
     const inputRef = useRef<HTMLDivElement>(null);
@@ -149,8 +154,13 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
     const handleInput: FormEventHandler<HTMLDivElement> = useCallback(
       (evt) => {
         const inputElement = inputRef.current;
-        if (inputElement && !(evt.nativeEvent as InputEvent).isComposing) {
+        const nativeEvent = evt.nativeEvent as InputEvent;
+        if (inputElement && !nativeEvent.isComposing) {
           normalizeEditorRoot(inputElement);
+          stripDeadCaretAnchors(inputElement);
+          if (isEditorEmpty(inputElement) && !hasInlineStyleElement(inputElement)) {
+            clearPendingInlineStyles();
+          }
         }
         syncEditorState();
       },
@@ -253,13 +263,13 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
         if (evt.defaultPrevented) return;
         const inputElement = inputRef.current;
         if (!inputElement) return;
-        if (handleEditorShortcut(inputElement, evt, keybinds)) {
+        if (handleEditorShortcut(inputElement, evt, keybinds, isMarkdownEnabled)) {
           evt.preventDefault();
           evt.stopPropagation();
           inputElement.dispatchEvent(new Event('input', { bubbles: true }));
         }
       },
-      [onKeyDown, keybinds]
+      [onKeyDown, keybinds, isMarkdownEnabled]
     );
 
     return (

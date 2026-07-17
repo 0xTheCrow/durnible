@@ -51,10 +51,10 @@ describe('handleEditorShortcut — inline marks', () => {
     ['i', 'italic'],
     ['u', 'underline'],
     ['s', 'strikeThrough'],
-  ])('Mod+%s dispatches toggleExecFormat(%j) and returns true', (key, command) => {
+  ])('Mod+%s calls toggleInlineMark(inputElement, %j) and returns true', (key, mark) => {
     const inputElement = setupContainer();
     const handled = handleEditorShortcut(inputElement, makeKeyEvent(key, { mod: true }));
-    expect(mocked.toggleExecFormat).toHaveBeenCalledWith(command);
+    expect(mocked.toggleInlineMark).toHaveBeenCalledWith(inputElement, mark);
     expect(handled).toBe(true);
   });
 
@@ -64,7 +64,7 @@ describe('handleEditorShortcut — inline marks', () => {
       mocked.isBlockFormatActive.mockImplementation((_, tag) => tag === 'pre');
       const inputElement = setupContainer();
       const handled = handleEditorShortcut(inputElement, makeKeyEvent(key, { mod: true }));
-      expect(mocked.toggleExecFormat).not.toHaveBeenCalled();
+      expect(mocked.toggleInlineMark).not.toHaveBeenCalled();
       expect(handled).toBe(false);
     }
   );

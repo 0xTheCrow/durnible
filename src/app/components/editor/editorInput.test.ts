@@ -12,6 +12,7 @@ import {
   isEditorEmpty,
   normalizeEditorRoot,
   restoreEditorDraft,
+  stripDeadCaretAnchors,
   NODE_TYPE_ATTR,
   EMOTICON_NODE,
 } from './editorInput';
@@ -376,5 +377,53 @@ describe('restoreEditorDraft', () => {
     // A live mention serializes to its id; a flattened one would serialize to
     // the display name 'Alice'.
     expect(domToPlainText(restored)).toBe('@alice:server.com');
+  });
+});
+
+describe('stripDeadCaretAnchors', () => {
+  const ZWSP = '\u200B';
+
+  const setCaret = (node: Node, offset: number) => {
+    const range = document.createRange();
+    range.setStart(node, offset);
+    range.collapse(true);
+    const sel = window.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+  };
+
+  it('removes an anchor that shares a text node with typed text and keeps the caret', () => {
+    const root = document.createElement('div');
+    root.innerHTML = `<strong>${ZWSP}hi</strong>`;
+    document.body.appendChild(root);
+    const text = root.querySelector('strong')!.firstChild as Text;
+    setCaret(text, 3);
+
+    stripDeadCaretAnchors(root);
+
+    expect(root.querySelector('strong')?.textContent).toBe('hi');
+    const range = window.getSelection()!.getRangeAt(0);
+    expect(range.startContainer).toBe(text);
+    expect(range.startOffset).toBe(2);
+  });
+
+  it('strips a trailing exit anchor merged with following text', () => {
+    const root = document.createElement('div');
+    root.innerHTML = `<strong>hi</strong>${ZWSP} world`;
+    document.body.appendChild(root);
+
+    stripDeadCaretAnchors(root);
+
+    expect(root.textContent).toBe('hi world');
+  });
+
+  it('keeps a lone length-1 anchor still holding the caret', () => {
+    const root = document.createElement('div');
+    root.innerHTML = `<strong>hi</strong>${ZWSP}`;
+    document.body.appendChild(root);
+
+    stripDeadCaretAnchors(root);
+
+    expect(root.textContent).toBe(`hi${ZWSP}`);
   });
 });

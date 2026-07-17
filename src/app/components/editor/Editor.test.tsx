@@ -116,10 +116,10 @@ describe('EditorController', () => {
 });
 
 describe('CustomEditor — keyboard integration', () => {
-  it('Mod+B dispatches the editorFormatting.toggleExecFormat helper', () => {
+  it('Mod+B dispatches the editorFormatting.toggleInlineMark helper', () => {
     const { editable } = renderEditor();
     fireEvent.keyDown(editable, { key: 'b', ctrlKey: true });
-    expect(mockedFormatting.toggleExecFormat).toHaveBeenCalledWith('bold');
+    expect(mockedFormatting.toggleInlineMark).toHaveBeenCalledWith(expect.anything(), 'bold');
   });
 });
 

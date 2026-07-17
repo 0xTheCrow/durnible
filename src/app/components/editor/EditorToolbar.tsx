@@ -29,12 +29,13 @@ import { domToMarkdown, domToMatrixCustomHTML, trimCustomHtml } from './editorOu
 import {
   isBlockFormatActive,
   isCodeActive,
-  isFormatActive,
+  isInlineMarkActive,
   isSpoilerActive,
   toggleBlockFormat,
   toggleCodeBlock,
   toggleExecFormat,
   toggleInlineCode,
+  toggleInlineMark,
   toggleSpoiler,
 } from './editorFormatting';
 
@@ -90,6 +91,7 @@ function InlineButton({ icon, tooltip, active, onClick, disabled, testId }: Inli
       {(triggerRef) => (
         <IconButton
           ref={triggerRef}
+          className={active ? css.ToolbarButtonActive : undefined}
           variant="SurfaceVariant"
           onMouseDown={preventFocusLoss}
           onTouchStart={preventFocusLoss}
@@ -122,6 +124,7 @@ function BlockButton({ icon, tooltip, active, onClick, disabled, testId }: Block
       {(triggerRef) => (
         <IconButton
           ref={triggerRef}
+          className={active ? css.ToolbarButtonActive : undefined}
           variant="SurfaceVariant"
           onMouseDown={preventFocusLoss}
           onTouchStart={preventFocusLoss}
@@ -247,6 +250,7 @@ function HeadingButton({ inputRef, onFormat, disabled }: HeadingButtonProps) {
       }
     >
       <IconButton
+        className={isActive ? css.ToolbarButtonActive : undefined}
         style={{ width: 'unset' }}
         variant="SurfaceVariant"
         onMouseDown={preventFocusLoss}
@@ -286,11 +290,21 @@ export function EditorToolbar({ inputRef, controllerRef, onFormat }: EditorToolb
     const inputElement = inputRef.current;
     if (!inputElement) return undefined;
     const sync = () => setTick((n) => n + 1);
+    const syncOnSelection = () => {
+      const selection = document.getSelection();
+      if (
+        selection &&
+        selection.rangeCount > 0 &&
+        inputElement.contains(selection.getRangeAt(0).startContainer)
+      ) {
+        sync();
+      }
+    };
     inputElement.addEventListener('input', sync);
-    inputElement.addEventListener('keyup', sync);
+    document.addEventListener('selectionchange', syncOnSelection);
     return () => {
       inputElement.removeEventListener('input', sync);
-      inputElement.removeEventListener('keyup', sync);
+      document.removeEventListener('selectionchange', syncOnSelection);
     };
   }, [inputRef]);
 
@@ -339,22 +353,23 @@ export function EditorToolbar({ inputRef, controllerRef, onFormat }: EditorToolb
             <InlineButton
               icon={Icons.Bold}
               tooltip={<ToolbarTooltip text="Bold" keybind={KeybindAction.FormatBold} />}
-              active={isFormatActive('bold')}
-              onClick={() => applyFormat(() => toggleExecFormat('bold'))}
+              active={inputElement ? isInlineMarkActive(inputElement, 'bold') : false}
+              onClick={() => applyFormat((target) => toggleInlineMark(target, 'bold'))}
               disabled={!isMarkdownEnabled || isInsideCodeBlock}
+              testId="editor-toolbar-bold"
             />
             <InlineButton
               icon={Icons.Italic}
               tooltip={<ToolbarTooltip text="Italic" keybind={KeybindAction.FormatItalic} />}
-              active={isFormatActive('italic')}
-              onClick={() => applyFormat(() => toggleExecFormat('italic'))}
+              active={inputElement ? isInlineMarkActive(inputElement, 'italic') : false}
+              onClick={() => applyFormat((target) => toggleInlineMark(target, 'italic'))}
               disabled={!isMarkdownEnabled || isInsideCodeBlock}
             />
             <InlineButton
               icon={Icons.Underline}
               tooltip={<ToolbarTooltip text="Underline" keybind={KeybindAction.FormatUnderline} />}
-              active={isFormatActive('underline')}
-              onClick={() => applyFormat(() => toggleExecFormat('underline'))}
+              active={inputElement ? isInlineMarkActive(inputElement, 'underline') : false}
+              onClick={() => applyFormat((target) => toggleInlineMark(target, 'underline'))}
               disabled={!isMarkdownEnabled || isInsideCodeBlock}
             />
             <InlineButton
@@ -362,8 +377,8 @@ export function EditorToolbar({ inputRef, controllerRef, onFormat }: EditorToolb
               tooltip={
                 <ToolbarTooltip text="Strike Through" keybind={KeybindAction.FormatStrikethrough} />
               }
-              active={isFormatActive('strikeThrough')}
-              onClick={() => applyFormat(() => toggleExecFormat('strikeThrough'))}
+              active={inputElement ? isInlineMarkActive(inputElement, 'strikeThrough') : false}
+              onClick={() => applyFormat((target) => toggleInlineMark(target, 'strikeThrough'))}
               disabled={!isMarkdownEnabled || isInsideCodeBlock}
             />
             <InlineButton
@@ -432,6 +447,7 @@ export function EditorToolbar({ inputRef, controllerRef, onFormat }: EditorToolb
               {(triggerRef) => (
                 <IconButton
                   ref={triggerRef}
+                  className={isMarkdownEnabled ? css.ToolbarButtonActive : undefined}
                   variant="SurfaceVariant"
                   onMouseDown={preventFocusLoss}
                   onTouchStart={preventFocusLoss}
