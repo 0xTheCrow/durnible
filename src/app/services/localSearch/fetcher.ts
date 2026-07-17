@@ -49,7 +49,7 @@ const extractDecryptedMessages = (
     const body = content?.body;
     if (typeof body !== 'string' || !body) continue;
     if (mEvt.isDecryptionFailure()) continue;
-    const { msgtype } = content;
+    const { msgtype, formatted_body: formattedBody, format } = content;
     const isText = msgtype === 'm.text' || msgtype === 'm.notice' || msgtype === 'm.emote';
     const isMedia =
       msgtype === 'm.image' ||
@@ -57,6 +57,14 @@ const extractDecryptedMessages = (
       msgtype === 'm.audio' ||
       msgtype === 'm.file';
     if (!isText && !isMedia) continue;
+
+    let storedContent: Record<string, unknown> | undefined;
+    if (isMedia) {
+      storedContent = content as Record<string, unknown>;
+    } else if (typeof formattedBody === 'string') {
+      storedContent = { format, formatted_body: formattedBody };
+    }
+
     messages.push({
       event_id: mEvt.getId() ?? '',
       room_id: roomId,
@@ -64,7 +72,7 @@ const extractDecryptedMessages = (
       origin_server_ts: mEvt.getTs(),
       body,
       type: msgtype,
-      content: isMedia ? (content as Record<string, unknown>) : undefined,
+      content: storedContent,
     });
   }
   return messages;

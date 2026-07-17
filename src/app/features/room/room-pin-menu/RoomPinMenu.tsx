@@ -100,6 +100,7 @@ type PinnedMessageProps = {
   legacyUsernameColor: boolean;
   hour24Clock: boolean;
   dateFormatString: string;
+  htmlReactParserOptions: HTMLReactParserOptions;
 };
 function PinnedMessage({
   room,
@@ -112,6 +113,7 @@ function PinnedMessage({
   legacyUsernameColor,
   hour24Clock,
   dateFormatString,
+  htmlReactParserOptions,
 }: PinnedMessageProps) {
   const pinnedEvent = useRoomEvent(room, eventId);
   const useAuthentication = useMediaAuthentication();
@@ -238,6 +240,7 @@ function PinnedMessage({
           getMemberPowerTag={getMemberPowerTag}
           accessibleTagColors={accessibleTagColors}
           legacyUsernameColor={legacyUsernameColor}
+          htmlReactParserOptions={htmlReactParserOptions}
         />
       )}
       {renderContent(pinnedEvent.getType(), false, pinnedEvent, displayName, getContent)}
@@ -508,6 +511,7 @@ export const RoomPinMenu = forwardRef<HTMLDivElement, RoomPinMenuProps>(
                               legacyUsernameColor={legacyUsernameColor || direct}
                               hour24Clock={hour24Clock}
                               dateFormatString={dateFormatString}
+                              htmlReactParserOptions={htmlReactParserOptions}
                             />
                           </SequenceCard>
                         </VirtualTile>

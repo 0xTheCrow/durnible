@@ -312,6 +312,8 @@ export function MessageSearch({
     setSearchParams((prevParams) => {
       const newParams = new URLSearchParams(prevParams);
       newParams.delete('term');
+      newParams.delete('has');
+      newParams.delete('senders');
       return newParams;
     });
   };

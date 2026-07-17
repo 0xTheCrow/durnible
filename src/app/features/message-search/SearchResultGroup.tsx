@@ -313,6 +313,7 @@ export function SearchResultGroup({
                       getMemberPowerTag={getMemberPowerTag}
                       accessibleTagColors={accessibleTagColors}
                       legacyUsernameColor={legacyUsernameColor}
+                      htmlReactParserOptions={htmlReactParserOptions}
                     />
                   )}
                   {renderMatrixEvent(event.type, false, event, displayName, getContent)}
