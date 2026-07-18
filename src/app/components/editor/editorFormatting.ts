@@ -93,7 +93,8 @@ export const toggleExecFormat = (command: string) => {
 };
 
 export const hasInlineStyleElement = (inputElement: HTMLElement): boolean =>
-  inputElement.querySelector('strong, b, em, i, u, s, del, strike') !== null;
+  inputElement.querySelector('strong, b, em, i, u, s, del, strike, code, [data-mx-spoiler]') !==
+  null;
 
 export const clearPendingInlineStyles = () => {
   // Both calls are load-bearing when run from the input handler: Chromium clears

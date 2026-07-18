@@ -10,6 +10,7 @@ import React, {
 import { Box, Scroll } from 'folds';
 import type { HtmlToEditorDomOptions } from './editorInput';
 import {
+  ensureInlineBoundaryAnchors,
   handleEditorBackspace,
   htmlToEditorDom,
   insertNodeAtRange,
@@ -128,6 +129,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
           if (!inputElement) return;
           const fragment = htmlToEditorDom(html, { mx, useAuthentication, ...options });
           inputElement.replaceChildren(fragment);
+          ensureInlineBoundaryAnchors(inputElement);
           savedRangeRef.current = null;
           syncEditorState();
         },
@@ -158,6 +160,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
         if (inputElement && !nativeEvent.isComposing) {
           normalizeEditorRoot(inputElement);
           stripDeadCaretAnchors(inputElement);
+          ensureInlineBoundaryAnchors(inputElement);
           if (isEditorEmpty(inputElement) && !hasInlineStyleElement(inputElement)) {
             clearPendingInlineStyles();
           }
