@@ -5,6 +5,7 @@ import { willEventRender } from './willEventRender';
 import { createMockMatrixEvent } from '../../../../test/mocks';
 
 const DEFAULT_SETTINGS = {
+  ignoredUsersSet: new Set<string>(),
   showHiddenEvents: false,
   hideMembershipEvents: false,
   hideNickAvatarEvents: false,
@@ -52,6 +53,40 @@ function memberEvent(opts: { membershipChanged: boolean }) {
   (event as unknown as { getPrevContent: () => unknown }).getPrevContent = vi.fn(() => prevContent);
   return event;
 }
+
+// ─── Ignored users / redacted message filtering ───────────────────────────
+
+describe('willEventRender — ignored users and redacted messages', () => {
+  it('returns false for an event from an ignored sender', () => {
+    const evt = withRelation(
+      createMockMatrixEvent({ type: 'm.room.message', sender: '@blocked:example.com' }),
+      null
+    );
+    expect(
+      willEventRender(evt, {
+        ...DEFAULT_SETTINGS,
+        ignoredUsersSet: new Set(['@blocked:example.com']),
+        showHiddenEvents: true,
+      })
+    ).toBe(false);
+  });
+
+  it('returns false for a redacted message when showHiddenEvents is off', () => {
+    const evt = withRelation(
+      createMockMatrixEvent({ type: 'm.room.message', redacted: true }),
+      null
+    );
+    expect(willEventRender(evt, DEFAULT_SETTINGS)).toBe(false);
+  });
+
+  it('returns true for a redacted message when showHiddenEvents is on', () => {
+    const evt = withRelation(
+      createMockMatrixEvent({ type: 'm.room.message', redacted: true }),
+      null
+    );
+    expect(willEventRender(evt, { ...DEFAULT_SETTINGS, showHiddenEvents: true })).toBe(true);
+  });
+});
 
 // ─── Reaction / edit filtering ────────────────────────────────────────────
 

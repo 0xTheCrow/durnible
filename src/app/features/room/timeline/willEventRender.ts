@@ -3,6 +3,7 @@ import { isMembershipChanged, reactionOrEditEvent } from '../../../utils/room';
 import { MessageEvent, StateEvent } from '../../../../types/matrix/room';
 
 export type WillEventRenderSettings = {
+  ignoredUsersSet: Set<string>;
   showHiddenEvents: boolean;
   hideMembershipEvents: boolean;
   hideNickAvatarEvents: boolean;
@@ -10,8 +11,16 @@ export type WillEventRenderSettings = {
 
 export const willEventRender = (
   mEvent: MatrixEvent,
-  { showHiddenEvents, hideMembershipEvents, hideNickAvatarEvents }: WillEventRenderSettings
+  {
+    ignoredUsersSet,
+    showHiddenEvents,
+    hideMembershipEvents,
+    hideNickAvatarEvents,
+  }: WillEventRenderSettings
 ): boolean => {
+  const sender = mEvent.getSender();
+  if (sender && ignoredUsersSet.has(sender)) return false;
+  if (mEvent.isRedacted() && !showHiddenEvents) return false;
   if (reactionOrEditEvent(mEvent)) return false;
   if (!showHiddenEvents) {
     if (mEvent.isRedaction()) return false;

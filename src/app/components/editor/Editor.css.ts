@@ -133,6 +133,19 @@ export const MarkdownBtnBox = style({
   paddingRight: config.space.S100,
 });
 
+export const ToolbarButtonActive = style({
+  selectors: {
+    '&[aria-pressed=true]': {
+      backgroundColor: color.SurfaceVariant.OnContainer,
+      color: color.SurfaceVariant.Container,
+    },
+    '&[aria-pressed=true]:hover, &[aria-pressed=true]:focus-visible, &[aria-pressed=true]:active': {
+      backgroundColor: color.SurfaceVariant.OnContainer,
+      color: color.SurfaceVariant.Container,
+    },
+  },
+});
+
 export const MarkdownIconInactive = style({
   opacity: config.opacity.Placeholder,
 });

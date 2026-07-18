@@ -161,6 +161,7 @@ function TimelineEventComponent({
         getMemberPowerTag={getMemberPowerTag}
         accessibleTagColors={accessiblePowerTagColors}
         legacyUsernameColor={legacyUsernameColor || direct}
+        htmlReactParserOptions={htmlReactParserOptions}
       />
     ) : undefined;
 

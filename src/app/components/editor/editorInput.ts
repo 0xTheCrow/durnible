@@ -636,6 +636,49 @@ export const normalizeEditorRoot = (element: HTMLElement): boolean => {
   return true;
 };
 
+export const stripDeadCaretAnchors = (element: HTMLElement): void => {
+  const selection = window.getSelection();
+  let caretNode: Node | null = null;
+  let caretOffset = 0;
+  if (selection && selection.rangeCount > 0) {
+    const range = selection.getRangeAt(0);
+    if (range.collapsed && element.contains(range.startContainer)) {
+      caretNode = range.startContainer;
+      caretOffset = range.startOffset;
+    }
+  }
+
+  const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+  const textNodes: Text[] = [];
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    textNodes.push(node as Text);
+  }
+
+  let changed = false;
+  textNodes.forEach((textNode) => {
+    const { data } = textNode;
+    if (data.length <= 1 || !data.includes(INLINE_VOID_CARET_ANCHOR)) return;
+
+    if (caretNode === textNode) {
+      let removedBeforeCaret = 0;
+      for (let i = 0; i < caretOffset && i < data.length; i += 1) {
+        if (data[i] === INLINE_VOID_CARET_ANCHOR) removedBeforeCaret += 1;
+      }
+      caretOffset -= removedBeforeCaret;
+    }
+    textNode.replaceData(0, data.length, stripCaretAnchors(data));
+    changed = true;
+  });
+
+  if (changed && caretNode && caretNode.isConnected) {
+    const range = document.createRange();
+    range.setStart(caretNode, Math.min(caretOffset, (caretNode as Text).data.length));
+    range.collapse(true);
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+  }
+};
+
 // Parse the draft as-is; routing it through htmlToEditorDom/sanitize strips the
 // internal void-node attributes and flattens mentions/emojis to text.
 export const restoreEditorDraft = (element: HTMLElement, html: string): void => {

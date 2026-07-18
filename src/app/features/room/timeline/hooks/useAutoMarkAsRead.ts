@@ -7,8 +7,8 @@ import { useRoomUnread } from '../../../../state/hooks/unread';
 import { roomToUnreadAtom } from '../../../../state/room/roomToUnread';
 import { markAsRead } from '../../../../utils/notifications';
 import { getReadReceiptEventId } from '../../../../utils/room/receipts';
-import { useLiveEventArrive } from '../../timeline/timelineState';
-import { getEventTimeline, getFirstLinkedTimeline } from '../../timeline/timelineUtils';
+import { useLiveEventArrive } from '../timelineState';
+import { getEventTimeline, getFirstLinkedTimeline } from '../timelineUtils';
 
 type UseAutoMarkAsReadParams = {
   mx: MatrixClient;

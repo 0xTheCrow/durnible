@@ -36,9 +36,9 @@ import {
   renderMatrixMention,
 } from '../../../../plugins/react-custom-html-parser';
 import { decryptAllTimelineEvent } from '../../../../utils/room';
-import { getLinkedTimelines, getLiveTimeline } from '../../timeline/timelineUtils';
-import { useTimelineClickHandlers } from '../../timeline/useTimelineClickHandlers';
-import type { TimelineMessageContextValue } from '../../timeline/TimelineMessageContext';
+import { getLinkedTimelines, getLiveTimeline } from '../timelineUtils';
+import { useTimelineClickHandlers } from '../useTimelineClickHandlers';
+import type { TimelineMessageContextValue } from '../TimelineMessageContext';
 
 type Params = {
   room: Room;

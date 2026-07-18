@@ -3,7 +3,7 @@ import { render, act } from '@testing-library/react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import type { MatrixClient, Room } from 'matrix-js-sdk';
 import { RoomEvent } from 'matrix-js-sdk';
-import { createEventEmitterRoom, createFakeEvent } from '../../timeline/timelineTestHelpers';
+import { createEventEmitterRoom, createFakeEvent } from '../timelineTestHelpers';
 import { createMockMatrixClient } from '../../../../../test/mocks';
 import { markAsRead } from '../../../../utils/notifications';
 import type * as NotificationsModule from '../../../../utils/notifications';

@@ -3,8 +3,8 @@ import { render, act } from '@testing-library/react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import type { EventTimeline, MatrixEvent, Room } from 'matrix-js-sdk';
 import { RoomEvent, RelationType } from 'matrix-js-sdk';
-import { createEventEmitterRoom } from '../../timeline/timelineTestHelpers';
-import type { Timeline } from '../../timeline/timelineState';
+import { createEventEmitterRoom } from '../timelineTestHelpers';
+import type { Timeline } from '../timelineState';
 import { useLiveTimelineUpdates } from './useLiveTimelineUpdates';
 import type { ScrollIntent } from './useScrollController';
 
@@ -57,13 +57,6 @@ function Harness({
     linkedTimelines: linkedTimelinesWithCount(totalEvents),
     range: { ...INITIAL_RANGE },
   });
-  const scrollElement = {
-    scrollHeight: 0,
-    offsetHeight: 0,
-    scrollTop: 0,
-  } as unknown as HTMLDivElement;
-  const scrollRef = useRef(scrollElement);
-  scrollRef.current = scrollElement;
   const atBottomRef = useRef(atBottom);
   atBottomRef.current = atBottom;
   const isInLivePaginationWindowRef = useRef(isInLivePaginationWindow);
@@ -73,7 +66,6 @@ function Harness({
   useLiveTimelineUpdates({
     room,
     setTimeline,
-    scrollRef,
     atBottomRef,
     isInLivePaginationWindowRef,
     intentRef,

@@ -1,8 +1,8 @@
 import React from 'react';
 import classNames from 'classnames';
 import { Box, as } from 'folds';
-import * as css from './RoomTimeline.css';
-import type { TimelineOverlayVariants } from './RoomTimeline.css';
+import * as css from './TimelineOverlay.css';
+import type { TimelineOverlayVariants } from './TimelineOverlay.css';
 
 export const TimelineOverlay = as<'div', TimelineOverlayVariants>(
   ({ position, className, ...props }, ref) => (

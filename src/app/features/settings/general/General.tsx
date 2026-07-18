@@ -533,24 +533,6 @@ function Advanced() {
   );
 }
 
-// TEMPORARY: top-of-page toggle for the in-progress RoomTimelineV2 rewrite.
-// Remove this whole component (and the setting) once V2 replaces V1.
-function ExperimentalTimelineToggle() {
-  const [useTimelineV2, setUseTimelineV2] = useSetting(settingsAtom, 'useTimelineV2');
-  return (
-    <Box direction="Column" gap="100">
-      <Text size="L400">Experimental</Text>
-      <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
-        <SettingTile
-          title="Use new timeline (V2)"
-          description="In-development rewrite of the room timeline. Toggle to compare against the current implementation."
-          after={<Switch variant="Primary" value={useTimelineV2} onChange={setUseTimelineV2} />}
-        />
-      </SequenceCard>
-    </Box>
-  );
-}
-
 type GeneralProps = {
   onBack: () => void;
   onClose: () => void;
@@ -568,7 +550,6 @@ export function General({ onBack, onClose }: GeneralProps) {
               <Editor />
               <Messages />
               <Advanced />
-              <ExperimentalTimelineToggle />
             </Box>
           </PageContent>
         </Scroll>

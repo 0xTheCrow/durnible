@@ -5,7 +5,7 @@ import {
   installResizeObserverStub,
   resizeObserverInstances,
   stubScrollGeometry,
-} from '../../timeline/timelineTestHelpers';
+} from '../timelineTestHelpers';
 import { useScrollController, LIVE_EDGE_THRESHOLD_PX } from './useScrollController';
 import type { ScrollController } from './useScrollController';
 
