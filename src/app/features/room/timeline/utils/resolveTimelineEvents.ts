@@ -3,7 +3,7 @@ import {
   getTimelineAndBaseIndex,
   getTimelineEvent,
   getTimelineRelativeIndex,
-} from '../../timeline/timelineUtils';
+} from '../timelineUtils';
 
 export type ResolvedTimelineEvent = {
   mEvent: MatrixEvent;

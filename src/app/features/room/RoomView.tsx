@@ -10,7 +10,6 @@ import { useMatrixClient } from '../../hooks/useMatrixClient';
 import type { EditorController } from '../../components/editor';
 import { RoomInputPlaceholder } from './input/RoomInputPlaceholder';
 import { RoomTimeline } from './timeline/RoomTimeline';
-import { RoomTimelineV2 } from './timeline-v2/RoomTimelineV2';
 import { RoomViewTyping } from './layout/RoomViewTyping';
 import { RoomTombstone } from './layout/RoomTombstone';
 import { RoomInput } from './input/RoomInput';
@@ -68,7 +67,6 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
   const roomViewRef = useRef<HTMLDivElement>(null);
 
   const [_hideActivity] = useSetting(settingsAtom, 'hideActivity');
-  const [useTimelineV2] = useSetting(settingsAtom, 'useTimelineV2');
   const screenSize = useScreenSizeContext();
 
   const { roomId } = room;
@@ -161,23 +159,13 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
     <Page ref={roomViewRef} style={{ position: 'relative' }}>
       <RoomViewHeader />
       <Box grow="Yes" direction="Column" style={{ position: 'relative' }}>
-        {useTimelineV2 ? (
-          <RoomTimelineV2
-            key={roomId}
-            room={room}
-            eventId={eventId}
-            roomInputRef={roomInputRef}
-            editorInputRef={editorInputRef}
-          />
-        ) : (
-          <RoomTimeline
-            key={roomId}
-            room={room}
-            eventId={eventId}
-            roomInputRef={roomInputRef}
-            editorInputRef={editorInputRef}
-          />
-        )}
+        <RoomTimeline
+          key={roomId}
+          room={room}
+          eventId={eventId}
+          roomInputRef={roomInputRef}
+          editorInputRef={editorInputRef}
+        />
         <RoomViewTyping room={room} />
         <TimelineSlider
           room={room}

@@ -45,18 +45,9 @@ export const getInitialTimeline = (room: Room): Timeline => {
   };
 };
 
-export const getEmptyTimeline = (): Timeline => ({
-  range: { oldest: 0, newest: 0 },
-  linkedTimelines: [],
-});
-
-// Loads the event's timeline (fetching from the server if necessary), then
-// paginates backwards/forwards until at least `contextSize` events surround
-// the target on each side, and decrypts all events in the linked timelines.
-// Returns the resulting linked timelines and the absolute index of the target,
-// or null on error. Surrounding context being loaded + decrypted up front means
-// callers can render the new range and scroll to the target without later
-// height shifts from late-arriving content.
+// Surrounding context is loaded and decrypted up front so callers can render
+// the new range and scroll to the target without later height shifts from
+// late-arriving content.
 export const loadEventContext = async (
   mx: MatrixClient,
   room: Room,
@@ -209,7 +200,6 @@ export const useTimelinePagination = (
         timelineToPaginate.getNeighbouringTimeline(
           backwards ? Direction.Backward : Direction.Forward
         ) ?? timelineToPaginate;
-      // Decrypt all event ahead of render cycle
       const roomId = fetchedTimeline.getRoomId();
       const room = roomId ? mx.getRoom(roomId) : null;
 

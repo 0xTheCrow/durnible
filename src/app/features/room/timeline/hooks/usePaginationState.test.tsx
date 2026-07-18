@@ -5,7 +5,7 @@ import type { EventTimeline, MatrixClient, MatrixEvent, Room } from 'matrix-js-s
 import { RelationType } from 'matrix-js-sdk';
 import { MatrixClientProvider } from '../../../../hooks/useMatrixClient';
 import { createMockMatrixClient, createMockRoom } from '../../../../../test/mocks';
-import type { Timeline } from '../../timeline/timelineState';
+import type { Timeline } from '../timelineState';
 import { usePaginationState } from './usePaginationState';
 
 const messageEvent = (): MatrixEvent =>
