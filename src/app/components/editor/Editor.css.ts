@@ -12,6 +12,35 @@ export const Editor = style([
   },
 ]);
 
+export const ActiveFormatBadges = style([
+  DefaultReset,
+  {
+    position: 'absolute',
+    top: 0,
+    left: toRem(48),
+    transform: 'translateY(-50%)',
+    pointerEvents: 'none',
+  },
+]);
+
+export const ActiveFormatBadge = style([
+  DefaultReset,
+  {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: toRem(2),
+    color: color.SurfaceVariant.Container,
+    backgroundColor: color.SurfaceVariant.OnContainer,
+    borderRadius: config.radii.R300,
+  },
+]);
+
+globalStyle(`${ActiveFormatBadge} svg`, {
+  width: toRem(11),
+  height: toRem(11),
+});
+
 export const EditorOptions = style([
   DefaultReset,
   {
@@ -130,7 +159,7 @@ export const EditorToolbar = style({
 });
 
 export const MarkdownBtnBox = style({
-  paddingRight: config.space.S100,
+  paddingRight: 0,
 });
 
 export const ToolbarButtonActive = style({

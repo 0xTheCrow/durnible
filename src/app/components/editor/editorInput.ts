@@ -679,6 +679,28 @@ export const stripDeadCaretAnchors = (element: HTMLElement): void => {
   }
 };
 
+// A generic inline element (spoiler span, inline code) at the start or end of its
+// block has no caret position beside it on the open side, so the caret can't be
+// placed before or after it to type unformatted text. A boundary anchor gives that
+// position; it's stripped on serialization and collapsed by stripDeadCaretAnchors
+// once text is typed beside it. The anchor is what makes a click/arrow-reachable
+// outside position exist at all in Chromium, which won't hold a caret next to a
+// boundary inline element without a text node there.
+const INLINE_BOUNDARY_SELECTOR = 'code, [data-mx-spoiler]';
+
+export const ensureInlineBoundaryAnchors = (element: HTMLElement): void => {
+  const spans = element.querySelectorAll<HTMLElement>(INLINE_BOUNDARY_SELECTOR);
+  spans.forEach((span) => {
+    if (span.closest('pre')) return;
+    if (!span.previousSibling) {
+      span.parentNode?.insertBefore(document.createTextNode(INLINE_VOID_CARET_ANCHOR), span);
+    }
+    if (!span.nextSibling) {
+      span.parentNode?.appendChild(document.createTextNode(INLINE_VOID_CARET_ANCHOR));
+    }
+  });
+};
+
 // Parse the draft as-is; routing it through htmlToEditorDom/sanitize strips the
 // internal void-node attributes and flattens mentions/emojis to text.
 export const restoreEditorDraft = (element: HTMLElement, html: string): void => {

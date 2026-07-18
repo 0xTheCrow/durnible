@@ -5,5 +5,7 @@ export * from './editorInput';
 export * from './editorFormatting';
 export * from './editorKeyboard';
 export * from './EditorToolbar';
+export * from './ActiveFormatBadges';
+export * from './useEditorActiveFormats';
 export * from './editorOutput';
 export * from './useEditorAutocomplete';

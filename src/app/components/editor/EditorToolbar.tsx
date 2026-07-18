@@ -389,6 +389,7 @@ export function EditorToolbar({ inputRef, controllerRef, onFormat }: EditorToolb
               active={inputElement ? isCodeActive(inputElement) : false}
               onClick={() => applyFormat(toggleInlineCode)}
               disabled={!isMarkdownEnabled || isInsideCodeBlock}
+              testId="editor-toolbar-inline-code"
             />
             <InlineButton
               icon={Icons.EyeBlind}
@@ -396,6 +397,7 @@ export function EditorToolbar({ inputRef, controllerRef, onFormat }: EditorToolb
               active={inputElement ? isSpoilerActive(inputElement) : false}
               onClick={() => applyFormat(toggleSpoiler)}
               disabled={!isMarkdownEnabled || isInsideCodeBlock}
+              testId="editor-toolbar-spoiler"
             />
           </Box>
           <Line variant="SurfaceVariant" direction="Vertical" style={{ height: toRem(12) }} />

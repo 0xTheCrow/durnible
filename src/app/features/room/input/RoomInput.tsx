@@ -25,6 +25,7 @@ import type { AutocompleteQuery, EditorController } from '../../../components/ed
 import {
   CustomEditor,
   EditorToolbar,
+  ActiveFormatBadges,
   AutocompletePrefix,
   RoomMentionAutocomplete,
   UserMentionAutocomplete,
@@ -627,7 +628,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     };
 
     return (
-      <div ref={ref}>
+      <div ref={ref} style={{ position: 'relative' }}>
         <Overlay
           open={dropZoneVisible}
           backdrop={<OverlayBackdrop />}
@@ -829,6 +830,15 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
                 </div>
               )
             }
+          />
+        )}
+        {!isVoiceRecording && !toolbar && (
+          <ActiveFormatBadges
+            inputRef={{
+              get current() {
+                return editorInputRef.current?.inputElement ?? null;
+              },
+            }}
           />
         )}
       </div>
