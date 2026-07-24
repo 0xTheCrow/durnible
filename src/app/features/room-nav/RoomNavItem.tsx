@@ -23,7 +23,7 @@ import FocusTrap from 'focus-trap-react';
 import { NavItem, NavItemContent, NavItemOptions, NavLink } from '../../components/nav';
 import { UnreadBadge, UnreadBadgeCenter } from '../../components/unread-badge';
 import { RoomAvatar, RoomIcon } from '../../components/room-avatar';
-import { getDirectRoomAvatarUrl, getRoomAvatarUrl } from '../../utils/room';
+import { getDirectRoomAvatarUrl, getRoomAvatarUrl, isCallRoom } from '../../utils/room';
 import { nameInitials } from '../../utils/common';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { useRoomUnread } from '../../state/hooks/unread';
@@ -315,6 +315,7 @@ export function RoomNavItem({
                   filled={selected}
                   size="100"
                   joinRule={room.getJoinRule()}
+                  call={isCallRoom(room)}
                 />
               )}
             </Avatar>

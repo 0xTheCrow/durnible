@@ -72,7 +72,8 @@ import { useRoomNavigate } from '../../../hooks/useRoomNavigate';
 import { useRoomCreators } from '../../../hooks/useRoomCreators';
 import { useRoomPermissions } from '../../../hooks/useRoomPermissions';
 import { InviteUserPrompt } from '../../../components/invite-user-prompt';
-import { useCallMemberships } from '../../../hooks/useCallMemberships';
+import { useActiveCallParticipantIds } from '../../../hooks/call/useActiveCallParticipantIds';
+import { useIsRoomCallAllowed } from '../../../hooks/call/useIsRoomCallAllowed';
 import { callStateAtom } from '../../../state/call';
 import { useCallActions } from '../../call';
 
@@ -333,9 +334,10 @@ export function RoomViewHeader() {
   const [peopleDrawer, setPeopleDrawer] = useSetting(settingsAtom, 'isPeopleDrawer');
   const [sliderVisible, setSliderVisible] = useAtom(timelineSliderVisibleAtom);
 
-  const callMemberships = useCallMemberships(room);
+  const callParticipantIds = useActiveCallParticipantIds(room);
   const callState = useAtomValue(callStateAtom);
   const { startCall, endCall } = useCallActions();
+  const isRoomCallAllowed = useIsRoomCallAllowed(room);
   const isConnectedToRoomCall =
     (callState.status === 'connected' || callState.status === 'reconnecting') &&
     callState.roomId === room.roomId;
@@ -343,7 +345,7 @@ export function RoomViewHeader() {
 
   let callTooltipText = 'Start Call';
   if (isConnectedToRoomCall) callTooltipText = 'Leave Call';
-  else if (callMemberships.length > 0) callTooltipText = 'Join Call';
+  else if (callParticipantIds.length > 0) callTooltipText = 'Join Call';
 
   const handleCallClick = () => {
     if (isConnectedToRoomCall) {
@@ -453,48 +455,50 @@ export function RoomViewHeader() {
           </Box>
         </Box>
         <Box shrink="No">
-          <TooltipProvider
-            position="Bottom"
-            offset={4}
-            tooltip={
-              <Tooltip>
-                <Text>{callTooltipText}</Text>
-              </Tooltip>
-            }
-          >
-            {(triggerRef) => (
-              <IconButton
-                style={{ position: 'relative' }}
-                ref={triggerRef}
-                onClick={handleCallClick}
-                disabled={isJoiningRoomCall}
-                aria-pressed={isConnectedToRoomCall}
-              >
-                {callMemberships.length > 0 && !isConnectedToRoomCall && (
-                  <Badge
-                    style={{
-                      position: 'absolute',
-                      left: toRem(3),
-                      top: toRem(3),
-                    }}
-                    variant="Success"
-                    size="400"
-                    fill="Solid"
-                    radii="Pill"
-                  >
-                    <Text as="span" size="L400">
-                      {callMemberships.length}
-                    </Text>
-                  </Badge>
-                )}
-                {isJoiningRoomCall ? (
-                  <Spinner size="200" />
-                ) : (
-                  <Icon size="400" src={Icons.Phone} filled={isConnectedToRoomCall} />
-                )}
-              </IconButton>
-            )}
-          </TooltipProvider>
+          {isRoomCallAllowed && (
+            <TooltipProvider
+              position="Bottom"
+              offset={4}
+              tooltip={
+                <Tooltip>
+                  <Text>{callTooltipText}</Text>
+                </Tooltip>
+              }
+            >
+              {(triggerRef) => (
+                <IconButton
+                  style={{ position: 'relative' }}
+                  ref={triggerRef}
+                  onClick={handleCallClick}
+                  disabled={isJoiningRoomCall}
+                  aria-pressed={isConnectedToRoomCall}
+                >
+                  {callParticipantIds.length > 0 && !isConnectedToRoomCall && (
+                    <Badge
+                      style={{
+                        position: 'absolute',
+                        left: toRem(3),
+                        top: toRem(3),
+                      }}
+                      variant="Success"
+                      size="400"
+                      fill="Solid"
+                      radii="Pill"
+                    >
+                      <Text as="span" size="L400">
+                        {callParticipantIds.length}
+                      </Text>
+                    </Badge>
+                  )}
+                  {isJoiningRoomCall ? (
+                    <Spinner size="200" />
+                  ) : (
+                    <Icon size="400" src={Icons.Phone} filled={isConnectedToRoomCall} />
+                  )}
+                </IconButton>
+              )}
+            </TooltipProvider>
+          )}
           {!ecryptedRoom && (
             <TooltipProvider
               position="Bottom"

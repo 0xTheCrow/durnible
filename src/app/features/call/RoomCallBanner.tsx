@@ -3,7 +3,7 @@ import { useAtomValue } from 'jotai';
 import type { Room } from 'matrix-js-sdk';
 import { Box, Button, Icon, Icons, Spinner, Text } from 'folds';
 import { callStateAtom } from '../../state/call';
-import { useCallMemberships } from '../../hooks/useCallMemberships';
+import { useActiveCallParticipantIds } from '../../hooks/call/useActiveCallParticipantIds';
 import { useCallActions } from './CallProvider';
 import * as css from './CallStrip.css';
 
@@ -11,7 +11,7 @@ type RoomCallBannerProps = {
   room: Room;
 };
 export function RoomCallBanner({ room }: RoomCallBannerProps) {
-  const memberships = useCallMemberships(room);
+  const participantIds = useActiveCallParticipantIds(room);
   const callState = useAtomValue(callStateAtom);
   const { startCall, endCall } = useCallActions();
 
@@ -46,14 +46,14 @@ export function RoomCallBanner({ room }: RoomCallBannerProps) {
     );
   }
 
-  if (isConnectedToRoomCall || memberships.length === 0) return null;
+  if (isConnectedToRoomCall || participantIds.length === 0) return null;
 
   return (
     <Box className={css.CallStrip} alignItems="Center" gap="200" shrink="No">
       <Icon size="100" src={Icons.Phone} />
       <Box grow="Yes">
         <Text size="T300" truncate>
-          Voice call in progress · {memberships.length} joined
+          Voice call in progress · {participantIds.length} joined
         </Text>
       </Box>
       <Button size="300" variant="Success" radii="300" onClick={() => startCall(room)}>

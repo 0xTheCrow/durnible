@@ -9,13 +9,15 @@ import {
 } from '../../state/hooks/createRoomModal';
 import type { CreateRoomModalState } from '../../state/createRoomModal';
 import { OverlayModal } from '../../components/OverlayModal';
+import { RoomType } from '../../../types/matrix/room';
 
 type CreateRoomModalProps = {
   state: CreateRoomModalState;
 };
 function CreateRoomModal({ state }: CreateRoomModalProps) {
-  const { spaceId } = state;
+  const { spaceId, roomType } = state;
   const closeDialog = useCloseCreateRoomModal();
+  const title = roomType === RoomType.Call ? 'New Voice Room' : 'New Room';
 
   const allJoinedRooms = useAllJoinedRoomsSet();
   const getRoom = useGetRoom(allJoinedRooms);
@@ -34,7 +36,7 @@ function CreateRoomModal({ state }: CreateRoomModalProps) {
               }}
             >
               <Box grow="Yes">
-                <Text size="H4">New Room</Text>
+                <Text size="H4">{title}</Text>
               </Box>
               <Box shrink="No">
                 <IconButton size="300" radii="300" onClick={closeDialog}>
@@ -51,7 +53,7 @@ function CreateRoomModal({ state }: CreateRoomModalProps) {
                 direction="Column"
                 gap="500"
               >
-                <CreateRoomForm space={space} onCreate={closeDialog} />
+                <CreateRoomForm space={space} roomType={roomType} onCreate={closeDialog} />
               </Box>
             </Scroll>
           </Box>

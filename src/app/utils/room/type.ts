@@ -28,5 +28,12 @@ export const isUnsupportedRoom = (room: Room | null): boolean => {
   if (!room) return false;
   const event = getStateEvent(room, StateEvent.RoomCreate);
   if (!event) return true;
-  return event.getContent().type !== undefined && event.getContent().type !== RoomType.Space;
+  const { type } = event.getContent();
+  return type !== undefined && type !== RoomType.Space && type !== RoomType.Call;
+};
+
+export const isCallRoom = (room: Room | null): boolean => {
+  if (!room) return false;
+  const event = getStateEvent(room, StateEvent.RoomCreate);
+  return event?.getContent().type === RoomType.Call;
 };
