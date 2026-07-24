@@ -2,14 +2,21 @@ import { Box, Icon, Icons, Text, as, color, toRem } from 'folds';
 import type { EventTimelineSet, Room } from 'matrix-js-sdk';
 import type { MouseEventHandler, ReactNode } from 'react';
 import React, { useCallback, useMemo } from 'react';
+import type { HTMLReactParserOptions } from 'html-react-parser';
+import parse from 'html-react-parser';
 import classNames from 'classnames';
-import { getMemberDisplayName, trimReplyFromBody } from '../../utils/room';
+import {
+  getMemberDisplayName,
+  trimReplyFromBody,
+  trimReplyFromFormattedBody,
+} from '../../utils/room';
 import { getMxIdLocalPart } from '../../utils/matrix';
 import { LinePlaceholder } from './placeholder';
 import { randomNumberBetween } from '../../utils/common';
 import * as css from './Reply.css';
 import { MessageDeletedContent, MessageFailedContent } from './content';
 import { scaleSystemEmoji } from '../../plugins/react-custom-html-parser';
+import { sanitizeCustomHtml } from '../../utils/sanitize';
 import { useRoomEvent } from '../../hooks/useRoomEvent';
 import colorMXID from '../../../util/colorMXID';
 import type { GetMemberPowerTag } from '../../hooks/useMemberPowerTag';
@@ -61,6 +68,7 @@ type ReplyProps = {
   getMemberPowerTag?: GetMemberPowerTag;
   accessibleTagColors?: Map<string, string>;
   legacyUsernameColor?: boolean;
+  htmlReactParserOptions?: HTMLReactParserOptions;
 };
 
 export const Reply = as<'div', ReplyProps>(
@@ -74,6 +82,7 @@ export const Reply = as<'div', ReplyProps>(
       getMemberPowerTag,
       accessibleTagColors,
       legacyUsernameColor,
+      htmlReactParserOptions,
       ...props
     },
     ref
@@ -85,7 +94,7 @@ export const Reply = as<'div', ReplyProps>(
     );
     const replyEvent = useRoomEvent(room, replyEventId, getFromLocalTimeline);
 
-    const { body } = replyEvent?.getContent() ?? {};
+    const { body, formatted_body: customBody } = replyEvent?.getContent() ?? {};
     const sender = replyEvent?.getSender();
     const powerTag = sender ? getMemberPowerTag?.(sender) : undefined;
     const tagColor = powerTag?.color ? accessibleTagColors?.get(powerTag.color) : undefined;
@@ -94,16 +103,35 @@ export const Reply = as<'div', ReplyProps>(
 
     const isRedacted = replyEvent?.isRedacted() ?? false;
     const showContent = replyEvent !== undefined;
-    const bodyJSX = body ? (
-      scaleSystemEmoji(trimReplyFromBody(body))
-    ) : isRedacted ? (
-      <MessageDeletedContent />
-    ) : (
-      <MessageFailedContent />
-    );
+    const isFormattedBody =
+      typeof body === 'string' &&
+      typeof customBody === 'string' &&
+      htmlReactParserOptions !== undefined;
+
+    let bodyJSX: ReactNode;
+    let bodyTestId: string;
+    if (body) {
+      bodyJSX = isFormattedBody
+        ? parse(sanitizeCustomHtml(trimReplyFromFormattedBody(customBody)), htmlReactParserOptions)
+        : scaleSystemEmoji(trimReplyFromBody(body));
+      bodyTestId = 'reply-body';
+    } else if (isRedacted) {
+      bodyJSX = <MessageDeletedContent />;
+      bodyTestId = 'reply-deleted';
+    } else {
+      bodyJSX = <MessageFailedContent />;
+      bodyTestId = 'reply-failed';
+    }
 
     return (
-      <Box direction="Row" gap="200" alignItems="Center" {...props} ref={ref}>
+      <Box
+        direction="Row"
+        gap="200"
+        alignItems="Center"
+        style={{ width: '100vw', maxWidth: '100%' }}
+        {...props}
+        ref={ref}
+      >
         {threadRootId && (
           <ThreadIndicator as="button" data-event-id={threadRootId} onClick={onClick} />
         )}
@@ -124,10 +152,8 @@ export const Reply = as<'div', ReplyProps>(
             <Text
               size="T300"
               truncate
-              data-testid={
-                // eslint-disable-next-line no-nested-ternary
-                body ? 'reply-body' : isRedacted ? 'reply-deleted' : 'reply-failed'
-              }
+              className={isFormattedBody ? css.FormattedReplyBody : undefined}
+              data-testid={bodyTestId}
             >
               {bodyJSX}
             </Text>

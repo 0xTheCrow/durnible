@@ -68,10 +68,6 @@ export interface Settings {
   preferredVideoInputDeviceId?: string;
   preferredAudioOutputDeviceId?: string;
   showCallPreJoinScreen: boolean;
-
-  // TEMPORARY: toggles RoomTimelineV2 (in-progress rewrite). Remove this
-  // setting and the V1 RoomTimeline once V2 reaches parity.
-  useTimelineV2: boolean;
 }
 
 const defaultSettings: Settings = {
@@ -131,8 +127,6 @@ const defaultSettings: Settings = {
   preferredVideoInputDeviceId: undefined,
   preferredAudioOutputDeviceId: undefined,
   showCallPreJoinScreen: false,
-
-  useTimelineV2: false,
 };
 
 export const getSettings = () => {

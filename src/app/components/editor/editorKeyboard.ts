@@ -1,5 +1,6 @@
 import { isKeyHotkey } from 'is-hotkey';
 import type { KeyboardEvent } from 'react';
+import type { InlineMark } from './editorFormatting';
 import {
   exitBlock,
   isBlockFormatActive,
@@ -8,6 +9,7 @@ import {
   toggleCodeBlock,
   toggleExecFormat,
   toggleInlineCode,
+  toggleInlineMark,
   toggleSpoiler,
 } from './editorFormatting';
 import { mobileOrTablet } from '../../utils/user-agent';
@@ -22,11 +24,11 @@ export const isSubmitEnterHotkey = (
   isKeyHotkey(keybinds[KeybindAction.ComposeSend], evt) ||
   (!enterForNewline && !mobileOrTablet() && isKeyHotkey('enter', evt));
 
-const INLINE_MARK_ACTIONS: ReadonlyArray<{ id: KeybindAction; command: string }> = [
-  { id: KeybindAction.FormatBold, command: 'bold' },
-  { id: KeybindAction.FormatItalic, command: 'italic' },
-  { id: KeybindAction.FormatUnderline, command: 'underline' },
-  { id: KeybindAction.FormatStrikethrough, command: 'strikeThrough' },
+const INLINE_MARK_ACTIONS: ReadonlyArray<{ id: KeybindAction; mark: InlineMark }> = [
+  { id: KeybindAction.FormatBold, mark: 'bold' },
+  { id: KeybindAction.FormatItalic, mark: 'italic' },
+  { id: KeybindAction.FormatUnderline, mark: 'underline' },
+  { id: KeybindAction.FormatStrikethrough, mark: 'strikeThrough' },
 ];
 
 const LIST_ACTIONS: ReadonlyArray<{ id: KeybindAction; command: string }> = [
@@ -67,8 +69,11 @@ const isCaretAtBlockStart = (inputElement: HTMLElement): boolean => {
 export const handleEditorShortcut = (
   inputElement: HTMLDivElement,
   evt: KeyboardEvent<Element>,
-  keybinds: KeybindMap = defaultKeybinds
+  keybinds: KeybindMap = defaultKeybinds,
+  isMarkdownEnabled = true
 ): boolean => {
+  if (!isMarkdownEnabled) return false;
+
   if (isKeyHotkey('backspace', evt)) {
     if (isExitableBlock(inputElement) && isCaretAtBlockStart(inputElement)) {
       exitBlock(inputElement);
@@ -87,10 +92,10 @@ export const handleEditorShortcut = (
 
   const insideCodeBlock = isBlockFormatActive(inputElement, 'pre');
 
-  for (const { id, command } of INLINE_MARK_ACTIONS) {
+  for (const { id, mark } of INLINE_MARK_ACTIONS) {
     if (isKeyHotkey(keybinds[id], evt)) {
       if (insideCodeBlock) return false;
-      toggleExecFormat(command);
+      toggleInlineMark(inputElement, mark);
       return true;
     }
   }

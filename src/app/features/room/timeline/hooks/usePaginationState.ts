@@ -3,15 +3,15 @@ import { useCallback, useState } from 'react';
 import type { Room } from 'matrix-js-sdk';
 import { Direction } from 'matrix-js-sdk';
 import { useMatrixClient } from '../../../../hooks/useMatrixClient';
-import { PAGINATION_LIMIT, useTimelinePagination } from '../../timeline/timelineState';
-import type { Timeline } from '../../timeline/timelineState';
+import { PAGINATION_LIMIT, useTimelinePagination } from '../timelineState';
+import type { Timeline } from '../timelineState';
 import {
   getLiveTimeline,
   getTimelineAndBaseIndex,
   getTimelineEvent,
   getTimelineRelativeIndex,
   getTimelinesEventsCount,
-} from '../../timeline/timelineUtils';
+} from '../timelineUtils';
 import { isModifierTimelineEvent } from '../../../../utils/room';
 
 export type PaginationState = {

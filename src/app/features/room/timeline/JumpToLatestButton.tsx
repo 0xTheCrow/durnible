@@ -1,7 +1,7 @@
 import type { RefObject } from 'react';
 import React, { useEffect, useState } from 'react';
 import { Chip, Icon, Icons, Text } from 'folds';
-import * as css from './RoomTimeline.css';
+import * as css from './TimelineOverlay.css';
 import { TimelineOverlay } from './TimelineOverlay';
 
 export const SCROLL_AWAY_RESET_PX = 300;
@@ -10,12 +10,11 @@ export type JumpToLatestButtonProps = {
   scrollRef: RefObject<HTMLDivElement>;
   // null when the caller has nothing to track (not live-linked, range not at
   // newest, or no rendered events). In that case we don't observe anything and
-  // let the button surface based on the other gates (atBottom, autoScrolling).
+  // let the button surface based on the other gates (atBottom).
   // Identified by event id rather than range index so that filtered events
   // (redactions) don't leave us observing a detached node.
   lastMessageId: string | null;
   atBottom: boolean;
-  autoScrolling: boolean;
   onClick: () => void;
 };
 
@@ -23,7 +22,6 @@ export function JumpToLatestButton({
   scrollRef,
   lastMessageId,
   atBottom,
-  autoScrolling,
   onClick,
 }: JumpToLatestButtonProps) {
   const [lastMsgVisible, setLastMsgVisible] = useState(true);
@@ -80,7 +78,7 @@ export function JumpToLatestButton({
     <TimelineOverlay
       className={css.JumpToLatestOverlay}
       position="Bottom"
-      data-visible={!atBottom && !lastMsgVisible && !autoScrolling && !dismissed}
+      data-visible={!atBottom && !lastMsgVisible && !dismissed}
       data-testid="jump-to-latest-overlay"
     >
       <Chip

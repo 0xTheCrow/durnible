@@ -92,6 +92,98 @@ export const toggleExecFormat = (command: string) => {
   document.execCommand(command, false);
 };
 
+export const hasInlineStyleElement = (inputElement: HTMLElement): boolean =>
+  inputElement.querySelector('strong, b, em, i, u, s, del, strike, code, [data-mx-spoiler]') !==
+  null;
+
+export const clearPendingInlineStyles = () => {
+  // Both calls are load-bearing when run from the input handler: Chromium clears
+  // the pending style via the per-command toggle (removeFormat alone doesn't stick
+  // there), Firefox only through removeFormat (queryCommandState reads false). Both
+  // are safe on a clean caret.
+  ['bold', 'italic', 'underline', 'strikeThrough'].forEach((command) => {
+    if (document.queryCommandState(command)) {
+      document.execCommand(command, false);
+    }
+  });
+  document.execCommand('removeFormat', false);
+};
+
+export type InlineMark = 'bold' | 'italic' | 'underline' | 'strikeThrough';
+
+const MARK_CONFIG: Record<InlineMark, { selector: string; tag: string }> = {
+  bold: { selector: 'strong, b', tag: 'strong' },
+  italic: { selector: 'em, i', tag: 'em' },
+  underline: { selector: 'u', tag: 'u' },
+  strikeThrough: { selector: 's, del, strike', tag: 's' },
+};
+
+const closestMarkAncestor = (
+  inputElement: HTMLElement,
+  startNode: Node,
+  selector: string
+): HTMLElement | null => {
+  let node: Node | null = startNode;
+  while (node && node !== inputElement) {
+    if (node.nodeType === Node.ELEMENT_NODE && (node as HTMLElement).matches(selector)) {
+      return node as HTMLElement;
+    }
+    node = node.parentNode;
+  }
+  return null;
+};
+
+const exitInlineMark = (inputElement: HTMLElement, selector: string) => {
+  const range = getSelectionInElement(inputElement);
+  if (!range || !range.collapsed) return;
+
+  const markElement = closestMarkAncestor(inputElement, range.startContainer, selector);
+  const parent = markElement?.parentNode;
+  if (!markElement || !parent) return;
+
+  const tailRange = document.createRange();
+  tailRange.setStart(range.startContainer, range.startOffset);
+  tailRange.setEnd(markElement, markElement.childNodes.length);
+  const tail = tailRange.extractContents();
+
+  const anchor = document.createTextNode('\u200B');
+  parent.insertBefore(anchor, markElement.nextSibling);
+
+  if (tail.textContent && tail.textContent.length > 0) {
+    const trailing = document.createElement(markElement.tagName.toLowerCase());
+    trailing.appendChild(tail);
+    parent.insertBefore(trailing, anchor.nextSibling);
+  }
+
+  if (!markElement.firstChild) {
+    parent.removeChild(markElement);
+  }
+
+  const sel = window.getSelection();
+  const caret = document.createRange();
+  caret.setStart(anchor, 1);
+  caret.collapse(true);
+  sel?.removeAllRanges();
+  sel?.addRange(caret);
+};
+
+export const isInlineMarkActive = (inputElement: HTMLElement, mark: InlineMark): boolean =>
+  selectionInsideSelector(inputElement, MARK_CONFIG[mark].selector);
+
+export const toggleInlineMark = (inputElement: HTMLElement, mark: InlineMark) => {
+  const { selector, tag } = MARK_CONFIG[mark];
+  if (selectionInsideSelector(inputElement, selector)) {
+    const range = getSelectionInElement(inputElement);
+    if (range && range.collapsed) {
+      exitInlineMark(inputElement, selector);
+    } else {
+      unwrapSelection(inputElement, selector);
+    }
+  } else {
+    wrapSelectionWithElement(inputElement, tag);
+  }
+};
+
 export const toggleInlineCode = (inputElement: HTMLElement) => {
   if (selectionInsideTag(inputElement, 'CODE')) {
     unwrapSelection(inputElement, 'code');
@@ -123,8 +215,6 @@ export const toggleCodeBlock = (inputElement: HTMLElement) => {
     document.execCommand('formatBlock', false, 'pre');
   }
 };
-
-export const isFormatActive = (command: string): boolean => document.queryCommandState(command);
 
 export const isCodeActive = (inputElement: HTMLElement): boolean =>
   selectionInsideTag(inputElement, 'CODE');
