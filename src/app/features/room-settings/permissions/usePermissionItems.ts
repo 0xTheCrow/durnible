@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { EventType } from 'matrix-js-sdk';
 import { MessageEvent, StateEvent } from '../../../../types/matrix/room';
 import type { PermissionGroup } from '../../common-settings/permissions';
 
@@ -82,6 +83,21 @@ export const usePermissionGroups = (): PermissionGroup[] => {
             key: MessageEvent.RoomRedaction,
           },
           name: 'Delete Self Messages',
+        },
+      ],
+    };
+
+    const callsGroup: PermissionGroup = {
+      name: 'Calls',
+      items: [
+        {
+          location: {
+            state: true,
+            key: EventType.GroupCallMemberPrefix,
+          },
+          name: 'Join Calls',
+          description:
+            'Announce joining and leaving a voice or video call. Members cannot join calls without this.',
         },
       ],
     };
@@ -196,6 +212,7 @@ export const usePermissionGroups = (): PermissionGroup[] => {
 
     return [
       messagesGroup,
+      callsGroup,
       moderationGroup,
       roomOverviewGroup,
       roomSettingsGroup,

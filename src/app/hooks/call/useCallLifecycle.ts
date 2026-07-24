@@ -43,7 +43,11 @@ export const useCallLifecycle = (): {
     };
     const handleDisconnected = () => {
       keyProvider?.clearRtcSession();
-      if (rtcSession.isJoined()) rtcSession.leaveRoomSession(LEAVE_MEMBERSHIP_TIMEOUT_MS);
+      if (rtcSession.isJoined()) {
+        rtcSession
+          .leaveRoomSession(LEAVE_MEMBERSHIP_TIMEOUT_MS)
+          .catch((error) => console.error('useCallLifecycle: failed to leave rtc session', error));
+      }
       setCallState({ status: 'idle' });
     };
 
@@ -62,7 +66,11 @@ export const useCallLifecycle = (): {
       if (callState.status === 'connecting') return;
       if (callState.status === 'connected' || callState.status === 'reconnecting') {
         if (callState.roomId === room.roomId) return;
-        await disconnectFromCall(callState.connection);
+        try {
+          await disconnectFromCall(callState.connection);
+        } catch (error) {
+          console.error('useCallLifecycle: failed to leave previous call', error);
+        }
       }
 
       setCallState({ status: 'connecting', roomId: room.roomId });
@@ -99,7 +107,11 @@ export const useCallLifecycle = (): {
     }
     if (callState.status !== 'connected' && callState.status !== 'reconnecting') return;
     setCallState({ status: 'idle' });
-    await disconnectFromCall(callState.connection);
+    try {
+      await disconnectFromCall(callState.connection);
+    } catch (error) {
+      console.error('useCallLifecycle: failed to leave call', error);
+    }
   }, [callState, setCallState]);
 
   return { callState, startCall, endCall };

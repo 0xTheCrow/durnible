@@ -1,12 +1,14 @@
-import React from 'react';
+import type { MouseEventHandler } from 'react';
+import React, { useState } from 'react';
 import type { Room } from 'matrix-js-sdk';
+import type { RectCords } from 'folds';
 import {
   Avatar,
-  AvatarFallback,
-  AvatarImage,
   Box,
   Icon,
+  IconButton,
   Icons,
+  PopOut,
   Spinner,
   Text,
   Tooltip,
@@ -14,42 +16,26 @@ import {
   config,
   toRem,
 } from 'folds';
-import { NavItem, NavItemContent, NavButton } from '../../components/nav';
-import { useMatrixClient } from '../../hooks/useMatrixClient';
-import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
+import FocusTrap from 'focus-trap-react';
+import { useFocusWithin, useHover } from 'react-aria';
+import { NavItem, NavItemContent, NavItemOptions, NavButton } from '../../components/nav';
 import { useActiveCallParticipantIds } from '../../hooks/call/useActiveCallParticipantIds';
 import { useVoiceRoomEntry } from '../call/useVoiceRoomEntry';
-import { getMemberAvatarMxc, getMemberDisplayName } from '../../utils/room';
-import { mxcUrlToHttp } from '../../utils/matrix';
-import { nameInitials } from '../../utils/common';
-import colorMXID from '../../../util/colorMXID';
+import { CallMemberAvatar } from '../call/CallMemberAvatar';
+import { getMemberDisplayName } from '../../utils/room';
+import { stopPropagation } from '../../utils/keyboard';
+import { RoomNavItemMenu } from './RoomNavItem';
 
 type VoiceParticipantProps = {
   room: Room;
   userId: string;
 };
 function VoiceParticipant({ room, userId }: VoiceParticipantProps) {
-  const mx = useMatrixClient();
-  const useAuthentication = useMediaAuthentication();
   const displayName = getMemberDisplayName(room, userId) ?? userId;
-  const avatarMxc = getMemberAvatarMxc(room, userId);
-  const avatarUrl = avatarMxc
-    ? mxcUrlToHttp(mx, avatarMxc, useAuthentication, 96, 96, 'crop') ?? undefined
-    : undefined;
 
   return (
     <Box as="span" alignItems="Center" gap="200">
-      <Avatar size="200" radii="Pill">
-        {avatarUrl ? (
-          <AvatarImage src={avatarUrl} alt={displayName} />
-        ) : (
-          <AvatarFallback style={{ backgroundColor: colorMXID(userId) }}>
-            <Text as="span" size="O400">
-              {nameInitials(displayName)}
-            </Text>
-          </AvatarFallback>
-        )}
-      </Avatar>
+      <CallMemberAvatar room={room} userId={userId} size="200" textSize="O400" />
       <Text as="span" size="T200" truncate>
         {displayName}
       </Text>
@@ -67,6 +53,26 @@ export function RoomNavVoiceItem({ room, selected, isDrawerMode, tall }: RoomNav
   const participantIds = useActiveCallParticipantIds(room);
   const { entryState, enterVoiceRoom } = useVoiceRoomEntry(room);
   const isConnected = entryState.status === 'connected';
+  const [hover, setHover] = useState(false);
+  const { hoverProps } = useHover({ onHoverChange: setHover });
+  const { focusWithinProps } = useFocusWithin({ onFocusWithinChange: setHover });
+  const [menuAnchor, setMenuAnchor] = useState<RectCords>();
+
+  const handleContextMenu: MouseEventHandler<HTMLElement> = (evt) => {
+    evt.preventDefault();
+    setMenuAnchor({
+      x: evt.clientX,
+      y: evt.clientY,
+      width: 0,
+      height: 0,
+    });
+  };
+
+  const handleOpenMenu: MouseEventHandler<HTMLButtonElement> = (evt) => {
+    setMenuAnchor(evt.currentTarget.getBoundingClientRect());
+  };
+
+  const optionsVisible = hover || !!menuAnchor;
 
   return (
     <Box direction="Column">
@@ -74,7 +80,11 @@ export function RoomNavVoiceItem({ room, selected, isDrawerMode, tall }: RoomNav
         variant="Background"
         radii="400"
         aria-selected={selected || isConnected}
+        data-hover={!!menuAnchor}
+        onContextMenu={isDrawerMode ? undefined : handleContextMenu}
         style={isDrawerMode || tall ? { minHeight: toRem(48) } : undefined}
+        {...hoverProps}
+        {...focusWithinProps}
       >
         <NavButton type="button" onClick={enterVoiceRoom}>
           <NavItemContent>
@@ -115,6 +125,43 @@ export function RoomNavVoiceItem({ room, selected, isDrawerMode, tall }: RoomNav
             </Box>
           </NavItemContent>
         </NavButton>
+        {optionsVisible && !isDrawerMode && (
+          <NavItemOptions>
+            <PopOut
+              anchor={menuAnchor}
+              offset={menuAnchor?.width === 0 ? 0 : undefined}
+              alignOffset={menuAnchor?.width === 0 ? 0 : -5}
+              position="Bottom"
+              align={menuAnchor?.width === 0 ? 'Start' : 'End'}
+              content={
+                <FocusTrap
+                  focusTrapOptions={{
+                    initialFocus: false,
+                    returnFocusOnDeactivate: false,
+                    onDeactivate: () => setMenuAnchor(undefined),
+                    clickOutsideDeactivates: true,
+                    isKeyForward: (evt: KeyboardEvent) => evt.key === 'ArrowDown',
+                    isKeyBackward: (evt: KeyboardEvent) => evt.key === 'ArrowUp',
+                    escapeDeactivates: stopPropagation,
+                  }}
+                >
+                  <RoomNavItemMenu room={room} onClose={() => setMenuAnchor(undefined)} />
+                </FocusTrap>
+              }
+            >
+              <IconButton
+                onClick={handleOpenMenu}
+                aria-pressed={!!menuAnchor}
+                variant="Background"
+                fill="None"
+                size="300"
+                radii="300"
+              >
+                <Icon size="50" src={Icons.VerticalDots} />
+              </IconButton>
+            </PopOut>
+          </NavItemOptions>
+        )}
       </NavItem>
       {participantIds.length > 0 && (
         <Box

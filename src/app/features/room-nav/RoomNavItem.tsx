@@ -58,7 +58,7 @@ type RoomNavItemMenuProps = {
   onClose: () => void;
   notificationMode?: RoomNotificationMode;
 };
-const RoomNavItemMenu = forwardRef<HTMLDivElement, RoomNavItemMenuProps>(
+export const RoomNavItemMenu = forwardRef<HTMLDivElement, RoomNavItemMenuProps>(
   ({ room, onClose, notificationMode }, ref) => {
     const mx = useMatrixClient();
     const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
@@ -74,6 +74,7 @@ const RoomNavItemMenu = forwardRef<HTMLDivElement, RoomNavItemMenuProps>(
     const [invitePrompt, setInvitePrompt] = useState(false);
 
     const isFavorite = 'm.favourite' in room.tags;
+    const isCallRoomMenu = isCallRoom(room);
 
     const handleToggleFavorite = () => {
       if (isFavorite) {
@@ -117,17 +118,19 @@ const RoomNavItemMenu = forwardRef<HTMLDivElement, RoomNavItemMenuProps>(
           />
         )}
         <Box direction="Column" gap="100" style={{ padding: config.space.S100 }}>
-          <MenuItem
-            onClick={handleMarkAsRead}
-            size="300"
-            after={<Icon size="100" src={Icons.CheckTwice} />}
-            radii="300"
-            disabled={!unread}
-          >
-            <Text style={{ flexGrow: 1 }} as="span" size="T300" truncate>
-              Mark as Read
-            </Text>
-          </MenuItem>
+          {!isCallRoomMenu && (
+            <MenuItem
+              onClick={handleMarkAsRead}
+              size="300"
+              after={<Icon size="100" src={Icons.CheckTwice} />}
+              radii="300"
+              disabled={!unread}
+            >
+              <Text style={{ flexGrow: 1 }} as="span" size="T300" truncate>
+                Mark as Read
+              </Text>
+            </MenuItem>
+          )}
           <MenuItem
             onClick={handleToggleFavorite}
             size="300"
@@ -138,27 +141,29 @@ const RoomNavItemMenu = forwardRef<HTMLDivElement, RoomNavItemMenuProps>(
               {isFavorite ? 'Unfavorite' : 'Favorite'}
             </Text>
           </MenuItem>
-          <RoomNotificationModeSwitcher roomId={room.roomId} value={notificationMode}>
-            {(handleOpen, opened, changing) => (
-              <MenuItem
-                size="300"
-                after={
-                  changing ? (
-                    <Spinner size="100" variant="Secondary" />
-                  ) : (
-                    <Icon size="100" src={getRoomNotificationModeIcon(notificationMode)} />
-                  )
-                }
-                radii="300"
-                aria-pressed={opened}
-                onClick={handleOpen}
-              >
-                <Text style={{ flexGrow: 1 }} as="span" size="T300" truncate>
-                  Notifications
-                </Text>
-              </MenuItem>
-            )}
-          </RoomNotificationModeSwitcher>
+          {!isCallRoomMenu && (
+            <RoomNotificationModeSwitcher roomId={room.roomId} value={notificationMode}>
+              {(handleOpen, opened, changing) => (
+                <MenuItem
+                  size="300"
+                  after={
+                    changing ? (
+                      <Spinner size="100" variant="Secondary" />
+                    ) : (
+                      <Icon size="100" src={getRoomNotificationModeIcon(notificationMode)} />
+                    )
+                  }
+                  radii="300"
+                  aria-pressed={opened}
+                  onClick={handleOpen}
+                >
+                  <Text style={{ flexGrow: 1 }} as="span" size="T300" truncate>
+                    Notifications
+                  </Text>
+                </MenuItem>
+              )}
+            </RoomNotificationModeSwitcher>
+          )}
         </Box>
         <Line variant="Surface" size="300" />
         <Box direction="Column" gap="100" style={{ padding: config.space.S100 }}>

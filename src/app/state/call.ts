@@ -9,3 +9,5 @@ export type CallState =
   | { status: 'failed'; roomId: string; error: Error };
 
 export const callStateAtom = atom<CallState>({ status: 'idle' });
+
+export const isCallPaneCollapsedAtom = atom(false);

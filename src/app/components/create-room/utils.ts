@@ -1,9 +1,11 @@
 import type { ICreateRoomOpts, ICreateRoomStateEvent, MatrixClient, Room } from 'matrix-js-sdk';
 import { EventType, JoinRule, RestrictedAllowType } from 'matrix-js-sdk';
-import type { RoomJoinRulesEventContent } from 'matrix-js-sdk/lib/types';
+import type {
+  RoomJoinRulesEventContent,
+  RoomPowerLevelsEventContent,
+} from 'matrix-js-sdk/lib/types';
 import { CreateRoomKind } from './CreateRoomKindSelector';
-import type { RoomType } from '../../../types/matrix/room';
-import { StateEvent } from '../../../types/matrix/room';
+import { RoomType, StateEvent } from '../../../types/matrix/room';
 import { getViaServers } from '../../plugins/via-servers';
 import { getMxIdServer } from '../../utils/matrix';
 
@@ -69,6 +71,29 @@ export const createRoomParentState = (parent: Room) => ({
   },
 });
 
+export const CALL_PARTICIPATION_EVENT_TYPES = [
+  EventType.GroupCallMemberPrefix,
+  EventType.RTCMembership,
+] as const;
+
+export const allowCallParticipationEvents = async (
+  mx: MatrixClient,
+  roomId: string
+): Promise<void> => {
+  const powerLevels = (await mx.getStateEvent(
+    roomId,
+    EventType.RoomPowerLevels,
+    ''
+  )) as RoomPowerLevelsEventContent;
+
+  const events = { ...powerLevels.events };
+  CALL_PARTICIPATION_EVENT_TYPES.forEach((eventType) => {
+    events[eventType] = 0;
+  });
+
+  await mx.sendStateEvent(roomId, EventType.RoomPowerLevels, { ...powerLevels, events }, '');
+};
+
 export const createRoomEncryptionState = () => ({
   type: 'm.room.encryption',
   state_key: '',
@@ -117,6 +142,10 @@ export const createRoom = async (mx: MatrixClient, data: CreateRoomData): Promis
   };
 
   const result = await mx.createRoom(options);
+
+  if (data.type === RoomType.Call) {
+    await allowCallParticipationEvents(mx, result.room_id);
+  }
 
   if (data.parent) {
     await mx.sendStateEvent(

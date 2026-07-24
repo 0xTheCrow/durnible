@@ -1,7 +1,7 @@
 import React from 'react';
-import { useAtomValue } from 'jotai';
+import { useAtomValue, useSetAtom } from 'jotai';
 import { Box, Icon, IconButton, Icons, Spinner, Text } from 'folds';
-import { callStateAtom } from '../../state/call';
+import { callStateAtom, isCallPaneCollapsedAtom } from '../../state/call';
 import type { CallConnection } from '../../plugins/call/CallConnection';
 import { useCallActions } from './CallProvider';
 import { useLocalMediaControls } from '../../hooks/call/useLocalMediaControls';
@@ -16,6 +16,7 @@ type ConnectedCallBarProps = {
 function ConnectedCallBar({ connection, isReconnecting }: ConnectedCallBarProps) {
   const { endCall } = useCallActions();
   const { navigateRoom } = useRoomNavigate();
+  const setIsCallPaneCollapsed = useSetAtom(isCallPaneCollapsedAtom);
   const { isMicrophoneEnabled, toggleMicrophone } = useLocalMediaControls(connection.livekitRoom);
   const roomName = useRoomName(connection.matrixRoom);
 
@@ -44,6 +45,14 @@ function ConnectedCallBar({ connection, isReconnecting }: ConnectedCallBarProps)
       <IconButton
         size="300"
         radii="300"
+        onClick={() => setIsCallPaneCollapsed(false)}
+        aria-label="Expand Call"
+      >
+        <Icon size="100" src={Icons.ChevronRight} />
+      </IconButton>
+      <IconButton
+        size="300"
+        radii="300"
         onClick={() => toggleMicrophone()}
         aria-label={isMicrophoneEnabled ? 'Mute Microphone' : 'Unmute Microphone'}
         aria-pressed={!isMicrophoneEnabled}
@@ -65,7 +74,9 @@ function ConnectedCallBar({ connection, isReconnecting }: ConnectedCallBarProps)
 
 export function CallBar() {
   const callState = useAtomValue(callStateAtom);
+  const isCallPaneCollapsed = useAtomValue(isCallPaneCollapsedAtom);
 
+  if (!isCallPaneCollapsed) return null;
   if (callState.status !== 'connected' && callState.status !== 'reconnecting') return null;
   return (
     <ConnectedCallBar
