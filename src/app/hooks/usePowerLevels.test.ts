@@ -34,6 +34,7 @@ describe('getPermissionPower', () => {
     users_default: 0,
     ban: 75,
     events: { 'm.room.message': 10, 'm.room.name': 60 },
+    events_default: 5,
     state_default: 50,
     notifications: { room: 30 },
   };
@@ -60,6 +61,16 @@ describe('getPermissionPower', () => {
 
   it('falls back to state_default for unknown state event', () => {
     expect(getPermissionPower(pl, { state: true })).toBe(pl.state_default);
+  });
+
+  it('falls back to state_default for a state event type with no explicit entry', () => {
+    expect(getPermissionPower(pl, { state: true, key: 'org.matrix.msc3401.call.member' })).toBe(
+      pl.state_default
+    );
+  });
+
+  it('falls back to events_default for a message event type with no explicit entry', () => {
+    expect(getPermissionPower(pl, { key: 'm.room.custom' })).toBe(pl.events_default);
   });
 
   it('reads notification power', () => {

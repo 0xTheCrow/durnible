@@ -225,17 +225,24 @@ const resolveLocation = (location: PermissionLocation): ResolvedLocation => {
   return { field: 'events_default' };
 };
 
+const getEventLocationDefaultPower = (
+  powerLevels: PowerLevels,
+  location: PermissionLocation
+): number => {
+  if ('state' in location) return powerLevels.state_default ?? DEFAULT_POWER_LEVELS.state_default;
+  return powerLevels.events_default ?? DEFAULT_POWER_LEVELS.events_default;
+};
+
 export const getPermissionPower = (
   powerLevels: PowerLevels,
   location: PermissionLocation
 ): number => {
   const { field, subKey } = resolveLocation(location);
   if (subKey !== undefined) {
-    return (
-      (powerLevels[field] as Record<string, number> | undefined)?.[subKey] ??
-      (DEFAULT_POWER_LEVELS[field] as Record<string, number>)[subKey] ??
-      0
-    );
+    const explicitPower = (powerLevels[field] as Record<string, number> | undefined)?.[subKey];
+    if (typeof explicitPower === 'number') return explicitPower;
+    if (field === 'events') return getEventLocationDefaultPower(powerLevels, location);
+    return (DEFAULT_POWER_LEVELS[field] as Record<string, number>)[subKey] ?? 0;
   }
   return (powerLevels[field] as number | undefined) ?? (DEFAULT_POWER_LEVELS[field] as number);
 };
