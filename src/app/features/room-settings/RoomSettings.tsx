@@ -7,6 +7,7 @@ import { PageNav, PageNavContent, PageNavHeader, PageRoot } from '../../componen
 import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { mxcUrlToHttp } from '../../utils/matrix';
+import { isCallRoom } from '../../utils/room';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
 import { useRoomAvatar, useRoomJoinRule, useRoomName } from '../../hooks/useRoomMeta';
 import { mDirectAtom } from '../../state/mDirectList';
@@ -116,6 +117,7 @@ export function RoomSettings({ initialPage, onClose }: RoomSettingsProps) {
                       <RoomIcon
                         size="50"
                         joinRule={joinRuleContent?.join_rule ?? JoinRule.Invite}
+                        call={isCallRoom(room)}
                         filled
                       />
                     )}

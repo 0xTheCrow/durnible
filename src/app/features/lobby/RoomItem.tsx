@@ -29,11 +29,11 @@ import { LocalRoomSummaryLoader } from '../../components/RoomSummaryLoader';
 import { UseStateProvider } from '../../components/UseStateProvider';
 import { RoomTopicViewer } from '../../components/room-topic-viewer';
 import { onEnterOrSpace } from '../../utils/keyboard';
-import { Membership } from '../../../types/matrix/room';
+import { Membership, RoomType } from '../../../types/matrix/room';
 import * as css from './RoomItem.css';
 import * as styleCss from './style.css';
 import { AsyncStatus, useAsyncCallback } from '../../hooks/useAsyncCallback';
-import { getDirectRoomAvatarUrl, getRoomAvatarUrl } from '../../utils/room';
+import { getDirectRoomAvatarUrl, getRoomAvatarUrl, isCallRoom } from '../../utils/room';
 import { ItemDraggableTarget, useDraggableItem } from './DnD';
 import { mxcUrlToHttp } from '../../utils/matrix';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
@@ -180,6 +180,7 @@ type RoomProfileProps = {
   suggested?: boolean;
   memberCount?: number;
   joinRule?: JoinRule;
+  call?: boolean;
   options?: ReactNode;
 };
 function RoomProfile({
@@ -190,6 +191,7 @@ function RoomProfile({
   suggested,
   memberCount,
   joinRule,
+  call,
   options,
 }: RoomProfileProps) {
   return (
@@ -200,7 +202,7 @@ function RoomProfile({
           src={avatarUrl}
           alt={name}
           renderFallback={() => (
-            <RoomIcon size="300" joinRule={joinRule ?? JoinRule.Restricted} filled />
+            <RoomIcon size="300" joinRule={joinRule ?? JoinRule.Restricted} call={call} filled />
           )}
         />
       </Avatar>
@@ -304,6 +306,23 @@ export const RoomItemCard = as<'div', RoomItemCardProps>(
     useDraggableItem(item, targetRef, onDragging, targetHandleRef);
 
     const joined = room?.getMyMembership() === Membership.Join;
+    const isCallRoomItem = room ? isCallRoom(room) : false;
+
+    const joinedOptions = isCallRoomItem ? undefined : (
+      <Box shrink="No" gap="100" alignItems="Center">
+        <Chip
+          data-room-id={roomId}
+          onClick={onOpen}
+          variant="Secondary"
+          fill="None"
+          size="400"
+          radii="Pill"
+          aria-label="Open Room"
+        >
+          <Icon size="50" src={Icons.ArrowRight} />
+        </Chip>
+      </Box>
+    );
 
     return (
       <SequenceCard
@@ -332,24 +351,9 @@ export const RoomItemCard = as<'div', RoomItemCardProps>(
                   memberCount={localSummary.memberCount}
                   suggested={content.suggested}
                   joinRule={localSummary.joinRule}
+                  call={isCallRoomItem}
                   options={
-                    joined ? (
-                      <Box shrink="No" gap="100" alignItems="Center">
-                        <Chip
-                          data-room-id={roomId}
-                          onClick={onOpen}
-                          variant="Secondary"
-                          fill="None"
-                          size="400"
-                          radii="Pill"
-                          aria-label="Open Room"
-                        >
-                          <Icon size="50" src={Icons.ArrowRight} />
-                        </Chip>
-                      </Box>
-                    ) : (
-                      <RoomJoinButton roomId={roomId} via={content.via} />
-                    )
+                    joined ? joinedOptions : <RoomJoinButton roomId={roomId} via={content.via} />
                   }
                 />
               )}
@@ -391,6 +395,7 @@ export const RoomItemCard = as<'div', RoomItemCardProps>(
                   memberCount={summary.num_joined_members}
                   suggested={content.suggested}
                   joinRule={summary.join_rule}
+                  call={summary.room_type === RoomType.Call}
                   options={<RoomJoinButton roomId={roomId} via={content.via} />}
                 />
               )}

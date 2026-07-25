@@ -32,6 +32,7 @@ import { BreakWord, LineClamp3 } from '../../../styles/Text.css';
 import { LINKIFY_OPTS } from '../../../plugins/react-custom-html-parser';
 import { RoomAvatar, RoomIcon } from '../../../components/room-avatar';
 import { mxcUrlToHttp } from '../../../utils/matrix';
+import { isCallRoom } from '../../../utils/room';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
 import { StateEvent } from '../../../../types/matrix/room';
@@ -205,6 +206,7 @@ export function RoomProfileEdit({
               renderFallback={() => (
                 <RoomIcon
                   space={room.isSpaceRoom()}
+                  call={isCallRoom(room)}
                   size="400"
                   joinRule={joinRule?.join_rule ?? JoinRule.Invite}
                   filled
@@ -348,6 +350,7 @@ export function RoomProfile({ permissions }: RoomProfileProps) {
                   renderFallback={() => (
                     <RoomIcon
                       space={room.isSpaceRoom()}
+                      call={isCallRoom(room)}
                       size="400"
                       joinRule={joinRule?.join_rule ?? JoinRule.Invite}
                       filled

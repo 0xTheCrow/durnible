@@ -418,6 +418,7 @@ export function Space({ isDrawerMode, extra }: SpaceProps = {}) {
     getRoom,
     useCallback(
       (parentId, roomId) => {
+        if (isCallRoom(mx.getRoom(roomId))) return false;
         if (!closedCategories.has(makeNavCategoryId(space.roomId, parentId))) {
           return false;
         }
@@ -425,7 +426,7 @@ export function Space({ isDrawerMode, extra }: SpaceProps = {}) {
         if (showRoom) return false;
         return true;
       },
-      [space.roomId, closedCategories, roomToUnread, selectedRoomId]
+      [mx, space.roomId, closedCategories, roomToUnread, selectedRoomId]
     ),
     useCallback(
       (sId) => closedCategories.has(makeNavCategoryId(space.roomId, sId)),

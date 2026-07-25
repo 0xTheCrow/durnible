@@ -39,6 +39,7 @@ import { settingsAtom } from '../../../state/settings';
 import { useSpaceOptionally } from '../../../hooks/useSpace';
 import { getHomeSearchPath, getSpaceSearchPath, withSearchParam } from '../../../pages/pathUtils';
 import { getCanonicalAliasOrRoomId, isRoomAlias, mxcUrlToHttp } from '../../../utils/matrix';
+import { isCallRoom } from '../../../utils/room';
 import type { _SearchPathSearchParams } from '../../../pages/paths';
 import * as css from './RoomViewHeader.css';
 import { useRoomUnread } from '../../../state/hooks/unread';
@@ -416,6 +417,7 @@ export function RoomViewHeader() {
                   <RoomIcon
                     size="200"
                     joinRule={room.getJoinRule() ?? JoinRule.Restricted}
+                    call={isCallRoom(room)}
                     filled
                   />
                 )}
