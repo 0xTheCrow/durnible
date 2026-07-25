@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import { Box, Text, Icon, Icons, Button, MenuItem } from 'folds';
 import { SequenceCard } from '../../../components/sequence-card';
-import { SequenceCardStyle } from '../styles.css';
+import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { SettingTile } from '../../../components/setting-tile';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { useAccountDataCallback } from '../../../hooks/useAccountDataCallback';
@@ -29,7 +29,7 @@ export function AccountData({ expand, onExpandToggle, onSelect }: AccountDataPro
     <Box direction="Column" gap="100">
       <Text size="L400">Account Data</Text>
       <SequenceCard
-        className={SequenceCardStyle}
+        className={SettingsCardStyle}
         variant="SurfaceVariant"
         direction="Column"
         gap="400"

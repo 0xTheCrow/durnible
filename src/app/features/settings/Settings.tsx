@@ -1,7 +1,6 @@
-import type { ChangeEventHandler, FormEventHandler } from 'react';
 import React, { useMemo, useState } from 'react';
 import type { IconSrc } from 'folds';
-import { Avatar, Box, Button, config, Icon, IconButton, Icons, Input, MenuItem, Text } from 'folds';
+import { Avatar, Box, Button, config, Icon, IconButton, Icons, MenuItem, Text } from 'folds';
 import { General } from './general';
 import { PageNav, PageNavContent, PageNavHeader, PageRoot } from '../../components/page';
 import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
@@ -22,8 +21,15 @@ import { About } from './about';
 import { UseStateProvider } from '../../components/UseStateProvider';
 import { LogoutDialog } from '../../components/LogoutDialog';
 import { OverlayModal } from '../../components/OverlayModal';
-import { SearchResults } from './search/SearchResults';
+import { settingsSearchData } from './search/searchData';
 import { SettingsPages } from './settingsPages';
+import {
+  SettingsSearchInput,
+  SettingsSearchResults,
+  useSettingsSearch,
+} from '../../components/settings-search';
+
+const SEARCH_PLACEHOLDER = 'Search settings...';
 
 type SettingsMenuItem = {
   page: SettingsPages;
@@ -97,62 +103,27 @@ export function Settings({ initialPage, onClose }: SettingsProps) {
     ? mxcUrlToHttp(mx, profile.avatarUrl, useAuthentication, 96, 96, 'crop') ?? undefined
     : undefined;
 
-  const screenSize = useScreenSizeContext();
-  const isMobile = screenSize === ScreenSize.Mobile;
+  const isMobile = useScreenSizeContext() === ScreenSize.Mobile;
   const [activePage, setActivePage] = useState<SettingsPages | undefined>(() => {
     if (initialPage) return initialPage;
     return isMobile ? undefined : SettingsPages.GeneralPage;
   });
-  const [searchInput, setSearchInput] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchMode, setSearchMode] = useState(false);
+  const search = useSettingsSearch();
   const menuItems = useSettingsMenuItems();
-
-  const handleSearchChange: ChangeEventHandler<HTMLInputElement> = (evt) => {
-    const next = evt.target.value;
-    setSearchInput(next);
-    if (!isMobile) {
-      setSearchQuery(next);
-      setSearchMode(next.trim() !== '');
-    } else if (next.trim() === '') {
-      setSearchQuery(next);
-    }
-  };
-
-  const handleSearchSubmit: FormEventHandler<HTMLFormElement> = (evt) => {
-    evt.preventDefault();
-    setSearchQuery(searchInput);
-    if (searchInput.trim() !== '') {
-      setSearchMode(true);
-    }
-  };
-
-  const handleSearchClear = () => {
-    setSearchInput('');
-    setSearchQuery('');
-    setSearchMode(false);
-  };
 
   const handleNavigateTo = (page: SettingsPages) => {
     setActivePage(page);
-    setSearchInput('');
-    setSearchQuery('');
-    setSearchMode(false);
+    search.clearSearch();
   };
 
   const handleBackToMenu = () => {
     setActivePage(undefined);
   };
 
-  const handleSearchQueryChange = (next: string) => {
-    setSearchInput(next);
-    setSearchQuery(next);
-  };
-
   return (
     <PageRoot
       nav={
-        screenSize === ScreenSize.Mobile && (activePage !== undefined || searchMode) ? undefined : (
+        isMobile && (activePage !== undefined || search.isSearching) ? undefined : (
           <PageNav size="300">
             <PageNavHeader outlined={false}>
               <Box grow="Yes" gap="200">
@@ -168,7 +139,7 @@ export function Settings({ initialPage, onClose }: SettingsProps) {
                 </Text>
               </Box>
               <Box shrink="No">
-                {screenSize === ScreenSize.Mobile && (
+                {isMobile && (
                   <IconButton onClick={onClose} variant="Background">
                     <Icon src={Icons.Cross} />
                   </IconButton>
@@ -177,50 +148,16 @@ export function Settings({ initialPage, onClose }: SettingsProps) {
             </PageNavHeader>
             <Box grow="Yes" direction="Column">
               <Box
-                as="form"
-                onSubmit={handleSearchSubmit}
-                gap="200"
-                alignItems="Center"
                 style={{ padding: `0 ${config.space.S200} ${config.space.S200}` }}
                 shrink="No"
+                direction="Column"
               >
-                <Box grow="Yes">
-                  <Input
-                    style={{ width: '100%' }}
-                    variant="Background"
-                    size="300"
-                    radii="400"
-                    autoFocus={!isMobile}
-                    placeholder="Search settings..."
-                    before={<Icon src={Icons.Search} size="100" />}
-                    value={searchInput}
-                    onChange={handleSearchChange}
-                    after={
-                      searchInput ? (
-                        <IconButton
-                          type="button"
-                          size="300"
-                          onClick={handleSearchClear}
-                          variant="Background"
-                          radii="Pill"
-                          aria-label="Clear search"
-                        >
-                          <Icon src={Icons.Cross} size="100" />
-                        </IconButton>
-                      ) : undefined
-                    }
-                  />
-                </Box>
-                {isMobile && searchInput && (
-                  <Button type="submit" size="300" variant="Primary" radii="400">
-                    <Text size="B300">Search</Text>
-                  </Button>
-                )}
+                <SettingsSearchInput search={search} placeholder={SEARCH_PLACEHOLDER} />
               </Box>
               <PageNavContent>
                 <div style={{ flexGrow: 1 }}>
                   {menuItems.map((item) => {
-                    const isActive = !searchMode && activePage === item.page;
+                    const isActive = !search.isSearching && activePage === item.page;
                     return (
                       <MenuItem
                         key={item.name}
@@ -272,11 +209,11 @@ export function Settings({ initialPage, onClose }: SettingsProps) {
         )
       }
     >
-      {searchMode ? (
-        <SearchResults
-          query={searchQuery}
-          onQueryChange={handleSearchQueryChange}
-          onBack={handleSearchClear}
+      {search.isSearching ? (
+        <SettingsSearchResults
+          search={search}
+          entries={settingsSearchData}
+          searchPlaceholder={SEARCH_PLACEHOLDER}
           onClose={onClose}
           onNavigateTo={handleNavigateTo}
         />

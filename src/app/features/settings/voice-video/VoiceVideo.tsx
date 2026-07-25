@@ -17,7 +17,7 @@ import {
 import FocusTrap from 'focus-trap-react';
 import { Page, PageContent } from '../../../components/page';
 import { SequenceCard } from '../../../components/sequence-card';
-import { SequenceCardStyle } from '../styles.css';
+import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { SettingTile } from '../../../components/setting-tile';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
@@ -201,7 +201,7 @@ export function PreJoinScreenSetting() {
   );
 }
 
-function DeviceAccessCard() {
+export function DeviceAccessCard() {
   const { audioInputDevices, videoInputDevices, audioOutputDevices, refreshDevices } =
     useMediaDevices();
   const hasDeviceLabels = [...audioInputDevices, ...videoInputDevices, ...audioOutputDevices].some(
@@ -217,7 +217,7 @@ function DeviceAccessCard() {
 
   return (
     <SequenceCard
-      className={SequenceCardStyle}
+      className={SettingsCardStyle}
       variant="SurfaceVariant"
       direction="Column"
       gap="400"
@@ -258,7 +258,7 @@ export function VoiceVideo({ onBack, onClose }: VoiceVideoProps) {
                 <Text size="L400">Devices</Text>
                 <DeviceAccessCard />
                 <SequenceCard
-                  className={SequenceCardStyle}
+                  className={SettingsCardStyle}
                   variant="SurfaceVariant"
                   direction="Column"
                   gap="400"
@@ -266,7 +266,7 @@ export function VoiceVideo({ onBack, onClose }: VoiceVideoProps) {
                   <MicrophoneDeviceSetting />
                 </SequenceCard>
                 <SequenceCard
-                  className={SequenceCardStyle}
+                  className={SettingsCardStyle}
                   variant="SurfaceVariant"
                   direction="Column"
                   gap="400"
@@ -274,7 +274,7 @@ export function VoiceVideo({ onBack, onClose }: VoiceVideoProps) {
                   <CameraDeviceSetting />
                 </SequenceCard>
                 <SequenceCard
-                  className={SequenceCardStyle}
+                  className={SettingsCardStyle}
                   variant="SurfaceVariant"
                   direction="Column"
                   gap="400"
@@ -285,7 +285,7 @@ export function VoiceVideo({ onBack, onClose }: VoiceVideoProps) {
               <Box direction="Column" gap="100">
                 <Text size="L400">Calls</Text>
                 <SequenceCard
-                  className={SequenceCardStyle}
+                  className={SettingsCardStyle}
                   variant="SurfaceVariant"
                   direction="Column"
                   gap="400"

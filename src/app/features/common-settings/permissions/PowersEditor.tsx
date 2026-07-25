@@ -24,7 +24,7 @@ import { TooltipProvider } from '../../../components/TooltipProvider';
 import { Page, PageContent, PageHeader } from '../../../components/page';
 import type { PowerLevels } from '../../../hooks/usePowerLevels';
 import { SequenceCard } from '../../../components/sequence-card';
-import { SequenceCardStyle } from '../styles.css';
+import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { SettingTile } from '../../../components/setting-tile';
 import type { PowerLevelTags } from '../../../hooks/usePowerLevelTags';
 import { getPowers, getUsedPowers, usePowerLevelTags } from '../../../hooks/usePowerLevelTags';
@@ -387,7 +387,7 @@ export function PowersEditor({ powerLevels, onClose }: PowersEditorProps) {
                 </Box>
                 <SequenceCard
                   variant="SurfaceVariant"
-                  className={SequenceCardStyle}
+                  className={SettingsCardStyle}
                   direction="Column"
                   gap="400"
                 >
@@ -427,7 +427,7 @@ export function PowersEditor({ powerLevels, onClose }: PowersEditorProps) {
                     <SequenceCard
                       key={power}
                       variant={deleted.has(power) ? 'Critical' : 'SurfaceVariant'}
-                      className={SequenceCardStyle}
+                      className={SettingsCardStyle}
                       direction="Column"
                       gap="400"
                     >

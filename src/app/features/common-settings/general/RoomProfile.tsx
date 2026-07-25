@@ -19,7 +19,7 @@ import classNames from 'classnames';
 import type { MatrixError } from 'matrix-js-sdk';
 import { EventType, JoinRule } from 'matrix-js-sdk';
 import { SequenceCard } from '../../../components/sequence-card';
-import { SequenceCardStyle } from '../../room-settings/styles.css';
+import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { useRoom } from '../../../hooks/useRoom';
 import {
   useRoomAvatar,
@@ -298,7 +298,7 @@ export function RoomProfile({ permissions }: RoomProfileProps) {
     <Box direction="Column" gap="100">
       <Text size="L400">Profile</Text>
       <SequenceCard
-        className={SequenceCardStyle}
+        className={SettingsCardStyle}
         variant="SurfaceVariant"
         direction="Column"
         gap="400"
