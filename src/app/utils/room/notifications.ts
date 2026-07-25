@@ -3,6 +3,10 @@ import { EventType, NotificationCountType, PushRuleActionName } from 'matrix-js-
 import type { UnreadInfo } from '../../../types/matrix/room';
 import { NotificationType } from '../../../types/matrix/room';
 import { getMyLatestReadReceiptTs } from './receipts';
+import { isCallRoom } from './type';
+
+export const checkIsRoomExcludedFromUnread = (room: Room): boolean =>
+  room.isSpaceRoom() || isCallRoom(room);
 
 export const isMutedRule = (rule: IPushRule) => {
   const hasRoomIdCondition = rule.conditions?.some(
@@ -145,7 +149,7 @@ export const getUnreadInfo = (room: Room): UnreadInfo => {
 
 export const getUnreadInfos = (mx: MatrixClient): UnreadInfo[] => {
   const unreadInfos = mx.getRooms().reduce<UnreadInfo[]>((unread, room) => {
-    if (room.isSpaceRoom()) return unread;
+    if (checkIsRoomExcludedFromUnread(room)) return unread;
     if (room.getMyMembership() !== 'join') return unread;
     if (getNotificationType(mx, room.roomId) === NotificationType.Mute) return unread;
 

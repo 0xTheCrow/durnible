@@ -8,6 +8,7 @@ import {
   getLatestEdit,
   getMentionContent,
   getOrphanParents,
+  isCallRoom,
   isMutedRule,
   isNotificationEvent,
   isRoom,
@@ -440,5 +441,15 @@ describe('isSpace / isRoom / isUnsupportedRoom', () => {
 
   it('isUnsupportedRoom returns false for a space', () => {
     expect(isUnsupportedRoom(roomWithCreateType(RoomType.Space) as never)).toBe(false);
+  });
+
+  it('isUnsupportedRoom returns false for a call room', () => {
+    expect(isUnsupportedRoom(roomWithCreateType(RoomType.Call) as never)).toBe(false);
+  });
+
+  it('isCallRoom returns true only for m.room.create.type === the call room type', () => {
+    expect(isCallRoom(roomWithCreateType(RoomType.Call) as never)).toBe(true);
+    expect(isCallRoom(roomWithCreateType(undefined) as never)).toBe(false);
+    expect(isCallRoom(roomWithCreateType(RoomType.Space) as never)).toBe(false);
   });
 });

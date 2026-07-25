@@ -104,6 +104,7 @@ Vite env vars use `VITE_` prefix, accessed via `import.meta.env.VITE_*`:
 - Prefer declarative sentences over rhetorical structure (no "Not X — Y", no tricolons for effect).
 - Don't write short sentences that exist only for rhythm or punctuation. "Not ideal." "Worth flagging." "That's the tradeoff." If a sentence doesn't add information beyond what the surrounding text already says, delete it.
 - Prefer precise technical explanations. Don't dumb things down, soften jargon, or add hand-holding analogies unless asked — assume the reader knows the stack.
+- Answer questions asked mid-task in the turn's final message. Text emitted between tool calls may never be displayed, so an answer that lives only there reads as the question being ignored. Answer when asked, then restate the answer in the message that ends the turn.
 
 ## Disagreement and judgment
 

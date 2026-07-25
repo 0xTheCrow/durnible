@@ -3,7 +3,7 @@ import { useAtomValue } from 'jotai';
 import { selectAtom } from 'jotai/utils';
 import type { MatrixClient } from 'matrix-js-sdk';
 import { useCallback, useMemo } from 'react';
-import { getAllParents, isRoom, isSpace, isUnsupportedRoom } from '../../utils/room';
+import { getAllParents, isCallRoom, isRoom, isSpace, isUnsupportedRoom } from '../../utils/room';
 import { compareRoomsEqual } from '../room-list/utils';
 import type { RoomToParents } from '../../../types/matrix/room';
 
@@ -143,6 +143,17 @@ export const useOrphanSpaces = (
 export const useRooms = (mx: MatrixClient, roomsAtom: RoomsAtom, mDirects: Set<string>) => {
   const selector: RoomSelector = useCallback(
     (roomId: string) => isRoom(mx.getRoom(roomId)) && !mDirects.has(roomId),
+    [mx, mDirects]
+  );
+  return useSelectedRooms(roomsAtom, selector);
+};
+
+export const useNonCallRooms = (mx: MatrixClient, roomsAtom: RoomsAtom, mDirects: Set<string>) => {
+  const selector: RoomSelector = useCallback(
+    (roomId: string) => {
+      const room = mx.getRoom(roomId);
+      return isRoom(room) && !mDirects.has(roomId) && !isCallRoom(room);
+    },
     [mx, mDirects]
   );
   return useSelectedRooms(roomsAtom, selector);

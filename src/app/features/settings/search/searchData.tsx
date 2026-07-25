@@ -7,6 +7,12 @@ import { clearCacheAndReload } from '../../../../client/initMatrix';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { SettingsPages } from '../settingsPages';
 import {
+  MicrophoneDeviceSetting,
+  CameraDeviceSetting,
+  SpeakerDeviceSetting,
+  PreJoinScreenSetting,
+} from '../voice-video';
+import {
   SelectTheme,
   PageZoomInput,
   SelectDateFormat,
@@ -780,5 +786,46 @@ export const settingsSearchData: SearchEntry[] = [
     pageName: 'About',
     sectionName: 'Options',
     Render: ClearCacheSetting,
+  },
+  // Voice & Video
+  {
+    id: 'microphone-device',
+    title: 'Microphone',
+    description: 'Microphone to use in voice and video calls.',
+    keywords: ['call', 'voice', 'audio', 'microphone', 'mic', 'device', 'input'],
+    page: SettingsPages.VoiceVideoPage,
+    pageName: 'Voice & Video',
+    sectionName: 'Devices',
+    Render: MicrophoneDeviceSetting,
+  },
+  {
+    id: 'camera-device',
+    title: 'Camera',
+    description: 'Camera to use in video calls.',
+    keywords: ['call', 'video', 'camera', 'webcam', 'device', 'input'],
+    page: SettingsPages.VoiceVideoPage,
+    pageName: 'Voice & Video',
+    sectionName: 'Devices',
+    Render: CameraDeviceSetting,
+  },
+  {
+    id: 'speaker-device',
+    title: 'Speaker',
+    description: 'Audio output to use in voice and video calls.',
+    keywords: ['call', 'voice', 'audio', 'speaker', 'headphone', 'device', 'output', 'sound'],
+    page: SettingsPages.VoiceVideoPage,
+    pageName: 'Voice & Video',
+    sectionName: 'Devices',
+    Render: SpeakerDeviceSetting,
+  },
+  {
+    id: 'call-pre-join-screen',
+    title: 'Pre-Join Screen',
+    description: 'Review your devices on a pre-join screen instead of joining calls instantly.',
+    keywords: ['call', 'voice', 'video', 'join', 'pre-join', 'prejoin', 'preview', 'lobby'],
+    page: SettingsPages.VoiceVideoPage,
+    pageName: 'Voice & Video',
+    sectionName: 'Calls',
+    Render: PreJoinScreenSetting,
   },
 ];

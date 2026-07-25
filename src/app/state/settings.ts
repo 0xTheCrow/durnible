@@ -63,6 +63,11 @@ export interface Settings {
   pwaMode: boolean;
 
   timelineSliderRange: TimelineSliderRange;
+
+  preferredAudioInputDeviceId?: string;
+  preferredVideoInputDeviceId?: string;
+  preferredAudioOutputDeviceId?: string;
+  showCallPreJoinScreen: boolean;
 }
 
 const defaultSettings: Settings = {
@@ -117,6 +122,11 @@ const defaultSettings: Settings = {
   pwaMode: false,
 
   timelineSliderRange: 'day',
+
+  preferredAudioInputDeviceId: undefined,
+  preferredVideoInputDeviceId: undefined,
+  preferredAudioOutputDeviceId: undefined,
+  showCallPreJoinScreen: false,
 };
 
 export const getSettings = () => {

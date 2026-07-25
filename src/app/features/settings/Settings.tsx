@@ -14,6 +14,7 @@ import { UserAvatar } from '../../components/user-avatar';
 import { nameInitials } from '../../utils/common';
 import { Notifications } from './notifications';
 import { Devices } from './devices';
+import { VoiceVideo } from './voice-video';
 import { EmojisStickers } from './emojis-stickers';
 import { Keybinds } from './keybinds';
 import { DeveloperTools } from './developer-tools';
@@ -52,6 +53,11 @@ const useSettingsMenuItems = (): SettingsMenuItem[] =>
         page: SettingsPages.DevicesPage,
         name: 'Devices',
         icon: Icons.Monitor,
+      },
+      {
+        page: SettingsPages.VoiceVideoPage,
+        name: 'Voice & Video',
+        icon: Icons.Headphone,
       },
       {
         page: SettingsPages.EmojisStickersPage,
@@ -287,6 +293,9 @@ export function Settings({ initialPage, onClose }: SettingsProps) {
           )}
           {activePage === SettingsPages.DevicesPage && (
             <Devices onBack={handleBackToMenu} onClose={onClose} />
+          )}
+          {activePage === SettingsPages.VoiceVideoPage && (
+            <VoiceVideo onBack={handleBackToMenu} onClose={onClose} />
           )}
           {activePage === SettingsPages.EmojisStickersPage && (
             <EmojisStickers onBack={handleBackToMenu} onClose={onClose} />

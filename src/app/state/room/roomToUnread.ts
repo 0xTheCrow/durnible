@@ -7,6 +7,7 @@ import { useCallback, useEffect } from 'react';
 import type { RoomToUnread, UnreadInfo, Unread } from '../../../types/matrix/room';
 import { Membership, NotificationType, StateEvent } from '../../../types/matrix/room';
 import {
+  checkIsRoomExcludedFromUnread,
   getAllParents,
   getNotificationType,
   getUnreadInfo,
@@ -216,7 +217,13 @@ export const useBindRoomToUnreadAtom = (mx: MatrixClient, unreadAtom: typeof roo
       removed: boolean,
       data: IRoomTimelineData
     ) => {
-      if (!room || !data.liveEvent || room.isSpaceRoom() || !isNotificationEvent(mEvent)) return;
+      if (
+        !room ||
+        !data.liveEvent ||
+        checkIsRoomExcludedFromUnread(room) ||
+        !isNotificationEvent(mEvent)
+      )
+        return;
       if (getNotificationType(mx, room.roomId) === NotificationType.Mute) {
         setUnreadAtom({
           type: 'DELETE',
@@ -238,7 +245,7 @@ export const useBindRoomToUnreadAtom = (mx: MatrixClient, unreadAtom: typeof roo
     const handleEventDecrypted = (mEvent: MatrixEvent) => {
       const roomId = mEvent.getRoomId();
       const room = roomId ? mx.getRoom(roomId) : null;
-      if (!room || room.isSpaceRoom()) return;
+      if (!room || checkIsRoomExcludedFromUnread(room)) return;
       if (!reconcileEncryptedRoomNotificationCounts(mx, room)) return;
       refreshRoomUnread(room);
     };
@@ -252,7 +259,7 @@ export const useBindRoomToUnreadAtom = (mx: MatrixClient, unreadAtom: typeof roo
     const handleReceipt = (mEvent: MatrixEvent, room: Room) => {
       const myUserId = mx.getUserId();
       if (!myUserId) return;
-      if (room.isSpaceRoom()) return;
+      if (checkIsRoomExcludedFromUnread(room)) return;
       const content = mEvent.getContent<ReceiptContent>();
 
       const isMyReceipt = Object.keys(content).find((eventId) =>

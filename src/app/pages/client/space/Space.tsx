@@ -42,12 +42,13 @@ import {
 } from '../../../hooks/router/useSelectedSpace';
 import { useSpace } from '../../../hooks/useSpace';
 import { VirtualTile } from '../../../components/virtualizer';
-import { RoomNavCategoryButton, RoomNavItem } from '../../../features/room-nav';
+import { RoomNavCategoryButton, RoomNavItem, RoomNavVoiceItem } from '../../../features/room-nav';
 import { makeNavCategoryId } from '../../../state/closedNavCategories';
 import { roomToUnreadAtom } from '../../../state/room/roomToUnread';
 import { useCategoryHandler } from '../../../hooks/useCategoryHandler';
 import { useNavToActivePathMapper } from '../../../hooks/useNavToActivePathMapper';
 import { useRoomName } from '../../../hooks/useRoomMeta';
+import type { HierarchyItem } from '../../../hooks/useSpaceHierarchy';
 import { useSpaceJoinedHierarchy } from '../../../hooks/useSpaceHierarchy';
 import { allRoomsAtom } from '../../../state/room-list/roomList';
 import { PageNav, PageNavContent, PageNavHeader } from '../../../components/page';
@@ -55,6 +56,7 @@ import { usePowerLevels } from '../../../hooks/usePowerLevels';
 import { useRecursiveChildScopeFactory, useSpaceChildren } from '../../../state/hooks/roomList';
 import { roomToParentsAtom } from '../../../state/room/roomToParents';
 import { markAsRead } from '../../../utils/notifications';
+import { isCallRoom } from '../../../utils/room';
 import { useRoomsUnread } from '../../../state/hooks/unread';
 import { UseStateProvider } from '../../../components/UseStateProvider';
 import { LeaveSpacePrompt } from '../../../components/leave-space-prompt';
@@ -371,6 +373,12 @@ export function SpaceTombstone({ roomId, replacementRoomId }: SpaceTombstoneProp
   );
 }
 
+type SpaceNavRow =
+  | { type: 'space'; item: HierarchyItem }
+  | { type: 'room'; item: HierarchyItem }
+  | { type: 'voiceHeader'; categoryId: string }
+  | { type: 'voiceRoom'; item: HierarchyItem };
+
 type SpaceProps = {
   isDrawerMode?: boolean;
   extra?: React.ReactNode;
@@ -425,8 +433,43 @@ export function Space({ isDrawerMode, extra }: SpaceProps = {}) {
     )
   );
 
+  const navRows = useMemo<SpaceNavRow[]>(() => {
+    const rows: SpaceNavRow[] = [];
+    let index = 0;
+    while (index < hierarchy.length) {
+      const item = hierarchy[index];
+      if (mx.getRoom(item.roomId)?.isSpaceRoom()) {
+        rows.push({ type: 'space', item });
+        index += 1;
+
+        const textRooms: HierarchyItem[] = [];
+        const voiceRooms: HierarchyItem[] = [];
+        while (index < hierarchy.length && !mx.getRoom(hierarchy[index].roomId)?.isSpaceRoom()) {
+          const childItem = hierarchy[index];
+          if (isCallRoom(mx.getRoom(childItem.roomId))) voiceRooms.push(childItem);
+          else textRooms.push(childItem);
+          index += 1;
+        }
+
+        textRooms.forEach((textItem) => rows.push({ type: 'room', item: textItem }));
+
+        if (voiceRooms.length > 0) {
+          const voiceCategoryId = makeNavCategoryId(space.roomId, item.roomId, 'voice');
+          rows.push({ type: 'voiceHeader', categoryId: voiceCategoryId });
+          if (!closedCategories.has(voiceCategoryId)) {
+            voiceRooms.forEach((voiceItem) => rows.push({ type: 'voiceRoom', item: voiceItem }));
+          }
+        }
+      } else {
+        rows.push({ type: 'room', item });
+        index += 1;
+      }
+    }
+    return rows;
+  }, [hierarchy, mx, space.roomId, closedCategories]);
+
   const virtualizer = useVirtualizer({
-    count: hierarchy.length,
+    count: navRows.length,
     getScrollElement: () => scrollRef.current,
     estimateSize: () => 0,
     overscan: 10,
@@ -495,11 +538,36 @@ export function Space({ isDrawerMode, extra }: SpaceProps = {}) {
             }}
           >
             {virtualizer.getVirtualItems().map((vItem) => {
-              const { roomId } = hierarchy[vItem.index] ?? {};
+              const row = navRows[vItem.index];
+              if (!row) return null;
+
+              if (row.type === 'voiceHeader') {
+                return (
+                  <VirtualTile
+                    virtualItem={vItem}
+                    key={vItem.index}
+                    ref={virtualizer.measureElement}
+                  >
+                    <div style={{ paddingTop: config.space.S400 }}>
+                      <NavCategoryHeader>
+                        <RoomNavCategoryButton
+                          data-category-id={row.categoryId}
+                          onClick={handleCategoryClick}
+                          closed={closedCategories.has(row.categoryId)}
+                        >
+                          Voice
+                        </RoomNavCategoryButton>
+                      </NavCategoryHeader>
+                    </div>
+                  </VirtualTile>
+                );
+              }
+
+              const { roomId } = row.item;
               const room = mx.getRoom(roomId);
               if (!room) return null;
 
-              if (room.isSpaceRoom()) {
+              if (row.type === 'space') {
                 const categoryId = makeNavCategoryId(space.roomId, roomId);
 
                 return (
@@ -519,6 +587,22 @@ export function Space({ isDrawerMode, extra }: SpaceProps = {}) {
                         </RoomNavCategoryButton>
                       </NavCategoryHeader>
                     </div>
+                  </VirtualTile>
+                );
+              }
+
+              if (row.type === 'voiceRoom') {
+                return (
+                  <VirtualTile
+                    virtualItem={vItem}
+                    key={vItem.index}
+                    ref={virtualizer.measureElement}
+                  >
+                    <RoomNavVoiceItem
+                      room={room}
+                      selected={selectedRoomId === roomId}
+                      isDrawerMode={isDrawerMode}
+                    />
                   </VirtualTile>
                 );
               }
