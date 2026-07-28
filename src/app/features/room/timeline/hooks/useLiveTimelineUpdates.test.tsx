@@ -57,6 +57,7 @@ function Harness({
     linkedTimelines: linkedTimelinesWithCount(totalEvents),
     range: { ...INITIAL_RANGE },
   });
+  const scrollRef = useRef<HTMLDivElement>(null);
   const atBottomRef = useRef(atBottom);
   atBottomRef.current = atBottom;
   const isInLivePaginationWindowRef = useRef(isInLivePaginationWindow);
@@ -66,6 +67,7 @@ function Harness({
   useLiveTimelineUpdates({
     room,
     setTimeline,
+    scrollRef,
     atBottomRef,
     isInLivePaginationWindowRef,
     intentRef,

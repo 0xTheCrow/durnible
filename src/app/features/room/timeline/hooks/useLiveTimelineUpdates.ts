@@ -6,11 +6,14 @@ import { useLiveEventArrive, useLiveEventDecryption } from '../timelineState';
 import type { Timeline } from '../timelineState';
 import { getTimelinesEventsCount } from '../timelineUtils';
 import { isModifierTimelineEvent } from '../../../../utils/room';
+import { getScrollBottomDistance } from '../../../../utils/dom';
+import { traceTimelineScroll } from '../utils/scrollTrace';
 import type { ScrollIntent } from './useScrollController';
 
 type UseLiveTimelineUpdatesParams = {
   room: Room;
   setTimeline: Dispatch<SetStateAction<Timeline>>;
+  scrollRef: RefObject<HTMLDivElement>;
   atBottomRef: RefObject<boolean>;
   isInLivePaginationWindowRef: RefObject<boolean>;
   intentRef: RefObject<ScrollIntent>;
@@ -21,6 +24,7 @@ type UseLiveTimelineUpdatesParams = {
 export const useLiveTimelineUpdates = ({
   room,
   setTimeline,
+  scrollRef,
   atBottomRef,
   isInLivePaginationWindowRef,
   intentRef,
@@ -42,6 +46,20 @@ export const useLiveTimelineUpdates = ({
       const atBottom = !!atBottomRef.current;
       const isInLivePaginationWindow = !!isInLivePaginationWindowRef.current;
       const shouldFollowLiveEdge = followingLive || (atBottom && isInLivePaginationWindow);
+      const scrollElement = scrollRef.current;
+
+      traceTimelineScroll('liveEventArrive', {
+        eventId: mEvent.getId(),
+        followingLive,
+        atBottom,
+        isInLivePaginationWindow,
+        focused,
+        autoPinEnabled,
+        scrollBottomDistance: scrollElement
+          ? Math.round(getScrollBottomDistance(scrollElement))
+          : null,
+        shouldFollowLiveEdge,
+      });
 
       if (shouldFollowLiveEdge) {
         if (autoPinEnabled) pinToLiveEnd();
@@ -63,6 +81,7 @@ export const useLiveTimelineUpdates = ({
     },
     [
       setTimeline,
+      scrollRef,
       atBottomRef,
       isInLivePaginationWindowRef,
       intentRef,

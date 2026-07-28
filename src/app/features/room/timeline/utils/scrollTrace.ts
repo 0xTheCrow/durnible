@@ -8,13 +8,14 @@ export type TimelineScrollTraceEntry = {
 
 const MAX_TRACE_ENTRIES = 500;
 
-const COALESCE_WINDOW_MS = 250;
+export const TRACE_COALESCE_WINDOW_MS = 250;
 
 const COALESCED_TRACE_EVENTS = new Set([
   'maintainPosition:apply',
   'apply:scrollToBottom',
   'apply:anchor-missing',
   'userInput',
+  'scroll',
 ]);
 
 const traceEntries: TimelineScrollTraceEntry[] = [];
@@ -26,7 +27,7 @@ export const traceTimelineScroll = (event: string, detail?: Record<string, unkno
     lastEntry &&
     lastEntry.event === event &&
     COALESCED_TRACE_EVENTS.has(event) &&
-    epochMs - lastEntry.epochMs < COALESCE_WINDOW_MS
+    epochMs - lastEntry.epochMs < TRACE_COALESCE_WINDOW_MS
   ) {
     lastEntry.at = Math.round(performance.now());
     lastEntry.epochMs = epochMs;
@@ -53,6 +54,7 @@ if (typeof window !== 'undefined') {
   const globalWindow = window as unknown as {
     __timelineScrollTrace: () => TimelineScrollTraceEntry[];
     __timelineScrollTraceText: (lastSeconds?: number) => string;
+    __timelineScrollTraceClear: () => void;
   };
   globalWindow.__timelineScrollTrace = () => [...traceEntries];
   globalWindow.__timelineScrollTraceText = (lastSeconds = 300) => {
@@ -62,6 +64,24 @@ if (typeof window !== 'undefined') {
       .map(formatTraceEntry)
       .join('\n');
   };
+  globalWindow.__timelineScrollTraceClear = () => {
+    traceEntries.length = 0;
+  };
   window.addEventListener('focus', () => traceTimelineScroll('window:focus'));
   window.addEventListener('blur', () => traceTimelineScroll('window:blur'));
+  /* eslint-disable-next-line no-console */
+  console.info(
+    [
+      'Timeline scroll trace active. Reproduce the issue, then copy the trace:',
+      '',
+      'copy(__timelineScrollTraceText())',
+      '',
+      'Takes an optional seconds argument (default 300). Other commands:',
+      '',
+      '__timelineScrollTraceClear()',
+      '__timelineScrollTrace()',
+      '',
+      'Clear empties the buffer before a repro; the bare call returns raw entries.',
+    ].join('\n')
+  );
 }
