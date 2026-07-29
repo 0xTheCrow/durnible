@@ -136,7 +136,7 @@ export function RoomTimeline({
     room,
     hideActivity,
     atBottom,
-    atBottomRef,
+    isInLivePaginationWindow,
     onMarkAsRead: clearNewMessagesDivider,
   });
 

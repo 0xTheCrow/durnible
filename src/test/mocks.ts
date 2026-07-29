@@ -12,6 +12,7 @@ type MockEventOptions = {
   content?: Record<string, unknown>;
   unsigned?: Record<string, unknown>;
   redacted?: boolean;
+  sending?: boolean;
   roomId?: string;
 };
 
@@ -34,7 +35,10 @@ export function createMockMatrixEvent(opts: MockEventOptions = {}): MatrixEvent 
     getWireContent: vi.fn(() => content),
     getPrevContent: vi.fn(() => ({})),
     isRedacted: vi.fn(() => opts.redacted ?? false),
+    isRedaction: vi.fn(() => type === 'm.room.redaction'),
+    isSending: vi.fn(() => opts.sending ?? false),
     isRelation: vi.fn(() => false),
+    getRelation: vi.fn(() => null),
     isEncrypted: vi.fn(() => false),
     getRoomId: vi.fn(() => roomId),
     getEffectiveEvent: vi.fn(() => ({ type, content, sender, event_id: id })),
@@ -177,6 +181,7 @@ export function createMockMatrixClient(): Partial<MatrixClient> {
       event_id: '$state',
     })) as unknown as MatrixClient['sendStateEvent'],
     reportEvent: vi.fn(async () => ({})) as unknown as MatrixClient['reportEvent'],
+    sendReadReceipt: vi.fn(async () => ({})) as unknown as MatrixClient['sendReadReceipt'],
     on: vi.fn().mockReturnThis(),
     off: vi.fn().mockReturnThis(),
     removeListener: vi.fn().mockReturnThis(),

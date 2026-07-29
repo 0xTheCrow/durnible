@@ -34,12 +34,12 @@ const makeRoom = (): EmitterRoom => {
 type HarnessProps = {
   room: Room;
   atBottom: boolean;
-  atBottomRef: { current: boolean };
+  isInLivePaginationWindow?: boolean;
 };
 
-function Harness({ room, atBottom, atBottomRef }: HarnessProps) {
+function Harness({ room, atBottom, isInLivePaginationWindow = true }: HarnessProps) {
   const mx = createMockMatrixClient() as unknown as MatrixClient;
-  useAutoMarkAsRead({ mx, room, hideActivity: false, atBottom, atBottomRef });
+  useAutoMarkAsRead({ mx, room, hideActivity: false, atBottom, isInLivePaginationWindow });
   return null;
 }
 
@@ -51,33 +51,52 @@ afterEach(() => {
 describe('useAutoMarkAsRead', () => {
   it('marks as read when at the bottom and focused', () => {
     vi.spyOn(document, 'hasFocus').mockReturnValue(true);
-    render(<Harness room={makeRoom()} atBottom atBottomRef={{ current: true }} />);
+    render(<Harness room={makeRoom()} atBottom />);
     expect(vi.mocked(markAsRead)).toHaveBeenCalledTimes(1);
   });
 
   it('does not mark as read when the document is unfocused', () => {
     vi.spyOn(document, 'hasFocus').mockReturnValue(false);
-    render(<Harness room={makeRoom()} atBottom atBottomRef={{ current: true }} />);
+    render(<Harness room={makeRoom()} atBottom />);
     expect(vi.mocked(markAsRead)).not.toHaveBeenCalled();
   });
 
   it('does not mark as read when not at the bottom', () => {
     vi.spyOn(document, 'hasFocus').mockReturnValue(true);
-    render(<Harness room={makeRoom()} atBottom={false} atBottomRef={{ current: false }} />);
+    render(<Harness room={makeRoom()} atBottom={false} />);
+    expect(vi.mocked(markAsRead)).not.toHaveBeenCalled();
+  });
+
+  it('does not mark as read at the bottom of a window that stops short of the live edge', () => {
+    vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+    render(<Harness room={makeRoom()} atBottom isInLivePaginationWindow={false} />);
     expect(vi.mocked(markAsRead)).not.toHaveBeenCalled();
   });
 
   it('marks as read when a live event arrives while at the bottom and focused', () => {
     vi.spyOn(document, 'hasFocus').mockReturnValue(true);
     const room = makeRoom();
-    render(<Harness room={room} atBottom={false} atBottomRef={{ current: true }} />);
-    expect(vi.mocked(markAsRead)).not.toHaveBeenCalled();
+    render(<Harness room={room} atBottom />);
+    expect(vi.mocked(markAsRead)).toHaveBeenCalledTimes(1);
 
     act(() => {
       room.emit(RoomEvent.Timeline, createFakeEvent('m.room.message'), room, undefined, false, {
         liveEvent: true,
       });
     });
-    expect(vi.mocked(markAsRead)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(markAsRead)).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not mark as read on a live event when the window stops short of the live edge', () => {
+    vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+    const room = makeRoom();
+    render(<Harness room={room} atBottom isInLivePaginationWindow={false} />);
+
+    act(() => {
+      room.emit(RoomEvent.Timeline, createFakeEvent('m.room.message'), room, undefined, false, {
+        liveEvent: true,
+      });
+    });
+    expect(vi.mocked(markAsRead)).not.toHaveBeenCalled();
   });
 });
