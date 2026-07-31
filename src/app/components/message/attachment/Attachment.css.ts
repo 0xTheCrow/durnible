@@ -31,6 +31,13 @@ export type AttachmentVariants = RecipeVariants<typeof Attachment>;
 
 export const AttachmentHeader = style({
   padding: config.space.S300,
+  paddingTop: config.space.S200,
+  paddingBottom: config.space.S200,
+});
+
+export const AttachmentHeaderTextOnly = style({
+  paddingTop: config.space.S300,
+  paddingBottom: config.space.S300,
 });
 
 export const AttachmentBox = style([
@@ -46,4 +53,5 @@ export const AttachmentBox = style([
 export const AttachmentContent = style({
   padding: config.space.S300,
   paddingTop: 0,
+  paddingBottom: config.space.S200,
 });

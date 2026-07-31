@@ -386,7 +386,12 @@ function RenderMessageContentInner({
             content={fileContent}
             renderAsFile={renderFile}
             renderAudioContent={(props) => (
-              <AudioContentView {...props} renderMediaControl={(p) => <MediaControl {...p} />} />
+              <AudioContentView
+                {...props}
+                renderMediaControl={(p) => (
+                  <MediaControl {...p} style={{ gap: config.space.S200 }} />
+                )}
+              />
             )}
             outlined={outlineAttachment}
           />

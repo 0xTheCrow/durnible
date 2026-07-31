@@ -15,15 +15,24 @@ export const Attachment = as<'div', css.AttachmentVariants>(
   )
 );
 
-export const AttachmentHeader = as<'div'>(({ className, ...props }, ref) => (
-  <Box
-    shrink="No"
-    gap="200"
-    className={classNames(css.AttachmentHeader, className)}
-    {...props}
-    ref={ref}
-  />
-));
+type AttachmentHeaderProps = {
+  isTextOnly?: boolean;
+};
+export const AttachmentHeader = as<'div', AttachmentHeaderProps>(
+  ({ className, isTextOnly, ...props }, ref) => (
+    <Box
+      shrink="No"
+      gap="200"
+      className={classNames(
+        css.AttachmentHeader,
+        isTextOnly && css.AttachmentHeaderTextOnly,
+        className
+      )}
+      {...props}
+      ref={ref}
+    />
+  )
+);
 
 export const AttachmentBox = as<'div'>(({ className, ...props }, ref) => (
   <Box

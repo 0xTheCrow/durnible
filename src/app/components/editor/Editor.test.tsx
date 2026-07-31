@@ -1,8 +1,10 @@
 import React from 'react';
 import { render, screen, act, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { getDefaultStore } from 'jotai';
 import { CustomEditor, type EditorController } from './Editor';
 import { MatrixTestWrapper } from '../../../test/wrapper';
+import { settingsAtom } from '../../state/settings';
 import * as formatting from './editorFormatting';
 
 vi.mock('./editorFormatting');
@@ -49,6 +51,8 @@ beforeEach(() => {
   mockedFormatting.isBlockFormatActive.mockReturnValue(false);
   mockedFormatting.isExitableBlock.mockReturnValue(false);
   getImageUrlBlobMock.mockReset();
+  const store = getDefaultStore();
+  store.set(settingsAtom, { ...store.get(settingsAtom), isMarkdownEnabled: true });
 });
 
 describe('EditorController', () => {

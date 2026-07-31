@@ -15,17 +15,17 @@ export type VoiceRecordingState =
   | { status: VoiceRecordingStatus.Stopped; blob: Blob; mimeType: string; duration: number }
   | { status: VoiceRecordingStatus.Error; error: string };
 
-const getSupportedMimeType = (): string => {
-  const candidates = [
-    'audio/webm;codecs=opus',
-    'audio/ogg;codecs=opus',
-    'audio/webm',
-    'audio/ogg',
-    'audio/mp4;codecs=aac',
-    'audio/mp4',
-  ];
-  return candidates.find((t) => MediaRecorder.isTypeSupported(t)) ?? '';
-};
+export const VOICE_RECORDING_MIME_TYPE_CANDIDATES = [
+  'audio/webm;codecs=opus',
+  'audio/ogg;codecs=opus',
+  'audio/webm',
+  'audio/ogg',
+  'audio/mp4;codecs=aac',
+  'audio/mp4',
+];
+
+const getSupportedMimeType = (): string =>
+  VOICE_RECORDING_MIME_TYPE_CANDIDATES.find((t) => MediaRecorder.isTypeSupported(t)) ?? '';
 
 export function useVoiceRecording() {
   const [state, setState] = useState<VoiceRecordingState>({ status: VoiceRecordingStatus.Idle });
