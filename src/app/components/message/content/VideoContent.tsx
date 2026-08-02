@@ -75,21 +75,47 @@ export const VideoContent = as<'div', VideoContentProps>(
 
     const [srcState, loadSrc] = useAutoLoadAsyncCallback(
       useCallback(async () => {
+        console.log('[video-debug] download start', {
+          timestamp: Date.now(),
+          url,
+          mimeType,
+          encrypted: !!encryptionInfo,
+        });
         const mediaUrl = mxcUrlToHttp(mx, url, useAuthentication) ?? url;
         const fileContent = encryptionInfo
-          ? await downloadEncryptedMedia(mediaUrl, (encBuf) =>
-              decryptFile(encBuf, mimeType, encryptionInfo)
-            )
+          ? await downloadEncryptedMedia(mediaUrl, (encBuf) => {
+              console.log('[video-debug] ciphertext fetched, decrypting', {
+                timestamp: Date.now(),
+                byteLength: encBuf.byteLength,
+              });
+              return decryptFile(encBuf, mimeType, encryptionInfo);
+            })
           : await downloadMedia(mediaUrl);
-        return URL.createObjectURL(fileContent);
+        console.log('[video-debug] blob ready', {
+          timestamp: Date.now(),
+          size: fileContent.size,
+          type: fileContent.type,
+        });
+        const objectUrl = URL.createObjectURL(fileContent);
+        console.log('[video-debug] object URL created', { timestamp: Date.now(), objectUrl });
+        return objectUrl;
       }, [mx, url, useAuthentication, mimeType, encryptionInfo]),
       !!autoPlay
     );
 
+    useEffect(() => {
+      console.log('[video-debug] srcState changed', {
+        timestamp: Date.now(),
+        status: srcState.status,
+      });
+    }, [srcState.status]);
+
     const handleLoad = () => {
+      console.log('[video-debug] React onLoadedMetadata fired', { timestamp: Date.now() });
       setLoad(true);
     };
     const handleError = () => {
+      console.log('[video-debug] React onError fired', { timestamp: Date.now() });
       setLoad(false);
       setError(true);
     };
@@ -116,8 +142,24 @@ export const VideoContent = as<'div', VideoContentProps>(
 
       const observer = new IntersectionObserver(
         ([entry]) => {
+          console.log('[video-debug] intersection', {
+            timestamp: Date.now(),
+            isIntersecting: entry.isIntersecting,
+            intersectionRatio: entry.intersectionRatio,
+            boundingClientRect: entry.boundingClientRect,
+            rootBounds: entry.rootBounds,
+          });
           if (!entry.isIntersecting) {
-            containerElement.querySelectorAll('video').forEach((v) => v.pause());
+            containerElement.querySelectorAll('video').forEach((v) => {
+              console.log('[video-debug] pausing video due to non-intersection', {
+                timestamp: Date.now(),
+                readyState: v.readyState,
+                networkState: v.networkState,
+                currentTime: v.currentTime,
+                paused: v.paused,
+              });
+              v.pause();
+            });
           }
         },
         { threshold: 0 }
@@ -126,6 +168,57 @@ export const VideoContent = as<'div', VideoContentProps>(
 
       return () => observer.disconnect();
     }, []);
+
+    useEffect(() => {
+      if (srcState.status !== AsyncStatus.Success) return undefined;
+      const videoElement = containerRef.current?.querySelector('video');
+      if (!videoElement) return undefined;
+
+      const readState = () => ({
+        timestamp: Date.now(),
+        readyState: videoElement.readyState,
+        networkState: videoElement.networkState,
+        currentTime: videoElement.currentTime,
+        duration: videoElement.duration,
+        paused: videoElement.paused,
+        currentSrc: videoElement.currentSrc,
+        error: videoElement.error
+          ? { code: videoElement.error.code, message: videoElement.error.message }
+          : null,
+      });
+
+      const eventNames = [
+        'loadstart',
+        'durationchange',
+        'loadedmetadata',
+        'loadeddata',
+        'progress',
+        'canplay',
+        'canplaythrough',
+        'playing',
+        'play',
+        'pause',
+        'waiting',
+        'stalled',
+        'suspend',
+        'abort',
+        'emptied',
+        'error',
+      ];
+      const listeners = eventNames.map((eventName) => {
+        const listener = () => console.log(`[video-debug] video event: ${eventName}`, readState());
+        videoElement.addEventListener(eventName, listener);
+        return { eventName, listener };
+      });
+
+      console.log('[video-debug] attached listeners to video element', readState());
+
+      return () => {
+        listeners.forEach(({ eventName, listener }) =>
+          videoElement.removeEventListener(eventName, listener)
+        );
+      };
+    }, [srcState.status]);
 
     return (
       <Box className={classNames(css.RelativeBase, className)} {...props} ref={mergedRef}>
