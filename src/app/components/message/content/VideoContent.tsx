@@ -21,6 +21,7 @@ import {
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
 import { validBlurHash } from '../../../utils/blurHash';
 import { hiddenImagesAtom, MessageEventIdContext } from '../../../state/hiddenImages';
+import knownGoodControlVideoUrl from '../../../../../public/res/video-debug-control.mp4';
 
 type VideoElementWithFirefoxDebugInfo = HTMLVideoElement & {
   mozRequestDebugInfo?: () => Promise<unknown>;
@@ -71,20 +72,25 @@ const logMediaElementCensus = () => {
   });
 };
 
-const spawnControlVideo = (objectUrl: string, isMuted: boolean) => {
-  const label = isMuted ? 'muted-control' : 'unmuted-control';
+const spawnControlVideo = (
+  src: string,
+  label: string,
+  isMuted: boolean,
+  bottomPixels: number,
+  borderColor: string
+) => {
   const controlVideoElement = document.createElement('video');
   controlVideoElement.controls = true;
   controlVideoElement.autoplay = true;
   controlVideoElement.muted = isMuted;
   controlVideoElement.style.cssText = [
     'position:fixed',
-    `bottom:${isMuted ? 150 : 8}px`,
+    `bottom:${bottomPixels}px`,
     'left:8px',
     'width:200px',
     'z-index:99999',
     'background:#000',
-    `border:3px solid ${isMuted ? 'lime' : 'red'}`,
+    `border:3px solid ${borderColor}`,
   ].join(';');
   const controlEventNames = [
     'loadstart',
@@ -111,7 +117,7 @@ const spawnControlVideo = (objectUrl: string, isMuted: boolean) => {
       })
     )
   );
-  controlVideoElement.src = objectUrl;
+  controlVideoElement.src = src;
   document.body.append(controlVideoElement);
   console.log(`[video-debug] diagnostics(${label}): appended`, { timestamp: Date.now() });
 };
@@ -225,8 +231,28 @@ export const VideoContent = as<'div', VideoContentProps>(
           timestamp: Date.now(),
         });
       }
-      spawnControlVideo(srcState.data.objectUrl, false);
-      spawnControlVideo(srcState.data.objectUrl, true);
+      spawnControlVideo(srcState.data.objectUrl, 'unmuted-control', false, 8, 'red');
+      spawnControlVideo(srcState.data.objectUrl, 'muted-control', true, 150, 'lime');
+      spawnControlVideo(knownGoodControlVideoUrl, 'known-good-control', true, 292, 'cyan');
+      srcState.data.blob
+        .arrayBuffer()
+        .then((blobBuffer) => crypto.subtle.digest('SHA-256', blobBuffer))
+        .then((digest) => {
+          const sha256Hex = Array.from(new Uint8Array(digest))
+            .map((byteValue) => byteValue.toString(16).padStart(2, '0'))
+            .join('');
+          console.log('[video-debug] diagnostics: decrypted blob sha256', {
+            timestamp: Date.now(),
+            sha256: sha256Hex,
+            size: srcState.data.blob.size,
+          });
+        })
+        .catch((reason) =>
+          console.log('[video-debug] diagnostics: sha256 computation failed', {
+            timestamp: Date.now(),
+            reason,
+          })
+        );
     }, [srcState]);
 
     const triggerDataUriFallback = useCallback(() => {
