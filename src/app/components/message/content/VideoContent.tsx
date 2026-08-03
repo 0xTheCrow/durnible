@@ -73,6 +73,9 @@ export const VideoContent = as<'div', VideoContentProps>(
     const [blurred, setBlurred] = useState(markedAsSpoiler ?? false);
     const effectiveBlurred = blurred || isForceHidden;
 
+    const [dataUriSrc, setDataUriSrc] = useState<string | undefined>(undefined);
+    const hasAttemptedDataUriFallbackRef = useRef(false);
+
     const [srcState, loadSrc] = useAutoLoadAsyncCallback(
       useCallback(async () => {
         console.log('[video-debug] download start', {
@@ -98,7 +101,7 @@ export const VideoContent = as<'div', VideoContentProps>(
         });
         const objectUrl = URL.createObjectURL(fileContent);
         console.log('[video-debug] object URL created', { timestamp: Date.now(), objectUrl });
-        return objectUrl;
+        return { blob: fileContent, objectUrl };
       }, [mx, url, useAuthentication, mimeType, encryptionInfo]),
       !!autoPlay
     );
@@ -110,6 +113,28 @@ export const VideoContent = as<'div', VideoContentProps>(
       });
     }, [srcState.status]);
 
+    const triggerDataUriFallback = useCallback(() => {
+      if (hasAttemptedDataUriFallbackRef.current) return;
+      if (srcState.status !== AsyncStatus.Success) return;
+      hasAttemptedDataUriFallbackRef.current = true;
+      console.log('[video-debug] blob playback failed, converting to data URI', {
+        timestamp: Date.now(),
+      });
+      const reader = new FileReader();
+      reader.onload = () => {
+        console.log('[video-debug] data URI fallback ready', { timestamp: Date.now() });
+        setDataUriSrc(reader.result as string);
+      };
+      reader.onerror = () => {
+        console.log('[video-debug] data URI fallback conversion failed', {
+          timestamp: Date.now(),
+          readerError: reader.error,
+        });
+        setError(true);
+      };
+      reader.readAsDataURL(srcState.data.blob);
+    }, [srcState]);
+
     const handleLoad = () => {
       console.log('[video-debug] React onLoadedMetadata fired', { timestamp: Date.now() });
       setLoad(true);
@@ -117,11 +142,17 @@ export const VideoContent = as<'div', VideoContentProps>(
     const handleError = () => {
       console.log('[video-debug] React onError fired', { timestamp: Date.now() });
       setLoad(false);
-      setError(true);
+      if (hasAttemptedDataUriFallbackRef.current) {
+        setError(true);
+      } else {
+        triggerDataUriFallback();
+      }
     };
 
     const handleRetry = () => {
       setError(false);
+      hasAttemptedDataUriFallbackRef.current = false;
+      setDataUriSrc(undefined);
       loadSrc();
     };
 
@@ -187,7 +218,23 @@ export const VideoContent = as<'div', VideoContentProps>(
           : null,
       });
 
-      const eventNames = [
+      const handleStalled = () => {
+        console.log('[video-debug] video event: stalled', readState());
+        if (hasAttemptedDataUriFallbackRef.current) {
+          console.log('[video-debug] stalled again after data URI fallback, giving up', {
+            timestamp: Date.now(),
+          });
+          setError(true);
+        } else {
+          console.log(
+            '[video-debug] stalled fired on a fully-buffered blob source, triggering data URI fallback',
+            { timestamp: Date.now() }
+          );
+          triggerDataUriFallback();
+        }
+      };
+
+      const loggedOnlyEventNames = [
         'loadstart',
         'durationchange',
         'loadedmetadata',
@@ -199,26 +246,57 @@ export const VideoContent = as<'div', VideoContentProps>(
         'play',
         'pause',
         'waiting',
-        'stalled',
         'suspend',
         'abort',
         'emptied',
         'error',
       ];
-      const listeners = eventNames.map((eventName) => {
+      const listeners = loggedOnlyEventNames.map((eventName) => {
         const listener = () => console.log(`[video-debug] video event: ${eventName}`, readState());
         videoElement.addEventListener(eventName, listener);
         return { eventName, listener };
       });
+      videoElement.addEventListener('stalled', handleStalled);
 
       console.log('[video-debug] attached listeners to video element', readState());
+
+      // Backstop only: `stalled`/`error` are the real signals and should catch this
+      // almost immediately. This exists solely in case some variant of the bug
+      // leaves the element silent forever without firing either.
+      const BACKSTOP_TIMEOUT_MS = 15000;
+      const backstopTimeout = setTimeout(() => {
+        if (videoElement.readyState !== 0) return;
+        console.log('[video-debug] backstop timeout reached with no stalled/error event', {
+          timestamp: Date.now(),
+          readyState: videoElement.readyState,
+          networkState: videoElement.networkState,
+          hasAttemptedDataUriFallback: hasAttemptedDataUriFallbackRef.current,
+        });
+        if (hasAttemptedDataUriFallbackRef.current) {
+          setError(true);
+        } else {
+          triggerDataUriFallback();
+        }
+      }, BACKSTOP_TIMEOUT_MS);
 
       return () => {
         listeners.forEach(({ eventName, listener }) =>
           videoElement.removeEventListener(eventName, listener)
         );
+        videoElement.removeEventListener('stalled', handleStalled);
+        clearTimeout(backstopTimeout);
       };
-    }, [srcState.status]);
+    }, [srcState.status, triggerDataUriFallback]);
+
+    useEffect(() => {
+      if (!dataUriSrc) return;
+      const videoElement = containerRef.current?.querySelector('video');
+      if (!videoElement) return;
+      console.log('[video-debug] reloading video element with data URI src', {
+        timestamp: Date.now(),
+      });
+      videoElement.load();
+    }, [dataUriSrc]);
 
     return (
       <Box className={classNames(css.RelativeBase, className)} {...props} ref={mergedRef}>
@@ -262,7 +340,7 @@ export const VideoContent = as<'div', VideoContentProps>(
           >
             {renderVideo({
               title: body,
-              src: srcState.data,
+              src: dataUriSrc ?? srcState.data.objectUrl,
               onLoadedMetadata: handleLoad,
               onError: handleError,
               autoPlay: true,
