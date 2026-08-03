@@ -276,9 +276,9 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
     );
 
     return (
-      <div className={css.Editor} ref={ref} data-no-swipe-drawer>
-        {top}
-        <Box alignItems="Start">
+      <div className={css.Editor} ref={ref} data-no-swipe-drawer style={{ maxHeight }}>
+        {top && <div className={css.EditorSlot}>{top}</div>}
+        <Box className={css.EditorInputRow} alignItems="Start">
           {before && (
             <Box className={css.EditorOptions} alignItems="Center" gap="100" shrink="No">
               {before}
@@ -287,7 +287,6 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
           <Scroll
             className={css.EditorTextareaScroll}
             variant="SurfaceVariant"
-            style={{ maxHeight }}
             size="300"
             visibility="Hover"
             hideTrack
@@ -319,7 +318,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
             </Box>
           )}
         </Box>
-        {bottom}
+        {bottom && <div className={css.EditorSlot}>{bottom}</div>}
       </div>
     );
   }

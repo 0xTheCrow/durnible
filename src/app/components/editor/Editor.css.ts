@@ -4,6 +4,8 @@ import { color, config, DefaultReset, toRem } from 'folds';
 export const Editor = style([
   DefaultReset,
   {
+    display: 'flex',
+    flexDirection: 'column',
     backgroundColor: color.SurfaceVariant.Container,
     color: color.SurfaceVariant.OnContainer,
     boxShadow: `inset 0 0 0 ${config.borderWidth.B300} ${color.SurfaceVariant.ContainerLine}`,
@@ -47,6 +49,14 @@ export const EditorOptions = style([
     padding: config.space.S200,
   },
 ]);
+
+export const EditorSlot = style({
+  flexShrink: 0,
+});
+
+export const EditorInputRow = style({
+  minHeight: 0,
+});
 
 export const EditorTextareaScroll = style({
   overscrollBehavior: 'contain',
