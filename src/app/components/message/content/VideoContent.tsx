@@ -122,6 +122,8 @@ const spawnControlVideo = (
   console.log(`[video-debug] diagnostics(${label}): appended`, { timestamp: Date.now() });
 };
 
+let hasSpawnedEarlyKnownGoodControl = false;
+
 type RenderVideoProps = {
   title: string;
   src: string;
@@ -235,6 +237,25 @@ export const VideoContent = as<'div', VideoContentProps>(
       spawnControlVideo(srcState.data.objectUrl, 'muted-control', true, 150, 'lime');
       spawnControlVideo(knownGoodControlVideoUrl, 'known-good-control', true, 292, 'cyan');
       srcState.data.blob
+        .slice(0, 16)
+        .arrayBuffer()
+        .then((headerBuffer) => {
+          const headerBytes = new Uint8Array(headerBuffer);
+          const readAscii = (start: number, end: number) =>
+            String.fromCharCode(...headerBytes.subarray(start, end));
+          console.log('[video-debug] diagnostics: container header', {
+            timestamp: Date.now(),
+            firstBoxType: readAscii(4, 8),
+            majorBrand: readAscii(8, 12),
+          });
+        })
+        .catch((reason) =>
+          console.log('[video-debug] diagnostics: container header read failed', {
+            timestamp: Date.now(),
+            reason,
+          })
+        );
+      srcState.data.blob
         .arrayBuffer()
         .then((blobBuffer) => crypto.subtle.digest('SHA-256', blobBuffer))
         .then((digest) => {
@@ -309,6 +330,12 @@ export const VideoContent = as<'div', VideoContentProps>(
       return setRef;
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [ref]);
+
+    useEffect(() => {
+      if (hasSpawnedEarlyKnownGoodControl) return;
+      hasSpawnedEarlyKnownGoodControl = true;
+      spawnControlVideo(knownGoodControlVideoUrl, 'early-known-good-control', true, 434, 'orange');
+    }, []);
 
     useEffect(() => {
       const containerElement = containerRef.current;
