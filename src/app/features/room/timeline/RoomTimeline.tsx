@@ -512,6 +512,7 @@ export function RoomTimeline({
           ref={scrollRef}
           visibility="Hover"
           style={{ overscrollBehavior: 'none', overflowAnchor: 'none' }}
+          data-testid="timeline-scroll"
         >
           <Box
             ref={contentRef}

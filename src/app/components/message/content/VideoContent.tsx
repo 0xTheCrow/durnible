@@ -157,6 +157,7 @@ export const VideoContent = as<'div', VideoContentProps>(
               size="500"
               onClick={loadSrc}
               before={<Icon size="Inherit" src={Icons.Play} filled />}
+              data-testid="video-content-watch-btn"
             >
               <Text size="B500">Watch</Text>
             </Button>
@@ -242,6 +243,7 @@ export const VideoContent = as<'div', VideoContentProps>(
                   radii="300"
                   onClick={handleRetry}
                   before={<Icon size="Inherit" src={Icons.Warning} filled />}
+                  data-testid="video-content-retry-btn"
                 >
                   <Text size="B300">Retry</Text>
                 </Button>

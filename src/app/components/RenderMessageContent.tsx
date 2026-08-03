@@ -59,7 +59,7 @@ import { sameGroupedImages } from '../utils/buildTimelineDescriptors';
 function VideoWithPersistedVolume(props: React.VideoHTMLAttributes<HTMLVideoElement>) {
   const ref = useRef<HTMLVideoElement>(null);
   useMediaVolumePersistence(ref, VIDEO_VOLUME_STORAGE_KEY);
-  return <Video {...props} ref={ref} />;
+  return <Video {...props} ref={ref} data-testid="video-player" />;
 }
 
 type RenderMessageContentProps = {
