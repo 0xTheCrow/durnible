@@ -29,6 +29,11 @@ window.matchMedia = vi.fn().mockImplementation((query: string) => ({
   dispatchEvent: vi.fn(),
 }));
 
+// jsdom doesn't implement scrollTo. Tests that care about scroll position
+// override it per-element via stubScrollGeometry; this keeps the rest from
+// throwing when scroll code runs incidentally.
+Element.prototype.scrollTo = vi.fn();
+
 // jsdom doesn't implement IntersectionObserver / ResizeObserver — provide
 // no-op stubs. The `as unknown as typeof X` cast bridges the missing
 // constructor signature so we don't need a decorative empty constructor here.

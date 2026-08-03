@@ -64,6 +64,7 @@ export interface Settings {
 
   timelineSliderRange: TimelineSliderRange;
 
+  useTimelineV1: boolean;
   preferredAudioInputDeviceId?: string;
   preferredVideoInputDeviceId?: string;
   preferredAudioOutputDeviceId?: string;
@@ -76,7 +77,7 @@ const defaultSettings: Settings = {
   lightThemeId: undefined,
   darkThemeId: undefined,
   monochromeMode: false,
-  isMarkdownEnabled: true,
+  isMarkdownEnabled: false,
   editorToolbar: false,
   isEditorToolbarGestureRequired: false,
   twitterEmoji: false,
@@ -123,6 +124,7 @@ const defaultSettings: Settings = {
 
   timelineSliderRange: 'day',
 
+  useTimelineV1: false,
   preferredAudioInputDeviceId: undefined,
   preferredVideoInputDeviceId: undefined,
   preferredAudioOutputDeviceId: undefined,

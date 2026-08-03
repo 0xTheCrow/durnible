@@ -50,6 +50,28 @@ export const imageEvent = (
   origin_server_ts: 1700000000002 + index,
 });
 
+export const AUDIO_DURATION_SECONDS = 0.5;
+
+export const audioEvent = (
+  mimeType = 'audio/wav',
+  durationSeconds = AUDIO_DURATION_SECONDS
+): Record<string, unknown> => ({
+  type: 'm.room.message',
+  sender: TEST_USER_ID,
+  content: {
+    msgtype: 'm.audio',
+    body: 'voice-message',
+    url: 'mxc://matrix.test/audioclip',
+    info: {
+      mimetype: mimeType,
+      duration: durationSeconds * 1000,
+    },
+    'org.matrix.msc3245.voice': {},
+  },
+  event_id: '$audioclip',
+  origin_server_ts: 1700000000003,
+});
+
 const initialSync = (
   extraTimelineEvents: Record<string, unknown>[] = []
 ): Record<string, unknown> => ({
@@ -134,12 +156,36 @@ export type HomeserverStub = {
 
 export type StubHomeserverOptions = {
   timelineEvents?: Record<string, unknown>[];
+  audioResponse?: { body: Buffer; contentType: string };
 };
 
 const TRANSPARENT_PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
   'base64'
 );
+
+const silentWav = (durationSeconds: number): Buffer => {
+  const sampleRate = 8000;
+  const sampleCount = Math.floor(sampleRate * durationSeconds);
+  const wav = Buffer.alloc(44 + sampleCount);
+  wav.write('RIFF', 0);
+  wav.writeUInt32LE(36 + sampleCount, 4);
+  wav.write('WAVE', 8);
+  wav.write('fmt ', 12);
+  wav.writeUInt32LE(16, 16);
+  wav.writeUInt16LE(1, 20);
+  wav.writeUInt16LE(1, 22);
+  wav.writeUInt32LE(sampleRate, 24);
+  wav.writeUInt32LE(sampleRate, 28);
+  wav.writeUInt16LE(1, 32);
+  wav.writeUInt16LE(8, 34);
+  wav.write('data', 36);
+  wav.writeUInt32LE(sampleCount, 40);
+  wav.fill(128, 44);
+  return wav;
+};
+
+const SILENT_WAV = silentWav(AUDIO_DURATION_SECONDS);
 
 export const stubHomeserver = async (
   page: Page,
@@ -193,6 +239,13 @@ export const stubHomeserver = async (
       return json(route, { 'm.upload.size': 50_000_000 });
     }
     if (pathname.includes('/media/')) {
+      if (pathname.includes('audioclip')) {
+        const { body, contentType } = options.audioResponse ?? {
+          body: SILENT_WAV,
+          contentType: 'audio/wav',
+        };
+        return route.fulfill({ status: 200, contentType, body });
+      }
       return route.fulfill({ status: 200, contentType: 'image/png', body: TRANSPARENT_PNG });
     }
     if (pathname.endsWith('/filter')) return json(route, { filter_id: '1' });

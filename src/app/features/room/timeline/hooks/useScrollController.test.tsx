@@ -87,6 +87,7 @@ describe('useScrollController', () => {
       const isInLivePaginationWindowRef = ref(true);
       const { controller, scrollElement } = renderController(isInLivePaginationWindowRef);
       const geometry = stubScrollGeometry(scrollElement, { scrollHeight: 500, offsetHeight: 400 });
+      geometry.setScrollTop(100);
       act(() => controller().syncFollowLive(true));
       expect(controller().intentRef.current?.kind).toBe('followLive');
 
@@ -102,6 +103,7 @@ describe('useScrollController', () => {
       const isInLivePaginationWindowRef = ref(true);
       const { controller, scrollElement } = renderController(isInLivePaginationWindowRef);
       const geometry = stubScrollGeometry(scrollElement, { scrollHeight: 500, offsetHeight: 400 });
+      geometry.setScrollTop(100);
       act(() => controller().syncFollowLive(true));
       expect(controller().intentRef.current?.kind).toBe('followLive');
 
@@ -123,6 +125,29 @@ describe('useScrollController', () => {
       geometry.setScrollTop(100 - (LIVE_EDGE_THRESHOLD_PX + 200));
       act(() => controller().syncFollowLive(false));
       expect(controller().intentRef.current?.kind).toBe('followLive');
+    });
+
+    it('stops gluing to the live edge on user input when the drift was never released', () => {
+      vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+      const { controller, scrollElement } = renderController(ref(true));
+      const geometry = stubScrollGeometry(scrollElement, { scrollHeight: 2000, offsetHeight: 400 });
+      const bottomScrollTop = 2000 - 400;
+      const historyScrollTop = bottomScrollTop - (LIVE_EDGE_THRESHOLD_PX + 200);
+
+      geometry.setScrollTop(bottomScrollTop);
+      act(() => controller().syncFollowLive(true));
+
+      geometry.setScrollTop(historyScrollTop);
+      act(() => controller().syncFollowLive(false));
+
+      act(() => {
+        scrollElement.dispatchEvent(new Event('wheel'));
+      });
+
+      geometry.setScrollHeight(2100);
+      act(() => resizeObserverInstances[0].trigger());
+
+      expect(geometry.getScrollTop()).toBe(historyScrollTop);
     });
   });
 

@@ -375,7 +375,7 @@ export function MFile({ content, renderFileContent, outlined }: MFileProps) {
 
   return (
     <Attachment outlined={outlined}>
-      <AttachmentHeader>
+      <AttachmentHeader isTextOnly>
         <FileHeader
           body={content.filename ?? content.body ?? 'Unnamed File'}
           mimeType={fileInfo?.mimetype ?? FALLBACK_MIMETYPE}

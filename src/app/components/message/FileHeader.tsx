@@ -53,7 +53,7 @@ export function FileDownloadButton({
       disabled={downloading}
       onClick={download}
       variant={hasError ? 'Critical' : 'SurfaceVariant'}
-      size="300"
+      size="400"
       radii="300"
     >
       {downloading ? (
