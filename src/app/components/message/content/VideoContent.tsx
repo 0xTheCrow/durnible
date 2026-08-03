@@ -21,108 +21,6 @@ import {
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
 import { validBlurHash } from '../../../utils/blurHash';
 import { hiddenImagesAtom, MessageEventIdContext } from '../../../state/hiddenImages';
-import knownGoodControlVideoUrl from '../../../../../public/res/video-debug-control.mp4';
-
-type VideoElementWithFirefoxDebugInfo = HTMLVideoElement & {
-  mozRequestDebugInfo?: () => Promise<unknown>;
-};
-
-const logMozRequestDebugInfo = (videoElement: HTMLVideoElement, label: string) => {
-  const debugCapableElement = videoElement as VideoElementWithFirefoxDebugInfo;
-  if (typeof debugCapableElement.mozRequestDebugInfo !== 'function') {
-    console.log(`[video-debug] diagnostics(${label}): mozRequestDebugInfo unavailable`, {
-      timestamp: Date.now(),
-    });
-    return;
-  }
-  debugCapableElement
-    .mozRequestDebugInfo()
-    .then((debugInfo) =>
-      console.log(
-        `[video-debug] diagnostics(${label}): mozRequestDebugInfo`,
-        JSON.stringify(debugInfo, null, 2)
-      )
-    )
-    .catch((reason) =>
-      console.log(`[video-debug] diagnostics(${label}): mozRequestDebugInfo failed`, {
-        timestamp: Date.now(),
-        reason,
-      })
-    );
-};
-
-const logMediaElementCensus = () => {
-  const mediaElements = Array.from(document.querySelectorAll<HTMLMediaElement>('video, audio'));
-  console.log('[video-debug] diagnostics: media element census', {
-    timestamp: Date.now(),
-    count: mediaElements.length,
-    elements: mediaElements.map((mediaElement, index) => ({
-      index,
-      tag: mediaElement.tagName,
-      src: mediaElement.currentSrc.slice(0, 70),
-      readyState: mediaElement.readyState,
-      networkState: mediaElement.networkState,
-      paused: mediaElement.paused,
-      muted: mediaElement.muted,
-      autoplay: mediaElement.autoplay,
-      error: mediaElement.error
-        ? { code: mediaElement.error.code, message: mediaElement.error.message }
-        : null,
-    })),
-  });
-};
-
-const spawnControlVideo = (
-  src: string,
-  label: string,
-  isMuted: boolean,
-  bottomPixels: number,
-  borderColor: string
-) => {
-  const controlVideoElement = document.createElement('video');
-  controlVideoElement.controls = true;
-  controlVideoElement.autoplay = true;
-  controlVideoElement.muted = isMuted;
-  controlVideoElement.style.cssText = [
-    'position:fixed',
-    `bottom:${bottomPixels}px`,
-    'left:8px',
-    'width:200px',
-    'z-index:99999',
-    'background:#000',
-    `border:3px solid ${borderColor}`,
-  ].join(';');
-  const controlEventNames = [
-    'loadstart',
-    'suspend',
-    'progress',
-    'loadedmetadata',
-    'loadeddata',
-    'canplay',
-    'canplaythrough',
-    'playing',
-    'waiting',
-    'stalled',
-    'error',
-  ];
-  controlEventNames.forEach((eventName) =>
-    controlVideoElement.addEventListener(eventName, () =>
-      console.log(`[video-debug] diagnostics(${label}): event ${eventName}`, {
-        timestamp: Date.now(),
-        readyState: controlVideoElement.readyState,
-        networkState: controlVideoElement.networkState,
-        error: controlVideoElement.error
-          ? { code: controlVideoElement.error.code, message: controlVideoElement.error.message }
-          : null,
-      })
-    )
-  );
-  controlVideoElement.src = src;
-  document.body.append(controlVideoElement);
-  console.log(`[video-debug] diagnostics(${label}): appended`, { timestamp: Date.now() });
-};
-
-let hasSpawnedEarlyKnownGoodControl = false;
 
 type RenderVideoProps = {
   title: string;
@@ -177,8 +75,6 @@ export const VideoContent = as<'div', VideoContentProps>(
 
     const [dataUriSrc, setDataUriSrc] = useState<string | undefined>(undefined);
     const hasAttemptedDataUriFallbackRef = useRef(false);
-    const hasRunHangDiagnosticsRef = useRef(false);
-    const containerRef = useRef<HTMLDivElement | null>(null);
 
     const [srcState, loadSrc] = useAutoLoadAsyncCallback(
       useCallback(async () => {
@@ -217,65 +113,6 @@ export const VideoContent = as<'div', VideoContentProps>(
       });
     }, [srcState.status]);
 
-    const runHangDiagnostics = useCallback(() => {
-      if (hasRunHangDiagnosticsRef.current) return;
-      if (srcState.status !== AsyncStatus.Success) return;
-      hasRunHangDiagnosticsRef.current = true;
-      console.log('[video-debug] diagnostics: hang detected, starting diagnostics', {
-        timestamp: Date.now(),
-      });
-      logMediaElementCensus();
-      const hungVideoElement = containerRef.current?.querySelector('video');
-      if (hungVideoElement) {
-        logMozRequestDebugInfo(hungVideoElement, 'hung-element');
-      } else {
-        console.log('[video-debug] diagnostics: no video element found in container', {
-          timestamp: Date.now(),
-        });
-      }
-      spawnControlVideo(srcState.data.objectUrl, 'unmuted-control', false, 8, 'red');
-      spawnControlVideo(srcState.data.objectUrl, 'muted-control', true, 150, 'lime');
-      spawnControlVideo(knownGoodControlVideoUrl, 'known-good-control', true, 292, 'cyan');
-      srcState.data.blob
-        .slice(0, 16)
-        .arrayBuffer()
-        .then((headerBuffer) => {
-          const headerBytes = new Uint8Array(headerBuffer);
-          const readAscii = (start: number, end: number) =>
-            String.fromCharCode(...headerBytes.subarray(start, end));
-          console.log('[video-debug] diagnostics: container header', {
-            timestamp: Date.now(),
-            firstBoxType: readAscii(4, 8),
-            majorBrand: readAscii(8, 12),
-          });
-        })
-        .catch((reason) =>
-          console.log('[video-debug] diagnostics: container header read failed', {
-            timestamp: Date.now(),
-            reason,
-          })
-        );
-      srcState.data.blob
-        .arrayBuffer()
-        .then((blobBuffer) => crypto.subtle.digest('SHA-256', blobBuffer))
-        .then((digest) => {
-          const sha256Hex = Array.from(new Uint8Array(digest))
-            .map((byteValue) => byteValue.toString(16).padStart(2, '0'))
-            .join('');
-          console.log('[video-debug] diagnostics: decrypted blob sha256', {
-            timestamp: Date.now(),
-            sha256: sha256Hex,
-            size: srcState.data.blob.size,
-          });
-        })
-        .catch((reason) =>
-          console.log('[video-debug] diagnostics: sha256 computation failed', {
-            timestamp: Date.now(),
-            reason,
-          })
-        );
-    }, [srcState]);
-
     const triggerDataUriFallback = useCallback(() => {
       if (hasAttemptedDataUriFallbackRef.current) return;
       if (srcState.status !== AsyncStatus.Success) return;
@@ -305,7 +142,6 @@ export const VideoContent = as<'div', VideoContentProps>(
     const handleError = () => {
       console.log('[video-debug] React onError fired', { timestamp: Date.now() });
       setLoad(false);
-      runHangDiagnostics();
       if (hasAttemptedDataUriFallbackRef.current) {
         setError(true);
       } else {
@@ -316,11 +152,11 @@ export const VideoContent = as<'div', VideoContentProps>(
     const handleRetry = () => {
       setError(false);
       hasAttemptedDataUriFallbackRef.current = false;
-      hasRunHangDiagnosticsRef.current = false;
       setDataUriSrc(undefined);
       loadSrc();
     };
 
+    const containerRef = useRef<HTMLDivElement | null>(null);
     const mergedRef = useMemo(() => {
       const setRef = (node: HTMLDivElement | null) => {
         containerRef.current = node;
@@ -330,12 +166,6 @@ export const VideoContent = as<'div', VideoContentProps>(
       return setRef;
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [ref]);
-
-    useEffect(() => {
-      if (hasSpawnedEarlyKnownGoodControl) return;
-      hasSpawnedEarlyKnownGoodControl = true;
-      spawnControlVideo(knownGoodControlVideoUrl, 'early-known-good-control', true, 434, 'orange');
-    }, []);
 
     useEffect(() => {
       const containerElement = containerRef.current;
@@ -390,12 +220,10 @@ export const VideoContent = as<'div', VideoContentProps>(
 
       const handleStalled = () => {
         console.log('[video-debug] video event: stalled', readState());
-        runHangDiagnostics();
         if (hasAttemptedDataUriFallbackRef.current) {
           console.log('[video-debug] stalled again after data URI fallback, giving up', {
             timestamp: Date.now(),
           });
-          logMozRequestDebugInfo(videoElement, 'data-uri-hung');
           setError(true);
         } else {
           console.log(
@@ -444,7 +272,6 @@ export const VideoContent = as<'div', VideoContentProps>(
           networkState: videoElement.networkState,
           hasAttemptedDataUriFallback: hasAttemptedDataUriFallbackRef.current,
         });
-        runHangDiagnostics();
         if (hasAttemptedDataUriFallbackRef.current) {
           setError(true);
         } else {
@@ -459,7 +286,7 @@ export const VideoContent = as<'div', VideoContentProps>(
         videoElement.removeEventListener('stalled', handleStalled);
         clearTimeout(backstopTimeout);
       };
-    }, [srcState.status, triggerDataUriFallback, runHangDiagnostics]);
+    }, [srcState.status, triggerDataUriFallback]);
 
     useEffect(() => {
       if (!dataUriSrc) return;

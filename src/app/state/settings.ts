@@ -63,6 +63,8 @@ export interface Settings {
   pwaMode: boolean;
 
   timelineSliderRange: TimelineSliderRange;
+
+  useTimelineV1: boolean;
 }
 
 const defaultSettings: Settings = {
@@ -117,6 +119,8 @@ const defaultSettings: Settings = {
   pwaMode: false,
 
   timelineSliderRange: 'day',
+
+  useTimelineV1: false,
 };
 
 export const getSettings = () => {
