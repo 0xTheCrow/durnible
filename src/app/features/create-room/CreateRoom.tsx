@@ -31,6 +31,7 @@ import { useCapabilities } from '../../hooks/useCapabilities';
 import { useAlive } from '../../hooks/useAlive';
 import { ErrorCode } from '../../cs-errorcode';
 import type { CreateRoomData } from '../../components/create-room';
+import { RoomType } from '../../../types/matrix/room';
 import {
   AdditionalCreatorInput,
   createRoom,
@@ -47,12 +48,15 @@ const getCreateRoomKindToIcon = (kind: CreateRoomKind) => {
   return Icons.HashGlobe;
 };
 
+const getCallRoomKindToIcon = () => Icons.VolumeHigh;
+
 type CreateRoomFormProps = {
   defaultKind?: CreateRoomKind;
   space?: Room;
+  roomType?: RoomType;
   onCreate?: (roomId: string) => void;
 };
-export function CreateRoomForm({ defaultKind, space, onCreate }: CreateRoomFormProps) {
+export function CreateRoomForm({ defaultKind, space, roomType, onCreate }: CreateRoomFormProps) {
   const mx = useMatrixClient();
   const alive = useAlive();
 
@@ -65,15 +69,17 @@ export function CreateRoomForm({ defaultKind, space, onCreate }: CreateRoomFormP
   }, [roomVersions?.default]);
 
   const allowRestricted = space && restrictedSupported(selectedRoomVersion);
+  const isCreatingCallRoom = roomType === RoomType.Call;
+  const getKindToIcon = isCreatingCallRoom ? getCallRoomKindToIcon : getCreateRoomKindToIcon;
 
   const [kind, setKind] = useState(
-    defaultKind ?? allowRestricted ? CreateRoomKind.Restricted : CreateRoomKind.Private
+    defaultKind ?? (allowRestricted ? CreateRoomKind.Restricted : CreateRoomKind.Private)
   );
   const allowAdditionalCreators = creatorsSupported(selectedRoomVersion);
   const { additionalCreators, addAdditionalCreator, removeAdditionalCreator } =
     useAdditionalCreators();
   const [federation, setFederation] = useState(true);
-  const [encryption, setEncryption] = useState(false);
+  const [encryption, setEncryption] = useState(isCreatingCallRoom);
   const [knock, setKnock] = useState(false);
   const [advance, setAdvance] = useState(false);
 
@@ -120,6 +126,7 @@ export function CreateRoomForm({ defaultKind, space, onCreate }: CreateRoomFormP
 
     create({
       version: selectedRoomVersion,
+      type: roomType,
       parent: space,
       kind,
       name: roomName,
@@ -145,14 +152,14 @@ export function CreateRoomForm({ defaultKind, space, onCreate }: CreateRoomFormP
           onSelect={setKind}
           canRestrict={allowRestricted}
           disabled={disabled}
-          getIcon={getCreateRoomKindToIcon}
+          getIcon={getKindToIcon}
         />
       </Box>
       <Box shrink="No" direction="Column" gap="100">
         <Text size="L400">Name</Text>
         <Input
           required
-          before={<Icon size="100" src={getCreateRoomKindToIcon(kind)} />}
+          before={<Icon size="100" src={getKindToIcon(kind)} />}
           name="nameInput"
           autoFocus
           size="500"

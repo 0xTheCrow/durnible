@@ -17,7 +17,8 @@ import { useRoomNavigate } from '../../hooks/useRoomNavigate';
 import { ScrollTopContainer } from '../../components/scroll-top-container';
 import { ContainerColor } from '../../styles/ContainerColor.css';
 import { decodeSearchParamValueArray, encodeSearchParamValueArray } from '../../pages/pathUtils';
-import { useRooms } from '../../state/hooks/roomList';
+import { useNonCallRooms } from '../../state/hooks/roomList';
+import { isCallRoom } from '../../utils/room';
 import { allRoomsAtom } from '../../state/room-list/roomList';
 import { mDirectAtom } from '../../state/mDirectList';
 import type { ResultGroup } from './useMessageSearch';
@@ -63,12 +64,16 @@ type MessageSearchProps = {
 export function MessageSearch({
   defaultRoomsFilterName,
   allowGlobal,
-  rooms,
+  rooms: scopedRooms,
   scrollRef,
 }: MessageSearchProps) {
   const mx = useMatrixClient();
   const mDirects = useAtomValue(mDirectAtom);
-  const allRooms = useRooms(mx, allRoomsAtom, mDirects);
+  const allRooms = useNonCallRooms(mx, allRoomsAtom, mDirects);
+  const rooms = useMemo(
+    () => scopedRooms.filter((roomId) => !isCallRoom(mx.getRoom(roomId))),
+    [scopedRooms, mx]
+  );
   const [mediaAutoLoad] = useSetting(settingsAtom, 'mediaAutoLoad');
   const [legacyUsernameColor] = useSetting(settingsAtom, 'legacyUsernameColor');
   const [hour24Clock] = useSetting(settingsAtom, 'hour24Clock');

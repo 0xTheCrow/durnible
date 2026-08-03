@@ -7,4 +7,5 @@ export enum SettingsPages {
   KeybindsPage,
   DeveloperToolsPage,
   AboutPage,
+  VoiceVideoPage,
 }

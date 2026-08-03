@@ -1,6 +1,7 @@
 export * from './state';
 export * from './type';
 export * from './space-hierarchy';
+export * from './room-calls';
 export * from './notifications';
 export * from './receipts';
 export * from './avatars';

@@ -27,6 +27,7 @@ import { RoomAvatar } from '../../components/room-avatar';
 import { nameInitials } from '../../utils/common';
 import { LocalRoomSummaryLoader } from '../../components/RoomSummaryLoader';
 import { getRoomAvatarUrl } from '../../utils/room';
+import { RoomType } from '../../../types/matrix/room';
 import { AsyncStatus, useAsyncCallback } from '../../hooks/useAsyncCallback';
 import * as css from './SpaceItem.css';
 import * as styleCss from './style.css';
@@ -255,6 +256,11 @@ function AddRoomButton({ item }: { item: HierarchyItem }) {
     setCords(undefined);
   };
 
+  const handleCreateCallRoom = () => {
+    openCreateRoomModal(item.roomId, RoomType.Call);
+    setCords(undefined);
+  };
+
   const handleAddExisting = () => {
     setAddExisting(true);
     setCords(undefined);
@@ -285,6 +291,15 @@ function AddRoomButton({ item }: { item: HierarchyItem }) {
               onClick={handleCreateRoom}
             >
               <Text size="T300">New Room</Text>
+            </MenuItem>
+            <MenuItem
+              size="300"
+              radii="300"
+              variant="Primary"
+              fill="None"
+              onClick={handleCreateCallRoom}
+            >
+              <Text size="T300">New Voice Room</Text>
             </MenuItem>
             <MenuItem size="300" radii="300" fill="None" onClick={handleAddExisting}>
               <Text size="T300">Existing Room</Text>

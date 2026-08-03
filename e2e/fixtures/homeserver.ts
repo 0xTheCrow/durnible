@@ -198,6 +198,10 @@ export const stubHomeserver = async (
     const url = new URL(route.request().url());
     const { pathname } = url;
 
+    if (pathname === '/.well-known/matrix/client') {
+      return json(route, { 'm.homeserver': { base_url: HOMESERVER_BASE_URL } });
+    }
+
     if (pathname === '/_matrix/client/versions') {
       return json(route, {
         versions: ['v1.1', 'v1.5', 'v1.11'],

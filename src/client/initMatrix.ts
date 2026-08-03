@@ -74,10 +74,13 @@ export const initClient = async (session: Session): Promise<MatrixClient> => {
   return mx;
 };
 
+export const CLIENT_WELL_KNOWN_POLL_PERIOD_SECONDS = 2 * 60 * 60;
+
 export const startClient = async (mx: MatrixClient) => {
   startupMark('start-client-start');
   await mx.startClient({
     lazyLoadMembers: true,
+    clientWellKnownPollPeriod: CLIENT_WELL_KNOWN_POLL_PERIOD_SECONDS,
   });
   startupMark('start-client-end');
 };

@@ -5,6 +5,7 @@ import classNames from 'classnames';
 import { ContainerColor } from '../../styles/ContainerColor.css';
 import * as css from './style.css';
 import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
+import { CallPane } from '../../features/call/CallPane';
 
 type PageRootProps = {
   nav: ReactNode;
@@ -14,12 +15,23 @@ type PageRootProps = {
 export function PageRoot({ nav, children }: PageRootProps) {
   const screenSize = useScreenSizeContext();
 
+  if (screenSize === ScreenSize.Mobile) {
+    return (
+      <Box grow="Yes" direction="Column" className={ContainerColor({ variant: 'Background' })}>
+        <CallPane />
+        <Box grow="Yes">
+          {nav}
+          {children}
+        </Box>
+      </Box>
+    );
+  }
+
   return (
     <Box grow="Yes" className={ContainerColor({ variant: 'Background' })}>
       {nav}
-      {screenSize !== ScreenSize.Mobile && (
-        <Line variant="Background" size="300" direction="Vertical" />
-      )}
+      <Line variant="Background" size="300" direction="Vertical" />
+      <CallPane />
       {children}
     </Box>
   );

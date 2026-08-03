@@ -48,11 +48,10 @@ export const RoomIcon = forwardRef<
   Omit<ComponentProps<typeof Icon>, 'src'> & {
     joinRule: JoinRule;
     space?: boolean;
+    call?: boolean;
   }
->(({ joinRule, space, ...props }, ref) => (
-  <Icon
-    src={joinRuleToIconSrc(Icons, joinRule, space || false) ?? Icons.Hash}
-    {...props}
-    ref={ref}
-  />
-));
+>(({ joinRule, space, call, ...props }, ref) => {
+  const src = call ? Icons.VolumeHigh : joinRuleToIconSrc(Icons, joinRule, space || false);
+
+  return <Icon src={src ?? Icons.Hash} {...props} ref={ref} />;
+});
