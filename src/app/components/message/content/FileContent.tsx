@@ -22,7 +22,7 @@ import {
   mxcUrlToHttp,
 } from '../../../utils/matrix';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
-import { ModalWide } from '../../../styles/Modal.css';
+import { ModalWide, PdfViewerModal } from '../../../styles/Modal.css';
 
 const renderErrorButton = (retry: () => void, text: string) => (
   <TooltipProvider
@@ -141,6 +141,7 @@ type RenderPdfViewerProps = {
   name: string;
   src: string;
   onClose: () => void;
+  onDownload: () => void;
 };
 export type ReadPdfFileProps = {
   body: string;
@@ -177,11 +178,16 @@ export function ReadPdfFile({
     <>
       {pdfState.status === AsyncStatus.Success && (
         <OverlayModal open={pdfViewer} onClose={() => setPdfViewer(false)}>
-          <Modal className={ModalWide} size="500" onContextMenu={(evt) => evt.stopPropagation()}>
+          <Modal
+            className={PdfViewerModal}
+            size="500"
+            onContextMenu={(evt) => evt.stopPropagation()}
+          >
             {renderViewer({
               name: body,
               src: pdfState.data,
               onClose: () => setPdfViewer(false),
+              onDownload: () => FileSaver.saveAs(pdfState.data, body),
             })}
           </Modal>
         </OverlayModal>

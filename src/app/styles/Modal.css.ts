@@ -5,6 +5,14 @@ export const ModalWide = style({
   minHeight: '90vh',
 });
 
+export const PdfViewerModal = style([ModalWide, { borderRadius: '0' }]);
+
+export const AudioPreviewModal = style({
+  width: '27.5rem',
+  maxWidth: '90vw',
+  height: 'fit-content',
+});
+
 export const ImageViewerModal = style({
   width: 'fit-content',
   height: 'fit-content',

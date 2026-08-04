@@ -23,8 +23,12 @@ import { bytesToSize, getFileTypeIcon } from '../../utils/common';
 import type { UploadItem, UploadMetadata } from '../../state/room/roomInputDrafts';
 import { roomUploadAtomFamily } from '../../state/room/roomInputDrafts';
 import { OverlayModal } from '../OverlayModal';
-import { ImageViewerModal } from '../../styles/Modal.css';
+import { AudioPreviewModal, ImageViewerModal, PdfViewerModal } from '../../styles/Modal.css';
 import { ImageEditor } from '../image-editor';
+import { MediaFrame, MediaFrameContent } from '../media';
+import { PdfViewer } from '../Pdf-viewer';
+import { UploadAudioPreview } from './UploadAudioPreview';
+import { UploadVideoPreview } from './UploadVideoPreview';
 
 type UploadQueueCardProps = {
   fileItem: UploadItem;
@@ -55,11 +59,15 @@ export function UploadQueueCard({
 
   const isImage = originalFile.type.startsWith('image');
   const isVideo = originalFile.type.startsWith('video');
+  const isAudio = originalFile.type.startsWith('audio');
+  const isPdf = originalFile.type === 'application/pdf';
+  const isPreviewable = isImage || isVideo || isAudio || isPdf;
   const previewUrl = useObjectURL(
-    (isImage || isVideo) && !fileItem.isDownloadingGif ? originalFile : undefined
+    isPreviewable && !fileItem.isDownloadingGif ? originalFile : undefined
   );
 
   const [editOpen, setEditOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   useEffect(() => {
     if (
@@ -119,6 +127,7 @@ export function UploadQueueCard({
   const canEdit =
     isImage && !showErrorOverlay && !fileItem.isDownloadingGif && !fileItem.isEncrypting;
   const canSpoiler = (isImage || isVideo) && !showErrorOverlay && !showProgress;
+  const canPreview = (isVideo || isAudio || isPdf) && !showErrorOverlay && !showProgress;
 
   return (
     <Box className={css.UploadQueueCard}>
@@ -135,11 +144,21 @@ export function UploadQueueCard({
           <video
             className={css.UploadQueueThumbnailMedia}
             src={previewUrl}
+            preload="metadata"
             style={metadata.markedAsSpoiler ? { filter: 'blur(24px)' } : undefined}
           />
         )}
         {!isImage && !isVideo && (
           <Icon size="600" src={getFileTypeIcon(Icons, originalFile.type)} />
+        )}
+
+        {canPreview && (
+          <button
+            type="button"
+            className={css.UploadQueuePreviewButton}
+            onClick={() => setPreviewOpen(true)}
+            aria-label={`Preview ${originalFile.name}`}
+          />
         )}
 
         {showProgress && (
@@ -252,6 +271,55 @@ export function UploadQueueCard({
       <Text size="T200" truncate>
         {originalFile.name}
       </Text>
+
+      {isVideo && previewUrl && (
+        <OverlayModal open={previewOpen} onClose={() => setPreviewOpen(false)}>
+          <Modal
+            className={ImageViewerModal}
+            size="500"
+            onContextMenu={(evt) => evt.stopPropagation()}
+          >
+            <MediaFrame expanded name={originalFile.name} onClose={() => setPreviewOpen(false)}>
+              <MediaFrameContent>
+                <UploadVideoPreview src={previewUrl} />
+              </MediaFrameContent>
+            </MediaFrame>
+          </Modal>
+        </OverlayModal>
+      )}
+
+      {isAudio && (
+        <OverlayModal open={previewOpen} onClose={() => setPreviewOpen(false)}>
+          <Modal className={AudioPreviewModal} size="500">
+            <MediaFrame name={originalFile.name} onClose={() => setPreviewOpen(false)}>
+              <MediaFrameContent>
+                <Box className={css.UploadQueueAudioPreview}>
+                  <UploadAudioPreview
+                    file={originalFile}
+                    durationMs={fileItem.mediaInfo?.audio?.durationMs}
+                  />
+                </Box>
+              </MediaFrameContent>
+            </MediaFrame>
+          </Modal>
+        </OverlayModal>
+      )}
+
+      {isPdf && previewUrl && (
+        <OverlayModal open={previewOpen} onClose={() => setPreviewOpen(false)}>
+          <Modal
+            className={PdfViewerModal}
+            size="500"
+            onContextMenu={(evt) => evt.stopPropagation()}
+          >
+            <PdfViewer
+              name={originalFile.name}
+              src={previewUrl}
+              onClose={() => setPreviewOpen(false)}
+            />
+          </Modal>
+        </OverlayModal>
+      )}
 
       {isImage && previewUrl && (
         <OverlayModal open={editOpen} onClose={() => setEditOpen(false)}>

@@ -66,6 +66,30 @@ export const CloseButton = style([
   },
 ]);
 
+export const ZoomGroup = style({
+  alignSelf: 'stretch',
+  display: 'flex',
+  flexShrink: 0,
+  selectors: {
+    '&:last-child': {
+      marginRight: `calc(-1 * ${config.space.S300})`,
+    },
+  },
+});
+
+export const ZoomButton = style([DefaultReset, edgeButtonBase, { borderRadius: 0 }]);
+
+export const ZoomChip = style([
+  DefaultReset,
+  edgeButtonBase,
+  {
+    borderRadius: 0,
+    width: '3rem',
+    paddingLeft: config.space.S200,
+    paddingRight: config.space.S200,
+  },
+]);
+
 export const Content = style([
   DefaultReset,
   {

@@ -26,23 +26,27 @@ export const usePdfDocumentLoader = (pdfJS: typeof PdfJsDist | undefined, src: s
 
 export const createPage = async (
   doc: PdfJsDist.PDFDocumentProxy,
-  pNo: number,
-  opts: GetViewportParameters
+  pageNumber: number,
+  viewportParams: GetViewportParameters
 ): Promise<HTMLCanvasElement> => {
-  const page = await doc.getPage(pNo);
-  const pageViewport = page.getViewport(opts);
+  const page = await doc.getPage(pageNumber);
+  const pageViewport = page.getViewport(viewportParams);
   const canvas = document.createElement('canvas');
   const context = canvas.getContext('2d');
 
   if (!context) throw new Error('failed to render page.');
 
-  canvas.width = pageViewport.width;
-  canvas.height = pageViewport.height;
+  const pixelRatio = window.devicePixelRatio || 1;
+  canvas.width = Math.floor(pageViewport.width * pixelRatio);
+  canvas.height = Math.floor(pageViewport.height * pixelRatio);
+  canvas.style.width = `${Math.floor(pageViewport.width)}px`;
+  canvas.style.height = `${Math.floor(pageViewport.height)}px`;
 
-  page.render({
+  await page.render({
     canvasContext: context,
     viewport: pageViewport,
-  });
+    transform: pixelRatio === 1 ? undefined : [pixelRatio, 0, 0, pixelRatio, 0, 0],
+  }).promise;
 
   return canvas;
 };
