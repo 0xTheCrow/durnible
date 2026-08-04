@@ -9,6 +9,7 @@ import { SettingsPages } from '../settingsPages';
 import type { SettingsSearchEntry } from '../../../components/settings-search';
 import {
   MicrophoneDeviceSetting,
+  MicrophoneInputFloorSetting,
   CameraDeviceSetting,
   SpeakerDeviceSetting,
   PreJoinScreenSetting,
@@ -1026,6 +1027,32 @@ export const settingsSearchData: SettingsSearchEntry<SettingsPages>[] = [
     pageName: 'Voice & Video',
     sectionName: 'Devices',
     Render: MicrophoneDeviceSetting,
+  },
+  {
+    id: 'microphone-input-floor',
+    title: 'Input Floor',
+    description:
+      'Audio quieter than the cutoff is not sent to the call. The bar shows your current input volume.',
+    keywords: [
+      'call',
+      'voice',
+      'audio',
+      'microphone',
+      'mic',
+      'input',
+      'floor',
+      'cutoff',
+      'threshold',
+      'sensitivity',
+      'gate',
+      'noise',
+      'volume',
+      'level',
+    ],
+    page: SettingsPages.VoiceVideoPage,
+    pageName: 'Voice & Video',
+    sectionName: 'Devices',
+    Render: MicrophoneInputFloorSetting,
   },
   {
     id: 'camera-device',

@@ -67,6 +67,7 @@ export interface Settings {
   preferredAudioInputDeviceId?: string;
   preferredVideoInputDeviceId?: string;
   preferredAudioOutputDeviceId?: string;
+  microphoneInputFloorLevel: number;
   showCallPreJoinScreen: boolean;
 }
 
@@ -126,6 +127,7 @@ const defaultSettings: Settings = {
   preferredAudioInputDeviceId: undefined,
   preferredVideoInputDeviceId: undefined,
   preferredAudioOutputDeviceId: undefined,
+  microphoneInputFloorLevel: 0,
   showCallPreJoinScreen: false,
 };
 

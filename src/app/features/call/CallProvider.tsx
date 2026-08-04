@@ -3,6 +3,7 @@ import React, { createContext, useContext, useMemo } from 'react';
 import type { Room } from 'matrix-js-sdk';
 import { useCallLifecycle } from '../../hooks/call/useCallLifecycle';
 import { CallAudioRenderer } from './CallAudioRenderer';
+import { CallMicrophoneGate } from './CallMicrophoneGate';
 
 type CallActions = {
   startCall: (room: Room) => Promise<void>;
@@ -25,6 +26,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
     <CallActionsContext.Provider value={callActions}>
       {children}
       <CallAudioRenderer />
+      <CallMicrophoneGate />
     </CallActionsContext.Provider>
   );
 }
