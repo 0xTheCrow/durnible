@@ -6,6 +6,7 @@ import { AsyncStatus, useAutoLoadAsyncCallback } from '../../../hooks/useAsyncCa
 import { decryptFile, downloadEncryptedMedia, mxcUrlToHttp } from '../../../utils/matrix';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
 import { FALLBACK_MIMETYPE } from '../../../utils/mimeTypes';
+import { useRevokeObjectURL } from '../../../hooks/useObjectURL';
 
 export type ThumbnailContentProps = {
   info: ThumbnailContentInfo;
@@ -37,5 +38,8 @@ export function ThumbnailContent({ info, renderImage }: ThumbnailContentProps) {
     true
   );
 
-  return thumbSrcState.status === AsyncStatus.Success ? renderImage(thumbSrcState.data) : null;
+  const thumbUrl = thumbSrcState.status === AsyncStatus.Success ? thumbSrcState.data : undefined;
+  useRevokeObjectURL(thumbUrl);
+
+  return thumbUrl ? renderImage(thumbUrl) : null;
 }

@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { useAtom } from 'jotai';
 import { Modal } from 'folds';
 import type { ImageViewerGalleryItem } from '../../state/imageViewer';
@@ -22,6 +22,8 @@ export function ImageViewerRenderer() {
   // Resolves a gallery item's mxc URL (and decrypts if needed) into an http
   // src the viewer can display. Lives here so ImageViewer.tsx stays free of
   // matrix-client dependencies.
+  const resolvedObjectUrlsRef = useRef<string[]>([]);
+
   const resolveSrc = useCallback(
     async (item: ImageViewerGalleryItem): Promise<string> => {
       if (item.src) return item.src;
@@ -34,12 +36,22 @@ export function ImageViewerRenderer() {
         const blob = await downloadEncryptedMedia(httpUrl, (encBuf) =>
           decryptFile(encBuf, item.mimeType ?? FALLBACK_MIMETYPE, enc)
         );
-        return URL.createObjectURL(blob);
+        const objectUrl = URL.createObjectURL(blob);
+        resolvedObjectUrlsRef.current.push(objectUrl);
+        return objectUrl;
       }
       return httpUrl;
     },
     [mx, useAuthentication]
   );
+
+  useEffect(() => {
+    if (!open) return undefined;
+    return () => {
+      resolvedObjectUrlsRef.current.forEach((objectUrl) => URL.revokeObjectURL(objectUrl));
+      resolvedObjectUrlsRef.current = [];
+    };
+  }, [open]);
 
   return (
     <OverlayModal open={open} onClose={onClose}>

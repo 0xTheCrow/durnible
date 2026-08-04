@@ -1,8 +1,8 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import type * as PdfJsDist from 'pdfjs-dist';
 import type { GetViewportParameters } from 'pdfjs-dist/types/src/display/api';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
-import { useAsyncCallback } from '../hooks/useAsyncCallback';
+import { AsyncStatus, useAsyncCallback } from '../hooks/useAsyncCallback';
 
 export const usePdfJSLoader = () =>
   useAsyncCallback(
@@ -13,8 +13,8 @@ export const usePdfJSLoader = () =>
     }, [])
   );
 
-export const usePdfDocumentLoader = (pdfJS: typeof PdfJsDist | undefined, src: string) =>
-  useAsyncCallback(
+export const usePdfDocumentLoader = (pdfJS: typeof PdfJsDist | undefined, src: string) => {
+  const loader = useAsyncCallback(
     useCallback(async () => {
       if (!pdfJS) {
         throw new Error('PdfJS is not loaded');
@@ -23,6 +23,18 @@ export const usePdfDocumentLoader = (pdfJS: typeof PdfJsDist | undefined, src: s
       return doc;
     }, [pdfJS, src])
   );
+
+  const [docState] = loader;
+  const doc = docState.status === AsyncStatus.Success ? docState.data : undefined;
+  useEffect(() => {
+    if (!doc) return undefined;
+    return () => {
+      doc.destroy();
+    };
+  }, [doc]);
+
+  return loader;
+};
 
 export const createPage = async (
   doc: PdfJsDist.PDFDocumentProxy,

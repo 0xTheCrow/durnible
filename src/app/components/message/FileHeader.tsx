@@ -6,6 +6,7 @@ import FileSaver from 'file-saver';
 import { mimeTypeToExt } from '../../utils/mimeTypes';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
+import { useRevokeObjectURL } from '../../hooks/useObjectURL';
 import { AsyncStatus, useAsyncCallback } from '../../hooks/useAsyncCallback';
 import {
   decryptFile,
@@ -45,6 +46,7 @@ export function FileDownloadButton({
       return fileURL;
     }, [mx, url, useAuthentication, mimeType, encryptionInfo, filename])
   );
+  useRevokeObjectURL(downloadState.status === AsyncStatus.Success ? downloadState.data : undefined);
 
   const downloading = downloadState.status === AsyncStatus.Loading;
   const hasError = downloadState.status === AsyncStatus.Error;

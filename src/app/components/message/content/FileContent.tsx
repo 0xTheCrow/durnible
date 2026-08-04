@@ -22,6 +22,7 @@ import {
   mxcUrlToHttp,
 } from '../../../utils/matrix';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
+import { useRevokeObjectURL } from '../../../hooks/useObjectURL';
 import { ModalWide, PdfViewerModal } from '../../../styles/Modal.css';
 
 const renderErrorButton = (retry: () => void, text: string) => (
@@ -173,6 +174,7 @@ export function ReadPdfFile({
       return URL.createObjectURL(fileContent);
     }, [mx, url, useAuthentication, mimeType, encryptionInfo])
   );
+  useRevokeObjectURL(pdfState.status === AsyncStatus.Success ? pdfState.data : undefined);
 
   return (
     <>
@@ -244,6 +246,7 @@ export function DownloadFile({ body, mimeType, url, info, encryptionInfo }: Down
       return fileURL;
     }, [mx, url, useAuthentication, mimeType, encryptionInfo, body])
   );
+  useRevokeObjectURL(downloadState.status === AsyncStatus.Success ? downloadState.data : undefined);
 
   return downloadState.status === AsyncStatus.Error ? (
     renderErrorButton(download, `Retry Download (${bytesToSize(info.size ?? 0)})`)

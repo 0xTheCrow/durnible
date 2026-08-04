@@ -19,6 +19,7 @@ import {
   mxcUrlToHttp,
 } from '../../../utils/matrix';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
+import { useRevokeObjectURL } from '../../../hooks/useObjectURL';
 import { validBlurHash } from '../../../utils/blurHash';
 import { hiddenImagesAtom, MessageEventIdContext } from '../../../state/hiddenImages';
 
@@ -85,6 +86,7 @@ export const VideoContent = as<'div', VideoContentProps>(
       }, [mx, url, useAuthentication, mimeType, encryptionInfo]),
       !!autoPlay
     );
+    useRevokeObjectURL(srcState.status === AsyncStatus.Success ? srcState.data : undefined);
 
     const handleLoad = () => {
       setLoad(true);
