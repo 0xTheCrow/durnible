@@ -61,10 +61,6 @@ jobs:
         run: npm ci
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium firefox
-      # Firefox drives an audio element's clock off a real output device; the runner has no
-      # sound card, so without this playback never advances and `ended` never fires.
-      - name: Load dummy sound card
-        run: sudo modprobe snd-dummy
       - name: Run Playwright tests
         env:
           NODE_OPTIONS: '--max_old_space_size=4096'
