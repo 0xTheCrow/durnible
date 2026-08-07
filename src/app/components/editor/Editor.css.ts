@@ -60,6 +60,7 @@ export const EditorInputRow = style({
 
 export const EditorTextareaScroll = style({
   overscrollBehavior: 'contain',
+  minHeight: 0,
 });
 
 export const EditorTextarea = style([
