@@ -5,6 +5,7 @@ import {
   Badge,
   Box,
   Button,
+  color,
   config,
   Icon,
   Icons,
@@ -184,7 +185,7 @@ export function MicrophoneInputFloorSetting() {
             >
               {params.children}
               <ProgressBar
-                style={{ width: '100%' }}
+                style={{ width: '100%', backgroundColor: color.SurfaceVariant.ContainerActive }}
                 variant={isInputAboveFloor ? 'Success' : 'Secondary'}
                 size="400"
                 min={0}
