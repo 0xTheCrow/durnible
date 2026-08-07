@@ -1,14 +1,17 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { Box, Icon, IconButton, Icons, Scroll, Text } from 'folds';
+import { Track } from 'livekit-client';
 import classNames from 'classnames';
 import { callStateAtom, isCallPaneCollapsedAtom } from '../../state/call';
 import type { CallConnection } from '../../plugins/call/CallConnection';
 import { isScreenshareSupported } from '../../plugins/call/localMedia';
-import { useLivekitParticipants } from '../../hooks/call/useLivekitParticipants';
+import type { CallVideoSource } from '../../hooks/call/useCallVideoSources';
+import { useCallVideoSources } from '../../hooks/call/useCallVideoSources';
 import { useActiveSpeakers } from '../../hooks/call/useActiveSpeakers';
 import { useLocalMediaControls } from '../../hooks/call/useLocalMediaControls';
 import { useCallMemberships } from '../../hooks/useCallMemberships';
+import { checkIsFullscreenSupported, useFullscreen } from '../../hooks/useFullscreen';
 import { useRoomName } from '../../hooks/useRoomMeta';
 import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
 import { findCallParticipantUserId } from '../../utils/call';
@@ -25,10 +28,13 @@ function ConnectedCallPane({ connection, isReconnecting }: ConnectedCallPaneProp
   const screenSize = useScreenSizeContext();
   const { endCall } = useCallActions();
   const setIsCollapsed = useSetAtom(isCallPaneCollapsedAtom);
-  const participants = useLivekitParticipants(livekitRoom);
+  const videoSources = useCallVideoSources(livekitRoom);
   const activeSpeakers = useActiveSpeakers(livekitRoom);
   const memberships = useCallMemberships(matrixRoom);
   const roomName = useRoomName(matrixRoom);
+  const paneRef = useRef<HTMLDivElement>(null);
+  const { isFullscreen, toggleFullscreen } = useFullscreen(paneRef);
+  const [spotlightKey, setSpotlightKey] = useState<string>();
   const {
     isMicrophoneEnabled,
     isCameraEnabled,
@@ -40,8 +46,33 @@ function ConnectedCallPane({ connection, isReconnecting }: ConnectedCallPaneProp
 
   const speakingIdentities = new Set(activeSpeakers.map((speaker) => speaker.identity));
 
+  const remoteScreenshareSources = videoSources.filter(
+    (videoSource) =>
+      videoSource.source === Track.Source.ScreenShare && !videoSource.participant.isLocal
+  );
+  const spotlightSource =
+    videoSources.find((videoSource) => videoSource.key === spotlightKey) ??
+    remoteScreenshareSources[remoteScreenshareSources.length - 1];
+  const stripSources = spotlightSource
+    ? videoSources.filter((videoSource) => videoSource.key !== spotlightSource.key)
+    : [];
+
+  const renderTile = (videoSource: CallVideoSource, className: string, onSelect?: () => void) => (
+    <CallParticipantTile
+      key={videoSource.key}
+      room={matrixRoom}
+      participant={videoSource.participant}
+      source={videoSource.source}
+      userId={findCallParticipantUserId(videoSource.participant.identity, memberships)}
+      isSpeaking={speakingIdentities.has(videoSource.participant.identity)}
+      className={className}
+      onSelect={onSelect}
+    />
+  );
+
   return (
     <Box
+      ref={paneRef}
       direction="Column"
       shrink="No"
       className={classNames(css.CallPane, screenSize === ScreenSize.Mobile && css.CallPaneStacked)}
@@ -68,21 +99,36 @@ function ConnectedCallPane({ connection, isReconnecting }: ConnectedCallPaneProp
         </IconButton>
       </Box>
 
-      <Box grow="Yes">
-        <Scroll size="300" hideTrack visibility="Hover">
-          <div className={css.CallTileGrid}>
-            {participants.map((participant) => (
-              <CallParticipantTile
-                key={participant.sid}
-                room={matrixRoom}
-                participant={participant}
-                userId={findCallParticipantUserId(participant.identity, memberships)}
-                isSpeaking={speakingIdentities.has(participant.identity)}
-              />
-            ))}
+      {spotlightSource ? (
+        <Box direction="Column" grow="Yes" className={css.CallSpotlightLayout}>
+          <div className={css.CallSpotlight}>
+            {renderTile(spotlightSource, css.CallSpotlightTile)}
           </div>
-        </Scroll>
-      </Box>
+          {stripSources.length > 0 && (
+            <Scroll
+              className={css.CallTileStripScroll}
+              direction="Horizontal"
+              size="300"
+              hideTrack
+              visibility="Hover"
+            >
+              <div className={css.CallTileStrip}>
+                {stripSources.map((videoSource) =>
+                  renderTile(videoSource, css.CallStripTile, () => setSpotlightKey(videoSource.key))
+                )}
+              </div>
+            </Scroll>
+          )}
+        </Box>
+      ) : (
+        <Box grow="Yes">
+          <Scroll size="300" hideTrack visibility="Hover">
+            <div className={css.CallTileGrid}>
+              {videoSources.map((videoSource) => renderTile(videoSource, css.CallGridTile))}
+            </div>
+          </Scroll>
+        </Box>
+      )}
 
       <Box className={css.CallPaneControls} alignItems="Center" justifyContent="Center" gap="200">
         <IconButton
@@ -115,6 +161,18 @@ function ConnectedCallPane({ connection, isReconnecting }: ConnectedCallPaneProp
             aria-pressed={isScreenshareEnabled}
           >
             <Icon size="100" src={Icons.Monitor} />
+          </IconButton>
+        )}
+        {checkIsFullscreenSupported() && (
+          <IconButton
+            size="400"
+            radii="Pill"
+            variant={isFullscreen ? 'Success' : 'SurfaceVariant'}
+            onClick={toggleFullscreen}
+            aria-label={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+            aria-pressed={isFullscreen}
+          >
+            <Icon size="100" src={Icons.External} />
           </IconButton>
         )}
         <IconButton

@@ -2,22 +2,22 @@ import { useEffect, useState } from 'react';
 import type { Participant, Room as LivekitRoom } from 'livekit-client';
 import { RoomEvent } from 'livekit-client';
 
-const getParticipants = (livekitRoom: LivekitRoom): Participant[] => [
+export const getLivekitParticipants = (livekitRoom: LivekitRoom): Participant[] => [
   livekitRoom.localParticipant,
   ...livekitRoom.remoteParticipants.values(),
 ];
 
 export const useLivekitParticipants = (livekitRoom: LivekitRoom): Participant[] => {
-  const [participants, setParticipants] = useState(() => getParticipants(livekitRoom));
+  const [participants, setParticipants] = useState(() => getLivekitParticipants(livekitRoom));
   const [prev, setPrev] = useState(livekitRoom);
   if (prev !== livekitRoom) {
     setPrev(livekitRoom);
-    setParticipants(getParticipants(livekitRoom));
+    setParticipants(getLivekitParticipants(livekitRoom));
   }
 
   useEffect(() => {
     const handleParticipantsChanged = () => {
-      setParticipants(getParticipants(livekitRoom));
+      setParticipants(getLivekitParticipants(livekitRoom));
     };
     livekitRoom.on(RoomEvent.ParticipantConnected, handleParticipantsChanged);
     livekitRoom.on(RoomEvent.ParticipantDisconnected, handleParticipantsChanged);

@@ -8,6 +8,14 @@ export const CallPane = style({
   maxWidth: toRem(640),
   backgroundColor: color.Surface.Container,
   borderRight: `${config.borderWidth.B300} solid ${color.Surface.ContainerLine}`,
+  selectors: {
+    '&:fullscreen': {
+      minWidth: 'unset',
+      maxWidth: 'unset',
+      width: '100%',
+      height: '100%',
+    },
+  },
 });
 
 export const CallPaneStacked = style({
@@ -33,13 +41,55 @@ export const CallTileGrid = style({
   alignContent: 'start',
 });
 
+export const CallSpotlightLayout = style({
+  minHeight: 0,
+  gap: config.space.S200,
+  padding: config.space.S200,
+});
+
+export const CallSpotlight = style({
+  display: 'flex',
+  flexGrow: 1,
+  minHeight: 0,
+});
+
+export const CallTileStripScroll = style({
+  flexShrink: 0,
+});
+
+export const CallTileStrip = style({
+  display: 'flex',
+  gap: config.space.S200,
+});
+
 export const CallTile = style({
   position: 'relative',
-  aspectRatio: '4 / 3',
   overflow: 'hidden',
   borderRadius: config.radii.R400,
   backgroundColor: color.SurfaceVariant.Container,
   border: `${config.borderWidth.B500} solid transparent`,
+});
+
+export const CallGridTile = style({
+  aspectRatio: '16 / 9',
+});
+
+export const CallStripTile = style({
+  flexShrink: 0,
+  width: toRem(128),
+  aspectRatio: '16 / 9',
+});
+
+export const CallSpotlightTile = style({
+  width: '100%',
+  height: '100%',
+});
+
+export const CallTileInteractive = style({
+  padding: 0,
+  font: 'inherit',
+  color: 'inherit',
+  cursor: 'pointer',
 });
 
 export const CallTileSpeaking = style({
@@ -49,7 +99,18 @@ export const CallTileSpeaking = style({
 export const CallTileVideo = style({
   width: '100%',
   height: '100%',
+});
+
+export const CallTileVideoCover = style({
   objectFit: 'cover',
+});
+
+export const CallTileVideoContain = style({
+  objectFit: 'contain',
+});
+
+export const CallTileVideoMirrored = style({
+  transform: 'scaleX(-1)',
 });
 
 export const CallTileName = style({
