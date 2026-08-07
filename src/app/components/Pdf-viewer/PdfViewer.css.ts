@@ -1,28 +1,44 @@
 import { style } from '@vanilla-extract/css';
 import { DefaultReset, color, config } from 'folds';
+import { Header, HeaderEdgeButton } from '../../styles/mediaFrame.css';
 
-export const PdfViewer = style([
-  DefaultReset,
-  {
-    height: '100%',
-  },
-]);
+export { PrimaryHeaderButton as PdfViewerDownloadButton } from '../../styles/mediaFrame.css';
 
-export const PdfViewerHeader = style([
-  DefaultReset,
-  {
-    paddingLeft: config.space.S200,
-    paddingRight: config.space.S200,
-    borderBottomWidth: config.borderWidth.B300,
-    flexShrink: 0,
-    gap: config.space.S200,
-  },
-]);
 export const PdfViewerFooter = style([
-  PdfViewerHeader,
+  Header,
   {
     borderTopWidth: config.borderWidth.B300,
     borderBottomWidth: 0,
+    justifyContent: 'space-between',
+  },
+]);
+
+const pageButtonBase = {
+  width: 'auto',
+  paddingLeft: config.space.S400,
+  paddingRight: config.space.S400,
+  gap: config.space.S200,
+  selectors: {
+    '&:disabled': {
+      cursor: 'default',
+      opacity: 0.3,
+    },
+  },
+} as const;
+
+export const PdfViewerPrevPageButton = style([
+  HeaderEdgeButton,
+  pageButtonBase,
+  {
+    marginLeft: `calc(-1 * ${config.space.S300})`,
+  },
+]);
+
+export const PdfViewerNextPageButton = style([
+  HeaderEdgeButton,
+  pageButtonBase,
+  {
+    marginRight: `calc(-1 * ${config.space.S300})`,
   },
 ]);
 

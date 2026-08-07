@@ -1,14 +1,10 @@
 import { style } from '@vanilla-extract/css';
-import { DefaultReset, color, config } from 'folds';
+import { DefaultReset, color } from 'folds';
 import { HEADER_HEIGHT } from '../../styles/mediaFrame.css';
 
 export {
-  Frame as ImageViewer,
-  FrameExpanded as ImageViewerExpanded,
-  Header as ImageViewerHeader,
   Content as ImageViewerContent,
   LoadingOverlay as ImageViewerLoadingOverlay,
-  CloseButton as ImageViewerCloseButton,
   PrimaryHeaderButton as ImageViewerDownloadButton,
 } from '../../styles/mediaFrame.css';
 
@@ -21,47 +17,6 @@ export const ImageViewerGalleryMode = style({
     },
   },
 });
-
-const zoomButtonBase = {
-  alignSelf: 'stretch',
-  flexShrink: 0,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  background: 'transparent',
-  border: 'none',
-  borderRadius: 0,
-  cursor: 'pointer',
-  color: 'inherit',
-  transition: 'background-color 120ms ease',
-  selectors: {
-    '&:hover': {
-      backgroundColor: color.SurfaceVariant.ContainerHover,
-    },
-    '&:focus-visible': {
-      outline: `${config.borderWidth.B400} solid ${color.Primary.Main}`,
-      outlineOffset: `calc(-1 * ${config.borderWidth.B400})`,
-    },
-  },
-} as const;
-
-export const ImageViewerZoomGroup = style({
-  alignSelf: 'stretch',
-  display: 'flex',
-  flexShrink: 0,
-});
-
-export const ImageViewerZoomButton = style([
-  DefaultReset,
-  zoomButtonBase,
-  { width: HEADER_HEIGHT },
-]);
-
-export const ImageViewerZoomChip = style([
-  DefaultReset,
-  zoomButtonBase,
-  { width: '3rem', paddingLeft: config.space.S200, paddingRight: config.space.S200 },
-]);
 
 const GALLERY_BUTTON_GUTTER_PER_SIDE = '3rem';
 

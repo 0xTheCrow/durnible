@@ -14,7 +14,7 @@ import {
 } from 'folds';
 import { Page, PageContent, PageHeader } from '../../../components/page';
 import { SequenceCard } from '../../../components/sequence-card';
-import { SequenceCardStyle } from '../styles.css';
+import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { SettingTile } from '../../../components/setting-tile';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
@@ -108,7 +108,7 @@ export function DeveloperTools({ onClose }: DeveloperToolsProps) {
               <Box direction="Column" gap="100">
                 <Text size="L400">Options</Text>
                 <SequenceCard
-                  className={SequenceCardStyle}
+                  className={SettingsCardStyle}
                   variant="SurfaceVariant"
                   direction="Column"
                   gap="400"
@@ -126,7 +126,7 @@ export function DeveloperTools({ onClose }: DeveloperToolsProps) {
                 </SequenceCard>
                 {developerTools && (
                   <SequenceCard
-                    className={SequenceCardStyle}
+                    className={SettingsCardStyle}
                     variant="SurfaceVariant"
                     direction="Column"
                     gap="400"
@@ -156,7 +156,7 @@ export function DeveloperTools({ onClose }: DeveloperToolsProps) {
                   <Text size="L400">Data</Text>
 
                   <SequenceCard
-                    className={SequenceCardStyle}
+                    className={SettingsCardStyle}
                     variant="SurfaceVariant"
                     direction="Column"
                     gap="400"
@@ -179,7 +179,7 @@ export function DeveloperTools({ onClose }: DeveloperToolsProps) {
                     />
                   </SequenceCard>
                   <SequenceCard
-                    className={SequenceCardStyle}
+                    className={SettingsCardStyle}
                     variant="SurfaceVariant"
                     direction="Column"
                     gap="400"
@@ -316,7 +316,7 @@ export function DeveloperTools({ onClose }: DeveloperToolsProps) {
                     )}
                   </SequenceCard>
                   <SequenceCard
-                    className={SequenceCardStyle}
+                    className={SettingsCardStyle}
                     variant="SurfaceVariant"
                     direction="Column"
                     gap="400"

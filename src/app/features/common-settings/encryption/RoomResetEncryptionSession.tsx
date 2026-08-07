@@ -2,7 +2,7 @@ import React, { useCallback } from 'react';
 import { Button, color, Spinner, Text } from 'folds';
 import type { MatrixError } from 'matrix-js-sdk';
 import { SequenceCard } from '../../../components/sequence-card';
-import { SequenceCardStyle } from '../../room-settings/styles.css';
+import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { SettingTile } from '../../../components/setting-tile';
 import { useRoom } from '../../../hooks/useRoom';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
@@ -26,7 +26,7 @@ export function RoomResetEncryptionSession() {
 
   return (
     <SequenceCard
-      className={SequenceCardStyle}
+      className={SettingsCardStyle}
       variant="SurfaceVariant"
       direction="Column"
       gap="400"

@@ -19,7 +19,7 @@ import classNames from 'classnames';
 import type { MatrixError } from 'matrix-js-sdk';
 import { EventType, JoinRule } from 'matrix-js-sdk';
 import { SequenceCard } from '../../../components/sequence-card';
-import { SequenceCardStyle } from '../../room-settings/styles.css';
+import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { useRoom } from '../../../hooks/useRoom';
 import {
   useRoomAvatar,
@@ -32,6 +32,7 @@ import { BreakWord, LineClamp3 } from '../../../styles/Text.css';
 import { LINKIFY_OPTS } from '../../../plugins/react-custom-html-parser';
 import { RoomAvatar, RoomIcon } from '../../../components/room-avatar';
 import { mxcUrlToHttp } from '../../../utils/matrix';
+import { isCallRoom } from '../../../utils/room';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
 import { StateEvent } from '../../../../types/matrix/room';
@@ -205,6 +206,7 @@ export function RoomProfileEdit({
               renderFallback={() => (
                 <RoomIcon
                   space={room.isSpaceRoom()}
+                  call={isCallRoom(room)}
                   size="400"
                   joinRule={joinRule?.join_rule ?? JoinRule.Invite}
                   filled
@@ -296,7 +298,7 @@ export function RoomProfile({ permissions }: RoomProfileProps) {
     <Box direction="Column" gap="100">
       <Text size="L400">Profile</Text>
       <SequenceCard
-        className={SequenceCardStyle}
+        className={SettingsCardStyle}
         variant="SurfaceVariant"
         direction="Column"
         gap="400"
@@ -348,6 +350,7 @@ export function RoomProfile({ permissions }: RoomProfileProps) {
                   renderFallback={() => (
                     <RoomIcon
                       space={room.isSpaceRoom()}
+                      call={isCallRoom(room)}
                       size="400"
                       joinRule={joinRule?.join_rule ?? JoinRule.Invite}
                       filled

@@ -5,7 +5,7 @@ import { Page, PageContent } from '../../../components/page';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SettingTile } from '../../../components/setting-tile';
 import { SettingsPageHeader } from '../components';
-import { SequenceCardStyle } from '../styles.css';
+import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import type {
   KeybindAction,
   KeybindCategory,
@@ -96,7 +96,7 @@ export function Keybinds({ onBack, onClose }: KeybindsProps) {
             <Box direction="Column" gap="700">
               <Box direction="Column" gap="100">
                 <SequenceCard
-                  className={SequenceCardStyle}
+                  className={SettingsCardStyle}
                   variant="SurfaceVariant"
                   direction="Column"
                 >
@@ -132,7 +132,7 @@ export function Keybinds({ onBack, onClose }: KeybindsProps) {
                     return (
                       <SequenceCard
                         key={item.id}
-                        className={SequenceCardStyle}
+                        className={SettingsCardStyle}
                         variant="SurfaceVariant"
                         direction="Column"
                       >

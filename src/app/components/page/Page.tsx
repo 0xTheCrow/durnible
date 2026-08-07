@@ -5,24 +5,28 @@ import classNames from 'classnames';
 import { ContainerColor } from '../../styles/ContainerColor.css';
 import * as css from './style.css';
 import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
-import { CallPane } from '../../features/call/CallPane';
+import { checkIsSideDock, useCallPaneDock } from '../../hooks/useCallPaneLayout';
 
 type PageRootProps = {
   nav: ReactNode;
+  aside?: ReactNode;
   children: ReactNode;
 };
 
-export function PageRoot({ nav, children }: PageRootProps) {
+export function PageRoot({ nav, aside, children }: PageRootProps) {
   const screenSize = useScreenSizeContext();
+  const { dock } = useCallPaneDock();
+  const isAsideBeforeContent = dock === 'Left' || dock === 'Top';
 
   if (screenSize === ScreenSize.Mobile) {
     return (
       <Box grow="Yes" direction="Column" className={ContainerColor({ variant: 'Background' })}>
-        <CallPane />
+        {isAsideBeforeContent && aside}
         <Box grow="Yes">
           {nav}
           {children}
         </Box>
+        {!isAsideBeforeContent && aside}
       </Box>
     );
   }
@@ -31,8 +35,15 @@ export function PageRoot({ nav, children }: PageRootProps) {
     <Box grow="Yes" className={ContainerColor({ variant: 'Background' })}>
       {nav}
       <Line variant="Background" size="300" direction="Vertical" />
-      <CallPane />
-      {children}
+      <Box
+        grow="Yes"
+        direction={checkIsSideDock(dock) ? 'Row' : 'Column'}
+        className={css.PageRootContent}
+      >
+        {isAsideBeforeContent && aside}
+        {children}
+        {!isAsideBeforeContent && aside}
+      </Box>
     </Box>
   );
 }

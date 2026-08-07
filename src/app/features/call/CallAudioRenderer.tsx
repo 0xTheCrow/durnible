@@ -2,11 +2,11 @@ import React, { useEffect, useRef } from 'react';
 import { useAtomValue } from 'jotai';
 import type { Participant, Room as LivekitRoom } from 'livekit-client';
 import { Track } from 'livekit-client';
-import { callStateAtom } from '../../state/call';
+import { callStateAtom, isCallDeafenedAtom } from '../../state/call';
 import { useLivekitParticipants } from '../../hooks/call/useLivekitParticipants';
 import { useParticipantTrackPublications } from '../../hooks/call/useParticipantTrackPublications';
 
-function AudioTrackPlayer({ track }: { track: Track }) {
+function AudioTrackPlayer({ track, isDeafened }: { track: Track; isDeafened: boolean }) {
   const audioElementRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
@@ -18,10 +18,16 @@ function AudioTrackPlayer({ track }: { track: Track }) {
     };
   }, [track]);
 
-  return <audio ref={audioElementRef} autoPlay />;
+  return <audio ref={audioElementRef} autoPlay muted={isDeafened} />;
 }
 
-function ParticipantAudio({ participant }: { participant: Participant }) {
+function ParticipantAudio({
+  participant,
+  isDeafened,
+}: {
+  participant: Participant;
+  isDeafened: boolean;
+}) {
   const trackPublications = useParticipantTrackPublications(participant);
 
   return (
@@ -30,7 +36,11 @@ function ParticipantAudio({ participant }: { participant: Participant }) {
         .filter((publication) => publication.kind === Track.Kind.Audio)
         .map((publication) =>
           publication.track ? (
-            <AudioTrackPlayer key={publication.trackSid} track={publication.track} />
+            <AudioTrackPlayer
+              key={publication.trackSid}
+              track={publication.track}
+              isDeafened={isDeafened}
+            />
           ) : null
         )}
     </>
@@ -39,13 +49,18 @@ function ParticipantAudio({ participant }: { participant: Participant }) {
 
 function ConnectedCallAudio({ livekitRoom }: { livekitRoom: LivekitRoom }) {
   const participants = useLivekitParticipants(livekitRoom);
+  const isDeafened = useAtomValue(isCallDeafenedAtom);
 
   return (
     <>
       {participants
         .filter((participant) => !participant.isLocal)
         .map((participant) => (
-          <ParticipantAudio key={participant.identity} participant={participant} />
+          <ParticipantAudio
+            key={participant.identity}
+            participant={participant}
+            isDeafened={isDeafened}
+          />
         ))}
     </>
   );

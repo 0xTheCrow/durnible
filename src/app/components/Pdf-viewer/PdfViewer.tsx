@@ -2,7 +2,6 @@
 /* eslint-disable jsx-a11y/no-noninteractive-element-interactions */
 import type { FormEventHandler, MouseEventHandler } from 'react';
 import React, { useEffect, useRef, useState } from 'react';
-import classNames from 'classnames';
 import type { RectCords } from 'folds';
 import {
   Box,
@@ -10,7 +9,6 @@ import {
   Chip,
   Header,
   Icon,
-  IconButton,
   Icons,
   Input,
   Menu,
@@ -22,21 +20,23 @@ import {
   config,
 } from 'folds';
 import FocusTrap from 'focus-trap-react';
-import FileSaver from 'file-saver';
 import * as css from './PdfViewer.css';
 import { AsyncStatus } from '../../hooks/useAsyncCallback';
 import { useZoom } from '../../hooks/useZoom';
+import { clampZoom } from '../../utils/zoom';
 import { createPage, usePdfDocumentLoader, usePdfJSLoader } from '../../plugins/pdfjs-dist';
 import { stopPropagation } from '../../utils/keyboard';
+import { MediaFrame, MediaFrameZoomControls } from '../media';
 
 export type PdfViewerProps = {
   name: string;
   src: string;
   onClose: () => void;
+  onDownload?: () => void;
 };
 
 export const PdfViewer = as<'div', PdfViewerProps>(
-  ({ className, name, src, onClose, ...props }, ref) => {
+  ({ className, name, src, onClose, onDownload, ...props }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
     const { zoom, zoomIn, zoomOut, setZoom } = useZoom(0.2);
@@ -63,24 +63,46 @@ export const PdfViewer = as<'div', PdfViewerProps>(
     }, [pdfJSState, loadPdfDocument]);
 
     useEffect(() => {
-      if (docState.status === AsyncStatus.Success) {
-        const doc = docState.data;
-        if (pageNo < 0 || pageNo > doc.numPages) return;
-        createPage(doc, pageNo, { scale: zoom }).then((canvas) => {
-          const container = containerRef.current;
-          if (!container) return;
-          container.textContent = '';
-          container.append(canvas);
-          scrollRef.current?.scrollTo({
-            top: 0,
-          });
-        });
-      }
-    }, [docState, pageNo, zoom]);
+      if (docState.status !== AsyncStatus.Success) return undefined;
+      const scrollElement = scrollRef.current;
+      if (!scrollElement) return undefined;
 
-    const handleDownload = () => {
-      FileSaver.saveAs(src, name);
-    };
+      let isStale = false;
+      docState.data.getPage(1).then((page) => {
+        if (isStale) return;
+        const { width, height } = page.getViewport({ scale: 1 });
+        setZoom(
+          clampZoom(
+            Math.min(scrollElement.clientWidth / width, scrollElement.clientHeight / height)
+          )
+        );
+      });
+
+      return () => {
+        isStale = true;
+      };
+    }, [docState, setZoom]);
+
+    useEffect(() => {
+      if (docState.status !== AsyncStatus.Success) return undefined;
+      const doc = docState.data;
+      if (pageNo < 0 || pageNo > doc.numPages) return undefined;
+
+      let isStale = false;
+      createPage(doc, pageNo, { scale: zoom }).then((canvas) => {
+        const container = containerRef.current;
+        if (isStale || !container) return;
+        container.textContent = '';
+        container.append(canvas);
+        scrollRef.current?.scrollTo({
+          top: 0,
+        });
+      });
+
+      return () => {
+        isStale = true;
+      };
+    }, [docState, pageNo, zoom]);
 
     const handleJumpSubmit: FormEventHandler<HTMLFormElement> = (evt) => {
       evt.preventDefault();
@@ -122,50 +144,36 @@ export const PdfViewer = as<'div', PdfViewerProps>(
     }, [docState]);
 
     return (
-      <Box className={classNames(css.PdfViewer, className)} direction="Column" {...props} ref={ref}>
-        <Header className={css.PdfViewerHeader} size="400">
-          <Box grow="Yes" alignItems="Center" gap="200">
-            <IconButton size="300" radii="300" onClick={onClose}>
-              <Icon size="50" src={Icons.ArrowLeft} />
-            </IconButton>
-            <Text size="T300" truncate>
-              {name}
-            </Text>
-          </Box>
-          <Box shrink="No" alignItems="Center" gap="200">
-            <IconButton
-              variant={zoom < 1 ? 'Success' : 'SurfaceVariant'}
-              outlined={zoom < 1}
-              size="300"
-              radii="Pill"
-              onClick={zoomOut}
-              aria-label="Zoom Out"
-            >
-              <Icon size="50" src={Icons.Minus} />
-            </IconButton>
-            <Chip variant="SurfaceVariant" radii="Pill" onClick={() => setZoom(zoom === 1 ? 2 : 1)}>
-              <Text size="B300">{Math.round(zoom * 100)}%</Text>
-            </Chip>
-            <IconButton
-              variant={zoom > 1 ? 'Success' : 'SurfaceVariant'}
-              outlined={zoom > 1}
-              size="300"
-              radii="Pill"
-              onClick={zoomIn}
-              aria-label="Zoom In"
-            >
-              <Icon size="50" src={Icons.Plus} />
-            </IconButton>
-            <Chip
-              variant="Primary"
-              onClick={handleDownload}
-              radii="300"
-              before={<Icon size="50" src={Icons.Download} />}
-            >
-              <Text size="B300">Download</Text>
-            </Chip>
-          </Box>
-        </Header>
+      <MediaFrame
+        name={name}
+        onClose={onClose}
+        className={className}
+        headerAfter={
+          <>
+            <MediaFrameZoomControls
+              zoom={zoom}
+              zoomIn={zoomIn}
+              zoomOut={zoomOut}
+              setZoom={setZoom}
+            />
+            {onDownload && (
+              <button
+                type="button"
+                className={css.PdfViewerDownloadButton}
+                onClick={onDownload}
+                aria-label="Download"
+              >
+                <Icon size="100" src={Icons.Download} />
+                <Text size="B300" as="span">
+                  Download
+                </Text>
+              </button>
+            )}
+          </>
+        }
+        {...props}
+        ref={ref}
+      >
         <Box direction="Column" grow="Yes" alignItems="Center" justifyContent="Center" gap="200">
           {isLoading && <Spinner variant="Secondary" size="600" />}
           {isError && (
@@ -199,15 +207,18 @@ export const PdfViewer = as<'div', PdfViewerProps>(
         </Box>
         {docState.status === AsyncStatus.Success && (
           <Header as="footer" className={css.PdfViewerFooter} size="400">
-            <Chip
-              variant="Secondary"
-              radii="300"
-              before={<Icon size="50" src={Icons.ChevronLeft} />}
+            <button
+              type="button"
+              className={css.PdfViewerPrevPageButton}
               onClick={handlePrevPage}
-              aria-disabled={pageNo <= 1}
+              disabled={pageNo <= 1}
+              aria-label="Previous Page"
             >
-              <Text size="B300">Previous</Text>
-            </Chip>
+              <Icon size="100" src={Icons.ChevronLeft} />
+              <Text size="B300" as="span">
+                Previous
+              </Text>
+            </button>
             <Box grow="Yes" justifyContent="Center" alignItems="Center" gap="200">
               <PopOut
                 anchor={jumpAnchor}
@@ -261,18 +272,21 @@ export const PdfViewer = as<'div', PdfViewerProps>(
                 </Chip>
               </PopOut>
             </Box>
-            <Chip
-              variant="Primary"
-              radii="300"
-              after={<Icon size="50" src={Icons.ChevronRight} />}
+            <button
+              type="button"
+              className={css.PdfViewerNextPageButton}
               onClick={handleNextPage}
-              aria-disabled={pageNo >= docState.data.numPages}
+              disabled={pageNo >= docState.data.numPages}
+              aria-label="Next Page"
             >
-              <Text size="B300">Next</Text>
-            </Chip>
+              <Text size="B300" as="span">
+                Next
+              </Text>
+              <Icon size="100" src={Icons.ChevronRight} />
+            </button>
           </Header>
         )}
-      </Box>
+      </MediaFrame>
     );
   }
 );

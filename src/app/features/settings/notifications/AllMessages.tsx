@@ -6,7 +6,7 @@ import { useAccountData } from '../../../hooks/useAccountData';
 import { AccountDataEvent } from '../../../../types/matrix/accountData';
 import { NotificationModeSwitcher } from './NotificationModeSwitcher';
 import { SequenceCard } from '../../../components/sequence-card';
-import { SequenceCardStyle } from '../styles.css';
+import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { SettingTile } from '../../../components/setting-tile';
 import type { PushRuleData } from '../../../hooks/usePushRule';
 import { usePushRule } from '../../../hooks/usePushRule';
@@ -93,7 +93,7 @@ export function AllMessagesNotifications() {
         </Box>
       </Box>
       <SequenceCard
-        className={SequenceCardStyle}
+        className={SettingsCardStyle}
         variant="SurfaceVariant"
         direction="Column"
         gap="400"
@@ -104,7 +104,7 @@ export function AllMessagesNotifications() {
         />
       </SequenceCard>
       <SequenceCard
-        className={SequenceCardStyle}
+        className={SettingsCardStyle}
         variant="SurfaceVariant"
         direction="Column"
         gap="400"
@@ -122,7 +122,7 @@ export function AllMessagesNotifications() {
         />
       </SequenceCard>
       <SequenceCard
-        className={SequenceCardStyle}
+        className={SettingsCardStyle}
         variant="SurfaceVariant"
         direction="Column"
         gap="400"
@@ -133,7 +133,7 @@ export function AllMessagesNotifications() {
         />
       </SequenceCard>
       <SequenceCard
-        className={SequenceCardStyle}
+        className={SettingsCardStyle}
         variant="SurfaceVariant"
         direction="Column"
         gap="400"

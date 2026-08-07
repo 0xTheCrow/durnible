@@ -1,8 +1,6 @@
 import React from 'react';
 import { Box, Icon, IconButton, Icons, Scroll, Text } from 'folds';
 import { Page, PageContent, PageHeader } from '../../../components/page';
-import { usePowerLevels } from '../../../hooks/usePowerLevels';
-import { useRoom } from '../../../hooks/useRoom';
 import {
   RoomProfile,
   RoomEncryption,
@@ -13,17 +11,13 @@ import {
   RoomPublish,
   RoomUpgrade,
 } from '../../common-settings/general';
-import { useRoomCreators } from '../../../hooks/useRoomCreators';
-import { useRoomPermissions } from '../../../hooks/useRoomPermissions';
+import { useRoomSettingsPermissions } from '../../common-settings/useRoomSettingsPermissions';
 
 type GeneralProps = {
   onClose: () => void;
 };
 export function General({ onClose }: GeneralProps) {
-  const room = useRoom();
-  const powerLevels = usePowerLevels(room);
-  const creators = useRoomCreators(room);
-  const permissions = useRoomPermissions(creators, powerLevels);
+  const permissions = useRoomSettingsPermissions();
 
   return (
     <Page>

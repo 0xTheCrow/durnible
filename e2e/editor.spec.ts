@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
 import {
+  RICH_TEXT_EDITOR_SETTINGS,
   seedSession,
+  seedSettings,
   stubHomeserver,
   TEST_ROOM_ID,
   type HomeserverStub,
@@ -42,9 +44,7 @@ test('plain text sends without a formatted body', async ({ page }) => {
 });
 
 test('erasing bold text clears the pending style so new text is not bold', async ({ page }) => {
-  await page.addInitScript(() => {
-    localStorage.setItem('settings', JSON.stringify({ editorToolbar: true }));
-  });
+  await seedSettings(page, RICH_TEXT_EDITOR_SETTINGS);
   await page.goto(roomPath);
 
   const editor = page.getByTestId('editor');
@@ -82,6 +82,7 @@ test('erasing bold text clears the pending style so new text is not bold', async
 });
 
 test('bold text survives serialization into the sent event', async ({ page }) => {
+  await seedSettings(page, RICH_TEXT_EDITOR_SETTINGS);
   await page.goto(roomPath);
 
   const editor = page.getByTestId('editor');

@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import classNames from 'classnames';
-import { Box, Header, Icon, Icons, Text } from 'folds';
+import { Box, Icon, Icons, Text } from 'folds';
 import type { CropperRef } from 'react-advanced-cropper';
 import { Cropper } from 'react-advanced-cropper';
 import 'react-advanced-cropper/dist/style.css';
 import * as css from './ImageEditor.css';
 import { loadImageElement } from '../../utils/dom';
+import { MediaFrame } from '../media';
 
 function CropIcon() {
   return (
@@ -189,63 +189,56 @@ export function ImageEditor({ name, url, mimeType, onClose, onSave }: ImageEdito
   };
 
   return (
-    <Box className={classNames(css.ImageEditor, css.ImageEditorExpanded)} direction="Column">
-      <Header className={css.ImageEditorHeader} size="500">
-        <button
-          type="button"
-          className={css.ImageEditorCloseButton}
-          onClick={onClose}
-          aria-label="Close"
-        >
-          <Icon size="200" src={Icons.ArrowLeft} />
-        </button>
-        <Box grow="Yes" alignItems="Center" gap="300">
-          <Text size="T400" truncate>
-            {name}
-          </Text>
-        </Box>
-        <div className={css.ImageEditorRotateGroup}>
+    <MediaFrame
+      expanded
+      name={name}
+      onClose={onClose}
+      headerAfter={
+        <>
+          <div className={css.ImageEditorRotateGroup}>
+            <button
+              type="button"
+              className={css.ImageEditorToolButton}
+              onClick={rotateClockwise}
+              aria-label="Rotate Right"
+            >
+              <Icon size="100" src={Icons.Reload} />
+            </button>
+            <button
+              type="button"
+              className={css.ImageEditorToolButton}
+              onClick={rotateCounterClockwise}
+              aria-label="Rotate Left"
+            >
+              <Icon size="100" src={Icons.Reload} className={css.ImageEditorMirroredIcon} />
+            </button>
+          </div>
           <button
             type="button"
-            className={css.ImageEditorToolButton}
-            onClick={rotateClockwise}
-            aria-label="Rotate Right"
+            className={css.ImageEditorCropToggle}
+            onClick={cropMode ? exitCropMode : enterCropMode}
+            aria-pressed={cropMode}
+            aria-label={cropMode ? 'Exit Crop Mode' : 'Enter Crop Mode'}
           >
-            <Icon size="100" src={Icons.Reload} />
+            <Icon size="100" src={cropMode ? Icons.Cross : CropIcon} />
+            <Text size="B300">Crop</Text>
           </button>
-          <button
-            type="button"
-            className={css.ImageEditorToolButton}
-            onClick={rotateCounterClockwise}
-            aria-label="Rotate Left"
-          >
-            <Icon size="100" src={Icons.Reload} className={css.ImageEditorMirroredIcon} />
-          </button>
-        </div>
-        <button
-          type="button"
-          className={css.ImageEditorCropToggle}
-          onClick={cropMode ? exitCropMode : enterCropMode}
-          aria-pressed={cropMode}
-          aria-label={cropMode ? 'Exit Crop Mode' : 'Enter Crop Mode'}
-        >
-          <Icon size="100" src={cropMode ? Icons.Cross : CropIcon} />
-          <Text size="B300">Crop</Text>
-        </button>
-        {onSave && (
-          <button
-            type="button"
-            className={css.ImageEditorSaveButton}
-            onClick={handleSave}
-            aria-label="Save"
-          >
-            <Icon size="100" src={Icons.Check} />
-            <Text size="B300" as="span">
-              Save
-            </Text>
-          </button>
-        )}
-      </Header>
+          {onSave && (
+            <button
+              type="button"
+              className={css.ImageEditorSaveButton}
+              onClick={handleSave}
+              aria-label="Save"
+            >
+              <Icon size="100" src={Icons.Check} />
+              <Text size="B300" as="span">
+                Save
+              </Text>
+            </button>
+          )}
+        </>
+      }
+    >
       <Box
         grow="Yes"
         className={css.ImageEditorContent}
@@ -276,6 +269,6 @@ export function ImageEditor({ name, url, mimeType, onClose, onSave }: ImageEdito
           />
         )}
       </Box>
-    </Box>
+    </MediaFrame>
   );
 }

@@ -16,6 +16,18 @@ export const VIDEO_MIME_TYPES = [
   'video/ogg',
   'video/quicktime',
   'video/x-matroska',
+  'video/3gpp',
+  'video/3gpp2',
+  'video/x-m4v',
+  'video/m4v',
+];
+
+const MP4_COMPATIBLE_VIDEO_MIME_TYPES = [
+  'video/quicktime',
+  'video/3gpp',
+  'video/3gpp2',
+  'video/x-m4v',
+  'video/m4v',
 ];
 
 export const AUDIO_MIME_TYPES = [
@@ -123,8 +135,7 @@ export const getBlobSafeMimeType = (mimeType: string) => {
   if (!ALLOWED_BLOB_MIME_TYPES.includes(type)) {
     return FALLBACK_MIMETYPE;
   }
-  // Required for Chromium browsers
-  if (type === 'video/quicktime') {
+  if (MP4_COMPATIBLE_VIDEO_MIME_TYPES.includes(type)) {
     return 'video/mp4';
   }
   // Map non-standard audio types to standard equivalents for browser compatibility

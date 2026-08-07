@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Badge, Box, Button, Chip, config, Icon, Icons, Menu, Spinner, Text } from 'folds';
 import { EventType } from 'matrix-js-sdk';
 import { SequenceCard } from '../../../components/sequence-card';
-import { SequenceCardStyle } from '../styles.css';
+import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { SettingTile } from '../../../components/setting-tile';
 import type { PowerLevels, PermissionLocation } from '../../../hooks/usePowerLevels';
 import { applyPermissionPower, getPermissionPower } from '../../../hooks/usePowerLevels';
@@ -109,7 +109,7 @@ export function PermissionGroups({
         <Text size="L400">Users</Text>
         <SequenceCard
           variant="SurfaceVariant"
-          className={SequenceCardStyle}
+          className={SettingsCardStyle}
           direction="Column"
           gap="400"
         >
@@ -173,7 +173,7 @@ export function PermissionGroups({
               <SequenceCard
                 key={itemIndex}
                 variant="SurfaceVariant"
-                className={SequenceCardStyle}
+                className={SettingsCardStyle}
                 direction="Column"
                 gap="400"
               >

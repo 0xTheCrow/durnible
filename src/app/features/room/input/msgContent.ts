@@ -56,36 +56,42 @@ export const getImageMsgContent = async (
   mxc: string
 ): Promise<IContent> => {
   const { file, originalFile, encryptionInfo, metadata } = item;
-  const [imgError, imageElement] = await to(loadImageElement(getImageFileUrl(originalFile)));
-  if (imgError) console.warn(imgError);
+  const imageFileUrl = getImageFileUrl(originalFile);
 
-  const content: IContent = {
-    msgtype: MsgType.Image,
-    filename: file.name,
-    body: file.name,
-    [MATRIX_SPOILER_PROPERTY_NAME]: metadata.markedAsSpoiler,
-  };
-  if (imageElement) {
-    const blurHash = encodeBlurHash(
-      imageElement,
-      512,
-      scaleYDimension(imageElement.width, 512, imageElement.height)
-    );
+  try {
+    const [imgError, imageElement] = await to(loadImageElement(imageFileUrl));
+    if (imgError) console.warn(imgError);
 
-    content.info = {
-      ...getImageInfo(imageElement, file),
-      [MATRIX_BLUR_HASH_PROPERTY_NAME]: blurHash,
+    const content: IContent = {
+      msgtype: MsgType.Image,
+      filename: file.name,
+      body: file.name,
+      [MATRIX_SPOILER_PROPERTY_NAME]: metadata.markedAsSpoiler,
     };
+    if (imageElement) {
+      const blurHash = encodeBlurHash(
+        imageElement,
+        512,
+        scaleYDimension(imageElement.width, 512, imageElement.height)
+      );
+
+      content.info = {
+        ...getImageInfo(imageElement, file),
+        [MATRIX_BLUR_HASH_PROPERTY_NAME]: blurHash,
+      };
+    }
+    if (encryptionInfo) {
+      content.file = {
+        ...encryptionInfo,
+        url: mxc,
+      };
+    } else {
+      content.url = mxc;
+    }
+    return content;
+  } finally {
+    URL.revokeObjectURL(imageFileUrl);
   }
-  if (encryptionInfo) {
-    content.file = {
-      ...encryptionInfo,
-      url: mxc,
-    };
-  } else {
-    content.url = mxc;
-  }
-  return content;
 };
 
 export const getVideoMsgContent = async (
@@ -94,47 +100,52 @@ export const getVideoMsgContent = async (
   mxc: string
 ): Promise<IContent> => {
   const { file, originalFile, encryptionInfo, metadata } = item;
+  const videoFileUrl = getVideoFileUrl(originalFile);
 
-  const [videoError, videoElement] = await to(loadVideoElement(getVideoFileUrl(originalFile)));
-  if (videoError) console.warn(videoError);
+  try {
+    const [videoError, videoElement] = await to(loadVideoElement(videoFileUrl));
+    if (videoError) console.warn(videoError);
 
-  const content: IContent = {
-    msgtype: MsgType.Video,
-    filename: file.name,
-    body: file.name,
-    [MATRIX_SPOILER_PROPERTY_NAME]: metadata.markedAsSpoiler,
-  };
-  if (videoElement) {
-    const [thumbError, thumbContent] = await to(
-      generateThumbnailContent(
-        mx,
-        videoElement,
-        getThumbnailDimensions(videoElement.videoWidth, videoElement.videoHeight),
-        !!encryptionInfo
-      )
-    );
-    if (thumbContent && thumbContent.thumbnail_info) {
-      thumbContent.thumbnail_info[MATRIX_BLUR_HASH_PROPERTY_NAME] = encodeBlurHash(
-        videoElement,
-        512,
-        scaleYDimension(videoElement.videoWidth, 512, videoElement.videoHeight)
+    const content: IContent = {
+      msgtype: MsgType.Video,
+      filename: file.name,
+      body: file.name,
+      [MATRIX_SPOILER_PROPERTY_NAME]: metadata.markedAsSpoiler,
+    };
+    if (videoElement) {
+      const [thumbError, thumbContent] = await to(
+        generateThumbnailContent(
+          mx,
+          videoElement,
+          getThumbnailDimensions(videoElement.videoWidth, videoElement.videoHeight),
+          !!encryptionInfo
+        )
       );
+      if (thumbContent && thumbContent.thumbnail_info) {
+        thumbContent.thumbnail_info[MATRIX_BLUR_HASH_PROPERTY_NAME] = encodeBlurHash(
+          videoElement,
+          512,
+          scaleYDimension(videoElement.videoWidth, 512, videoElement.videoHeight)
+        );
+      }
+      if (thumbError) console.warn(thumbError);
+      content.info = {
+        ...getVideoInfo(videoElement, file),
+        ...thumbContent,
+      };
     }
-    if (thumbError) console.warn(thumbError);
-    content.info = {
-      ...getVideoInfo(videoElement, file),
-      ...thumbContent,
-    };
+    if (encryptionInfo) {
+      content.file = {
+        ...encryptionInfo,
+        url: mxc,
+      };
+    } else {
+      content.url = mxc;
+    }
+    return content;
+  } finally {
+    URL.revokeObjectURL(videoFileUrl);
   }
-  if (encryptionInfo) {
-    content.file = {
-      ...encryptionInfo,
-      url: mxc,
-    };
-  } else {
-    content.url = mxc;
-  }
-  return content;
 };
 
 export const getAudioMsgContent = async (item: UploadItem, mxc: string): Promise<IContent> => {

@@ -5,7 +5,7 @@ import { Box, Text, Badge } from 'folds';
 import { useAccountData } from '../../../hooks/useAccountData';
 import { AccountDataEvent } from '../../../../types/matrix/accountData';
 import { SequenceCard } from '../../../components/sequence-card';
-import { SequenceCardStyle } from '../styles.css';
+import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { SettingTile } from '../../../components/setting-tile';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { useUserProfile } from '../../../hooks/useUserProfile';
@@ -135,7 +135,7 @@ export function SpecialMessagesNotifications() {
         </Box>
       </Box>
       <SequenceCard
-        className={SequenceCardStyle}
+        className={SettingsCardStyle}
         variant="SurfaceVariant"
         direction="Column"
         gap="400"
@@ -152,7 +152,7 @@ export function SpecialMessagesNotifications() {
         />
       </SequenceCard>
       <SequenceCard
-        className={SequenceCardStyle}
+        className={SettingsCardStyle}
         variant="SurfaceVariant"
         direction="Column"
         gap="400"
@@ -169,7 +169,7 @@ export function SpecialMessagesNotifications() {
         />
       </SequenceCard>
       <SequenceCard
-        className={SequenceCardStyle}
+        className={SettingsCardStyle}
         variant="SurfaceVariant"
         direction="Column"
         gap="400"
@@ -186,7 +186,7 @@ export function SpecialMessagesNotifications() {
         />
       </SequenceCard>
       <SequenceCard
-        className={SequenceCardStyle}
+        className={SettingsCardStyle}
         variant="SurfaceVariant"
         direction="Column"
         gap="400"
@@ -203,7 +203,7 @@ export function SpecialMessagesNotifications() {
         />
       </SequenceCard>
       <SequenceCard
-        className={SequenceCardStyle}
+        className={SettingsCardStyle}
         variant="SurfaceVariant"
         direction="Column"
         gap="400"

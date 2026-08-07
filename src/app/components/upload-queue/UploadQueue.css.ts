@@ -82,6 +82,36 @@ export const UploadQueueThumbnailMedia = style({
   objectFit: 'cover',
 });
 
+export const UploadQueueVideoPreview = style({
+  position: 'relative',
+  width: '100%',
+  height: '100%',
+});
+
+export const UploadQueueVideoPreviewOverlay = style({
+  position: 'absolute',
+  inset: 0,
+});
+
+export const UploadQueueAudioPreview = style({
+  width: '100%',
+  padding: config.space.S400,
+});
+
+export const UploadQueuePreviewButton = style({
+  position: 'absolute',
+  inset: 0,
+  border: 'none',
+  padding: 0,
+  backgroundColor: 'transparent',
+  cursor: 'pointer',
+  selectors: {
+    '&:hover, &:focus-visible': {
+      backgroundColor: 'rgba(0, 0, 0, 0.25)',
+    },
+  },
+});
+
 export const UploadQueueActions = style({
   position: 'absolute',
   top: config.space.S100,

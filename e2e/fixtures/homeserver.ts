@@ -3,6 +3,7 @@ import {
   MATRIX_GALLERY_ID_PROPERTY_NAME,
   MATRIX_GALLERY_INDEX_PROPERTY_NAME,
 } from '../../src/types/matrix/common';
+import type { Settings } from '../../src/app/state/settings';
 
 export const HOMESERVER_BASE_URL = 'https://matrix.test';
 export const TEST_USER_ID = '@tester:matrix.test';
@@ -70,6 +71,39 @@ export const audioEvent = (
   },
   event_id: '$audioclip',
   origin_server_ts: 1700000000003,
+});
+
+export const VIDEO_DURATION_SECONDS = 2;
+export const VIDEO_WIDTH = 320;
+export const VIDEO_HEIGHT = 240;
+
+export const videoEvent = (
+  mimeType = 'video/webm',
+  durationSeconds = VIDEO_DURATION_SECONDS
+): Record<string, unknown> => ({
+  type: 'm.room.message',
+  sender: TEST_USER_ID,
+  content: {
+    msgtype: 'm.video',
+    body: 'video-clip',
+    url: 'mxc://matrix.test/videoclip',
+    info: {
+      mimetype: mimeType,
+      duration: durationSeconds * 1000,
+      w: VIDEO_WIDTH,
+      h: VIDEO_HEIGHT,
+    },
+  },
+  event_id: '$videoclip',
+  origin_server_ts: 1700000000004,
+});
+
+export const textEvent = (index: number): Record<string, unknown> => ({
+  type: 'm.room.message',
+  sender: TEST_USER_ID,
+  content: { msgtype: 'm.text', body: `filler message ${index}` },
+  event_id: `$filler${index}`,
+  origin_server_ts: 1700000000010 + index,
 });
 
 const initialSync = (
@@ -149,6 +183,16 @@ export const seedSession = (context: BrowserContext): Promise<void> =>
     [HOMESERVER_BASE_URL, TEST_USER_ID, TEST_DEVICE_ID, TEST_ACCESS_TOKEN] as const
   );
 
+export const RICH_TEXT_EDITOR_SETTINGS: Partial<Settings> = {
+  editorToolbar: true,
+  isMarkdownEnabled: true,
+};
+
+export const seedSettings = (page: Page, settings: Partial<Settings>): Promise<void> =>
+  page.addInitScript((serializedSettings) => {
+    localStorage.setItem('settings', serializedSettings);
+  }, JSON.stringify(settings));
+
 export type HomeserverStub = {
   sentEvents: SentEvent[];
   unmatched: string[];
@@ -157,6 +201,7 @@ export type HomeserverStub = {
 export type StubHomeserverOptions = {
   timelineEvents?: Record<string, unknown>[];
   audioResponse?: { body: Buffer; contentType: string };
+  videoResponse?: { body: Buffer; contentType: string };
 };
 
 const TRANSPARENT_PNG = Buffer.from(
@@ -239,6 +284,11 @@ export const stubHomeserver = async (
       return json(route, { 'm.upload.size': 50_000_000 });
     }
     if (pathname.includes('/media/')) {
+      if (pathname.includes('videoclip')) {
+        if (!options.videoResponse) return json(route, { errcode: 'M_NOT_FOUND' }, 404);
+        const { body, contentType } = options.videoResponse;
+        return route.fulfill({ status: 200, contentType, body });
+      }
       if (pathname.includes('audioclip')) {
         const { body, contentType } = options.audioResponse ?? {
           body: SILENT_WAV,

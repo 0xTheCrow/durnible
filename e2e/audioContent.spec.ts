@@ -39,6 +39,12 @@ const play = async (page: Page) => {
   await expect(toggle).toHaveAttribute('aria-pressed', 'true');
 };
 
+// CI runners have no audio output device, and Firefox drives an audio element's clock off a
+// real one, so playback never advances to `ended` there. Local Firefox runs still cover this.
+const NO_AUDIO_DEVICE_REASON = 'Firefox cannot advance playback without an audio output device';
+const skipWhenPlaybackCannotFinish = (browserName: string) =>
+  test.skip(browserName === 'firefox' && !!process.env.CI, NO_AUDIO_DEVICE_REASON);
+
 const waitForPlaybackToEnd = async (page: Page) => {
   await page.waitForFunction((selector) => {
     const audio = document.querySelector(selector) as HTMLAudioElement | null;
@@ -102,7 +108,12 @@ const recordVoiceClip = async (
   return { body: Buffer.from(recorded.bytes), mimeType: recorded.mimeType };
 };
 
-test('a single click after playback ends starts it again', async ({ context, page }) => {
+test('a single click after playback ends starts it again', async ({
+  context,
+  page,
+  browserName,
+}) => {
+  skipWhenPlaybackCannotFinish(browserName);
   await openRoom(context, page, { timelineEvents: [audioEvent()] });
   await play(page);
   await waitForPlaybackToEnd(page);
@@ -119,7 +130,12 @@ test('a single click after playback ends starts it again', async ({ context, pag
   await expect.poll(() => page.evaluate(() => window.playEventCount)).toBeGreaterThan(0);
 });
 
-test('a recording with no container duration replays from the start', async ({ context, page }) => {
+test('a recording with no container duration replays from the start', async ({
+  context,
+  page,
+  browserName,
+}) => {
+  skipWhenPlaybackCannotFinish(browserName);
   const recording = await recordVoiceClip(context);
   await openRoom(context, page, {
     timelineEvents: [audioEvent(recording.mimeType)],

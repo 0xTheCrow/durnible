@@ -21,7 +21,7 @@ import { timeDayMonYear, timeHourMinute, today, yesterday } from '../../../utils
 import { BreakWord } from '../../../styles/Text.css';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { SequenceCard } from '../../../components/sequence-card';
-import { SequenceCardStyle } from '../styles.css';
+import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { LogoutDialog } from '../../../components/LogoutDialog';
 import { OverlayModal } from '../../../components/OverlayModal';
 import { useSetting } from '../../../state/hooks/settings';
@@ -30,7 +30,7 @@ import { settingsAtom } from '../../../state/settings';
 export function DeviceTilePlaceholder() {
   return (
     <SequenceCard
-      className={SequenceCardStyle}
+      className={SettingsCardStyle}
       style={{ height: toRem(66) }}
       variant="SurfaceVariant"
       direction="Column"

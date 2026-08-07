@@ -3,7 +3,7 @@ import { Box, Text, Scroll } from 'folds';
 import { Page, PageContent } from '../../../components/page';
 import { SettingsPageHeader } from '../components';
 import { SequenceCard } from '../../../components/sequence-card';
-import { SequenceCardStyle } from '../styles.css';
+import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { SettingTile } from '../../../components/setting-tile';
 import { useDeviceIds, useDeviceList, useSplitCurrentDevice } from '../../../hooks/useDeviceList';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
@@ -76,7 +76,7 @@ export function Devices({ onBack, onClose }: DevicesProps) {
               <Box direction="Column" gap="100">
                 <Text size="L400">Security</Text>
                 <SequenceCard
-                  className={SequenceCardStyle}
+                  className={SettingsCardStyle}
                   variant="SurfaceVariant"
                   direction="Column"
                   gap="400"
@@ -105,7 +105,7 @@ export function Devices({ onBack, onClose }: DevicesProps) {
                 <Text size="L400">Current</Text>
                 {currentDevice ? (
                   <SequenceCard
-                    className={SequenceCardStyle}
+                    className={SettingsCardStyle}
                     variant="SurfaceVariant"
                     direction="Column"
                     gap="400"

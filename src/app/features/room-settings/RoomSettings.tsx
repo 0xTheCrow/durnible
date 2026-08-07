@@ -7,6 +7,7 @@ import { PageNav, PageNavContent, PageNavHeader, PageRoot } from '../../componen
 import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { mxcUrlToHttp } from '../../utils/matrix';
+import { isCallRoom } from '../../utils/room';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
 import { useRoomAvatar, useRoomJoinRule, useRoomName } from '../../hooks/useRoomMeta';
 import { mDirectAtom } from '../../state/mDirectList';
@@ -19,6 +20,25 @@ import { Encryption } from './encryption';
 import { RoomSettingsPage } from '../../state/roomSettings';
 import { useRoom } from '../../hooks/useRoom';
 import { DeveloperTools } from '../common-settings/developer-tools';
+import { usePermissionGroups } from './permissions/usePermissionItems';
+import type { RoomSettingsSearchPages } from '../common-settings/search';
+import { useRoomSettingsSearchEntries } from '../common-settings/search';
+import {
+  SettingsSearchInput,
+  SettingsSearchResults,
+  useSettingsSearch,
+} from '../../components/settings-search';
+
+const SEARCH_PLACEHOLDER = 'Search room settings...';
+
+const SEARCH_PAGES: RoomSettingsSearchPages<RoomSettingsPage> = {
+  general: RoomSettingsPage.GeneralPage,
+  members: RoomSettingsPage.MembersPage,
+  permissions: RoomSettingsPage.PermissionsPage,
+  emojisStickers: RoomSettingsPage.EmojisStickersPage,
+  developerTools: RoomSettingsPage.DeveloperToolsPage,
+  encryption: RoomSettingsPage.EncryptionPage,
+};
 
 type RoomSettingsMenuItem = {
   page: RoomSettingsPage;
@@ -85,25 +105,34 @@ export function RoomSettings({ initialPage, onClose }: RoomSettingsProps) {
     ? mxcUrlToHttp(mx, roomAvatar, useAuthentication, 96, 96, 'crop') ?? undefined
     : undefined;
 
-  const screenSize = useScreenSizeContext();
+  const isMobile = useScreenSizeContext() === ScreenSize.Mobile;
   const [activePage, setActivePage] = useState<RoomSettingsPage | undefined>(() => {
     if (initialPage) return initialPage;
-    return screenSize === ScreenSize.Mobile ? undefined : RoomSettingsPage.GeneralPage;
+    return isMobile ? undefined : RoomSettingsPage.GeneralPage;
   });
   const menuItems = useRoomSettingsMenuItems(room.hasEncryptionStateEvent());
 
+  const search = useSettingsSearch();
+  const permissionGroups = usePermissionGroups();
+  const searchEntries = useRoomSettingsSearchEntries(SEARCH_PAGES, permissionGroups);
+
   const handlePageRequestClose = () => {
-    if (screenSize === ScreenSize.Mobile) {
+    if (isMobile) {
       setActivePage(undefined);
       return;
     }
     onClose();
   };
 
+  const handleNavigateTo = (page: RoomSettingsPage) => {
+    setActivePage(page);
+    search.clearSearch();
+  };
+
   return (
     <PageRoot
       nav={
-        screenSize === ScreenSize.Mobile && activePage !== undefined ? undefined : (
+        isMobile && (activePage !== undefined || search.isSearching) ? undefined : (
           <PageNav size="300">
             <PageNavHeader outlined={false}>
               <Box grow="Yes" gap="200">
@@ -116,6 +145,7 @@ export function RoomSettings({ initialPage, onClose }: RoomSettingsProps) {
                       <RoomIcon
                         size="50"
                         joinRule={joinRuleContent?.join_rule ?? JoinRule.Invite}
+                        call={isCallRoom(room)}
                         filled
                       />
                     )}
@@ -126,7 +156,7 @@ export function RoomSettings({ initialPage, onClose }: RoomSettingsProps) {
                 </Text>
               </Box>
               <Box shrink="No">
-                {screenSize === ScreenSize.Mobile && (
+                {isMobile && (
                   <IconButton onClick={onClose} variant="Background">
                     <Icon src={Icons.Cross} />
                   </IconButton>
@@ -134,28 +164,38 @@ export function RoomSettings({ initialPage, onClose }: RoomSettingsProps) {
               </Box>
             </PageNavHeader>
             <Box grow="Yes" direction="Column">
+              <Box
+                style={{ padding: `0 ${config.space.S200} ${config.space.S200}` }}
+                shrink="No"
+                direction="Column"
+              >
+                <SettingsSearchInput search={search} placeholder={SEARCH_PLACEHOLDER} />
+              </Box>
               <PageNavContent>
                 <div style={{ flexGrow: 1 }}>
-                  {menuItems.map((item) => (
-                    <MenuItem
-                      key={item.name}
-                      variant="Background"
-                      radii="400"
-                      aria-pressed={activePage === item.page}
-                      before={<Icon src={item.icon} size="100" filled={activePage === item.page} />}
-                      onClick={() => setActivePage(item.page)}
-                    >
-                      <Text
-                        style={{
-                          fontWeight: activePage === item.page ? config.fontWeight.W600 : undefined,
-                        }}
-                        size="T300"
-                        truncate
+                  {menuItems.map((item) => {
+                    const isActive = !search.isSearching && activePage === item.page;
+                    return (
+                      <MenuItem
+                        key={item.name}
+                        variant="Background"
+                        radii="400"
+                        aria-pressed={isActive}
+                        before={<Icon src={item.icon} size="100" filled={isActive} />}
+                        onClick={() => handleNavigateTo(item.page)}
                       >
-                        {item.name}
-                      </Text>
-                    </MenuItem>
-                  ))}
+                        <Text
+                          style={{
+                            fontWeight: isActive ? config.fontWeight.W600 : undefined,
+                          }}
+                          size="T300"
+                          truncate
+                        >
+                          {item.name}
+                        </Text>
+                      </MenuItem>
+                    );
+                  })}
                 </div>
               </PageNavContent>
             </Box>
@@ -163,19 +203,35 @@ export function RoomSettings({ initialPage, onClose }: RoomSettingsProps) {
         )
       }
     >
-      {activePage === RoomSettingsPage.GeneralPage && <General onClose={handlePageRequestClose} />}
-      {activePage === RoomSettingsPage.MembersPage && <Members onClose={handlePageRequestClose} />}
-      {activePage === RoomSettingsPage.PermissionsPage && (
-        <Permissions onClose={handlePageRequestClose} />
-      )}
-      {activePage === RoomSettingsPage.EmojisStickersPage && (
-        <EmojisStickers onClose={handlePageRequestClose} />
-      )}
-      {activePage === RoomSettingsPage.EncryptionPage && (
-        <Encryption onClose={handlePageRequestClose} />
-      )}
-      {activePage === RoomSettingsPage.DeveloperToolsPage && (
-        <DeveloperTools onClose={handlePageRequestClose} />
+      {search.isSearching ? (
+        <SettingsSearchResults
+          search={search}
+          entries={searchEntries}
+          searchPlaceholder={SEARCH_PLACEHOLDER}
+          onClose={onClose}
+          onNavigateTo={handleNavigateTo}
+        />
+      ) : (
+        <>
+          {activePage === RoomSettingsPage.GeneralPage && (
+            <General onClose={handlePageRequestClose} />
+          )}
+          {activePage === RoomSettingsPage.MembersPage && (
+            <Members onClose={handlePageRequestClose} />
+          )}
+          {activePage === RoomSettingsPage.PermissionsPage && (
+            <Permissions onClose={handlePageRequestClose} />
+          )}
+          {activePage === RoomSettingsPage.EmojisStickersPage && (
+            <EmojisStickers onClose={handlePageRequestClose} />
+          )}
+          {activePage === RoomSettingsPage.EncryptionPage && (
+            <Encryption onClose={handlePageRequestClose} />
+          )}
+          {activePage === RoomSettingsPage.DeveloperToolsPage && (
+            <DeveloperTools onClose={handlePageRequestClose} />
+          )}
+        </>
       )}
     </PageRoot>
   );

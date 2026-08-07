@@ -2,26 +2,32 @@ import type { MouseEventHandler } from 'react';
 import React, { useState } from 'react';
 import type { RectCords } from 'folds';
 import {
+  Badge,
   Box,
   Button,
+  color,
   config,
   Icon,
   Icons,
   Menu,
   MenuItem,
   PopOut,
+  ProgressBar,
   Scroll,
   Switch,
   Text,
+  toRem,
 } from 'folds';
 import FocusTrap from 'focus-trap-react';
+import { Range } from 'react-range';
 import { Page, PageContent } from '../../../components/page';
 import { SequenceCard } from '../../../components/sequence-card';
-import { SequenceCardStyle } from '../styles.css';
+import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { SettingTile } from '../../../components/setting-tile';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
 import { useMediaDevices } from '../../../hooks/useMediaDevices';
+import { useMicrophoneInputLevel } from '../../../hooks/call/useMicrophoneInputLevel';
 import { requestMediaPermission } from '../../../plugins/call/localMedia';
 import { SettingsPageHeader } from '../components';
 import { stopPropagation } from '../../../utils/keyboard';
@@ -139,6 +145,78 @@ export function MicrophoneDeviceSetting() {
   );
 }
 
+export function MicrophoneInputFloorSetting() {
+  const [preferredAudioInputDeviceId] = useSetting(settingsAtom, 'preferredAudioInputDeviceId');
+  const [microphoneInputFloorLevel, setMicrophoneInputFloorLevel] = useSetting(
+    settingsAtom,
+    'microphoneInputFloorLevel'
+  );
+  const { inputLevel, isMicrophoneAvailable } = useMicrophoneInputLevel(
+    preferredAudioInputDeviceId
+  );
+  const isInputAboveFloor = inputLevel > 0 && inputLevel >= microphoneInputFloorLevel;
+
+  return (
+    <SettingTile
+      title="Input Floor"
+      description={
+        isMicrophoneAvailable
+          ? 'Audio quieter than the cutoff is not sent to the call. The bar shows your current input volume.'
+          : 'Allow microphone access to preview your input volume.'
+      }
+    >
+      <Box direction="Column" gap="200" style={{ paddingTop: config.space.S200 }}>
+        <Range
+          step={0.01}
+          min={0}
+          max={1}
+          values={[microphoneInputFloorLevel]}
+          onChange={(values) => setMicrophoneInputFloorLevel(values[0])}
+          renderTrack={(params) => (
+            <div
+              {...params.props}
+              style={{
+                ...params.props.style,
+                width: '100%',
+                height: toRem(16),
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+              {params.children}
+              <ProgressBar
+                style={{ width: '100%', backgroundColor: color.SurfaceVariant.ContainerActive }}
+                variant={isInputAboveFloor ? 'Success' : 'Secondary'}
+                size="400"
+                min={0}
+                max={1}
+                value={inputLevel}
+                radii="300"
+              />
+            </div>
+          )}
+          renderThumb={(params) => (
+            <Badge
+              size="400"
+              variant="Secondary"
+              fill="Solid"
+              radii="Pill"
+              outlined
+              {...params.props}
+              style={{ ...params.props.style, zIndex: 0 }}
+            />
+          )}
+        />
+        <Text size="T200" priority="300">
+          {microphoneInputFloorLevel === 0
+            ? 'Cutoff: Off'
+            : `Cutoff: ${Math.round(microphoneInputFloorLevel * 100)}%`}
+        </Text>
+      </Box>
+    </SettingTile>
+  );
+}
+
 export function CameraDeviceSetting() {
   const { videoInputDevices } = useMediaDevices();
   const [preferredVideoInputDeviceId, setPreferredVideoInputDeviceId] = useSetting(
@@ -201,7 +279,7 @@ export function PreJoinScreenSetting() {
   );
 }
 
-function DeviceAccessCard() {
+export function DeviceAccessCard() {
   const { audioInputDevices, videoInputDevices, audioOutputDevices, refreshDevices } =
     useMediaDevices();
   const hasDeviceLabels = [...audioInputDevices, ...videoInputDevices, ...audioOutputDevices].some(
@@ -217,7 +295,7 @@ function DeviceAccessCard() {
 
   return (
     <SequenceCard
-      className={SequenceCardStyle}
+      className={SettingsCardStyle}
       variant="SurfaceVariant"
       direction="Column"
       gap="400"
@@ -258,15 +336,16 @@ export function VoiceVideo({ onBack, onClose }: VoiceVideoProps) {
                 <Text size="L400">Devices</Text>
                 <DeviceAccessCard />
                 <SequenceCard
-                  className={SequenceCardStyle}
+                  className={SettingsCardStyle}
                   variant="SurfaceVariant"
                   direction="Column"
                   gap="400"
                 >
                   <MicrophoneDeviceSetting />
+                  <MicrophoneInputFloorSetting />
                 </SequenceCard>
                 <SequenceCard
-                  className={SequenceCardStyle}
+                  className={SettingsCardStyle}
                   variant="SurfaceVariant"
                   direction="Column"
                   gap="400"
@@ -274,7 +353,7 @@ export function VoiceVideo({ onBack, onClose }: VoiceVideoProps) {
                   <CameraDeviceSetting />
                 </SequenceCard>
                 <SequenceCard
-                  className={SequenceCardStyle}
+                  className={SettingsCardStyle}
                   variant="SurfaceVariant"
                   direction="Column"
                   gap="400"
@@ -285,7 +364,7 @@ export function VoiceVideo({ onBack, onClose }: VoiceVideoProps) {
               <Box direction="Column" gap="100">
                 <Text size="L400">Calls</Text>
                 <SequenceCard
-                  className={SequenceCardStyle}
+                  className={SettingsCardStyle}
                   variant="SurfaceVariant"
                   direction="Column"
                   gap="400"

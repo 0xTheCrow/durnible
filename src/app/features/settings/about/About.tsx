@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, Text, Scroll, Button, config, toRem } from 'folds';
 import { Page, PageContent } from '../../../components/page';
 import { SequenceCard } from '../../../components/sequence-card';
-import { SequenceCardStyle } from '../styles.css';
+import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { SettingTile } from '../../../components/setting-tile';
 import CinnySVG from '../../../../../public/res/svg/cinny.svg';
 import { clearCacheAndReload } from '../../../../client/initMatrix';
@@ -44,7 +44,7 @@ export function About({ onBack, onClose }: AboutProps) {
               <Box direction="Column" gap="100">
                 <Text size="L400">Options</Text>
                 <SequenceCard
-                  className={SequenceCardStyle}
+                  className={SettingsCardStyle}
                   variant="SurfaceVariant"
                   direction="Column"
                   gap="400"
@@ -70,7 +70,7 @@ export function About({ onBack, onClose }: AboutProps) {
               <Box direction="Column" gap="100">
                 <Text size="L400">Credits</Text>
                 <SequenceCard
-                  className={SequenceCardStyle}
+                  className={SettingsCardStyle}
                   variant="SurfaceVariant"
                   direction="Column"
                   gap="400"

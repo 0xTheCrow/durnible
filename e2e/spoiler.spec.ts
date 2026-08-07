@@ -1,6 +1,8 @@
 import { test, expect, type Page } from '@playwright/test';
 import {
+  RICH_TEXT_EDITOR_SETTINGS,
   seedSession,
+  seedSettings,
   stubHomeserver,
   TEST_ROOM_ID,
   type HomeserverStub,
@@ -11,9 +13,7 @@ const roomPath = `/home/${encodeURIComponent(TEST_ROOM_ID)}/`;
 let homeserver: HomeserverStub;
 
 test.beforeEach(async ({ context, page }) => {
-  await page.addInitScript(() => {
-    localStorage.setItem('settings', JSON.stringify({ editorToolbar: true }));
-  });
+  await seedSettings(page, RICH_TEXT_EDITOR_SETTINGS);
   await seedSession(context);
   homeserver = await stubHomeserver(page);
 });

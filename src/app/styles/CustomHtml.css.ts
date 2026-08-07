@@ -1,4 +1,4 @@
-import { style } from '@vanilla-extract/css';
+import { globalStyle, style } from '@vanilla-extract/css';
 import { recipe } from '@vanilla-extract/recipes';
 import { color, config, DefaultReset, toRem } from 'folds';
 import { ContainerColor } from './ContainerColor.css';
@@ -82,6 +82,10 @@ export const Spoiler = recipe({
       },
     },
   },
+});
+
+globalStyle(`${Spoiler.classNames.base}[aria-pressed=true] > *`, {
+  opacity: 0,
 });
 
 export const CodeBlock = style([

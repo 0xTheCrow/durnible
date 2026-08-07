@@ -29,7 +29,7 @@ import { mDirectAtom } from '../../state/mDirectList';
 import { roomToParentsAtom } from '../../state/room/roomToParents';
 import { useAllJoinedRoomsSet, useGetRoom } from '../../hooks/useGetRoom';
 import { VirtualTile } from '../../components/virtualizer';
-import { getDirectRoomAvatarUrl, getRoomAvatarUrl } from '../../utils/room';
+import { getDirectRoomAvatarUrl, getRoomAvatarUrl, isCallRoom } from '../../utils/room';
 import { RoomAvatar, RoomIcon } from '../../components/room-avatar';
 import { nameInitials } from '../../utils/common';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
@@ -268,7 +268,11 @@ export function AddExistingModal({ parentId, space, onClose }: AddExistingModalP
                                   )}
                                 />
                               ) : (
-                                <RoomIcon size="200" joinRule={room.getJoinRule()} />
+                                <RoomIcon
+                                  size="200"
+                                  joinRule={room.getJoinRule()}
+                                  call={isCallRoom(room)}
+                                />
                               )}
                             </Avatar>
                           }

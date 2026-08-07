@@ -4,7 +4,7 @@ import type { MatrixError } from 'matrix-js-sdk';
 import { JoinRule } from 'matrix-js-sdk';
 import type { RoomJoinRulesEventContent } from 'matrix-js-sdk/lib/types';
 import { SequenceCard } from '../../../components/sequence-card';
-import { SequenceCardStyle } from '../../room-settings/styles.css';
+import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { SettingTile } from '../../../components/setting-tile';
 import { useRoom } from '../../../hooks/useRoom';
 import { useRoomDirectoryVisibility } from '../../../hooks/useRoomDirectoryVisibility';
@@ -41,7 +41,7 @@ export function RoomPublish({ permissions }: RoomPublishProps) {
 
   return (
     <SequenceCard
-      className={SequenceCardStyle}
+      className={SettingsCardStyle}
       variant="SurfaceVariant"
       direction="Column"
       gap="400"

@@ -7,8 +7,7 @@ import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { StateEvent } from '../../../../types/matrix/room';
 import { usePermissionGroups } from './usePermissionItems';
 import { PermissionGroups, Powers, PowersEditor } from '../../common-settings/permissions';
-import { useRoomCreators } from '../../../hooks/useRoomCreators';
-import { useRoomPermissions } from '../../../hooks/useRoomPermissions';
+import { useRoomSettingsPermissions } from '../../common-settings/useRoomSettingsPermissions';
 
 type PermissionsProps = {
   onClose: () => void;
@@ -17,9 +16,8 @@ export function Permissions({ onClose }: PermissionsProps) {
   const mx = useMatrixClient();
   const room = useRoom();
   const powerLevels = usePowerLevels(room);
-  const creators = useRoomCreators(room);
 
-  const permissions = useRoomPermissions(creators, powerLevels);
+  const permissions = useRoomSettingsPermissions();
 
   const canEditPowers = permissions.stateEvent(StateEvent.PowerLevelTags, mx.getSafeUserId());
   const canEditPermissions = permissions.stateEvent(StateEvent.RoomPowerLevels, mx.getSafeUserId());

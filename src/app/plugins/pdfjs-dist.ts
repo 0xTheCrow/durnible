@@ -1,8 +1,8 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import type * as PdfJsDist from 'pdfjs-dist';
 import type { GetViewportParameters } from 'pdfjs-dist/types/src/display/api';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
-import { useAsyncCallback } from '../hooks/useAsyncCallback';
+import { AsyncStatus, useAsyncCallback } from '../hooks/useAsyncCallback';
 
 export const usePdfJSLoader = () =>
   useAsyncCallback(
@@ -13,8 +13,8 @@ export const usePdfJSLoader = () =>
     }, [])
   );
 
-export const usePdfDocumentLoader = (pdfJS: typeof PdfJsDist | undefined, src: string) =>
-  useAsyncCallback(
+export const usePdfDocumentLoader = (pdfJS: typeof PdfJsDist | undefined, src: string) => {
+  const loader = useAsyncCallback(
     useCallback(async () => {
       if (!pdfJS) {
         throw new Error('PdfJS is not loaded');
@@ -24,25 +24,41 @@ export const usePdfDocumentLoader = (pdfJS: typeof PdfJsDist | undefined, src: s
     }, [pdfJS, src])
   );
 
+  const [docState] = loader;
+  const doc = docState.status === AsyncStatus.Success ? docState.data : undefined;
+  useEffect(() => {
+    if (!doc) return undefined;
+    return () => {
+      doc.destroy();
+    };
+  }, [doc]);
+
+  return loader;
+};
+
 export const createPage = async (
   doc: PdfJsDist.PDFDocumentProxy,
-  pNo: number,
-  opts: GetViewportParameters
+  pageNumber: number,
+  viewportParams: GetViewportParameters
 ): Promise<HTMLCanvasElement> => {
-  const page = await doc.getPage(pNo);
-  const pageViewport = page.getViewport(opts);
+  const page = await doc.getPage(pageNumber);
+  const pageViewport = page.getViewport(viewportParams);
   const canvas = document.createElement('canvas');
   const context = canvas.getContext('2d');
 
   if (!context) throw new Error('failed to render page.');
 
-  canvas.width = pageViewport.width;
-  canvas.height = pageViewport.height;
+  const pixelRatio = window.devicePixelRatio || 1;
+  canvas.width = Math.floor(pageViewport.width * pixelRatio);
+  canvas.height = Math.floor(pageViewport.height * pixelRatio);
+  canvas.style.width = `${Math.floor(pageViewport.width)}px`;
+  canvas.style.height = `${Math.floor(pageViewport.height)}px`;
 
-  page.render({
+  await page.render({
     canvasContext: context,
     viewport: pageViewport,
-  });
+    transform: pixelRatio === 1 ? undefined : [pixelRatio, 0, 0, pixelRatio, 0, 0],
+  }).promise;
 
   return canvas;
 };

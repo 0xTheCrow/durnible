@@ -2,7 +2,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import FileSaver from 'file-saver';
 import classNames from 'classnames';
-import { Box, Header, Icon, Icons, Spinner, Text, as } from 'folds';
+import { Box, Icon, Icons, Spinner, Text, as } from 'folds';
 import * as css from './ImageViewer.css';
 import { useZoom } from '../../hooks/useZoom';
 import { usePan } from '../../hooks/usePan';
@@ -11,6 +11,7 @@ import { useTouchGesture } from '../../hooks/useTouchGesture';
 import { downloadMedia } from '../../utils/matrix';
 import { clampPanWithinBounds, clampZoom, panToKeepPointFixed } from '../../utils/zoom';
 import type { ImageViewerGalleryItem } from '../../state/imageViewer';
+import { MediaFrame, MediaFrameZoomControls } from '../media';
 
 export const IMAGE_VIEWER_ZOOM_STEP = 0.2;
 
@@ -199,75 +200,39 @@ export const ImageViewer = as<'div', ImageViewerProps>(
     const inGallery = !!gallery && gallery.items.length > 1;
 
     return (
-      <Box
-        className={classNames(
-          css.ImageViewer,
-          zoom > 1 && css.ImageViewerExpanded,
-          inGallery && css.ImageViewerGalleryMode,
-          className
-        )}
-        direction="Column"
+      <MediaFrame
+        expanded={zoom > 1}
+        name={alt}
+        onClose={onClose}
+        closeButtonTestId="image-viewer-close-btn"
+        nameTestId="image-viewer-alt"
+        className={classNames(inGallery && css.ImageViewerGalleryMode, className)}
+        headerAfter={
+          <>
+            <MediaFrameZoomControls
+              zoom={zoom}
+              zoomIn={zoomIn}
+              zoomOut={zoomOut}
+              setZoom={setZoom}
+              testIdPrefix="image-viewer"
+            />
+            <button
+              type="button"
+              data-testid="image-viewer-download-btn"
+              className={css.ImageViewerDownloadButton}
+              onClick={handleDownload}
+              aria-label="Download"
+            >
+              <Icon size="100" src={Icons.Download} />
+              <Text size="B300" as="span">
+                Download
+              </Text>
+            </button>
+          </>
+        }
         {...props}
         ref={ref}
       >
-        <Header className={css.ImageViewerHeader} size="500">
-          <button
-            type="button"
-            data-testid="image-viewer-close-btn"
-            className={css.ImageViewerCloseButton}
-            onClick={onClose}
-            aria-label="Close"
-          >
-            <Icon size="200" src={Icons.ArrowLeft} />
-          </button>
-          <Box grow="Yes" alignItems="Center" gap="300">
-            <Text size="T400" truncate data-testid="image-viewer-alt">
-              {alt}
-            </Text>
-          </Box>
-          <div className={css.ImageViewerZoomGroup}>
-            <button
-              type="button"
-              data-testid="image-viewer-zoom-out"
-              className={css.ImageViewerZoomButton}
-              onClick={zoomOut}
-              aria-label="Zoom Out"
-            >
-              <Icon size="100" src={Icons.Minus} />
-            </button>
-            <button
-              type="button"
-              data-testid="image-viewer-zoom-chip"
-              className={css.ImageViewerZoomChip}
-              onClick={() => setZoom(zoom === 1 ? 2 : 1)}
-            >
-              <Text size="B300" data-testid="image-viewer-zoom-label">
-                {Math.round(zoom * 100)}%
-              </Text>
-            </button>
-            <button
-              type="button"
-              data-testid="image-viewer-zoom-in"
-              className={css.ImageViewerZoomButton}
-              onClick={zoomIn}
-              aria-label="Zoom In"
-            >
-              <Icon size="100" src={Icons.Plus} />
-            </button>
-          </div>
-          <button
-            type="button"
-            data-testid="image-viewer-download-btn"
-            className={css.ImageViewerDownloadButton}
-            onClick={handleDownload}
-            aria-label="Download"
-          >
-            <Icon size="100" src={Icons.Download} />
-            <Text size="B300" as="span">
-              Download
-            </Text>
-          </button>
-        </Header>
         {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
         <Box
           ref={contentRef}
@@ -334,7 +299,7 @@ export const ImageViewer = as<'div', ImageViewerProps>(
             </div>
           )}
         </Box>
-      </Box>
+      </MediaFrame>
     );
   }
 );

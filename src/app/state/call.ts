@@ -10,4 +10,12 @@ export type CallState =
 
 export const callStateAtom = atom<CallState>({ status: 'idle' });
 
+export const activeCallRoomIdAtom = atom<string | undefined>((get) => {
+  const callState = get(callStateAtom);
+  if (callState.status === 'idle' || callState.status === 'failed') return undefined;
+  return callState.roomId;
+});
+
 export const isCallPaneCollapsedAtom = atom(false);
+
+export const isCallDeafenedAtom = atom(false);

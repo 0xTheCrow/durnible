@@ -1,9 +1,16 @@
 import { test, expect } from '@playwright/test';
-import { seedSession, stubHomeserver, TEST_ROOM_ID } from './fixtures/homeserver';
+import {
+  RICH_TEXT_EDITOR_SETTINGS,
+  seedSession,
+  seedSettings,
+  stubHomeserver,
+  TEST_ROOM_ID,
+} from './fixtures/homeserver';
 
 const roomPath = `/home/${encodeURIComponent(TEST_ROOM_ID)}/`;
 
 test.beforeEach(async ({ context, page }) => {
+  await seedSettings(page, { ...RICH_TEXT_EDITOR_SETTINGS, editorToolbar: false });
   await seedSession(context);
   await stubHomeserver(page);
 });

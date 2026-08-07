@@ -22,7 +22,8 @@ import {
   mxcUrlToHttp,
 } from '../../../utils/matrix';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
-import { ModalWide } from '../../../styles/Modal.css';
+import { useRevokeObjectURL } from '../../../hooks/useObjectURL';
+import { ModalWide, PdfViewerModal } from '../../../styles/Modal.css';
 
 const renderErrorButton = (retry: () => void, text: string) => (
   <TooltipProvider
@@ -141,6 +142,7 @@ type RenderPdfViewerProps = {
   name: string;
   src: string;
   onClose: () => void;
+  onDownload: () => void;
 };
 export type ReadPdfFileProps = {
   body: string;
@@ -172,16 +174,22 @@ export function ReadPdfFile({
       return URL.createObjectURL(fileContent);
     }, [mx, url, useAuthentication, mimeType, encryptionInfo])
   );
+  useRevokeObjectURL(pdfState.status === AsyncStatus.Success ? pdfState.data : undefined);
 
   return (
     <>
       {pdfState.status === AsyncStatus.Success && (
         <OverlayModal open={pdfViewer} onClose={() => setPdfViewer(false)}>
-          <Modal className={ModalWide} size="500" onContextMenu={(evt) => evt.stopPropagation()}>
+          <Modal
+            className={PdfViewerModal}
+            size="500"
+            onContextMenu={(evt) => evt.stopPropagation()}
+          >
             {renderViewer({
               name: body,
               src: pdfState.data,
               onClose: () => setPdfViewer(false),
+              onDownload: () => FileSaver.saveAs(pdfState.data, body),
             })}
           </Modal>
         </OverlayModal>
@@ -238,6 +246,7 @@ export function DownloadFile({ body, mimeType, url, info, encryptionInfo }: Down
       return fileURL;
     }, [mx, url, useAuthentication, mimeType, encryptionInfo, body])
   );
+  useRevokeObjectURL(downloadState.status === AsyncStatus.Success ? downloadState.data : undefined);
 
   return downloadState.status === AsyncStatus.Error ? (
     renderErrorButton(download, `Retry Download (${bytesToSize(info.size ?? 0)})`)

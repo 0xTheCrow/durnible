@@ -2,7 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { Box, Button, config, Menu, Spinner, Text } from 'folds';
 import type { AuthDict, IMyDevice, MatrixError } from 'matrix-js-sdk';
 import { SequenceCard } from '../../../components/sequence-card';
-import { SequenceCardStyle } from '../styles.css';
+import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { ActionUIA, ActionUIAFlowsLoader } from '../../../components/ActionUIA';
 import { DeviceDeleteBtn, DeviceTile } from './DeviceTile';
 import type { AsyncState } from '../../../hooks/useAsyncCallback';
@@ -108,7 +108,7 @@ export function OtherDevices({ devices, refreshDeviceList, showVerification }: O
         <Text size="L400">Others</Text>
         {authMetadata && (
           <SequenceCard
-            className={SequenceCardStyle}
+            className={SettingsCardStyle}
             variant="SurfaceVariant"
             direction="Column"
             gap="400"
@@ -139,7 +139,7 @@ export function OtherDevices({ devices, refreshDeviceList, showVerification }: O
           .map((device) => (
             <SequenceCard
               key={device.device_id}
-              className={SequenceCardStyle}
+              className={SettingsCardStyle}
               variant={deleted.has(device.device_id) ? 'Critical' : 'SurfaceVariant'}
               direction="Column"
               gap="400"
