@@ -2,7 +2,7 @@ import type { ChangeEventHandler, FormEventHandler } from 'react';
 import React, { useCallback, useState } from 'react';
 import { Box, Button, Chip, Icon, IconButton, Icons, Input, Spinner, Text, config } from 'folds';
 import { SequenceCard } from '../../../components/sequence-card';
-import { SequenceCardStyle } from '../styles.css';
+import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { SettingTile } from '../../../components/setting-tile';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
@@ -138,7 +138,7 @@ export function IgnoredUserList() {
         <Text size="L400">Blocked Users</Text>
       </Box>
       <SequenceCard
-        className={SequenceCardStyle}
+        className={SettingsCardStyle}
         variant="SurfaceVariant"
         direction="Column"
         gap="400"

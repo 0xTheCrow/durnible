@@ -16,7 +16,7 @@ import React, { useCallback, useState } from 'react';
 import type { MatrixError } from 'matrix-js-sdk';
 import { EventType } from 'matrix-js-sdk';
 import { SequenceCard } from '../../../components/sequence-card';
-import { SequenceCardStyle } from '../../room-settings/styles.css';
+import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { SettingTile } from '../../../components/setting-tile';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { StateEvent } from '../../../../types/matrix/room';
@@ -60,7 +60,7 @@ export function RoomEncryption({ permissions }: RoomEncryptionProps) {
 
   return (
     <SequenceCard
-      className={SequenceCardStyle}
+      className={SettingsCardStyle}
       variant="SurfaceVariant"
       direction="Column"
       gap="400"

@@ -6,7 +6,7 @@ import { AllMessagesNotifications } from './AllMessages';
 import { SpecialMessagesNotifications } from './SpecialMessages';
 import { KeywordMessagesNotifications } from './KeywordMessages';
 import { SequenceCard } from '../../../components/sequence-card';
-import { SequenceCardStyle } from '../styles.css';
+import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { SettingTile } from '../../../components/setting-tile';
 import { SettingsPageHeader } from '../components';
 
@@ -29,7 +29,7 @@ export function Notifications({ onBack, onClose }: NotificationsProps) {
               <Box direction="Column" gap="100">
                 <Text size="L400">Block Messages</Text>
                 <SequenceCard
-                  className={SequenceCardStyle}
+                  className={SettingsCardStyle}
                   variant="SurfaceVariant"
                   direction="Column"
                   gap="400"

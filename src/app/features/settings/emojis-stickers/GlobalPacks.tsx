@@ -26,7 +26,7 @@ import FocusTrap from 'focus-trap-react';
 import { useAtomValue } from 'jotai';
 import type { Room } from 'matrix-js-sdk';
 import { useGlobalImagePacks, useRoomsImagePacks } from '../../../hooks/useImagePacks';
-import { SequenceCardStyle } from '../styles.css';
+import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SettingTile } from '../../../components/setting-tile';
 import { mxcUrlToHttp } from '../../../utils/matrix';
@@ -174,7 +174,7 @@ function GlobalPackSelector({
                     return (
                       <SequenceCard
                         key={pack.id}
-                        className={SequenceCardStyle}
+                        className={SettingsCardStyle}
                         variant={added ? 'Success' : 'SurfaceVariant'}
                         direction="Column"
                         gap="400"
@@ -212,7 +212,7 @@ function GlobalPackSelector({
 
             {roomToPacks.size === 0 && (
               <SequenceCard
-                className={SequenceCardStyle}
+                className={SettingsCardStyle}
                 variant="SurfaceVariant"
                 direction="Column"
                 gap="400"
@@ -348,7 +348,7 @@ export function GlobalPacks({ onViewPack }: GlobalPacksProps) {
     return (
       <SequenceCard
         key={pack.id}
-        className={SequenceCardStyle}
+        className={SettingsCardStyle}
         variant={removed ? 'Critical' : 'SurfaceVariant'}
         direction="Column"
         gap="400"
@@ -418,7 +418,7 @@ export function GlobalPacks({ onViewPack }: GlobalPacksProps) {
       <Box direction="Column" gap="100">
         <Text size="L400">Favorite Packs</Text>
         <SequenceCard
-          className={SequenceCardStyle}
+          className={SettingsCardStyle}
           variant="SurfaceVariant"
           direction="Column"
           gap="400"

@@ -12,7 +12,7 @@ import {
   useSpaceJoinRuleIcon,
 } from '../../../components/JoinRulesSwitcher';
 import { SequenceCard } from '../../../components/sequence-card';
-import { SequenceCardStyle } from '../../room-settings/styles.css';
+import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { SettingTile } from '../../../components/setting-tile';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { useRoom } from '../../../hooks/useRoom';
@@ -124,7 +124,7 @@ export function RoomJoinRules({ permissions }: RoomJoinRulesProps) {
 
   return (
     <SequenceCard
-      className={SequenceCardStyle}
+      className={SettingsCardStyle}
       variant="SurfaceVariant"
       direction="Column"
       gap="400"

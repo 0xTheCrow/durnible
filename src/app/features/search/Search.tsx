@@ -30,6 +30,7 @@ import {
   getDirectRoomAvatarUrl,
   getRoomAvatarUrl,
   guessPerfectParent,
+  isCallRoom,
 } from '../../utils/room';
 import { highlightText, makeHighlightRegex } from '../../plugins/react-custom-html-parser';
 import { factoryRoomIdByActivity } from '../../utils/sort';
@@ -358,6 +359,7 @@ export function Search({ onClose }: SearchProps) {
                               size="100"
                               joinRule={room.getJoinRule()}
                               space={room.isSpaceRoom()}
+                              call={isCallRoom(room)}
                             />
                           )}
                         </Avatar>

@@ -28,7 +28,7 @@ import { useRoom } from '../../../hooks/useRoom';
 import { useRoomImagePacks } from '../../../hooks/useImagePacks';
 import { LineClamp2 } from '../../../styles/Text.css';
 import { SettingTile } from '../../../components/setting-tile';
-import { SequenceCardStyle } from '../styles.css';
+import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { mxcUrlToHttp } from '../../../utils/matrix';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
@@ -40,8 +40,7 @@ import { StateEvent } from '../../../../types/matrix/room';
 import { suffixRename } from '../../../utils/common';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { useAlive } from '../../../hooks/useAlive';
-import { useRoomCreators } from '../../../hooks/useRoomCreators';
-import { useRoomPermissions } from '../../../hooks/useRoomPermissions';
+import { useRoomSettingsPermissions } from '../useRoomSettingsPermissions';
 
 type PackEditPermissionTileProps = {
   roomId: string;
@@ -84,7 +83,7 @@ function PackEditPermissionTile({ roomId, powerLevels, canEdit }: PackEditPermis
 
   return (
     <SequenceCard
-      className={SequenceCardStyle}
+      className={SettingsCardStyle}
       variant="SurfaceVariant"
       direction="Column"
       gap="400"
@@ -190,7 +189,7 @@ function CreatePackTile({ packs, roomId }: CreatePackTileProps) {
 
   return (
     <SequenceCard
-      className={SequenceCardStyle}
+      className={SettingsCardStyle}
       variant="SurfaceVariant"
       direction="Column"
       gap="400"
@@ -247,9 +246,8 @@ export function RoomPacks({ onViewPack }: RoomPacksProps) {
   const alive = useAlive();
 
   const powerLevels = usePowerLevels(room);
-  const creators = useRoomCreators(room);
 
-  const permissions = useRoomPermissions(creators, powerLevels);
+  const permissions = useRoomSettingsPermissions();
   const canEdit = permissions.stateEvent(StateEvent.PoniesRoomEmotes, mx.getSafeUserId());
   const canEditPowerLevels = permissions.stateEvent(StateEvent.RoomPowerLevels, mx.getSafeUserId());
 
@@ -297,7 +295,7 @@ export function RoomPacks({ onViewPack }: RoomPacksProps) {
     return (
       <SequenceCard
         key={pack.id}
-        className={SequenceCardStyle}
+        className={SettingsCardStyle}
         variant={removed ? 'Critical' : 'SurfaceVariant'}
         direction="Column"
         gap="400"
@@ -381,7 +379,7 @@ export function RoomPacks({ onViewPack }: RoomPacksProps) {
         {packs.map(renderPack)}
         {packs.length === 0 && (
           <SequenceCard
-            className={SequenceCardStyle}
+            className={SettingsCardStyle}
             variant="SurfaceVariant"
             direction="Column"
             gap="400"

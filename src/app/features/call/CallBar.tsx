@@ -1,10 +1,12 @@
 import React from 'react';
 import { useAtomValue, useSetAtom } from 'jotai';
-import { Box, Icon, IconButton, Icons, Spinner, Text } from 'folds';
+import { Box, Icon, Icons, Spinner, Text } from 'folds';
 import { callStateAtom, isCallPaneCollapsedAtom } from '../../state/call';
 import type { CallConnection } from '../../plugins/call/CallConnection';
 import { useCallActions } from './CallProvider';
+import { CallControlButton } from './CallControlButton';
 import { useLocalMediaControls } from '../../hooks/call/useLocalMediaControls';
+import { useCallDeafen } from '../../hooks/call/useCallDeafen';
 import { useRoomNavigate } from '../../hooks/useRoomNavigate';
 import { useRoomName } from '../../hooks/useRoomMeta';
 import * as css from './CallStrip.css';
@@ -18,6 +20,7 @@ function ConnectedCallBar({ connection, isReconnecting }: ConnectedCallBarProps)
   const { navigateRoom } = useRoomNavigate();
   const setIsCallPaneCollapsed = useSetAtom(isCallPaneCollapsedAtom);
   const { isMicrophoneEnabled, toggleMicrophone } = useLocalMediaControls(connection.livekitRoom);
+  const { isDeafened, toggleDeafen } = useCallDeafen(connection.livekitRoom);
   const roomName = useRoomName(connection.matrixRoom);
 
   return (
@@ -42,32 +45,39 @@ function ConnectedCallBar({ connection, isReconnecting }: ConnectedCallBarProps)
           {isReconnecting ? 'Reconnecting…' : 'Voice call'}
         </Text>
       </Box>
-      <IconButton
+      <CallControlButton
         size="300"
         radii="300"
         onClick={() => setIsCallPaneCollapsed(false)}
-        aria-label="Expand Call"
-      >
-        <Icon size="100" src={Icons.ChevronRight} />
-      </IconButton>
-      <IconButton
+        label="Expand Call"
+        icon={Icons.ChevronRight}
+      />
+      <CallControlButton
         size="300"
         radii="300"
         onClick={() => toggleMicrophone()}
-        aria-label={isMicrophoneEnabled ? 'Mute Microphone' : 'Unmute Microphone'}
+        label={isMicrophoneEnabled ? 'Mute Microphone' : 'Unmute Microphone'}
+        icon={isMicrophoneEnabled ? Icons.Mic : Icons.MicMute}
         aria-pressed={!isMicrophoneEnabled}
-      >
-        <Icon size="100" src={isMicrophoneEnabled ? Icons.Mic : Icons.MicMute} />
-      </IconButton>
-      <IconButton
+      />
+      <CallControlButton
+        size="300"
+        radii="300"
+        onClick={() => toggleDeafen()}
+        label={isDeafened ? 'Undeafen' : 'Deafen'}
+        icon={Icons.Headphone}
+        isIconFilled={isDeafened}
+        aria-pressed={isDeafened}
+      />
+      <CallControlButton
         size="300"
         radii="300"
         variant="Critical"
         onClick={() => endCall()}
-        aria-label="Leave Call"
-      >
-        <Icon size="100" src={Icons.Phone} filled />
-      </IconButton>
+        label="Leave Call"
+        icon={Icons.Phone}
+        isIconFilled
+      />
     </Box>
   );
 }

@@ -5,7 +5,7 @@ import FocusTrap from 'focus-trap-react';
 import type { RectCords } from 'folds';
 import { Box, Button, Chip, Text, PopOut, Menu, Scroll, toRem, config, color } from 'folds';
 import { SequenceCard } from '../../../components/sequence-card';
-import { SequenceCardStyle } from '../styles.css';
+import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { getPowers, usePowerLevelTags } from '../../../hooks/usePowerLevelTags';
 import { SettingTile } from '../../../components/setting-tile';
 import type { PowerLevels } from '../../../hooks/usePowerLevels';
@@ -113,7 +113,7 @@ export function Powers({ powerLevels, permissionGroups, onEdit }: PowersProps) {
       {creators.size > 0 && (
         <SequenceCard
           variant="SurfaceVariant"
-          className={SequenceCardStyle}
+          className={SettingsCardStyle}
           direction="Column"
           gap="400"
         >
@@ -141,7 +141,7 @@ export function Powers({ powerLevels, permissionGroups, onEdit }: PowersProps) {
       )}
       <SequenceCard
         variant="SurfaceVariant"
-        className={SequenceCardStyle}
+        className={SettingsCardStyle}
         direction="Column"
         gap="400"
       >

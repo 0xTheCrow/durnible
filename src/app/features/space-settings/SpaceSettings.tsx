@@ -18,6 +18,24 @@ import { Members } from '../common-settings/members';
 import { DeveloperTools } from '../common-settings/developer-tools';
 import { General } from './general';
 import { Permissions } from './permissions';
+import { usePermissionGroups } from './permissions/usePermissionItems';
+import type { RoomSettingsSearchPages } from '../common-settings/search';
+import { useRoomSettingsSearchEntries } from '../common-settings/search';
+import {
+  SettingsSearchInput,
+  SettingsSearchResults,
+  useSettingsSearch,
+} from '../../components/settings-search';
+
+const SEARCH_PLACEHOLDER = 'Search space settings...';
+
+const SEARCH_PAGES: RoomSettingsSearchPages<SpaceSettingsPage> = {
+  general: SpaceSettingsPage.GeneralPage,
+  members: SpaceSettingsPage.MembersPage,
+  permissions: SpaceSettingsPage.PermissionsPage,
+  emojisStickers: SpaceSettingsPage.EmojisStickersPage,
+  developerTools: SpaceSettingsPage.DeveloperToolsPage,
+};
 
 type SpaceSettingsMenuItem = {
   page: SpaceSettingsPage;
@@ -75,25 +93,34 @@ export function SpaceSettings({ initialPage, onClose }: SpaceSettingsProps) {
     ? mxcUrlToHttp(mx, roomAvatar, useAuthentication, 96, 96, 'crop') ?? undefined
     : undefined;
 
-  const screenSize = useScreenSizeContext();
+  const isMobile = useScreenSizeContext() === ScreenSize.Mobile;
   const [activePage, setActivePage] = useState<SpaceSettingsPage | undefined>(() => {
     if (initialPage) return initialPage;
-    return screenSize === ScreenSize.Mobile ? undefined : SpaceSettingsPage.GeneralPage;
+    return isMobile ? undefined : SpaceSettingsPage.GeneralPage;
   });
   const menuItems = useSpaceSettingsMenuItems();
 
+  const search = useSettingsSearch();
+  const permissionGroups = usePermissionGroups();
+  const searchEntries = useRoomSettingsSearchEntries(SEARCH_PAGES, permissionGroups);
+
   const handlePageRequestClose = () => {
-    if (screenSize === ScreenSize.Mobile) {
+    if (isMobile) {
       setActivePage(undefined);
       return;
     }
     onClose();
   };
 
+  const handleNavigateTo = (page: SpaceSettingsPage) => {
+    setActivePage(page);
+    search.clearSearch();
+  };
+
   return (
     <PageRoot
       nav={
-        screenSize === ScreenSize.Mobile && activePage !== undefined ? undefined : (
+        isMobile && (activePage !== undefined || search.isSearching) ? undefined : (
           <PageNav size="300">
             <PageNavHeader outlined={false}>
               <Box grow="Yes" gap="200">
@@ -117,7 +144,7 @@ export function SpaceSettings({ initialPage, onClose }: SpaceSettingsProps) {
                 </Text>
               </Box>
               <Box shrink="No">
-                {screenSize === ScreenSize.Mobile && (
+                {isMobile && (
                   <IconButton onClick={onClose} variant="Background">
                     <Icon src={Icons.Cross} />
                   </IconButton>
@@ -125,28 +152,38 @@ export function SpaceSettings({ initialPage, onClose }: SpaceSettingsProps) {
               </Box>
             </PageNavHeader>
             <Box grow="Yes" direction="Column">
+              <Box
+                style={{ padding: `0 ${config.space.S200} ${config.space.S200}` }}
+                shrink="No"
+                direction="Column"
+              >
+                <SettingsSearchInput search={search} placeholder={SEARCH_PLACEHOLDER} />
+              </Box>
               <PageNavContent>
                 <div style={{ flexGrow: 1 }}>
-                  {menuItems.map((item) => (
-                    <MenuItem
-                      key={item.name}
-                      variant="Background"
-                      radii="400"
-                      aria-pressed={activePage === item.page}
-                      before={<Icon src={item.icon} size="100" filled={activePage === item.page} />}
-                      onClick={() => setActivePage(item.page)}
-                    >
-                      <Text
-                        style={{
-                          fontWeight: activePage === item.page ? config.fontWeight.W600 : undefined,
-                        }}
-                        size="T300"
-                        truncate
+                  {menuItems.map((item) => {
+                    const isActive = !search.isSearching && activePage === item.page;
+                    return (
+                      <MenuItem
+                        key={item.name}
+                        variant="Background"
+                        radii="400"
+                        aria-pressed={isActive}
+                        before={<Icon src={item.icon} size="100" filled={isActive} />}
+                        onClick={() => handleNavigateTo(item.page)}
                       >
-                        {item.name}
-                      </Text>
-                    </MenuItem>
-                  ))}
+                        <Text
+                          style={{
+                            fontWeight: isActive ? config.fontWeight.W600 : undefined,
+                          }}
+                          size="T300"
+                          truncate
+                        >
+                          {item.name}
+                        </Text>
+                      </MenuItem>
+                    );
+                  })}
                 </div>
               </PageNavContent>
             </Box>
@@ -154,16 +191,32 @@ export function SpaceSettings({ initialPage, onClose }: SpaceSettingsProps) {
         )
       }
     >
-      {activePage === SpaceSettingsPage.GeneralPage && <General onClose={handlePageRequestClose} />}
-      {activePage === SpaceSettingsPage.MembersPage && <Members onClose={handlePageRequestClose} />}
-      {activePage === SpaceSettingsPage.PermissionsPage && (
-        <Permissions onClose={handlePageRequestClose} />
-      )}
-      {activePage === SpaceSettingsPage.EmojisStickersPage && (
-        <EmojisStickers onClose={handlePageRequestClose} />
-      )}
-      {activePage === SpaceSettingsPage.DeveloperToolsPage && (
-        <DeveloperTools onClose={handlePageRequestClose} />
+      {search.isSearching ? (
+        <SettingsSearchResults
+          search={search}
+          entries={searchEntries}
+          searchPlaceholder={SEARCH_PLACEHOLDER}
+          onClose={onClose}
+          onNavigateTo={handleNavigateTo}
+        />
+      ) : (
+        <>
+          {activePage === SpaceSettingsPage.GeneralPage && (
+            <General onClose={handlePageRequestClose} />
+          )}
+          {activePage === SpaceSettingsPage.MembersPage && (
+            <Members onClose={handlePageRequestClose} />
+          )}
+          {activePage === SpaceSettingsPage.PermissionsPage && (
+            <Permissions onClose={handlePageRequestClose} />
+          )}
+          {activePage === SpaceSettingsPage.EmojisStickersPage && (
+            <EmojisStickers onClose={handlePageRequestClose} />
+          )}
+          {activePage === SpaceSettingsPage.DeveloperToolsPage && (
+            <DeveloperTools onClose={handlePageRequestClose} />
+          )}
+        </>
       )}
     </PageRoot>
   );

@@ -5,7 +5,7 @@ import type { MatrixClient } from 'matrix-js-sdk';
 import { JoinRule } from 'matrix-js-sdk';
 import { useAtomValue } from 'jotai';
 
-import { getDirectRoomAvatarUrl } from '../../../utils/room';
+import { getDirectRoomAvatarUrl, isCallRoom } from '../../../utils/room';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import type { AutocompleteQuery } from './autocompleteQuery';
 import { AutocompleteMenu } from './AutocompleteMenu';
@@ -163,7 +163,12 @@ export function RoomMentionAutocomplete({
                       )}
                     />
                   ) : (
-                    <RoomIcon size="100" joinRule={room.getJoinRule()} space={room.isSpaceRoom()} />
+                    <RoomIcon
+                      size="100"
+                      joinRule={room.getJoinRule()}
+                      space={room.isSpaceRoom()}
+                      call={isCallRoom(room)}
+                    />
                   )}
                 </Avatar>
               }

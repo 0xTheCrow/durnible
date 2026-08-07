@@ -11,6 +11,8 @@ export enum MessageLayout {
 
 export type TimelineSliderRange = 'day' | 'week' | 'month' | '3months' | '6months' | 'year' | 'all';
 
+export type CallPaneDock = 'Left' | 'Right' | 'Top' | 'Bottom';
+
 export interface Settings {
   themeId?: string;
   useSystemTheme: boolean;
@@ -68,7 +70,11 @@ export interface Settings {
   preferredAudioInputDeviceId?: string;
   preferredVideoInputDeviceId?: string;
   preferredAudioOutputDeviceId?: string;
+  microphoneInputFloorLevel: number;
   showCallPreJoinScreen: boolean;
+  callPaneDock: CallPaneDock;
+  callPaneWidth: number;
+  callPaneHeight: number;
 }
 
 const defaultSettings: Settings = {
@@ -128,7 +134,11 @@ const defaultSettings: Settings = {
   preferredAudioInputDeviceId: undefined,
   preferredVideoInputDeviceId: undefined,
   preferredAudioOutputDeviceId: undefined,
+  microphoneInputFloorLevel: 0,
   showCallPreJoinScreen: false,
+  callPaneDock: 'Top',
+  callPaneWidth: 360,
+  callPaneHeight: 420,
 };
 
 export const getSettings = () => {

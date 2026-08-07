@@ -6,7 +6,7 @@ import { Box, Text, Badge, Button, Input, config, IconButton, Icons, Icon, Spinn
 import { useAccountData } from '../../../hooks/useAccountData';
 import { AccountDataEvent } from '../../../../types/matrix/accountData';
 import { SequenceCard } from '../../../components/sequence-card';
-import { SequenceCardStyle } from '../styles.css';
+import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { SettingTile } from '../../../components/setting-tile';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import type { NotificationModeOptions } from '../../../hooks/useNotificationMode';
@@ -173,7 +173,7 @@ export function KeywordMessagesNotifications() {
         </Box>
       </Box>
       <SequenceCard
-        className={SequenceCardStyle}
+        className={SettingsCardStyle}
         variant="SurfaceVariant"
         direction="Column"
         gap="400"
@@ -188,7 +188,7 @@ export function KeywordMessagesNotifications() {
       {keywordPushRules.map((pushRule) => (
         <SequenceCard
           key={pushRule.rule_id}
-          className={SequenceCardStyle}
+          className={SettingsCardStyle}
           variant="SurfaceVariant"
           direction="Column"
           gap="400"

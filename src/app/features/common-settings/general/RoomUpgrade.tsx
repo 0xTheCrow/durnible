@@ -16,7 +16,7 @@ import type { MatrixError } from 'matrix-js-sdk';
 import { Method } from 'matrix-js-sdk';
 import type { RoomTombstoneEventContent } from 'matrix-js-sdk/lib/types';
 import { SequenceCard } from '../../../components/sequence-card';
-import { SequenceCardStyle } from '../../room-settings/styles.css';
+import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { SettingTile } from '../../../components/setting-tile';
 import { useRoom } from '../../../hooks/useRoom';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
@@ -191,7 +191,7 @@ export function RoomUpgrade({ permissions, onClose }: RoomUpgradeProps) {
 
   return (
     <SequenceCard
-      className={SequenceCardStyle}
+      className={SettingsCardStyle}
       variant="SurfaceVariant"
       direction="Column"
       gap="400"

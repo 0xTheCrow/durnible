@@ -3,7 +3,7 @@ import { Box, Text, Scroll, Switch, Button } from 'folds';
 import { Page, PageContent } from '../../../components/page';
 import { SettingsPageHeader } from '../components';
 import { SequenceCard } from '../../../components/sequence-card';
-import { SequenceCardStyle } from '../styles.css';
+import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { SettingTile } from '../../../components/setting-tile';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
@@ -58,7 +58,7 @@ export function DeveloperTools({ onBack, onClose }: DeveloperToolsProps) {
               <Box direction="Column" gap="100">
                 <Text size="L400">Options</Text>
                 <SequenceCard
-                  className={SequenceCardStyle}
+                  className={SettingsCardStyle}
                   variant="SurfaceVariant"
                   direction="Column"
                   gap="400"
@@ -76,7 +76,7 @@ export function DeveloperTools({ onBack, onClose }: DeveloperToolsProps) {
                 </SequenceCard>
                 {developerTools && (
                   <SequenceCard
-                    className={SequenceCardStyle}
+                    className={SettingsCardStyle}
                     variant="SurfaceVariant"
                     direction="Column"
                     gap="400"

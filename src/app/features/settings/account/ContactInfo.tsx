@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect } from 'react';
 import { Box, Text, Chip } from 'folds';
 import { SequenceCard } from '../../../components/sequence-card';
-import { SequenceCardStyle } from '../styles.css';
+import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { SettingTile } from '../../../components/setting-tile';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
@@ -24,7 +24,7 @@ export function ContactInformation() {
     <Box direction="Column" gap="100">
       <Text size="L400">Contact Information</Text>
       <SequenceCard
-        className={SequenceCardStyle}
+        className={SettingsCardStyle}
         variant="SurfaceVariant"
         direction="Column"
         gap="400"

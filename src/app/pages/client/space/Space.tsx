@@ -57,6 +57,7 @@ import { useRecursiveChildScopeFactory, useSpaceChildren } from '../../../state/
 import { roomToParentsAtom } from '../../../state/room/roomToParents';
 import { markAsRead } from '../../../utils/notifications';
 import { isCallRoom } from '../../../utils/room';
+import { activeCallRoomIdAtom } from '../../../state/call';
 import { useRoomsUnread } from '../../../state/hooks/unread';
 import { UseStateProvider } from '../../../components/UseStateProvider';
 import { LeaveSpacePrompt } from '../../../components/leave-space-prompt';
@@ -402,6 +403,7 @@ export function Space({ isDrawerMode, extra }: SpaceProps = {}) {
   const searchSelected = useSpaceSearchSelected(spaceIdOrAlias);
 
   const [closedCategories, setClosedCategories] = useAtom(useClosedNavCategoriesAtom());
+  const activeCallRoomId = useAtomValue(activeCallRoomIdAtom);
 
   const getRoom = useCallback(
     (rId: string) => {
@@ -418,6 +420,7 @@ export function Space({ isDrawerMode, extra }: SpaceProps = {}) {
     getRoom,
     useCallback(
       (parentId, roomId) => {
+        if (isCallRoom(mx.getRoom(roomId))) return false;
         if (!closedCategories.has(makeNavCategoryId(space.roomId, parentId))) {
           return false;
         }
@@ -425,7 +428,7 @@ export function Space({ isDrawerMode, extra }: SpaceProps = {}) {
         if (showRoom) return false;
         return true;
       },
-      [space.roomId, closedCategories, roomToUnread, selectedRoomId]
+      [mx, space.roomId, closedCategories, roomToUnread, selectedRoomId]
     ),
     useCallback(
       (sId) => closedCategories.has(makeNavCategoryId(space.roomId, sId)),
@@ -456,9 +459,11 @@ export function Space({ isDrawerMode, extra }: SpaceProps = {}) {
         if (voiceRooms.length > 0) {
           const voiceCategoryId = makeNavCategoryId(space.roomId, item.roomId, 'voice');
           rows.push({ type: 'voiceHeader', categoryId: voiceCategoryId });
-          if (!closedCategories.has(voiceCategoryId)) {
-            voiceRooms.forEach((voiceItem) => rows.push({ type: 'voiceRoom', item: voiceItem }));
-          }
+          const isVoiceCategoryClosed = closedCategories.has(voiceCategoryId);
+          voiceRooms.forEach((voiceItem) => {
+            if (isVoiceCategoryClosed && voiceItem.roomId !== activeCallRoomId) return;
+            rows.push({ type: 'voiceRoom', item: voiceItem });
+          });
         }
       } else {
         rows.push({ type: 'room', item });
@@ -466,7 +471,7 @@ export function Space({ isDrawerMode, extra }: SpaceProps = {}) {
       }
     }
     return rows;
-  }, [hierarchy, mx, space.roomId, closedCategories]);
+  }, [hierarchy, mx, space.roomId, closedCategories, activeCallRoomId]);
 
   const virtualizer = useVirtualizer({
     count: navRows.length,

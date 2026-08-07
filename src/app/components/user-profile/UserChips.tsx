@@ -35,7 +35,7 @@ import { useDirectRooms } from '../../pages/client/direct/useDirectRooms';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
 import { useAllJoinedRoomsSet, useGetRoom } from '../../hooks/useGetRoom';
 import { RoomAvatar, RoomIcon } from '../room-avatar';
-import { getDirectRoomAvatarUrl, getRoomAvatarUrl } from '../../utils/room';
+import { getDirectRoomAvatarUrl, getRoomAvatarUrl, isCallRoom } from '../../utils/room';
 import { nameInitials } from '../../utils/common';
 import { getMatrixToUser } from '../../plugins/matrix-to';
 import { useTimeoutToggle } from '../../hooks/useTimeoutToggle';
@@ -324,7 +324,7 @@ export function MutualRoomsChip({ userId }: { userId: string }) {
                 )}
               />
             ) : (
-              <RoomIcon size="100" joinRule={room.getJoinRule()} />
+              <RoomIcon size="100" joinRule={room.getJoinRule()} call={isCallRoom(room)} />
             )}
           </Avatar>
         }
