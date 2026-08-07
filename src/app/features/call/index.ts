@@ -1,4 +1,3 @@
-export * from './CallView';
 export * from './CallProvider';
 export * from './CallAudioRenderer';
 export * from './CallMicrophoneGate';

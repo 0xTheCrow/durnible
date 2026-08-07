@@ -1,64 +1,172 @@
-import { style } from '@vanilla-extract/css';
+import { style, styleVariants } from '@vanilla-extract/css';
 import { color, config, toRem } from 'folds';
 
+const paneBorder = `${config.borderWidth.B300} solid ${color.Surface.ContainerLine}`;
+
 export const CallPane = style({
-  flexBasis: 0,
-  flexGrow: 1,
-  minWidth: toRem(280),
-  maxWidth: toRem(640),
+  position: 'relative',
+  display: 'grid',
+  gridTemplateRows: 'auto minmax(0, 1fr) auto',
+  flexShrink: 0,
+  minWidth: 0,
+  minHeight: 0,
+  overflow: 'hidden',
   backgroundColor: color.Surface.Container,
-  borderRight: `${config.borderWidth.B300} solid ${color.Surface.ContainerLine}`,
   selectors: {
     '&:fullscreen': {
-      minWidth: 'unset',
-      maxWidth: 'unset',
       width: '100%',
       height: '100%',
     },
   },
 });
 
-export const CallPaneStacked = style({
-  flexGrow: 0,
-  flexShrink: 0,
-  height: '35vh',
-  minWidth: 'unset',
-  maxWidth: 'unset',
-  borderRight: 'none',
-  borderBottom: `${config.borderWidth.B300} solid ${color.Surface.ContainerLine}`,
+export const CallPaneDockBorder = styleVariants({
+  Left: { borderRight: paneBorder },
+  Right: { borderLeft: paneBorder },
+  Top: { borderBottom: paneBorder },
+  Bottom: { borderTop: paneBorder },
+});
+
+export const CallPaneResizeHandle = style({
+  position: 'absolute',
+  zIndex: 1,
+  padding: 0,
+  border: 'none',
+  backgroundColor: 'transparent',
+  transitionProperty: 'background-color',
+  transitionDuration: '100ms',
+  selectors: {
+    '&:hover, &[data-resizing="true"]': {
+      backgroundColor: color.Primary.Main,
+    },
+  },
+});
+
+export const CallPaneResizeHandleSide = style({
+  top: 0,
+  bottom: 0,
+  width: toRem(6),
+  cursor: 'col-resize',
+});
+
+export const CallPaneResizeHandleHorizontal = style({
+  left: 0,
+  right: 0,
+  height: toRem(6),
+  cursor: 'row-resize',
+});
+
+export const CallPaneResizeHandleEdge = styleVariants({
+  Left: { right: 0 },
+  Right: { left: 0 },
+  Top: { bottom: 0 },
+  Bottom: { top: 0 },
 });
 
 export const CallPaneHeader = style({
-  padding: `${config.space.S200} ${config.space.S300}`,
-  borderBottom: `${config.borderWidth.B300} solid ${color.Surface.ContainerLine}`,
+  gap: config.space.S200,
+  padding: `0 ${config.space.S200} 0 ${config.space.S300}`,
+  borderBottom: paneBorder,
+});
+
+export const CallPaneHeaderDraggable = style({
+  cursor: 'grab',
+});
+
+export const CallPaneDockZoneOverlay = style({
+  position: 'fixed',
+  inset: 0,
+  zIndex: config.zIndex.Max,
+  display: 'grid',
+  gridTemplateColumns: '25% 1fr 25%',
+  gridTemplateRows: '1fr 1fr',
+  padding: config.space.S200,
+  gap: config.space.S200,
+});
+
+export const CallPaneDockZoneArea = styleVariants({
+  Left: { gridColumn: '1', gridRow: '1 / span 2' },
+  Right: { gridColumn: '3', gridRow: '1 / span 2' },
+  Top: { gridColumn: '2', gridRow: '1' },
+  Bottom: { gridColumn: '2', gridRow: '2' },
+});
+
+export const CallPaneDockZone = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  borderRadius: config.radii.R400,
+  border: `${config.borderWidth.B500} dashed ${color.Surface.ContainerLine}`,
+  backgroundColor: color.Surface.Container,
+  opacity: 0.75,
+});
+
+export const CallPaneDockZoneActive = style({
+  borderColor: color.Primary.Main,
+  backgroundColor: color.Primary.Container,
+  color: color.Primary.OnContainer,
+  opacity: 1,
+});
+
+export const CallGridLayout = style({
+  display: 'grid',
+  gridTemplateRows: 'minmax(0, 1fr)',
+  padding: config.space.S200,
+  minWidth: 0,
+  minHeight: 0,
+});
+
+export const CallTileGridArea = style({
+  display: 'grid',
+  gridTemplateRows: 'minmax(0, 1fr) auto',
+  minWidth: 0,
+  minHeight: 0,
 });
 
 export const CallTileGrid = style({
   display: 'grid',
-  gridTemplateColumns: `repeat(auto-fit, minmax(${toRem(140)}, 1fr))`,
-  gap: config.space.S200,
-  padding: config.space.S200,
-  alignContent: 'start',
+  justifyContent: 'center',
+  alignContent: 'center',
+  minWidth: 0,
+  minHeight: 0,
+});
+
+export const CallOverflowRow = style({
+  paddingTop: config.space.S100,
+});
+
+export const CallOverflowParticipant = style({
+  maxWidth: toRem(160),
+  padding: `${config.space.S100} ${config.space.S200}`,
+  borderRadius: config.radii.Pill,
+  border: `${config.borderWidth.B300} solid transparent`,
+  backgroundColor: color.SurfaceVariant.Container,
+  color: color.SurfaceVariant.OnContainer,
+});
+
+export const CallOverflowParticipantSpeaking = style({
+  borderColor: color.Success.Main,
 });
 
 export const CallSpotlightLayout = style({
-  minHeight: 0,
+  display: 'grid',
+  gridTemplateRows: 'minmax(0, 1fr) auto',
   gap: config.space.S200,
   padding: config.space.S200,
+  minWidth: 0,
+  minHeight: 0,
 });
 
 export const CallSpotlight = style({
-  display: 'flex',
-  flexGrow: 1,
+  position: 'relative',
+  minWidth: 0,
   minHeight: 0,
-});
-
-export const CallTileStripScroll = style({
-  flexShrink: 0,
 });
 
 export const CallTileStrip = style({
   display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
   gap: config.space.S200,
 });
 
@@ -71,18 +179,19 @@ export const CallTile = style({
 });
 
 export const CallGridTile = style({
-  aspectRatio: '16 / 9',
+  minWidth: 0,
+  minHeight: 0,
 });
 
 export const CallStripTile = style({
-  flexShrink: 0,
+  flex: '0 0 auto',
   width: toRem(128),
-  aspectRatio: '16 / 9',
+  height: toRem(72),
 });
 
 export const CallSpotlightTile = style({
-  width: '100%',
-  height: '100%',
+  position: 'absolute',
+  inset: 0,
 });
 
 export const CallTileInteractive = style({
@@ -96,7 +205,13 @@ export const CallTileSpeaking = style({
   borderColor: color.Success.Main,
 });
 
+export const CallTileFocused = style({
+  borderColor: color.Primary.Main,
+});
+
 export const CallTileVideo = style({
+  position: 'absolute',
+  inset: 0,
   width: '100%',
   height: '100%',
 });

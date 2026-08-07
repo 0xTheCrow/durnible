@@ -17,3 +17,5 @@ export const activeCallRoomIdAtom = atom<string | undefined>((get) => {
 });
 
 export const isCallPaneCollapsedAtom = atom(false);
+
+export const isCallDeafenedAtom = atom(false);

@@ -1,12 +1,15 @@
 import React, { useEffect, useRef } from 'react';
 import type { Room } from 'matrix-js-sdk';
+import type { CallMembership } from 'matrix-js-sdk/lib/matrixrtc';
 import type { Participant } from 'livekit-client';
 import { Track } from 'livekit-client';
-import { Box, Icon, Icons, Text } from 'folds';
+import { Box, Icon, Icons, Spinner, Text } from 'folds';
 import classNames from 'classnames';
-import type { CallVideoSourceKind } from '../../hooks/call/useCallVideoSources';
+import { useAtomValue } from 'jotai';
+import { isCallDeafenedAtom } from '../../state/call';
+import type { CallVideoSourceKind } from '../../hooks/call/useCallParticipantEntries';
 import { useParticipantTrackPublications } from '../../hooks/call/useParticipantTrackPublications';
-import { getMemberDisplayName } from '../../utils/room';
+import { resolveCallParticipant } from '../../utils/call';
 import { CallMemberAvatar } from './CallMemberAvatar';
 import * as css from './CallPane.css';
 
@@ -14,8 +17,10 @@ type CallParticipantTileProps = {
   room: Room;
   participant: Participant;
   source: CallVideoSourceKind;
-  userId: string | undefined;
+  memberships: CallMembership[];
   isSpeaking: boolean;
+  isScreensharing?: boolean;
+  isFocused?: boolean;
   className: string;
   onSelect?: () => void;
 };
@@ -23,15 +28,19 @@ export function CallParticipantTile({
   room,
   participant,
   source,
-  userId,
+  memberships,
   isSpeaking,
+  isScreensharing,
+  isFocused,
   className,
   onSelect,
 }: CallParticipantTileProps) {
   const trackPublications = useParticipantTrackPublications(participant);
+  const isDeafened = useAtomValue(isCallDeafenedAtom);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const isDeafenedLocally = participant.isLocal && isDeafened;
 
-  const isScreenshare = source === Track.Source.ScreenShare;
+  const isScreenshareSource = source === Track.Source.ScreenShare;
   const videoPublication = trackPublications.find((publication) => publication.source === source);
   const microphonePublication = trackPublications.find(
     (publication) => publication.source === Track.Source.Microphone
@@ -48,21 +57,36 @@ export function CallParticipantTile({
     };
   }, [videoTrack]);
 
-  const memberName = userId ? getMemberDisplayName(room, userId) ?? userId : participant.identity;
+  const { userId, displayName: memberName } = resolveCallParticipant(
+    room,
+    participant.identity,
+    memberships
+  );
   let displayName = memberName;
-  if (isScreenshare) {
+  if (isScreenshareSource) {
     displayName = participant.isLocal ? 'Your screen' : `${memberName}'s screen`;
   }
 
   const renderPlaceholder = () => {
-    if (isScreenshare) return <Icon size="400" src={Icons.Monitor} />;
-    return userId && <CallMemberAvatar room={room} userId={userId} size="500" textSize="H4" />;
+    if (isScreenshareSource) {
+      return (
+        <Box direction="Column" alignItems="Center" gap="200">
+          <Spinner size="400" variant="Secondary" />
+          <Text align="Center" size="T200" priority="300">
+            Waiting for {displayName}…
+          </Text>
+        </Box>
+      );
+    }
+    if (!userId) return <Icon size="400" src={Icons.User} />;
+    return <CallMemberAvatar room={room} userId={userId} size="500" textSize="H4" />;
   };
 
   const tileClassName = classNames(
     css.CallTile,
     className,
-    isSpeaking && !isScreenshare && css.CallTileSpeaking
+    isSpeaking && !isScreenshareSource && css.CallTileSpeaking,
+    isFocused && css.CallTileFocused
   );
 
   const tileContent = (
@@ -72,8 +96,8 @@ export function CallParticipantTile({
           ref={videoRef}
           className={classNames(
             css.CallTileVideo,
-            isScreenshare ? css.CallTileVideoContain : css.CallTileVideoCover,
-            participant.isLocal && !isScreenshare && css.CallTileVideoMirrored
+            isScreenshareSource ? css.CallTileVideoContain : css.CallTileVideoCover,
+            participant.isLocal && !isScreenshareSource && css.CallTileVideoMirrored
           )}
           autoPlay
           playsInline
@@ -83,7 +107,11 @@ export function CallParticipantTile({
         renderPlaceholder()
       )}
       <Box className={css.CallTileName} alignItems="Center" gap="100">
-        {!isScreenshare && isMuted && <Icon size="50" src={Icons.MicMute} filled />}
+        {!isScreenshareSource && isDeafenedLocally && (
+          <Icon size="50" src={Icons.Headphone} filled />
+        )}
+        {!isScreenshareSource && isMuted && <Icon size="50" src={Icons.MicMute} filled />}
+        {!isScreenshareSource && isScreensharing && <Icon size="50" src={Icons.Monitor} filled />}
         <Text as="span" size="T200" truncate>
           {displayName}
         </Text>
@@ -97,7 +125,8 @@ export function CallParticipantTile({
         as="button"
         type="button"
         onClick={onSelect}
-        aria-label={`Spotlight ${displayName}`}
+        aria-label={`Focus ${displayName}`}
+        aria-pressed={isFocused}
         className={classNames(tileClassName, css.CallTileInteractive)}
         alignItems="Center"
         justifyContent="Center"

@@ -20,6 +20,8 @@ import FocusTrap from 'focus-trap-react';
 import { useFocusWithin, useHover } from 'react-aria';
 import { NavItem, NavItemContent, NavItemOptions, NavButton } from '../../components/nav';
 import { useActiveCallParticipantIds } from '../../hooks/call/useActiveCallParticipantIds';
+import type { CallParticipantAudioState } from '../../hooks/call/useCallParticipantAudioStates';
+import { useCallParticipantAudioStates } from '../../hooks/call/useCallParticipantAudioStates';
 import { useVoiceRoomEntry } from '../call/useVoiceRoomEntry';
 import { CallMemberAvatar } from '../call/CallMemberAvatar';
 import { getMemberDisplayName } from '../../utils/room';
@@ -29,8 +31,9 @@ import { RoomNavItemMenu } from './RoomNavItem';
 type VoiceParticipantProps = {
   room: Room;
   userId: string;
+  audioState?: CallParticipantAudioState;
 };
-function VoiceParticipant({ room, userId }: VoiceParticipantProps) {
+function VoiceParticipant({ room, userId, audioState }: VoiceParticipantProps) {
   const displayName = getMemberDisplayName(room, userId) ?? userId;
 
   return (
@@ -39,6 +42,8 @@ function VoiceParticipant({ room, userId }: VoiceParticipantProps) {
       <Text as="span" size="T200" truncate>
         {displayName}
       </Text>
+      {audioState === 'muted' && <Icon size="50" src={Icons.MicMute} filled />}
+      {audioState === 'deafened' && <Icon size="50" src={Icons.Headphone} filled />}
     </Box>
   );
 }
@@ -51,6 +56,7 @@ type RoomNavVoiceItemProps = {
 };
 export function RoomNavVoiceItem({ room, selected, isDrawerMode, tall }: RoomNavVoiceItemProps) {
   const participantIds = useActiveCallParticipantIds(room);
+  const participantAudioStates = useCallParticipantAudioStates(room);
   const { entryState, enterVoiceRoom } = useVoiceRoomEntry(room);
   const isConnected = entryState.status === 'connected';
   const [hover, setHover] = useState(false);
@@ -174,7 +180,12 @@ export function RoomNavVoiceItem({ room, selected, isDrawerMode, tall }: RoomNav
           }}
         >
           {participantIds.map((userId) => (
-            <VoiceParticipant key={userId} room={room} userId={userId} />
+            <VoiceParticipant
+              key={userId}
+              room={room}
+              userId={userId}
+              audioState={participantAudioStates.get(userId)}
+            />
           ))}
         </Box>
       )}
