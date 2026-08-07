@@ -530,7 +530,7 @@ function Advanced() {
           after={<Switch variant="Primary" value={pwaMode} onChange={setPwaMode} />}
         />
       </SequenceCard>
-      <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
+      <SequenceCard className={SettingsCardStyle} variant="SurfaceVariant" direction="Column">
         <SettingTile
           title="Use Legacy Timeline (V1)"
           description="Switch back to the previous room timeline implementation."
