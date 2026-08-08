@@ -9,8 +9,10 @@ import { useAtomValue } from 'jotai';
 import { isCallDeafenedAtom } from '../../state/call';
 import type { CallVideoSourceKind } from '../../hooks/call/useCallParticipantEntries';
 import { useParticipantTrackPublications } from '../../hooks/call/useParticipantTrackPublications';
+import { useCallUserIsMuted } from '../../state/hooks/callVolumePreferences';
 import { resolveCallParticipant } from '../../utils/call';
 import { CallMemberAvatar } from './CallMemberAvatar';
+import { useCallUserVolumeMenu } from './useCallUserVolumeMenu';
 import * as css from './CallPane.css';
 
 type CallParticipantTileProps = {
@@ -67,6 +69,9 @@ export function CallParticipantTile({
     displayName = participant.isLocal ? 'Your screen' : `${memberName}'s screen`;
   }
 
+  const isMutedLocally = useCallUserIsMuted(userId);
+  const { handleContextMenu, volumeMenu } = useCallUserVolumeMenu(userId, memberName);
+
   const renderPlaceholder = () => {
     if (isScreenshareSource) {
       return (
@@ -110,6 +115,7 @@ export function CallParticipantTile({
         {!isScreenshareSource && isDeafenedLocally && (
           <Icon size="50" src={Icons.Headphone} filled />
         )}
+        {!isScreenshareSource && isMutedLocally && <Icon size="50" src={Icons.VolumeMute} filled />}
         {!isScreenshareSource && isMuted && <Icon size="50" src={Icons.MicMute} filled />}
         {!isScreenshareSource && isScreensharing && <Icon size="50" src={Icons.Monitor} filled />}
         <Text as="span" size="T200" truncate>
@@ -121,24 +127,36 @@ export function CallParticipantTile({
 
   if (onSelect) {
     return (
+      <>
+        <Box
+          as="button"
+          type="button"
+          onClick={onSelect}
+          onContextMenu={handleContextMenu}
+          aria-label={`Focus ${displayName}`}
+          aria-pressed={isFocused}
+          className={classNames(tileClassName, css.CallTileInteractive)}
+          alignItems="Center"
+          justifyContent="Center"
+        >
+          {tileContent}
+        </Box>
+        {volumeMenu}
+      </>
+    );
+  }
+
+  return (
+    <>
       <Box
-        as="button"
-        type="button"
-        onClick={onSelect}
-        aria-label={`Focus ${displayName}`}
-        aria-pressed={isFocused}
-        className={classNames(tileClassName, css.CallTileInteractive)}
+        className={tileClassName}
+        onContextMenu={handleContextMenu}
         alignItems="Center"
         justifyContent="Center"
       >
         {tileContent}
       </Box>
-    );
-  }
-
-  return (
-    <Box className={tileClassName} alignItems="Center" justifyContent="Center">
-      {tileContent}
-    </Box>
+      {volumeMenu}
+    </>
   );
 }

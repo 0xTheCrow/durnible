@@ -1,12 +1,24 @@
 import React, { useEffect, useRef } from 'react';
 import { useAtomValue } from 'jotai';
-import type { Participant, Room as LivekitRoom } from 'livekit-client';
-import { Track } from 'livekit-client';
+import type { Participant } from 'livekit-client';
+import { RemoteAudioTrack, Track } from 'livekit-client';
 import { callStateAtom, isCallDeafenedAtom } from '../../state/call';
+import {
+  callVolumePreferencesAtom,
+  getCallUserPlaybackVolumeLevel,
+} from '../../state/callVolumePreferences';
+import type { CallConnection } from '../../plugins/call/CallConnection';
+import { useCallMemberships } from '../../hooks/useCallMemberships';
+import { findCallParticipantUserId } from '../../utils/call';
 import { useLivekitParticipants } from '../../hooks/call/useLivekitParticipants';
 import { useParticipantTrackPublications } from '../../hooks/call/useParticipantTrackPublications';
 
-function AudioTrackPlayer({ track, isDeafened }: { track: Track; isDeafened: boolean }) {
+type AudioTrackPlayerProps = {
+  track: RemoteAudioTrack;
+  isDeafened: boolean;
+  volumeLevel: number;
+};
+function AudioTrackPlayer({ track, isDeafened, volumeLevel }: AudioTrackPlayerProps) {
   const audioElementRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
@@ -18,16 +30,19 @@ function AudioTrackPlayer({ track, isDeafened }: { track: Track; isDeafened: boo
     };
   }, [track]);
 
+  useEffect(() => {
+    track.setVolume(volumeLevel);
+  }, [track, volumeLevel]);
+
   return <audio ref={audioElementRef} autoPlay muted={isDeafened} />;
 }
 
-function ParticipantAudio({
-  participant,
-  isDeafened,
-}: {
+type ParticipantAudioProps = {
   participant: Participant;
   isDeafened: boolean;
-}) {
+  volumeLevel: number;
+};
+function ParticipantAudio({ participant, isDeafened, volumeLevel }: ParticipantAudioProps) {
   const trackPublications = useParticipantTrackPublications(participant);
 
   return (
@@ -35,11 +50,12 @@ function ParticipantAudio({
       {trackPublications
         .filter((publication) => publication.kind === Track.Kind.Audio)
         .map((publication) =>
-          publication.track ? (
+          publication.track instanceof RemoteAudioTrack ? (
             <AudioTrackPlayer
               key={publication.trackSid}
               track={publication.track}
               isDeafened={isDeafened}
+              volumeLevel={volumeLevel}
             />
           ) : null
         )}
@@ -47,21 +63,30 @@ function ParticipantAudio({
   );
 }
 
-function ConnectedCallAudio({ livekitRoom }: { livekitRoom: LivekitRoom }) {
-  const participants = useLivekitParticipants(livekitRoom);
+type ConnectedCallAudioProps = {
+  connection: CallConnection;
+};
+function ConnectedCallAudio({ connection }: ConnectedCallAudioProps) {
+  const participants = useLivekitParticipants(connection.livekitRoom);
+  const memberships = useCallMemberships(connection.matrixRoom);
   const isDeafened = useAtomValue(isCallDeafenedAtom);
+  const volumePreferences = useAtomValue(callVolumePreferencesAtom);
 
   return (
     <>
       {participants
         .filter((participant) => !participant.isLocal)
-        .map((participant) => (
-          <ParticipantAudio
-            key={participant.identity}
-            participant={participant}
-            isDeafened={isDeafened}
-          />
-        ))}
+        .map((participant) => {
+          const userId = findCallParticipantUserId(participant.identity, memberships);
+          return (
+            <ParticipantAudio
+              key={participant.identity}
+              participant={participant}
+              isDeafened={isDeafened}
+              volumeLevel={getCallUserPlaybackVolumeLevel(volumePreferences, userId)}
+            />
+          );
+        })}
     </>
   );
 }
@@ -70,5 +95,5 @@ export function CallAudioRenderer() {
   const callState = useAtomValue(callStateAtom);
 
   if (callState.status !== 'connected' && callState.status !== 'reconnecting') return null;
-  return <ConnectedCallAudio livekitRoom={callState.connection.livekitRoom} />;
+  return <ConnectedCallAudio connection={callState.connection} />;
 }

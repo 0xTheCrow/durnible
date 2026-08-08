@@ -9,6 +9,7 @@ import { useCallTileGridLayout } from '../../hooks/call/useCallTileGridLayout';
 import { CALL_TILE_GAP, resolveCallParticipant } from '../../utils/call';
 import { CallMemberAvatar } from './CallMemberAvatar';
 import { CallParticipantTile } from './CallParticipantTile';
+import { useCallUserVolumeMenu } from './useCallUserVolumeMenu';
 import * as css from './CallPane.css';
 
 type CallOverflowParticipantProps = {
@@ -30,31 +31,36 @@ function CallOverflowParticipant({
     entry.participant.identity,
     memberships
   );
+  const { handleContextMenu, volumeMenu } = useCallUserVolumeMenu(userId, displayName);
 
   return (
-    <Box
-      as="button"
-      type="button"
-      onClick={onSelect}
-      aria-label={`Focus ${displayName}`}
-      className={classNames(
-        css.CallOverflowParticipant,
-        isSpeaking && css.CallOverflowParticipantSpeaking
-      )}
-      alignItems="Center"
-      gap="100"
-      shrink="No"
-    >
-      {userId ? (
-        <CallMemberAvatar room={room} userId={userId} size="200" textSize="O400" />
-      ) : (
-        <Icon size="50" src={Icons.User} />
-      )}
-      {entry.isScreensharing && <Icon size="50" src={Icons.Monitor} filled />}
-      <Text as="span" size="T200" truncate>
-        {displayName}
-      </Text>
-    </Box>
+    <>
+      <Box
+        as="button"
+        type="button"
+        onClick={onSelect}
+        onContextMenu={handleContextMenu}
+        aria-label={`Focus ${displayName}`}
+        className={classNames(
+          css.CallOverflowParticipant,
+          isSpeaking && css.CallOverflowParticipantSpeaking
+        )}
+        alignItems="Center"
+        gap="100"
+        shrink="No"
+      >
+        {userId ? (
+          <CallMemberAvatar room={room} userId={userId} size="200" textSize="O400" />
+        ) : (
+          <Icon size="50" src={Icons.User} />
+        )}
+        {entry.isScreensharing && <Icon size="50" src={Icons.Monitor} filled />}
+        <Text as="span" size="T200" truncate>
+          {displayName}
+        </Text>
+      </Box>
+      {volumeMenu}
+    </>
   );
 }
 

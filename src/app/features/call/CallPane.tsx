@@ -29,6 +29,7 @@ import { CallParticipantTile } from './CallParticipantTile';
 import { CallTileGrid } from './CallTileGrid';
 import { CallPaneDockMenu } from './CallPaneDockMenu';
 import { CallControlButton } from './CallControlButton';
+import { CallMasterVolumeMenu } from './CallMasterVolumeMenu';
 import { CALL_PANE_DRAG_TYPE, CallPaneDockZones } from './CallPaneDockZones';
 import * as css from './CallPane.css';
 
@@ -224,6 +225,7 @@ function ConnectedCallPane({ connection, isReconnecting }: ConnectedCallPaneProp
               isIconFilled={isDeafened}
               aria-pressed={isDeafened}
             />
+            <CallMasterVolumeMenu />
             <CallControlButton
               size="400"
               radii="Pill"
