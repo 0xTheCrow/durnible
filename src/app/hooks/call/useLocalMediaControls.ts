@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { Room as LivekitRoom } from 'livekit-client';
-import { ParticipantEvent } from 'livekit-client';
+import { LocalVideoTrack, ParticipantEvent, Track } from 'livekit-client';
+import { settingsAtom } from '../../state/settings';
+import { useSetting } from '../../state/hooks/settings';
+import {
+  applyScreenshareQuality,
+  getScreenshareCaptureOptions,
+  getScreenshareEncoding,
+} from '../../plugins/call/screenshare';
 
 export type LocalMediaState = {
   isMicrophoneEnabled: boolean;
@@ -29,6 +36,8 @@ export const useLocalMediaControls = (
   toggleScreenshare: () => Promise<void>;
 } => {
   const [localMediaState, setLocalMediaState] = useState(() => getLocalMediaState(livekitRoom));
+  const [screenshareResolution] = useSetting(settingsAtom, 'screenshareResolution');
+  const [screenshareMaxFrameRate] = useSetting(settingsAtom, 'screenshareMaxFrameRate');
   const [prev, setPrev] = useState(livekitRoom);
   if (prev !== livekitRoom) {
     setPrev(livekitRoom);
@@ -46,6 +55,23 @@ export const useLocalMediaControls = (
     };
   }, [livekitRoom]);
 
+  useEffect(() => {
+    if (!localMediaState.isScreenshareEnabled) return;
+    const screenshareTrack = livekitRoom.localParticipant.getTrackPublication(
+      Track.Source.ScreenShare
+    )?.track;
+    if (!(screenshareTrack instanceof LocalVideoTrack)) return;
+
+    applyScreenshareQuality(screenshareTrack, screenshareResolution, screenshareMaxFrameRate).catch(
+      (error) => console.error('useLocalMediaControls: failed to apply screenshare quality', error)
+    );
+  }, [
+    livekitRoom,
+    localMediaState.isScreenshareEnabled,
+    screenshareResolution,
+    screenshareMaxFrameRate,
+  ]);
+
   const toggleMicrophone = useCallback(async () => {
     const { localParticipant } = livekitRoom;
     await localParticipant.setMicrophoneEnabled(!localParticipant.isMicrophoneEnabled);
@@ -60,11 +86,16 @@ export const useLocalMediaControls = (
 
   const toggleScreenshare = useCallback(async () => {
     const { localParticipant } = livekitRoom;
-    await localParticipant.setScreenShareEnabled(!localParticipant.isScreenShareEnabled, {
-      audio: true,
-    });
+    await localParticipant.setScreenShareEnabled(
+      !localParticipant.isScreenShareEnabled,
+      getScreenshareCaptureOptions(screenshareResolution, screenshareMaxFrameRate),
+      {
+        screenShareEncoding: getScreenshareEncoding(screenshareResolution, screenshareMaxFrameRate),
+        degradationPreference: 'maintain-framerate',
+      }
+    );
     setLocalMediaState(getLocalMediaState(livekitRoom));
-  }, [livekitRoom]);
+  }, [livekitRoom, screenshareResolution, screenshareMaxFrameRate]);
 
   return { ...localMediaState, toggleMicrophone, toggleCamera, toggleScreenshare };
 };

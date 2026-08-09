@@ -163,6 +163,14 @@ export const CallSpotlight = style({
   minHeight: 0,
 });
 
+export const CallEncryptionDebugPanel = style({
+  margin: `0 ${config.space.S200}`,
+  padding: config.space.S100,
+  borderRadius: config.radii.R300,
+  backgroundColor: color.SurfaceVariant.Container,
+  color: color.SurfaceVariant.OnContainer,
+});
+
 export const CallSpotlightBar = style({
   paddingLeft: config.space.S100,
   minHeight: 0,

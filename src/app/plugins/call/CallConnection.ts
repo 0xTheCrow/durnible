@@ -1,4 +1,4 @@
-import { Room as LivekitRoom, ScreenSharePresets } from 'livekit-client';
+import { Room as LivekitRoom } from 'livekit-client';
 import type { MatrixClient, Room } from 'matrix-js-sdk';
 import type { LivekitTransportConfig, MatrixRTCSession } from 'matrix-js-sdk/lib/matrixrtc';
 import { isLivekitTransportConfig } from 'matrix-js-sdk/lib/matrixrtc';
@@ -8,6 +8,11 @@ import { getSfuConnectionDetails } from './sfu';
 import type { MediaDevicePreferences } from './localMedia';
 
 export const LEAVE_MEMBERSHIP_TIMEOUT_MS = 10_000;
+
+export const MAX_CALL_PIXEL_DENSITY = 2;
+
+export const getCallPixelDensity = (): number =>
+  Math.min(window.devicePixelRatio || 1, MAX_CALL_PIXEL_DENSITY);
 
 export type CallConnection = {
   matrixClient: MatrixClient;
@@ -42,11 +47,10 @@ export const connectToCall = async (
   const rtcSession = matrixClient.matrixRTC.getRoomSession(matrixRoom);
   const keyProvider = matrixRoom.hasEncryptionStateEvent() ? new MatrixKeyProvider() : undefined;
   const livekitRoom = new LivekitRoom({
-    adaptiveStream: true,
+    adaptiveStream: { pixelDensity: getCallPixelDensity() },
     dynacast: true,
     audioCaptureDefaults: { deviceId: devicePreferences.audioInputDeviceId },
     videoCaptureDefaults: { deviceId: devicePreferences.videoInputDeviceId },
-    publishDefaults: { screenShareEncoding: ScreenSharePresets.h1080fps30.encoding },
     e2ee: keyProvider ? { keyProvider, worker: new LivekitE2EEWorker() } : undefined,
   });
 

@@ -39,8 +39,6 @@ export function CallUserVolumeMenu({
             initialFocus: false,
             onDeactivate: onClose,
             clickOutsideDeactivates: true,
-            isKeyForward: (evt: KeyboardEvent) => evt.key === 'ArrowDown',
-            isKeyBackward: (evt: KeyboardEvent) => evt.key === 'ArrowUp',
             escapeDeactivates: stopPropagation,
           }}
         >

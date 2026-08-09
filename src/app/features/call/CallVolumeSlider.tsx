@@ -68,7 +68,7 @@ export function CallVolumeSlider({
             radii="Pill"
             outlined
             {...params.props}
-            style={{ ...params.props.style, zIndex: 0 }}
+            style={{ ...params.props.style, zIndex: 1 }}
           />
         )}
       />

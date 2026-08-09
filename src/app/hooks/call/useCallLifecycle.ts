@@ -1,7 +1,8 @@
 import { useCallback, useEffect } from 'react';
 import { useAtom } from 'jotai';
 import type { Room } from 'matrix-js-sdk';
-import { RoomEvent } from 'livekit-client';
+import type { Participant } from 'livekit-client';
+import { DisconnectReason, RoomEvent } from 'livekit-client';
 import { useMatrixClient } from '../useMatrixClient';
 import { useLivekitFoci } from '../useLivekitFoci';
 import { useSetting } from '../../state/hooks/settings';
@@ -41,23 +42,32 @@ export const useCallLifecycle = (): {
     const handleReconnected = () => {
       setCallState({ status: 'connected', roomId: matrixRoom.roomId, connection });
     };
-    const handleDisconnected = () => {
+    const handleDisconnected = (reason?: DisconnectReason) => {
       keyProvider?.clearRtcSession();
-      if (rtcSession.isJoined()) {
+      if (reason !== DisconnectReason.CLIENT_INITIATED && rtcSession.isJoined()) {
         rtcSession
           .leaveRoomSession(LEAVE_MEMBERSHIP_TIMEOUT_MS)
           .catch((error) => console.error('useCallLifecycle: failed to leave rtc session', error));
       }
       setCallState({ status: 'idle' });
     };
+    const handleEncryptionError = (error: Error, participant?: Participant) => {
+      console.error('useCallLifecycle: call media encryption error', {
+        error,
+        participantIdentity: participant?.identity,
+        isRoomE2EEEnabled: livekitRoom.isE2EEEnabled,
+      });
+    };
 
     livekitRoom.on(RoomEvent.Reconnecting, handleReconnecting);
     livekitRoom.on(RoomEvent.Reconnected, handleReconnected);
     livekitRoom.on(RoomEvent.Disconnected, handleDisconnected);
+    livekitRoom.on(RoomEvent.EncryptionError, handleEncryptionError);
     return () => {
       livekitRoom.off(RoomEvent.Reconnecting, handleReconnecting);
       livekitRoom.off(RoomEvent.Reconnected, handleReconnected);
       livekitRoom.off(RoomEvent.Disconnected, handleDisconnected);
+      livekitRoom.off(RoomEvent.EncryptionError, handleEncryptionError);
     };
   }, [connection, setCallState]);
 

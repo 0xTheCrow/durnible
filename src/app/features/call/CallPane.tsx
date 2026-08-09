@@ -14,6 +14,8 @@ import { Track } from 'livekit-client';
 import { draggable } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import classNames from 'classnames';
 import { callStateAtom, isCallPaneCollapsedAtom } from '../../state/call';
+import { settingsAtom } from '../../state/settings';
+import { useSetting } from '../../state/hooks/settings';
 import type { CallConnection } from '../../plugins/call/CallConnection';
 import { isScreenshareSupported } from '../../plugins/call/localMedia';
 import {
@@ -33,6 +35,7 @@ import { CallPaneDockMenu } from './CallPaneDockMenu';
 import { CallControlButton } from './CallControlButton';
 import { CallMasterVolumeMenu } from './CallMasterVolumeMenu';
 import { CallSpotlightBar } from './CallSpotlightBar';
+import { CallEncryptionDebugPanel } from './CallEncryptionDebugPanel';
 import { CALL_PANE_DRAG_TYPE, CallPaneDockZones } from './CallPaneDockZones';
 import * as css from './CallPane.css';
 
@@ -100,6 +103,7 @@ function ConnectedCallPane({ connection, isReconnecting }: ConnectedCallPaneProp
     toggleScreenshare,
   } = useLocalMediaControls(livekitRoom);
   const { isDeafened, toggleDeafen } = useCallDeafen(livekitRoom);
+  const [developerTools] = useSetting(settingsAtom, 'developerTools');
 
   const autoFocusedEntry =
     autoFocusKey === dismissedScreenshareKey
@@ -172,6 +176,8 @@ function ConnectedCallPane({ connection, isReconnecting }: ConnectedCallPaneProp
               icon={Icons.ChevronLeft}
             />
           </Header>
+
+          {developerTools && <CallEncryptionDebugPanel livekitRoom={livekitRoom} />}
 
           {focusedEntry ? (
             <div className={css.CallSpotlightLayout}>

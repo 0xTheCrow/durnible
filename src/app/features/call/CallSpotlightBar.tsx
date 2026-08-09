@@ -2,19 +2,21 @@ import React from 'react';
 import type { Room } from 'matrix-js-sdk';
 import type { CallMembership } from 'matrix-js-sdk/lib/matrixrtc';
 import { Box, Chip, Icon, Icons, Text } from 'folds';
-import { RemoteVideoTrack, Track } from 'livekit-client';
+import { LocalVideoTrack, RemoteVideoTrack, Track } from 'livekit-client';
 import type { CallParticipantEntry } from '../../hooks/call/useCallParticipantEntries';
 import { useParticipantTrackPublications } from '../../hooks/call/useParticipantTrackPublications';
-import type { CallVideoStreamStats } from '../../hooks/call/useCallVideoStreamStats';
 import { useCallVideoStreamStats } from '../../hooks/call/useCallVideoStreamStats';
+import { useScreenshareSenderStats } from '../../hooks/call/useScreenshareSenderStats';
 import { resolveCallParticipant } from '../../utils/call';
+import { CallScreenQualityMenu } from './CallScreenQualityMenu';
 import * as css from './CallPane.css';
 
-const getStreamStatsLabel = (stats: CallVideoStreamStats): string | undefined => {
-  const parts: string[] = [];
-  if (stats.frameWidth && stats.frameHeight) parts.push(`${stats.frameWidth}×${stats.frameHeight}`);
-  if (stats.framesPerSecond !== undefined) parts.push(`${stats.framesPerSecond} fps`);
-  return parts.length > 0 ? parts.join(' · ') : undefined;
+const getResolutionLabel = (stats: {
+  frameWidth?: number;
+  frameHeight?: number;
+}): string | undefined => {
+  if (!stats.frameWidth || !stats.frameHeight) return undefined;
+  return `${stats.frameWidth}×${stats.frameHeight}`;
 };
 
 type CallSpotlightBarProps = {
@@ -34,10 +36,15 @@ export function CallSpotlightBar({
 
   const source = entry.isScreensharing ? Track.Source.ScreenShare : Track.Source.Camera;
   const videoTrack = trackPublications.find((publication) => publication.source === source)?.track;
-  const stats = useCallVideoStreamStats(
+  const receiverStats = useCallVideoStreamStats(
     videoTrack instanceof RemoteVideoTrack ? videoTrack : undefined
   );
-  const streamStatsLabel = stats && getStreamStatsLabel(stats);
+  const senderStats = useScreenshareSenderStats(
+    videoTrack instanceof LocalVideoTrack ? videoTrack : undefined
+  );
+  const stats = receiverStats ?? senderStats;
+  const resolutionLabel = stats && getResolutionLabel(stats);
+  const isOwnScreenshare = entry.participant.isLocal && entry.isScreensharing;
 
   const getWatchingLabel = (): string => {
     if (!entry.isScreensharing) return `Watching ${displayName}`;
@@ -51,12 +58,13 @@ export function CallSpotlightBar({
         <Text size="T200" priority="300" truncate>
           {getWatchingLabel()}
         </Text>
-        {streamStatsLabel && (
+        {resolutionLabel && (
           <Text size="T200" priority="400" truncate>
-            {streamStatsLabel}
+            {resolutionLabel}
           </Text>
         )}
       </Box>
+      {isOwnScreenshare && <CallScreenQualityMenu senderStats={senderStats} />}
       <Chip
         as="button"
         size="400"
