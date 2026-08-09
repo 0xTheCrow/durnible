@@ -9,18 +9,24 @@ export type CallParticipantEntry = {
   key: string;
   participant: Participant;
   isScreensharing: boolean;
+  isCameraEnabled: boolean;
   isMicrophoneMuted: boolean;
 };
+
+export const checkIsEntryStreamingVideo = (entry: CallParticipantEntry): boolean =>
+  entry.isScreensharing || entry.isCameraEnabled;
 
 const getCallParticipantEntries = (livekitRoom?: LivekitRoom): CallParticipantEntry[] => {
   if (!livekitRoom) return [];
   return getLivekitParticipants(livekitRoom).map((participant) => {
     const screensharePublication = participant.getTrackPublication(Track.Source.ScreenShare);
+    const cameraPublication = participant.getTrackPublication(Track.Source.Camera);
     const microphonePublication = participant.getTrackPublication(Track.Source.Microphone);
     return {
       key: participant.identity,
       participant,
       isScreensharing: screensharePublication !== undefined && !screensharePublication.isMuted,
+      isCameraEnabled: cameraPublication !== undefined && !cameraPublication.isMuted,
       isMicrophoneMuted: microphonePublication === undefined || microphonePublication.isMuted,
     };
   });

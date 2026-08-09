@@ -1,4 +1,4 @@
-import { Room as LivekitRoom } from 'livekit-client';
+import { Room as LivekitRoom, ScreenSharePresets } from 'livekit-client';
 import type { MatrixClient, Room } from 'matrix-js-sdk';
 import type { LivekitTransportConfig, MatrixRTCSession } from 'matrix-js-sdk/lib/matrixrtc';
 import { isLivekitTransportConfig } from 'matrix-js-sdk/lib/matrixrtc';
@@ -46,6 +46,7 @@ export const connectToCall = async (
     dynacast: true,
     audioCaptureDefaults: { deviceId: devicePreferences.audioInputDeviceId },
     videoCaptureDefaults: { deviceId: devicePreferences.videoInputDeviceId },
+    publishDefaults: { screenShareEncoding: ScreenSharePresets.h1080fps30.encoding },
     e2ee: keyProvider ? { keyProvider, worker: new LivekitE2EEWorker() } : undefined,
   });
 

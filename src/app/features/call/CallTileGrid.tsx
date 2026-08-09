@@ -5,10 +5,12 @@ import { Track } from 'livekit-client';
 import { Box, Icon, Icons, Scroll, Text } from 'folds';
 import classNames from 'classnames';
 import type { CallParticipantEntry } from '../../hooks/call/useCallParticipantEntries';
+import { checkIsEntryStreamingVideo } from '../../hooks/call/useCallParticipantEntries';
 import { useCallTileGridLayout } from '../../hooks/call/useCallTileGridLayout';
 import { CALL_TILE_GAP, resolveCallParticipant } from '../../utils/call';
 import { CallMemberAvatar } from './CallMemberAvatar';
 import { CallParticipantTile } from './CallParticipantTile';
+import { useIsParticipantSpeaking } from '../../hooks/call/useIsParticipantSpeaking';
 import { useCallUserVolumeMenu } from './useCallUserVolumeMenu';
 import * as css from './CallPane.css';
 
@@ -16,16 +18,15 @@ type CallOverflowParticipantProps = {
   room: Room;
   entry: CallParticipantEntry;
   memberships: CallMembership[];
-  isSpeaking: boolean;
-  onSelect: () => void;
+  onSelect?: (participantIdentity: string) => void;
 };
-function CallOverflowParticipant({
+function CallOverflowParticipantComponent({
   room,
   entry,
   memberships,
-  isSpeaking,
   onSelect,
 }: CallOverflowParticipantProps) {
+  const isSpeaking = useIsParticipantSpeaking(entry.participant);
   const { userId, displayName } = resolveCallParticipant(
     room,
     entry.participant.identity,
@@ -33,51 +34,66 @@ function CallOverflowParticipant({
   );
   const { handleContextMenu, volumeMenu } = useCallUserVolumeMenu(userId, displayName);
 
+  const participantContent = (
+    <>
+      {userId ? (
+        <CallMemberAvatar room={room} userId={userId} size="200" textSize="O400" />
+      ) : (
+        <Icon size="50" src={Icons.User} />
+      )}
+      {entry.isScreensharing && <Icon size="50" src={Icons.Monitor} filled />}
+      <Text as="span" size="T200" truncate>
+        {displayName}
+      </Text>
+    </>
+  );
+
+  const participantClassName = classNames(
+    css.CallOverflowParticipant,
+    isSpeaking && css.CallOverflowParticipantSpeaking
+  );
+
   return (
     <>
-      <Box
-        as="button"
-        type="button"
-        onClick={onSelect}
-        onContextMenu={handleContextMenu}
-        aria-label={`Focus ${displayName}`}
-        className={classNames(
-          css.CallOverflowParticipant,
-          isSpeaking && css.CallOverflowParticipantSpeaking
-        )}
-        alignItems="Center"
-        gap="100"
-        shrink="No"
-      >
-        {userId ? (
-          <CallMemberAvatar room={room} userId={userId} size="200" textSize="O400" />
-        ) : (
-          <Icon size="50" src={Icons.User} />
-        )}
-        {entry.isScreensharing && <Icon size="50" src={Icons.Monitor} filled />}
-        <Text as="span" size="T200" truncate>
-          {displayName}
-        </Text>
-      </Box>
+      {onSelect ? (
+        <Box
+          as="button"
+          type="button"
+          onClick={() => onSelect(entry.participant.identity)}
+          onContextMenu={handleContextMenu}
+          aria-label={`Focus ${displayName}`}
+          className={participantClassName}
+          alignItems="Center"
+          gap="100"
+          shrink="No"
+        >
+          {participantContent}
+        </Box>
+      ) : (
+        <Box
+          onContextMenu={handleContextMenu}
+          className={participantClassName}
+          alignItems="Center"
+          gap="100"
+          shrink="No"
+        >
+          {participantContent}
+        </Box>
+      )}
       {volumeMenu}
     </>
   );
 }
 
+const CallOverflowParticipant = React.memo(CallOverflowParticipantComponent);
+
 type CallTileGridProps = {
   room: Room;
   entries: CallParticipantEntry[];
   memberships: CallMembership[];
-  speakingIdentities: Set<string>;
   onFocus: (key: string) => void;
 };
-export function CallTileGrid({
-  room,
-  entries,
-  memberships,
-  speakingIdentities,
-  onFocus,
-}: CallTileGridProps) {
+export function CallTileGrid({ room, entries, memberships, onFocus }: CallTileGridProps) {
   const gridAreaRef = useRef<HTMLDivElement>(null);
   const { columnCount, tileWidth, tileHeight, visibleTileCount } = useCallTileGridLayout(
     gridAreaRef,
@@ -104,10 +120,9 @@ export function CallTileGrid({
             participant={entry.participant}
             source={Track.Source.Camera}
             memberships={memberships}
-            isSpeaking={speakingIdentities.has(entry.participant.identity)}
             isScreensharing={entry.isScreensharing}
             className={css.CallGridTile}
-            onSelect={() => onFocus(entry.key)}
+            onSelect={checkIsEntryStreamingVideo(entry) ? onFocus : undefined}
           />
         ))}
       </div>
@@ -120,8 +135,7 @@ export function CallTileGrid({
                 room={room}
                 entry={entry}
                 memberships={memberships}
-                isSpeaking={speakingIdentities.has(entry.participant.identity)}
-                onSelect={() => onFocus(entry.key)}
+                onSelect={checkIsEntryStreamingVideo(entry) ? onFocus : undefined}
               />
             ))}
           </Box>

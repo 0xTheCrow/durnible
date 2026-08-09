@@ -150,8 +150,8 @@ export const CallOverflowParticipantSpeaking = style({
 
 export const CallSpotlightLayout = style({
   display: 'grid',
-  gridTemplateRows: 'minmax(0, 1fr) auto',
-  gap: config.space.S200,
+  gridTemplateRows: 'minmax(0, 1fr) auto auto',
+  gap: config.space.S100,
   padding: config.space.S200,
   minWidth: 0,
   minHeight: 0,
@@ -160,6 +160,11 @@ export const CallSpotlightLayout = style({
 export const CallSpotlight = style({
   position: 'relative',
   minWidth: 0,
+  minHeight: 0,
+});
+
+export const CallSpotlightBar = style({
+  paddingLeft: config.space.S100,
   minHeight: 0,
 });
 
@@ -226,6 +231,23 @@ export const CallTileVideoContain = style({
 
 export const CallTileVideoMirrored = style({
   transform: 'scaleX(-1)',
+});
+
+export const CallTileScreenshareBadge = style({
+  position: 'absolute',
+  top: config.space.S100,
+  left: config.space.S100,
+  padding: `0 ${config.space.S100}`,
+  borderRadius: config.radii.R300,
+  backgroundColor: color.Primary.Container,
+  color: color.Primary.OnContainer,
+  transition: 'background-color 100ms ease, color 100ms ease',
+  selectors: {
+    [`${CallTileInteractive}:hover &, ${CallTileInteractive}:focus-visible &`]: {
+      backgroundColor: color.Primary.Main,
+      color: color.Primary.OnMain,
+    },
+  },
 });
 
 export const CallTileName = style({
