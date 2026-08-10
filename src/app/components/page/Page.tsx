@@ -163,7 +163,7 @@ export function PageHero({
 }: {
   icon: ReactNode;
   title: ReactNode;
-  subTitle: ReactNode;
+  subTitle?: ReactNode;
   children?: ReactNode;
 }) {
   return (
@@ -175,9 +175,11 @@ export function PageHero({
         <Text align="Center" size="H2">
           {title}
         </Text>
-        <Text align="Center" priority="400">
-          {subTitle}
-        </Text>
+        {subTitle && (
+          <Text align="Center" priority="400">
+            {subTitle}
+          </Text>
+        )}
       </Box>
       {children}
     </Box>
