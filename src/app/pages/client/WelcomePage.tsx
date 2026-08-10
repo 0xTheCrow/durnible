@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, config } from 'folds';
 import { Page, PageHero, PageHeroSection } from '../../components/page';
-import CinnySVG from '../../../../public/res/svg/cinny.svg';
+import LogoSVG from '../../../../public/res/svg/durnible.svg';
 
 export function WelcomePage() {
   return (
@@ -15,9 +15,9 @@ export function WelcomePage() {
       >
         <PageHeroSection>
           <PageHero
-            icon={<img width="70" height="70" src={CinnySVG} alt="Durnible Logo" />}
+            icon={<img width="120" height="120" src={LogoSVG} alt="Durnible Logo" />}
             title="Welcome to Durnible"
-            subTitle="Yet another matrix client."
+            subTitle=""
           />
         </PageHeroSection>
       </Box>

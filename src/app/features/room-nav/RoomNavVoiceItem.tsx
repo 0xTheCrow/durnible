@@ -24,6 +24,8 @@ import type { CallParticipantAudioState } from '../../hooks/call/useCallParticip
 import { useCallParticipantAudioStates } from '../../hooks/call/useCallParticipantAudioStates';
 import { useVoiceRoomEntry } from '../call/useVoiceRoomEntry';
 import { CallMemberAvatar } from '../call/CallMemberAvatar';
+import { useCallUserVolumeMenu } from '../call/useCallUserVolumeMenu';
+import { useCallUserIsMuted } from '../../state/hooks/callVolumePreferences';
 import { getMemberDisplayName } from '../../utils/room';
 import { stopPropagation } from '../../utils/keyboard';
 import { RoomNavItemMenu } from './RoomNavItem';
@@ -35,16 +37,22 @@ type VoiceParticipantProps = {
 };
 function VoiceParticipant({ room, userId, audioState }: VoiceParticipantProps) {
   const displayName = getMemberDisplayName(room, userId) ?? userId;
+  const isMutedLocally = useCallUserIsMuted(userId);
+  const { handleContextMenu, volumeMenu } = useCallUserVolumeMenu(userId, displayName);
 
   return (
-    <Box as="span" alignItems="Center" gap="200">
-      <CallMemberAvatar room={room} userId={userId} size="200" textSize="O400" />
-      <Text as="span" size="T200" truncate>
-        {displayName}
-      </Text>
-      {audioState === 'muted' && <Icon size="50" src={Icons.MicMute} filled />}
-      {audioState === 'deafened' && <Icon size="50" src={Icons.Headphone} filled />}
-    </Box>
+    <>
+      <Box as="span" alignItems="Center" gap="200" onContextMenu={handleContextMenu}>
+        <CallMemberAvatar room={room} userId={userId} size="200" textSize="O400" />
+        <Text as="span" size="T200" truncate>
+          {displayName}
+        </Text>
+        {isMutedLocally && <Icon size="50" src={Icons.VolumeMute} filled />}
+        {audioState === 'muted' && <Icon size="50" src={Icons.MicMute} filled />}
+        {audioState === 'deafened' && <Icon size="50" src={Icons.Headphone} filled />}
+      </Box>
+      {volumeMenu}
+    </>
   );
 }
 

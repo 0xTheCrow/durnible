@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useAtomValue, useSetAtom } from 'jotai';
 import {
   Box,
@@ -14,10 +14,14 @@ import { Track } from 'livekit-client';
 import { draggable } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import classNames from 'classnames';
 import { callStateAtom, isCallPaneCollapsedAtom } from '../../state/call';
+import { settingsAtom } from '../../state/settings';
+import { useSetting } from '../../state/hooks/settings';
 import type { CallConnection } from '../../plugins/call/CallConnection';
 import { isScreenshareSupported } from '../../plugins/call/localMedia';
-import { useCallParticipantEntries } from '../../hooks/call/useCallParticipantEntries';
-import { useActiveSpeakers } from '../../hooks/call/useActiveSpeakers';
+import {
+  checkIsEntryStreamingVideo,
+  useCallParticipantEntries,
+} from '../../hooks/call/useCallParticipantEntries';
 import { useLocalMediaControls } from '../../hooks/call/useLocalMediaControls';
 import { useCallDeafen } from '../../hooks/call/useCallDeafen';
 import { useCallMemberships } from '../../hooks/useCallMemberships';
@@ -29,6 +33,9 @@ import { CallParticipantTile } from './CallParticipantTile';
 import { CallTileGrid } from './CallTileGrid';
 import { CallPaneDockMenu } from './CallPaneDockMenu';
 import { CallControlButton } from './CallControlButton';
+import { CallMasterVolumeMenu } from './CallMasterVolumeMenu';
+import { CallSpotlightBar } from './CallSpotlightBar';
+import { CallEncryptionDebugPanel } from './CallEncryptionDebugPanel';
 import { CALL_PANE_DRAG_TYPE, CallPaneDockZones } from './CallPaneDockZones';
 import * as css from './CallPane.css';
 
@@ -41,7 +48,6 @@ function ConnectedCallPane({ connection, isReconnecting }: ConnectedCallPaneProp
   const { endCall } = useCallActions();
   const setIsCollapsed = useSetAtom(isCallPaneCollapsedAtom);
   const entries = useCallParticipantEntries(livekitRoom);
-  const activeSpeakers = useActiveSpeakers(livekitRoom);
   const memberships = useCallMemberships(matrixRoom);
   const roomName = useRoomName(matrixRoom);
   const paneRef = useRef<HTMLDivElement>(null);
@@ -56,20 +62,24 @@ function ConnectedCallPane({ connection, isReconnecting }: ConnectedCallPaneProp
   const [isDraggingPane, setIsDraggingPane] = useState(false);
   const [pickedFocusKey, setPickedFocusKey] = useState<string>();
   const [autoFocusKey, setAutoFocusKey] = useState<string>();
+  const [dismissedScreenshareKey, setDismissedScreenshareKey] = useState<string>();
 
   useEffect(() => {
+    const checkIsStillScreensharing = (key: string | undefined) =>
+      entries.some((entry) => entry.key === key && entry.isScreensharing);
+
     setAutoFocusKey((currentKey) => {
-      const isCurrentStillStreaming = entries.some(
-        (entry) => entry.key === currentKey && entry.isScreensharing
-      );
-      if (isCurrentStillStreaming) return currentKey;
+      if (checkIsStillScreensharing(currentKey)) return currentKey;
       return entries.find((entry) => entry.isScreensharing)?.key;
     });
+    setDismissedScreenshareKey((currentKey) =>
+      checkIsStillScreensharing(currentKey) ? currentKey : undefined
+    );
   }, [entries]);
 
-  const handleFocus = (key: string) => {
+  const handleFocus = useCallback((key: string) => {
     setPickedFocusKey((currentKey) => (currentKey === key ? undefined : key));
-  };
+  }, []);
 
   useEffect(() => {
     const headerElement = headerRef.current;
@@ -93,12 +103,25 @@ function ConnectedCallPane({ connection, isReconnecting }: ConnectedCallPaneProp
     toggleScreenshare,
   } = useLocalMediaControls(livekitRoom);
   const { isDeafened, toggleDeafen } = useCallDeafen(livekitRoom);
+  const [developerTools] = useSetting(settingsAtom, 'developerTools');
 
-  const speakingIdentities = new Set(activeSpeakers.map((speaker) => speaker.identity));
+  const autoFocusedEntry =
+    autoFocusKey === dismissedScreenshareKey
+      ? undefined
+      : entries.find((entry) => entry.key === autoFocusKey);
+  const pickedEntry = entries.find(
+    (entry) => entry.key === pickedFocusKey && checkIsEntryStreamingVideo(entry)
+  );
+  const focusedEntry = pickedEntry ?? autoFocusedEntry;
+  const stripEntries =
+    focusedEntry && !focusedEntry.isScreensharing
+      ? entries.filter((entry) => entry.key !== focusedEntry.key)
+      : entries;
 
-  const focusedEntry =
-    entries.find((entry) => entry.key === pickedFocusKey) ??
-    entries.find((entry) => entry.key === autoFocusKey);
+  const handleUnfocus = () => {
+    setPickedFocusKey(undefined);
+    if (focusedEntry?.isScreensharing) setDismissedScreenshareKey(focusedEntry.key);
+  };
 
   return (
     <div
@@ -154,6 +177,8 @@ function ConnectedCallPane({ connection, isReconnecting }: ConnectedCallPaneProp
             />
           </Header>
 
+          {developerTools && <CallEncryptionDebugPanel livekitRoom={livekitRoom} />}
+
           {focusedEntry ? (
             <div className={css.CallSpotlightLayout}>
               <div className={css.CallSpotlight}>
@@ -164,24 +189,28 @@ function ConnectedCallPane({ connection, isReconnecting }: ConnectedCallPaneProp
                     focusedEntry.isScreensharing ? Track.Source.ScreenShare : Track.Source.Camera
                   }
                   memberships={memberships}
-                  isSpeaking={speakingIdentities.has(focusedEntry.participant.identity)}
                   className={css.CallSpotlightTile}
                 />
               </div>
+              <CallSpotlightBar
+                room={matrixRoom}
+                entry={focusedEntry}
+                memberships={memberships}
+                onStopWatching={handleUnfocus}
+              />
               <Scroll direction="Horizontal" size="300" hideTrack visibility="Hover">
                 <div className={css.CallTileStrip}>
-                  {entries.map((entry) => (
+                  {stripEntries.map((entry) => (
                     <CallParticipantTile
                       key={entry.key}
                       room={matrixRoom}
                       participant={entry.participant}
                       source={Track.Source.Camera}
                       memberships={memberships}
-                      isSpeaking={speakingIdentities.has(entry.participant.identity)}
                       isScreensharing={entry.isScreensharing}
                       isFocused={entry.key === focusedEntry.key}
                       className={css.CallStripTile}
-                      onSelect={() => handleFocus(entry.key)}
+                      onSelect={checkIsEntryStreamingVideo(entry) ? handleFocus : undefined}
                     />
                   ))}
                 </div>
@@ -193,7 +222,6 @@ function ConnectedCallPane({ connection, isReconnecting }: ConnectedCallPaneProp
                 room={matrixRoom}
                 entries={entries}
                 memberships={memberships}
-                speakingIdentities={speakingIdentities}
                 onFocus={handleFocus}
               />
             </div>
@@ -224,6 +252,7 @@ function ConnectedCallPane({ connection, isReconnecting }: ConnectedCallPaneProp
               isIconFilled={isDeafened}
               aria-pressed={isDeafened}
             />
+            <CallMasterVolumeMenu />
             <CallControlButton
               size="400"
               radii="Pill"

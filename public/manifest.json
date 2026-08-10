@@ -1,7 +1,7 @@
 {
   "name": "Durnible",
   "short_name": "Durnible",
-  "description": "Yet another matrix client",
+  "description": "A Matrix client: end-to-end encrypted messaging, spaces, voice and video calls, screen sharing.",
   "dir": "auto",
   "lang": "en-US",
   "display": "standalone",

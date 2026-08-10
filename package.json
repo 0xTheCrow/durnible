@@ -1,7 +1,7 @@
 {
   "name": "durnible",
   "version": "4.10.2",
-  "description": "Yet another matrix client",
+  "description": "",
   "main": "index.js",
   "type": "module",
   "engines": {

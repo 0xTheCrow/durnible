@@ -4,7 +4,7 @@ import { Page, PageContent } from '../../../components/page';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { SettingTile } from '../../../components/setting-tile';
-import CinnySVG from '../../../../../public/res/svg/cinny.svg';
+import LogoSVG from '../../../../../public/res/svg/durnible.svg';
 import { clearCacheAndReload } from '../../../../client/initMatrix';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { SettingsPageHeader } from '../components';
@@ -27,7 +27,7 @@ export function About({ onBack, onClose }: AboutProps) {
                 <Box shrink="No">
                   <img
                     style={{ width: toRem(60), height: toRem(60) }}
-                    src={CinnySVG}
+                    src={LogoSVG}
                     alt="Durnible logo"
                   />
                 </Box>
@@ -37,7 +37,6 @@ export function About({ onBack, onClose }: AboutProps) {
                       <Text size="H3">Durnible</Text>
                       <Text size="T200">v4.10.2</Text>
                     </Box>
-                    <Text>Yet another matrix client.</Text>
                   </Box>
                 </Box>
               </Box>

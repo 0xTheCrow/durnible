@@ -9,8 +9,11 @@ import { useAtomValue } from 'jotai';
 import { isCallDeafenedAtom } from '../../state/call';
 import type { CallVideoSourceKind } from '../../hooks/call/useCallParticipantEntries';
 import { useParticipantTrackPublications } from '../../hooks/call/useParticipantTrackPublications';
+import { useIsParticipantSpeaking } from '../../hooks/call/useIsParticipantSpeaking';
+import { useCallUserIsMuted } from '../../state/hooks/callVolumePreferences';
 import { resolveCallParticipant } from '../../utils/call';
 import { CallMemberAvatar } from './CallMemberAvatar';
+import { useCallUserVolumeMenu } from './useCallUserVolumeMenu';
 import * as css from './CallPane.css';
 
 type CallParticipantTileProps = {
@@ -18,24 +21,23 @@ type CallParticipantTileProps = {
   participant: Participant;
   source: CallVideoSourceKind;
   memberships: CallMembership[];
-  isSpeaking: boolean;
   isScreensharing?: boolean;
   isFocused?: boolean;
   className: string;
-  onSelect?: () => void;
+  onSelect?: (participantIdentity: string) => void;
 };
-export function CallParticipantTile({
+function CallParticipantTileComponent({
   room,
   participant,
   source,
   memberships,
-  isSpeaking,
   isScreensharing,
   isFocused,
   className,
   onSelect,
 }: CallParticipantTileProps) {
   const trackPublications = useParticipantTrackPublications(participant);
+  const isSpeaking = useIsParticipantSpeaking(participant);
   const isDeafened = useAtomValue(isCallDeafenedAtom);
   const videoRef = useRef<HTMLVideoElement>(null);
   const isDeafenedLocally = participant.isLocal && isDeafened;
@@ -57,15 +59,10 @@ export function CallParticipantTile({
     };
   }, [videoTrack]);
 
-  const { userId, displayName: memberName } = resolveCallParticipant(
-    room,
-    participant.identity,
-    memberships
-  );
-  let displayName = memberName;
-  if (isScreenshareSource) {
-    displayName = participant.isLocal ? 'Your screen' : `${memberName}'s screen`;
-  }
+  const { userId, displayName } = resolveCallParticipant(room, participant.identity, memberships);
+
+  const isMutedLocally = useCallUserIsMuted(userId);
+  const { handleContextMenu, volumeMenu } = useCallUserVolumeMenu(userId, displayName);
 
   const renderPlaceholder = () => {
     if (isScreenshareSource) {
@@ -106,39 +103,61 @@ export function CallParticipantTile({
       ) : (
         renderPlaceholder()
       )}
-      <Box className={css.CallTileName} alignItems="Center" gap="100">
-        {!isScreenshareSource && isDeafenedLocally && (
-          <Icon size="50" src={Icons.Headphone} filled />
-        )}
-        {!isScreenshareSource && isMuted && <Icon size="50" src={Icons.MicMute} filled />}
-        {!isScreenshareSource && isScreensharing && <Icon size="50" src={Icons.Monitor} filled />}
-        <Text as="span" size="T200" truncate>
-          {displayName}
-        </Text>
-      </Box>
+      {!isScreenshareSource && isScreensharing && !isFocused && (
+        <Box className={css.CallTileScreenshareBadge} alignItems="Center" gap="100">
+          <Icon size="50" src={Icons.Monitor} filled />
+          <Text as="span" size="T200">
+            Sharing
+          </Text>
+        </Box>
+      )}
+      {!isScreenshareSource && (
+        <Box className={css.CallTileName} alignItems="Center" gap="100">
+          {isDeafenedLocally && <Icon size="50" src={Icons.Headphone} filled />}
+          {isMutedLocally && <Icon size="50" src={Icons.VolumeMute} filled />}
+          {isMuted && <Icon size="50" src={Icons.MicMute} filled />}
+          <Text as="span" size="T200" truncate>
+            {displayName}
+          </Text>
+        </Box>
+      )}
     </>
   );
 
   if (onSelect) {
     return (
+      <>
+        <Box
+          as="button"
+          type="button"
+          onClick={() => onSelect(participant.identity)}
+          onContextMenu={handleContextMenu}
+          aria-label={`Focus ${displayName}`}
+          aria-pressed={isFocused}
+          className={classNames(tileClassName, css.CallTileInteractive)}
+          alignItems="Center"
+          justifyContent="Center"
+        >
+          {tileContent}
+        </Box>
+        {volumeMenu}
+      </>
+    );
+  }
+
+  return (
+    <>
       <Box
-        as="button"
-        type="button"
-        onClick={onSelect}
-        aria-label={`Focus ${displayName}`}
-        aria-pressed={isFocused}
-        className={classNames(tileClassName, css.CallTileInteractive)}
+        className={tileClassName}
+        onContextMenu={handleContextMenu}
         alignItems="Center"
         justifyContent="Center"
       >
         {tileContent}
       </Box>
-    );
-  }
-
-  return (
-    <Box className={tileClassName} alignItems="Center" justifyContent="Center">
-      {tileContent}
-    </Box>
+      {volumeMenu}
+    </>
   );
 }
+
+export const CallParticipantTile = React.memo(CallParticipantTileComponent);

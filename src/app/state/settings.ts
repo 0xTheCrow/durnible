@@ -13,6 +13,9 @@ export type TimelineSliderRange = 'day' | 'week' | 'month' | '3months' | '6month
 
 export type CallPaneDock = 'Left' | 'Right' | 'Top' | 'Bottom';
 
+export type ScreenshareResolution = '720p' | '1080p' | '1440p';
+export type ScreenshareMaxFrameRate = 15 | 30 | 60;
+
 export interface Settings {
   themeId?: string;
   useSystemTheme: boolean;
@@ -71,6 +74,8 @@ export interface Settings {
   preferredVideoInputDeviceId?: string;
   preferredAudioOutputDeviceId?: string;
   microphoneInputFloorLevel: number;
+  screenshareResolution: ScreenshareResolution;
+  screenshareMaxFrameRate: ScreenshareMaxFrameRate;
   showCallPreJoinScreen: boolean;
   callPaneDock: CallPaneDock;
   callPaneWidth: number;
@@ -135,6 +140,8 @@ const defaultSettings: Settings = {
   preferredVideoInputDeviceId: undefined,
   preferredAudioOutputDeviceId: undefined,
   microphoneInputFloorLevel: 0,
+  screenshareResolution: '1080p',
+  screenshareMaxFrameRate: 30,
   showCallPreJoinScreen: false,
   callPaneDock: 'Top',
   callPaneWidth: 360,

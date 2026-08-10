@@ -9,6 +9,11 @@ import type { MediaDevicePreferences } from './localMedia';
 
 export const LEAVE_MEMBERSHIP_TIMEOUT_MS = 10_000;
 
+export const MAX_CALL_PIXEL_DENSITY = 2;
+
+export const getCallPixelDensity = (): number =>
+  Math.min(window.devicePixelRatio || 1, MAX_CALL_PIXEL_DENSITY);
+
 export type CallConnection = {
   matrixClient: MatrixClient;
   matrixRoom: Room;
@@ -42,7 +47,7 @@ export const connectToCall = async (
   const rtcSession = matrixClient.matrixRTC.getRoomSession(matrixRoom);
   const keyProvider = matrixRoom.hasEncryptionStateEvent() ? new MatrixKeyProvider() : undefined;
   const livekitRoom = new LivekitRoom({
-    adaptiveStream: true,
+    adaptiveStream: { pixelDensity: getCallPixelDensity() },
     dynacast: true,
     audioCaptureDefaults: { deviceId: devicePreferences.audioInputDeviceId },
     videoCaptureDefaults: { deviceId: devicePreferences.videoInputDeviceId },

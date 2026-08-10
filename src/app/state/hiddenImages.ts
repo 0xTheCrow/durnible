@@ -14,11 +14,7 @@ const loadFromStorage = (): string[] => {
 };
 
 const saveToStorage = (queue: string[]): void => {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(queue));
-  } catch {
-    // ignore quota/security errors
-  }
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(queue));
 };
 
 // Underlying atom holds the queue ordered oldest→newest

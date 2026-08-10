@@ -48,7 +48,7 @@ global.IntersectionObserver = MockObserver as unknown as typeof IntersectionObse
 global.ResizeObserver = MockObserver as unknown as typeof ResizeObserver;
 
 // Mock SVG imports
-vi.mock('../../../../public/res/svg/cinny.svg', () => ({ default: 'cinny.svg' }));
+vi.mock('../../../../public/res/svg/durnible.svg', () => ({ default: 'durnible.svg' }));
 
 // Mock i18next
 vi.mock('react-i18next', () => ({
