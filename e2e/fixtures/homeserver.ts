@@ -106,6 +106,18 @@ export const textEvent = (index: number): Record<string, unknown> => ({
   origin_server_ts: 1700000000010 + index,
 });
 
+export const replyEvent = (index: number, repliedToEventId: string): Record<string, unknown> => ({
+  type: 'm.room.message',
+  sender: TEST_USER_ID,
+  content: {
+    msgtype: 'm.text',
+    body: `> replied\n\nreply message ${index}`,
+    'm.relates_to': { 'm.in_reply_to': { event_id: repliedToEventId } },
+  },
+  event_id: `$reply${index}`,
+  origin_server_ts: 1700000000010 + index,
+});
+
 const initialSync = (
   extraTimelineEvents: Record<string, unknown>[] = []
 ): Record<string, unknown> => ({

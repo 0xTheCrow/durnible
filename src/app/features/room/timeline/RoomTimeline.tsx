@@ -232,11 +232,10 @@ export function RoomTimeline({
   const hadFocusRef = useRef(false);
   useLayoutEffect(() => {
     if (focusRequest) {
-      scrollController.pinToAnchor(
-        `[data-message-id="${CSS.escape(focusRequest.eventId)}"]`,
-        { align: 'start', offsetFraction: 0.12 },
-        { animate: true }
-      );
+      scrollController.pinToAnchor(`[data-message-id="${CSS.escape(focusRequest.eventId)}"]`, {
+        align: 'start',
+        offsetFraction: 0.12,
+      });
       hadFocusRef.current = true;
     } else if (hadFocusRef.current) {
       scrollController.release();
