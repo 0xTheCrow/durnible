@@ -4,7 +4,7 @@ import type { Room } from 'matrix-js-sdk';
 import { Direction } from 'matrix-js-sdk';
 import { useMatrixClient } from '../../../../hooks/useMatrixClient';
 import { PAGINATION_LIMIT, useTimelinePagination } from '../timelineState';
-import type { Timeline } from '../timelineState';
+import type { Timeline, TimelineRange } from '../timelineState';
 import {
   getLiveTimeline,
   getTimelineAndBaseIndex,
@@ -26,6 +26,7 @@ export type PaginationState = {
 export const usePaginationState = (
   room: Room,
   timeline: Timeline,
+  range: TimelineRange,
   setTimeline: Dispatch<SetStateAction<Timeline>>
 ): PaginationState => {
   const mx = useMatrixClient();
@@ -43,15 +44,15 @@ export const usePaginationState = (
 
   const canPaginateBack =
     typeof timeline.linkedTimelines[0]?.getPaginationToken(Direction.Backward) === 'string';
-  const rangeAtOldest = timeline.range.oldest === 0;
+  const rangeAtOldest = range.oldest === 0;
 
   const liveTimelineLinked =
     timeline.linkedTimelines[timeline.linkedTimelines.length - 1] === getLiveTimeline(room);
 
   const eventsLength = getTimelinesEventsCount(timeline.linkedTimelines);
   const rangeAtNewest = (() => {
-    if (timeline.range.newest >= eventsLength) return true;
-    for (let i = timeline.range.newest; i < eventsLength; i += 1) {
+    if (range.newest >= eventsLength) return true;
+    for (let i = range.newest; i < eventsLength; i += 1) {
       const [eventTimeline, base] = getTimelineAndBaseIndex(timeline.linkedTimelines, i);
       if (!eventTimeline) continue;
       const matrixEvent = getTimelineEvent(eventTimeline, getTimelineRelativeIndex(i, base));

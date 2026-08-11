@@ -52,6 +52,34 @@ const renderController = (
   return { controller: () => hookRef.current!, scrollElement };
 };
 
+type StubbedRow = {
+  setOffsetTop: (value: number) => void;
+};
+
+const appendRow = (
+  contentElement: HTMLElement,
+  offsetTop: number,
+  offsetHeight: number
+): StubbedRow => {
+  const rowElement = document.createElement('div');
+  rowElement.setAttribute('data-message-id', '$row');
+  let currentOffsetTop = offsetTop;
+  Object.defineProperty(rowElement, 'offsetTop', {
+    configurable: true,
+    get: () => currentOffsetTop,
+  });
+  Object.defineProperty(rowElement, 'offsetHeight', {
+    configurable: true,
+    get: () => offsetHeight,
+  });
+  contentElement.appendChild(rowElement);
+  return {
+    setOffsetTop: (value) => {
+      currentOffsetTop = value;
+    },
+  };
+};
+
 let originalResizeObserver: typeof ResizeObserver | undefined;
 
 beforeEach(() => {
@@ -164,6 +192,28 @@ describe('useScrollController', () => {
       act(() => resizeObserverInstances[0].trigger());
 
       expect(geometry.getScrollTop()).toBe(100);
+    });
+
+    it('keeps the same content under the viewport when content above it grows while free', () => {
+      vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+      const { controller, scrollElement } = renderController(ref(false), ref(false));
+      const contentElement = scrollElement.querySelector('[data-testid="content"]') as HTMLElement;
+      const geometry = stubScrollGeometry(scrollElement, { scrollHeight: 5000, offsetHeight: 400 });
+      const viewportTopScrollTop = 2000;
+      const growthAboveViewportPx = 300;
+
+      const topRow = appendRow(contentElement, viewportTopScrollTop, 500);
+      geometry.setScrollTop(viewportTopScrollTop);
+      act(() => {
+        scrollElement.dispatchEvent(new Event('scroll'));
+      });
+      expect(controller().intentRef.current?.kind).toBe('free');
+
+      topRow.setOffsetTop(viewportTopScrollTop + growthAboveViewportPx);
+      geometry.setScrollHeight(5000 + growthAboveViewportPx);
+      act(() => resizeObserverInstances[0].trigger());
+
+      expect(geometry.getScrollTop()).toBe(viewportTopScrollTop + growthAboveViewportPx);
     });
 
     it('re-pins followLive on resize when focused', () => {

@@ -512,7 +512,6 @@ function Messages() {
 function Advanced() {
   const [pwaMode, setPwaMode] = useSetting(settingsAtom, 'pwaMode');
   const [swipeGestures, setSwipeGestures] = useSetting(settingsAtom, 'swipeGestures');
-  const [useTimelineV1, setUseTimelineV1] = useSetting(settingsAtom, 'useTimelineV1');
   return (
     <Box direction="Column" gap="100">
       <Text size="L400">Advanced</Text>
@@ -528,13 +527,6 @@ function Advanced() {
           title="PWA Mode"
           description="Show update notifications when a new version is available."
           after={<Switch variant="Primary" value={pwaMode} onChange={setPwaMode} />}
-        />
-      </SequenceCard>
-      <SequenceCard className={SettingsCardStyle} variant="SurfaceVariant" direction="Column">
-        <SettingTile
-          title="Use Legacy Timeline (V1)"
-          description="Switch back to the previous room timeline implementation."
-          after={<Switch variant="Primary" value={useTimelineV1} onChange={setUseTimelineV1} />}
         />
       </SequenceCard>
     </Box>

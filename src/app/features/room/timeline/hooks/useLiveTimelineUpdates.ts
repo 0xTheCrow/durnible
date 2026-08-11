@@ -7,6 +7,7 @@ import type { Timeline } from '../timelineState';
 import { getTimelinesEventsCount } from '../timelineUtils';
 import { isModifierTimelineEvent } from '../../../../utils/room';
 import { getScrollBottomDistance } from '../../../../utils/dom';
+import { createTimelineWindow } from '../utils/timelineWindow';
 import { traceTimelineScroll } from '../utils/scrollTrace';
 import type { ScrollIntent } from './useScrollController';
 
@@ -65,13 +66,13 @@ export const useLiveTimelineUpdates = ({
         if (autoPinEnabled) pinToLiveEnd();
         setTimeline((current) => {
           const total = getTimelinesEventsCount(current.linkedTimelines);
-          const windowSize = current.range.newest - current.range.oldest;
           return {
             ...current,
-            range: {
-              oldest: Math.max(0, total - windowSize),
-              newest: total,
-            },
+            window: createTimelineWindow(
+              current.linkedTimelines,
+              Math.max(0, total - current.window.size),
+              total
+            ),
           };
         });
         return;

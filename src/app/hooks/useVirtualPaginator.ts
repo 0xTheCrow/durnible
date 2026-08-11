@@ -81,34 +81,28 @@ const getDropIndex = (
   return dropIndex;
 };
 
-type RestoreAnchorData = [number | undefined, HTMLElement | undefined];
-const getRestoreAnchor = (
+const getRestoreAnchorElement = (
   range: ItemRange,
   getItemElement: (index: number) => HTMLElement | undefined,
   direction: Direction
-): RestoreAnchorData => {
-  let scrollAnchorElement: HTMLElement | undefined;
-  const scrollAnchorItem = (
-    direction === Direction.Backward ? generateItems(range) : generateItems(range).reverse()
-  ).find((i) => {
-    const itemElement = getItemElement(i);
-    if (itemElement) {
-      scrollAnchorElement = itemElement;
-      return true;
+): HTMLElement | undefined => {
+  let anchorElement: HTMLElement | undefined;
+  (direction === Direction.Backward ? generateItems(range) : generateItems(range).reverse()).find(
+    (item) => {
+      anchorElement = getItemElement(item);
+      return !!anchorElement;
     }
-    return false;
-  });
-  return [scrollAnchorItem, scrollAnchorElement];
+  );
+  return anchorElement;
 };
 
-const getRestoreScrollData = (scrollTop: number, restoreAnchorData: RestoreAnchorData) => {
-  const [anchorItem, anchorElement] = restoreAnchorData;
-  if (!anchorItem || !anchorElement) {
+const getRestoreScrollData = (scrollTop: number, anchorElement: HTMLElement | undefined) => {
+  if (!anchorElement) {
     return undefined;
   }
   return {
     scrollTop,
-    anchorItem,
+    anchorElement,
     anchorOffsetTop: anchorElement.offsetTop,
   };
 };
@@ -148,7 +142,7 @@ export const useVirtualPaginator = <TScrollElement extends HTMLElement>(
   const restoreScrollRef = useRef<{
     scrollTop: number;
     anchorOffsetTop: number;
-    anchorItem: number;
+    anchorElement: HTMLElement;
   }>();
 
   const propRef = useRef({
@@ -156,11 +150,6 @@ export const useVirtualPaginator = <TScrollElement extends HTMLElement>(
     limit,
     count,
   });
-  if (propRef.current.count !== count) {
-    // Clear restoreScrollRef on count change
-    // As restoreScrollRef.current.anchorItem might changes
-    restoreScrollRef.current = undefined;
-  }
   propRef.current = {
     range,
     count,
@@ -194,7 +183,7 @@ export const useVirtualPaginator = <TScrollElement extends HTMLElement>(
             getDropIndex(scrollElement, currentRange, Direction.Forward, getItemElement, 2) ?? end;
           restoreScrollRef.current = getRestoreScrollData(
             scrollElement.scrollTop,
-            getRestoreAnchor({ start, end }, getItemElement, Direction.Backward)
+            getRestoreAnchorElement({ start, end }, getItemElement, Direction.Backward)
           );
         }
         start = Math.max(start - currentLimit, 0);
@@ -213,7 +202,7 @@ export const useVirtualPaginator = <TScrollElement extends HTMLElement>(
             start;
           restoreScrollRef.current = getRestoreScrollData(
             scrollElement.scrollTop,
-            getRestoreAnchor({ start, end }, getItemElement, Direction.Forward)
+            getRestoreAnchorElement({ start, end }, getItemElement, Direction.Forward)
           );
         }
         end = Math.min(end + currentLimit, currentCount);
@@ -270,12 +259,11 @@ export const useVirtualPaginator = <TScrollElement extends HTMLElement>(
     }
     const {
       anchorOffsetTop: oldOffsetTop,
-      anchorItem,
+      anchorElement,
       scrollTop: oldScrollTop,
     } = restoreScrollRef.current;
-    const anchorElement = getItemElement(anchorItem);
 
-    if (!anchorElement) return;
+    if (!anchorElement.isConnected) return;
     const { offsetTop } = anchorElement;
     const offsetAddition = offsetTop - oldOffsetTop;
     const restoreTop = oldScrollTop + offsetAddition;

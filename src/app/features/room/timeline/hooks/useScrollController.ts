@@ -50,6 +50,9 @@ const ANCHOR_SATISFIED_TOLERANCE_PX = 2;
 
 export const LIVE_EDGE_THRESHOLD_PX = 20;
 
+const getElementTopInScroll = (element: HTMLElement, scrollElement: HTMLElement): number =>
+  element.offsetTop - scrollElement.offsetTop;
+
 const anchorOffsetPx = (intent: AnchorIntent, scrollElement: HTMLElement): number =>
   intent.offsetFraction !== undefined
     ? Math.round(scrollElement.clientHeight * intent.offsetFraction)
@@ -66,6 +69,44 @@ export const useScrollController = ({
   const autoScrollTimerRef = useRef(0);
   const lastReportedAtBottomRef = useRef(false);
   const userScrollSinceBottomRef = useRef(false);
+
+  const freeScrollAnchorRef = useRef<{ element: HTMLElement; viewportOffset: number } | null>(null);
+
+  const captureFreeScrollAnchor = useCallback(() => {
+    freeScrollAnchorRef.current = null;
+    const scrollElement = scrollRef.current;
+    const contentElement = contentRef.current;
+    if (!scrollElement || !contentElement) return;
+    const { scrollTop } = scrollElement;
+    const rowElements = contentElement.children;
+    for (let i = 0; i < rowElements.length; i += 1) {
+      const rowElement = rowElements[i] as HTMLElement;
+      const rowTop = getElementTopInScroll(rowElement, scrollElement);
+      if (rowTop + rowElement.offsetHeight > scrollTop) {
+        freeScrollAnchorRef.current = { element: rowElement, viewportOffset: rowTop - scrollTop };
+        return;
+      }
+    }
+  }, [scrollRef, contentRef]);
+
+  const maintainFreePosition = useCallback(() => {
+    const scrollElement = scrollRef.current;
+    if (!scrollElement) return;
+    const freeScrollAnchor = freeScrollAnchorRef.current;
+    if (!freeScrollAnchor || !freeScrollAnchor.element.isConnected) {
+      captureFreeScrollAnchor();
+      return;
+    }
+    const targetScrollTop =
+      getElementTopInScroll(freeScrollAnchor.element, scrollElement) -
+      freeScrollAnchor.viewportOffset;
+    if (targetScrollTop === scrollElement.scrollTop) return;
+    traceTimelineScroll('maintainPosition:free-apply', {
+      scrollTopBefore: Math.round(scrollElement.scrollTop),
+      targetScrollTop: Math.round(targetScrollTop),
+    });
+    scrollElement.scrollTo({ top: targetScrollTop, behavior: 'instant' });
+  }, [scrollRef, captureFreeScrollAnchor]);
 
   const beginAutoScroll = useCallback(() => {
     autoScrollingRef.current = true;
@@ -203,7 +244,10 @@ export const useScrollController = ({
     const contentElement = contentRef.current;
     if (!scrollElement || !contentElement) return undefined;
     const maintainPosition = () => {
-      if (intentRef.current.kind === 'free') return;
+      if (intentRef.current.kind === 'free') {
+        maintainFreePosition();
+        return;
+      }
       if (
         intentRef.current.kind === 'followLive' &&
         !document.hasFocus() &&
@@ -219,7 +263,7 @@ export const useScrollController = ({
     resizeObserver.observe(contentElement);
     resizeObserver.observe(scrollElement);
     return () => resizeObserver.disconnect();
-  }, [scrollRef, contentRef, apply, unfocusedAutoScrollRef]);
+  }, [scrollRef, contentRef, apply, unfocusedAutoScrollRef, maintainFreePosition]);
 
   useEffect(() => {
     const scrollElement = scrollRef.current;
@@ -256,6 +300,7 @@ export const useScrollController = ({
     };
     let lastScrollSampleAt = 0;
     const handleScroll = () => {
+      captureFreeScrollAnchor();
       const now = performance.now();
       if (now - lastScrollSampleAt < TRACE_COALESCE_WINDOW_MS) return;
       lastScrollSampleAt = now;
@@ -279,7 +324,7 @@ export const useScrollController = ({
       scrollElement.removeEventListener('scroll', handleScroll);
       scrollElement.removeEventListener('scrollend', handleScrollEnd);
     };
-  }, [scrollRef, isInLivePaginationWindowRef]);
+  }, [scrollRef, isInLivePaginationWindowRef, captureFreeScrollAnchor]);
 
   return useMemo(
     () => ({ pinToLiveEnd, pinToAnchor, release, releaseFollowLive, syncFollowLive, intentRef }),

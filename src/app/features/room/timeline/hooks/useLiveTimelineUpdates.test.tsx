@@ -5,14 +5,23 @@ import type { EventTimeline, MatrixEvent, Room } from 'matrix-js-sdk';
 import { RoomEvent, RelationType } from 'matrix-js-sdk';
 import { createEventEmitterRoom } from '../timelineTestHelpers';
 import type { Timeline } from '../timelineState';
+import { createTimelineWindow, getWindowRange } from '../utils/timelineWindow';
 import { useLiveTimelineUpdates } from './useLiveTimelineUpdates';
 import type { ScrollIntent } from './useScrollController';
 
 const INITIAL_RANGE = { oldest: 5, newest: 10 };
 const WINDOW_SIZE = INITIAL_RANGE.newest - INITIAL_RANGE.oldest;
 
-const linkedTimelinesWithCount = (count: number): EventTimeline[] =>
-  [{ getEvents: () => new Array(count) }] as unknown as EventTimeline[];
+const linkedTimelinesWithCount = (count: number): EventTimeline[] => {
+  const events = Array.from(
+    { length: count },
+    (_unused, index) => ({ getId: () => `$e${index}` } as MatrixEvent)
+  );
+  return [{ getEvents: () => events }] as unknown as EventTimeline[];
+};
+
+const derivedRange = (timeline: Timeline | null | undefined) =>
+  timeline ? getWindowRange(timeline.linkedTimelines, timeline.window) : undefined;
 
 const liveMessage = (): MatrixEvent =>
   ({
@@ -53,9 +62,12 @@ function Harness({
   pinToLiveEnd,
   onState,
 }: HarnessProps) {
-  const [timeline, setTimeline] = useState<Timeline>({
-    linkedTimelines: linkedTimelinesWithCount(totalEvents),
-    range: { ...INITIAL_RANGE },
+  const [timeline, setTimeline] = useState<Timeline>(() => {
+    const linkedTimelines = linkedTimelinesWithCount(totalEvents);
+    return {
+      linkedTimelines,
+      window: createTimelineWindow(linkedTimelines, INITIAL_RANGE.oldest, INITIAL_RANGE.newest),
+    };
   });
   const scrollRef = useRef<HTMLDivElement>(null);
   const atBottomRef = useRef(atBottom);
@@ -130,7 +142,7 @@ describe('useLiveTimelineUpdates', () => {
   it('re-renders without shifting the range for a modifier event', () => {
     const { room, pinToLiveEnd, state } = setup({ followingLive: true });
     emit(room, reaction());
-    expect(state.current?.range).toEqual(INITIAL_RANGE);
+    expect(derivedRange(state.current)).toEqual(INITIAL_RANGE);
     expect(pinToLiveEnd).not.toHaveBeenCalled();
   });
 
@@ -142,7 +154,7 @@ describe('useLiveTimelineUpdates', () => {
       totalEvents,
     });
     emit(room, liveMessage());
-    expect(state.current?.range).toEqual({
+    expect(derivedRange(state.current)).toEqual({
       oldest: totalEvents - WINDOW_SIZE,
       newest: totalEvents,
     });
@@ -159,7 +171,7 @@ describe('useLiveTimelineUpdates', () => {
       totalEvents,
     });
     emit(room, liveMessage());
-    expect(state.current?.range).toEqual({
+    expect(derivedRange(state.current)).toEqual({
       oldest: totalEvents - WINDOW_SIZE,
       newest: totalEvents,
     });
@@ -175,7 +187,7 @@ describe('useLiveTimelineUpdates', () => {
       totalEvents: INITIAL_RANGE.newest + 1,
     });
     emit(room, liveMessage());
-    expect(state.current?.range).toEqual(INITIAL_RANGE);
+    expect(derivedRange(state.current)).toEqual(INITIAL_RANGE);
     expect(pinToLiveEnd).not.toHaveBeenCalled();
   });
 
@@ -188,7 +200,7 @@ describe('useLiveTimelineUpdates', () => {
       totalEvents: INITIAL_RANGE.newest + 1,
     });
     emit(room, liveMessage());
-    expect(state.current?.range).toEqual(INITIAL_RANGE);
+    expect(derivedRange(state.current)).toEqual(INITIAL_RANGE);
     expect(pinToLiveEnd).not.toHaveBeenCalled();
   });
 
@@ -201,7 +213,7 @@ describe('useLiveTimelineUpdates', () => {
       totalEvents,
     });
     emit(room, liveMessage());
-    expect(state.current?.range).toEqual({
+    expect(derivedRange(state.current)).toEqual({
       oldest: totalEvents - WINDOW_SIZE,
       newest: totalEvents,
     });
@@ -217,7 +229,7 @@ describe('useLiveTimelineUpdates', () => {
       totalEvents,
     });
     emit(room, liveMessage());
-    expect(state.current?.range).toEqual({
+    expect(derivedRange(state.current)).toEqual({
       oldest: totalEvents - WINDOW_SIZE,
       newest: totalEvents,
     });

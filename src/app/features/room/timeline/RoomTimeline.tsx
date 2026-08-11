@@ -45,6 +45,7 @@ import { useTimelineMessageContextValue } from './hooks/useTimelineMessageContex
 import { usePaginationState } from './hooks/usePaginationState';
 import { useAutoMarkAsRead } from './hooks/useAutoMarkAsRead';
 import { resolveTimelineEvents } from './utils/resolveTimelineEvents';
+import { createTimelineWindow, getWindowRange } from './utils/timelineWindow';
 import { traceTimelineScroll } from './utils/scrollTrace';
 import { willEventRender } from './willEventRender';
 
@@ -67,6 +68,15 @@ export function RoomTimeline({
   const scrollRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [timeline, setTimeline] = useState<Timeline>(() => getInitialTimeline(room));
+  const windowStartIndexHintRef = useRef<number>();
+  const range = getWindowRange(
+    timeline.linkedTimelines,
+    timeline.window,
+    windowStartIndexHintRef.current
+  );
+  windowStartIndexHintRef.current = range.oldest;
+  const renderedRangeRef = useRef(range);
+  renderedRangeRef.current = range;
   const [editId, setEditId] = useState<string>();
   const [dividerReadUptoEventId, setDividerReadUptoEventId] = useState<string | undefined>(() =>
     getReadReceiptEventId(room, mx.getSafeUserId())
@@ -97,7 +107,7 @@ export function RoomTimeline({
     isForwardPaginating,
     liveTimelineLinked,
     rangeAtNewest,
-  } = usePaginationState(room, timeline, setTimeline);
+  } = usePaginationState(room, timeline, range, setTimeline);
 
   const { selectionMode, selectedIds, bulkDeleting, handleBulkDelete, handleCancelSelection } =
     useBulkSelection(mx, room);
@@ -183,10 +193,11 @@ export function RoomTimeline({
       const totalCount = getTimelinesEventsCount(result.linkedTimelines);
       setTimeline({
         linkedTimelines: result.linkedTimelines,
-        range: {
-          oldest: Math.max(0, result.absoluteIndex - contextSize),
-          newest: Math.min(totalCount, result.absoluteIndex + contextSize),
-        },
+        window: createTimelineWindow(
+          result.linkedTimelines,
+          Math.max(0, result.absoluteIndex - contextSize),
+          Math.min(totalCount, result.absoluteIndex + contextSize)
+        ),
       });
       setFocusRequest({ eventId: targetEventId, nonce: requestId });
       setHighlightFocus(highlight);
@@ -297,16 +308,17 @@ export function RoomTimeline({
     const totalCount = getTimelinesEventsCount(result.linkedTimelines);
     setTimeline({
       linkedTimelines: result.linkedTimelines,
-      range: {
-        oldest: Math.max(0, result.absoluteIndex - contextSize),
-        newest: Math.min(totalCount, result.absoluteIndex + contextSize),
-      },
+      window: createTimelineWindow(
+        result.linkedTimelines,
+        Math.max(0, result.absoluteIndex - contextSize),
+        Math.min(totalCount, result.absoluteIndex + contextSize)
+      ),
     });
     setPendingJumpToDivider(true);
   };
 
   const eventsLength = getTimelinesEventsCount(timeline.linkedTimelines);
-  const { oldest: rangeOldest, newest: rangeNewest } = timeline.range;
+  const { oldest: rangeOldest, newest: rangeNewest } = range;
 
   useEffect(() => {
     traceTimelineScroll('timelineWindow:change', {
@@ -337,15 +349,23 @@ export function RoomTimeline({
   const { getItems, observeBackAnchor, observeFrontAnchor } = useVirtualPaginator({
     count: eventsLength,
     limit: PAGINATION_LIMIT,
-    range: { start: timeline.range.oldest, end: timeline.range.newest },
-    onRangeChange: useCallback(
-      (range) =>
-        setTimeline((current) => ({
+    range: { start: range.oldest, end: range.newest },
+    onRangeChange: useCallback((nextRange) => {
+      const renderedRange = renderedRangeRef.current;
+      const startShift = nextRange.start - renderedRange.oldest;
+      setTimeline((current) => {
+        const currentStartIndex =
+          getWindowRange(current.linkedTimelines, current.window).oldest + startShift;
+        return {
           ...current,
-          range: { oldest: range.start, newest: range.end },
-        })),
-      []
-    ),
+          window: createTimelineWindow(
+            current.linkedTimelines,
+            Math.max(0, currentStartIndex),
+            Math.max(0, currentStartIndex) + (nextRange.end - nextRange.start)
+          ),
+        };
+      });
+    }, []),
     getScrollElement,
     getItemElement,
     onEnd: handleTimelinePagination,
@@ -435,10 +455,11 @@ export function RoomTimeline({
       const totalCount = getTimelinesEventsCount(result.linkedTimelines);
       setTimeline({
         linkedTimelines: result.linkedTimelines,
-        range: {
-          oldest: Math.max(0, result.absoluteIndex - contextSize),
-          newest: Math.min(totalCount, result.absoluteIndex + contextSize),
-        },
+        window: createTimelineWindow(
+          result.linkedTimelines,
+          Math.max(0, result.absoluteIndex - contextSize),
+          Math.min(totalCount, result.absoluteIndex + contextSize)
+        ),
       });
       setPendingMountPlacement(true);
     })();
