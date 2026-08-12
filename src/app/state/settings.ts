@@ -13,6 +13,14 @@ export type TimelineSliderRange = 'day' | 'week' | 'month' | '3months' | '6month
 
 export type CallPaneDock = 'Left' | 'Right' | 'Top' | 'Bottom';
 
+export type NotificationSoundId =
+  | 'stealth'
+  | 'low-key'
+  | 'exuberant'
+  | 'attention'
+  | 'chime'
+  | 'melody';
+
 export type ScreenshareResolution = '720p' | '1080p' | '1440p';
 export type ScreenshareMaxFrameRate = 15 | 30 | 60;
 
@@ -56,7 +64,9 @@ export interface Settings {
   replyHighlight: boolean;
 
   showNotifications: boolean;
-  isNotificationSounds: boolean;
+  isNotificationSoundEnabled: boolean;
+  messageNotificationSoundId: NotificationSoundId;
+  inviteNotificationSoundId: NotificationSoundId;
 
   hour24Clock: boolean;
   dateFormatString: string;
@@ -121,7 +131,9 @@ const defaultSettings: Settings = {
   replyHighlight: true,
 
   showNotifications: true,
-  isNotificationSounds: true,
+  isNotificationSoundEnabled: true,
+  messageNotificationSoundId: 'stealth',
+  inviteNotificationSoundId: 'stealth',
 
   hour24Clock: false,
   dateFormatString: 'D MMM YYYY',
@@ -146,12 +158,21 @@ const defaultSettings: Settings = {
   callPaneHeight: 420,
 };
 
+type LegacySettings = Settings & {
+  isNotificationSounds?: boolean;
+};
+
 export const getSettings = () => {
   const settings = localStorage.getItem(STORAGE_KEY);
   if (settings === null) return defaultSettings;
+  const storedSettings = JSON.parse(settings) as LegacySettings;
   return {
     ...defaultSettings,
-    ...(JSON.parse(settings) as Settings),
+    ...storedSettings,
+    isNotificationSoundEnabled:
+      storedSettings.isNotificationSoundEnabled ??
+      storedSettings.isNotificationSounds ??
+      defaultSettings.isNotificationSoundEnabled,
   };
 };
 

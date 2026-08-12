@@ -1,16 +1,14 @@
-import React, { useCallback } from 'react';
-import { Box, Text, Switch, Button, color, Spinner } from 'folds';
-import type { IPusherRequest } from 'matrix-js-sdk';
+import React from 'react';
+import { Box, Text, Switch, Button, color } from 'folds';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { SettingTile } from '../../../components/setting-tile';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
 import { getNotificationState, usePermissionState } from '../../../hooks/usePermission';
-import { useEmailNotifications } from '../../../hooks/useEmailNotifications';
-import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
-import { useMatrixClient } from '../../../hooks/useMatrixClient';
+import { SelectNotificationSound } from '../components';
 
+/*
 function EmailNotification() {
   const mx = useMatrixClient();
   const [result, refreshResult] = useEmailNotifications();
@@ -83,13 +81,22 @@ function EmailNotification() {
     />
   );
 }
+*/
 
 export function SystemNotification() {
   const notifPermission = usePermissionState('notifications', getNotificationState());
   const [showNotifications, setShowNotifications] = useSetting(settingsAtom, 'showNotifications');
-  const [isNotificationSounds, setIsNotificationSounds] = useSetting(
+  const [isNotificationSoundEnabled, setIsNotificationSoundEnabled] = useSetting(
     settingsAtom,
-    'isNotificationSounds'
+    'isNotificationSoundEnabled'
+  );
+  const [messageNotificationSoundId, setMessageNotificationSoundId] = useSetting(
+    settingsAtom,
+    'messageNotificationSoundId'
+  );
+  const [inviteNotificationSoundId, setInviteNotificationSoundId] = useSetting(
+    settingsAtom,
+    'inviteNotificationSoundId'
   );
 
   const requestNotificationPermission = () => {
@@ -142,9 +149,34 @@ export function SystemNotification() {
         <SettingTile
           title="Notification Sound"
           description="Play sound when new message arrive."
-          after={<Switch value={isNotificationSounds} onChange={setIsNotificationSounds} />}
+          after={
+            <Switch value={isNotificationSoundEnabled} onChange={setIsNotificationSoundEnabled} />
+          }
+        />
+        <SettingTile
+          title="Message Sound"
+          description="Sound played when a new message arrive."
+          after={
+            <SelectNotificationSound
+              soundId={messageNotificationSoundId}
+              disabled={!isNotificationSoundEnabled}
+              onSelect={setMessageNotificationSoundId}
+            />
+          }
+        />
+        <SettingTile
+          title="Invite Sound"
+          description="Sound played when a new invitation arrive."
+          after={
+            <SelectNotificationSound
+              soundId={inviteNotificationSoundId}
+              disabled={!isNotificationSoundEnabled}
+              onSelect={setInviteNotificationSoundId}
+            />
+          }
         />
       </SequenceCard>
+      {/*
       <SequenceCard
         className={SettingsCardStyle}
         variant="SurfaceVariant"
@@ -153,6 +185,7 @@ export function SystemNotification() {
       >
         <EmailNotification />
       </SequenceCard>
+      */}
     </Box>
   );
 }

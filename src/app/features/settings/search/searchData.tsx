@@ -22,6 +22,7 @@ import {
   SelectDateFormat,
   SelectMessageLayout,
   SelectMessageSpacing,
+  SelectNotificationSound,
 } from '../components';
 
 // --- Appearance ---
@@ -320,12 +321,52 @@ function MessageSpacingSetting() {
 
 // --- Notifications ---
 function NotificationSoundSetting() {
-  const [value, setValue] = useSetting(settingsAtom, 'isNotificationSounds');
+  const [value, setValue] = useSetting(settingsAtom, 'isNotificationSoundEnabled');
   return (
     <SettingTile
       title="Notification Sound"
       description="Play sound when new messages arrive."
       after={<Switch variant="Primary" value={value} onChange={setValue} />}
+    />
+  );
+}
+function MessageNotificationSoundSetting() {
+  const [isNotificationSoundEnabled] = useSetting(settingsAtom, 'isNotificationSoundEnabled');
+  const [messageNotificationSoundId, setMessageNotificationSoundId] = useSetting(
+    settingsAtom,
+    'messageNotificationSoundId'
+  );
+  return (
+    <SettingTile
+      title="Message Sound"
+      description="Sound played when a new message arrive."
+      after={
+        <SelectNotificationSound
+          soundId={messageNotificationSoundId}
+          disabled={!isNotificationSoundEnabled}
+          onSelect={setMessageNotificationSoundId}
+        />
+      }
+    />
+  );
+}
+function InviteNotificationSoundSetting() {
+  const [isNotificationSoundEnabled] = useSetting(settingsAtom, 'isNotificationSoundEnabled');
+  const [inviteNotificationSoundId, setInviteNotificationSoundId] = useSetting(
+    settingsAtom,
+    'inviteNotificationSoundId'
+  );
+  return (
+    <SettingTile
+      title="Invite Sound"
+      description="Sound played when a new invitation arrive."
+      after={
+        <SelectNotificationSound
+          soundId={inviteNotificationSoundId}
+          disabled={!isNotificationSoundEnabled}
+          onSelect={setInviteNotificationSoundId}
+        />
+      }
     />
   );
 }
@@ -717,6 +758,36 @@ export const settingsSearchData: SettingsSearchEntry<SettingsPages>[] = [
     Render: NotificationSoundSetting,
   },
   {
+    id: 'message-notification-sound',
+    title: 'Message Sound',
+    description: 'Sound played when a new message arrive.',
+    keywords: ['notification', 'sound', 'audio', 'message', 'tone', 'chime', 'ping', 'ringtone'],
+    page: SettingsPages.NotificationPage,
+    pageName: 'Notifications',
+    sectionName: 'System',
+    Render: MessageNotificationSoundSetting,
+  },
+  {
+    id: 'invite-notification-sound',
+    title: 'Invite Sound',
+    description: 'Sound played when a new invitation arrive.',
+    keywords: [
+      'notification',
+      'sound',
+      'audio',
+      'invite',
+      'invitation',
+      'tone',
+      'chime',
+      'ringtone',
+    ],
+    page: SettingsPages.NotificationPage,
+    pageName: 'Notifications',
+    sectionName: 'System',
+    Render: InviteNotificationSoundSetting,
+  },
+  /*
+  {
     id: 'email-notification',
     title: 'Email Notification',
     description: 'Send notifications to your email address.',
@@ -725,6 +796,7 @@ export const settingsSearchData: SettingsSearchEntry<SettingsPages>[] = [
     pageName: 'Notifications',
     sectionName: 'System',
   },
+  */
   {
     id: 'keyword-notifications',
     title: 'Keyword Messages',
