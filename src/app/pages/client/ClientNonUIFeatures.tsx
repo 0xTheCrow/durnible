@@ -1,6 +1,6 @@
 import { useAtomValue } from 'jotai';
 import type { ReactNode } from 'react';
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { MatrixEvent, RoomEventHandlerMap } from 'matrix-js-sdk';
 import { MatrixEventEvent, RoomEvent } from 'matrix-js-sdk';
@@ -125,11 +125,12 @@ function SyncRecovery() {
 function SystemEmojiFeature() {
   const [twitterEmoji] = useSetting(settingsAtom, 'twitterEmoji');
 
-  if (twitterEmoji) {
-    document.documentElement.style.setProperty('--font-emoji', 'Twemoji');
-  } else {
-    document.documentElement.style.setProperty('--font-emoji', 'Twemoji_DISABLED');
-  }
+  useLayoutEffect(() => {
+    document.documentElement.style.setProperty(
+      '--font-emoji',
+      twitterEmoji ? 'Twemoji' : 'Twemoji_DISABLED'
+    );
+  }, [twitterEmoji]);
 
   return null;
 }
@@ -137,11 +138,13 @@ function SystemEmojiFeature() {
 function PageZoomFeature() {
   const [pageZoom] = useSetting(settingsAtom, 'pageZoom');
 
-  if (pageZoom === 100) {
-    document.documentElement.style.removeProperty('font-size');
-  } else {
-    document.documentElement.style.setProperty('font-size', `calc(1em * ${pageZoom / 100})`);
-  }
+  useLayoutEffect(() => {
+    if (pageZoom === 100) {
+      document.documentElement.style.removeProperty('font-size');
+    } else {
+      document.documentElement.style.setProperty('font-size', `calc(1em * ${pageZoom / 100})`);
+    }
+  }, [pageZoom]);
 
   return null;
 }
