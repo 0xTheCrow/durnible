@@ -292,6 +292,24 @@ describe('isEditorEmpty', () => {
     rootElement.textContent = '   \n  ';
     expect(isEditorEmpty(rootElement)).toBe(true);
   });
+
+  it('returns false for a textless mxc emoticon nested in a block', () => {
+    const rootElement = document.createElement('div');
+    const line = document.createElement('div');
+    line.appendChild(
+      createEmoticonNode({
+        mx: mockMx,
+        useAuthentication: false,
+        key: 'mxc://server.com/party',
+        shortcode: 'party',
+      })
+    );
+    const emptyLine = document.createElement('div');
+    emptyLine.appendChild(document.createElement('br'));
+    rootElement.append(line, emptyLine);
+
+    expect(isEditorEmpty(rootElement)).toBe(false);
+  });
 });
 
 describe('normalizeEditorRoot', () => {

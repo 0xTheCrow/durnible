@@ -535,31 +535,12 @@ const walkHtmlNodes = (
   return isFirstBlockChild;
 };
 
-const NON_EMPTY_TAGS = new Set([
-  'OL',
-  'UL',
-  'BLOCKQUOTE',
-  'PRE',
-  'H1',
-  'H2',
-  'H3',
-  'H4',
-  'H5',
-  'H6',
-]);
+const NON_EMPTY_CONTENT_SELECTOR = `ol, ul, blockquote, pre, h1, h2, h3, h4, h5, h6, [${NODE_TYPE_ATTR}]`;
 
 export const isEditorEmpty = (inputElement: HTMLElement): boolean => {
   const text = inputElement.textContent ?? '';
   if (stripCaretAnchors(text).trim().length > 0) return false;
-  for (let i = 0; i < inputElement.childNodes.length; i += 1) {
-    const child = inputElement.childNodes[i];
-    if (child.nodeType === Node.ELEMENT_NODE) {
-      const tag = (child as HTMLElement).tagName;
-      if (NON_EMPTY_TAGS.has(tag)) return false;
-      if ((child as HTMLElement).hasAttribute(NODE_TYPE_ATTR)) return false;
-    }
-  }
-  return true;
+  return inputElement.querySelector(NON_EMPTY_CONTENT_SELECTOR) === null;
 };
 
 const ROOT_BLOCK_TAGS = new Set([

@@ -17,7 +17,10 @@ import type { ShortcodeMapEntry } from '../../plugins/emoji';
 export const customHtmlEqualsPlainText = (customHtml: string, plain: string): boolean =>
   customHtml.replace(/<br\/>/g, '\n') === sanitizeText(plain);
 
-export const trimCustomHtml = (customHtml: string) => customHtml.replace(/<br\/>$/g, '').trim();
+const TRAILING_LINE_BREAKS_AND_WHITESPACE = /(?:<br\/>|\s)+$/;
+
+export const trimCustomHtml = (customHtml: string) =>
+  customHtml.replace(TRAILING_LINE_BREAKS_AND_WHITESPACE, '').trim();
 
 export const trimCommand = (cmdName: string, str: string) => {
   const cmdRegX = new RegExp(`^(\\s+)?(\\/${sanitizeForRegex(cmdName)})([^\\S\n]+)?`);
@@ -67,6 +70,18 @@ const hasOnlyLineContainerAncestors = (node: Node, root: HTMLElement): boolean =
 
 const isBlockMarkdownLineBreak = (node: Node, root: HTMLElement, opts: DomOutputOptions): boolean =>
   Boolean(opts.allowMarkdown) && hasOnlyLineContainerAncestors(node, root);
+
+const isEmptyTextNode = (node: Node): boolean =>
+  node.nodeType === Node.TEXT_NODE && stripCaretAnchors((node as Text).data).length === 0;
+
+const isTrailingFillerLineBreak = (node: Node): boolean => {
+  let following = node.nextSibling;
+  while (following) {
+    if (!isEmptyTextNode(following)) return false;
+    following = following.nextSibling;
+  }
+  return true;
+};
 
 const QUOTE_MARKER_AT_LINE_START = /^(\\*)&gt;/gm;
 const unescapeQuoteMarkers = (html: string): string =>
@@ -160,6 +175,7 @@ const nodeToCustomHtml = (node: Node, root: HTMLElement, opts: DomOutputOptions)
   const tag = element.tagName;
 
   if (tag === 'BR') {
+    if (isTrailingFillerLineBreak(element)) return '';
     return isBlockMarkdownLineBreak(element, root, opts) ? '\n' : '<br/>';
   }
 
@@ -301,7 +317,10 @@ const nodeToMarkdown = (node: Node, root: HTMLElement): string => {
 
   const tag = element.tagName;
 
-  if (tag === 'BR') return isBlockSeparator(element) ? '' : LINE_BREAK;
+  if (tag === 'BR') {
+    if (isBlockSeparator(element) || isTrailingFillerLineBreak(element)) return '';
+    return LINE_BREAK;
+  }
 
   const childMarkdown = childrenToMarkdown(element, root);
 
@@ -370,7 +389,7 @@ const nodeToPlainText = (node: Node, root: HTMLElement): string => {
   }
 
   const tag = element.tagName;
-  if (tag === 'BR') return '\n';
+  if (tag === 'BR') return isTrailingFillerLineBreak(element) ? '' : '\n';
 
   const childText = childrenToPlainText(element, root);
 

@@ -800,11 +800,18 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
                   )}
                 </EmojiBoardWrapper>
                 {hasEditorContent || !!replyDraft || selectedFiles.length > 0 ? (
-                  <IconButton onClick={submit} variant="SurfaceVariant" size="300" radii="300">
+                  <IconButton
+                    data-testid="room-input-send"
+                    onClick={submit}
+                    variant="SurfaceVariant"
+                    size="300"
+                    radii="300"
+                  >
                     <Icon src={Icons.Send} />
                   </IconButton>
                 ) : (
                   <IconButton
+                    data-testid="room-input-voice-record"
                     onClick={() => setIsVoiceRecording(true)}
                     variant="SurfaceVariant"
                     size="300"

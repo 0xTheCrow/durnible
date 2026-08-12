@@ -138,6 +138,17 @@ describe('markdown toggle', () => {
     expect(rootElement.innerHTML).toBe(original);
   });
 
+  it('preserves an empty line between two lines', () => {
+    const rootElement = editorWith('line one<br/><br/>line two');
+    const original = rootElement.innerHTML;
+
+    enableMarkdown(rootElement);
+    expect(rootElement.innerHTML).toBe(original);
+
+    disableMarkdown(rootElement);
+    expect(domToMarkdown(rootElement)).toBe('line one<br/><br/>line two');
+  });
+
   it('parses a blockquote wherever it appears, not only on the first line', () => {
     const rootElement = editorWith('# heading<br/>&gt; quoted');
 

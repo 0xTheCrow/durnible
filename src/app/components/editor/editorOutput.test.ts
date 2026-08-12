@@ -8,6 +8,7 @@ import {
   getMentionsFromDom,
   replaceShortcodesInDom,
   getCommandFromDom,
+  trimCustomHtml,
 } from './editorOutput';
 import { NODE_TYPE_ATTR, EMOTICON_NODE, MENTION_NODE, COMMAND_NODE } from './editorInput';
 import type { ShortcodeMapEntry } from '../../plugins/emoji';
@@ -266,6 +267,59 @@ describe('domToMatrixCustomHTML', () => {
     const html = domToMatrixCustomHTML(root, MARKDOWN);
     expect(html).not.toContain('\u200B');
     expect(html).toContain('hello');
+  });
+});
+
+describe('browser line break fillers', () => {
+  const withEmptyMiddleLine = (): HTMLDivElement => {
+    const root = createRootElement();
+    const first = document.createElement('div');
+    first.textContent = 'a';
+    const empty = document.createElement('div');
+    empty.appendChild(document.createElement('br'));
+    const last = document.createElement('div');
+    last.textContent = 'b';
+    root.append(first, empty, last);
+    return root;
+  };
+
+  it('counts a <div><br></div> empty line once in the custom html', () => {
+    expect(trimCustomHtml(domToMatrixCustomHTML(withEmptyMiddleLine(), MARKDOWN))).toBe(
+      'a<br/><br/>b'
+    );
+  });
+
+  it('counts a <div><br></div> empty line once in the plain text', () => {
+    expect(domToPlainText(withEmptyMiddleLine()).trim()).toBe('a\n\nb');
+  });
+
+  it('drops a trailing <br> filler left at the end of a line', () => {
+    const root = createRootElement();
+    root.appendChild(document.createTextNode('hi'));
+    root.appendChild(document.createElement('br'));
+
+    expect(trimCustomHtml(domToMatrixCustomHTML(root, MARKDOWN))).toBe('hi');
+    expect(domToPlainText(root).trim()).toBe('hi');
+  });
+
+  it('keeps a <br> that has content after it', () => {
+    const root = createRootElement();
+    root.appendChild(document.createTextNode('a'));
+    root.appendChild(document.createElement('br'));
+    root.appendChild(document.createElement('br'));
+    root.appendChild(document.createTextNode('b'));
+
+    expect(trimCustomHtml(domToMatrixCustomHTML(root, MARKDOWN))).toBe('a<br/><br/>b');
+  });
+});
+
+describe('trimCustomHtml', () => {
+  it('strips a run of trailing line breaks, matching the plain text trim', () => {
+    expect(trimCustomHtml('hello<br/><br/><br/>')).toBe('hello');
+  });
+
+  it('keeps line breaks that are followed by content', () => {
+    expect(trimCustomHtml('hello<br/><br/>world<br/>')).toBe('hello<br/><br/>world');
   });
 });
 

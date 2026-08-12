@@ -4,6 +4,7 @@ import {
   MATRIX_GALLERY_INDEX_PROPERTY_NAME,
 } from '../../src/types/matrix/common';
 import type { Settings } from '../../src/app/state/settings';
+import { AccountDataEvent } from '../../src/types/matrix/accountData';
 
 export const HOMESERVER_BASE_URL = 'https://matrix.test';
 export const TEST_USER_ID = '@tester:matrix.test';
@@ -118,12 +119,24 @@ export const replyEvent = (index: number, repliedToEventId: string): Record<stri
   origin_server_ts: 1700000000010 + index,
 });
 
-const initialSync = (
-  extraTimelineEvents: Record<string, unknown>[] = []
-): Record<string, unknown> => ({
+export const TEST_CUSTOM_EMOJI_SHORTCODE = 'durnibletestemoji';
+export const TEST_CUSTOM_EMOJI_MXC = 'mxc://matrix.test/customemoji';
+
+const userImagePackEvent = (): Record<string, unknown> => ({
+  type: AccountDataEvent.PoniesUserEmotes,
+  content: {
+    pack: { display_name: 'Test Pack', usage: ['emoticon'] },
+    images: { [TEST_CUSTOM_EMOJI_SHORTCODE]: { url: TEST_CUSTOM_EMOJI_MXC } },
+  },
+});
+
+const initialSync = ({
+  timelineEvents = [],
+  userImagePack = false,
+}: StubHomeserverOptions): Record<string, unknown> => ({
   next_batch: 's_1',
   device_one_time_keys_count: { signed_curve25519: 50 },
-  account_data: { events: [] },
+  account_data: { events: userImagePack ? [userImagePackEvent()] : [] },
   presence: { events: [] },
   rooms: {
     join: {
@@ -155,7 +168,7 @@ const initialSync = (
               event_id: '$first',
               origin_server_ts: 1700000000001,
             },
-            ...extraTimelineEvents,
+            ...timelineEvents,
           ],
           prev_batch: 'p_0',
           limited: false,
@@ -212,6 +225,7 @@ export type HomeserverStub = {
 
 export type StubHomeserverOptions = {
   timelineEvents?: Record<string, unknown>[];
+  userImagePack?: boolean;
   audioResponse?: { body: Buffer; contentType: string };
   videoResponse?: { body: Buffer; contentType: string };
 };
@@ -268,7 +282,7 @@ export const stubHomeserver = async (
 
     if (pathname.endsWith('/sync')) {
       syncCount += 1;
-      if (syncCount === 1) return json(route, initialSync(options.timelineEvents));
+      if (syncCount === 1) return json(route, initialSync(options));
       await new Promise((resolve) => {
         setTimeout(resolve, 30_000);
       });

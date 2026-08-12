@@ -8,9 +8,8 @@ import { roomToUnreadAtom, unreadEqual, unreadInfoToUnread } from '../../state/r
 import LogoSVG from '../../../../public/res/svg/durnible.svg';
 import LogoUnreadSVG from '../../../../public/res/svg/durnible-unread.svg';
 import LogoHighlightSVG from '../../../../public/res/svg/durnible-highlight.svg';
-import NotificationSound from '../../../../public/sound/notification.ogg';
-import InviteSound from '../../../../public/sound/invite.ogg';
 import { notificationPermission, setFavicon } from '../../utils/dom';
+import { getNotificationSoundUrl } from '../../plugins/notificationSounds';
 import { useSetting } from '../../state/hooks/settings';
 import { settingsAtom } from '../../state/settings';
 import { allInvitesAtom } from '../../state/room-list/inviteList';
@@ -180,7 +179,8 @@ function InviteNotifications() {
 
   const navigate = useNavigate();
   const [showNotifications] = useSetting(settingsAtom, 'showNotifications');
-  const [notificationSound] = useSetting(settingsAtom, 'isNotificationSounds');
+  const [isNotificationSoundEnabled] = useSetting(settingsAtom, 'isNotificationSoundEnabled');
+  const [inviteNotificationSoundId] = useSetting(settingsAtom, 'inviteNotificationSoundId');
 
   const notify = useCallback(
     (count: number) => {
@@ -210,16 +210,26 @@ function InviteNotifications() {
         notify(invites.length - perviousInviteLen);
       }
 
-      if (notificationSound) {
+      if (isNotificationSoundEnabled) {
         playSound();
       }
     }
-  }, [mx, invites, perviousInviteLen, showNotifications, notificationSound, notify, playSound]);
+  }, [
+    mx,
+    invites,
+    perviousInviteLen,
+    showNotifications,
+    isNotificationSoundEnabled,
+    notify,
+    playSound,
+  ]);
 
   return (
-    <audio ref={audioRef} style={{ display: 'none' }}>
-      <source src={InviteSound} type="audio/ogg" />
-    </audio>
+    <audio
+      ref={audioRef}
+      src={getNotificationSoundUrl(inviteNotificationSoundId)}
+      style={{ display: 'none' }}
+    />
   );
 }
 
@@ -230,7 +240,8 @@ function MessageNotifications() {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
   const [showNotifications] = useSetting(settingsAtom, 'showNotifications');
-  const [notificationSound] = useSetting(settingsAtom, 'isNotificationSounds');
+  const [isNotificationSoundEnabled] = useSetting(settingsAtom, 'isNotificationSoundEnabled');
+  const [messageNotificationSoundId] = useSetting(settingsAtom, 'messageNotificationSoundId');
 
   const navigate = useNavigate();
   const notificationSelected = useInboxNotificationsSelected();
@@ -321,7 +332,7 @@ function MessageNotifications() {
         });
       }
 
-      if (notificationSound) {
+      if (isNotificationSoundEnabled) {
         playSound();
       }
     };
@@ -331,7 +342,7 @@ function MessageNotifications() {
     };
   }, [
     mx,
-    notificationSound,
+    isNotificationSoundEnabled,
     notificationSelected,
     showNotifications,
     playSound,
@@ -341,9 +352,11 @@ function MessageNotifications() {
   ]);
 
   return (
-    <audio ref={audioRef} style={{ display: 'none' }}>
-      <source src={NotificationSound} type="audio/ogg" />
-    </audio>
+    <audio
+      ref={audioRef}
+      src={getNotificationSoundUrl(messageNotificationSoundId)}
+      style={{ display: 'none' }}
+    />
   );
 }
 
