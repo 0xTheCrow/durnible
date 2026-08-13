@@ -20,6 +20,32 @@ export const PageNav = recipe({
 });
 export type PageNavVariants = RecipeVariants<typeof PageNav>;
 
+export const AdjustablePageNav = style({
+  position: 'relative',
+  flexShrink: 0,
+});
+
+export const PageNavCollapsedStrip = style({
+  width: toRem(28),
+  flexShrink: 0,
+  padding: 0,
+  border: 'none',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  cursor: 'pointer',
+  color: 'inherit',
+  backgroundColor: 'transparent',
+  selectors: {
+    '&:hover, &:focus-visible': {
+      backgroundColor: color.Background.ContainerHover,
+    },
+    '&:active': {
+      backgroundColor: color.Background.ContainerActive,
+    },
+  },
+});
+
 export const PageNavHeader = recipe({
   base: {
     padding: `0 ${config.space.S200} 0 ${config.space.S300}`,

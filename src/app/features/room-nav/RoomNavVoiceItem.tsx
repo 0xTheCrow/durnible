@@ -29,6 +29,7 @@ import { useCallUserIsMuted } from '../../state/hooks/callVolumePreferences';
 import { getMemberDisplayName } from '../../utils/room';
 import { stopPropagation } from '../../utils/keyboard';
 import { RoomNavItemMenu } from './RoomNavItem';
+import { TruncatedText } from '../../components/TruncatedText';
 
 type VoiceParticipantProps = {
   room: Room;
@@ -44,9 +45,9 @@ function VoiceParticipant({ room, userId, audioState }: VoiceParticipantProps) {
     <>
       <Box as="span" alignItems="Center" gap="200" onContextMenu={handleContextMenu}>
         <CallMemberAvatar room={room} userId={userId} size="200" textSize="O400" />
-        <Text as="span" size="T200" truncate>
+        <TruncatedText as="span" size="T200">
           {displayName}
-        </Text>
+        </TruncatedText>
         {isMutedLocally && <Icon size="50" src={Icons.VolumeMute} filled />}
         {audioState === 'muted' && <Icon size="50" src={Icons.MicMute} filled />}
         {audioState === 'deafened' && <Icon size="50" src={Icons.Headphone} filled />}
@@ -111,9 +112,9 @@ export function RoomNavVoiceItem({ room, selected, isDrawerMode, tall }: RoomNav
                 )}
               </Avatar>
               <Box as="span" grow="Yes">
-                <Text as="span" size="Inherit" truncate>
+                <TruncatedText as="span" size="Inherit">
                   {room.name}
-                </Text>
+                </TruncatedText>
               </Box>
               {entryState.status === 'failed' && (
                 <TooltipProvider

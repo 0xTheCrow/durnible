@@ -1,6 +1,7 @@
 import { style } from '@vanilla-extract/css';
 import { DefaultReset, color } from 'folds';
 import { HEADER_HEIGHT } from '../../styles/mediaFrame.css';
+import { MOBILE_MEDIA_QUERY } from '../../styles/breakpoints';
 
 export {
   Content as ImageViewerContent,
@@ -12,7 +13,7 @@ export const ImageViewerGalleryMode = style({
   width: '90vw',
   height: '90vh',
   '@media': {
-    'screen and (max-width: 750px)': {
+    [MOBILE_MEDIA_QUERY]: {
       width: '100vw',
     },
   },
@@ -72,7 +73,7 @@ export const ImageViewerImg = style([
     userSelect: 'none',
     backgroundColor: color.Surface.Container,
     '@media': {
-      'screen and (max-width: 750px)': {
+      [MOBILE_MEDIA_QUERY]: {
         maxWidth: '100vw',
         maxHeight: `calc(85vh - ${HEADER_HEIGHT})`,
       },
@@ -83,7 +84,7 @@ export const ImageViewerImg = style([
 export const ImageViewerImgGallery = style({
   maxWidth: `calc(90vw - ${GALLERY_BUTTON_GUTTER})`,
   '@media': {
-    'screen and (max-width: 750px)': {
+    [MOBILE_MEDIA_QUERY]: {
       maxWidth: `calc(100vw - ${GALLERY_BUTTON_GUTTER})`,
     },
   },

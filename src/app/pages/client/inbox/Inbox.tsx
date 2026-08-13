@@ -1,5 +1,5 @@
 import React from 'react';
-import { Avatar, Box, Icon, Icons, Text } from 'folds';
+import { Avatar, Box, Icon, Icons } from 'folds';
 import { useAtomValue } from 'jotai';
 import { NavCategory, NavItem, NavItemContent, NavLink } from '../../../components/nav';
 import { getInboxInvitesPath, getInboxNotificationsPath } from '../../pathUtils';
@@ -10,7 +10,8 @@ import {
 import { UnreadBadge } from '../../../components/unread-badge';
 import { allInvitesAtom } from '../../../state/room-list/inviteList';
 import { useNavToActivePathMapper } from '../../../hooks/useNavToActivePathMapper';
-import { PageNav, PageNavContent, PageNavHeader } from '../../../components/page';
+import { AdjustablePageNav, PageNavContent, PageNavHeader } from '../../../components/page';
+import { TruncatedText } from '../../../components/TruncatedText';
 
 function InvitesNavItem() {
   const invitesSelected = useInboxInvitesSelected();
@@ -31,9 +32,9 @@ function InvitesNavItem() {
               <Icon src={Icons.Mail} size="100" filled={invitesSelected} />
             </Avatar>
             <Box as="span" grow="Yes">
-              <Text as="span" size="Inherit" truncate>
+              <TruncatedText as="span" size="Inherit">
                 Invites
-              </Text>
+              </TruncatedText>
             </Box>
             {inviteCount > 0 && <UnreadBadge highlight count={inviteCount} />}
           </Box>
@@ -48,13 +49,11 @@ export function Inbox() {
   const notificationsSelected = useInboxNotificationsSelected();
 
   return (
-    <PageNav>
+    <AdjustablePageNav>
       <PageNavHeader>
         <Box grow="Yes" gap="300">
           <Box grow="Yes">
-            <Text size="H4" truncate>
-              Inbox
-            </Text>
+            <TruncatedText size="H4">Inbox</TruncatedText>
           </Box>
         </Box>
       </PageNavHeader>
@@ -70,9 +69,9 @@ export function Inbox() {
                       <Icon src={Icons.MessageUnread} size="100" filled={notificationsSelected} />
                     </Avatar>
                     <Box as="span" grow="Yes">
-                      <Text as="span" size="Inherit" truncate>
+                      <TruncatedText as="span" size="Inherit">
                         Notifications
-                      </Text>
+                      </TruncatedText>
                     </Box>
                   </Box>
                 </NavItemContent>
@@ -82,6 +81,6 @@ export function Inbox() {
           </NavCategory>
         </Box>
       </PageNavContent>
-    </PageNav>
+    </AdjustablePageNav>
   );
 }

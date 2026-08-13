@@ -22,6 +22,7 @@ export enum KeybindAction {
 
   GlobalOpenSearch = 'global.openSearch',
   GlobalFocusComposer = 'global.focusComposer',
+  GlobalTogglePageNav = 'global.togglePageNav',
 }
 
 export type KeybindMap = Record<KeybindAction, string>;
@@ -44,6 +45,7 @@ export const defaultKeybinds: KeybindMap = {
   [KeybindAction.ComposeSend]: 'mod+enter',
   [KeybindAction.GlobalOpenSearch]: 'mod+k',
   [KeybindAction.GlobalFocusComposer]: 'mod+v',
+  [KeybindAction.GlobalTogglePageNav]: 'mod+shift+b',
 };
 
 export type KeybindCategory = 'composer' | 'global' | 'formatting';
@@ -65,6 +67,7 @@ export const keybindMeta: KeybindMeta[] = [
 
   { id: KeybindAction.GlobalOpenSearch, label: 'Open Room Search', category: 'global' },
   { id: KeybindAction.GlobalFocusComposer, label: 'Focus Message Input', category: 'global' },
+  { id: KeybindAction.GlobalTogglePageNav, label: 'Toggle Side Panel', category: 'global' },
 
   { id: KeybindAction.FormatBold, label: 'Bold', category: 'formatting' },
   { id: KeybindAction.FormatItalic, label: 'Italic', category: 'formatting' },

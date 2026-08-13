@@ -1,13 +1,14 @@
 import { style } from '@vanilla-extract/css';
 import { recipe } from '@vanilla-extract/recipes';
 import { DefaultReset, color, config, toRem } from 'folds';
+import { MOBILE_MEDIA_QUERY } from '../../../styles/breakpoints';
 
 export const RoomViewFollowingPlaceholder = style([
   DefaultReset,
   {
     height: toRem(16),
     '@media': {
-      'screen and (max-width: 750px)': {
+      [MOBILE_MEDIA_QUERY]: {
         height: toRem(8),
       },
     },

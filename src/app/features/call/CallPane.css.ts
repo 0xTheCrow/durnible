@@ -27,42 +27,6 @@ export const CallPaneDockBorder = styleVariants({
   Bottom: { borderTop: paneBorder },
 });
 
-export const CallPaneResizeHandle = style({
-  position: 'absolute',
-  zIndex: 1,
-  padding: 0,
-  border: 'none',
-  backgroundColor: 'transparent',
-  transitionProperty: 'background-color',
-  transitionDuration: '100ms',
-  selectors: {
-    '&:hover, &[data-resizing="true"]': {
-      backgroundColor: color.Primary.Main,
-    },
-  },
-});
-
-export const CallPaneResizeHandleSide = style({
-  top: 0,
-  bottom: 0,
-  width: toRem(6),
-  cursor: 'col-resize',
-});
-
-export const CallPaneResizeHandleHorizontal = style({
-  left: 0,
-  right: 0,
-  height: toRem(6),
-  cursor: 'row-resize',
-});
-
-export const CallPaneResizeHandleEdge = styleVariants({
-  Left: { right: 0 },
-  Right: { left: 0 },
-  Top: { bottom: 0 },
-  Bottom: { top: 0 },
-});
-
 export const CallPaneHeader = style({
   gap: config.space.S200,
   padding: `0 ${config.space.S200} 0 ${config.space.S300}`,

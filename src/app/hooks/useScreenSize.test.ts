@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { getScreenSize, ScreenSize, TABLET_BREAKPOINT, MOBILE_BREAKPOINT } from './useScreenSize';
+import { MOBILE_BREAKPOINT, TABLET_BREAKPOINT } from '../styles/breakpoints';
+import { getScreenSize, ScreenSize } from './useScreenSize';
 
 describe('getScreenSize', () => {
   it('returns Desktop for widths above the tablet breakpoint', () => {

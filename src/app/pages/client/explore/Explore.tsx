@@ -32,8 +32,9 @@ import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { getMxIdServer } from '../../../utils/matrix';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { useNavToActivePathMapper } from '../../../hooks/useNavToActivePathMapper';
-import { PageNav, PageNavContent, PageNavHeader } from '../../../components/page';
+import { AdjustablePageNav, PageNavContent, PageNavHeader } from '../../../components/page';
 import { OverlayModal } from '../../../components/OverlayModal';
+import { TruncatedText } from '../../../components/TruncatedText';
 
 export function AddServer() {
   const mx = useMatrixClient();
@@ -133,9 +134,7 @@ export function AddServer() {
         before={<Icon size="100" src={Icons.Plus} />}
         onClick={() => setDialog(true)}
       >
-        <Text size="B300" truncate>
-          Add Server
-        </Text>
+        <TruncatedText size="B300">Add Server</TruncatedText>
       </Button>
     </>
   );
@@ -154,13 +153,11 @@ export function Explore() {
   const selectedServer = useExploreServer();
 
   return (
-    <PageNav>
+    <AdjustablePageNav>
       <PageNavHeader>
         <Box grow="Yes" gap="300">
           <Box grow="Yes">
-            <Text size="H4" truncate>
-              Explore Community
-            </Text>
+            <TruncatedText size="H4">Explore Community</TruncatedText>
           </Box>
         </Box>
       </PageNavHeader>
@@ -176,9 +173,9 @@ export function Explore() {
                       <Icon src={Icons.Bulb} size="100" filled={featuredSelected} />
                     </Avatar>
                     <Box as="span" grow="Yes">
-                      <Text as="span" size="Inherit" truncate>
+                      <TruncatedText as="span" size="Inherit">
                         Featured
-                      </Text>
+                      </TruncatedText>
                     </Box>
                   </Box>
                 </NavItemContent>
@@ -201,9 +198,9 @@ export function Explore() {
                         />
                       </Avatar>
                       <Box as="span" grow="Yes">
-                        <Text as="span" size="Inherit" truncate>
+                        <TruncatedText as="span" size="Inherit">
                           {userServer}
-                        </Text>
+                        </TruncatedText>
                       </Box>
                     </Box>
                   </NavItemContent>
@@ -214,7 +211,7 @@ export function Explore() {
           {servers.length > 0 && (
             <NavCategory>
               <NavCategoryHeader>
-                <Text size="O400" style={{ paddingLeft: config.space.S200 }}>
+                <Text size="O400" style={{ paddingLeft: config.space.S200 }} truncate>
                   Servers
                 </Text>
               </NavCategoryHeader>
@@ -232,9 +229,9 @@ export function Explore() {
                           <Icon src={Icons.Server} size="100" filled={server === selectedServer} />
                         </Avatar>
                         <Box as="span" grow="Yes">
-                          <Text as="span" size="Inherit" truncate>
+                          <TruncatedText as="span" size="Inherit">
                             {server}
-                          </Text>
+                          </TruncatedText>
                         </Box>
                       </Box>
                     </NavItemContent>
@@ -248,6 +245,6 @@ export function Explore() {
           </Box>
         </Box>
       </PageNavContent>
-    </PageNav>
+    </AdjustablePageNav>
   );
 }

@@ -116,7 +116,7 @@ Vite env vars use `VITE_` prefix, accessed via `import.meta.env.VITE_*`:
 ## Key Patterns
 
 - **Matrix client** is initialized in `src/client/` and provided via React context
-- **Responsive breakpoints**: Desktop >1124px, Tablet >750px, Mobile <750px (see `useScreenSize` hook)
+- **Responsive breakpoints**: Desktop >1124px, Tablet >850px, Mobile ≤850px. Values live in `src/app/styles/breakpoints.ts` and are shared by the `useScreenSize` hook and the `MOBILE_MEDIA_QUERY` used in `*.css.ts` media queries — don't hardcode the pixel value.
 - **i18n**: translations in `public/locales/`, use `useTranslation()` hook
 - **Virtualization**: long lists use `@tanstack/react-virtual`
 - **Drag & drop**: uses `@atlaskit/pragmatic-drag-and-drop`

@@ -79,6 +79,10 @@ export interface Settings {
 
   timelineSliderRange: TimelineSliderRange;
 
+  pageNavWidth: number;
+  isPageNavCollapsed: boolean;
+  isPageNavResizeEnabled: boolean;
+
   preferredAudioInputDeviceId?: string;
   preferredVideoInputDeviceId?: string;
   preferredAudioOutputDeviceId?: string;
@@ -145,6 +149,10 @@ const defaultSettings: Settings = {
   pwaMode: false,
 
   timelineSliderRange: 'day',
+
+  pageNavWidth: 256,
+  isPageNavCollapsed: false,
+  isPageNavResizeEnabled: false,
 
   preferredAudioInputDeviceId: undefined,
   preferredVideoInputDeviceId: undefined,

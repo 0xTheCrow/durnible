@@ -1,3 +1,4 @@
+import { isKeyHotkey } from 'is-hotkey';
 import { useAtomValue } from 'jotai';
 import type { ReactNode } from 'react';
 import React, { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
@@ -29,6 +30,9 @@ import { useSelectedRoom } from '../../hooks/router/useSelectedRoom';
 import { useInboxNotificationsSelected } from '../../hooks/router/useInbox';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
 import { addLiveMessageToCache } from '../../services/localSearch';
+import { useKeyDown } from '../../hooks/useKeyDown';
+import { useKeybind } from '../../state/hooks/keybinds';
+import { KeybindAction } from '../../state/keybinds';
 
 function SearchCacheUpdater() {
   const mx = useMatrixClient();
@@ -102,6 +106,25 @@ function SearchCacheUpdater() {
       pendingDecryptions.clear();
     };
   }, [mx]);
+
+  return null;
+}
+
+function PageNavToggleHotkey() {
+  const [, setIsPageNavCollapsed] = useSetting(settingsAtom, 'isPageNavCollapsed');
+  const togglePageNavHotkey = useKeybind(KeybindAction.GlobalTogglePageNav);
+
+  useKeyDown(
+    window,
+    useCallback(
+      (event) => {
+        if (!isKeyHotkey(togglePageNavHotkey, event)) return;
+        event.preventDefault();
+        setIsPageNavCollapsed((isCollapsed) => !isCollapsed);
+      },
+      [togglePageNavHotkey, setIsPageNavCollapsed]
+    )
+  );
 
   return null;
 }
@@ -371,6 +394,7 @@ export function ClientNonUIFeatures({ children }: ClientNonUIFeaturesProps) {
   return (
     <>
       <SyncRecovery />
+      <PageNavToggleHotkey />
       <SearchCacheUpdater />
       <SystemEmojiFeature />
       <PageZoomFeature />

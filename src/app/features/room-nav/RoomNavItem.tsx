@@ -52,6 +52,7 @@ import { RoomNotificationModeSwitcher } from '../../components/RoomNotificationS
 import { useRoomCreators } from '../../hooks/useRoomCreators';
 import { useRoomPermissions } from '../../hooks/useRoomPermissions';
 import { InviteUserPrompt } from '../../components/invite-user-prompt';
+import { TruncatedText } from '../../components/TruncatedText';
 
 type RoomNavItemMenuProps = {
   room: Room;
@@ -325,17 +326,16 @@ export function RoomNavItem({
               )}
             </Avatar>
             <Box as="span" grow="Yes">
-              <Text
+              <TruncatedText
                 priority={unread && notificationMode !== RoomNotificationMode.Mute ? '500' : '300'}
                 as="span"
                 size="Inherit"
-                truncate
                 style={
                   notificationMode === RoomNotificationMode.Mute ? { opacity: 0.45 } : undefined
                 }
               >
                 {room.name}
-              </Text>
+              </TruncatedText>
               {notificationMode !== RoomNotificationMode.Unset && (
                 <Icon
                   size="200"

@@ -1,5 +1,6 @@
 import { style } from '@vanilla-extract/css';
 import { DefaultReset, color, config } from 'folds';
+import { MOBILE_MEDIA_QUERY } from './breakpoints';
 
 export const HEADER_HEIGHT = '2.25rem';
 
@@ -9,7 +10,7 @@ export const FrameExpanded = style({
   width: '90vw',
   height: '90vh',
   '@media': {
-    'screen and (max-width: 750px)': {
+    [MOBILE_MEDIA_QUERY]: {
       width: '100vw',
     },
   },
@@ -26,7 +27,7 @@ export const Header = style([
     flexShrink: 0,
     gap: config.space.S300,
     '@media': {
-      'screen and (max-width: 750px)': {
+      [MOBILE_MEDIA_QUERY]: {
         gap: config.space.S200,
       },
     },
@@ -122,7 +123,7 @@ export const PrimaryHeaderButton = style([
     paddingRight: config.space.S400,
     marginRight: `calc(-1 * ${config.space.S300})`,
     '@media': {
-      'screen and (max-width: 750px)': {
+      [MOBILE_MEDIA_QUERY]: {
         paddingLeft: config.space.S200,
         paddingRight: config.space.S200,
       },

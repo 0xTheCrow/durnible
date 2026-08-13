@@ -37,6 +37,7 @@ import { CallMasterVolumeMenu } from './CallMasterVolumeMenu';
 import { CallSpotlightBar } from './CallSpotlightBar';
 import { CallEncryptionDebugPanel } from './CallEncryptionDebugPanel';
 import { CALL_PANE_DRAG_TYPE, CallPaneDockZones } from './CallPaneDockZones';
+import * as paneResizeCss from '../../styles/PaneResizeHandle.css';
 import * as css from './CallPane.css';
 
 type ConnectedCallPaneProps = {
@@ -135,9 +136,11 @@ function ConnectedCallPane({ connection, isReconnecting }: ConnectedCallPaneProp
             <button
               type="button"
               className={classNames(
-                css.CallPaneResizeHandle,
-                isSideDock ? css.CallPaneResizeHandleSide : css.CallPaneResizeHandleHorizontal,
-                css.CallPaneResizeHandleEdge[dock]
+                paneResizeCss.PaneResizeHandle,
+                isSideDock
+                  ? paneResizeCss.PaneResizeHandleSide
+                  : paneResizeCss.PaneResizeHandleHorizontal,
+                paneResizeCss.PaneResizeHandleAnchor[dock]
               )}
               data-resizing={isResizing}
               onPointerDown={handleResizePointerDown}
