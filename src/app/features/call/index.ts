@@ -4,5 +4,6 @@ export * from './CallMicrophoneGate';
 export * from './CallBar';
 export * from './RoomCallBanner';
 export * from './CallPane';
+export * from './CallScreen';
 export * from './CallMemberAvatar';
 export * from './useVoiceRoomEntry';

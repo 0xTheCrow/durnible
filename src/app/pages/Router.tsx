@@ -74,7 +74,7 @@ import { CreateSpaceModalRenderer } from '../features/create-space';
 import { SearchModalRenderer } from '../features/search';
 import { ImageViewerRenderer } from '../components/image-viewer/ImageViewerRenderer';
 import { getFallbackSession } from '../state/sessions';
-import { CallBar, CallProvider } from '../features/call';
+import { CallBar, CallProvider, CallScreen } from '../features/call';
 
 export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize) => {
   const { hashRouter } = clientConfig;
@@ -143,6 +143,7 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
                             <Outlet />
                           </ClientLayout>
                         </Box>
+                        <CallScreen />
                         <SearchModalRenderer />
                         <ImageViewerRenderer />
                         <UserRoomProfileRenderer />

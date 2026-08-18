@@ -1,4 +1,4 @@
-import type { MouseEventHandler } from 'react';
+import type { ComponentProps, MouseEventHandler } from 'react';
 import React, { useState } from 'react';
 import type { RectCords } from 'folds';
 import { Icons, Menu, PopOut } from 'folds';
@@ -13,7 +13,11 @@ import { stopPropagation } from '../../utils/keyboard';
 import { CallControlButton } from './CallControlButton';
 import { CallVolumeSlider } from './CallVolumeSlider';
 
-export function CallMasterVolumeMenu() {
+type CallMasterVolumeMenuProps = {
+  size?: ComponentProps<typeof CallControlButton>['size'];
+  iconSize?: ComponentProps<typeof CallControlButton>['iconSize'];
+};
+export function CallMasterVolumeMenu({ size = '400', iconSize }: CallMasterVolumeMenuProps) {
   const [menuAnchor, setMenuAnchor] = useState<RectCords>();
   const { masterVolumeLevel } = useAtomValue(callVolumePreferencesAtom);
   const setMasterVolumeLevel = useSetAtom(setCallMasterVolumeLevelAtom);
@@ -49,7 +53,8 @@ export function CallMasterVolumeMenu() {
       }
     >
       <CallControlButton
-        size="400"
+        size={size}
+        iconSize={iconSize}
         radii="Pill"
         variant="SurfaceVariant"
         onClick={handleOpenMenu}

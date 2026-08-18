@@ -8,11 +8,13 @@ type CallControlButtonProps = Omit<ComponentProps<typeof IconButton>, 'children'
   label: string;
   icon: IconSrc;
   isIconFilled?: boolean;
+  iconSize?: ComponentProps<typeof Icon>['size'];
 };
 export function CallControlButton({
   label,
   icon,
   isIconFilled,
+  iconSize = '100',
   ...buttonProps
 }: CallControlButtonProps) {
   return (
@@ -25,7 +27,7 @@ export function CallControlButton({
     >
       {(triggerRef) => (
         <IconButton ref={triggerRef} aria-label={label} {...buttonProps}>
-          <Icon size="100" src={icon} filled={isIconFilled} />
+          <Icon size={iconSize} src={icon} filled={isIconFilled} />
         </IconButton>
       )}
     </TooltipProvider>

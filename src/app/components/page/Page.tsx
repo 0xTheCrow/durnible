@@ -28,13 +28,9 @@ export function PageRoot({ nav, aside, children }: PageRootProps) {
 
   if (screenSize === ScreenSize.Mobile) {
     return (
-      <Box grow="Yes" direction="Column" className={ContainerColor({ variant: 'Background' })}>
-        {isAsideBeforeContent && aside}
-        <Box grow="Yes">
-          {nav}
-          {children}
-        </Box>
-        {!isAsideBeforeContent && aside}
+      <Box grow="Yes" className={ContainerColor({ variant: 'Background' })}>
+        {nav}
+        {children}
       </Box>
     );
   }

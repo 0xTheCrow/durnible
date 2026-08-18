@@ -38,6 +38,7 @@ export const resolveCallParticipant = (
 };
 
 export const CALL_TILE_ASPECT_RATIO = 16 / 9;
+export const CALL_TILE_PORTRAIT_ASPECT_RATIO = 3 / 4;
 export const CALL_TILE_MIN_WIDTH = 120;
 export const CALL_TILE_GAP = 8;
 export const CALL_TILE_OVERFLOW_ROW_HEIGHT = 40;
@@ -52,7 +53,8 @@ export type CallTileGridLayout = {
 const getWidestTileFit = (
   tileCount: number,
   containerWidth: number,
-  containerHeight: number
+  containerHeight: number,
+  aspectRatio: number
 ): { columnCount: number; tileWidth: number } => {
   let widestFit = { columnCount: 1, tileWidth: 0 };
 
@@ -62,7 +64,7 @@ const getWidestTileFit = (
     const availableHeight = containerHeight - CALL_TILE_GAP * (rowCount - 1);
     const tileWidth = Math.max(
       0,
-      Math.min(availableWidth / columnCount, (availableHeight / rowCount) * CALL_TILE_ASPECT_RATIO)
+      Math.min(availableWidth / columnCount, (availableHeight / rowCount) * aspectRatio)
     );
     if (tileWidth > widestFit.tileWidth) widestFit = { columnCount, tileWidth };
   }
@@ -72,36 +74,44 @@ const getWidestTileFit = (
 
 const withTileHeight = (
   fit: { columnCount: number; tileWidth: number },
-  visibleTileCount: number
+  visibleTileCount: number,
+  aspectRatio: number
 ): CallTileGridLayout => ({
   ...fit,
-  tileHeight: Math.round(fit.tileWidth / CALL_TILE_ASPECT_RATIO),
+  tileHeight: Math.round(fit.tileWidth / aspectRatio),
   visibleTileCount,
 });
 
 export const getCallTileGridLayout = (
   tileCount: number,
   containerWidth: number,
-  containerHeight: number
+  containerHeight: number,
+  aspectRatio: number = CALL_TILE_ASPECT_RATIO
 ): CallTileGridLayout => {
   if (tileCount <= 0 || containerWidth <= 0 || containerHeight <= 0) {
     return { columnCount: 1, tileWidth: 0, tileHeight: 0, visibleTileCount: 0 };
   }
 
-  const fullFit = getWidestTileFit(tileCount, containerWidth, containerHeight);
+  const fullFit = getWidestTileFit(tileCount, containerWidth, containerHeight, aspectRatio);
   if (fullFit.tileWidth >= CALL_TILE_MIN_WIDTH || tileCount === 1) {
-    return withTileHeight(fullFit, tileCount);
+    return withTileHeight(fullFit, tileCount, aspectRatio);
   }
 
   const truncatedHeight = containerHeight - CALL_TILE_OVERFLOW_ROW_HEIGHT - CALL_TILE_GAP;
   for (let visibleTileCount = tileCount - 1; visibleTileCount >= 1; visibleTileCount -= 1) {
-    const truncatedFit = getWidestTileFit(visibleTileCount, containerWidth, truncatedHeight);
+    const truncatedFit = getWidestTileFit(
+      visibleTileCount,
+      containerWidth,
+      truncatedHeight,
+      aspectRatio
+    );
     if (truncatedFit.tileWidth >= CALL_TILE_MIN_WIDTH) {
-      return withTileHeight(truncatedFit, visibleTileCount);
+      return withTileHeight(truncatedFit, visibleTileCount, aspectRatio);
     }
   }
 
-  return withTileHeight(getWidestTileFit(1, containerWidth, truncatedHeight), 1);
+  const singleTileFit = getWidestTileFit(1, containerWidth, truncatedHeight, aspectRatio);
+  return withTileHeight(singleTileFit, 1, aspectRatio);
 };
 
 export const getActiveCallParticipantIds = (memberships: CallParticipantMembership[]): string[] => {
