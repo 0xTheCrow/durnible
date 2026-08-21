@@ -301,6 +301,16 @@ export const useScrollController = ({
     let lastScrollSampleAt = 0;
     const handleScroll = () => {
       captureFreeScrollAnchor();
+      if (!autoScrollingRef.current) {
+        userScrollSinceBottomRef.current = true;
+      }
+      if (
+        userScrollSinceBottomRef.current &&
+        intentRef.current.kind === 'followLive' &&
+        getScrollBottomDistance(scrollElement) > LIVE_EDGE_THRESHOLD_PX
+      ) {
+        intentRef.current = { kind: 'free' };
+      }
       const now = performance.now();
       if (now - lastScrollSampleAt < TRACE_COALESCE_WINDOW_MS) return;
       lastScrollSampleAt = now;

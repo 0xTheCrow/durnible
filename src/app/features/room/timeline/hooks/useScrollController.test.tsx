@@ -177,6 +177,26 @@ describe('useScrollController', () => {
 
       expect(geometry.getScrollTop()).toBe(historyScrollTop);
     });
+
+    it('releases the live edge on a displaced scroll without a bound input event', () => {
+      const { controller, scrollElement } = renderController(ref(true));
+      const geometry = stubScrollGeometry(scrollElement, {
+        scrollHeight: 2000,
+        offsetHeight: 400,
+      });
+      const bottomScrollTop = 2000 - 400;
+
+      geometry.setScrollTop(bottomScrollTop);
+      act(() => controller().syncFollowLive(true));
+      expect(controller().intentRef.current?.kind).toBe('followLive');
+
+      geometry.setScrollTop(bottomScrollTop - (LIVE_EDGE_THRESHOLD_PX + 100));
+      act(() => {
+        scrollElement.dispatchEvent(new Event('scroll'));
+      });
+
+      expect(controller().intentRef.current?.kind).toBe('free');
+    });
   });
 
   describe('maintainPosition on resize', () => {
