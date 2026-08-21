@@ -4,15 +4,17 @@ Durnible is a Matrix chat client built with React, TypeScript, and Vite. Forked 
 
 ## Quick Reference
 
-| Command                | Purpose                                   |
-| ---------------------- | ----------------------------------------- |
-| `npm start`            | Dev server                                |
-| `npm run build`        | Production build                          |
-| `npm run lint`         | Prettier write, then ESLint check         |
-| `npm run typecheck`    | TypeScript type checking (`tsc --noEmit`) |
-| `npm test`             | Run tests (Vitest)                        |
-| `npm run test:watch`   | Watch mode tests                          |
-| `npm run fix:prettier` | Auto-format with Prettier                 |
+| Command                 | Purpose                                                         |
+| ----------------------- | --------------------------------------------------------------- |
+| `npm start`             | Dev server                                                      |
+| `npm run build`         | Production build                                                |
+| `npm run build:analyze` | Build + emit bundle treemap (`dist/bundle-visualizer.html`)     |
+| `npm run lint`          | Prettier write, then ESLint check                               |
+| `npm run typecheck`     | TypeScript type checking (`tsc --noEmit`)                       |
+| `npm test`              | Run tests (Vitest)                                              |
+| `npm run test:watch`    | Watch mode tests                                                |
+| `npm run e2e`           | Run Playwright e2e (auto-starts dev server; chromium + firefox) |
+| `npm run fix:prettier`  | Auto-format with Prettier                                       |
 
 ## Tech Stack
 
@@ -61,7 +63,7 @@ Durnible is a Matrix chat client built with React, TypeScript, and Vite. Forked 
     setValue(propValue);
   }
   ```
-- Use `useCallback` and `useMemo` the way React is designed to have them used. Both preserve reference identity for a downstream consumer that actually depends on it — a hook dep array that would otherwise re-fire, a `React.memo`-wrapped child that would otherwise re-render, an external API that requires stable refs. `useMemo` additionally caches the result of a computation, which is worth reaching for only when the computation is *measurably* expensive. Neither is a default, and neither is a style to apply uniformly. If nothing downstream reads the identity and the computation isn't expensive, the wrapper allocates and adds noise without benefit. Before reaching for either, name the specific consumer that needs stable identity or the specific expensive computation being saved; if you can't, inline. Mixing wrapped and inline handlers within the same component is the tell — either every wrap is load-bearing for its own reason, or none of them are.
+- Use `useCallback` and `useMemo` the way React is designed to have them used. Both preserve reference identity for a downstream consumer that actually depends on it — a hook dep array that would otherwise re-fire, a `React.memo`-wrapped child that would otherwise re-render, an external API that requires stable refs. `useMemo` additionally caches the result of a computation, which is worth reaching for only when the computation is _measurably_ expensive. Neither is a default, and neither is a style to apply uniformly. If nothing downstream reads the identity and the computation isn't expensive, the wrapper allocates and adds noise without benefit. Before reaching for either, name the specific consumer that needs stable identity or the specific expensive computation being saved; if you can't, inline. Mixing wrapped and inline handlers within the same component is the tell — either every wrap is load-bearing for its own reason, or none of them are.
 - Don't patch matrix-js-sdk types with `as any` — find the correct type or fix the upstream typing.
 - Don't use `setTimeout` to work around race conditions in room state — use the SDK's event listeners.
 - Avoid `requestAnimationFrame` if possible — prefer CSS transitions/animations or React state-driven updates.
@@ -120,3 +122,28 @@ Vite env vars use `VITE_` prefix, accessed via `import.meta.env.VITE_*`:
 - **i18n**: translations in `public/locales/`, use `useTranslation()` hook
 - **Virtualization**: long lists use `@tanstack/react-virtual`
 - **Drag & drop**: uses `@atlaskit/pragmatic-drag-and-drop`
+
+## Lazy Loading
+
+Server-side / build-time lazy-loading work on the main bundle. Verify with `npm run build:analyze` before and after each change.
+
+### Done — call / livekit split
+
+- Entry JS dropped 1,099 kB → 572 kB gzip (lazy ~527 kB). The livekit + call graph now loads in a single `call` chunk only when a call starts.
+- Mechanism: thin `CallProvider` (livekit-free) + `React.lazy` gates in `src/app/features/call/CallMounts.tsx` (`CallBarGate`/`CallScreenGate`/`CallPaneGate`), a lazy `CallEngineMount` that publishes participant state into the `activeCallParticipantEntriesAtom`, and `useCallParticipantStates` rewritten to read that atom. `useCallLifecycle` was deleted.
+- Entry-present call surfaces (room nav/header) must NOT import livekit — read the Jotai atoms instead. Livekit code is grouped into the `call` chunk via `manualChunks` in `vite.config.js`.
+- Before merging, manually verify the live voice-call flow (join/leave, mute/deafen, screenshare) — not covered by the e2e suite.
+
+### Backlog (not yet done, in rough priority order)
+
+- **Route-level splitting** in `src/app/pages/Router.tsx`: lazily load `Room`, `Explore`/`Featured`/`PublicRooms`, `Inbox`/`Notifications`/`Invites`, `Create`, `Direct`, `Space`. Highest impact beyond the call split.
+- **Modal/overlay renderers** rendered unconditionally in the client layout at `Router.tsx`: room-settings, space-settings, create-room, create-space, search, image-viewer, reaction-viewer, device-verification, backup-restore. Smallest, safest next increment (render on open, not on mount).
+- **Auth vs client split**: a logged-out visitor currently downloads the whole client. Split `Login`/`Register`/`ResetPassword` from the client shell.
+- **Emoji data / picker**: lazy-load emoji data (`emojibase-data` is large) out of the compose path.
+
+### Baseline for future comparison
+
+- `index` entry: 572 kB gzip
+- `call` chunk (lazy): 528 kB gzip
+- `ReactPrism` / `pdf` (lazy): 210 kB / 97 kB gzip
+- `rust-crypto` wasm (lazy): 1,873 kB gzip

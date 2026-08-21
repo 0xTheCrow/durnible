@@ -3,9 +3,12 @@ import react from '@vitejs/plugin-react';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
 import { VitePWA } from 'vite-plugin-pwa';
+import { visualizer } from 'rollup-plugin-visualizer';
 import fs from 'fs';
 import path from 'path';
 import buildConfig from './build.config';
+
+const isAnalyzeBuild = process.env.ANALYZE === 'true';
 
 const copyFiles = {
   targets: [
@@ -78,6 +81,12 @@ export default defineConfig({
     viteStaticCopy(copyFiles),
     vanillaExtractPlugin({ identifiers: 'debug' }),
     react(),
+    isAnalyzeBuild &&
+      visualizer({
+        gzipSize: true,
+        template: 'treemap',
+        filename: 'dist/bundle-visualizer.html',
+      }),
     VitePWA({
       srcDir: 'src',
       filename: 'sw.ts',
@@ -101,6 +110,19 @@ export default defineConfig({
     copyPublicDir: false,
     rollupOptions: {
       inject: { Buffer: ['buffer', 'Buffer'] },
+      output: {
+        manualChunks(id) {
+          if (
+            id.includes('node_modules/livekit-client') ||
+            id.includes('/src/app/features/call/') ||
+            id.includes('/src/app/hooks/call/') ||
+            id.includes('/src/app/plugins/call/')
+          ) {
+            return 'call';
+          }
+          return undefined;
+        },
+      },
     },
   },
 });

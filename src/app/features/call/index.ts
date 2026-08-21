@@ -1,4 +1,5 @@
 export * from './CallProvider';
+export * from './CallMounts';
 export * from './CallAudioRenderer';
 export * from './CallMicrophoneGate';
 export * from './CallBar';

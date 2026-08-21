@@ -39,7 +39,7 @@ const getCallParticipantEntries = (livekitRoom?: LivekitRoom): CallParticipantEn
   });
 };
 
-const PARTICIPANT_ENTRY_EVENTS = [
+export const PARTICIPANT_ENTRY_EVENTS = [
   RoomEvent.ParticipantConnected,
   RoomEvent.ParticipantDisconnected,
   RoomEvent.TrackPublished,
