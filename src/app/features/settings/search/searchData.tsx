@@ -170,7 +170,8 @@ function UrlPreviewSetting() {
   const [value, setValue] = useSetting(settingsAtom, 'urlPreview');
   return (
     <SettingTile
-      title="URL Preview"
+      title="Url Preview"
+      description="Show rich link previews and embeds in unencrypted rooms."
       after={<Switch variant="Primary" value={value} onChange={setValue} />}
     />
   );
@@ -179,7 +180,8 @@ function EncUrlPreviewSetting() {
   const [value, setValue] = useSetting(settingsAtom, 'encUrlPreview');
   return (
     <SettingTile
-      title="URL Preview in Encrypted Room"
+      title="Url Preview in Encrypted Room"
+      description="Show rich link previews and embeds in encrypted rooms."
       after={<Switch variant="Primary" value={value} onChange={setValue} />}
     />
   );

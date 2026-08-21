@@ -407,14 +407,16 @@ function Messages() {
       <SequenceCard className={SettingsCardStyle} variant="SurfaceVariant" direction="Column">
         <SettingTile
           title="Url Preview"
+          description="Show rich link previews and embeds in unencrypted rooms."
           after={<Switch variant="Primary" value={urlPreview} onChange={setUrlPreview} />}
         />
-      </SequenceCard>
-      <SequenceCard className={SettingsCardStyle} variant="SurfaceVariant" direction="Column">
-        <SettingTile
-          title="Url Preview in Encrypted Room"
-          after={<Switch variant="Primary" value={encUrlPreview} onChange={setEncUrlPreview} />}
-        />
+        <Box direction="Column" gap="100" style={{ paddingTop: config.space.S100 }}>
+          <SettingTile
+            title="Url Preview in Encrypted Room"
+            description="Show rich link previews and embeds in encrypted rooms."
+            after={<Switch variant="Primary" value={encUrlPreview} onChange={setEncUrlPreview} />}
+          />
+        </Box>
       </SequenceCard>
       <SequenceCard className={SettingsCardStyle} variant="SurfaceVariant" direction="Column">
         <SettingTile
