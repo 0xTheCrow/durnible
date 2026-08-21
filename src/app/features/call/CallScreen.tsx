@@ -143,7 +143,13 @@ function ConnectedCallScreen({ connection, isReconnecting, onMinimize }: Connect
           isIconFilled={isDeafened}
           aria-pressed={isDeafened}
         />
-        <CallMasterVolumeMenu size={CONTROL_BUTTON_SIZE} iconSize={CONTROL_ICON_SIZE} />
+        <CallMasterVolumeMenu
+          room={matrixRoom}
+          entries={entries}
+          memberships={memberships}
+          size={CONTROL_BUTTON_SIZE}
+          iconSize={CONTROL_ICON_SIZE}
+        />
         {isScreenshareSupported() && (
           <CallControlButton
             size={CONTROL_BUTTON_SIZE}

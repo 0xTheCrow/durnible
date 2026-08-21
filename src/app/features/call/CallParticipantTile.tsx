@@ -8,6 +8,7 @@ import classNames from 'classnames';
 import { useAtomValue } from 'jotai';
 import { isCallDeafenedAtom } from '../../state/call';
 import type { CallVideoSourceKind } from '../../hooks/call/useCallParticipantEntries';
+import { checkIsScreenshareAudioEnabled } from '../../hooks/call/useCallParticipantEntries';
 import { useParticipantTrackPublications } from '../../hooks/call/useParticipantTrackPublications';
 import { useIsParticipantSpeaking } from '../../hooks/call/useIsParticipantSpeaking';
 import { useCallUserIsMuted } from '../../state/hooks/callVolumePreferences';
@@ -49,6 +50,7 @@ function CallParticipantTileComponent({
   );
   const videoTrack = videoPublication?.isMuted ? undefined : videoPublication?.track;
   const isMuted = microphonePublication === undefined || microphonePublication.isMuted;
+  const isScreenshareAudioEnabled = checkIsScreenshareAudioEnabled(participant);
 
   useEffect(() => {
     const videoElement = videoRef.current;
@@ -62,7 +64,11 @@ function CallParticipantTileComponent({
   const { userId, displayName } = resolveCallParticipant(room, participant.identity, memberships);
 
   const isMutedLocally = useCallUserIsMuted(userId);
-  const { handleContextMenu, volumeMenu } = useCallUserVolumeMenu(userId, displayName);
+  const { handleContextMenu, volumeMenu } = useCallUserVolumeMenu(
+    userId,
+    displayName,
+    isScreenshareAudioEnabled
+  );
 
   const renderPlaceholder = () => {
     if (isScreenshareSource) {

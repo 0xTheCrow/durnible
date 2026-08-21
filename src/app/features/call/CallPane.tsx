@@ -164,7 +164,7 @@ function ConnectedCallPane({ connection, isReconnecting }: ConnectedCallPaneProp
               isIconFilled={isDeafened}
               aria-pressed={isDeafened}
             />
-            <CallMasterVolumeMenu />
+            <CallMasterVolumeMenu room={matrixRoom} entries={entries} memberships={memberships} />
             <CallControlButton
               size="400"
               radii="Pill"

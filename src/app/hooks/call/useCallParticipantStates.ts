@@ -7,9 +7,12 @@ import { useCallParticipantEntries } from './useCallParticipantEntries';
 
 export type CallParticipantAudioState = 'active' | 'muted' | 'deafened';
 
-export const useCallParticipantAudioStates = (
-  room: Room
-): Map<string, CallParticipantAudioState> => {
+export type CallParticipantState = {
+  audioState: CallParticipantAudioState;
+  isScreenshareAudioEnabled: boolean;
+};
+
+export const useCallParticipantStates = (room: Room): Map<string, CallParticipantState> => {
   const callState = useAtomValue(callStateAtom);
   const isDeafened = useAtomValue(isCallDeafenedAtom);
   const memberships = useCallMemberships(room);
@@ -21,16 +24,21 @@ export const useCallParticipantAudioStates = (
       : undefined;
   const entries = useCallParticipantEntries(connection?.livekitRoom);
 
-  const audioStates = new Map<string, CallParticipantAudioState>();
+  const participantStates = new Map<string, CallParticipantState>();
   entries.forEach((entry) => {
     const userId = findCallParticipantUserId(entry.participant.identity, memberships);
     if (!userId) return;
-    if (entry.participant.isLocal && isDeafened) {
-      audioStates.set(userId, 'deafened');
-      return;
-    }
-    audioStates.set(userId, entry.isMicrophoneMuted ? 'muted' : 'active');
+
+    const getAudioState = (): CallParticipantAudioState => {
+      if (entry.participant.isLocal && isDeafened) return 'deafened';
+      return entry.isMicrophoneMuted ? 'muted' : 'active';
+    };
+
+    participantStates.set(userId, {
+      audioState: getAudioState(),
+      isScreenshareAudioEnabled: entry.isScreenshareAudioEnabled,
+    });
   });
 
-  return audioStates;
+  return participantStates;
 };

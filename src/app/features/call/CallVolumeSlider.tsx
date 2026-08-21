@@ -1,5 +1,16 @@
 import React from 'react';
-import { Badge, Box, ProgressBar, Text, color, config, toRem } from 'folds';
+import {
+  Badge,
+  Box,
+  Icon,
+  IconButton,
+  Icons,
+  ProgressBar,
+  Text,
+  color,
+  config,
+  toRem,
+} from 'folds';
 import { Range } from 'react-range';
 import { CALL_VOLUME_LEVEL_MAX, CALL_VOLUME_LEVEL_MIN } from '../../state/callVolumePreferences';
 
@@ -9,6 +20,9 @@ type CallVolumeSliderProps = {
   label: string;
   volumeLevel: number;
   isDisabled?: boolean;
+  isMuted?: boolean;
+  muteLabel?: string;
+  onToggleMute?: () => void;
   onChange: (volumeLevel: number) => void;
   onCommit: (volumeLevel: number) => void;
 };
@@ -16,15 +30,33 @@ export function CallVolumeSlider({
   label,
   volumeLevel,
   isDisabled,
+  isMuted,
+  muteLabel,
+  onToggleMute,
   onChange,
   onCommit,
 }: CallVolumeSliderProps) {
   return (
     <Box direction="Column" gap="200" style={{ padding: config.space.S200, width: toRem(200) }}>
-      <Box alignItems="Center" justifyContent="SpaceBetween" gap="200">
-        <Text size="T200" truncate>
-          {label}
-        </Text>
+      <Box alignItems="Center" gap="200">
+        {onToggleMute && (
+          <IconButton
+            size="300"
+            radii="300"
+            fill="None"
+            variant={isMuted ? 'Critical' : 'SurfaceVariant'}
+            onClick={onToggleMute}
+            aria-pressed={isMuted}
+            aria-label={muteLabel}
+          >
+            <Icon size="50" src={isMuted ? Icons.VolumeMute : Icons.VolumeHigh} filled={isMuted} />
+          </IconButton>
+        )}
+        <Box grow="Yes">
+          <Text size="T200" truncate>
+            {label}
+          </Text>
+        </Box>
         <Text size="T200" priority="300">
           {Math.round(volumeLevel * 100)}%
         </Text>

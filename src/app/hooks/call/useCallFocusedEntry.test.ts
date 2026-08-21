@@ -6,11 +6,12 @@ import { useCallFocusedEntry } from './useCallFocusedEntry';
 
 const makeEntry = (
   key: string,
-  { isScreensharing = false, isCameraEnabled = false } = {}
+  { isScreensharing = false, isScreenshareAudioEnabled = false, isCameraEnabled = false } = {}
 ): CallParticipantEntry => ({
   key,
   participant: { identity: key } as unknown as Participant,
   isScreensharing,
+  isScreenshareAudioEnabled,
   isCameraEnabled,
   isMicrophoneMuted: false,
 });

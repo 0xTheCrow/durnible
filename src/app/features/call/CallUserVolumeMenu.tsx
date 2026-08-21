@@ -14,18 +14,21 @@ import { CallVolumeSlider } from './CallVolumeSlider';
 type CallUserVolumeMenuProps = {
   userId: string;
   displayName: string;
+  isScreenshareAudioEnabled: boolean;
   anchor: RectCords;
   onClose: () => void;
 };
 export function CallUserVolumeMenu({
   userId,
   displayName,
+  isScreenshareAudioEnabled,
   anchor,
   onClose,
 }: CallUserVolumeMenuProps) {
   const volumePreferences = useAtomValue(callVolumePreferencesAtom);
   const setUserVolumePreference = useSetAtom(setCallUserVolumePreferenceAtom);
-  const { volumeLevel, isMuted } = getCallUserVolumePreference(volumePreferences, userId);
+  const { volumeLevel, isMuted, screenshareVolumeLevel, isScreenshareMuted } =
+    getCallUserVolumePreference(volumePreferences, userId);
 
   return (
     <PopOut
@@ -79,6 +82,50 @@ export function CallUserVolumeMenu({
                   })
                 }
               />
+              {isScreenshareAudioEnabled && (
+                <>
+                  <MenuItem
+                    size="300"
+                    variant={isScreenshareMuted ? 'Critical' : 'Surface'}
+                    radii="300"
+                    before={
+                      <Icon
+                        size="100"
+                        src={isScreenshareMuted ? Icons.VolumeMute : Icons.VolumeHigh}
+                      />
+                    }
+                    aria-pressed={isScreenshareMuted}
+                    onClick={() =>
+                      setUserVolumePreference({
+                        userId,
+                        preference: { isScreenshareMuted: !isScreenshareMuted },
+                        isCommit: true,
+                      })
+                    }
+                  >
+                    <Text size="T300">{isScreenshareMuted ? 'Unmute Screen' : 'Mute Screen'}</Text>
+                  </MenuItem>
+                  <CallVolumeSlider
+                    label={`${displayName}'s Screen`}
+                    volumeLevel={screenshareVolumeLevel}
+                    isDisabled={isScreenshareMuted}
+                    onChange={(nextVolumeLevel) =>
+                      setUserVolumePreference({
+                        userId,
+                        preference: { screenshareVolumeLevel: nextVolumeLevel },
+                        isCommit: false,
+                      })
+                    }
+                    onCommit={(nextVolumeLevel) =>
+                      setUserVolumePreference({
+                        userId,
+                        preference: { screenshareVolumeLevel: nextVolumeLevel },
+                        isCommit: true,
+                      })
+                    }
+                  />
+                </>
+              )}
             </Box>
           </Menu>
         </FocusTrap>

@@ -20,8 +20,8 @@ import FocusTrap from 'focus-trap-react';
 import { useFocusWithin, useHover } from 'react-aria';
 import { NavItem, NavItemContent, NavItemOptions, NavButton } from '../../components/nav';
 import { useActiveCallParticipantIds } from '../../hooks/call/useActiveCallParticipantIds';
-import type { CallParticipantAudioState } from '../../hooks/call/useCallParticipantAudioStates';
-import { useCallParticipantAudioStates } from '../../hooks/call/useCallParticipantAudioStates';
+import type { CallParticipantState } from '../../hooks/call/useCallParticipantStates';
+import { useCallParticipantStates } from '../../hooks/call/useCallParticipantStates';
 import { useVoiceRoomEntry } from '../call/useVoiceRoomEntry';
 import { CallMemberAvatar } from '../call/CallMemberAvatar';
 import { useCallUserVolumeMenu } from '../call/useCallUserVolumeMenu';
@@ -34,12 +34,17 @@ import { TruncatedText } from '../../components/TruncatedText';
 type VoiceParticipantProps = {
   room: Room;
   userId: string;
-  audioState?: CallParticipantAudioState;
+  participantState?: CallParticipantState;
 };
-function VoiceParticipant({ room, userId, audioState }: VoiceParticipantProps) {
+function VoiceParticipant({ room, userId, participantState }: VoiceParticipantProps) {
   const displayName = getMemberDisplayName(room, userId) ?? userId;
   const isMutedLocally = useCallUserIsMuted(userId);
-  const { handleContextMenu, volumeMenu } = useCallUserVolumeMenu(userId, displayName);
+  const { handleContextMenu, volumeMenu } = useCallUserVolumeMenu(
+    userId,
+    displayName,
+    participantState?.isScreenshareAudioEnabled === true
+  );
+  const audioState = participantState?.audioState;
 
   return (
     <>
@@ -65,7 +70,7 @@ type RoomNavVoiceItemProps = {
 };
 export function RoomNavVoiceItem({ room, selected, isDrawerMode, tall }: RoomNavVoiceItemProps) {
   const participantIds = useActiveCallParticipantIds(room);
-  const participantAudioStates = useCallParticipantAudioStates(room);
+  const participantStates = useCallParticipantStates(room);
   const { entryState, enterVoiceRoom } = useVoiceRoomEntry(room);
   const isConnected = entryState.status === 'connected';
   const [hover, setHover] = useState(false);
@@ -193,7 +198,7 @@ export function RoomNavVoiceItem({ room, selected, isDrawerMode, tall }: RoomNav
               key={userId}
               room={room}
               userId={userId}
-              audioState={participantAudioStates.get(userId)}
+              participantState={participantStates.get(userId)}
             />
           ))}
         </Box>

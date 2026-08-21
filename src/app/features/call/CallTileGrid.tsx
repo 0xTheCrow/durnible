@@ -32,7 +32,11 @@ function CallOverflowParticipantComponent({
     entry.participant.identity,
     memberships
   );
-  const { handleContextMenu, volumeMenu } = useCallUserVolumeMenu(userId, displayName);
+  const { handleContextMenu, volumeMenu } = useCallUserVolumeMenu(
+    userId,
+    displayName,
+    entry.isScreenshareAudioEnabled
+  );
 
   const participantContent = (
     <>
