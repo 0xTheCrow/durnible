@@ -1,6 +1,6 @@
 import { atom } from 'jotai';
 
-const STORAGE_KEY = 'settings';
+export const SETTINGS_STORAGE_KEY = 'settings';
 export type DateFormat = 'D MMM YYYY' | 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY/MM/DD' | '';
 export type MessageSpacing = '0' | '100' | '200' | '300' | '400' | '500';
 export enum MessageLayout {
@@ -171,7 +171,7 @@ type LegacySettings = Settings & {
 };
 
 export const getSettings = () => {
-  const settings = localStorage.getItem(STORAGE_KEY);
+  const settings = localStorage.getItem(SETTINGS_STORAGE_KEY);
   if (settings === null) return defaultSettings;
   const storedSettings = JSON.parse(settings) as LegacySettings;
   return {
@@ -185,7 +185,7 @@ export const getSettings = () => {
 };
 
 export const setSettings = (settings: Settings) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+  localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
 };
 
 const baseSettings = atom<Settings>(getSettings());

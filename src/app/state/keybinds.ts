@@ -1,6 +1,6 @@
 import { atom } from 'jotai';
 
-const STORAGE_KEY = 'keybinds';
+export const KEYBINDS_STORAGE_KEY = 'keybinds';
 
 export enum KeybindAction {
   FormatBold = 'format.bold',
@@ -89,7 +89,7 @@ const isValidActionId = (id: string): id is KeybindAction =>
   Object.values(KeybindAction).includes(id as KeybindAction);
 
 const getStored = (): KeybindMap => {
-  const raw = localStorage.getItem(STORAGE_KEY);
+  const raw = localStorage.getItem(KEYBINDS_STORAGE_KEY);
   if (!raw) return defaultKeybinds;
   try {
     const parsed = JSON.parse(raw) as Record<string, unknown>;
@@ -106,7 +106,7 @@ const getStored = (): KeybindMap => {
 };
 
 const setStored = (map: KeybindMap) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
+  localStorage.setItem(KEYBINDS_STORAGE_KEY, JSON.stringify(map));
 };
 
 const baseKeybindsAtom = atom<KeybindMap>(getStored());

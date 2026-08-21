@@ -1,10 +1,10 @@
 import { atom } from 'jotai';
 
 export const getLocalStorageItem = <T>(key: string, defaultValue: T): T => {
-  const item = localStorage.getItem(key);
-  if (item === null) return defaultValue;
-  if (item === 'undefined') return undefined as T;
   try {
+    const item = localStorage.getItem(key);
+    if (item === null) return defaultValue;
+    if (item === 'undefined') return undefined as T;
     return JSON.parse(item) as T;
   } catch {
     return defaultValue;
@@ -12,7 +12,12 @@ export const getLocalStorageItem = <T>(key: string, defaultValue: T): T => {
 };
 
 export const setLocalStorageItem = <T>(key: string, value: T) => {
-  localStorage.setItem(key, JSON.stringify(value));
+  const serialized = JSON.stringify(value);
+  try {
+    localStorage.setItem(key, serialized);
+  } catch {
+    // Storage is unavailable; persistence is best-effort, the in-memory atom still holds the value.
+  }
 };
 
 export type GetLocalStorageItem<T> = (key: string) => T;
