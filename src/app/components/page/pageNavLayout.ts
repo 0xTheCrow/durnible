@@ -1,0 +1,3 @@
+export const PAGE_NAV_MIN_WIDTH = 180;
+export const PAGE_NAV_MAX_CONTAINER_FRACTION = 0.5;
+export const PAGE_NAV_KEYBOARD_RESIZE_STEP = 16;
