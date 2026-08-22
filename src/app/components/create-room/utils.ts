@@ -8,6 +8,7 @@ import { CreateRoomKind } from './CreateRoomKindSelector';
 import { RoomType, StateEvent } from '../../../types/matrix/room';
 import { getViaServers } from '../../plugins/via-servers';
 import { getMxIdServer } from '../../utils/matrix';
+import { createRoomEncryptionState } from './encryption';
 
 export const createRoomCreationContent = (
   type: RoomType | undefined,
@@ -93,14 +94,6 @@ export const allowCallParticipationEvents = async (
 
   await mx.sendStateEvent(roomId, EventType.RoomPowerLevels, { ...powerLevels, events }, '');
 };
-
-export const createRoomEncryptionState = () => ({
-  type: 'm.room.encryption',
-  state_key: '',
-  content: {
-    algorithm: 'm.megolm.v1.aes-sha2',
-  },
-});
 
 export type CreateRoomData = {
   version: string;
