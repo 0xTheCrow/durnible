@@ -133,52 +133,22 @@ The metric is the **eager set**: the entry `<script>` plus every `<link rel="mod
 
 `npm run build:analyze` shows chunk sizes but not whether a chunk is eager, so it cannot confirm a split. Two earlier entries here claimed wins that had not happened because they tracked entry-chunk size alone.
 
-### Done — call / livekit split
+### Rules
 
-Eager set 1,099 → 970 kB gzip. `livekit` (122 kB gzip) and the call UI load on demand via `React.lazy` gates in `CallMounts.tsx` and a lazy `CallEngineMount`; `CallProvider` stays livekit-free and eager.
-
-It only landed once the barrel was severed. `features/call/index.ts` re-exports every call module, and `Router.tsx`, `RoomView.tsx`, and `RoomViewHeader.tsx` imported through it, making the heavy bodies statically reachable — **do not import from `features/call`**, use concrete paths. `manualChunks` matches `node_modules/livekit-client` only; matching `src/app/features/call/` swept the eagerly-rendered `CallProvider` into livekit's chunk and made the whole thing eager. Entry-present call surfaces must read the Jotai atoms, never import livekit. Verify the live call flow manually before merging — the e2e suite does not cover it.
-
-### Done — modal renderer split
-
-`reaction-viewer` (1.3 kB gzip) and `RoomSettings` (2.4 kB gzip) load on first open. They are small because both are built almost entirely from modules the timeline already loads; splitting a leaf that shares its dependency tree with the shell buys little.
-
-Two rules came out of it. A `React.lazy` body must not be statically imported elsewhere, so keep heavy bodies out of feature `index.ts` barrels. And **`Suspense` goes above the modal, never inside it**: `OverlayModal` renders `FocusTrap`, whose `componentDidMount` calls `activate()` synchronously and throws when the container holds no tabbable node. A `fallback={null}` inside the modal commits an empty modal, and that throw escapes to the React root, which has no error boundary, unmounting the whole tree. `initialFocus: false` does not prevent it.
-
-### Do not use manualChunks for app code
-
-Rolldown pulls a matched module's shared dependencies into the named chunk. Naming `src/app/features/room/reaction-viewer/` produced a 1.2 MB chunk of 65 shared app modules that the entry then statically imported, and moved shared component CSS ahead of `index.css`, breaking vanilla-extract's equal-specificity order. Plain dynamic `import()` with no rule produced a correct 2.7 kB chunk. Reserve it for large `node_modules` packages reachable only from a lazy path.
-
-### TODO — lazy-load candidates
-
-All are interaction- or route-gated; none run during first paint. Sizes are minified / estimated gzip, derived from the 2.8-4.1x code ratio measured in this build except where marked. **Directory size is an upper bound** — what moves is that minus whatever the eager shell also imports, and that share is invisible until you build. Delete items as they land; drop this list when the batch is done.
-
-- [ ] **Emoji data** — 506 / **73 kB gzip (measured)**. `en/compact.json` only; the shortcode dicts (368 / 64 kB) stay eager for timeline reactions. Move `emojis`/`emojiGroups` out of `plugins/emoji.ts` behind a cached Promise fired at boot. All six consumers are interaction-gated. Traps: `EmojiGroupId` must stay in `emoji.ts` or `useEmojiGroupIcons`/`useEmojiGroupLabels` drag the chunk back in, and `useRecentEmoji`/`useFavoriteEmoji` become async. Decide up front whether `RoomInput.submit()` gates on the promise or accepts an `await` before it mutates the live input DOM — it is synchronous today and reads the element back after `replaceShortcodesInDom`, so an await there opens a window where the element can change.
-- [ ] **User settings** — 172 / ~49 kB. `features/settings` + `common-settings`, mounted via `SettingsTab` in the always-rendered sidebar. Same shape as the already-lazy `RoomSettings`, and the code is settings-specific rather than shared, so it should move close to full value. Largest app-code candidate.
-- [ ] **Image cropper** — 86 / ~25 kB. Imported only by `components/image-editor/ImageEditor.tsx`. Smallest effort per kB.
-- [ ] **Emoji board UI** — 46 / ~13 kB. Do alongside the emoji data item; both land on first picker open.
-- [ ] **Route splitting** in `Router.tsx` — ~810 kB pool, real yield unknown and probably far lower. Probe one route before committing. `pages/client/create` is only a ~4 kB wrapper; the create graph lives in `components/create-room`, shared with the eager composer.
-- [ ] **Space lobby** 28 / ~8 kB · **message search** 27 / ~8 kB · **user profile modal** 22 / ~6 kB · **image pack view** 14 / ~4 kB · **create room + space modals** 9 / ~3 kB. Do as one batch — per-change verification costs the same regardless of size.
-
-Everything at estimate takes the eager set 970 → ~780 kB gzip.
+- A `React.lazy` body must not be statically imported anywhere else, or it will not move. Keep heavy bodies out of feature `index.ts` barrels and import concrete paths.
+- **`Suspense` goes above the modal, never inside it.** `OverlayModal` renders `FocusTrap`, whose `componentDidMount` calls `activate()` synchronously and throws when the container holds no tabbable node. A `fallback={null}` inside the modal commits an empty modal, and that throw escapes to the React root, which has no error boundary, unmounting the whole tree. `initialFocus: false` does not prevent it.
+- **No `manualChunks` for app code.** Rolldown pulls a matched module's shared dependencies into the named chunk. Naming a feature directory produced a 1.2 MB chunk of 65 shared app modules that the entry then statically imported, and moved shared component CSS ahead of `index.css`, breaking vanilla-extract's equal-specificity order. Reserve it for large `node_modules` packages reachable only from a lazy path.
+- A chunk far under estimate usually means another importer is still pinning the shared code eager.
 
 ### Conditional
 
+- **Route splitting** in `Router.tsx` — real yield unknown and probably low; measure before committing to it. `components/create-room` is pinned eager by `hooks/useCommands.ts`.
 - **Auth vs client split** — removing auth from the logged-in bundle (`pages/auth` + `oidc-client-ts`) is ~18 kB gzip; removing the client from the logged-out bundle is ~700 kB, but only for visitors on the login page.
-- **`matrix-widget-api`** — 104 / ~30 kB, eager purely as a matrix-js-sdk transitive. Nothing here imports it; the only widget reference is a permission key string in `usePermissionItems.ts`.
-- **`sanitize-html` + `postcss`** — 62 / ~17 kB. Removal, not deferral: it sits on the timeline render path via `utils/sanitize.ts`.
+- **`sanitize-html` + `postcss`** — ~17 kB. Removal, not deferral: it sits on the timeline render path via `utils/sanitize.ts`.
 
 ### Not candidates
 
 Verified eager and immovable: `chroma-js` (timeline power tags), `react-range` (`AudioPlayer`), `ua-parser-js` (`src/index.tsx`), `entities`/`htmlparser2` (message HTML), `i18next`, `@remix-run/router`, plus `matrix-js-sdk`/`react-dom`/`folds` and the timeline and composer directories.
-
-### Baseline (measured 2026-08-22)
-
-Eager set = entry + modulepreloads in `dist/index.html`. Eager **970 kB gzip** / 3,739 kB raw over 10 chunks; deferred 498 kB gzip over 16. Largest deferred: `ReactPrism` 210, `livekit` 122, `pdf` 97, `rust-crypto` 45 kB gzip. Biggest eager contributors, minified: emojibase 849, matrix-js-sdk 659, `features` 389, `components` 294, react-dom 129, `pages` 127, folds 119, matrix-widget-api 104.
-
-The service worker precaches 34 entries (5.63 MB raw / 1.51 MB gzip) at install, not on interaction. `matrix_sdk_crypto_wasm_bg.wasm` (5.57 MB) and `pdf.worker.min.mjs` (1.38 MB) are excluded because `globPatterns` in `vite.config.js` lists only `js,css,html`.
-
-All sizes are decimal kB (bytes / 1000), matching `npm run build`; tools reporting KiB read ~2.4% smaller. Regenerate by diffing the preload list against the full asset list.
 
 ## folds (UI library)
 

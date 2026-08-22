@@ -1,13 +1,16 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Menu, PopOut, toRem } from 'folds';
 import FocusTrap from 'focus-trap-react';
 import { useCloseUserRoomProfile, useUserRoomProfileState } from '../state/hooks/userRoomProfile';
-import { UserRoomProfile } from './user-profile';
 import type { UserRoomProfileState } from '../state/userRoomProfile';
 import { useAllJoinedRoomsSet, useGetRoom } from '../hooks/useGetRoom';
 import { stopPropagation } from '../utils/keyboard';
 import { SpaceProvider } from '../hooks/useSpace';
 import { RoomProvider } from '../hooks/useRoom';
+
+const UserRoomProfile = lazy(() =>
+  import('./user-profile').then((module) => ({ default: module.UserRoomProfile }))
+);
 
 function UserRoomProfileContextMenu({ state }: { state: UserRoomProfileState }) {
   const { roomId, spaceId, userId, cords, position } = state;
@@ -26,22 +29,24 @@ function UserRoomProfileContextMenu({ state }: { state: UserRoomProfileState }) 
       position={position ?? 'Top'}
       align="Start"
       content={
-        <FocusTrap
-          focusTrapOptions={{
-            initialFocus: false,
-            onDeactivate: close,
-            clickOutsideDeactivates: true,
-            escapeDeactivates: stopPropagation,
-          }}
-        >
-          <Menu style={{ width: toRem(340) }}>
-            <SpaceProvider value={space ?? null}>
-              <RoomProvider value={room}>
-                <UserRoomProfile userId={userId} />
-              </RoomProvider>
-            </SpaceProvider>
-          </Menu>
-        </FocusTrap>
+        <Suspense fallback={null}>
+          <FocusTrap
+            focusTrapOptions={{
+              initialFocus: false,
+              onDeactivate: close,
+              clickOutsideDeactivates: true,
+              escapeDeactivates: stopPropagation,
+            }}
+          >
+            <Menu style={{ width: toRem(340) }}>
+              <SpaceProvider value={space ?? null}>
+                <RoomProvider value={room}>
+                  <UserRoomProfile userId={userId} />
+                </RoomProvider>
+              </SpaceProvider>
+            </Menu>
+          </FocusTrap>
+        </Suspense>
       }
     />
   );

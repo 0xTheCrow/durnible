@@ -30,7 +30,7 @@ import { settingsAtom } from '../../../state/settings';
 import { useKeybinds } from '../../../state/hooks/keybinds';
 import { useRelevantImagePacks } from '../../../hooks/useImagePacks';
 import { ImageUsage } from '../../../plugins/custom-emoji/types';
-import { buildShortcodeMap, emojis as unicodeEmojis } from '../../../plugins/emoji';
+import { buildShortcodeMap, getEmojiData } from '../../../plugins/emoji';
 import { EmojiBoardWrapper } from '../../../components/emoji-board';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
@@ -108,7 +108,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
     }, [room, mEvent]);
 
     const buildEditContent = useCallback((): IContent | undefined => {
-      const shortcodeMap = buildShortcodeMap(imagePacks, unicodeEmojis);
+      const shortcodeMap = buildShortcodeMap(imagePacks, getEmojiData().emojis);
       const inputElement = editorInputRef.current?.inputElement;
       if (!inputElement) return undefined;
 

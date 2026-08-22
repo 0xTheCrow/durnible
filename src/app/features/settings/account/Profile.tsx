@@ -1,5 +1,5 @@
 import type { ChangeEventHandler, FormEventHandler } from 'react';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { lazy, Suspense, useCallback, useMemo, useState } from 'react';
 import {
   Box,
   Text,
@@ -36,12 +36,15 @@ import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { useFilePicker } from '../../../hooks/useFilePicker';
 import { useObjectURL } from '../../../hooks/useObjectURL';
 import { stopPropagation } from '../../../utils/keyboard';
-import { ImageEditor } from '../../../components/image-editor';
 import { ModalWide } from '../../../styles/Modal.css';
 import type { UploadSuccess } from '../../../state/upload';
 import { createUploadAtom } from '../../../state/upload';
 import { CompactUploadCardRenderer } from '../../../components/upload-card';
 import { useCapabilities } from '../../../hooks/useCapabilities';
+
+const ImageEditor = lazy(() =>
+  import('../../../components/image-editor').then((module) => ({ default: module.ImageEditor }))
+);
 
 type ProfileProps = {
   profile: UserProfile;
@@ -140,26 +143,28 @@ function ProfileAvatar({ profile, userId }: ProfileProps) {
       )}
 
       {imageFileURL && (
-        <Overlay open={false} backdrop={<OverlayBackdrop />}>
-          <OverlayCenter>
-            <FocusTrap
-              focusTrapOptions={{
-                initialFocus: false,
-                onDeactivate: handleRemoveUpload,
-                clickOutsideDeactivates: true,
-                escapeDeactivates: stopPropagation,
-              }}
-            >
-              <Modal className={ModalWide} variant="Surface" size="500">
-                <ImageEditor
-                  name={imageFile?.name ?? 'Unnamed'}
-                  url={imageFileURL}
-                  onClose={handleRemoveUpload}
-                />
-              </Modal>
-            </FocusTrap>
-          </OverlayCenter>
-        </Overlay>
+        <Suspense fallback={null}>
+          <Overlay open={false} backdrop={<OverlayBackdrop />}>
+            <OverlayCenter>
+              <FocusTrap
+                focusTrapOptions={{
+                  initialFocus: false,
+                  onDeactivate: handleRemoveUpload,
+                  clickOutsideDeactivates: true,
+                  escapeDeactivates: stopPropagation,
+                }}
+              >
+                <Modal className={ModalWide} variant="Surface" size="500">
+                  <ImageEditor
+                    name={imageFile?.name ?? 'Unnamed'}
+                    url={imageFileURL}
+                    onClose={handleRemoveUpload}
+                  />
+                </Modal>
+              </FocusTrap>
+            </OverlayCenter>
+          </Overlay>
+        </Suspense>
       )}
 
       <OverlayModal open={alertRemove} onClose={() => setAlertRemove(false)}>

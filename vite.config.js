@@ -103,6 +103,9 @@ export default defineConfig({
       },
     }),
   ],
+  resolve: {
+    alias: [{ find: /^matrix-widget-api$/, replacement: 'matrix-widget-api/src/index.ts' }],
+  },
   build: {
     outDir: 'dist',
     target: 'es2022',

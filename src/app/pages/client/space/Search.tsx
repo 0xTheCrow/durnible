@@ -1,8 +1,7 @@
-import React, { useRef } from 'react';
+import React, { lazy, Suspense, useRef } from 'react';
 import { Box, Icon, Icons, Text, Scroll, IconButton } from 'folds';
 import { useAtomValue } from 'jotai';
 import { Page, PageContent, PageContentCenter, PageHeader } from '../../../components/page';
-import { MessageSearch } from '../../../features/message-search';
 import { useSpace } from '../../../hooks/useSpace';
 import { useRecursiveChildRoomScopeFactory, useSpaceChildren } from '../../../state/hooks/roomList';
 import { allRoomsAtom } from '../../../state/room-list/roomList';
@@ -11,6 +10,10 @@ import { roomToParentsAtom } from '../../../state/room/roomToParents';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
 import { BackRouteHandler } from '../../../components/BackRouteHandler';
+
+const MessageSearch = lazy(() =>
+  import('../../../features/message-search').then((module) => ({ default: module.MessageSearch }))
+);
 
 export function SpaceSearch() {
   const mx = useMatrixClient();
@@ -54,12 +57,14 @@ export function SpaceSearch() {
         <Scroll ref={scrollRef} hideTrack visibility="Hover">
           <PageContent>
             <PageContentCenter>
-              <MessageSearch
-                defaultRoomsFilterName={space.name}
-                allowGlobal
-                rooms={rooms}
-                scrollRef={scrollRef}
-              />
+              <Suspense fallback={null}>
+                <MessageSearch
+                  defaultRoomsFilterName={space.name}
+                  allowGlobal
+                  rooms={rooms}
+                  scrollRef={scrollRef}
+                />
+              </Suspense>
             </PageContentCenter>
           </PageContent>
         </Scroll>

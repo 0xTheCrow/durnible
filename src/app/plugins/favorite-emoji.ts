@@ -1,7 +1,6 @@
 import type { MatrixClient } from 'matrix-js-sdk';
 import { getAccountData } from '../utils/room';
 import type { Emoji } from './emoji';
-import { emojis } from './emoji';
 import { PackImageReader } from './custom-emoji';
 import { AccountDataEvent } from '../../types/matrix/accountData';
 import { EmojiType } from '../components/emoji-board/types';
@@ -24,11 +23,14 @@ export const getFavoriteEmojis = (mx: MatrixClient): FavoriteEmojiEntry[] => {
   return content.favorites;
 };
 
-export const getFavoriteEmojiItems = (mx: MatrixClient): Array<Emoji | PackImageReader> => {
+export const getFavoriteEmojiItems = (
+  mx: MatrixClient,
+  unicodeEmojis: Emoji[]
+): Array<Emoji | PackImageReader> => {
   const entries = getFavoriteEmojis(mx);
   return entries.reduce<Array<Emoji | PackImageReader>>((list, entry) => {
     if (entry.type === EmojiType.Emoji) {
-      const emoji = emojis.find((e) => e.unicode === entry.data);
+      const emoji = unicodeEmojis.find((e) => e.unicode === entry.data);
       if (emoji) list.push(emoji);
     } else {
       list.push(new PackImageReader(entry.shortcode, entry.data, { body: entry.label }));

@@ -99,7 +99,7 @@ import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
 import { useImagePackRooms } from '../../../hooks/useImagePackRooms';
 import { useRelevantImagePacks } from '../../../hooks/useImagePacks';
 import { ImageUsage } from '../../../plugins/custom-emoji/types';
-import { buildShortcodeMap, emojis as unicodeEmojis } from '../../../plugins/emoji';
+import { buildShortcodeMap, getEmojiData } from '../../../plugins/emoji';
 import { usePowerLevelsContext } from '../../../hooks/usePowerLevels';
 import colorMXID from '../../../../util/colorMXID';
 import { useIsDirectRoom } from '../../../hooks/useRoom';
@@ -385,7 +385,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       const inputElement = editorInputRef.current?.inputElement;
       if (!inputElement) return;
 
-      const shortcodeMap = buildShortcodeMap(imagePacks, unicodeEmojis);
+      const shortcodeMap = buildShortcodeMap(imagePacks, getEmojiData().emojis);
       replaceShortcodesInDom(inputElement, shortcodeMap, mx, useAuthentication);
 
       let plainText = domToPlainText(inputElement).trim();

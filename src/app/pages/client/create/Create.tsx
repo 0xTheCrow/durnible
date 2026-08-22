@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Box, Icon, Icons, Scroll } from 'folds';
 import {
   Page,
@@ -7,8 +7,13 @@ import {
   PageHero,
   PageHeroSection,
 } from '../../../components/page';
-import { CreateSpaceForm } from '../../../features/create-space';
 import { useRoomNavigate } from '../../../hooks/useRoomNavigate';
+
+const CreateSpaceForm = lazy(() =>
+  import('../../../features/create-space/CreateSpace').then((module) => ({
+    default: module.CreateSpaceForm,
+  }))
+);
 
 export function Create() {
   const { navigateSpace } = useRoomNavigate();
@@ -26,7 +31,9 @@ export function Create() {
                     title="Create Space"
                     subTitle="Build a space for your community."
                   />
-                  <CreateSpaceForm onCreate={navigateSpace} />
+                  <Suspense fallback={null}>
+                    <CreateSpaceForm onCreate={navigateSpace} />
+                  </Suspense>
                 </Box>
               </PageHeroSection>
             </PageContentCenter>

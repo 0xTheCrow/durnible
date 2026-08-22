@@ -1,14 +1,17 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Box, config, Header, Icon, IconButton, Icons, Modal, Scroll, Text } from 'folds';
 import { useAllJoinedRoomsSet, useGetRoom } from '../../hooks/useGetRoom';
 import { SpaceProvider } from '../../hooks/useSpace';
-import { CreateSpaceForm } from './CreateSpace';
 import {
   useCloseCreateSpaceModal,
   useCreateSpaceModalState,
 } from '../../state/hooks/createSpaceModal';
 import type { CreateSpaceModalState } from '../../state/createSpaceModal';
 import { OverlayModal } from '../../components/OverlayModal';
+
+const CreateSpaceForm = lazy(() =>
+  import('./CreateSpace').then((module) => ({ default: module.CreateSpaceForm }))
+);
 
 type CreateSpaceModalProps = {
   state: CreateSpaceModalState;
@@ -23,41 +26,43 @@ function CreateSpaceModal({ state }: CreateSpaceModalProps) {
 
   return (
     <SpaceProvider value={space ?? null}>
-      <OverlayModal open onClose={closeDialog}>
-        <Modal size="300" flexHeight>
-          <Box direction="Column">
-            <Header
-              size="500"
-              style={{
-                padding: config.space.S200,
-                paddingLeft: config.space.S400,
-                borderBottomWidth: config.borderWidth.B300,
-              }}
-            >
-              <Box grow="Yes">
-                <Text size="H4">New Space</Text>
-              </Box>
-              <Box shrink="No">
-                <IconButton size="300" radii="300" onClick={closeDialog}>
-                  <Icon src={Icons.Cross} />
-                </IconButton>
-              </Box>
-            </Header>
-            <Scroll size="300" hideTrack>
-              <Box
+      <Suspense fallback={null}>
+        <OverlayModal open onClose={closeDialog}>
+          <Modal size="300" flexHeight>
+            <Box direction="Column">
+              <Header
+                size="500"
                 style={{
-                  padding: config.space.S400,
-                  paddingRight: config.space.S200,
+                  padding: config.space.S200,
+                  paddingLeft: config.space.S400,
+                  borderBottomWidth: config.borderWidth.B300,
                 }}
-                direction="Column"
-                gap="500"
               >
-                <CreateSpaceForm space={space} onCreate={closeDialog} />
-              </Box>
-            </Scroll>
-          </Box>
-        </Modal>
-      </OverlayModal>
+                <Box grow="Yes">
+                  <Text size="H4">New Space</Text>
+                </Box>
+                <Box shrink="No">
+                  <IconButton size="300" radii="300" onClick={closeDialog}>
+                    <Icon src={Icons.Cross} />
+                  </IconButton>
+                </Box>
+              </Header>
+              <Scroll size="300" hideTrack>
+                <Box
+                  style={{
+                    padding: config.space.S400,
+                    paddingRight: config.space.S200,
+                  }}
+                  direction="Column"
+                  gap="500"
+                >
+                  <CreateSpaceForm space={space} onCreate={closeDialog} />
+                </Box>
+              </Scroll>
+            </Box>
+          </Modal>
+        </OverlayModal>
+      </Suspense>
     </SpaceProvider>
   );
 }

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Box } from 'folds';
 import {
   Outlet,
@@ -50,7 +50,6 @@ import { Explore, FeaturedRooms, PublicRooms } from './client/explore';
 import { Notifications, Inbox, Invites } from './client/inbox';
 import { setAfterLoginRedirectPath } from './afterLoginRedirectPath';
 import { Room } from '../features/room';
-import { Lobby } from '../features/lobby';
 import { WelcomePage } from './client/WelcomePage';
 import { SidebarNav } from './client/SidebarNav';
 import { PageRoot } from '../components/page';
@@ -75,6 +74,8 @@ import { ImageViewerRenderer } from '../components/image-viewer/ImageViewerRende
 import { getFallbackSession } from '../state/sessions';
 import { CallPaneGate, CallBarGate, CallScreenGate } from '../features/call/CallMounts';
 import { CallProvider } from '../features/call/CallProvider';
+
+const Lobby = lazy(() => import('../features/lobby').then((module) => ({ default: module.Lobby })));
 
 export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize) => {
   const { hashRouter } = clientConfig;
@@ -253,7 +254,14 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
               element={<WelcomePage />}
             />
           )}
-          <Route path={_LOBBY_PATH} element={<Lobby />} />
+          <Route
+            path={_LOBBY_PATH}
+            element={
+              <Suspense fallback={null}>
+                <Lobby />
+              </Suspense>
+            }
+          />
           <Route path={_SEARCH_PATH} element={<SpaceSearch />} />
           <Route
             path={_ROOM_PATH}
