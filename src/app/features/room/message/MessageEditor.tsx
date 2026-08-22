@@ -58,8 +58,14 @@ export const MessageEditor = as<'div', MessageEditorProps>(
     const [toolbar, setToolbar] = useState(globalToolbar);
     const isComposing = useComposingCheck();
     const editorInputRef = useRef<EditorController | null>(null);
-    const editableElementRef = useRef<HTMLDivElement | null>(null);
-    editableElementRef.current = editorInputRef.current?.inputElement ?? null;
+    const editorElementRef = React.useMemo(
+      () => ({
+        get current() {
+          return editorInputRef.current?.inputElement ?? null;
+        },
+      }),
+      []
+    );
     const stableImagePackRooms = React.useMemo(() => imagePackRooms ?? [], [imagePackRooms]);
     const imagePacks = useRelevantImagePacks(ImageUsage.Emoticon, stableImagePackRooms);
 
@@ -67,11 +73,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
       useState<AutocompleteQuery<AutocompletePrefix>>();
 
     const editorAutocomplete = useEditorAutocomplete({
-      editorInputRef: {
-        get current() {
-          return editorInputRef.current?.inputElement ?? null;
-        },
-      },
+      editorInputRef: editorElementRef,
       mx,
       useAuthentication,
       room,
@@ -372,14 +374,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
               {toolbar && (
                 <div>
                   <Line variant="SurfaceVariant" size="300" />
-                  <EditorToolbar
-                    inputRef={{
-                      get current() {
-                        return editorInputRef.current?.inputElement ?? null;
-                      },
-                    }}
-                    controllerRef={editorInputRef}
-                  />
+                  <EditorToolbar inputRef={editorElementRef} controllerRef={editorInputRef} />
                 </div>
               )}
             </>

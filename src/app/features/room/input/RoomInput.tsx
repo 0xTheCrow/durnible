@@ -516,12 +516,17 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       latestDraftRef.current = inputElement && !empty ? inputElement.innerHTML : '';
     }, [editorInputRef]);
 
-    const editorAutocomplete = useEditorAutocomplete({
-      editorInputRef: {
+    const editorElementRef = useMemo(
+      () => ({
         get current() {
           return editorInputRef.current?.inputElement ?? null;
         },
-      },
+      }),
+      [editorInputRef]
+    );
+
+    const editorAutocomplete = useEditorAutocomplete({
+      editorInputRef: editorElementRef,
       mx,
       useAuthentication,
       room,
@@ -826,28 +831,13 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
               toolbar && (
                 <div>
                   <Line variant="SurfaceVariant" size="300" />
-                  <EditorToolbar
-                    inputRef={{
-                      get current() {
-                        return editorInputRef.current?.inputElement ?? null;
-                      },
-                    }}
-                    controllerRef={editorInputRef}
-                  />
+                  <EditorToolbar inputRef={editorElementRef} controllerRef={editorInputRef} />
                 </div>
               )
             }
           />
         )}
-        {!isVoiceRecording && !toolbar && (
-          <ActiveFormatBadges
-            inputRef={{
-              get current() {
-                return editorInputRef.current?.inputElement ?? null;
-              },
-            }}
-          />
-        )}
+        {!isVoiceRecording && !toolbar && <ActiveFormatBadges inputRef={editorElementRef} />}
       </div>
     );
   }
