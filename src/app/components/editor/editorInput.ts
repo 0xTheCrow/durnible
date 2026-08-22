@@ -618,6 +618,8 @@ export const normalizeEditorRoot = (element: HTMLElement): boolean => {
 };
 
 export const stripDeadCaretAnchors = (element: HTMLElement): void => {
+  if (!element.textContent?.includes(INLINE_VOID_CARET_ANCHOR)) return;
+
   const selection = window.getSelection();
   let caretNode: Node | null = null;
   let caretOffset = 0;

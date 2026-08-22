@@ -25,6 +25,7 @@ export type CpuProfile = {
 };
 
 export type PerformanceSession = {
+  client: CDPSession;
   start: () => Promise<void>;
   stop: () => Promise<CpuProfile>;
   detach: () => Promise<void>;
@@ -47,6 +48,7 @@ export const createPerformanceSession = async (
   }
 
   return {
+    client,
     start: async () => {
       await client.send('Profiler.start');
     },
@@ -185,6 +187,8 @@ export type KeystrokeTiming = {
   inputBlockMs: number[];
   keyupBlockMs: number[];
   frameMs: number[];
+  compositionBlockMs: number[];
+  compositionFrameMs: number[];
   longTaskMs: number[];
 };
 
@@ -201,6 +205,8 @@ export const installKeystrokeTiming = (page: Page): Promise<void> =>
       inputBlockMs: [],
       keyupBlockMs: [],
       frameMs: [],
+      compositionBlockMs: [],
+      compositionFrameMs: [],
       longTaskMs: [],
     };
     window.__keystrokeTiming = timing;
@@ -241,6 +247,20 @@ export const installKeystrokeTiming = (page: Page): Promise<void> =>
       true
     );
 
+    document.addEventListener(
+      'compositionupdate',
+      () => {
+        const startedAt = performance.now();
+        scheduleAfterCurrentTask(() =>
+          timing.compositionBlockMs.push(performance.now() - startedAt)
+        );
+        requestAnimationFrame(() => {
+          setTimeout(() => timing.compositionFrameMs.push(performance.now() - startedAt), 0);
+        });
+      },
+      true
+    );
+
     new PerformanceObserver((list) => {
       list.getEntries().forEach((entry) => timing.longTaskMs.push(entry.duration));
     }).observe({ type: 'longtask', buffered: false });
@@ -254,6 +274,8 @@ export const collectKeystrokeTiming = async (page: Page): Promise<KeystrokeTimin
         inputBlockMs: [],
         keyupBlockMs: [],
         frameMs: [],
+        compositionBlockMs: [],
+        compositionFrameMs: [],
         longTaskMs: [],
       }
   );

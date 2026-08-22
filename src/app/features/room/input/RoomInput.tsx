@@ -21,17 +21,12 @@ import {
 } from 'folds';
 
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
-import type { AutocompleteQuery, EditorController } from '../../../components/editor';
+import type { EditorController } from '../../../components/editor';
 import {
   CustomEditor,
   EditorToolbar,
   ActiveFormatBadges,
-  AutocompletePrefix,
-  RoomMentionAutocomplete,
-  UserMentionAutocomplete,
-  EmoticonAutocomplete,
   createEmoticonNode,
-  useEditorAutocomplete,
   customHtmlEqualsPlainText,
   trimCustomHtml,
   trimCommand,
@@ -87,7 +82,7 @@ import {
   getVideoMsgContent,
 } from './msgContent';
 import { getMemberDisplayName, getMentionContent, trimReplyFromBody } from '../../../utils/room';
-import { CommandAutocomplete } from './CommandAutocomplete';
+import { ComposerAutocomplete } from './ComposerAutocomplete';
 import { VoiceMessageRecorder } from './VoiceMessageRecorder';
 import { Command, SHRUG, TABLEFLIP, UNFLIP, useCommands } from '../../../hooks/useCommands';
 import { mobileOrTablet } from '../../../utils/user-agent';
@@ -180,8 +175,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     const imagePacks = useRelevantImagePacks(ImageUsage.Emoticon, imagePackRooms);
 
     const [toolbar, setToolbar] = useSetting(settingsAtom, 'editorToolbar');
-    const [autocompleteQuery, setAutocompleteQuery] =
-      useState<AutocompleteQuery<AutocompletePrefix>>();
+    const [isAutocompleteOpen, setIsAutocompleteOpen] = useState(false);
 
     const sendTypingStatus = useTypingStatusUpdater(mx, roomId);
 
@@ -501,20 +495,19 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       if (isKeyHotkey('escape', evt)) {
         evt.preventDefault();
         evt.stopPropagation();
-        if (autocompleteQuery) {
-          setAutocompleteQuery(undefined);
-          return;
-        }
+        if (isAutocompleteOpen) return;
         setReplyDraft(undefined);
       }
     };
 
-    const handleEditorChange = useCallback(() => {
-      const inputElement = editorInputRef.current?.inputElement;
-      const empty = inputElement ? isEditorEmpty(inputElement) : true;
-      setHasEditorContent(!empty);
-      latestDraftRef.current = inputElement && !empty ? inputElement.innerHTML : '';
-    }, [editorInputRef]);
+    const handleEditorChange = useCallback(
+      (isEmpty: boolean) => {
+        const inputElement = editorInputRef.current?.inputElement;
+        setHasEditorContent(!isEmpty);
+        latestDraftRef.current = inputElement && !isEmpty ? inputElement.innerHTML : '';
+      },
+      [editorInputRef]
+    );
 
     const editorElementRef = useMemo(
       () => ({
@@ -525,20 +518,6 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       [editorInputRef]
     );
 
-    const editorAutocomplete = useEditorAutocomplete({
-      editorInputRef: editorElementRef,
-      mx,
-      useAuthentication,
-      room,
-      roomId,
-    });
-    const {
-      handleMentionSelect,
-      handleRoomMentionSelect,
-      handleEmoticonSelect: handleAutocompleteEmoticonSelect,
-      handleCommandSelect,
-    } = editorAutocomplete;
-
     const handleKeyUp: KeyboardEventHandler = useCallback(
       (evt) => {
         if (isKeyHotkey('escape', evt)) {
@@ -546,18 +525,12 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
           return;
         }
 
-        const inputElement = evt.currentTarget as HTMLDivElement;
         if (!hideActivity) {
-          sendTypingStatus(!isEditorEmpty(inputElement));
+          sendTypingStatus(!isEditorEmpty(evt.currentTarget as HTMLDivElement));
         }
-        setAutocompleteQuery(editorAutocomplete.detectAutocompleteQuery(inputElement));
       },
-      [sendTypingStatus, hideActivity, editorAutocomplete]
+      [sendTypingStatus, hideActivity]
     );
-
-    const handleCloseAutocomplete = useCallback(() => {
-      setAutocompleteQuery(undefined);
-    }, []);
 
     const handleEmoticonSelect = (key: string, shortcode: string) => {
       if (key.startsWith('mxc://')) {
@@ -662,37 +635,13 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
             </Dialog>
           </OverlayCenter>
         </Overlay>
-        {autocompleteQuery?.prefix === AutocompletePrefix.RoomMention && (
-          <RoomMentionAutocomplete
-            query={autocompleteQuery}
-            onClose={handleCloseAutocomplete}
-            onSelect={handleRoomMentionSelect}
-          />
-        )}
-        {autocompleteQuery?.prefix === AutocompletePrefix.UserMention && (
-          <UserMentionAutocomplete
-            room={room}
-            query={autocompleteQuery}
-            onClose={handleCloseAutocomplete}
-            onSelect={handleMentionSelect}
-          />
-        )}
-        {autocompleteQuery?.prefix === AutocompletePrefix.Emoticon && (
-          <EmoticonAutocomplete
-            imagePackRooms={imagePackRooms}
-            query={autocompleteQuery}
-            onClose={handleCloseAutocomplete}
-            onSelect={handleAutocompleteEmoticonSelect}
-          />
-        )}
-        {autocompleteQuery?.prefix === AutocompletePrefix.Command && (
-          <CommandAutocomplete
-            room={room}
-            query={autocompleteQuery}
-            onClose={handleCloseAutocomplete}
-            onSelect={handleCommandSelect}
-          />
-        )}
+        <ComposerAutocomplete
+          editorElementRef={editorElementRef}
+          room={room}
+          roomId={roomId}
+          imagePackRooms={imagePackRooms}
+          onOpenChange={setIsAutocompleteOpen}
+        />
         {isVoiceRecording ? (
           <VoiceMessageRecorder
             onSend={handleVoiceSend}
@@ -718,7 +667,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
                   />
                 )}
                 {replyDraft && (
-                  <div>
+                  <div data-testid="room-input-reply-draft">
                     <Box
                       alignItems="Center"
                       gap="300"

@@ -7,6 +7,7 @@ import {
   TEST_CUSTOM_EMOJI_MXC,
   TEST_CUSTOM_EMOJI_SHORTCODE,
   TEST_ROOM_ID,
+  textEvent,
   type HomeserverStub,
   type StubHomeserverOptions,
 } from './fixtures/homeserver';
@@ -165,4 +166,28 @@ test('bold text survives serialization into the sent event', async ({ page }) =>
   expect(sent.eventType).toBe('m.room.message');
   expect(sent.content.body).toBe('hello');
   expect(sent.content.formatted_body).toBe('<strong>hello</strong>');
+});
+
+test('escape closes the autocomplete before it discards the reply draft', async ({ page }) => {
+  await openRoom(page, { timelineEvents: [textEvent(0)] });
+
+  await page.getByText('filler message 0').hover();
+  await page.getByTestId('message-reply-btn').click();
+
+  const replyDraft = page.getByTestId('room-input-reply-draft');
+  await expect(replyDraft).toBeVisible();
+
+  const editor = page.getByTestId('editor');
+  await editor.click();
+  await editor.pressSequentially('@');
+
+  const autocompleteMenu = page.locator('[class*="AutocompleteMenuContainer"]');
+  await expect(autocompleteMenu).toBeVisible();
+
+  await page.keyboard.press('Escape');
+  await expect(autocompleteMenu).toBeHidden();
+  await expect(replyDraft).toBeVisible();
+
+  await page.keyboard.press('Escape');
+  await expect(replyDraft).toBeHidden();
 });

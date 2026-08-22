@@ -36,7 +36,7 @@ export type EditorController = {
   setContent: (html: string, options?: HtmlToEditorDomOptions) => void;
 };
 
-export type EditorChangeHandler = () => void;
+export type EditorChangeHandler = (isEmpty: boolean) => void;
 
 type CustomEditorProps = {
   editableName?: string;
@@ -83,8 +83,9 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
     const syncEditorState = useCallback(() => {
       const inputElement = inputRef.current;
       if (!inputElement) return;
-      setIsEmpty(isEditorEmpty(inputElement));
-      onChange?.();
+      const isEditorNowEmpty = isEditorEmpty(inputElement);
+      setIsEmpty(isEditorNowEmpty);
+      onChange?.(isEditorNowEmpty);
     }, [onChange]);
 
     useImperativeHandle(

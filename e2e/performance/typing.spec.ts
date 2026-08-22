@@ -1,4 +1,4 @@
-import { test, expect, devices, type Page } from '@playwright/test';
+import { test, expect, devices, type CDPSession, type Page } from '@playwright/test';
 import type { Settings } from '../../src/app/state/settings';
 import { seedSession, seedSettings, stubHomeserver, TEST_ROOM_ID } from '../fixtures/homeserver';
 import {
@@ -22,6 +22,8 @@ const KEYSTROKE_COUNT = Number(process.env.PERFORMANCE_KEYSTROKES ?? 60);
 const KEYSTROKE_DELAY_MS = 60;
 const PREFILLED_CHARACTER_COUNT = 2000;
 const SETTLE_MS = 3000;
+const RUN_LABEL = process.env.PERFORMANCE_LABEL ?? '';
+const runFileName = (name: string): string => (RUN_LABEL ? `${name}-${RUN_LABEL}` : name);
 
 const buildTypedText = (characterCount: number, withSpaces: boolean): string => {
   const phrase = withSpaces
@@ -54,6 +56,8 @@ type ScenarioResult = {
   input: SampleStats;
   keyup: SampleStats;
   frame: SampleStats;
+  composition: SampleStats;
+  compositionFrame: SampleStats;
   longTaskCount: number;
   summary: ProfileSummary;
   profilePath: string;
@@ -109,17 +113,67 @@ const placeCaretAtEnd = (page: Page): Promise<void> =>
     selection?.addRange(range);
   });
 
+const COMPOSITION_WORDS = ['hello', 'there', 'typing', 'feels', 'slower', 'today'];
+
+const composeText = async (
+  page: Page,
+  client: CDPSession,
+  compositionUpdateCount: number
+): Promise<void> => {
+  let remainingUpdates = compositionUpdateCount;
+  let wordIndex = 0;
+  while (remainingUpdates > 0) {
+    const word = COMPOSITION_WORDS[wordIndex % COMPOSITION_WORDS.length];
+    wordIndex += 1;
+    for (let length = 1; length <= word.length && remainingUpdates > 0; length += 1) {
+      await client.send('Input.imeSetComposition', {
+        text: word.slice(0, length),
+        selectionStart: length,
+        selectionEnd: length,
+      });
+      remainingUpdates -= 1;
+      await page.waitForTimeout(KEYSTROKE_DELAY_MS);
+    }
+    await client.send('Input.insertText', { text: `${word} ` });
+    await page.waitForTimeout(KEYSTROKE_DELAY_MS);
+  }
+};
+
+const prefillEditorWithInlineCode = (page: Page): Promise<void> =>
+  page.evaluate(() => {
+    const editor = document.querySelector<HTMLElement>('[data-testid="editor"]');
+    if (!editor) throw new Error('editor not found');
+    const block = document.createElement('div');
+    const leadingCode = document.createElement('code');
+    leadingCode.textContent = 'npm run performance';
+    const trailingCode = document.createElement('code');
+    trailingCode.textContent = 'PERFORMANCE_KEYSTROKES';
+    block.append(leadingCode, document.createTextNode(' between '), trailingCode);
+    editor.replaceChildren(block);
+    editor.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+
 type ScenarioOptions = {
   name: string;
   description: string;
   settings?: Partial<Settings>;
   prefill?: boolean;
+  prefillInlineCode?: boolean;
   openAutocomplete?: boolean;
+  useComposition?: boolean;
 };
 
 const measureTypingScenario = async (
   page: Page,
-  { name, description, settings, prefill, openAutocomplete }: ScenarioOptions
+  {
+    name,
+    description,
+    settings,
+    prefill,
+    prefillInlineCode,
+    openAutocomplete,
+    useComposition,
+  }: ScenarioOptions
 ): Promise<ScenarioResult> => {
   if (settings) await seedSettings(page, settings);
   await stubHomeserver(page);
@@ -130,6 +184,7 @@ const measureTypingScenario = async (
   await editor.click();
 
   if (prefill) await prefillEditor(page, PREFILLED_CHARACTER_COUNT);
+  if (prefillInlineCode) await prefillEditorWithInlineCode(page);
 
   await page.keyboard.type('warmup', { delay: 20 });
   await page.waitForTimeout(SETTLE_MS);
@@ -146,16 +201,20 @@ const measureTypingScenario = async (
   await installKeystrokeTiming(page);
   await session.start();
 
-  await page.keyboard.type(buildTypedText(KEYSTROKE_COUNT, !openAutocomplete), {
-    delay: KEYSTROKE_DELAY_MS,
-  });
+  if (useComposition) {
+    await composeText(page, session.client, KEYSTROKE_COUNT);
+  } else {
+    await page.keyboard.type(buildTypedText(KEYSTROKE_COUNT, !openAutocomplete), {
+      delay: KEYSTROKE_DELAY_MS,
+    });
+  }
   await page.waitForTimeout(600);
 
   const profile = await session.stop();
   const timing = await collectKeystrokeTiming(page);
   await session.detach();
 
-  const profilePath = await saveCpuProfile(profile, `typing-${name}`);
+  const profilePath = await saveCpuProfile(profile, runFileName(`typing-${name}`));
 
   return {
     name,
@@ -164,6 +223,8 @@ const measureTypingScenario = async (
     input: summarizeSamples(timing.inputBlockMs),
     keyup: summarizeSamples(timing.keyupBlockMs),
     frame: summarizeSamples(timing.frameMs),
+    composition: summarizeSamples(timing.compositionBlockMs),
+    compositionFrame: summarizeSamples(timing.compositionFrameMs),
     longTaskCount: timing.longTaskMs.length,
     summary: summarizeProfile(profile),
     profilePath,
@@ -192,6 +253,12 @@ const renderScenario = (result: ScenarioResult): string => {
     statsRow('input task block (ms)', result.input),
     statsRow('keyup task block (ms)', result.keyup),
     statsRow('keydown to painted frame (ms)', result.frame),
+    ...(result.composition.count > 0
+      ? [
+          statsRow('composition task block (ms)', result.composition),
+          statsRow('composition to painted frame (ms)', result.compositionFrame),
+        ]
+      : []),
     '',
     `Long tasks (>50ms): ${result.longTaskCount}`,
     '',
@@ -287,6 +354,29 @@ test.describe('composer typing cost', () => {
     );
   });
 
+  test('composition typing', async ({ page }) => {
+    results.push(
+      await measureTypingScenario(page, {
+        name: 'composition',
+        description:
+          'Predictive/IME keyboard composing words via Input.imeSetComposition rather than discrete keystrokes. This is the mobile soft-keyboard path; the other scenarios never produce composition events.',
+        useComposition: true,
+      })
+    );
+  });
+
+  test('composition typing beside inline code anchors', async ({ page }) => {
+    results.push(
+      await measureTypingScenario(page, {
+        name: 'composition-inline-code',
+        description:
+          'Composition typing with inline code at both block boundaries, so ensureInlineBoundaryAnchors and stripDeadCaretAnchors actually mutate and reset the selection on each edit.',
+        prefillInlineCode: true,
+        useComposition: true,
+      })
+    );
+  });
+
   test.afterAll(async () => {
     if (results.length === 0) return;
     const report = [
@@ -304,15 +394,20 @@ test.describe('composer typing cost', () => {
       ...results.map(renderScenario),
     ].join('\n');
 
-    const reportPath = await saveReport('typing.md', report);
+    const reportPath = await saveReport(`${runFileName('typing')}.md`, report);
     process.stdout.write(`\nPerformance report: ${reportPath}\n`);
     process.stdout.write(`Profiles: ${PERFORMANCE_RESULTS_DIR}\n\n`);
 
     results.forEach((result) => {
+      const isComposition = result.composition.count > 0;
+      const frame = isComposition ? result.compositionFrame : result.frame;
       process.stdout.write(
-        `${result.name.padEnd(24)} input p50 ${formatMs(result.input.p50Ms).padStart(6)}ms   ` +
-          `keyup p50 ${formatMs(result.keyup.p50Ms).padStart(6)}ms   ` +
-          `frame p50 ${formatMs(result.frame.p50Ms).padStart(6)}ms   ` +
+        `${result.name.padEnd(26)} input p50 ${formatMs(result.input.p50Ms).padStart(6)}ms   ` +
+          `${isComposition ? 'compose' : '  keyup'} p50 ` +
+          `${formatMs(isComposition ? result.composition.p50Ms : result.keyup.p50Ms).padStart(
+            6
+          )}ms   ` +
+          `frame p50 ${formatMs(frame.p50Ms).padStart(6)}ms   ` +
           `busy ${formatMs(result.summary.activeMs).padStart(7)}ms\n`
       );
     });
