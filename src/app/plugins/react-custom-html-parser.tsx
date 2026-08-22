@@ -353,6 +353,7 @@ export const getReactCustomHtmlParser = (
     handleMentionClick?: ReactEventHandler<HTMLElement>;
     useAuthentication?: boolean;
     pauseGifs?: boolean;
+    pauseGifEmojis?: boolean;
   }
 ): HTMLReactParserOptions => {
   const opts: HTMLReactParserOptions = {
@@ -523,7 +524,7 @@ export const getReactCustomHtmlParser = (
                   {...props}
                   className={css.EmoticonImg}
                   src={mxcUrlToEmojiHttp(mx, props.src, params.useAuthentication) ?? htmlSrc}
-                  pauseGifs={params.pauseGifs ?? false}
+                  pauseGifs={!!(params.pauseGifs && params.pauseGifEmojis)}
                 />
               </span>
             );

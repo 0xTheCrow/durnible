@@ -58,6 +58,9 @@ export interface Settings {
   legacyUsernameColor: boolean;
   unfocusedAutoScroll: boolean;
   pauseGifs: boolean;
+  pauseGifImages: boolean;
+  pauseGifStickers: boolean;
+  pauseGifEmojis: boolean;
   gifShowNsfw: boolean;
   gifShowHidden: boolean;
   gifRandomFeatured: boolean;
@@ -129,6 +132,9 @@ const defaultSettings: Settings = {
   legacyUsernameColor: false,
   unfocusedAutoScroll: false,
   pauseGifs: false,
+  pauseGifImages: true,
+  pauseGifStickers: true,
+  pauseGifEmojis: true,
   gifShowNsfw: false,
   gifShowHidden: false,
   gifRandomFeatured: false,

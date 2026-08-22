@@ -253,12 +253,55 @@ function UnfocusedAutoScrollSetting() {
 }
 function PauseGifsSetting() {
   const [value, setValue] = useSetting(settingsAtom, 'pauseGifs');
+  const [imagesValue, setImagesValue] = useSetting(settingsAtom, 'pauseGifImages');
+  const [stickersValue, setStickersValue] = useSetting(settingsAtom, 'pauseGifStickers');
+  const [emojisValue, setEmojisValue] = useSetting(settingsAtom, 'pauseGifEmojis');
   return (
-    <SettingTile
-      title="Play GIFs on Hover"
-      description="GIFs are paused by default and only animate while hovered."
-      after={<Switch variant="Primary" value={value} onChange={setValue} />}
-    />
+    <>
+      <SettingTile
+        title="Play GIFs on Hover"
+        description="GIFs are paused by default and only animate while hovered."
+        after={<Switch variant="Primary" value={value} onChange={setValue} />}
+      />
+      <Box direction="Column" gap="100">
+        <SettingTile
+          title="GIF Images"
+          disabled={!value}
+          after={
+            <Switch
+              variant="Primary"
+              value={imagesValue}
+              onChange={setImagesValue}
+              disabled={!value}
+            />
+          }
+        />
+        <SettingTile
+          title="Stickers"
+          disabled={!value}
+          after={
+            <Switch
+              variant="Primary"
+              value={stickersValue}
+              onChange={setStickersValue}
+              disabled={!value}
+            />
+          }
+        />
+        <SettingTile
+          title="Emojis"
+          disabled={!value}
+          after={
+            <Switch
+              variant="Primary"
+              value={emojisValue}
+              onChange={setEmojisValue}
+              disabled={!value}
+            />
+          }
+        />
+      </Box>
+    </>
   );
 }
 function ReplyHighlightSetting() {
@@ -702,7 +745,17 @@ export const settingsSearchData: SettingsSearchEntry<SettingsPages>[] = [
     id: 'pause-gifs',
     title: 'Play GIFs on Hover',
     description: 'GIFs are paused by default and only animate while hovered.',
-    keywords: ['gif', 'animate', 'animation', 'hover', 'pause', 'media'],
+    keywords: [
+      'gif',
+      'animate',
+      'animation',
+      'hover',
+      'pause',
+      'media',
+      'sticker',
+      'emoji',
+      'image',
+    ],
     page: SettingsPages.GeneralPage,
     pageName: 'General',
     sectionName: 'Messages',

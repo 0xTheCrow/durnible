@@ -25,6 +25,8 @@ import { Reaction } from '../../../components/message';
 import { getHexcodeForEmoji, getShortcodeFor } from '../../../plugins/emoji';
 import { UserAvatar } from '../../../components/user-avatar';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
+import { useSetting } from '../../../state/hooks/settings';
+import { settingsAtom } from '../../../state/settings';
 import { useOpenUserRoomProfile } from '../../../state/hooks/userRoomProfile';
 import { useSpaceOptionally } from '../../../hooks/useSpace';
 import { getMouseEventCords } from '../../../utils/dom';
@@ -39,6 +41,8 @@ export const ReactionViewer = as<'div', ReactionViewerProps>(
   ({ className, room, initialKey, relations, onClose, ...props }, ref) => {
     const mx = useMatrixClient();
     const useAuthentication = useMediaAuthentication();
+    const [pauseGifs] = useSetting(settingsAtom, 'pauseGifs');
+    const [pauseGifEmojis] = useSetting(settingsAtom, 'pauseGifEmojis');
     const reactions = useRelations(
       relations,
       useCallback((rel) => [...(rel.getSortedAnnotationsByKey() ?? [])], [])
@@ -92,6 +96,7 @@ export const ReactionViewer = as<'div', ReactionViewerProps>(
                     aria-selected={key === selectedKey}
                     onClick={() => setSelectedKey(key)}
                     useAuthentication={useAuthentication}
+                    pauseGifs={!!(pauseGifs && pauseGifEmojis)}
                   />
                 );
               })}

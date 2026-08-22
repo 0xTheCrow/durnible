@@ -79,6 +79,7 @@ export function SearchResultGroup({
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
   const [pauseGifs] = useSetting(settingsAtom, 'pauseGifs');
+  const [pauseGifEmojis] = useSetting(settingsAtom, 'pauseGifEmojis');
   const highlightRegex = useMemo(() => makeHighlightRegex(highlights), [highlights]);
 
   const powerLevels = usePowerLevels(room);
@@ -117,6 +118,7 @@ export function SearchResultGroup({
         handleSpoilerClick: spoilerClickHandler,
         handleMentionClick: mentionClickHandler,
         pauseGifs,
+        pauseGifEmojis,
       }),
     [
       mx,
@@ -127,6 +129,7 @@ export function SearchResultGroup({
       spoilerClickHandler,
       useAuthentication,
       pauseGifs,
+      pauseGifEmojis,
     ]
   );
 

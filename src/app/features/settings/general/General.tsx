@@ -331,6 +331,9 @@ function Messages() {
     'hideNickAvatarEvents'
   );
   const [pauseGifs, setPauseGifs] = useSetting(settingsAtom, 'pauseGifs');
+  const [pauseGifImages, setPauseGifImages] = useSetting(settingsAtom, 'pauseGifImages');
+  const [pauseGifStickers, setPauseGifStickers] = useSetting(settingsAtom, 'pauseGifStickers');
+  const [pauseGifEmojis, setPauseGifEmojis] = useSetting(settingsAtom, 'pauseGifEmojis');
   const [mediaAutoLoad, setMediaAutoLoad] = useSetting(settingsAtom, 'mediaAutoLoad');
   const [urlPreview, setUrlPreview] = useSetting(settingsAtom, 'urlPreview');
   const [encUrlPreview, setEncUrlPreview] = useSetting(settingsAtom, 'encUrlPreview');
@@ -499,6 +502,44 @@ function Messages() {
           description="GIFs are paused by default and only animate while hovered."
           after={<Switch variant="Primary" value={pauseGifs} onChange={setPauseGifs} />}
         />
+        <Box direction="Column" gap="100" style={{ paddingTop: config.space.S100 }}>
+          <SettingTile
+            title="GIF Images"
+            disabled={!pauseGifs}
+            after={
+              <Switch
+                variant="Primary"
+                value={pauseGifImages}
+                onChange={setPauseGifImages}
+                disabled={!pauseGifs}
+              />
+            }
+          />
+          <SettingTile
+            title="Stickers"
+            disabled={!pauseGifs}
+            after={
+              <Switch
+                variant="Primary"
+                value={pauseGifStickers}
+                onChange={setPauseGifStickers}
+                disabled={!pauseGifs}
+              />
+            }
+          />
+          <SettingTile
+            title="Emojis"
+            disabled={!pauseGifs}
+            after={
+              <Switch
+                variant="Primary"
+                value={pauseGifEmojis}
+                onChange={setPauseGifEmojis}
+                disabled={!pauseGifs}
+              />
+            }
+          />
+        </Box>
       </SequenceCard>
       <SequenceCard className={SettingsCardStyle} variant="SurfaceVariant" direction="Column">
         <SettingTile
