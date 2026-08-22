@@ -1,3 +1,5 @@
+@layer element-defaults, folds;
+
 @import 'folds/dist/style.css' layer(folds);
 
 @font-face {
@@ -103,46 +105,48 @@ a:hover {
 b {
   font-weight: 500;
 }
-label {
-  margin: 0;
-  padding: 0;
-}
-button,
-textarea {
-  margin: 0;
-  padding: 0;
-  background-color: transparent;
-  color: inherit;
-  font-family: inherit;
-  font-size: inherit;
-  font-weight: inherit;
-  line-height: inherit;
-  letter-spacing: inherit;
-  border: none;
-}
-button {
-  max-width: 100%;
-  text-transform: none;
-  text-align: inherit;
-  overflow: visible;
-  -webkit-appearance: button;
-}
-textarea,
-input,
-input[type],
-input[type='text'],
-input[type='username'],
-input[type='password'],
-input[type='email'],
-input[type='checkbox'] {
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-}
+@layer element-defaults {
+  label {
+    margin: 0;
+    padding: 0;
+  }
+  button,
+  textarea {
+    margin: 0;
+    padding: 0;
+    background-color: transparent;
+    color: inherit;
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+    line-height: inherit;
+    letter-spacing: inherit;
+    border: none;
+  }
+  button {
+    max-width: 100%;
+    text-transform: none;
+    text-align: inherit;
+    overflow: visible;
+    -webkit-appearance: button;
+  }
+  textarea,
+  input,
+  input[type],
+  input[type='text'],
+  input[type='username'],
+  input[type='password'],
+  input[type='email'],
+  input[type='checkbox'] {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+  }
 
-textarea {
-  color: inherit;
-  word-spacing: inherit;
+  textarea {
+    color: inherit;
+    word-spacing: inherit;
+  }
 }
 
 audio:not([controls]) {
