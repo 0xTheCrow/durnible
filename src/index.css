@@ -1,3 +1,5 @@
+@import 'folds/dist/style.css' layer(folds);
+
 @font-face {
   font-family: Twemoji;
   src: url('../public/font/Twemoji.Mozilla.v15.1.0.woff2'),

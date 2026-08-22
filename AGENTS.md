@@ -137,7 +137,8 @@ The metric is the **eager set**: the entry `<script>` plus every `<link rel="mod
 
 - A `React.lazy` body must not be statically imported anywhere else, or it will not move. Keep heavy bodies out of feature `index.ts` barrels and import concrete paths.
 - **`Suspense` goes above the modal, never inside it.** `OverlayModal` renders `FocusTrap`, whose `componentDidMount` calls `activate()` synchronously and throws when the container holds no tabbable node. A `fallback={null}` inside the modal commits an empty modal, and that throw escapes to the React root, which has no error boundary, unmounting the whole tree. `initialFocus: false` does not prevent it.
-- **No `manualChunks` for app code.** Rolldown pulls a matched module's shared dependencies into the named chunk. Naming a feature directory produced a 1.2 MB chunk of 65 shared app modules that the entry then statically imported, and moved shared component CSS ahead of `index.css`, breaking vanilla-extract's equal-specificity order. Reserve it for large `node_modules` packages reachable only from a lazy path.
+- **No `manualChunks` for app code.** Rolldown pulls a matched module's shared dependencies into the named chunk. Naming a feature directory produced a 1.2 MB chunk of 65 shared app modules that the entry then statically imported. Reserve it for large `node_modules` packages reachable only from a lazy path.
+- **Stylesheet order is the cascade.** Vanilla Extract emits single-class rules, so equal-specificity ties go to whichever stylesheet loads first, and chunking decides that — rolldown's automatic shared-chunk extraction relocates CSS with no `manualChunks` rule involved. `src/index.css` puts folds in `@layer folds` so unlayered app CSS wins regardless of order; app-vs-app ties are unprotected. `cssCodeSplit: false` does not help, and chunking `.css.ts` together is worse.
 - A chunk far under estimate usually means another importer is still pinning the shared code eager.
 
 ### Conditional
@@ -160,13 +161,13 @@ It is the project's design vocabulary, not a swappable component dependency: 425
 
 119 kB minified in the eager set, all of it folds' own code. `"dependencies": {}`, and its bundle externalizes `classnames`, `react`, `react-dom`, and `react/jsx-runtime` — all peers the app already ships, so there is no dedup win to find.
 
-It publishes only `dist`: one pre-bundled `index.js` plus a 46 kB `style.css`. `src/index.tsx` blanket-imports that stylesheet, so all 46 kB ships regardless of which components are used, 36% of `index.css`. Vanilla Extract compiled it at folds' publish time, so this build cannot split it per component.
+It publishes only `dist`: one pre-bundled `index.js` plus a 46 kB `style.css`. `src/index.css` blanket-imports that stylesheet, so all 46 kB ships regardless of which components are used, 36% of `index.css`. Vanilla Extract compiled it at folds' publish time, so this build cannot split it per component.
 
 Peer pins are stale and install only because `.npmrc` sets `legacy-peer-deps=true`: it wants `@vanilla-extract/css` 1.9.2 (installed 1.20.1), `recipes` 0.3.0 (0.5.7), `react`/`react-dom` 17.0.0 (18.2.0). Inert today, but it has not been updated for React 18.
 
 ### TODO — vendor the source
 
-Copy the folds repo's `src/` — not `node_modules/folds/dist`, which ships no sources — to `src/app/folds/`; alias `folds` to that path in `compilerOptions.paths` and `resolve.alias`, neither of which exists today; drop the dependency; and delete the `folds/dist/style.css` import from `src/index.tsx` so styles compile through this project's Vanilla Extract pipeline. All 425 call sites keep `from 'folds'` unchanged, and it reverts by reinstalling the package.
+Copy the folds repo's `src/` — not `node_modules/folds/dist`, which ships no sources — to `src/app/folds/`; alias `folds` to that path in `compilerOptions.paths` and `resolve.alias`, neither of which exists today; drop the dependency; and delete the `folds/dist/style.css` `@import` from `src/index.css` so styles compile through this project's Vanilla Extract pipeline. All 425 call sites keep `from 'folds'` unchanged, and it reverts by reinstalling the package.
 
 **Probe first:** clone, alias, then `npm run typecheck` and `npm run build`. The VE 1.9 → 1.20 and recipes 0.3 → 0.5 spans include breaking theme and recipe API changes, and whether the source compiles is the gate on the whole plan.
 
