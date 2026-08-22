@@ -24,15 +24,15 @@ function RenderSettings({ state }: RenderSettingsProps) {
   if (!room) return null;
 
   return (
-    <Modal500 onClose={closeSettings}>
-      <SpaceProvider value={space ?? null}>
-        <RoomProvider value={room}>
-          <Suspense fallback={null}>
+    <Suspense fallback={null}>
+      <Modal500 onClose={closeSettings}>
+        <SpaceProvider value={space ?? null}>
+          <RoomProvider value={room}>
             <LazyRoomSettings initialPage={page} onClose={closeSettings} />
-          </Suspense>
-        </RoomProvider>
-      </SpaceProvider>
-    </Modal500>
+          </RoomProvider>
+        </SpaceProvider>
+      </Modal500>
+    </Suspense>
   );
 }
 

@@ -12,24 +12,24 @@ export function ReactionViewerRenderer() {
   const close = useCloseReactionViewer();
 
   return (
-    <OverlayModal
-      open={!!state}
-      onClose={close}
-      overlayProps={{ onContextMenu: (evt) => evt.stopPropagation() }}
-      focusTrapOptions={{ returnFocusOnDeactivate: false }}
-    >
-      <Modal variant="Surface" size="300" flexHeight>
-        {state && (
-          <Suspense fallback={null}>
+    <Suspense fallback={null}>
+      <OverlayModal
+        open={!!state}
+        onClose={close}
+        overlayProps={{ onContextMenu: (evt) => evt.stopPropagation() }}
+        focusTrapOptions={{ returnFocusOnDeactivate: false }}
+      >
+        <Modal variant="Surface" size="300" flexHeight>
+          {state && (
             <LazyReactionViewer
               room={state.room}
               initialKey={state.initialKey}
               relations={state.relations}
               onClose={close}
             />
-          </Suspense>
-        )}
-      </Modal>
-    </OverlayModal>
+          )}
+        </Modal>
+      </OverlayModal>
+    </Suspense>
   );
 }

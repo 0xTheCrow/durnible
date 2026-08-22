@@ -73,7 +73,8 @@ import { CreateSpaceModalRenderer } from '../features/create-space';
 import { SearchModalRenderer } from '../features/search';
 import { ImageViewerRenderer } from '../components/image-viewer/ImageViewerRenderer';
 import { getFallbackSession } from '../state/sessions';
-import { CallPaneGate, CallBarGate, CallScreenGate, CallProvider } from '../features/call';
+import { CallPaneGate, CallBarGate, CallScreenGate } from '../features/call/CallMounts';
+import { CallProvider } from '../features/call/CallProvider';
 
 export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize) => {
   const { hashRouter } = clientConfig;

@@ -112,17 +112,8 @@ export default defineConfig({
       inject: { Buffer: ['buffer', 'Buffer'] },
       output: {
         manualChunks(id) {
-          if (id.includes('src/app/features/room-settings/')) return 'room-settings';
-          if (id.includes('src/app/features/room/reaction-viewer/')) {
-            return 'reaction-viewer';
-          }
-          if (
-            id.includes('node_modules/livekit-client') ||
-            id.includes('/src/app/features/call/') ||
-            id.includes('/src/app/hooks/call/') ||
-            id.includes('/src/app/plugins/call/')
-          ) {
-            return 'call';
+          if (id.includes('node_modules/livekit-client')) {
+            return 'livekit';
           }
           return undefined;
         },

@@ -125,25 +125,55 @@ Vite env vars use `VITE_` prefix, accessed via `import.meta.env.VITE_*`:
 
 ## Lazy Loading
 
-Server-side / build-time lazy-loading work on the main bundle. Verify with `npm run build:analyze` before and after each change.
+Build-time lazy-loading work on the main bundle.
+
+### How to verify a split landed
+
+The metric is the **eager set**: the entry `<script>` plus every `<link rel="modulepreload">` in `dist/index.html`. That is what the browser fetches before the app can render. A shrinking `index.js` proves nothing on its own — a `manualChunks` rule can move code into a separate file that the entry still statically imports, leaving it eagerly preloaded. Check two things after every change:
+
+- `dist/index.html` — the modulepreload list must not contain the chunk you just split out.
+- Build output — no `INEFFECTIVE_DYNAMIC_IMPORT` warnings. That warning means a `React.lazy` body is also statically imported somewhere (usually a barrel `index.ts`) and will not move to its own chunk.
+
+`npm run build:analyze` reports chunk sizes but not whether a chunk is eager, so it cannot confirm a split landed. Two earlier entries in this section claimed wins that had not happened because they tracked entry-chunk size alone.
 
 ### Done — call / livekit split
 
-- Entry JS dropped 1,099 kB → 572 kB gzip (lazy ~527 kB). The livekit + call graph now loads in a single `call` chunk only when a call starts.
-- Mechanism: thin `CallProvider` (livekit-free) + `React.lazy` gates in `src/app/features/call/CallMounts.tsx` (`CallBarGate`/`CallScreenGate`/`CallPaneGate`), a lazy `CallEngineMount` that publishes participant state into the `activeCallParticipantEntriesAtom`, and `useCallParticipantStates` rewritten to read that atom. `useCallLifecycle` was deleted.
-- Entry-present call surfaces (room nav/header) must NOT import livekit — read the Jotai atoms instead. Livekit code is grouped into the `call` chunk via `manualChunks` in `vite.config.js`.
-- Before merging, manually verify the live voice-call flow (join/leave, mute/deafen, screenshare) — not covered by the e2e suite.
+- livekit and the call UI now load on demand. Eager set 1,064 → 938.7 kB gzip (−125 kB). The `livekit` chunk is 118 kB gzip; `CallBar`, `CallPane`, `CallScreen`, `CallEngineMount`, `CallConnection`, and `CallEncryptionDebugPanel` are separate on-demand chunks.
+- Mechanism: thin `CallProvider` (livekit-free) + `React.lazy` gates in `src/app/features/call/CallMounts.tsx` (`CallBarGate`/`CallScreenGate`/`CallPaneGate`), a lazy `CallEngineMount` that publishes participant state into `activeCallParticipantEntriesAtom`, and `useCallParticipantStates` reading that atom. `useCallLifecycle` was deleted.
+- The split only landed once the barrel was severed. `features/call/index.ts` re-exports every call module, and `Router.tsx`, `RoomView.tsx`, and `RoomViewHeader.tsx` all imported through it, which made `CallBar`/`CallPane`/`CallScreen` statically reachable from the entry. All three now import concrete paths. Do not import from `features/call` — the barrel still re-exports the heavy bodies and will re-break this.
+- `manualChunks` in `vite.config.js` matches `node_modules/livekit-client` only. An earlier version also matched `src/app/features/call/`, `hooks/call/`, and `plugins/call/`, which swept the eagerly-rendered `CallProvider` and `CallMounts` into the same chunk as livekit and made the entire chunk a static dependency of the entry.
+- Entry-present call surfaces (room nav/header) must not import livekit — read the Jotai atoms instead.
+- Before merging, manually verify the live voice-call flow (join/leave, mute/deafen, screenshare). Not covered by the e2e suite.
 
-### Backlog (not yet done, in rough priority order)
+### Done — modal renderer split
 
-- **Route-level splitting** in `src/app/pages/Router.tsx`: lazily load `Room`, `Explore`/`Featured`/`PublicRooms`, `Inbox`/`Notifications`/`Invites`, `Create`, `Direct`, `Space`. Highest impact beyond the call split.
-- **Modal/overlay renderers** rendered unconditionally in the client layout at `Router.tsx`: room-settings, space-settings, create-room, create-space, search, image-viewer, reaction-viewer, device-verification, backup-restore. Smallest, safest next increment (render on open, not on mount).
-- **Auth vs client split**: a logged-out visitor currently downloads the whole client. Split `Login`/`Register`/`ResetPassword` from the client shell.
-- **Emoji data / picker**: lazy-load emoji data (`emojibase-data` is large) out of the compose path.
+- `reaction-viewer` (1.3 kB gzip) and `RoomSettings` (2.4 kB gzip) load on first open. The renderer wrappers stay eager, reading state and rendering `null` until opened.
+- The chunks are small because both components are built almost entirely from modules the timeline already loads — message layouts, avatars, emoji, virtualizer. Only their own unique code moves. Splitting a leaf that shares its dependency tree with the shell buys little no matter how it is chunked.
+- A `React.lazy` body must not be statically imported elsewhere. `features/room-settings/index.ts` re-exported `RoomSettings` and `Router.tsx` imported the renderer from that barrel, producing an `INEFFECTIVE_DYNAMIC_IMPORT`. Fix: import the renderer from its own file, and keep the heavy body out of the feature index.
+- `Suspense` goes **above** the modal, never inside it. `OverlayModal` renders `FocusTrap`, whose `componentDidMount` calls `activate()` synchronously; `activate()` throws "must have at least one container with at least one tabbable node" when the container holds no tabbable node. A `Suspense fallback={null}` placed inside the modal commits an empty modal on the first render, and that throw escapes to the React root, which has no error boundary above it, unmounting the whole tree. `initialFocus: false` does not prevent this — it only short-circuits `getInitialFocusNode`.
+- Moved `createRoomEncryptionState` out of `components/create-room` into its own `encryption.ts`, so the always-visible composer (`useCommands` `/startdm`) stops dragging the create-room UI into the entry.
 
-### Baseline for future comparison
+### Do not use manualChunks for app code
 
-- `index` entry: 572 kB gzip
-- `call` chunk (lazy): 528 kB gzip
-- `ReactPrism` / `pdf` (lazy): 210 kB / 97 kB gzip
-- `rust-crypto` wasm (lazy): 1,873 kB gzip
+Rolldown's `manualChunks` pulls a matched module's shared dependencies into the named chunk as well. Naming `src/app/features/room/reaction-viewer/` produced a 1.2 MB chunk holding 65 app modules (`react-custom-html-parser`, `plugins/emoji`, all of `components/message/layout/*`), which the entry then statically imported — so nothing was deferred and 1.2 MB was added to the preload list. It also moved shared component CSS into stylesheets that load before `index.css`, changing vanilla-extract's emission order and breaking equal-specificity rules across the app.
+
+Plain dynamic `import()` with no rule at all produced correct 2.7 kB and 7.6 kB chunks. Reserve `manualChunks` for large `node_modules` packages reachable only from a lazy path.
+
+### Backlog (not yet done, rough priority order)
+
+- **Emoji data** — 829 kB minified, 23% of the eager set and its largest single item. Move `plugins/emoji.ts`'s data arrays (`emojis`, `emojiGroups`) into a lazy `emoji-data.ts` loaded via a cached Promise fired at boot (`await loadUnicodeEmoji()`). Keep the pure functions (`getShortcodeFor`, `getHexcodeForEmoji`, `buildShortcodeMap`) and the shortcode dicts (joypixels/emojibase) eager — the latter paint existing reactions on the visible timeline. `recent-emoji.ts` and `favorite-emoji.ts` `.find()` over `emojis` and point at the lazy data too.
+- **Route-level splitting** in `src/app/pages/Router.tsx` — ~790 kB minified across `features`/`components`/`pages`. Lazily load `Room`, `Explore`/`Featured`/`PublicRooms`, `Inbox`/`Notifications`/`Invites`, `Create`, `Direct`, `Space`. Caveat from the create-probe: `pages/client/create` is only a ~4 kB wrapper and the real create graph is `components/create-room`, shared with the eager composer, so route-gating alone moves little until that path is broken (mostly done via `encryption.ts`).
+- **Image cropper** — 84 kB minified. `react-advanced-cropper` and `advanced-cropper` are imported only by `components/image-editor/ImageEditor.tsx`, a modal-only surface. An isolated leaf, so unlike the modal bodies above it should actually move.
+- **sanitize-html** — 76 kB minified including the 27 `postcss` modules it pulls in for style-attribute parsing. It sits on the timeline render path via `utils/sanitize.ts` so it cannot be deferred; a lighter sanitizer would drop postcss from the browser entirely.
+- **Auth vs client split** — a logged-out visitor downloads the whole client. Splitting `Login`/`Register`/`ResetPassword` from the client shell also removes `oidc-client-ts` (35 kB minified) from the eager set.
+
+### Baseline (measured 2026-08-22)
+
+Eager set = entry + modulepreloads listed in `dist/index.html`.
+
+- Eager total: **938.7 kB gzip** / 3,652 kB raw, across 10 chunks
+- Deferred total: 482.8 kB gzip, across 17 chunks
+- Largest deferred chunks: `ReactPrism` 204 kB, `livekit` 118 kB, `pdf` 94 kB, `rust-crypto` 43 kB gzip
+- Eager composition, minified pre-gzip (compression ratios vary by content, so these are not transfer shares): emojibase 829 kB, matrix-js-sdk 644 kB, `src/app/features` 380 kB, `src/app/components` 287 kB, react-dom 126 kB, `src/app/pages` 124 kB, folds 116 kB, matrix-widget-api 102 kB, advanced-cropper 84 kB, sanitize-html + postcss 76 kB
+- Service worker precaches 34 js/css/html entries, 5.37 MB raw / ~1.47 MB gzip, downloaded at SW install rather than on interaction. `matrix_sdk_crypto_wasm_bg.wasm` (5.32 MB) and `pdf.worker.min.mjs` (1.31 MB) are excluded because `globPatterns` in `vite.config.js` lists only `js,css,html`.
+- Gzip figures come from `zlib.gzipSync` defaults and differ slightly from vite's reporter column. Do not mix the two sources in a comparison.

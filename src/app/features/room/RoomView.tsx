@@ -17,7 +17,7 @@ import { TimelineSlider } from './timeline/TimelineSlider';
 import { /* RoomViewFollowing, */ RoomViewFollowingPlaceholder } from './layout/RoomViewFollowing';
 import { Page } from '../../components/page';
 import { RoomViewHeader } from './layout/RoomViewHeader';
-import { RoomCallBanner } from '../call';
+import { RoomCallBanner } from '../call/RoomCallBanner';
 import { useKeyDown } from '../../hooks/useKeyDown';
 import { editableActiveElement } from '../../utils/dom';
 import { settingsAtom } from '../../state/settings';
