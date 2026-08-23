@@ -54,7 +54,6 @@ export const MessageEditor = as<'div', MessageEditorProps>(
     const [enterForNewline] = useSetting(settingsAtom, 'enterForNewline');
     const keybinds = useKeybinds();
     const [globalToolbar] = useSetting(settingsAtom, 'editorToolbar');
-    const [isMarkdownEnabled] = useSetting(settingsAtom, 'isMarkdownEnabled');
     const [toolbar, setToolbar] = useState(globalToolbar);
     const isComposing = useComposingCheck();
     const editorInputRef = useRef<EditorController | null>(null);
@@ -116,11 +115,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
 
       replaceShortcodesInDom(inputElement, shortcodeMap, mx, useAuthentication);
       const plainText = domToPlainText(inputElement).trim();
-      const customHtml = trimCustomHtml(
-        domToMatrixCustomHTML(inputElement, {
-          allowMarkdown: isMarkdownEnabled,
-        })
-      );
+      const customHtml = trimCustomHtml(domToMatrixCustomHTML(inputElement));
       const mentionData = getMentionsFromDom(inputElement, mx);
 
       const [prevBody, prevCustomHtml, prevMentions] = getPrevBodyAndFormattedBody();
@@ -165,7 +160,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
           rel_type: RelationType.Replace,
         },
       };
-    }, [mx, mEvent, isMarkdownEnabled, getPrevBodyAndFormattedBody, imagePacks, useAuthentication]);
+    }, [mx, mEvent, getPrevBodyAndFormattedBody, imagePacks, useAuthentication]);
 
     const [saveState, save] = useAsyncCallback(
       useCallback(async () => {
@@ -242,7 +237,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
         typeof customHtml === 'string'
           ? customHtml
           : sanitizeText(plainBody).replace(/\n/g, '<br>');
-      controller.setContent(html, { convertListsToMarkdown: isMarkdownEnabled });
+      controller.setContent(html);
       const inputElement = controller.inputElement;
       if (inputElement) {
         inputElement.focus();
@@ -261,7 +256,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
         sel?.removeAllRanges();
         sel?.addRange(range);
       }
-    }, [getPrevBodyAndFormattedBody, isMarkdownEnabled]);
+    }, [getPrevBodyAndFormattedBody]);
 
     useEffect(() => {
       if (saveState.status === AsyncStatus.Success) {
@@ -374,7 +369,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
               {toolbar && (
                 <div>
                   <Line variant="SurfaceVariant" size="300" />
-                  <EditorToolbar inputRef={editorElementRef} controllerRef={editorInputRef} />
+                  <EditorToolbar inputRef={editorElementRef} />
                 </div>
               )}
             </>

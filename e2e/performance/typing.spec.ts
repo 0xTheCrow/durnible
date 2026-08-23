@@ -1,6 +1,12 @@
 import { test, expect, devices, type CDPSession, type Page } from '@playwright/test';
 import type { Settings } from '../../src/app/state/settings';
-import { seedSession, seedSettings, stubHomeserver, TEST_ROOM_ID } from '../fixtures/homeserver';
+import {
+  seedSession,
+  seedSettings,
+  stubHomeserver,
+  TEST_ROOM_ID,
+  textEvent,
+} from '../fixtures/homeserver';
 import {
   collectKeystrokeTiming,
   createPerformanceSession,
@@ -9,9 +15,11 @@ import {
   PERFORMANCE_RESULTS_DIR,
   saveCpuProfile,
   saveReport,
+  startRendererTrace,
   summarizeProfile,
   summarizeSamples,
   type ProfileSummary,
+  type RendererTiming,
   type SampleStats,
 } from '../fixtures/performance';
 
@@ -23,6 +31,9 @@ const KEYSTROKE_DELAY_MS = 60;
 const PREFILLED_CHARACTER_COUNT = 2000;
 const SETTLE_MS = 3000;
 const RUN_LABEL = process.env.PERFORMANCE_LABEL ?? '';
+const IS_TRACING_RENDERER = process.env.PERFORMANCE_TRACE === '1';
+const BUSY_ROOM_MESSAGE_COUNT = Number(process.env.PERFORMANCE_ROOM_MESSAGES ?? 300);
+const REPETITION_COUNT = Number(process.env.PERFORMANCE_REPETITIONS ?? 1);
 const runFileName = (name: string): string => (RUN_LABEL ? `${name}-${RUN_LABEL}` : name);
 
 const buildTypedText = (characterCount: number, withSpaces: boolean): string => {
@@ -59,7 +70,9 @@ type ScenarioResult = {
   composition: SampleStats;
   compositionFrame: SampleStats;
   longTaskCount: number;
+  renderedMessageCount: number;
   summary: ProfileSummary;
+  renderer?: RendererTiming;
   profilePath: string;
 };
 
@@ -161,6 +174,7 @@ type ScenarioOptions = {
   prefillInlineCode?: boolean;
   openAutocomplete?: boolean;
   useComposition?: boolean;
+  busyRoom?: boolean;
 };
 
 const measureTypingScenario = async (
@@ -173,15 +187,24 @@ const measureTypingScenario = async (
     prefillInlineCode,
     openAutocomplete,
     useComposition,
-  }: ScenarioOptions
+    busyRoom,
+  }: ScenarioOptions,
+  repetition: number
 ): Promise<ScenarioResult> => {
   if (settings) await seedSettings(page, settings);
-  await stubHomeserver(page);
+  await stubHomeserver(page, {
+    timelineEvents: busyRoom
+      ? Array.from({ length: BUSY_ROOM_MESSAGE_COUNT }, (unused, index) => textEvent(index))
+      : undefined,
+  });
   await page.goto(roomPath);
 
   const editor = page.getByTestId('editor');
   await expect(editor).toBeVisible();
   await editor.click();
+
+  const renderedMessageCount = await page.getByTestId('message-body').count();
+  if (busyRoom) expect(renderedMessageCount).toBeGreaterThan(20);
 
   if (prefill) await prefillEditor(page, PREFILLED_CHARACTER_COUNT);
   if (prefillInlineCode) await prefillEditorWithInlineCode(page);
@@ -199,6 +222,7 @@ const measureTypingScenario = async (
     cpuThrottlingRate: CPU_THROTTLING_RATE,
   });
   await installKeystrokeTiming(page);
+  const rendererTrace = IS_TRACING_RENDERER ? await startRendererTrace(session.client) : undefined;
   await session.start();
 
   if (useComposition) {
@@ -211,10 +235,14 @@ const measureTypingScenario = async (
   await page.waitForTimeout(600);
 
   const profile = await session.stop();
+  const renderer = await rendererTrace?.stop();
   const timing = await collectKeystrokeTiming(page);
   await session.detach();
 
-  const profilePath = await saveCpuProfile(profile, runFileName(`typing-${name}`));
+  const profilePath = await saveCpuProfile(
+    profile,
+    runFileName(REPETITION_COUNT > 1 ? `typing-${name}-rep${repetition}` : `typing-${name}`)
+  );
 
   return {
     name,
@@ -226,45 +254,95 @@ const measureTypingScenario = async (
     composition: summarizeSamples(timing.compositionBlockMs),
     compositionFrame: summarizeSamples(timing.compositionFrameMs),
     longTaskCount: timing.longTaskMs.length,
+    renderedMessageCount,
     summary: summarizeProfile(profile),
+    renderer,
     profilePath,
   };
 };
 
-const statsRow = (label: string, stats: SampleStats): string =>
-  `| ${label} | ${stats.count} | ${formatMs(stats.meanMs)} | ${formatMs(stats.p50Ms)} | ` +
-  `${formatMs(stats.p95Ms)} | ${formatMs(stats.maxMs)} |`;
+const medianOf = (values: number[]): number => {
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted[Math.floor(sorted.length / 2)];
+};
+
+const formatRange = (values: number[]): string =>
+  values.length > 1
+    ? `${formatMs(Math.min(...values))}\u2013${formatMs(Math.max(...values))}`
+    : '\u2014';
+
+const metricRow = (label: string, statsPerRepetition: SampleStats[]): string => {
+  if (statsPerRepetition.every((stats) => stats.count === 0)) return '';
+  const p50s = statsPerRepetition.map((stats) => stats.p50Ms);
+  const p95s = statsPerRepetition.map((stats) => stats.p95Ms);
+  const maxes = statsPerRepetition.map((stats) => stats.maxMs);
+  return (
+    `| ${label} | ${formatMs(medianOf(p50s))} | ${formatRange(p50s)} | ` +
+    `${formatMs(medianOf(p95s))} | ${formatMs(Math.max(...maxes))} |`
+  );
+};
 
 const perKeystrokeMs = (totalMs: number): string => formatMs(totalMs / KEYSTROKE_COUNT);
 
 const costRow = (label: string, totalMs: number, sharePercent: number): string =>
   `| ${label} | ${perKeystrokeMs(totalMs)} | ${formatMs(totalMs)} | ${sharePercent.toFixed(1)}% |`;
 
-const renderScenario = (result: ScenarioResult): string => {
-  const { summary } = result;
+const renderScenario = (repetitions: ScenarioResult[]): string => {
+  const busyPerRepetition = repetitions.map((result) => result.summary.activeMs);
+  const representative = [...repetitions].sort((a, b) => a.summary.activeMs - b.summary.activeMs)[
+    Math.floor(repetitions.length / 2)
+  ];
+  const { summary } = representative;
+
+  const metricRows = [
+    metricRow(
+      'keydown task block (ms)',
+      repetitions.map((result) => result.keydown)
+    ),
+    metricRow(
+      'input task block (ms)',
+      repetitions.map((result) => result.input)
+    ),
+    metricRow(
+      'keyup task block (ms)',
+      repetitions.map((result) => result.keyup)
+    ),
+    metricRow(
+      'keydown to painted frame (ms)',
+      repetitions.map((result) => result.frame)
+    ),
+    metricRow(
+      'composition task block (ms)',
+      repetitions.map((result) => result.composition)
+    ),
+    metricRow(
+      'composition to painted frame (ms)',
+      repetitions.map((result) => result.compositionFrame)
+    ),
+  ].filter((row) => row !== '');
+
   const lines = [
-    `## ${result.name}`,
+    `## ${representative.name}`,
     '',
-    result.description,
+    representative.description,
     '',
-    '| metric | samples | mean | p50 | p95 | max |',
-    '| --- | --- | --- | --- | --- | --- |',
-    statsRow('keydown task block (ms)', result.keydown),
-    statsRow('input task block (ms)', result.input),
-    statsRow('keyup task block (ms)', result.keyup),
-    statsRow('keydown to painted frame (ms)', result.frame),
-    ...(result.composition.count > 0
-      ? [
-          statsRow('composition task block (ms)', result.composition),
-          statsRow('composition to painted frame (ms)', result.compositionFrame),
-        ]
-      : []),
+    `| metric | p50 | p50 across ${repetitions.length} rep(s) | p95 | max |`,
+    '| --- | --- | --- | --- | --- |',
+    ...metricRows,
+  ];
+
+  lines.push(
     '',
-    `Long tasks (>50ms): ${result.longTaskCount}`,
+    `Main thread busy: ${formatMs(medianOf(busyPerRepetition))}ms ` +
+      `(range ${formatRange(busyPerRepetition)} over ${repetitions.length} rep(s))`,
     '',
-    `Main thread was busy ${formatMs(summary.activeMs)}ms of ${formatMs(summary.sampledMs)}ms ` +
-      `sampled, of which ${formatMs(summary.unattributedMs)}ms sat in engine frames with no JS ` +
-      `on the stack (layout, paint, compilation). Tables below rank the remaining ` +
+    `Rendered messages in timeline: ${representative.renderedMessageCount}`,
+    '',
+    `Long tasks (>50ms), median across reps: ${medianOf(repetitions.map((r) => r.longTaskCount))}`,
+    '',
+    `Profile tables below come from the median repetition by busy time. Of its ` +
+      `${formatMs(summary.activeMs)}ms busy, ${formatMs(summary.unattributedMs)}ms sat in engine ` +
+      `frames with no JS on the stack; the tables rank the remaining ` +
       `${formatMs(summary.activeMs - summary.unattributedMs)}ms of attributed JS.`,
     '',
     '### Self time by source file (top 12)',
@@ -286,8 +364,8 @@ const renderScenario = (result: ScenarioResult): string => {
     '### Watched editor functions (inclusive time, includes native DOM calls they make)',
     '',
     '| function | ms/keystroke | total ms | share of busy |',
-    '| --- | --- | --- | --- |',
-  ];
+    '| --- | --- | --- | --- |'
+  );
 
   const watched = WATCHED_FUNCTIONS.map((functionName) => ({
     functionName,
@@ -305,110 +383,126 @@ const renderScenario = (result: ScenarioResult): string => {
     });
   }
 
-  lines.push('', `CPU profile: \`${result.profilePath}\``, '');
+  const { renderer } = representative;
+  if (renderer) {
+    lines.push(
+      '',
+      '### Renderer phases (devtools.timeline, inclusive of nested work)',
+      '',
+      '| phase | total ms |',
+      '| --- | --- |',
+      `| style recalc (UpdateLayoutTree) | ${formatMs(renderer.styleMs)} |`,
+      `| layout (Layout) | ${formatMs(renderer.layoutMs)} |`,
+      `| paint (Paint + Commit) | ${formatMs(renderer.paintMs)} |`,
+      '',
+      '#### Top trace events',
+      '',
+      '| event | total ms | count |',
+      '| --- | --- | --- |',
+      ...renderer.byEvent
+        .slice(0, 15)
+        .map((event) => `| ${event.name} | ${formatMs(event.totalMs)} | ${event.count} |`)
+    );
+  }
+
+  lines.push('', `CPU profile (median repetition): \`${representative.profilePath}\``, '');
   return lines.join('\n');
 };
+
+const SCENARIOS: ScenarioOptions[] = [
+  {
+    name: 'empty-composer',
+    description: 'Baseline. Typing into an empty composer with default settings.',
+  },
+  {
+    name: 'long-message',
+    description: `Composer pre-filled with ~${PREFILLED_CHARACTER_COUNT} characters across 6 blocks, then typed at the end. Isolates per-keystroke work that scales with document size.`,
+    prefill: true,
+  },
+  {
+    name: 'long-message-toolbar',
+    description:
+      'Same as long message, with the editor toolbar enabled. Isolates the toolbar re-render cost.',
+    settings: { editorToolbar: true },
+    prefill: true,
+  },
+  {
+    name: 'autocomplete-open',
+    description:
+      'Typing with an active @ autocomplete query. Isolates the cost of re-rendering while a query is open.',
+    openAutocomplete: true,
+  },
+  {
+    name: 'composition',
+    description:
+      'Predictive/IME keyboard composing words via Input.imeSetComposition rather than discrete keystrokes. This is the mobile soft-keyboard path; the other scenarios never produce composition events.',
+    useComposition: true,
+  },
+  {
+    name: 'composition-inline-code',
+    description:
+      'Composition typing with inline code at both block boundaries, so ensureInlineBoundaryAnchors and stripDeadCaretAnchors actually mutate and reset the selection on each edit.',
+    prefillInlineCode: true,
+    useComposition: true,
+  },
+  {
+    name: 'busy-room',
+    description: `Typing into an empty composer in a room seeded with ${BUSY_ROOM_MESSAGE_COUNT} timeline messages, rather than the near-empty room every other scenario uses.`,
+    busyRoom: true,
+  },
+];
 
 test.describe('composer typing cost', () => {
   test.describe.configure({ mode: 'serial' });
 
-  test('empty composer', async ({ page }) => {
-    results.push(
-      await measureTypingScenario(page, {
-        name: 'empty-composer',
-        description: 'Baseline. Typing into an empty composer with default settings.',
-      })
-    );
-  });
-
-  test('long message', async ({ page }) => {
-    results.push(
-      await measureTypingScenario(page, {
-        name: 'long-message',
-        description: `Composer pre-filled with ~${PREFILLED_CHARACTER_COUNT} characters across 6 blocks, then typed at the end. Isolates per-keystroke work that scales with document size.`,
-        prefill: true,
-      })
-    );
-  });
-
-  test('long message with editor toolbar', async ({ page }) => {
-    results.push(
-      await measureTypingScenario(page, {
-        name: 'long-message-toolbar',
-        description:
-          'Same as long message, with the editor toolbar enabled. Isolates the toolbar re-render cost.',
-        settings: { editorToolbar: true, isMarkdownEnabled: true },
-        prefill: true,
-      })
-    );
-  });
-
-  test('mention autocomplete open', async ({ page }) => {
-    results.push(
-      await measureTypingScenario(page, {
-        name: 'autocomplete-open',
-        description:
-          'Typing with an active @ autocomplete query. Isolates the cost of re-rendering RoomInput on every keystroke.',
-        openAutocomplete: true,
-      })
-    );
-  });
-
-  test('composition typing', async ({ page }) => {
-    results.push(
-      await measureTypingScenario(page, {
-        name: 'composition',
-        description:
-          'Predictive/IME keyboard composing words via Input.imeSetComposition rather than discrete keystrokes. This is the mobile soft-keyboard path; the other scenarios never produce composition events.',
-        useComposition: true,
-      })
-    );
-  });
-
-  test('composition typing beside inline code anchors', async ({ page }) => {
-    results.push(
-      await measureTypingScenario(page, {
-        name: 'composition-inline-code',
-        description:
-          'Composition typing with inline code at both block boundaries, so ensureInlineBoundaryAnchors and stripDeadCaretAnchors actually mutate and reset the selection on each edit.',
-        prefillInlineCode: true,
-        useComposition: true,
-      })
-    );
-  });
+  for (let repetition = 1; repetition <= REPETITION_COUNT; repetition += 1) {
+    SCENARIOS.forEach((scenario) => {
+      test(`${scenario.name} (rep ${repetition}/${REPETITION_COUNT})`, async ({ page }) => {
+        results.push(await measureTypingScenario(page, scenario, repetition));
+      });
+    });
+  }
 
   test.afterAll(async () => {
     if (results.length === 0) return;
+
+    const scenarioNames = [...new Set(results.map((result) => result.name))];
+    const groups = scenarioNames.map((name) => results.filter((result) => result.name === name));
+
     const report = [
       '# Composer typing performance',
       '',
       `- CPU throttling: ${CPU_THROTTLING_RATE}x`,
       `- Viewport: Pixel 5`,
-      `- Keystrokes measured per scenario: ${KEYSTROKE_COUNT} at ${KEYSTROKE_DELAY_MS}ms intervals`,
+      `- Keystrokes per scenario: ${KEYSTROKE_COUNT} at ${KEYSTROKE_DELAY_MS}ms intervals`,
+      `- Repetitions: ${REPETITION_COUNT} (scenarios interleaved, not batched)`,
       `- Generated: ${new Date().toISOString()}`,
       '',
-      'Measured against the Vite dev server, so React runs in development mode and absolute',
-      'numbers are pessimistic. Use these figures to rank costs and to compare before/after a',
-      'change, not as production latency.',
+      'Rank scenarios on busy time, not p50. Across identical runs busy reproduces to within a few',
+      'percent while p50 swings much more, so a p50 gap narrower than the range column is noise.',
       '',
-      ...results.map(renderScenario),
+      ...groups.map(renderScenario),
     ].join('\n');
 
     const reportPath = await saveReport(`${runFileName('typing')}.md`, report);
     process.stdout.write(`\nPerformance report: ${reportPath}\n`);
     process.stdout.write(`Profiles: ${PERFORMANCE_RESULTS_DIR}\n\n`);
 
-    results.forEach((result) => {
-      const isComposition = result.composition.count > 0;
-      const frame = isComposition ? result.compositionFrame : result.frame;
+    groups.forEach((group) => {
+      const busyPerRepetition = group.map((result) => result.summary.activeMs);
+      const isComposition = group[0].composition.count > 0;
+      const framePerRepetition = group.map((result) =>
+        isComposition ? result.compositionFrame.p50Ms : result.frame.p50Ms
+      );
+      const frameMedianMs = formatMs(medianOf(framePerRepetition)).padStart(6);
+      const busyMedianMs = formatMs(medianOf(busyPerRepetition)).padStart(8);
+      const frameRangeCell = `[${formatRange(framePerRepetition)}]`.padEnd(18);
       process.stdout.write(
-        `${result.name.padEnd(26)} input p50 ${formatMs(result.input.p50Ms).padStart(6)}ms   ` +
-          `${isComposition ? 'compose' : '  keyup'} p50 ` +
-          `${formatMs(isComposition ? result.composition.p50Ms : result.keyup.p50Ms).padStart(
-            6
-          )}ms   ` +
-          `frame p50 ${formatMs(frame.p50Ms).padStart(6)}ms   ` +
-          `busy ${formatMs(result.summary.activeMs).padStart(7)}ms\n`
+        `${group[0].name.padEnd(
+          26
+        )} frame p50 ${frameMedianMs}ms ${frameRangeCell}busy ${busyMedianMs}ms [${formatRange(
+          busyPerRepetition
+        )}]\n`
       );
     });
   });

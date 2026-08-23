@@ -1,7 +1,5 @@
 import type { MatrixClient } from 'matrix-js-sdk';
 import { sanitizeText } from '../../utils/sanitize';
-import { parseBlockMD, parseInlineMD } from '../../plugins/markdown';
-import { findAndReplace } from '../../utils/findAndReplace';
 import { isUserId } from '../../utils/matrix';
 import { sanitizeForRegex } from '../../utils/regex';
 import {
@@ -29,10 +27,6 @@ export const trimCommand = (cmdName: string, str: string) => {
   return str.slice(match[0].length);
 };
 
-export type DomOutputOptions = {
-  allowMarkdown?: boolean;
-};
-
 const stripCaretAnchors = (text: string): string => text.replace(/\u200B/g, '');
 
 const FORMATTING_TAGS = new Set(['B', 'STRONG', 'I', 'EM', 'U', 'S', 'DEL', 'STRIKE', 'CODE']);
@@ -48,29 +42,6 @@ const isInsideTag = (node: Node, rootElement: HTMLElement, tag: string): boolean
   return false;
 };
 
-const LINE_CONTAINER_TAGS = new Set(['DIV', 'P']);
-
-const BLOCK_LINE_TAGS = new Set(['H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'BLOCKQUOTE', 'LI']);
-
-const BLOCK_CONTAINER_TAGS = new Set(['PRE', 'OL', 'UL']);
-
-const hasOnlyLineContainerAncestors = (node: Node, root: HTMLElement): boolean => {
-  let current: Node | null = node.parentNode;
-  while (current && current !== root) {
-    if (
-      current.nodeType !== Node.ELEMENT_NODE ||
-      !LINE_CONTAINER_TAGS.has((current as HTMLElement).tagName)
-    ) {
-      return false;
-    }
-    current = current.parentNode;
-  }
-  return current === root;
-};
-
-const isBlockMarkdownLineBreak = (node: Node, root: HTMLElement, opts: DomOutputOptions): boolean =>
-  Boolean(opts.allowMarkdown) && hasOnlyLineContainerAncestors(node, root);
-
 const isEmptyTextNode = (node: Node): boolean =>
   node.nodeType === Node.TEXT_NODE && stripCaretAnchors((node as Text).data).length === 0;
 
@@ -82,19 +53,6 @@ const isTrailingFillerLineBreak = (node: Node): boolean => {
   }
   return true;
 };
-
-const QUOTE_MARKER_AT_LINE_START = /^(\\*)&gt;/gm;
-const unescapeQuoteMarkers = (html: string): string =>
-  html.replace(QUOTE_MARKER_AT_LINE_START, '$1>');
-
-const HTML_TAG_RE = /<([\w-]+)(?: [^>]*)?(?:(?:\/>)|(?:>.*?<\/\1>))/g;
-const ignoreHTMLParseInlineMD = (text: string): string =>
-  findAndReplace(
-    text,
-    HTML_TAG_RE,
-    (match) => match[0],
-    (txt) => parseInlineMD(txt)
-  ).join('');
 
 const voidToCustomHtml = (element: HTMLElement): string => {
   const altType = element.getAttribute(NODE_TYPE_ATTR);
@@ -158,7 +116,7 @@ const voidToPlainText = (element: HTMLElement): string => {
   return stripCaretAnchors(element.textContent ?? '');
 };
 
-const nodeToCustomHtml = (node: Node, root: HTMLElement, opts: DomOutputOptions): string => {
+const nodeToCustomHtml = (node: Node, root: HTMLElement): string => {
   if (node.nodeType === Node.TEXT_NODE) {
     const raw = stripCaretAnchors((node as Text).data);
     if (raw.length === 0) return '';
@@ -176,22 +134,17 @@ const nodeToCustomHtml = (node: Node, root: HTMLElement, opts: DomOutputOptions)
 
   if (tag === 'BR') {
     if (isTrailingFillerLineBreak(element)) return '';
-    return isBlockMarkdownLineBreak(element, root, opts) ? '\n' : '<br/>';
+    return '<br/>';
   }
 
-  const childHtml = childrenToCustomHtml(element, root, opts);
+  const childHtml = childrenToCustomHtml(element, root);
 
-  if (opts.allowMarkdown) {
-    if (tag === 'B' || tag === 'STRONG') return `<strong>${childHtml}</strong>`;
-    if (tag === 'I' || tag === 'EM') return `<i>${childHtml}</i>`;
-    if (tag === 'U') return `<u>${childHtml}</u>`;
-    if (tag === 'S' || tag === 'DEL' || tag === 'STRIKE') return `<s>${childHtml}</s>`;
-    if (tag === 'CODE' && !isInsideTag(element, root, 'PRE')) return `<code>${childHtml}</code>`;
-    if (element.hasAttribute('data-mx-spoiler')) return `<span data-mx-spoiler>${childHtml}</span>`;
-  } else {
-    if (BLOCK_LINE_TAGS.has(tag)) return `${childHtml}<br/>`;
-    if (BLOCK_CONTAINER_TAGS.has(tag)) return childHtml;
-  }
+  if (tag === 'B' || tag === 'STRONG') return `<strong>${childHtml}</strong>`;
+  if (tag === 'I' || tag === 'EM') return `<i>${childHtml}</i>`;
+  if (tag === 'U') return `<u>${childHtml}</u>`;
+  if (tag === 'S' || tag === 'DEL' || tag === 'STRIKE') return `<s>${childHtml}</s>`;
+  if (tag === 'CODE' && !isInsideTag(element, root, 'PRE')) return `<code>${childHtml}</code>`;
+  if (element.hasAttribute('data-mx-spoiler')) return `<span data-mx-spoiler>${childHtml}</span>`;
 
   if (tag === 'H1') return `<h1>${childHtml}</h1>`;
   if (tag === 'H2') return `<h2>${childHtml}</h2>`;
@@ -206,174 +159,30 @@ const nodeToCustomHtml = (node: Node, root: HTMLElement, opts: DomOutputOptions)
   if (tag === 'UL') return `<ul>${childHtml}</ul>`;
   if (tag === 'LI') return `<li><p>${childHtml}</p></li>`;
 
-  if (tag === 'DIV' || tag === 'P') {
-    return isBlockMarkdownLineBreak(element, root, opts) ? `${childHtml}\n` : `${childHtml}<br/>`;
-  }
+  if (tag === 'DIV' || tag === 'P') return `${childHtml}<br/>`;
 
   return childHtml;
 };
 
-const childrenToCustomHtml = (
-  parent: HTMLElement,
-  root: HTMLElement,
-  opts: DomOutputOptions
-): string => {
+const childrenToCustomHtml = (parent: HTMLElement, root: HTMLElement): string => {
   let result = '';
   parent.childNodes.forEach((child) => {
-    result += nodeToCustomHtml(child, root, opts);
+    result += nodeToCustomHtml(child, root);
   });
   return result;
 };
 
-export const domToMatrixCustomHTML = (rootElement: HTMLElement, opts: DomOutputOptions): string => {
+export const domToMatrixCustomHTML = (rootElement: HTMLElement): string => {
+  let html = '';
+  rootElement.childNodes.forEach((child) => {
+    html += nodeToCustomHtml(child, rootElement);
+  });
+
   const hasBlocks =
     rootElement.querySelector('h1, h2, h3, h4, h5, h6, blockquote, pre, ol, ul, div, p, li') !==
     null;
 
-  if (hasBlocks) {
-    let html = '';
-    rootElement.childNodes.forEach((child) => {
-      html += nodeToCustomHtml(child, rootElement, opts);
-    });
-
-    if (opts.allowMarkdown) {
-      html = parseBlockMD(unescapeQuoteMarkers(html), ignoreHTMLParseInlineMD);
-    }
-    return html;
-  }
-
-  let lineHtml = '';
-  rootElement.childNodes.forEach((child) => {
-    lineHtml += nodeToCustomHtml(child, rootElement, opts);
-  });
-  lineHtml += '<br/>';
-
-  if (opts.allowMarkdown) {
-    const asLine = unescapeQuoteMarkers(lineHtml.replace(/<br\/>$/, '\n'));
-    return parseBlockMD(asLine, ignoreHTMLParseInlineMD);
-  }
-
-  return lineHtml;
-};
-
-const LINE_BREAK = '<br/>';
-
-const HEADING_MARKERS: Record<string, string> = {
-  H1: '#',
-  H2: '##',
-  H3: '###',
-  H4: '####',
-  H5: '#####',
-  H6: '######',
-};
-
-const BLOCK_ELEMENT_TAGS = new Set([
-  'H1',
-  'H2',
-  'H3',
-  'H4',
-  'H5',
-  'H6',
-  'BLOCKQUOTE',
-  'PRE',
-  'OL',
-  'UL',
-]);
-
-const isBlockSeparator = (node: Node): boolean => {
-  let previous: Node | null = node.previousSibling;
-  while (previous && previous.nodeType === Node.TEXT_NODE && previous.textContent === '') {
-    previous = previous.previousSibling;
-  }
-  return (
-    previous !== null &&
-    previous.nodeType === Node.ELEMENT_NODE &&
-    BLOCK_ELEMENT_TAGS.has((previous as HTMLElement).tagName)
-  );
-};
-
-const prefixLines = (markdown: string, prefix: string): string =>
-  markdown
-    .split(LINE_BREAK)
-    .map((line) => `${prefix}${line}`)
-    .join(LINE_BREAK);
-
-const TRAILING_LINE_BREAK = /<br\/>$/;
-
-const asBlockLine = (markdown: string): string =>
-  markdown.endsWith(LINE_BREAK) ? markdown : `${markdown}${LINE_BREAK}`;
-
-const nodeToMarkdown = (node: Node, root: HTMLElement): string => {
-  if (node.nodeType === Node.TEXT_NODE) {
-    return sanitizeText(stripCaretAnchors((node as Text).data));
-  }
-
-  if (node.nodeType !== Node.ELEMENT_NODE) return '';
-  const element = node as HTMLElement;
-
-  if (element.hasAttribute(NODE_TYPE_ATTR)) {
-    return voidToCustomHtml(element);
-  }
-
-  const tag = element.tagName;
-
-  if (tag === 'BR') {
-    if (isBlockSeparator(element) || isTrailingFillerLineBreak(element)) return '';
-    return LINE_BREAK;
-  }
-
-  const childMarkdown = childrenToMarkdown(element, root);
-
-  if (tag === 'B' || tag === 'STRONG') return `**${childMarkdown}**`;
-  if (tag === 'I' || tag === 'EM') return `*${childMarkdown}*`;
-  if (tag === 'U') return `__${childMarkdown}__`;
-  if (tag === 'S' || tag === 'DEL' || tag === 'STRIKE') return `~~${childMarkdown}~~`;
-  if (tag === 'CODE' && !isInsideTag(element, root, 'PRE')) return `\`${childMarkdown}\``;
-  if (element.hasAttribute('data-mx-spoiler')) return `||${childMarkdown}||`;
-
-  const headingMarker = HEADING_MARKERS[tag];
-  if (headingMarker) return asBlockLine(`${headingMarker} ${childMarkdown}`);
-
-  if (tag === 'BLOCKQUOTE') {
-    const lines = childMarkdown.replace(TRAILING_LINE_BREAK, '');
-    return asBlockLine(prefixLines(lines, '> '));
-  }
-
-  if (tag === 'PRE') {
-    const lines = childMarkdown.replace(/\n/g, LINE_BREAK).replace(TRAILING_LINE_BREAK, '');
-    return `\`\`\`${LINE_BREAK}${lines}${LINE_BREAK}\`\`\`${LINE_BREAK}`;
-  }
-
-  if (tag === 'OL' || tag === 'UL') return childMarkdown;
-
-  if (tag === 'LI') {
-    const parentTag = element.parentElement?.tagName;
-    const marker =
-      parentTag === 'OL'
-        ? `${Array.from(element.parentElement?.children ?? []).indexOf(element) + 1}.`
-        : '*';
-    return asBlockLine(`${marker} ${childMarkdown}`);
-  }
-
-  if (tag === 'DIV' || tag === 'P') return asBlockLine(childMarkdown);
-
-  return childMarkdown;
-};
-
-const childrenToMarkdown = (parent: HTMLElement, root: HTMLElement): string => {
-  let result = '';
-  parent.childNodes.forEach((child) => {
-    result += nodeToMarkdown(child, root);
-  });
-  return result;
-};
-
-export const domToMarkdown = (rootElement: HTMLElement): string => {
-  let markdown = '';
-  rootElement.childNodes.forEach((child) => {
-    markdown += nodeToMarkdown(child, rootElement);
-  });
-  return markdown.replace(TRAILING_LINE_BREAK, '');
+  return hasBlocks ? html : `${html}<br/>`;
 };
 
 const nodeToPlainText = (node: Node, root: HTMLElement): string => {

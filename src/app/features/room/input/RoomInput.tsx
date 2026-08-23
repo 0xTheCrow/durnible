@@ -122,7 +122,6 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     const useAuthentication = useMediaAuthentication();
     const [enterForNewline] = useSetting(settingsAtom, 'enterForNewline');
     const keybinds = useKeybinds();
-    const [isMarkdownEnabled] = useSetting(settingsAtom, 'isMarkdownEnabled');
     const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
     const [legacyUsernameColor] = useSetting(settingsAtom, 'legacyUsernameColor');
     const direct = useIsDirectRoom();
@@ -383,11 +382,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       replaceShortcodesInDom(inputElement, shortcodeMap, mx, useAuthentication);
 
       let plainText = domToPlainText(inputElement).trim();
-      let customHtml = trimCustomHtml(
-        domToMatrixCustomHTML(inputElement, {
-          allowMarkdown: isMarkdownEnabled,
-        })
-      );
+      let customHtml = trimCustomHtml(domToMatrixCustomHTML(inputElement));
       const commandName = getCommandFromDom(inputElement);
       let msgType = MsgType.Text;
 
@@ -780,7 +775,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
               toolbar && (
                 <div>
                   <Line variant="SurfaceVariant" size="300" />
-                  <EditorToolbar inputRef={editorElementRef} controllerRef={editorInputRef} />
+                  <EditorToolbar inputRef={editorElementRef} />
                 </div>
               )
             }

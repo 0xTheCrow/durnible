@@ -267,7 +267,6 @@ function DateAndTime() {
 
 function Editor() {
   const [enterForNewline, setEnterForNewline] = useSetting(settingsAtom, 'enterForNewline');
-  const [isMarkdownEnabled, setIsMarkdownEnabled] = useSetting(settingsAtom, 'isMarkdownEnabled');
   const [isEditorToolbarGestureRequired, setIsEditorToolbarGestureRequired] = useSetting(
     settingsAtom,
     'isEditorToolbarGestureRequired'
@@ -283,14 +282,6 @@ function Editor() {
           title="ENTER for Newline"
           description={`Use ${sendKey} to send message and ENTER for newline.`}
           after={<Switch variant="Primary" value={enterForNewline} onChange={setEnterForNewline} />}
-        />
-      </SequenceCard>
-      <SequenceCard className={SettingsCardStyle} variant="SurfaceVariant" direction="Column">
-        <SettingTile
-          title="Markdown Formatting"
-          after={
-            <Switch variant="Primary" value={isMarkdownEnabled} onChange={setIsMarkdownEnabled} />
-          }
         />
       </SequenceCard>
       <SequenceCard className={SettingsCardStyle} variant="SurfaceVariant" direction="Column">

@@ -188,7 +188,6 @@ export const replaceTextInNode = (
 type HtmlToAltInputCtx = {
   mx: MatrixClient;
   useAuthentication: boolean;
-  convertListsToMarkdown?: boolean;
 };
 
 const BLOCK_TAGS = new Set([
@@ -325,78 +324,6 @@ const resolveMentionFromAnchor = (
   return null;
 };
 
-const LINE_BREAKING_TAGS = new Set([
-  'ul',
-  'ol',
-  'blockquote',
-  'pre',
-  'h1',
-  'h2',
-  'h3',
-  'h4',
-  'h5',
-  'h6',
-  'br',
-]);
-
-const containsLineBreakingTag = (nodes: ChildNode[]): boolean =>
-  nodes.some(
-    (child) =>
-      isTag(child) &&
-      (LINE_BREAKING_TAGS.has(child.name.toLowerCase()) || containsLineBreakingTag(child.children))
-  );
-
-const containsTagName = (nodes: ChildNode[], name: string): boolean =>
-  nodes.some(
-    (child) => isTag(child) && (child.name === name || containsTagName(child.children, name))
-  );
-
-const isSingleLineListItem = (listItem: Element): boolean => {
-  if (containsLineBreakingTag(listItem.children)) return false;
-  if (
-    collectTextContent(listItem.children).trim().length === 0 &&
-    !containsTagName(listItem.children, 'img')
-  ) {
-    return false;
-  }
-  const paragraphCount = listItem.children.filter(
-    (child) => isTag(child) && (child.name === 'p' || child.name === 'div')
-  ).length;
-  return paragraphCount <= 1;
-};
-
-const LETTER_MARKER = /^[a-zA-Z]$/;
-const NUMERIC_MARKER = /^\d+$/;
-
-const getListLineMarkers = (list: Element, listItems: Element[]): string[] | null => {
-  if (listItems.length === 0) return null;
-  if (!listItems.every(isSingleLineListItem)) return null;
-
-  const dataMd = list.attribs['data-md'];
-
-  if (list.name === 'ul') {
-    const bullet = dataMd === '-' ? '-' : '*';
-    return listItems.map(() => bullet);
-  }
-
-  const letterMarker = [dataMd, list.attribs.type].find(
-    (value) => value !== undefined && LETTER_MARKER.test(value)
-  );
-  if (letterMarker) {
-    const firstCharCode = letterMarker.charCodeAt(0);
-    const lastCharCode = firstCharCode + listItems.length - 1;
-    const maxCharCode = letterMarker === letterMarker.toLowerCase() ? 122 : 90;
-    if (lastCharCode > maxCharCode) return null;
-    return listItems.map((_, index) => `${String.fromCharCode(firstCharCode + index)}.`);
-  }
-
-  const numericMarker = [dataMd, list.attribs.start].find(
-    (value) => value !== undefined && NUMERIC_MARKER.test(value)
-  );
-  const firstNumber = numericMarker ? Number(numericMarker) : 1;
-  return listItems.map((_, index) => `${firstNumber + index}.`);
-};
-
 const walkHtmlNodes = (
   nodes: ChildNode[],
   parent: Node,
@@ -477,34 +404,6 @@ const walkHtmlNodes = (
       parent.appendChild(wrapper);
       isFirstBlockChild = false;
       return;
-    }
-
-    if (
-      ctx.convertListsToMarkdown &&
-      (tag === 'ol' || tag === 'ul') &&
-      parent.nodeType === Node.DOCUMENT_FRAGMENT_NODE
-    ) {
-      const listItems = element.children.filter(
-        (child): child is Element => isTag(child) && child.name === 'li'
-      );
-      const markers = getListLineMarkers(element, listItems);
-      if (markers) {
-        if (!isFirstBlockChild) emitBlockSeparator(parent);
-        listItems.forEach((listItem, index) => {
-          if (index > 0) emitBlockSeparator(parent);
-          appendTextToParent(parent, `${markers[index]} `);
-          walkHtmlNodes(listItem.children, parent, ctx, true, insideCodeBlock);
-        });
-        const followingNode = element.next;
-        if (
-          followingNode &&
-          !(isTag(followingNode) && BLOCK_TAGS.has(followingNode.name.toLowerCase()))
-        ) {
-          emitBlockSeparator(parent);
-        }
-        isFirstBlockChild = false;
-        return;
-      }
     }
 
     if (PRESERVED_BLOCK_TAGS.has(tag)) {
@@ -692,8 +591,6 @@ export const restoreEditorDraft = (element: HTMLElement, html: string): void => 
   element.replaceChildren(template.content);
   normalizeEditorRoot(element);
 };
-
-export type HtmlToEditorDomOptions = Pick<HtmlToAltInputCtx, 'convertListsToMarkdown'>;
 
 export const htmlToEditorDom = (html: string, ctx: HtmlToAltInputCtx): DocumentFragment => {
   const sanitized = sanitizeCustomHtml(html);

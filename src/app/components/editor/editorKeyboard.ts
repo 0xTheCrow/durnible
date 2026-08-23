@@ -69,11 +69,8 @@ const isCaretAtBlockStart = (inputElement: HTMLElement): boolean => {
 export const handleEditorShortcut = (
   inputElement: HTMLDivElement,
   evt: KeyboardEvent<Element>,
-  keybinds: KeybindMap = defaultKeybinds,
-  isMarkdownEnabled = true
+  keybinds: KeybindMap = defaultKeybinds
 ): boolean => {
-  if (!isMarkdownEnabled) return false;
-
   if (isKeyHotkey('backspace', evt)) {
     if (isExitableBlock(inputElement) && isCaretAtBlockStart(inputElement)) {
       exitBlock(inputElement);

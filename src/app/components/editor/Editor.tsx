@@ -8,7 +8,6 @@ import React, {
   useState,
 } from 'react';
 import { Box, Scroll } from 'folds';
-import type { HtmlToEditorDomOptions } from './editorInput';
 import {
   ensureInlineBoundaryAnchors,
   handleEditorBackspace,
@@ -23,8 +22,6 @@ import { clearPendingInlineStyles, hasInlineStyleElement } from './editorFormatt
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
 import { useKeybinds } from '../../state/hooks/keybinds';
-import { useSetting } from '../../state/hooks/settings';
-import { settingsAtom } from '../../state/settings';
 import * as css from './Editor.css';
 import { getImageUrlBlob } from '../../utils/dom';
 
@@ -33,7 +30,7 @@ export type EditorController = {
   focus: () => void;
   insertText: (text: string) => void;
   insertNode: (node: Node) => void;
-  setContent: (html: string, options?: HtmlToEditorDomOptions) => void;
+  setContent: (html: string) => void;
 };
 
 export type EditorChangeHandler = (isEmpty: boolean) => void;
@@ -74,7 +71,6 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
     const mx = useMatrixClient();
     const useAuthentication = useMediaAuthentication();
     const keybinds = useKeybinds();
-    const [isMarkdownEnabled] = useSetting(settingsAtom, 'isMarkdownEnabled');
 
     const [isEmpty, setIsEmpty] = useState(true);
     const inputRef = useRef<HTMLDivElement>(null);
@@ -125,10 +121,10 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
           savedRangeRef.current = insertNodeAtRange(inputElement, savedRangeRef.current, node);
           syncEditorState();
         },
-        setContent: (html: string, options?: HtmlToEditorDomOptions) => {
+        setContent: (html: string) => {
           const inputElement = inputRef.current;
           if (!inputElement) return;
-          const fragment = htmlToEditorDom(html, { mx, useAuthentication, ...options });
+          const fragment = htmlToEditorDom(html, { mx, useAuthentication });
           inputElement.replaceChildren(fragment);
           ensureInlineBoundaryAnchors(inputElement);
           savedRangeRef.current = null;
@@ -267,13 +263,13 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
         if (evt.defaultPrevented) return;
         const inputElement = inputRef.current;
         if (!inputElement) return;
-        if (handleEditorShortcut(inputElement, evt, keybinds, isMarkdownEnabled)) {
+        if (handleEditorShortcut(inputElement, evt, keybinds)) {
           evt.preventDefault();
           evt.stopPropagation();
           inputElement.dispatchEvent(new Event('input', { bubbles: true }));
         }
       },
-      [onKeyDown, keybinds, isMarkdownEnabled]
+      [onKeyDown, keybinds]
     );
 
     return (

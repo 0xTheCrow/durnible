@@ -30,7 +30,6 @@ export interface Settings {
   lightThemeId?: string;
   darkThemeId?: string;
   monochromeMode?: boolean;
-  isMarkdownEnabled: boolean;
   editorToolbar: boolean;
   isEditorToolbarGestureRequired: boolean;
   twitterEmoji: boolean;
@@ -104,7 +103,6 @@ const defaultSettings: Settings = {
   lightThemeId: undefined,
   darkThemeId: undefined,
   monochromeMode: false,
-  isMarkdownEnabled: false,
   editorToolbar: false,
   isEditorToolbarGestureRequired: false,
   twitterEmoji: false,

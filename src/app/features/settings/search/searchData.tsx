@@ -99,15 +99,6 @@ function EnterForNewlineSetting() {
     />
   );
 }
-function MarkdownSetting() {
-  const [value, setValue] = useSetting(settingsAtom, 'isMarkdownEnabled');
-  return (
-    <SettingTile
-      title="Markdown Formatting"
-      after={<Switch variant="Primary" value={value} onChange={setValue} />}
-    />
-  );
-}
 function EditorToolbarGestureSetting() {
   const [value, setValue] = useSetting(settingsAtom, 'isEditorToolbarGestureRequired');
   return (
@@ -555,15 +546,6 @@ export const settingsSearchData: SettingsSearchEntry<SettingsPages>[] = [
     pageName: 'General',
     sectionName: 'Editor',
     Render: EnterForNewlineSetting,
-  },
-  {
-    id: 'markdown',
-    title: 'Markdown Formatting',
-    keywords: ['markdown', 'bold', 'italic', 'formatting', 'editor', 'markup', 'rich text'],
-    page: SettingsPages.GeneralPage,
-    pageName: 'General',
-    sectionName: 'Editor',
-    Render: MarkdownSetting,
   },
   {
     id: 'editor-toolbar-gesture',

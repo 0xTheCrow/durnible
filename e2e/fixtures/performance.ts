@@ -63,6 +63,80 @@ export const createPerformanceSession = async (
   };
 };
 
+type TraceEvent = {
+  name: string;
+  ph: string;
+  ts: number;
+  dur?: number;
+};
+
+export type TraceEventSummary = {
+  name: string;
+  totalMs: number;
+  count: number;
+};
+
+export type RendererTiming = {
+  byEvent: TraceEventSummary[];
+  styleMs: number;
+  layoutMs: number;
+  paintMs: number;
+};
+
+const RENDERER_TRACE_CATEGORIES = ['devtools.timeline'];
+
+export type RendererTrace = {
+  stop: () => Promise<RendererTiming>;
+};
+
+export const startRendererTrace = async (client: CDPSession): Promise<RendererTrace> => {
+  const events: TraceEvent[] = [];
+  const collect = (payload: { value?: TraceEvent[] }) => {
+    if (payload.value) events.push(...payload.value);
+  };
+  client.on('Tracing.dataCollected', collect);
+  await client.send('Tracing.start', {
+    traceConfig: { includedCategories: RENDERER_TRACE_CATEGORIES },
+    transferMode: 'ReportEvents',
+  });
+
+  return {
+    stop: async () => {
+      const tracingComplete = new Promise<void>((resolve) => {
+        client.once('Tracing.tracingComplete', () => resolve());
+      });
+      await client.send('Tracing.end');
+      await tracingComplete;
+      client.off('Tracing.dataCollected', collect);
+      return summarizeRendererTrace(events);
+    },
+  };
+};
+
+const totalMsForEvent = (byName: Map<string, TraceEventSummary>, name: string): number =>
+  byName.get(name)?.totalMs ?? 0;
+
+const summarizeRendererTrace = (events: TraceEvent[]): RendererTiming => {
+  const byName = new Map<string, TraceEventSummary>();
+  events.forEach((event) => {
+    if (event.ph !== 'X' || event.dur === undefined) return;
+    const existing = byName.get(event.name);
+    if (existing) {
+      existing.totalMs += event.dur / 1000;
+      existing.count += 1;
+      return;
+    }
+    byName.set(event.name, { name: event.name, totalMs: event.dur / 1000, count: 1 });
+  });
+
+  return {
+    byEvent: [...byName.values()].sort((a, b) => b.totalMs - a.totalMs),
+    styleMs: totalMsForEvent(byName, 'UpdateLayoutTree'),
+    layoutMs: totalMsForEvent(byName, 'Layout'),
+    paintMs: totalMsForEvent(byName, 'Paint') + totalMsForEvent(byName, 'Commit'),
+  };
+};
+
 export type ProfileEntry = {
   label: string;
   selfMs: number;

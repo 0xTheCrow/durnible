@@ -20,6 +20,8 @@
     "test:watch": "vitest",
     "e2e": "playwright test",
     "performance": "playwright test --config playwright.performance.config.ts",
+    "performance:production": "PERFORMANCE_TARGET=production playwright test --config playwright.performance.config.ts",
+    "performance:trace": "PERFORMANCE_TRACE=1 playwright test --config playwright.performance.config.ts",
     "prepare": "husky"
   },
   "keywords": [],

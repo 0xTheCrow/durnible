@@ -210,7 +210,6 @@ export const seedSession = (context: BrowserContext): Promise<void> =>
 
 export const RICH_TEXT_EDITOR_SETTINGS: Partial<Settings> = {
   editorToolbar: true,
-  isMarkdownEnabled: true,
 };
 
 export const seedSettings = (page: Page, settings: Partial<Settings>): Promise<void> =>

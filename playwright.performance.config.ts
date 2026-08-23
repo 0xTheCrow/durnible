@@ -1,5 +1,10 @@
 import { defineConfig, devices } from '@playwright/test';
-import { BASE_URL } from './playwright.config';
+
+const IS_PRODUCTION_TARGET = process.env.PERFORMANCE_TARGET === 'production';
+
+const PORT = IS_PRODUCTION_TARGET ? 4173 : 8080;
+
+export const PERFORMANCE_BASE_URL = `http://localhost:${PORT}`;
 
 export default defineConfig({
   testDir: './e2e/performance',
@@ -9,7 +14,7 @@ export default defineConfig({
   timeout: 240_000,
   reporter: [['list']],
   use: {
-    baseURL: BASE_URL,
+    baseURL: PERFORMANCE_BASE_URL,
     trace: 'off',
     video: 'off',
     screenshot: 'off',
@@ -21,9 +26,11 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm start',
-    url: BASE_URL,
-    reuseExistingServer: true,
-    timeout: 120_000,
+    command: IS_PRODUCTION_TARGET
+      ? `npm run build && npx vite preview --port ${PORT} --strictPort`
+      : 'npm start',
+    url: PERFORMANCE_BASE_URL,
+    reuseExistingServer: !IS_PRODUCTION_TARGET,
+    timeout: 300_000,
   },
 });

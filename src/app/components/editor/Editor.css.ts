@@ -169,10 +169,6 @@ export const EditorToolbar = style({
   padding: config.space.S100,
 });
 
-export const MarkdownBtnBox = style({
-  paddingRight: 0,
-});
-
 export const ToolbarButtonActive = style({
   selectors: {
     '&[aria-pressed=true]': {
@@ -184,8 +180,4 @@ export const ToolbarButtonActive = style({
       color: color.SurfaceVariant.Container,
     },
   },
-});
-
-export const MarkdownIconInactive = style({
-  opacity: config.opacity.Placeholder,
 });

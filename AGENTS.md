@@ -15,6 +15,7 @@ Durnible is a Matrix chat client built with React, TypeScript, and Vite. Forked 
 | `npm run test:watch`    | Watch mode tests                                                |
 | `npm run e2e`           | Run Playwright e2e (auto-starts dev server; chromium + firefox) |
 | `npm run fix:prettier`  | Auto-format with Prettier                                       |
+| `npm run performance`   | Composer typing benchmark (chromium only; not part of `e2e`)    |
 
 ## Tech Stack
 
@@ -68,6 +69,7 @@ Durnible is a Matrix chat client built with React, TypeScript, and Vite. Forked 
 - Don't use `setTimeout` to work around race conditions in room state — use the SDK's event listeners.
 - Avoid `requestAnimationFrame` if possible — prefer CSS transitions/animations or React state-driven updates.
 - No comments by default. Aim for code that reads on its own — clear names, obvious control flow. Only add a comment when something is genuinely unclear and can't be fixed by renaming or restructuring: a non-obvious invariant, a workaround for a specific bug, or behavior that would surprise a reader. Don't narrate what the code does, don't leave JSDoc on internal helpers, don't reference the current task or PR.
+- Docs (AGENTS.md included) describe how things are, not how they were. When something changes, rewrite the text to match and delete what it replaced — no corrections, before/after framing, changelog entries, or "Done — X" sections. Why it changed belongs in the commit message or PR.
 - Watch for reuse opportunities. Before writing a new helper, check whether an existing utility in `src/app/utils/`, hook in `src/app/hooks/`, or component already does the job. If you're writing something that looks like code elsewhere in the repo, stop and consolidate — extract a shared function rather than duplicating. When editing, flag nearby duplication you notice even if it's out of scope, and ask before refactoring.
 - This project uses vite 8 / Rolldown, which resolves CJS default imports by Node semantics (`import x from 'pkg'` yields `module.exports`, ignoring a runtime `__esModule`+`exports.default`). A bare-CJS package (no `exports`/`module` field in its `package.json`) that's TS-compiled with `exports.default` will break on a default import — `x` becomes the module object, not the function. Import the **named** export instead (`import { thing } from 'pkg'`), or read `.default` explicitly. This bit `millify` (fixed in `src/app/plugins/millify.ts`).
 
@@ -80,6 +82,31 @@ Durnible is a Matrix chat client built with React, TypeScript, and Vite. Forked 
 - Don't hardcode values in tests that are defined as constants in source. If the test needs a value that depends on a source constant — a timeout, a cap, a threshold, a mime type, an event type, a URL path — import that constant and reference it (or derive from it, e.g. `WINDOW_MS / 2`). If the value isn't currently exported but is useful in a test, make it exportable first rather than copying the literal over. Copy-pasted literals desync silently when the source constant is retuned: the test either passes with stale semantics or fails in a way that looks like a regression when it isn't.
 - Don't write tests that only verify behavior the type system already guarantees (e.g., that a function compares the correct fields on a typed object). Focus test effort on behavior types can't catch: state transitions, async sequencing, side effects, edge cases in runtime logic.
 - Never write a test that passes while the behavior it covers is broken. If a behavior is misbehaving, its test must fail — that is the entire point of the test. Don't reach for expected-failure markers (Playwright's `test.fail()`), skips, or inverted assertions to keep a suite green around a known defect, and don't weaken an assertion until it stops failing. A green run has to mean the behavior works; the moment it can mean "works, or is broken in a way we wrote down," the suite stops being a signal and starts being noise. A real defect gets a genuinely failing test that stays red until it's fixed.
+
+## Performance Benchmarking
+
+Composer typing benchmark in `e2e/performance/`, excluded from the normal suite so CI never runs it.
+Writes a markdown report and per-scenario `.cpuprofile` files to `performance-results/` (gitignored).
+
+| Command                          | Purpose                                                     |
+| -------------------------------- | ----------------------------------------------------------- |
+| `npm run performance`            | Run against the dev server                                  |
+| `npm run performance:production` | Build and measure the real bundle (attribution is minified) |
+| `npm run performance:trace`      | Add renderer phases; inflates `busy` ~27%                   |
+
+| Env var                      | Default | Purpose                                                            |
+| ---------------------------- | ------- | ------------------------------------------------------------------ |
+| `PERFORMANCE_REPETITIONS`    | `1`     | Repeat every scenario N times, interleaved; report shows the range |
+| `PERFORMANCE_KEYSTROKES`     | `60`    | Keystrokes per scenario; use 150+ for anything conclusive          |
+| `PERFORMANCE_CPU_THROTTLING` | `4`     | CDP CPU throttle (4x ≈ mid-tier mobile)                            |
+| `PERFORMANCE_LABEL`          | —       | Suffixes output filenames so runs don't clobber each other         |
+| `PERFORMANCE_ROOM_MESSAGES`  | `300`   | Messages seeded for the `busy-room` scenario                       |
+| `PERFORMANCE_TRACE`          | —       | `1` enables renderer tracing                                       |
+| `PERFORMANCE_TARGET`         | —       | `production` builds and serves via `vite preview`                  |
+
+Rank on `busy` (total main-thread work) — it is far more reproducible than p50. Run with
+`PERFORMANCE_REPETITIONS=3` and treat scenarios whose ranges overlap as indistinguishable. When
+comparing two versions, label both runs and run them in the same session.
 
 ## Git
 
