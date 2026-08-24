@@ -372,5 +372,67 @@ describe('useScrollController', () => {
 
       expect(geometry.getScrollTop()).toBe(1200);
     });
+
+    it('keeps following the newest message when a shrink, a correction, and growth share one scroll event', () => {
+      vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+      const { controller, scrollElement, anchorElement } = renderController(ref(true));
+      const geometry = stubScrollGeometry(scrollElement, {
+        scrollHeight: 1903,
+        offsetHeight: 400,
+        anchorElement,
+        latestMessageBottom: 1903,
+      });
+
+      act(() => controller().pinToLatestMessageBottom());
+      act(() => {
+        scrollElement.dispatchEvent(new Event('scroll'));
+      });
+      expect(geometry.getScrollTop()).toBe(1503);
+
+      act(() => controller().pinToLatestMessageBottom());
+
+      geometry.setScrollHeight(1898);
+      geometry.setNewestMessageBottom(1898);
+      geometry.setScrollTop(1499);
+      act(() => resizeObserverInstances[0].trigger());
+      expect(geometry.getScrollTop()).toBe(1498);
+
+      geometry.setScrollHeight(2348);
+      geometry.setNewestMessageBottom(2345);
+      act(() => {
+        scrollElement.dispatchEvent(new Event('scroll'));
+      });
+      act(() => resizeObserverInstances[0].trigger());
+
+      expect(geometry.getScrollTop()).toBe(1945);
+    });
+
+    it('keeps following the newest message when growth follows a rounding correction', () => {
+      vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+      const { controller, scrollElement, anchorElement } = renderController(ref(true));
+      const geometry = stubScrollGeometry(scrollElement, {
+        scrollHeight: 7731,
+        offsetHeight: 400,
+        anchorElement,
+        latestMessageBottom: 7730,
+      });
+
+      geometry.setScrollTop(7331);
+      act(() => {
+        scrollElement.dispatchEvent(new Event('scroll'));
+      });
+
+      act(() => controller().pinToLatestMessageBottom());
+      expect(geometry.getScrollTop()).toBe(7330);
+
+      geometry.setScrollHeight(7781);
+      geometry.setNewestMessageBottom(7780);
+      act(() => {
+        scrollElement.dispatchEvent(new Event('scroll'));
+      });
+      act(() => resizeObserverInstances[0].trigger());
+
+      expect(geometry.getScrollTop()).toBe(7380);
+    });
   });
 });
