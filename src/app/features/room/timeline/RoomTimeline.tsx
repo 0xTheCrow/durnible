@@ -376,9 +376,10 @@ export function RoomTimeline({
     getItemElement,
     onEnd: handleTimelinePagination,
     shouldRestoreScroll: useCallback(() => {
-      const isIntentFree = scrollController.intentRef.current?.kind === 'free';
-      traceTimelineScroll('paginator:shouldRestoreScroll', { isIntentFree });
-      return isIntentFree;
+      const intentKind = scrollController.intentRef.current?.kind;
+      const isAnchorPinned = intentKind === 'anchor';
+      traceTimelineScroll('paginator:shouldRestoreScroll', { intentKind, isAnchorPinned });
+      return !isAnchorPinned;
     }, [scrollController]),
   });
 

@@ -54,6 +54,17 @@ const collectSamples = (page: Page): Promise<number[]> =>
     () => (window as unknown as { __timelineScrollSamples: number[] }).__timelineScrollSamples
   );
 
+const getTopVisibleEventId = (page: Page): Promise<string> =>
+  page.evaluate((selector) => {
+    const scrollElement = document.querySelector(selector) as HTMLElement;
+    const scrollTop = scrollElement.getBoundingClientRect().top;
+    const rows = Array.from(scrollElement.querySelectorAll('[data-message-id]')) as HTMLElement[];
+    const firstVisible = rows.find((row) => row.getBoundingClientRect().bottom > scrollTop);
+    return firstVisible?.getAttribute('data-message-id') ?? '';
+  }, timelineScrollSelector);
+
+const indexOfFiller = (eventId: string): number => Number(eventId.replace('$filler', ''));
+
 const openRoomAtLiveEdge = async (page: Page) => {
   await page.goto(roomPath);
   await expect(page.locator(`[data-message-id="${NEWEST_EVENT_ID}"]`)).toBeVisible();
@@ -297,4 +308,69 @@ test('stays at the live edge when a first reaction lands on an older message', a
   ).toBeVisible();
 
   await expect.poll(() => getDistanceFromBottom(page)).toBeLessThan(STUCK_TO_BOTTOM_PX);
+});
+
+const sendMessage = async (page: Page, body: string) => {
+  const editor = page.getByTestId('editor');
+  await editor.click();
+  await editor.pressSequentially(body);
+  await page.keyboard.press('Enter');
+};
+
+test('follows the sent message when posting from the bottom of the timeline', async ({
+  context,
+  page,
+}) => {
+  await seedSession(context);
+  await stubHomeserver(page, {
+    timelineEvents: Array.from({ length: FILLER_COUNT }, (_unused, index) => textEvent(index)),
+    echoSentEvents: true,
+  });
+
+  await openRoomAtLiveEdge(page);
+  await sendMessage(page, 'own send from the bottom');
+  await expect(page.getByText('own send from the bottom')).toBeVisible();
+  await page.waitForTimeout(SAMPLE_DURATION_MS);
+
+  expect(await getDistanceFromBottom(page)).toBeLessThan(STUCK_TO_BOTTOM_PX);
+});
+
+test('holds the scroll position when posting while scrolled up', async ({ context, page }) => {
+  await seedSession(context);
+  await stubHomeserver(page, {
+    timelineEvents: Array.from({ length: FILLER_COUNT }, (_unused, index) => textEvent(index)),
+    echoSentEvents: true,
+  });
+
+  const distanceBeforeSend = await openRoomScrolledUp(page);
+  await startSamplingDistanceFromBottom(page);
+  await sendMessage(page, 'own send while scrolled up');
+  await page.waitForTimeout(SAMPLE_DURATION_MS);
+
+  const samples = await collectSamples(page);
+  expect(samples.length).toBeGreaterThan(0);
+  expect(Math.min(...samples)).toBeGreaterThan(distanceBeforeSend / 2);
+});
+
+test('does not drift into older messages when posting near the bottom', async ({
+  context,
+  page,
+}) => {
+  await seedSession(context);
+  await stubHomeserver(page, {
+    timelineEvents: Array.from({ length: FILLER_COUNT }, (_unused, index) => textEvent(index)),
+    echoSentEvents: true,
+  });
+
+  await openRoomAtLiveEdge(page);
+  const oldestVisibleBeforeSend = await getTopVisibleEventId(page);
+
+  await sendMessage(page, 'own send near the bottom');
+  await expect(page.getByText('own send near the bottom')).toBeVisible();
+  await page.waitForTimeout(SAMPLE_DURATION_MS);
+
+  const oldestVisibleAfterSend = await getTopVisibleEventId(page);
+  expect(indexOfFiller(oldestVisibleAfterSend)).toBeGreaterThanOrEqual(
+    indexOfFiller(oldestVisibleBeforeSend)
+  );
 });
