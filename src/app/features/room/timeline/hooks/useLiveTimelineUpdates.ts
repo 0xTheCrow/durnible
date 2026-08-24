@@ -14,8 +14,8 @@ type UseLiveTimelineUpdatesParams = {
   room: Room;
   setTimeline: Dispatch<SetStateAction<Timeline>>;
   scrollRef: RefObject<HTMLDivElement>;
-  checkIsAtLiveEdge: () => boolean;
-  pinToLiveEnd: () => void;
+  checkIsLatestMessageBottomVisible: () => boolean;
+  pinToLatestMessageBottom: () => void;
   unfocusedAutoScroll: boolean;
 };
 
@@ -23,8 +23,8 @@ export const useLiveTimelineUpdates = ({
   room,
   setTimeline,
   scrollRef,
-  checkIsAtLiveEdge,
-  pinToLiveEnd,
+  checkIsLatestMessageBottomVisible,
+  pinToLatestMessageBottom,
   unfocusedAutoScroll,
 }: UseLiveTimelineUpdatesParams): void => {
   const handleLiveEventArrive = useCallback(
@@ -38,12 +38,12 @@ export const useLiveTimelineUpdates = ({
 
       const focused = typeof document !== 'undefined' && document.hasFocus();
       const autoPinEnabled = focused || unfocusedAutoScroll;
-      const isAtLiveEdge = checkIsAtLiveEdge();
+      const isLatestMessageBottomVisible = checkIsLatestMessageBottomVisible();
       const scrollElement = scrollRef.current;
 
       traceTimelineScroll('liveEventArrive', {
         eventId: mEvent.getId(),
-        isAtLiveEdge,
+        isLatestMessageBottomVisible,
         focused,
         autoPinEnabled,
         scrollBottomDistance: scrollElement
@@ -51,8 +51,8 @@ export const useLiveTimelineUpdates = ({
           : null,
       });
 
-      if (isAtLiveEdge) {
-        if (autoPinEnabled) pinToLiveEnd();
+      if (isLatestMessageBottomVisible) {
+        if (autoPinEnabled) pinToLatestMessageBottom();
         setTimeline((current) => {
           const total = getTimelinesEventsCount(current.linkedTimelines);
           return {
@@ -69,7 +69,13 @@ export const useLiveTimelineUpdates = ({
 
       setTimeline((current) => ({ ...current }));
     },
-    [setTimeline, scrollRef, checkIsAtLiveEdge, pinToLiveEnd, unfocusedAutoScroll]
+    [
+      setTimeline,
+      scrollRef,
+      checkIsLatestMessageBottomVisible,
+      pinToLatestMessageBottom,
+      unfocusedAutoScroll,
+    ]
   );
 
   useLiveEventArrive(room, handleLiveEventArrive);

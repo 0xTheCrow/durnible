@@ -39,7 +39,7 @@ import {
   NEW_MESSAGES_DIVIDER_ANCHOR_ID,
 } from './components/NewMessagesDivider';
 import { DayDivider } from './components/DayDivider';
-import { useIsNewestMessageVisible } from './hooks/useIsNewestMessageVisible';
+import { useIsLatestMessageBottomVisible } from './hooks/useIsLatestMessageBottomVisible';
 import { useLiveTimelineUpdates } from './hooks/useLiveTimelineUpdates';
 import { useScrollController } from './hooks/useScrollController';
 import { useTimelineMessageContextValue } from './hooks/useTimelineMessageContextValue';
@@ -126,14 +126,16 @@ export function RoomTimeline({
   const unfocusedAutoScrollRef = useRef(unfocusedAutoScroll);
   unfocusedAutoScrollRef.current = unfocusedAutoScroll;
 
-  const { isNewestMessageVisible, isNewestMessageVisibleRef, newestMessageAnchorRef } =
-    useIsNewestMessageVisible({ scrollRef });
+  const { isLatestMessageBottomVisible, latestMessageBottomRef } = useIsLatestMessageBottomVisible({
+    scrollRef,
+    isInLivePaginationWindow,
+  });
 
   const scrollController = useScrollController({
     scrollRef,
     contentRef,
     isInLivePaginationWindowRef,
-    isNewestMessageVisibleRef,
+    latestMessageBottomRef,
     unfocusedAutoScrollRef,
   });
 
@@ -142,8 +144,7 @@ export function RoomTimeline({
     mx,
     room,
     hideActivity,
-    atBottom: isNewestMessageVisible,
-    isInLivePaginationWindow,
+    isLatestMessageBottomVisible,
     onMarkAsRead: clearNewMessagesDivider,
   });
 
@@ -244,8 +245,8 @@ export function RoomTimeline({
     room,
     setTimeline,
     scrollRef,
-    checkIsAtLiveEdge: scrollController.checkIsAtLiveEdge,
-    pinToLiveEnd: scrollController.pinToLiveEnd,
+    checkIsLatestMessageBottomVisible: scrollController.checkIsLatestMessageBottomVisible,
+    pinToLatestMessageBottom: scrollController.pinToLatestMessageBottom,
     unfocusedAutoScroll,
   });
 
@@ -431,7 +432,9 @@ export function RoomTimeline({
   const isUnreadDividerMissing =
     mountResolved && roomIsUnread && !!readReceiptEventId && !firstUnreadEventId;
   const showUnreadChips =
-    mountResolved && !isNewestMessageVisible && (isDividerOffscreen || isUnreadDividerMissing);
+    mountResolved &&
+    !isLatestMessageBottomVisible &&
+    (isDividerOffscreen || isUnreadDividerMissing);
 
   useLayoutEffect(() => {
     if (didResolveMountRef.current) return;
@@ -440,7 +443,7 @@ export function RoomTimeline({
     if (!scrollElement) return;
     if (mountSnapshot.eventId) return;
     if (!(mountSnapshot.roomIsUnread && mountSnapshot.readReceiptEventId)) {
-      scrollController.pinToLiveEnd();
+      scrollController.pinToLatestMessageBottom();
       setMountResolved(true);
       return;
     }
@@ -496,7 +499,7 @@ export function RoomTimeline({
     traceTimelineScroll('jumpToLatest:click');
     if (eventId) navigateRoom(room.roomId, undefined, { replace: true });
     setTimeline(getInitialTimeline(room));
-    scrollController.pinToLiveEnd();
+    scrollController.pinToLatestMessageBottom();
     setSliderPosition(1);
   };
 
@@ -602,7 +605,7 @@ export function RoomTimeline({
               );
             })}
 
-            <span data-testid="newest-message-anchor" ref={newestMessageAnchorRef} />
+            <span data-testid="latest-message-bottom" ref={latestMessageBottomRef} />
 
             {!isInLivePaginationWindow && <div ref={observeFrontAnchor} />}
             {isForwardPaginating && <ForwardPaginationSkeletons layout={messageLayout} />}
@@ -612,7 +615,7 @@ export function RoomTimeline({
           <JumpToLatestButton
             scrollRef={scrollRef}
             lastMessageId={isInLivePaginationWindow ? lastRenderedEventId : null}
-            atBottom={isNewestMessageVisible}
+            isLatestMessageBottomVisible={isLatestMessageBottomVisible}
             onClick={handleJumpToLatest}
           />
         )}

@@ -12,7 +12,7 @@ export const TRACE_COALESCE_WINDOW_MS = 250;
 
 const COALESCED_TRACE_EVENTS = new Set([
   'maintainPosition:apply',
-  'apply:scrollToBottom',
+  'apply:scrollToLatestMessageBottom',
   'apply:anchor-missing',
   'userInput',
   'scroll',

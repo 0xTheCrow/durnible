@@ -241,8 +241,8 @@ const renderTimeline = ({ room, mx }: RoomFixture, eventId?: string) =>
     </MemoryRouter>
   );
 
-const reachLiveEdge = (container: HTMLElement) => {
-  const anchor = container.querySelector('[data-testid="newest-message-anchor"]') as HTMLElement;
+const reportLatestMessageVisible = (container: HTMLElement) => {
+  const anchor = container.querySelector('[data-testid="latest-message-bottom"]') as HTMLElement;
   const observer = findObserverOf(anchor);
   act(() => {
     observer?.trigger(true);
@@ -265,13 +265,35 @@ const renderedEventIds = (container: HTMLElement): string[] =>
     (element) => element.getAttribute('data-message-id') as string
   );
 
-const scrollAwayFromLiveEdge = (container: HTMLElement) => {
+const LATEST_MESSAGE_BOTTOM_SCROLL_TOP = 1600;
+const HISTORY_SCROLL_TOP = 1000;
+
+const stubTimelineGeometry = (container: HTMLElement) => {
   const scrollElement = container.querySelector('[data-testid="timeline-scroll"]') as HTMLElement;
-  const geometry = stubScrollGeometry(scrollElement, { scrollHeight: 2000, offsetHeight: 400 });
-  geometry.setScrollTop(1000);
-  act(() => {
-    scrollElement.dispatchEvent(new Event('wheel'));
+  const anchorElement = container.querySelector(
+    '[data-testid="latest-message-bottom"]'
+  ) as HTMLElement;
+  const geometry = stubScrollGeometry(scrollElement, {
+    scrollHeight: 2000,
+    offsetHeight: 400,
+    anchorElement,
   });
+  return (scrollTop: number) => {
+    geometry.setScrollTop(scrollTop);
+    act(() => {
+      scrollElement.dispatchEvent(new Event('scroll'));
+    });
+  };
+};
+
+const scrollToLiveEdge = (container: HTMLElement) => {
+  stubTimelineGeometry(container)(LATEST_MESSAGE_BOTTOM_SCROLL_TOP);
+};
+
+const scrollAwayFromLiveEdge = (container: HTMLElement) => {
+  const scrollTo = stubTimelineGeometry(container);
+  scrollTo(LATEST_MESSAGE_BOTTOM_SCROLL_TOP);
+  scrollTo(HISTORY_SCROLL_TOP);
 };
 
 const triggerBackPagination = async (container: HTMLElement) => {
@@ -286,7 +308,7 @@ describe('RoomTimeline window stability during back pagination', () => {
   it('renders an arriving live event while following the live edge', async () => {
     const fixture = createRoomWithPaginatableLiveTimeline(false);
     const { container } = renderTimeline(fixture);
-    reachLiveEdge(container);
+    scrollToLiveEdge(container);
 
     await act(async () => {
       fixture.arriveLiveEvents(1);
@@ -343,7 +365,7 @@ describe('RoomTimeline auto mark as read', () => {
     const fixture = createRoomWithDetachedReceipt();
     const { container } = renderTimeline(fixture);
 
-    reachLiveEdge(container);
+    reportLatestMessageVisible(container);
 
     expect(vi.mocked(fixture.mx.sendReadReceipt)).toHaveBeenCalled();
   });
@@ -355,7 +377,7 @@ describe('RoomTimeline auto mark as read', () => {
       await Promise.resolve();
     });
 
-    reachLiveEdge(container);
+    reportLatestMessageVisible(container);
 
     expect(vi.mocked(fixture.mx.sendReadReceipt)).not.toHaveBeenCalled();
   });

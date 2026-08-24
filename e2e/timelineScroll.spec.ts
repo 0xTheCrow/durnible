@@ -138,6 +138,131 @@ test('holds the scroll position when a limited sync arrives while scrolled up', 
   expect(Math.min(...samples)).toBeGreaterThan(distanceBeforeArrival / 2);
 });
 
+test('jumping to latest lands on the bottom of the timeline', async ({ context, page }) => {
+  await seedSession(context);
+  await stubHomeserver(page, {
+    timelineEvents: Array.from({ length: FILLER_COUNT }, (_unused, index) => textEvent(index)),
+  });
+
+  await openRoomScrolledUp(page);
+  await page.getByTestId('jump-to-latest-button').click();
+  await page.waitForTimeout(SAMPLE_DURATION_MS);
+
+  expect(await getDistanceFromBottom(page)).toBeLessThan(STUCK_TO_BOTTOM_PX);
+});
+
+const GROWTH_PX = 300;
+const TRAILING_SPACE_PX = 24;
+
+const growNewestMessage = (page: Page) =>
+  page.evaluate(
+    ([eventId, growthPx]) => {
+      const styleElement = document.createElement('style');
+      styleElement.textContent = `[data-message-id="${eventId}"] { padding-bottom: ${growthPx}px; }`;
+      document.head.appendChild(styleElement);
+    },
+    [NEWEST_EVENT_ID, GROWTH_PX] as const
+  );
+
+const growEveryMessageOnNextRender = (page: Page) =>
+  page.evaluate((growthPx) => {
+    const scrollElement = document.querySelector('[data-testid="timeline-scroll"]') as HTMLElement;
+    const observer = new MutationObserver(() => {
+      observer.disconnect();
+      const styleElement = document.createElement('style');
+      styleElement.textContent = `[data-message-id] { padding-bottom: ${growthPx}px; }`;
+      document.head.appendChild(styleElement);
+    });
+    observer.observe(scrollElement, { childList: true, subtree: true });
+  }, 12);
+
+const renderBelowLatestMessage = (page: Page) =>
+  page.evaluate((heightPx) => {
+    const styleElement = document.createElement('style');
+    styleElement.textContent = `[data-testid="latest-message-bottom"] { display: block; margin-bottom: ${heightPx}px; }`;
+    document.head.appendChild(styleElement);
+  }, GROWTH_PX);
+
+const getLatestMessageBottomOffsetFromViewport = (page: Page): Promise<number> =>
+  page.evaluate((selector) => {
+    const scrollElement = document.querySelector(selector) as HTMLElement;
+    const anchorElement = scrollElement.querySelector(
+      '[data-testid="latest-message-bottom"]'
+    ) as HTMLElement;
+    return (
+      scrollElement.getBoundingClientRect().bottom - anchorElement.getBoundingClientRect().bottom
+    );
+  }, timelineScrollSelector);
+
+test('lands on the bottom when the newest message grows right after jumping to latest', async ({
+  context,
+  page,
+}) => {
+  await seedSession(context);
+  await stubHomeserver(page, {
+    timelineEvents: Array.from({ length: FILLER_COUNT }, (_unused, index) => textEvent(index)),
+  });
+
+  await openRoomScrolledUp(page);
+  await page.getByTestId('jump-to-latest-button').click();
+  await growNewestMessage(page);
+  await page.waitForTimeout(SAMPLE_DURATION_MS);
+
+  expect(await getDistanceFromBottom(page)).toBeLessThan(STUCK_TO_BOTTOM_PX);
+});
+
+test('stays on the bottom when the newest message grows after jumping to latest settles', async ({
+  context,
+  page,
+}) => {
+  await seedSession(context);
+  await stubHomeserver(page, {
+    timelineEvents: Array.from({ length: FILLER_COUNT }, (_unused, index) => textEvent(index)),
+  });
+
+  await openRoomScrolledUp(page);
+  await page.getByTestId('jump-to-latest-button').click();
+  await page.waitForTimeout(SAMPLE_DURATION_MS);
+  await growNewestMessage(page);
+  await page.waitForTimeout(SAMPLE_DURATION_MS);
+
+  expect(await getDistanceFromBottom(page)).toBeLessThan(STUCK_TO_BOTTOM_PX);
+});
+
+test('lands on the bottom when the swapped-in window grows before the observers report', async ({
+  context,
+  page,
+}) => {
+  await seedSession(context);
+  await stubHomeserver(page, {
+    timelineEvents: Array.from({ length: FILLER_COUNT }, (_unused, index) => textEvent(index)),
+  });
+
+  await openRoomScrolledUp(page);
+  await growEveryMessageOnNextRender(page);
+  await page.getByTestId('jump-to-latest-button').click();
+  await page.waitForTimeout(SAMPLE_DURATION_MS);
+
+  expect(await getDistanceFromBottom(page)).toBeLessThan(STUCK_TO_BOTTOM_PX);
+});
+
+test('rests the newest message on the viewport bottom when content renders below it', async ({
+  context,
+  page,
+}) => {
+  await seedSession(context);
+  await stubHomeserver(page, {
+    timelineEvents: Array.from({ length: FILLER_COUNT }, (_unused, index) => textEvent(index)),
+  });
+
+  await openRoomScrolledUp(page);
+  await renderBelowLatestMessage(page);
+  await page.getByTestId('jump-to-latest-button').click();
+  await page.waitForTimeout(SAMPLE_DURATION_MS);
+
+  expect(await getLatestMessageBottomOffsetFromViewport(page)).toBeLessThan(TRAILING_SPACE_PX + 4);
+});
+
 test('stays at the live edge when a first reaction lands on the newest message', async ({
   context,
   page,
