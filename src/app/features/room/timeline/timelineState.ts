@@ -223,6 +223,22 @@ export const useLiveEventArrive = (room: Room, onArrive: (mEvent: MatrixEvent) =
   }, [room, onArrive]);
 };
 
+export const useLiveTimelineReset = (room: Room, onReset: () => void) => {
+  useEffect(() => {
+    const handleTimelineReset: EventTimelineSetHandlerMap[RoomEvent.TimelineReset] = (
+      eventRoom
+    ) => {
+      if (eventRoom?.roomId !== room.roomId) return;
+      onReset();
+    };
+
+    room.on(RoomEvent.TimelineReset, handleTimelineReset);
+    return () => {
+      room.removeListener(RoomEvent.TimelineReset, handleTimelineReset);
+    };
+  }, [room, onReset]);
+};
+
 export const useLiveTimelineRefresh = (room: Room, onRefresh: () => void) => {
   useEffect(() => {
     const handleTimelineRefresh: RoomEventHandlerMap[RoomEvent.TimelineRefresh] = (r) => {

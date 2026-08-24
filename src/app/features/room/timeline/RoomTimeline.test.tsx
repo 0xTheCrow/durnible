@@ -12,7 +12,6 @@ import {
   findObserverOf,
   installIntersectionObserverStub,
   installResizeObserverStub,
-  ioInstances,
   stubScrollGeometry,
 } from './timelineTestHelpers';
 import type * as roomUtils from '../../../utils/room';
@@ -242,9 +241,11 @@ const renderTimeline = ({ room, mx }: RoomFixture, eventId?: string) =>
     </MemoryRouter>
   );
 
-const reachLiveEdge = () => {
+const reachLiveEdge = (container: HTMLElement) => {
+  const anchor = container.querySelector('[data-testid="newest-message-anchor"]') as HTMLElement;
+  const observer = findObserverOf(anchor);
   act(() => {
-    ioInstances.forEach((observer) => observer.trigger(true));
+    observer?.trigger(true);
   });
 };
 
@@ -285,6 +286,7 @@ describe('RoomTimeline window stability during back pagination', () => {
   it('renders an arriving live event while following the live edge', async () => {
     const fixture = createRoomWithPaginatableLiveTimeline(false);
     const { container } = renderTimeline(fixture);
+    reachLiveEdge(container);
 
     await act(async () => {
       fixture.arriveLiveEvents(1);
@@ -339,21 +341,21 @@ describe('RoomTimeline window stability during back pagination', () => {
 describe('RoomTimeline auto mark as read', () => {
   it('sends a read receipt at the live edge when the stored receipt sits in a detached timeline', () => {
     const fixture = createRoomWithDetachedReceipt();
-    renderTimeline(fixture);
+    const { container } = renderTimeline(fixture);
 
-    reachLiveEdge();
+    reachLiveEdge(container);
 
     expect(vi.mocked(fixture.mx.sendReadReceipt)).toHaveBeenCalled();
   });
 
   it('does not send a read receipt at the bottom of a window opened away from the live edge', async () => {
     const fixture = createRoomWithDetachedReceipt();
-    renderTimeline(fixture, RECEIPT_EVENT_ID);
+    const { container } = renderTimeline(fixture, RECEIPT_EVENT_ID);
     await act(async () => {
       await Promise.resolve();
     });
 
-    reachLiveEdge();
+    reachLiveEdge(container);
 
     expect(vi.mocked(fixture.mx.sendReadReceipt)).not.toHaveBeenCalled();
   });

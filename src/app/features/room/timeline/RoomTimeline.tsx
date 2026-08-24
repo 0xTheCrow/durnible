@@ -16,9 +16,10 @@ import {
   getInitialTimeline,
   loadEventContext,
   useLiveTimelineRefresh,
+  useLiveTimelineReset,
   PAGINATION_LIMIT,
 } from './timelineState';
-import { getTimelinesEventsCount } from './timelineUtils';
+import { getLiveTimeline, getTimelinesEventsCount } from './timelineUtils';
 import { useVirtualPaginator } from '../../../hooks/useVirtualPaginator';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { useRoomNavigate } from '../../../hooks/useRoomNavigate';
@@ -38,7 +39,7 @@ import {
   NEW_MESSAGES_DIVIDER_ANCHOR_ID,
 } from './components/NewMessagesDivider';
 import { DayDivider } from './components/DayDivider';
-import { useAtBottom } from './hooks/useAtBottom';
+import { useIsNewestMessageVisible } from './hooks/useIsNewestMessageVisible';
 import { useLiveTimelineUpdates } from './hooks/useLiveTimelineUpdates';
 import { useScrollController } from './hooks/useScrollController';
 import { useTimelineMessageContextValue } from './hooks/useTimelineMessageContextValue';
@@ -125,27 +126,23 @@ export function RoomTimeline({
   const unfocusedAutoScrollRef = useRef(unfocusedAutoScroll);
   unfocusedAutoScrollRef.current = unfocusedAutoScroll;
 
+  const { isNewestMessageVisible, isNewestMessageVisibleRef, newestMessageAnchorRef } =
+    useIsNewestMessageVisible({ scrollRef });
+
   const scrollController = useScrollController({
     scrollRef,
     contentRef,
     isInLivePaginationWindowRef,
+    isNewestMessageVisibleRef,
     unfocusedAutoScrollRef,
   });
-
-  const { atBottom, atBottomRef, atBottomAnchorRef } = useAtBottom({
-    scrollRef,
-    onChange: scrollController.syncFollowLive,
-  });
-  useLayoutEffect(() => {
-    if (!liveTimelineLinked) scrollController.releaseFollowLive();
-  }, [liveTimelineLinked, scrollController]);
 
   const clearNewMessagesDivider = useCallback(() => setDividerReadUptoEventId(undefined), []);
   const { readReceiptEventId, roomIsUnread } = useAutoMarkAsRead({
     mx,
     room,
     hideActivity,
-    atBottom,
+    atBottom: isNewestMessageVisible,
     isInLivePaginationWindow,
     onMarkAsRead: clearNewMessagesDivider,
   });
@@ -247,9 +244,7 @@ export function RoomTimeline({
     room,
     setTimeline,
     scrollRef,
-    atBottomRef,
-    isInLivePaginationWindowRef,
-    intentRef: scrollController.intentRef,
+    checkIsAtLiveEdge: scrollController.checkIsAtLiveEdge,
     pinToLiveEnd: scrollController.pinToLiveEnd,
     unfocusedAutoScroll,
   });
@@ -260,6 +255,17 @@ export function RoomTimeline({
       if (liveTimelineLinked) {
         setTimeline(getInitialTimeline(room));
       }
+    }, [room, liveTimelineLinked])
+  );
+
+  useLiveTimelineReset(
+    room,
+    useCallback(() => {
+      if (!liveTimelineLinked) return;
+      setTimeline((current) => ({
+        ...current,
+        linkedTimelines: [...current.linkedTimelines, getLiveTimeline(room)],
+      }));
     }, [room, liveTimelineLinked])
   );
 
@@ -425,7 +431,7 @@ export function RoomTimeline({
   const isUnreadDividerMissing =
     mountResolved && roomIsUnread && !!readReceiptEventId && !firstUnreadEventId;
   const showUnreadChips =
-    mountResolved && !atBottom && (isDividerOffscreen || isUnreadDividerMissing);
+    mountResolved && !isNewestMessageVisible && (isDividerOffscreen || isUnreadDividerMissing);
 
   useLayoutEffect(() => {
     if (didResolveMountRef.current) return;
@@ -596,17 +602,17 @@ export function RoomTimeline({
               );
             })}
 
+            <span data-testid="newest-message-anchor" ref={newestMessageAnchorRef} />
+
             {!isInLivePaginationWindow && <div ref={observeFrontAnchor} />}
             {isForwardPaginating && <ForwardPaginationSkeletons layout={messageLayout} />}
-
-            <span ref={atBottomAnchorRef} />
           </Box>
         </Scroll>
         {mountResolved && (
           <JumpToLatestButton
             scrollRef={scrollRef}
             lastMessageId={isInLivePaginationWindow ? lastRenderedEventId : null}
-            atBottom={atBottom}
+            atBottom={isNewestMessageVisible}
             onClick={handleJumpToLatest}
           />
         )}

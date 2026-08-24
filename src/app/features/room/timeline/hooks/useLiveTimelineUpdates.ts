@@ -9,15 +9,12 @@ import { isModifierTimelineEvent } from '../../../../utils/room';
 import { getScrollBottomDistance } from '../../../../utils/dom';
 import { createTimelineWindow } from '../utils/timelineWindow';
 import { traceTimelineScroll } from '../utils/scrollTrace';
-import type { ScrollIntent } from './useScrollController';
 
 type UseLiveTimelineUpdatesParams = {
   room: Room;
   setTimeline: Dispatch<SetStateAction<Timeline>>;
   scrollRef: RefObject<HTMLDivElement>;
-  atBottomRef: RefObject<boolean>;
-  isInLivePaginationWindowRef: RefObject<boolean>;
-  intentRef: RefObject<ScrollIntent>;
+  checkIsAtLiveEdge: () => boolean;
   pinToLiveEnd: () => void;
   unfocusedAutoScroll: boolean;
 };
@@ -26,9 +23,7 @@ export const useLiveTimelineUpdates = ({
   room,
   setTimeline,
   scrollRef,
-  atBottomRef,
-  isInLivePaginationWindowRef,
-  intentRef,
+  checkIsAtLiveEdge,
   pinToLiveEnd,
   unfocusedAutoScroll,
 }: UseLiveTimelineUpdatesParams): void => {
@@ -43,26 +38,20 @@ export const useLiveTimelineUpdates = ({
 
       const focused = typeof document !== 'undefined' && document.hasFocus();
       const autoPinEnabled = focused || unfocusedAutoScroll;
-      const followingLive = intentRef.current?.kind === 'followLive';
-      const atBottom = !!atBottomRef.current;
-      const isInLivePaginationWindow = !!isInLivePaginationWindowRef.current;
-      const shouldFollowLiveEdge = followingLive || (atBottom && isInLivePaginationWindow);
+      const isAtLiveEdge = checkIsAtLiveEdge();
       const scrollElement = scrollRef.current;
 
       traceTimelineScroll('liveEventArrive', {
         eventId: mEvent.getId(),
-        followingLive,
-        atBottom,
-        isInLivePaginationWindow,
+        isAtLiveEdge,
         focused,
         autoPinEnabled,
         scrollBottomDistance: scrollElement
           ? Math.round(getScrollBottomDistance(scrollElement))
           : null,
-        shouldFollowLiveEdge,
       });
 
-      if (shouldFollowLiveEdge) {
+      if (isAtLiveEdge) {
         if (autoPinEnabled) pinToLiveEnd();
         setTimeline((current) => {
           const total = getTimelinesEventsCount(current.linkedTimelines);
@@ -80,15 +69,7 @@ export const useLiveTimelineUpdates = ({
 
       setTimeline((current) => ({ ...current }));
     },
-    [
-      setTimeline,
-      scrollRef,
-      atBottomRef,
-      isInLivePaginationWindowRef,
-      intentRef,
-      pinToLiveEnd,
-      unfocusedAutoScroll,
-    ]
+    [setTimeline, scrollRef, checkIsAtLiveEdge, pinToLiveEnd, unfocusedAutoScroll]
   );
 
   useLiveEventArrive(room, handleLiveEventArrive);

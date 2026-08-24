@@ -190,6 +190,50 @@ const emptySync = (): Record<string, unknown> => ({
   rooms: { join: {}, invite: {}, leave: {} },
 });
 
+export const liveMessageEvent = (id: string, body: string): Record<string, unknown> => ({
+  type: 'm.room.message',
+  sender: TEST_USER_ID,
+  content: { msgtype: 'm.text', body },
+  event_id: id,
+  origin_server_ts: 1700000100000,
+});
+
+export const reactionEvent = (
+  id: string,
+  reactsToEventId: string,
+  key: string
+): Record<string, unknown> => ({
+  type: 'm.reaction',
+  sender: TEST_USER_ID,
+  content: { 'm.relates_to': { rel_type: 'm.annotation', event_id: reactsToEventId, key } },
+  event_id: id,
+  origin_server_ts: 1700000100000,
+});
+
+const liveSync = (
+  batch: number,
+  events: Record<string, unknown>[],
+  isLimited: boolean
+): Record<string, unknown> => ({
+  next_batch: `s_${batch}`,
+  account_data: { events: [] },
+  presence: { events: [] },
+  rooms: {
+    join: {
+      [TEST_ROOM_ID]: {
+        summary: {},
+        state: { events: [] },
+        timeline: { events, prev_batch: `p_${batch}`, limited: isLimited },
+        ephemeral: { events: [] },
+        account_data: { events: [] },
+        unread_notifications: { notification_count: 0, highlight_count: 0 },
+      },
+    },
+    invite: {},
+    leave: {},
+  },
+});
+
 const json = (route: Route, body: unknown, status = 200): Promise<void> =>
   route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
 
@@ -217,10 +261,17 @@ export const seedSettings = (page: Page, settings: Partial<Settings>): Promise<v
     localStorage.setItem('settings', serializedSettings);
   }, JSON.stringify(settings));
 
+export type PushTimelineOptions = {
+  isLimited?: boolean;
+};
+
 export type HomeserverStub = {
   sentEvents: SentEvent[];
   unmatched: string[];
+  pushTimeline: (events: Record<string, unknown>[], options?: PushTimelineOptions) => void;
 };
+
+const SYNC_LONG_POLL_MS = 30_000;
 
 export type StubHomeserverOptions = {
   timelineEvents?: Record<string, unknown>[];
@@ -261,8 +312,32 @@ export const stubHomeserver = async (
   page: Page,
   options: StubHomeserverOptions = {}
 ): Promise<HomeserverStub> => {
-  const stub: HomeserverStub = { sentEvents: [], unmatched: [] };
+  const queuedSyncs: Record<string, unknown>[] = [];
+  let releaseLongPoll: (() => void) | undefined;
+  const stub: HomeserverStub = {
+    sentEvents: [],
+    unmatched: [],
+    pushTimeline: (events, { isLimited = false } = {}) => {
+      queuedSyncs.push(liveSync(queuedSyncs.length + 2, events, isLimited));
+      releaseLongPoll?.();
+    },
+  };
   let syncCount = 0;
+
+  const takeQueuedSync = (): Promise<Record<string, unknown> | undefined> =>
+    new Promise((resolve) => {
+      const settle = () => {
+        clearTimeout(timeoutId);
+        releaseLongPoll = undefined;
+        resolve(queuedSyncs.shift());
+      };
+      const timeoutId = setTimeout(settle, SYNC_LONG_POLL_MS);
+      if (queuedSyncs.length > 0) {
+        settle();
+        return;
+      }
+      releaseLongPoll = settle;
+    });
 
   await page.route(`${HOMESERVER_BASE_URL}/**`, async (route) => {
     const url = new URL(route.request().url());
@@ -282,10 +357,8 @@ export const stubHomeserver = async (
     if (pathname.endsWith('/sync')) {
       syncCount += 1;
       if (syncCount === 1) return json(route, initialSync(options));
-      await new Promise((resolve) => {
-        setTimeout(resolve, 30_000);
-      });
-      return json(route, emptySync());
+      const queued = await takeQueuedSync();
+      return json(route, queued ?? emptySync());
     }
 
     if (pathname.includes('/send/')) {
