@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import {
   seedSession,
+  seedSettings,
   stubHomeserver,
   textEvent,
   liveMessageEvent,
@@ -18,6 +19,7 @@ const MIN_DISPLACEMENT_PX = 400;
 const LIVE_EDGE_TOLERANCE_PX = 40;
 const STUCK_TO_BOTTOM_PX = 8;
 const SAMPLE_DURATION_MS = 2000;
+const BOOT_TIMEOUT_MS = 20000;
 
 const NEWEST_EVENT_ID = `$filler${FILLER_COUNT - 1}`;
 const OLDER_VISIBLE_EVENT_ID = `$filler${FILLER_COUNT - 6}`;
@@ -67,13 +69,17 @@ const indexOfFiller = (eventId: string): number => Number(eventId.replace('$fill
 
 const openRoomAtLiveEdge = async (page: Page) => {
   await page.goto(roomPath);
-  await expect(page.locator(`[data-message-id="${NEWEST_EVENT_ID}"]`)).toBeVisible();
+  await expect(page.locator(`[data-message-id="${NEWEST_EVENT_ID}"]`)).toBeVisible({
+    timeout: BOOT_TIMEOUT_MS,
+  });
   await expect.poll(() => getDistanceFromBottom(page)).toBeLessThan(STUCK_TO_BOTTOM_PX);
 };
 
 const openRoomScrolledUp = async (page: Page) => {
   await page.goto(roomPath);
-  await expect(page.locator(`[data-message-id="${NEWEST_EVENT_ID}"]`)).toBeVisible();
+  await expect(page.locator(`[data-message-id="${NEWEST_EVENT_ID}"]`)).toBeVisible({
+    timeout: BOOT_TIMEOUT_MS,
+  });
   await expect.poll(() => getDistanceFromBottom(page)).toBeLessThan(LIVE_EDGE_TOLERANCE_PX);
 
   await page.locator(timelineScrollSelector).hover();
@@ -373,4 +379,51 @@ test('does not drift into older messages when posting near the bottom', async ({
   expect(indexOfFiller(oldestVisibleAfterSend)).toBeGreaterThanOrEqual(
     indexOfFiller(oldestVisibleBeforeSend)
   );
+});
+
+const blurTimelineWindow = async (page: Page) => {
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'hasFocus', { configurable: true, value: () => false });
+    window.dispatchEvent(new Event('blur'));
+  });
+  await expect.poll(() => page.evaluate(() => document.hasFocus())).toBe(false);
+};
+
+test('follows an arriving message while unfocused when unfocusedAutoScroll is on', async ({
+  context,
+  page,
+}) => {
+  await seedSession(context);
+  await seedSettings(page, { unfocusedAutoScroll: true });
+  const stub = await stubHomeserver(page, {
+    timelineEvents: Array.from({ length: FILLER_COUNT }, (_unused, index) => textEvent(index)),
+  });
+
+  await openRoomAtLiveEdge(page);
+  await blurTimelineWindow(page);
+
+  stub.pushTimeline([liveMessageEvent('$arrived', 'arrived while unfocused')]);
+  await expect(page.locator('[data-message-id="$arrived"]')).toBeVisible();
+
+  await expect.poll(() => getDistanceFromBottom(page)).toBeLessThan(STUCK_TO_BOTTOM_PX);
+});
+
+test('holds position for an arriving message while unfocused when unfocusedAutoScroll is off', async ({
+  context,
+  page,
+}) => {
+  await seedSession(context);
+  await seedSettings(page, { unfocusedAutoScroll: false });
+  const stub = await stubHomeserver(page, {
+    timelineEvents: Array.from({ length: FILLER_COUNT }, (_unused, index) => textEvent(index)),
+  });
+
+  await openRoomAtLiveEdge(page);
+  await blurTimelineWindow(page);
+
+  stub.pushTimeline([liveMessageEvent('$arrived', 'arrived while unfocused')]);
+  await expect(page.locator('[data-message-id="$arrived"]')).toBeVisible();
+  await page.waitForTimeout(SAMPLE_DURATION_MS);
+
+  expect(await getDistanceFromBottom(page)).toBeGreaterThan(STUCK_TO_BOTTOM_PX);
 });

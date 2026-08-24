@@ -275,6 +275,7 @@ const SYNC_LONG_POLL_MS = 30_000;
 
 export type StubHomeserverOptions = {
   timelineEvents?: Record<string, unknown>[];
+  echoSentEvents?: boolean;
   userImagePack?: boolean;
   audioResponse?: { body: Buffer; contentType: string };
   videoResponse?: { body: Buffer; contentType: string };
@@ -362,12 +363,23 @@ export const stubHomeserver = async (
     }
 
     if (pathname.includes('/send/')) {
-      const eventType = pathname.split('/send/')[1].split('/')[0];
-      stub.sentEvents.push({
-        eventType,
-        content: route.request().postDataJSON() as Record<string, unknown>,
-      });
-      return json(route, { event_id: `$sent_${stub.sentEvents.length}` });
+      const [eventType, transactionId] = pathname.split('/send/')[1].split('/');
+      const content = route.request().postDataJSON() as Record<string, unknown>;
+      stub.sentEvents.push({ eventType, content });
+      const eventId = `$sent_${stub.sentEvents.length}`;
+      if (options.echoSentEvents) {
+        stub.pushTimeline([
+          {
+            type: eventType,
+            sender: TEST_USER_ID,
+            content,
+            event_id: eventId,
+            origin_server_ts: 1700000200000 + stub.sentEvents.length,
+            unsigned: { transaction_id: transactionId },
+          },
+        ]);
+      }
+      return json(route, { event_id: eventId });
     }
 
     if (pathname.endsWith('/messages')) {
