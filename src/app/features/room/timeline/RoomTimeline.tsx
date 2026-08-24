@@ -230,6 +230,7 @@ export function RoomTimeline({
   const hadFocusRef = useRef(false);
   useLayoutEffect(() => {
     if (focusRequest) {
+      scrollController.haltMomentumScroll();
       scrollController.pinToAnchor(`[data-message-id="${CSS.escape(focusRequest.eventId)}"]`, {
         align: 'start',
         offsetFraction: 0.12,
@@ -299,6 +300,7 @@ export function RoomTimeline({
   };
 
   const handleJumpToUnread = async () => {
+    scrollController.haltMomentumScroll();
     if (dividerElement) {
       scrollController.pinToAnchor(
         `[data-anchor-id="${NEW_MESSAGES_DIVIDER_ANCHOR_ID}"]`,
@@ -498,6 +500,7 @@ export function RoomTimeline({
 
   const handleJumpToLatest = () => {
     traceTimelineScroll('jumpToLatest:click');
+    scrollController.haltMomentumScroll();
     if (eventId) navigateRoom(room.roomId, undefined, { replace: true });
     setTimeline(getInitialTimeline(room));
     scrollController.pinToLatestMessageBottom();

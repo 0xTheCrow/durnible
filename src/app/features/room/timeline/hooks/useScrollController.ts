@@ -35,6 +35,7 @@ type UseScrollControllerParams = {
 export type ScrollController = {
   pinToLatestMessageBottom: (options?: BehaviorOptions) => void;
   pinToAnchor: (selector: string, options?: AnchorOptions, behavior?: BehaviorOptions) => void;
+  haltMomentumScroll: () => void;
   release: () => void;
   checkIsLatestMessageBottomVisible: () => boolean;
   intentRef: RefObject<ScrollIntent>;
@@ -63,6 +64,10 @@ const getLatestMessageBottomScrollTop = (
     trailingSpacePx -
     scrollElement.getBoundingClientRect().bottom;
   return Math.min(Math.max(0, Math.round(targetScrollTop)), maxScrollTop);
+};
+
+const forceReflow = (element: HTMLElement) => {
+  element.getBoundingClientRect();
 };
 
 const anchorOffsetPx = (intent: AnchorIntent, scrollElement: HTMLElement): number =>
@@ -227,6 +232,18 @@ export const useScrollController = ({
     [applyAnchor]
   );
 
+  const haltMomentumScroll = useCallback(() => {
+    const scrollElement = scrollRef.current;
+    if (!scrollElement) return;
+    const { scrollTop } = scrollElement;
+    const { overflowY } = scrollElement.style;
+    traceTimelineScroll('haltMomentumScroll', { scrollTop: Math.round(scrollTop) });
+    scrollElement.style.overflowY = 'hidden';
+    forceReflow(scrollElement);
+    scrollElement.style.overflowY = overflowY;
+    scrollElement.scrollTop = scrollTop;
+  }, [scrollRef]);
+
   const release = useCallback(() => {
     traceTimelineScroll('release', { from: intentRef.current.kind });
     intentRef.current = { kind: 'free' };
@@ -325,10 +342,17 @@ export const useScrollController = ({
     () => ({
       pinToLatestMessageBottom,
       pinToAnchor,
+      haltMomentumScroll,
       release,
       checkIsLatestMessageBottomVisible,
       intentRef,
     }),
-    [pinToLatestMessageBottom, pinToAnchor, release, checkIsLatestMessageBottomVisible]
+    [
+      pinToLatestMessageBottom,
+      pinToAnchor,
+      haltMomentumScroll,
+      release,
+      checkIsLatestMessageBottomVisible,
+    ]
   );
 };
