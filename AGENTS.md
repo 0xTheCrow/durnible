@@ -150,6 +150,16 @@ Vite env vars use `VITE_` prefix, accessed via `import.meta.env.VITE_*`:
 - **Virtualization**: long lists use `@tanstack/react-virtual`
 - **Drag & drop**: uses `@atlaskit/pragmatic-drag-and-drop`
 
+## Known Issues
+
+### TODO — timeline gap after `Room.timelineReset` (gappy sync)
+
+Reported on Firefox mobile: tabbed away from an open room for a while, tabbed back, and the timeline showed some new messages but was missing a chunk between where the user left off and the most recent messages. Scrolling up did not load the missing messages; reloading the page did.
+
+A `limited` `/sync` response (matrix-js-sdk's `Room.timelineReset` — most reachable via a backgrounded mobile tab resuming, but any flaky connection can trigger it) hands the room a new, SDK-disconnected live timeline. the `useLiveTimelineReset` callback in `src/app/features/room/timeline/RoomTimeline.tsx` appends it to `linkedTimelines` instead of replacing it; downstream code treats that array as one continuous chain, so the render shows old content immediately followed by new content with a real, unfetched gap between them. Backward pagination only ever targets `linkedTimelines[0]`, never the appended timeline, so scrolling can't recover the gap — only a reload can, since that rebuilds a single genuine chain.
+
+The obvious fix — `setTimeline(getInitialTimeline(room))`, as `useLiveTimelineRefresh` already does for the rarer `Room.TimelineRefresh` — isn't safe as-is: no re-anchor for scroll position when intent is `free` (scrolled up, not glued to bottom); races with `useTimelinePagination`'s in-flight `recalibratePagination`, which closes over the pre-reset array and can overwrite the fix; and `Room.timelineReset` fires far more often than `Room.TimelineRefresh`, so the "yank to live tail" behavior would move from rare to common. Needs a scroll-intent gate and a reset-aware pagination path before implementing.
+
 ## Lazy Loading
 
 Build-time lazy-loading work on the main bundle.
