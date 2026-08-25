@@ -415,12 +415,17 @@ export const useScrollController = ({
       if (!autoScrollingRef.current) {
         userScrollSinceBottomRef.current = true;
       }
-      if (
-        userScrollSinceBottomRef.current &&
-        intentRef.current.kind === 'latestMessageBottom' &&
-        getScrollBottomDistance(scrollElement) > LATEST_MESSAGE_BOTTOM_RELEASE_THRESHOLD_PX
-      ) {
-        intentRef.current = { kind: 'free' };
+      if (intentRef.current.kind === 'latestMessageBottom') {
+        const scrollBottomDistance = getScrollBottomDistance(scrollElement);
+        if (
+          userScrollSinceBottomRef.current &&
+          scrollBottomDistance > LATEST_MESSAGE_BOTTOM_RELEASE_THRESHOLD_PX
+        ) {
+          traceTimelineScroll('latestMessageBottomFollow:release-on-scroll', {
+            scrollBottomDistance: Math.round(scrollBottomDistance),
+          });
+          intentRef.current = { kind: 'free' };
+        }
       }
       const { scrollTop } = scrollElement;
       const isLargeJump = Math.abs(scrollTop - lastLoggedScrollTop) > LARGE_SCROLL_JUMP_PX;
