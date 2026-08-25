@@ -51,7 +51,6 @@ export interface Settings {
   embedYouTube: boolean;
   embedSpotify: boolean;
   embedSoundCloud: boolean;
-  embedNitter: boolean;
   embedLinks: boolean;
   showHiddenEvents: boolean;
   legacyUsernameColor: boolean;
@@ -124,7 +123,6 @@ const defaultSettings: Settings = {
   embedYouTube: true,
   embedSpotify: true,
   embedSoundCloud: true,
-  embedNitter: true,
   embedLinks: true,
   showHiddenEvents: false,
   legacyUsernameColor: false,

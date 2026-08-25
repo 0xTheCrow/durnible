@@ -331,7 +331,6 @@ function Messages() {
   const [embedYouTube, setEmbedYouTube] = useSetting(settingsAtom, 'embedYouTube');
   const [embedSpotify, setEmbedSpotify] = useSetting(settingsAtom, 'embedSpotify');
   const [embedSoundCloud, setEmbedSoundCloud] = useSetting(settingsAtom, 'embedSoundCloud');
-  const [embedNitter, setEmbedNitter] = useSetting(settingsAtom, 'embedNitter');
   const [embedLinks, setEmbedLinks] = useSetting(settingsAtom, 'embedLinks');
   const [showEmbedToggles, setShowEmbedToggles] = useState(false);
   const [showHiddenEvents, setShowHiddenEvents] = useSetting(settingsAtom, 'showHiddenEvents');
@@ -458,10 +457,6 @@ function Messages() {
               after={
                 <Switch variant="Primary" value={embedSoundCloud} onChange={setEmbedSoundCloud} />
               }
-            />
-            <SettingTile
-              title="Twitter / X (Nitter)"
-              after={<Switch variant="Primary" value={embedNitter} onChange={setEmbedNitter} />}
             />
           </Box>
         )}

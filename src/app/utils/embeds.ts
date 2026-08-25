@@ -72,20 +72,3 @@ export const getSoundCloudEmbedInfo = (url: string): SoundCloudEmbedInfo | undef
   const cleanUrl = `https://soundcloud.com/${match[1]}/${match[2]}`;
   return { cleanUrl, isSet: match[2].startsWith('sets/') };
 };
-
-// ── Twitter / X ──────────────────────────────────────────────────────────────
-// Embedded via a configurable Nitter instance to avoid Twitter's tracking script.
-// Set VITE_NITTER_INSTANCES in your .env to override the default.
-
-const TWITTER_URL_REG =
-  /^https?:\/\/(?:(?:www\.|mobile\.)?twitter\.com|x\.com)\/([\w]+)\/status\/(\d+)/;
-
-export type TwitterEmbedInfo = { user: string; id: string };
-
-export const testTwitterUrl = (url: string): boolean => TWITTER_URL_REG.test(url);
-
-export const getTwitterEmbedInfo = (url: string): TwitterEmbedInfo | undefined => {
-  const match = url.match(TWITTER_URL_REG);
-  if (!match) return undefined;
-  return { user: match[1], id: match[2] };
-};

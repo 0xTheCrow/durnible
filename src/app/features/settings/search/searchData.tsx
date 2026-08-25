@@ -214,15 +214,6 @@ function EmbedSoundCloudSetting() {
     />
   );
 }
-function EmbedNitterSetting() {
-  const [value, setValue] = useSetting(settingsAtom, 'embedNitter');
-  return (
-    <SettingTile
-      title="Embed Twitter / X (Nitter)"
-      after={<Switch variant="Primary" value={value} onChange={setValue} />}
-    />
-  );
-}
 function ShowHiddenEventsSetting() {
   const [value, setValue] = useSetting(settingsAtom, 'showHiddenEvents');
   return (
@@ -694,15 +685,6 @@ export const settingsSearchData: SettingsSearchEntry<SettingsPages>[] = [
     pageName: 'General',
     sectionName: 'Messages',
     Render: EmbedSoundCloudSetting,
-  },
-  {
-    id: 'embed-nitter',
-    title: 'Embed Twitter / X (Nitter)',
-    keywords: ['twitter', 'nitter', 'x', 'embed', 'social', 'media', 'tweet'],
-    page: SettingsPages.GeneralPage,
-    pageName: 'General',
-    sectionName: 'Messages',
-    Render: EmbedNitterSetting,
   },
   {
     id: 'show-hidden-events',

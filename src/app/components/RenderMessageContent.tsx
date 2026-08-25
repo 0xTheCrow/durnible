@@ -27,7 +27,7 @@ import {
   UnsupportedContent,
   VideoContent as VideoContentView,
 } from './message';
-import { YouTubeEmbed, SpotifyEmbed, SoundCloudEmbed, NitterEmbed } from './url-preview';
+import { YouTubeEmbed, SpotifyEmbed, SoundCloudEmbed } from './url-preview';
 import { Image, MediaControl, Video } from './media';
 import {
   useMediaVolumePersistence,
@@ -43,8 +43,6 @@ import {
   getSpotifyEmbedInfo,
   testSoundCloudUrl,
   getSoundCloudEmbedInfo,
-  testTwitterUrl,
-  getTwitterEmbedInfo,
 } from '../utils/embeds';
 import { settingsAtom } from '../state/settings';
 import type {
@@ -108,16 +106,8 @@ function RenderMessageContentInner({
     const soundcloudUrls = settings.embedSoundCloud
       ? filteredUrls.filter((url) => testSoundCloudUrl(url))
       : [];
-    const twitterUrls = settings.embedNitter
-      ? filteredUrls.filter((url) => testTwitterUrl(url))
-      : [];
 
-    if (
-      youtubeUrls.length === 0 &&
-      spotifyUrls.length === 0 &&
-      soundcloudUrls.length === 0 &&
-      twitterUrls.length === 0
-    )
+    if (youtubeUrls.length === 0 && spotifyUrls.length === 0 && soundcloudUrls.length === 0)
       return undefined;
 
     const showEmbed = !!urlPreview;
@@ -156,19 +146,6 @@ function RenderMessageContentInner({
           const info = getSoundCloudEmbedInfo(url);
           return info ? (
             <SoundCloudEmbed
-              key={url}
-              info={info}
-              url={url}
-              showEmbed={showEmbed}
-              showLink={showLink}
-              style={{ marginTop: config.space.S200 }}
-            />
-          ) : null;
-        })}
-        {twitterUrls.map((url) => {
-          const info = getTwitterEmbedInfo(url);
-          return info ? (
-            <NitterEmbed
               key={url}
               info={info}
               url={url}
