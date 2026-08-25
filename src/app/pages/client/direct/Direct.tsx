@@ -40,7 +40,12 @@ import { roomToUnreadAtom } from '../../../state/room/roomToUnread';
 import { useCategoryHandler } from '../../../hooks/useCategoryHandler';
 import { useNavToActivePathMapper } from '../../../hooks/useNavToActivePathMapper';
 import { useDirectRooms } from './useDirectRooms';
-import { PageNav, PageNavContent, PageNavHeader } from '../../../components/page';
+import {
+  AdjustablePageNav,
+  PageNavContent,
+  PageNavHeader,
+  PageNavLayoutMenuItems,
+} from '../../../components/page';
 import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
 import { useClosedNavCategoriesAtom } from '../../../state/hooks/closedNavCategories';
 import { useRoomsUnread } from '../../../state/hooks/unread';
@@ -53,11 +58,13 @@ import {
   useRoomsNotificationPreferencesContext,
 } from '../../../hooks/useRoomsNotificationPreferences';
 import { useDirectCreateSelected } from '../../../hooks/router/useDirectSelected';
+import { TruncatedText } from '../../../components/TruncatedText';
 
 type DirectMenuProps = {
+  isDrawerMode?: boolean;
   onClose: () => void;
 };
-const DirectMenu = forwardRef<HTMLDivElement, DirectMenuProps>(({ onClose }, ref) => {
+const DirectMenu = forwardRef<HTMLDivElement, DirectMenuProps>(({ isDrawerMode, onClose }, ref) => {
   const mx = useMatrixClient();
   const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
   const orphanRooms = useDirectRooms();
@@ -83,12 +90,13 @@ const DirectMenu = forwardRef<HTMLDivElement, DirectMenuProps>(({ onClose }, ref
             Mark as Read
           </Text>
         </MenuItem>
+        <PageNavLayoutMenuItems isDrawerMode={isDrawerMode} onClose={onClose} />
       </Box>
     </Menu>
   );
 });
 
-function DirectHeader() {
+function DirectHeader({ isDrawerMode }: { isDrawerMode?: boolean }) {
   const [menuAnchor, setMenuAnchor] = useState<RectCords>();
 
   const handleOpenMenu: MouseEventHandler<HTMLButtonElement> = (evt) => {
@@ -104,9 +112,7 @@ function DirectHeader() {
       <PageNavHeader>
         <Box alignItems="Center" grow="Yes" gap="300">
           <Box grow="Yes">
-            <Text size="H4" truncate>
-              Direct Messages
-            </Text>
+            <TruncatedText size="H4">Direct Messages</TruncatedText>
           </Box>
           <Box>
             <IconButton aria-pressed={!!menuAnchor} variant="Background" onClick={handleOpenMenu}>
@@ -132,7 +138,7 @@ function DirectHeader() {
               escapeDeactivates: stopPropagation,
             }}
           >
-            <DirectMenu onClose={() => setMenuAnchor(undefined)} />
+            <DirectMenu isDrawerMode={isDrawerMode} onClose={() => setMenuAnchor(undefined)} />
           </FocusTrap>
         }
       />
@@ -159,9 +165,7 @@ function DirectEmpty() {
         }
         options={
           <Button variant="Secondary" size="300" onClick={() => navigate(getDirectCreatePath())}>
-            <Text size="B300" truncate>
-              Direct Message
-            </Text>
+            <TruncatedText size="B300">Direct Message</TruncatedText>
           </Button>
         }
       />
@@ -211,8 +215,8 @@ export function Direct({ isDrawerMode, extra }: DirectProps = {}) {
   );
 
   return (
-    <PageNav>
-      <DirectHeader />
+    <AdjustablePageNav isDrawerMode={isDrawerMode}>
+      <DirectHeader isDrawerMode={isDrawerMode} />
       {noRoomToDisplay ? (
         <DirectEmpty />
       ) : (
@@ -231,9 +235,9 @@ export function Direct({ isDrawerMode, extra }: DirectProps = {}) {
                         <Icon src={Icons.Plus} size="100" />
                       </Avatar>
                       <Box as="span" grow="Yes">
-                        <Text as="span" size="Inherit" truncate>
+                        <TruncatedText as="span" size="Inherit">
                           Create Chat
-                        </Text>
+                        </TruncatedText>
                       </Box>
                     </Box>
                   </NavItemContent>
@@ -290,6 +294,6 @@ export function Direct({ isDrawerMode, extra }: DirectProps = {}) {
         </PageNavContent>
       )}
       {extra}
-    </PageNav>
+    </AdjustablePageNav>
   );
 }

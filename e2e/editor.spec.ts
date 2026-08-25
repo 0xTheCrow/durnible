@@ -1,24 +1,32 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import {
   RICH_TEXT_EDITOR_SETTINGS,
   seedSession,
   seedSettings,
   stubHomeserver,
+  TEST_CUSTOM_EMOJI_MXC,
+  TEST_CUSTOM_EMOJI_SHORTCODE,
   TEST_ROOM_ID,
+  textEvent,
   type HomeserverStub,
+  type StubHomeserverOptions,
 } from './fixtures/homeserver';
 
 const roomPath = `/home/${encodeURIComponent(TEST_ROOM_ID)}/`;
 
 let homeserver: HomeserverStub;
 
-test.beforeEach(async ({ context, page }) => {
+test.beforeEach(async ({ context }) => {
   await seedSession(context);
-  homeserver = await stubHomeserver(page);
 });
 
-test('boots into a room with the composer focused', async ({ page }) => {
+const openRoom = async (page: Page, options: StubHomeserverOptions = {}) => {
+  homeserver = await stubHomeserver(page, options);
   await page.goto(roomPath);
+};
+
+test('boots into a room with the composer focused', async ({ page }) => {
+  await openRoom(page);
 
   await expect(page.getByTestId('editor')).toBeVisible();
   expect(
@@ -28,7 +36,7 @@ test('boots into a room with the composer focused', async ({ page }) => {
 });
 
 test('plain text sends without a formatted body', async ({ page }) => {
-  await page.goto(roomPath);
+  await openRoom(page);
 
   const editor = page.getByTestId('editor');
   await expect(editor).toBeVisible();
@@ -45,7 +53,7 @@ test('plain text sends without a formatted body', async ({ page }) => {
 
 test('erasing bold text clears the pending style so new text is not bold', async ({ page }) => {
   await seedSettings(page, RICH_TEXT_EDITOR_SETTINGS);
-  await page.goto(roomPath);
+  await openRoom(page);
 
   const editor = page.getByTestId('editor');
   await expect(editor).toBeVisible();
@@ -81,9 +89,67 @@ test('erasing bold text clears the pending style so new text is not bold', async
   expect(sent.content.formatted_body).toBeUndefined();
 });
 
+test('a trailing line break does not reach the sent event', async ({ page }) => {
+  await seedSettings(page, RICH_TEXT_EDITOR_SETTINGS);
+  await openRoom(page);
+
+  const editor = page.getByTestId('editor');
+  await expect(editor).toBeVisible();
+  await editor.click();
+  await editor.pressSequentially('hello');
+  await page.keyboard.press('Shift+Enter');
+  await page.keyboard.press('Enter');
+
+  await expect.poll(() => homeserver.sentEvents.length).toBe(1);
+
+  const [sent] = homeserver.sentEvents;
+  expect(sent.content.body).toBe('hello');
+  expect(sent.content.formatted_body).toBeUndefined();
+});
+
+test('an empty line between two lines is sent as one empty line', async ({ page }) => {
+  await seedSettings(page, { ...RICH_TEXT_EDITOR_SETTINGS, enterForNewline: true });
+  await openRoom(page);
+
+  const editor = page.getByTestId('editor');
+  await expect(editor).toBeVisible();
+  await editor.click();
+  await editor.pressSequentially('hello');
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Enter');
+  await editor.pressSequentially('world');
+  await page.keyboard.press('ControlOrMeta+Enter');
+
+  await expect.poll(() => homeserver.sentEvents.length).toBe(1);
+
+  const [sent] = homeserver.sentEvents;
+  expect(sent.content.body).toBe('hello\n\nworld');
+});
+
+test('the send button survives a newline after a custom emoji', async ({ page }) => {
+  await seedSettings(page, { ...RICH_TEXT_EDITOR_SETTINGS, enterForNewline: true });
+  await openRoom(page, { userImagePack: true });
+
+  const editor = page.getByTestId('editor');
+  await expect(editor).toBeVisible();
+  await editor.click();
+
+  await editor.pressSequentially(`:${TEST_CUSTOM_EMOJI_SHORTCODE}`);
+  await page.keyboard.press('Tab');
+  await expect(
+    editor.locator(`[data-node-type="emoticon"][data-key="${TEST_CUSTOM_EMOJI_MXC}"]`)
+  ).toBeVisible();
+  await expect(page.getByTestId('room-input-send')).toBeVisible();
+
+  await page.keyboard.press('Enter');
+
+  await expect(page.getByTestId('room-input-send')).toBeVisible();
+  await expect(page.getByTestId('room-input-voice-record')).toBeHidden();
+});
+
 test('bold text survives serialization into the sent event', async ({ page }) => {
   await seedSettings(page, RICH_TEXT_EDITOR_SETTINGS);
-  await page.goto(roomPath);
+  await openRoom(page);
 
   const editor = page.getByTestId('editor');
   await expect(editor).toBeVisible();
@@ -100,4 +166,28 @@ test('bold text survives serialization into the sent event', async ({ page }) =>
   expect(sent.eventType).toBe('m.room.message');
   expect(sent.content.body).toBe('hello');
   expect(sent.content.formatted_body).toBe('<strong>hello</strong>');
+});
+
+test('escape closes the autocomplete before it discards the reply draft', async ({ page }) => {
+  await openRoom(page, { timelineEvents: [textEvent(0)] });
+
+  await page.getByText('filler message 0').hover();
+  await page.getByTestId('message-reply-btn').click();
+
+  const replyDraft = page.getByTestId('room-input-reply-draft');
+  await expect(replyDraft).toBeVisible();
+
+  const editor = page.getByTestId('editor');
+  await editor.click();
+  await editor.pressSequentially('@');
+
+  const autocompleteMenu = page.locator('[class*="AutocompleteMenuContainer"]');
+  await expect(autocompleteMenu).toBeVisible();
+
+  await page.keyboard.press('Escape');
+  await expect(autocompleteMenu).toBeHidden();
+  await expect(replyDraft).toBeVisible();
+
+  await page.keyboard.press('Escape');
+  await expect(replyDraft).toBeHidden();
 });

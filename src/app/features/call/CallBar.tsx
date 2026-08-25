@@ -8,6 +8,7 @@ import { CallControlButton } from './CallControlButton';
 import { useLocalMediaControls } from '../../hooks/call/useLocalMediaControls';
 import { useCallDeafen } from '../../hooks/call/useCallDeafen';
 import { useRoomNavigate } from '../../hooks/useRoomNavigate';
+import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
 import { useRoomName } from '../../hooks/useRoomMeta';
 import * as css from './CallStrip.css';
 
@@ -18,6 +19,8 @@ type ConnectedCallBarProps = {
 function ConnectedCallBar({ connection, isReconnecting }: ConnectedCallBarProps) {
   const { endCall } = useCallActions();
   const { navigateRoom } = useRoomNavigate();
+  const screenSize = useScreenSizeContext();
+  const isMobile = screenSize === ScreenSize.Mobile;
   const setIsCallPaneCollapsed = useSetAtom(isCallPaneCollapsedAtom);
   const { isMicrophoneEnabled, toggleMicrophone } = useLocalMediaControls(connection.livekitRoom);
   const { isDeafened, toggleDeafen } = useCallDeafen(connection.livekitRoom);
@@ -37,7 +40,12 @@ function ConnectedCallBar({ connection, isReconnecting }: ConnectedCallBarProps)
           type="button"
           size="T300"
           truncate
-          onClick={() => navigateRoom(connection.matrixRoom.roomId)}
+          aria-label={isMobile ? `Expand ${roomName} Call` : undefined}
+          onClick={
+            isMobile
+              ? () => setIsCallPaneCollapsed(false)
+              : () => navigateRoom(connection.matrixRoom.roomId)
+          }
         >
           <b>{roomName}</b>
         </Text>

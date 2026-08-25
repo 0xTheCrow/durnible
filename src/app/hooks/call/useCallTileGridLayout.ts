@@ -6,7 +6,8 @@ import { useElementSizeObserver } from '../useElementSizeObserver';
 
 export const useCallTileGridLayout = (
   containerRef: RefObject<HTMLElement>,
-  tileCount: number
+  tileCount: number,
+  aspectRatio?: number
 ): CallTileGridLayout => {
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 
@@ -25,5 +26,5 @@ export const useCallTileGridLayout = (
     useCallback((width, height) => setContainerSize({ width, height }), [])
   );
 
-  return getCallTileGridLayout(tileCount, containerSize.width, containerSize.height);
+  return getCallTileGridLayout(tileCount, containerSize.width, containerSize.height, aspectRatio);
 };

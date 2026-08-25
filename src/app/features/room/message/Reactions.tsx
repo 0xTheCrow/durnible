@@ -31,6 +31,7 @@ const ReactionBuckets = as<'div', ReactionBucketsProps>(
     const useAuthentication = useMediaAuthentication();
     const screenSize = useScreenSizeContext();
     const [pauseGifs] = useSetting(settingsAtom, 'pauseGifs');
+    const [pauseGifEmojis] = useSetting(settingsAtom, 'pauseGifEmojis');
     const openReactionViewer = useOpenReactionViewer();
     const myUserId = mx.getUserId();
 
@@ -87,7 +88,7 @@ const ReactionBuckets = as<'div', ReactionBucketsProps>(
                   onContextMenu={handleViewReaction}
                   aria-disabled={!canSendReaction}
                   useAuthentication={useAuthentication}
-                  pauseGifs={pauseGifs}
+                  pauseGifs={!!(pauseGifs && pauseGifEmojis)}
                 />
               )}
             </TooltipProvider>

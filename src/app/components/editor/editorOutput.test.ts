@@ -8,6 +8,7 @@ import {
   getMentionsFromDom,
   replaceShortcodesInDom,
   getCommandFromDom,
+  trimCustomHtml,
 } from './editorOutput';
 import { NODE_TYPE_ATTR, EMOTICON_NODE, MENTION_NODE, COMMAND_NODE } from './editorInput';
 import type { ShortcodeMapEntry } from '../../plugins/emoji';
@@ -67,25 +68,17 @@ const commandNode = (command: string) => {
   return span;
 };
 
-const MARKDOWN = {
-  allowMarkdown: true,
-};
-
-const PLAIN_TEXT = {
-  allowMarkdown: false,
-};
-
 describe('domToMatrixCustomHTML', () => {
   it('converts plain text to text<br/>', () => {
     const root = createRootElement();
     root.textContent = 'hello world';
-    expect(domToMatrixCustomHTML(root, MARKDOWN)).toBe('hello world<br/>');
+    expect(domToMatrixCustomHTML(root)).toBe('hello world<br/>');
   });
 
   it('sanitizes HTML special characters in text', () => {
     const root = createRootElement();
     root.textContent = '<script>alert("xss")</script>';
-    const html = domToMatrixCustomHTML(root, MARKDOWN);
+    const html = domToMatrixCustomHTML(root);
     expect(html).not.toContain('<script>');
     expect(html).toContain('&lt;script&gt;');
   });
@@ -95,7 +88,7 @@ describe('domToMatrixCustomHTML', () => {
     const b = document.createElement('b');
     b.textContent = 'bold';
     root.appendChild(b);
-    expect(domToMatrixCustomHTML(root, MARKDOWN)).toContain('<strong>bold</strong>');
+    expect(domToMatrixCustomHTML(root)).toContain('<strong>bold</strong>');
   });
 
   it('converts <i> to <i>', () => {
@@ -103,7 +96,7 @@ describe('domToMatrixCustomHTML', () => {
     const i = document.createElement('i');
     i.textContent = 'italic';
     root.appendChild(i);
-    expect(domToMatrixCustomHTML(root, MARKDOWN)).toContain('<i>italic</i>');
+    expect(domToMatrixCustomHTML(root)).toContain('<i>italic</i>');
   });
 
   it('converts <u> to <u>', () => {
@@ -111,7 +104,7 @@ describe('domToMatrixCustomHTML', () => {
     const u = document.createElement('u');
     u.textContent = 'underline';
     root.appendChild(u);
-    expect(domToMatrixCustomHTML(root, MARKDOWN)).toContain('<u>underline</u>');
+    expect(domToMatrixCustomHTML(root)).toContain('<u>underline</u>');
   });
 
   it('converts <s> to <s>', () => {
@@ -119,7 +112,7 @@ describe('domToMatrixCustomHTML', () => {
     const s = document.createElement('s');
     s.textContent = 'strike';
     root.appendChild(s);
-    expect(domToMatrixCustomHTML(root, MARKDOWN)).toContain('<s>strike</s>');
+    expect(domToMatrixCustomHTML(root)).toContain('<s>strike</s>');
   });
 
   it('converts <code> to <code>', () => {
@@ -127,7 +120,7 @@ describe('domToMatrixCustomHTML', () => {
     const code = document.createElement('code');
     code.textContent = 'inline';
     root.appendChild(code);
-    expect(domToMatrixCustomHTML(root, MARKDOWN)).toContain('<code>inline</code>');
+    expect(domToMatrixCustomHTML(root)).toContain('<code>inline</code>');
   });
 
   it('converts <span data-mx-spoiler> to <span data-mx-spoiler>', () => {
@@ -136,7 +129,7 @@ describe('domToMatrixCustomHTML', () => {
     span.setAttribute('data-mx-spoiler', '');
     span.textContent = 'hidden';
     root.appendChild(span);
-    expect(domToMatrixCustomHTML(root, MARKDOWN)).toContain('<span data-mx-spoiler>hidden</span>');
+    expect(domToMatrixCustomHTML(root)).toContain('<span data-mx-spoiler>hidden</span>');
   });
 
   it('handles nested formatting', () => {
@@ -146,17 +139,7 @@ describe('domToMatrixCustomHTML', () => {
     i.textContent = 'both';
     b.appendChild(i);
     root.appendChild(b);
-    expect(domToMatrixCustomHTML(root, MARKDOWN)).toContain('<strong><i>both</i></strong>');
-  });
-
-  it('ignores formatting when allowMarkdown is false', () => {
-    const root = createRootElement();
-    const b = document.createElement('b');
-    b.textContent = 'bold';
-    root.appendChild(b);
-    const html = domToMatrixCustomHTML(root, PLAIN_TEXT);
-    expect(html).not.toContain('<strong>');
-    expect(html).toContain('bold');
+    expect(domToMatrixCustomHTML(root)).toContain('<strong><i>both</i></strong>');
   });
 
   it('converts <br> to <br/>', () => {
@@ -164,13 +147,13 @@ describe('domToMatrixCustomHTML', () => {
     root.appendChild(document.createTextNode('line1'));
     root.appendChild(document.createElement('br'));
     root.appendChild(document.createTextNode('line2'));
-    expect(domToMatrixCustomHTML(root, MARKDOWN)).toContain('line1<br/>line2');
+    expect(domToMatrixCustomHTML(root)).toContain('line1<br/>line2');
   });
 
   it('converts mention void to matrix.to link', () => {
     const root = createRootElement();
     root.appendChild(mentionNode('@alice:server.com', 'Alice'));
-    const html = domToMatrixCustomHTML(root, MARKDOWN);
+    const html = domToMatrixCustomHTML(root);
     expect(html).toContain('href="https://matrix.to/#/@alice:server.com"');
     expect(html).toContain('>Alice</a>');
   });
@@ -183,7 +166,7 @@ describe('domToMatrixCustomHTML', () => {
         via: 'server1.com,server2.com',
       })
     );
-    const html = domToMatrixCustomHTML(root, MARKDOWN);
+    const html = domToMatrixCustomHTML(root);
     expect(html).toContain('!room:server.com/$event123');
     expect(html).toContain('via=server1.com');
     expect(html).toContain('via=server2.com');
@@ -192,7 +175,7 @@ describe('domToMatrixCustomHTML', () => {
   it('converts mxc emoticon void to <img>', () => {
     const root = createRootElement();
     root.appendChild(emoticonNode('mxc://example/wave', 'wave'));
-    const html = domToMatrixCustomHTML(root, MARKDOWN);
+    const html = domToMatrixCustomHTML(root);
     expect(html).toContain('data-mx-emoticon');
     expect(html).toContain('src="mxc://example/wave"');
     expect(html).toContain('alt="wave"');
@@ -201,7 +184,7 @@ describe('domToMatrixCustomHTML', () => {
   it('converts unicode emoticon void to text', () => {
     const root = createRootElement();
     root.appendChild(emoticonNode('😀', 'grinning'));
-    const html = domToMatrixCustomHTML(root, MARKDOWN);
+    const html = domToMatrixCustomHTML(root);
     expect(html).toContain('😀');
     expect(html).not.toContain('data-mx-emoticon');
   });
@@ -209,7 +192,7 @@ describe('domToMatrixCustomHTML', () => {
   it('converts command void to /command', () => {
     const root = createRootElement();
     root.appendChild(commandNode('me'));
-    const html = domToMatrixCustomHTML(root, MARKDOWN);
+    const html = domToMatrixCustomHTML(root);
     expect(html).toContain('/me');
   });
 
@@ -218,7 +201,7 @@ describe('domToMatrixCustomHTML', () => {
     const h1 = document.createElement('h1');
     h1.textContent = 'Title';
     root.appendChild(h1);
-    expect(domToMatrixCustomHTML(root, MARKDOWN)).toContain('<h1>Title</h1>');
+    expect(domToMatrixCustomHTML(root)).toContain('<h1>Title</h1>');
   });
 
   it('converts <blockquote> to <blockquote>', () => {
@@ -226,7 +209,7 @@ describe('domToMatrixCustomHTML', () => {
     const bq = document.createElement('blockquote');
     bq.textContent = 'quoted';
     root.appendChild(bq);
-    expect(domToMatrixCustomHTML(root, MARKDOWN)).toContain('<blockquote>quoted</blockquote>');
+    expect(domToMatrixCustomHTML(root)).toContain('<blockquote>quoted</blockquote>');
   });
 
   it('converts <pre> to <pre><code>', () => {
@@ -234,7 +217,7 @@ describe('domToMatrixCustomHTML', () => {
     const pre = document.createElement('pre');
     pre.textContent = 'code here';
     root.appendChild(pre);
-    expect(domToMatrixCustomHTML(root, MARKDOWN)).toContain('<pre><code>code here</code></pre>');
+    expect(domToMatrixCustomHTML(root)).toContain('<pre><code>code here</code></pre>');
   });
 
   it('converts <ol>/<ul>/<li> to list HTML', () => {
@@ -244,18 +227,39 @@ describe('domToMatrixCustomHTML', () => {
     li.textContent = 'item';
     ul.appendChild(li);
     root.appendChild(ul);
-    const html = domToMatrixCustomHTML(root, MARKDOWN);
+    const html = domToMatrixCustomHTML(root);
     expect(html).toContain('<ul>');
     expect(html).toContain('<li><p>item</p></li>');
     expect(html).toContain('</ul>');
   });
 
-  it('does not parse inline markdown when text has a formatting ancestor', () => {
+  it('sends typed inline markdown syntax literally', () => {
+    const root = createRootElement();
+    root.textContent = '**bold** *italic* __underline__ ~~strike~~ `code` ||spoiler||';
+    const html = domToMatrixCustomHTML(root);
+    expect(html).toBe('**bold** *italic* __underline__ ~~strike~~ `code` ||spoiler||<br/>');
+  });
+
+  it('sends typed block markdown syntax literally', () => {
+    const root = createRootElement();
+    const heading = document.createElement('div');
+    heading.textContent = '# not a heading';
+    const quote = document.createElement('div');
+    quote.textContent = '> not a quote';
+    const item = document.createElement('div');
+    item.textContent = '* not a list';
+    root.append(heading, quote, item);
+    expect(trimCustomHtml(domToMatrixCustomHTML(root))).toBe(
+      '# not a heading<br/>&gt; not a quote<br/>* not a list'
+    );
+  });
+
+  it('keeps applied formatting around text that looks like markdown', () => {
     const root = createRootElement();
     const b = document.createElement('b');
     b.textContent = '*not italic*';
     root.appendChild(b);
-    const html = domToMatrixCustomHTML(root, MARKDOWN);
+    const html = domToMatrixCustomHTML(root);
     expect(html).toContain('<strong>*not italic*</strong>');
     expect(html).not.toContain('<i>');
   });
@@ -263,9 +267,60 @@ describe('domToMatrixCustomHTML', () => {
   it('strips zero-width caret anchors', () => {
     const root = createRootElement();
     root.textContent = '\u200Bhello\u200B';
-    const html = domToMatrixCustomHTML(root, MARKDOWN);
+    const html = domToMatrixCustomHTML(root);
     expect(html).not.toContain('\u200B');
     expect(html).toContain('hello');
+  });
+});
+
+describe('browser line break fillers', () => {
+  const withEmptyMiddleLine = (): HTMLDivElement => {
+    const root = createRootElement();
+    const first = document.createElement('div');
+    first.textContent = 'a';
+    const empty = document.createElement('div');
+    empty.appendChild(document.createElement('br'));
+    const last = document.createElement('div');
+    last.textContent = 'b';
+    root.append(first, empty, last);
+    return root;
+  };
+
+  it('counts a <div><br></div> empty line once in the custom html', () => {
+    expect(trimCustomHtml(domToMatrixCustomHTML(withEmptyMiddleLine()))).toBe('a<br/><br/>b');
+  });
+
+  it('counts a <div><br></div> empty line once in the plain text', () => {
+    expect(domToPlainText(withEmptyMiddleLine()).trim()).toBe('a\n\nb');
+  });
+
+  it('drops a trailing <br> filler left at the end of a line', () => {
+    const root = createRootElement();
+    root.appendChild(document.createTextNode('hi'));
+    root.appendChild(document.createElement('br'));
+
+    expect(trimCustomHtml(domToMatrixCustomHTML(root))).toBe('hi');
+    expect(domToPlainText(root).trim()).toBe('hi');
+  });
+
+  it('keeps a <br> that has content after it', () => {
+    const root = createRootElement();
+    root.appendChild(document.createTextNode('a'));
+    root.appendChild(document.createElement('br'));
+    root.appendChild(document.createElement('br'));
+    root.appendChild(document.createTextNode('b'));
+
+    expect(trimCustomHtml(domToMatrixCustomHTML(root))).toBe('a<br/><br/>b');
+  });
+});
+
+describe('trimCustomHtml', () => {
+  it('strips a run of trailing line breaks, matching the plain text trim', () => {
+    expect(trimCustomHtml('hello<br/><br/><br/>')).toBe('hello');
+  });
+
+  it('keeps line breaks that are followed by content', () => {
+    expect(trimCustomHtml('hello<br/><br/>world<br/>')).toBe('hello<br/><br/>world');
   });
 });
 

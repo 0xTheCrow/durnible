@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useState } from 'react';
 import {
   Box,
   Chip,
@@ -24,11 +24,14 @@ import type { UploadItem, UploadMetadata } from '../../state/room/roomInputDraft
 import { roomUploadAtomFamily } from '../../state/room/roomInputDrafts';
 import { OverlayModal } from '../OverlayModal';
 import { AudioPreviewModal, ImageViewerModal, PdfViewerModal } from '../../styles/Modal.css';
-import { ImageEditor } from '../image-editor';
 import { MediaFrame, MediaFrameContent } from '../media';
 import { PdfViewer } from '../Pdf-viewer';
 import { UploadAudioPreview } from './UploadAudioPreview';
 import { UploadVideoPreview } from './UploadVideoPreview';
+
+const ImageEditor = lazy(() =>
+  import('../image-editor').then((module) => ({ default: module.ImageEditor }))
+);
 
 type UploadQueueCardProps = {
   fileItem: UploadItem;
@@ -322,21 +325,23 @@ export function UploadQueueCard({
       )}
 
       {isImage && previewUrl && (
-        <OverlayModal open={editOpen} onClose={() => setEditOpen(false)}>
-          <Modal
-            className={ImageViewerModal}
-            size="500"
-            onContextMenu={(evt) => evt.stopPropagation()}
-          >
-            <ImageEditor
-              name={originalFile.name}
-              url={previewUrl}
-              mimeType={originalFile.type}
-              onClose={() => setEditOpen(false)}
-              onSave={(newFile) => onReplaceFile(fileItem, newFile)}
-            />
-          </Modal>
-        </OverlayModal>
+        <Suspense fallback={null}>
+          <OverlayModal open={editOpen} onClose={() => setEditOpen(false)}>
+            <Modal
+              className={ImageViewerModal}
+              size="500"
+              onContextMenu={(evt) => evt.stopPropagation()}
+            >
+              <ImageEditor
+                name={originalFile.name}
+                url={previewUrl}
+                mimeType={originalFile.type}
+                onClose={() => setEditOpen(false)}
+                onSave={(newFile) => onReplaceFile(fileItem, newFile)}
+              />
+            </Modal>
+          </OverlayModal>
+        </Suspense>
       )}
     </Box>
   );

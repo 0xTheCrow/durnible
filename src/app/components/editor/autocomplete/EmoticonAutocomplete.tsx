@@ -12,7 +12,7 @@ import { onTabPress } from '../../../utils/keyboard';
 import { useRecentEmoji } from '../../../hooks/useRecentEmoji';
 import { useRelevantImagePacks } from '../../../hooks/useImagePacks';
 import type { Emoji } from '../../../plugins/emoji';
-import { emojis } from '../../../plugins/emoji';
+import { useEmojiData } from '../../../hooks/useEmojiData';
 import { useKeyDown } from '../../../hooks/useKeyDown';
 import { mxcUrlToHttp } from '../../../utils/matrix';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
@@ -48,6 +48,7 @@ export function EmoticonAutocomplete({
 
   const imagePacks = useRelevantImagePacks(ImageUsage.Emoticon, imagePackRooms);
   const recentEmoji = useRecentEmoji(mx, 20);
+  const { emojis } = useEmojiData();
 
   const searchList = useMemo(() => {
     const list: Array<EmoticonSearchItem> = [];
@@ -55,7 +56,7 @@ export function EmoticonAutocomplete({
       imagePacks.flatMap((pack) => pack.getImages(ImageUsage.Emoticon)),
       emojis
     );
-  }, [imagePacks]);
+  }, [imagePacks, emojis]);
 
   const [result, search, resetSearch] = useAsyncSearch(
     searchList,

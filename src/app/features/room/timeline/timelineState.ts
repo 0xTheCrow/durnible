@@ -18,8 +18,8 @@ import {
   getLinkedTimelines,
   getLiveTimeline,
   getTimelinesEventsCount,
-  timelineToEventsCount,
 } from './timelineUtils';
+import { createTimelineWindow } from './utils/timelineWindow';
 
 export const PAGINATION_LIMIT = 80;
 
@@ -28,9 +28,14 @@ export type TimelineRange = {
   newest: number;
 };
 
+export type TimelineWindow = {
+  startEventId: string | undefined;
+  size: number;
+};
+
 export type Timeline = {
   linkedTimelines: EventTimeline[];
-  range: TimelineRange;
+  window: TimelineWindow;
 };
 
 export const getInitialTimeline = (room: Room): Timeline => {
@@ -38,10 +43,11 @@ export const getInitialTimeline = (room: Room): Timeline => {
   const evLength = getTimelinesEventsCount(linkedTimelines);
   return {
     linkedTimelines,
-    range: {
-      oldest: Math.max(evLength - PAGINATION_LIMIT, 0),
-      newest: evLength,
-    },
+    window: createTimelineWindow(
+      linkedTimelines,
+      Math.max(evLength - PAGINATION_LIMIT, 0),
+      evLength
+    ),
   };
 };
 
@@ -130,42 +136,16 @@ export const useTimelinePagination = (
   const handleTimelinePagination = useMemo(() => {
     let fetching = false;
 
-    const recalibratePagination = (
-      linkedTimelines: EventTimeline[],
-      timelinesEventsCount: number[],
-      backwards: boolean
-    ) => {
-      const topTimeline = linkedTimelines[0];
-      const timelineMatch = (mt: EventTimeline) => (t: EventTimeline) => t === mt;
-
-      const newLTimelines = getLinkedTimelines(topTimeline);
-      const topTmIndex = newLTimelines.findIndex(timelineMatch(topTimeline));
-      const topAddedTm = topTmIndex === -1 ? [] : newLTimelines.slice(0, topTmIndex);
-
-      const topTmAddedEvt =
-        timelineToEventsCount(newLTimelines[topTmIndex]) - timelinesEventsCount[0];
-      const offsetRange = getTimelinesEventsCount(topAddedTm) + (backwards ? topTmAddedEvt : 0);
-
+    const recalibratePagination = (linkedTimelines: EventTimeline[]) => {
       setTimeline((currentTimeline) => ({
-        linkedTimelines: newLTimelines,
-        range:
-          offsetRange > 0
-            ? {
-                oldest: currentTimeline.range.oldest + offsetRange,
-                newest: currentTimeline.range.newest + offsetRange,
-              }
-            : // TODO: identity-only range write to re-trigger useVirtualPaginator's
-              // fill-view effect after the item count grows. Workaround for the hook
-              // not re-evaluating on `count` change; fix in the hook. Same pattern in
-              // GifBoard.tsx loadGifs append branch.
-              { ...currentTimeline.range },
+        ...currentTimeline,
+        linkedTimelines: getLinkedTimelines(linkedTimelines[0]),
       }));
     };
 
     return async (backwards: boolean) => {
       if (fetching) return;
       const { linkedTimelines: lTimelines } = timelineRef.current;
-      const timelinesEventsCount = lTimelines.map(timelineToEventsCount);
 
       const timelineToPaginate = backwards ? lTimelines[0] : lTimelines[lTimelines.length - 1];
       if (!timelineToPaginate) return;
@@ -178,7 +158,7 @@ export const useTimelinePagination = (
         getTimelinesEventsCount(lTimelines) !==
           getTimelinesEventsCount(getLinkedTimelines(timelineToPaginate))
       ) {
-        recalibratePagination(lTimelines, timelinesEventsCount, backwards);
+        recalibratePagination(lTimelines);
         return;
       }
       if (!paginationToken) return;
@@ -210,7 +190,7 @@ export const useTimelinePagination = (
       fetching = false;
       onFetchStateChangeRef.current?.(backwards, false);
       if (alive()) {
-        recalibratePagination(lTimelines, timelinesEventsCount, backwards);
+        recalibratePagination(lTimelines);
       }
     };
   }, [mx, alive, setTimeline, limit]);

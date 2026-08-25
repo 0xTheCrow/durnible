@@ -29,7 +29,7 @@ import { atom, useAtom, useSetAtom } from 'jotai';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { monitorForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import type { Emoji } from '../../plugins/emoji';
-import { emojiGroups, emojis } from '../../plugins/emoji';
+import { useEmojiData } from '../../hooks/useEmojiData';
 import { useEmojiGroupLabels } from './useEmojiGroupLabels';
 import { useEmojiGroupIcons } from './useEmojiGroupIcons';
 import { preventScrollWithArrowKey, stopPropagation } from '../../utils/keyboard';
@@ -120,6 +120,7 @@ const useGroups = (
 
   const recentEmojis = useRecentEmoji(mx, 21);
   const labels = useEmojiGroupLabels();
+  const { emojiGroups } = useEmojiData();
 
   const emojiGroupItems = useMemo(() => {
     if (tab !== EmojiBoardTab.Emoji) return [];
@@ -175,7 +176,7 @@ const useGroups = (
     });
 
     return g;
-  }, [mx, recentEmojis, favoriteEmojis, labels, imagePacks, tab, packOrder]);
+  }, [mx, recentEmojis, favoriteEmojis, labels, imagePacks, tab, packOrder, emojiGroups]);
 
   const stickerGroupItems = useMemo(() => {
     const g: StickerGroupItem[] = [];
@@ -276,6 +277,7 @@ function EmojiSidebar({
   const usage = ImageUsage.Emoticon;
   const labels = useEmojiGroupLabels();
   const icons = useEmojiGroupIcons();
+  const { emojiGroups } = useEmojiData();
   const isMobile = useScreenSize() !== ScreenSize.Desktop;
   const [reorderMode, setReorderMode] = useState(false);
 
@@ -879,6 +881,7 @@ export function EmojiBoard({
 
   const favoriteEmojis = useFavoriteEmoji(mx);
   const favoriteEntries = useFavoriteEntries(mx);
+  const { emojis } = useEmojiData();
 
   const imagePacks = useMemo(() => {
     if (packOrder.length === 0) return rawImagePacks;
@@ -902,7 +905,7 @@ export function EmojiBoard({
     list = list.concat(imagePacks.flatMap((pack) => pack.getImages(usage)));
     if (emojiTab) list = list.concat(emojis);
     return list;
-  }, [emojiTab, usage, imagePacks]);
+  }, [emojiTab, usage, imagePacks, emojis]);
 
   const [result, search, resetSearch] = useAsyncSearch(
     searchList,

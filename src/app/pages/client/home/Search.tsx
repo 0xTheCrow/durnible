@@ -1,10 +1,13 @@
-import React, { useRef } from 'react';
+import React, { lazy, Suspense, useRef } from 'react';
 import { Box, Icon, Icons, Text, Scroll, IconButton } from 'folds';
 import { Page, PageContent, PageContentCenter, PageHeader } from '../../../components/page';
-import { MessageSearch } from '../../../features/message-search';
 import { useHomeRooms } from './useHomeRooms';
 import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
 import { BackRouteHandler } from '../../../components/BackRouteHandler';
+
+const MessageSearch = lazy(() =>
+  import('../../../features/message-search').then((module) => ({ default: module.MessageSearch }))
+);
 
 export function HomeSearch() {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -39,12 +42,14 @@ export function HomeSearch() {
         <Scroll ref={scrollRef} hideTrack visibility="Hover">
           <PageContent>
             <PageContentCenter>
-              <MessageSearch
-                defaultRoomsFilterName="Home"
-                allowGlobal
-                rooms={rooms}
-                scrollRef={scrollRef}
-              />
+              <Suspense fallback={null}>
+                <MessageSearch
+                  defaultRoomsFilterName="Home"
+                  allowGlobal
+                  rooms={rooms}
+                  scrollRef={scrollRef}
+                />
+              </Suspense>
             </PageContentCenter>
           </PageContent>
         </Scroll>

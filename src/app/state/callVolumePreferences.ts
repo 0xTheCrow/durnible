@@ -5,10 +5,14 @@ const STORAGE_KEY = 'durnible_call_volume_preferences';
 export const CALL_VOLUME_LEVEL_MIN = 0;
 export const CALL_VOLUME_LEVEL_MAX = 1;
 export const CALL_VOLUME_LEVEL_DEFAULT = 1;
+export const CALL_VOLUME_USER_PREFERENCE_LIMIT = 500;
 
 export type CallUserVolumePreference = {
   volumeLevel: number;
   isMuted: boolean;
+  screenshareVolumeLevel: number;
+  isScreenshareMuted: boolean;
+  updatedAt: number;
 };
 
 export type CallVolumePreferences = {
@@ -19,17 +23,40 @@ export type CallVolumePreferences = {
 const DEFAULT_USER_PREFERENCE: CallUserVolumePreference = {
   volumeLevel: CALL_VOLUME_LEVEL_DEFAULT,
   isMuted: false,
+  screenshareVolumeLevel: CALL_VOLUME_LEVEL_DEFAULT,
+  isScreenshareMuted: false,
+  updatedAt: 0,
 };
 
 const clampVolumeLevel = (volumeLevel: number): number =>
   Math.min(CALL_VOLUME_LEVEL_MAX, Math.max(CALL_VOLUME_LEVEL_MIN, volumeLevel));
 
 const checkIsDefaultUserPreference = (preference: CallUserVolumePreference): boolean =>
-  preference.volumeLevel === CALL_VOLUME_LEVEL_DEFAULT && !preference.isMuted;
+  preference.volumeLevel === CALL_VOLUME_LEVEL_DEFAULT &&
+  !preference.isMuted &&
+  preference.screenshareVolumeLevel === CALL_VOLUME_LEVEL_DEFAULT &&
+  !preference.isScreenshareMuted;
 
 const parseVolumeLevel = (value: unknown): number | undefined => {
   if (typeof value !== 'number' || Number.isNaN(value)) return undefined;
   return clampVolumeLevel(value);
+};
+
+const parseUpdatedAt = (value: unknown): number => {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) return 0;
+  return value;
+};
+
+const dropPreferencesOverLimit = (
+  userPreferences: Record<string, CallUserVolumePreference>
+): Record<string, CallUserVolumePreference> => {
+  const entries = Object.entries(userPreferences);
+  if (entries.length <= CALL_VOLUME_USER_PREFERENCE_LIMIT) return userPreferences;
+  return Object.fromEntries(
+    entries
+      .sort(([, left], [, right]) => right.updatedAt - left.updatedAt)
+      .slice(0, CALL_VOLUME_USER_PREFERENCE_LIMIT)
+  );
 };
 
 const loadFromStorage = (): CallVolumePreferences => {
@@ -47,13 +74,20 @@ const loadFromStorage = (): CallVolumePreferences => {
       parseVolumeLevel(parsed.masterVolumeLevel) ?? CALL_VOLUME_LEVEL_DEFAULT;
 
     Object.entries(parsed.userPreferences ?? {}).forEach(([userId, userPreference]) => {
-      const volumeLevel = parseVolumeLevel(userPreference?.volumeLevel);
-      if (volumeLevel === undefined) return;
-      const preference = { volumeLevel, isMuted: userPreference?.isMuted === true };
+      if (!userPreference) return;
+      const preference: CallUserVolumePreference = {
+        volumeLevel: parseVolumeLevel(userPreference.volumeLevel) ?? CALL_VOLUME_LEVEL_DEFAULT,
+        isMuted: userPreference.isMuted === true,
+        screenshareVolumeLevel:
+          parseVolumeLevel(userPreference.screenshareVolumeLevel) ?? CALL_VOLUME_LEVEL_DEFAULT,
+        isScreenshareMuted: userPreference.isScreenshareMuted === true,
+        updatedAt: parseUpdatedAt(userPreference.updatedAt),
+      };
       if (checkIsDefaultUserPreference(preference)) return;
       preferences.userPreferences[userId] = preference;
     });
 
+    preferences.userPreferences = dropPreferencesOverLimit(preferences.userPreferences);
     return preferences;
   } catch {
     return preferences;
@@ -61,7 +95,12 @@ const loadFromStorage = (): CallVolumePreferences => {
 };
 
 const saveToStorage = (preferences: CallVolumePreferences): void => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(preferences));
+  const serialized = JSON.stringify(preferences);
+  try {
+    localStorage.setItem(STORAGE_KEY, serialized);
+  } catch {
+    // Storage is unavailable; a volume preference is not worth interrupting the call for.
+  }
 };
 
 const baseCallVolumePreferences = atom<CallVolumePreferences>(loadFromStorage());
@@ -94,6 +133,8 @@ export const setCallUserVolumePreferenceAtom = atom<
     ...preference,
   };
   nextPreference.volumeLevel = clampVolumeLevel(nextPreference.volumeLevel);
+  nextPreference.screenshareVolumeLevel = clampVolumeLevel(nextPreference.screenshareVolumeLevel);
+  nextPreference.updatedAt = Date.now();
 
   if (checkIsDefaultUserPreference(nextPreference)) {
     delete userPreferences[userId];
@@ -101,7 +142,10 @@ export const setCallUserVolumePreferenceAtom = atom<
     userPreferences[userId] = nextPreference;
   }
 
-  const preferences: CallVolumePreferences = { ...currentPreferences, userPreferences };
+  const preferences: CallVolumePreferences = {
+    ...currentPreferences,
+    userPreferences: dropPreferencesOverLimit(userPreferences),
+  };
   set(baseCallVolumePreferences, preferences);
   if (isCommit) saveToStorage(preferences);
 });
@@ -121,4 +165,13 @@ export const getCallUserPlaybackVolumeLevel = (
   const userPreference = getCallUserVolumePreference(preferences, userId);
   if (userPreference.isMuted) return 0;
   return preferences.masterVolumeLevel * userPreference.volumeLevel;
+};
+
+export const getCallScreensharePlaybackVolumeLevel = (
+  preferences: CallVolumePreferences,
+  userId: string | undefined
+): number => {
+  const userPreference = getCallUserVolumePreference(preferences, userId);
+  if (userPreference.isMuted || userPreference.isScreenshareMuted) return 0;
+  return preferences.masterVolumeLevel * userPreference.screenshareVolumeLevel;
 };

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import type { OnIntersectionCallback } from './useIntersectionObserver';
 import { useIntersectionObserver } from './useIntersectionObserver';
 import { getScrollInfo, isIntersectingScrollView } from '../utils/dom';
+import { traceTimelineScroll } from '../features/room/timeline/utils/scrollTrace';
 
 const PAGINATOR_ANCHOR_ATTR = 'data-paginator-anchor';
 
@@ -81,34 +82,28 @@ const getDropIndex = (
   return dropIndex;
 };
 
-type RestoreAnchorData = [number | undefined, HTMLElement | undefined];
-const getRestoreAnchor = (
+const getRestoreAnchorElement = (
   range: ItemRange,
   getItemElement: (index: number) => HTMLElement | undefined,
   direction: Direction
-): RestoreAnchorData => {
-  let scrollAnchorElement: HTMLElement | undefined;
-  const scrollAnchorItem = (
-    direction === Direction.Backward ? generateItems(range) : generateItems(range).reverse()
-  ).find((i) => {
-    const itemElement = getItemElement(i);
-    if (itemElement) {
-      scrollAnchorElement = itemElement;
-      return true;
+): HTMLElement | undefined => {
+  let anchorElement: HTMLElement | undefined;
+  (direction === Direction.Backward ? generateItems(range) : generateItems(range).reverse()).find(
+    (item) => {
+      anchorElement = getItemElement(item);
+      return !!anchorElement;
     }
-    return false;
-  });
-  return [scrollAnchorItem, scrollAnchorElement];
+  );
+  return anchorElement;
 };
 
-const getRestoreScrollData = (scrollTop: number, restoreAnchorData: RestoreAnchorData) => {
-  const [anchorItem, anchorElement] = restoreAnchorData;
-  if (!anchorItem || !anchorElement) {
+const getRestoreScrollData = (scrollTop: number, anchorElement: HTMLElement | undefined) => {
+  if (!anchorElement) {
     return undefined;
   }
   return {
     scrollTop,
-    anchorItem,
+    anchorElement,
     anchorOffsetTop: anchorElement.offsetTop,
   };
 };
@@ -148,7 +143,7 @@ export const useVirtualPaginator = <TScrollElement extends HTMLElement>(
   const restoreScrollRef = useRef<{
     scrollTop: number;
     anchorOffsetTop: number;
-    anchorItem: number;
+    anchorElement: HTMLElement;
   }>();
 
   const propRef = useRef({
@@ -156,11 +151,6 @@ export const useVirtualPaginator = <TScrollElement extends HTMLElement>(
     limit,
     count,
   });
-  if (propRef.current.count !== count) {
-    // Clear restoreScrollRef on count change
-    // As restoreScrollRef.current.anchorItem might changes
-    restoreScrollRef.current = undefined;
-  }
   propRef.current = {
     range,
     count,
@@ -178,6 +168,15 @@ export const useVirtualPaginator = <TScrollElement extends HTMLElement>(
       const { range: currentRange, limit: currentLimit, count: currentCount } = propRef.current;
       let { start, end } = currentRange;
 
+      traceTimelineScroll('paginator:paginate', {
+        direction,
+        rangeStart: currentRange.start,
+        rangeEnd: currentRange.end,
+        count: currentCount,
+        scrollTop: scrollElement ? Math.round(scrollElement.scrollTop) : null,
+        scrollHeight: scrollElement ? Math.round(scrollElement.scrollHeight) : null,
+      });
+
       if (direction === Direction.Backward) {
         restoreScrollRef.current = undefined;
         if (start === 0) {
@@ -194,7 +193,7 @@ export const useVirtualPaginator = <TScrollElement extends HTMLElement>(
             getDropIndex(scrollElement, currentRange, Direction.Forward, getItemElement, 2) ?? end;
           restoreScrollRef.current = getRestoreScrollData(
             scrollElement.scrollTop,
-            getRestoreAnchor({ start, end }, getItemElement, Direction.Backward)
+            getRestoreAnchorElement({ start, end }, getItemElement, Direction.Backward)
           );
         }
         start = Math.max(start - currentLimit, 0);
@@ -213,12 +212,13 @@ export const useVirtualPaginator = <TScrollElement extends HTMLElement>(
             start;
           restoreScrollRef.current = getRestoreScrollData(
             scrollElement.scrollTop,
-            getRestoreAnchor({ start, end }, getItemElement, Direction.Forward)
+            getRestoreAnchorElement({ start, end }, getItemElement, Direction.Forward)
           );
         }
         end = Math.min(end + currentLimit, currentCount);
       }
 
+      traceTimelineScroll('paginator:rangeChange', { direction, start, end });
       onRangeChange({
         start,
         end,
@@ -270,15 +270,28 @@ export const useVirtualPaginator = <TScrollElement extends HTMLElement>(
     }
     const {
       anchorOffsetTop: oldOffsetTop,
-      anchorItem,
+      anchorElement,
       scrollTop: oldScrollTop,
     } = restoreScrollRef.current;
-    const anchorElement = getItemElement(anchorItem);
 
-    if (!anchorElement) return;
+    if (!anchorElement.isConnected) {
+      traceTimelineScroll('paginator:restoreScroll-skipped', { reason: 'anchor-disconnected' });
+      return;
+    }
     const { offsetTop } = anchorElement;
     const offsetAddition = offsetTop - oldOffsetTop;
     const restoreTop = oldScrollTop + offsetAddition;
+
+    traceTimelineScroll('paginator:restoreScroll', {
+      anchorIndex: anchorElement.getAttribute('data-message-item'),
+      anchorMessageId: anchorElement.getAttribute('data-message-id'),
+      scrollHeight: Math.round(scrollElement.scrollHeight),
+      oldOffsetTop,
+      offsetTop,
+      offsetAddition,
+      oldScrollTop: Math.round(oldScrollTop),
+      restoreTop: Math.round(restoreTop),
+    });
 
     scrollElement.scrollTo({
       top: restoreTop,

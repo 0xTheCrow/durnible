@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { lazy, Suspense, useState } from 'react';
 import { Badge, color, Icon, Icons, Text } from 'folds';
 import {
   SidebarAvatar,
@@ -16,7 +16,11 @@ import {
 } from '../../../hooks/useDeviceVerificationStatus';
 import { useCrossSigningActive } from '../../../hooks/useCrossSigning';
 import { Modal500 } from '../../../components/Modal500';
-import { Settings, SettingsPages } from '../../../features/settings';
+import { SettingsPages } from '../../../features/settings';
+
+const Settings = lazy(() =>
+  import('../../../features/settings/Settings').then((module) => ({ default: module.Settings }))
+);
 
 function UnverifiedIndicator() {
   const mx = useMatrixClient();
@@ -77,9 +81,11 @@ function UnverifiedIndicator() {
         </SidebarItem>
       )}
       {settings && (
-        <Modal500 onClose={closeSettings}>
-          <Settings initialPage={SettingsPages.DevicesPage} onClose={closeSettings} />
-        </Modal500>
+        <Suspense fallback={null}>
+          <Modal500 onClose={closeSettings}>
+            <Settings initialPage={SettingsPages.DevicesPage} onClose={closeSettings} />
+          </Modal500>
+        </Suspense>
       )}
     </>
   );

@@ -19,3 +19,12 @@ export const activeCallRoomIdAtom = atom<string | undefined>((get) => {
 export const isCallPaneCollapsedAtom = atom(false);
 
 export const isCallDeafenedAtom = atom(false);
+
+export type ActiveCallParticipantEntry = {
+  identity: string;
+  isLocal: boolean;
+  isMicrophoneMuted: boolean;
+  isScreenshareAudioEnabled: boolean;
+};
+
+export const activeCallParticipantEntriesAtom = atom<ActiveCallParticipantEntry[]>([]);

@@ -5,6 +5,7 @@ import { RemoteAudioTrack, Track } from 'livekit-client';
 import { callStateAtom, isCallDeafenedAtom } from '../../state/call';
 import {
   callVolumePreferencesAtom,
+  getCallScreensharePlaybackVolumeLevel,
   getCallUserPlaybackVolumeLevel,
 } from '../../state/callVolumePreferences';
 import type { CallConnection } from '../../plugins/call/CallConnection';
@@ -40,9 +41,15 @@ function AudioTrackPlayer({ track, isDeafened, volumeLevel }: AudioTrackPlayerPr
 type ParticipantAudioProps = {
   participant: Participant;
   isDeafened: boolean;
-  volumeLevel: number;
+  microphoneVolumeLevel: number;
+  screenshareVolumeLevel: number;
 };
-function ParticipantAudio({ participant, isDeafened, volumeLevel }: ParticipantAudioProps) {
+function ParticipantAudio({
+  participant,
+  isDeafened,
+  microphoneVolumeLevel,
+  screenshareVolumeLevel,
+}: ParticipantAudioProps) {
   const trackPublications = useParticipantTrackPublications(participant);
 
   return (
@@ -55,7 +62,11 @@ function ParticipantAudio({ participant, isDeafened, volumeLevel }: ParticipantA
               key={publication.trackSid}
               track={publication.track}
               isDeafened={isDeafened}
-              volumeLevel={volumeLevel}
+              volumeLevel={
+                publication.source === Track.Source.ScreenShareAudio
+                  ? screenshareVolumeLevel
+                  : microphoneVolumeLevel
+              }
             />
           ) : null
         )}
@@ -83,7 +94,11 @@ function ConnectedCallAudio({ connection }: ConnectedCallAudioProps) {
               key={participant.identity}
               participant={participant}
               isDeafened={isDeafened}
-              volumeLevel={getCallUserPlaybackVolumeLevel(volumePreferences, userId)}
+              microphoneVolumeLevel={getCallUserPlaybackVolumeLevel(volumePreferences, userId)}
+              screenshareVolumeLevel={getCallScreensharePlaybackVolumeLevel(
+                volumePreferences,
+                userId
+              )}
             />
           );
         })}

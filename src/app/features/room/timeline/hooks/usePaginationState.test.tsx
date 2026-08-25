@@ -6,6 +6,7 @@ import { RelationType } from 'matrix-js-sdk';
 import { MatrixClientProvider } from '../../../../hooks/useMatrixClient';
 import { createMockMatrixClient, createMockRoom } from '../../../../../test/mocks';
 import type { Timeline } from '../timelineState';
+import { createTimelineWindow, getWindowRange } from '../utils/timelineWindow';
 import { usePaginationState } from './usePaginationState';
 
 const messageEvent = (): MatrixEvent =>
@@ -35,7 +36,7 @@ const makeTimeline = (events: MatrixEvent[]): EventTimeline =>
 
 const makeTimelineState = (linked: EventTimeline, newest: number): Timeline => ({
   linkedTimelines: [linked],
-  range: { oldest: 0, newest },
+  window: createTimelineWindow([linked], 0, newest),
 });
 
 const mx = createMockMatrixClient();
@@ -44,7 +45,8 @@ const wrapper = ({ children }: { children: React.ReactNode }) =>
 
 const render = (timeline: Timeline) => {
   const room = createMockRoom();
-  return renderHook(() => usePaginationState(room as unknown as Room, timeline, () => {}), {
+  const range = getWindowRange(timeline.linkedTimelines, timeline.window);
+  return renderHook(() => usePaginationState(room as unknown as Room, timeline, range, () => {}), {
     wrapper,
   });
 };

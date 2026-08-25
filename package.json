@@ -10,6 +10,7 @@
   "scripts": {
     "start": "vite",
     "build": "vite build",
+    "build:analyze": "ANALYZE=true vite build",
     "lint": "npm run fix:prettier && npm run check:eslint",
     "check:eslint": "eslint src",
     "check:prettier": "prettier --check .",
@@ -17,6 +18,10 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "e2e": "playwright test",
+    "performance": "playwright test --config playwright.performance.config.ts",
+    "performance:production": "PERFORMANCE_TARGET=production playwright test --config playwright.performance.config.ts",
+    "performance:trace": "PERFORMANCE_TRACE=1 playwright test --config playwright.performance.config.ts",
     "prepare": "husky"
   },
   "keywords": [],
@@ -38,7 +43,6 @@
     "browser-encrypt-attachment": "0.3.0",
     "chroma-js": "3.1.2",
     "classnames": "2.3.2",
-    "dateformat": "5.0.3",
     "dayjs": "1.11.10",
     "domhandler": "5.0.3",
     "emojibase": "15.3.1",
@@ -71,8 +75,8 @@
     "react-google-recaptcha": "2.1.0",
     "react-i18next": "15.0.0",
     "react-range": "1.8.14",
-    "react-router-dom": "6.30.3",
-    "sanitize-html": "2.12.1",
+    "react-router-dom": "7.18.2",
+    "sanitize-html": "2.17.7",
     "ua-parser-js": "1.0.35"
   },
   "devDependencies": {
@@ -106,8 +110,9 @@
     "jsdom": "29.0.1",
     "lint-staged": "16.4.0",
     "prettier": "2.8.1",
+    "rollup-plugin-visualizer": "7.1.1",
     "typescript": "5.7.3",
-    "vite": "8.0.14",
+    "vite": "8.2.2",
     "vite-plugin-pwa": "1.3.0",
     "vite-plugin-static-copy": "4.1.0",
     "vitest": "4.1.0",

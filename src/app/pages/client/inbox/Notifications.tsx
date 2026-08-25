@@ -218,6 +218,7 @@ function RoomNotificationsGroupComp({
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
   const [pauseGifs] = useSetting(settingsAtom, 'pauseGifs');
+  const [pauseGifEmojis] = useSetting(settingsAtom, 'pauseGifEmojis');
   const unread = useRoomUnread(room.roomId, roomToUnreadAtom);
 
   const powerLevels = usePowerLevels(room);
@@ -255,8 +256,18 @@ function RoomNotificationsGroupComp({
         handleSpoilerClick: spoilerClickHandler,
         handleMentionClick: mentionClickHandler,
         pauseGifs,
+        pauseGifEmojis,
       }),
-    [mx, room, linkifyOpts, mentionClickHandler, spoilerClickHandler, useAuthentication, pauseGifs]
+    [
+      mx,
+      room,
+      linkifyOpts,
+      mentionClickHandler,
+      spoilerClickHandler,
+      useAuthentication,
+      pauseGifs,
+      pauseGifEmojis,
+    ]
   );
 
   const renderMatrixEvent = useMatrixEventRenderer<[IRoomEvent, string, GetContentCallback]>(

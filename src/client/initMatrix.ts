@@ -6,6 +6,7 @@ import { cryptoCallbacks } from './secretStorageKeys';
 import { clearNavToActivePathStore } from '../app/state/navToActivePath';
 import { startupMark } from '../app/utils/startupPerf';
 import { MEDIA_CACHE_BUCKETS } from '../app/utils/mediaCache';
+import { clearAccountScopedStorage } from '../app/utils/localStorage';
 
 const clearCachedMedia = async (): Promise<void> => {
   if ('caches' in window) {
@@ -92,6 +93,24 @@ export const clearCacheAndReload = async (mx: MatrixClient) => {
   window.location.reload();
 };
 
+export const clearLocalSessionData = async (mx?: MatrixClient) => {
+  if (mx) {
+    mx.stopClient();
+    await mx.clearStores();
+  } else {
+    const databases = await window.indexedDB.databases();
+    databases.forEach(({ name }) => {
+      if (name) {
+        window.indexedDB.deleteDatabase(name);
+      }
+    });
+  }
+
+  await clearCachedMedia();
+  clearAccountScopedStorage();
+  window.location.reload();
+};
+
 export const logoutClient = async (mx: MatrixClient) => {
   mx.stopClient();
   try {
@@ -99,23 +118,7 @@ export const logoutClient = async (mx: MatrixClient) => {
   } catch {
     // ignore if failed to logout
   }
-  await mx.clearStores();
-  await clearCachedMedia();
-  window.localStorage.clear();
-  window.location.reload();
+  await clearLocalSessionData(mx);
 };
 
-export const clearLoginData = async () => {
-  const dbs = await window.indexedDB.databases();
-
-  dbs.forEach((idbInfo) => {
-    const { name } = idbInfo;
-    if (name) {
-      window.indexedDB.deleteDatabase(name);
-    }
-  });
-
-  await clearCachedMedia();
-  window.localStorage.clear();
-  window.location.reload();
-};
+export const clearLoginData = async () => clearLocalSessionData();

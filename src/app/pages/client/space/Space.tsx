@@ -51,7 +51,12 @@ import { useRoomName } from '../../../hooks/useRoomMeta';
 import type { HierarchyItem } from '../../../hooks/useSpaceHierarchy';
 import { useSpaceJoinedHierarchy } from '../../../hooks/useSpaceHierarchy';
 import { allRoomsAtom } from '../../../state/room-list/roomList';
-import { PageNav, PageNavContent, PageNavHeader } from '../../../components/page';
+import {
+  AdjustablePageNav,
+  PageNavContent,
+  PageNavHeader,
+  PageNavLayoutMenuItems,
+} from '../../../components/page';
 import { usePowerLevels } from '../../../hooks/usePowerLevels';
 import { useRecursiveChildScopeFactory, useSpaceChildren } from '../../../state/hooks/roomList';
 import { roomToParentsAtom } from '../../../state/room/roomToParents';
@@ -82,166 +87,171 @@ import { ContainerColor } from '../../../styles/ContainerColor.css';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { BreakWord } from '../../../styles/Text.css';
 import { InviteUserPrompt } from '../../../components/invite-user-prompt';
+import { TruncatedText } from '../../../components/TruncatedText';
 
 type SpaceMenuProps = {
   room: Room;
+  isDrawerMode?: boolean;
   onClose: () => void;
 };
-const SpaceMenu = forwardRef<HTMLDivElement, SpaceMenuProps>(({ room, onClose }, ref) => {
-  const mx = useMatrixClient();
-  const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
-  const [developerTools] = useSetting(settingsAtom, 'developerTools');
-  const roomToParents = useAtomValue(roomToParentsAtom);
-  const powerLevels = usePowerLevels(room);
-  const creators = useRoomCreators(room);
+const SpaceMenu = forwardRef<HTMLDivElement, SpaceMenuProps>(
+  ({ room, isDrawerMode, onClose }, ref) => {
+    const mx = useMatrixClient();
+    const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
+    const [developerTools] = useSetting(settingsAtom, 'developerTools');
+    const roomToParents = useAtomValue(roomToParentsAtom);
+    const powerLevels = usePowerLevels(room);
+    const creators = useRoomCreators(room);
 
-  const permissions = useRoomPermissions(creators, powerLevels);
-  const canInvite = permissions.action('invite', mx.getSafeUserId());
-  const openSpaceSettings = useOpenSpaceSettings();
-  const { navigateRoom } = useRoomNavigate();
+    const permissions = useRoomPermissions(creators, powerLevels);
+    const canInvite = permissions.action('invite', mx.getSafeUserId());
+    const openSpaceSettings = useOpenSpaceSettings();
+    const { navigateRoom } = useRoomNavigate();
 
-  const [invitePrompt, setInvitePrompt] = useState(false);
+    const [invitePrompt, setInvitePrompt] = useState(false);
 
-  const allChild = useSpaceChildren(
-    allRoomsAtom,
-    room.roomId,
-    useRecursiveChildScopeFactory(mx, roomToParents)
-  );
-  const unread = useRoomsUnread(allChild, roomToUnreadAtom);
+    const allChild = useSpaceChildren(
+      allRoomsAtom,
+      room.roomId,
+      useRecursiveChildScopeFactory(mx, roomToParents)
+    );
+    const unread = useRoomsUnread(allChild, roomToUnreadAtom);
 
-  const handleMarkAsRead = () => {
-    allChild.forEach((childRoomId) => markAsRead(mx, childRoomId, hideActivity));
-    onClose();
-  };
+    const handleMarkAsRead = () => {
+      allChild.forEach((childRoomId) => markAsRead(mx, childRoomId, hideActivity));
+      onClose();
+    };
 
-  const handleCopyLink = () => {
-    const roomIdOrAlias = getCanonicalAliasOrRoomId(mx, room.roomId);
-    const viaServers = isRoomAlias(roomIdOrAlias) ? undefined : getViaServers(room);
-    copyToClipboard(getMatrixToRoom(roomIdOrAlias, viaServers));
-    onClose();
-  };
+    const handleCopyLink = () => {
+      const roomIdOrAlias = getCanonicalAliasOrRoomId(mx, room.roomId);
+      const viaServers = isRoomAlias(roomIdOrAlias) ? undefined : getViaServers(room);
+      copyToClipboard(getMatrixToRoom(roomIdOrAlias, viaServers));
+      onClose();
+    };
 
-  const handleInvite = () => {
-    setInvitePrompt(true);
-  };
+    const handleInvite = () => {
+      setInvitePrompt(true);
+    };
 
-  const handleRoomSettings = () => {
-    openSpaceSettings(room.roomId);
-    onClose();
-  };
+    const handleRoomSettings = () => {
+      openSpaceSettings(room.roomId);
+      onClose();
+    };
 
-  const handleOpenTimeline = () => {
-    navigateRoom(room.roomId);
-    onClose();
-  };
+    const handleOpenTimeline = () => {
+      navigateRoom(room.roomId);
+      onClose();
+    };
 
-  return (
-    <Menu ref={ref} style={{ maxWidth: toRem(160), width: '100vw' }}>
-      <Box direction="Column" gap="100" style={{ padding: config.space.S100 }}>
-        {invitePrompt && room && (
-          <InviteUserPrompt
-            room={room}
-            onClose={() => {
-              setInvitePrompt(false);
-              onClose();
-            }}
-          />
-        )}
-        <MenuItem
-          onClick={handleMarkAsRead}
-          size="300"
-          after={<Icon size="100" src={Icons.CheckTwice} />}
-          radii="300"
-          disabled={!unread}
-        >
-          <Text style={{ flexGrow: 1 }} as="span" size="T300" truncate>
-            Mark as Read
-          </Text>
-        </MenuItem>
-      </Box>
-      <Line variant="Surface" size="300" />
-      <Box direction="Column" gap="100" style={{ padding: config.space.S100 }}>
-        <MenuItem
-          onClick={handleInvite}
-          variant="Primary"
-          fill="None"
-          size="300"
-          after={<Icon size="100" src={Icons.UserPlus} />}
-          radii="300"
-          aria-pressed={invitePrompt}
-          disabled={!canInvite}
-        >
-          <Text style={{ flexGrow: 1 }} as="span" size="T300" truncate>
-            Invite
-          </Text>
-        </MenuItem>
-        <MenuItem
-          onClick={handleCopyLink}
-          size="300"
-          after={<Icon size="100" src={Icons.Link} />}
-          radii="300"
-        >
-          <Text style={{ flexGrow: 1 }} as="span" size="T300" truncate>
-            Copy Link
-          </Text>
-        </MenuItem>
-        <MenuItem
-          onClick={handleRoomSettings}
-          size="300"
-          after={<Icon size="100" src={Icons.Setting} />}
-          radii="300"
-        >
-          <Text style={{ flexGrow: 1 }} as="span" size="T300" truncate>
-            Space Settings
-          </Text>
-        </MenuItem>
-        {developerTools && (
+    return (
+      <Menu ref={ref} style={{ maxWidth: toRem(160), width: '100vw' }}>
+        <Box direction="Column" gap="100" style={{ padding: config.space.S100 }}>
+          {invitePrompt && room && (
+            <InviteUserPrompt
+              room={room}
+              onClose={() => {
+                setInvitePrompt(false);
+                onClose();
+              }}
+            />
+          )}
           <MenuItem
-            onClick={handleOpenTimeline}
+            onClick={handleMarkAsRead}
             size="300"
-            after={<Icon size="100" src={Icons.Terminal} />}
+            after={<Icon size="100" src={Icons.CheckTwice} />}
+            radii="300"
+            disabled={!unread}
+          >
+            <Text style={{ flexGrow: 1 }} as="span" size="T300" truncate>
+              Mark as Read
+            </Text>
+          </MenuItem>
+        </Box>
+        <Line variant="Surface" size="300" />
+        <Box direction="Column" gap="100" style={{ padding: config.space.S100 }}>
+          <MenuItem
+            onClick={handleInvite}
+            variant="Primary"
+            fill="None"
+            size="300"
+            after={<Icon size="100" src={Icons.UserPlus} />}
+            radii="300"
+            aria-pressed={invitePrompt}
+            disabled={!canInvite}
+          >
+            <Text style={{ flexGrow: 1 }} as="span" size="T300" truncate>
+              Invite
+            </Text>
+          </MenuItem>
+          <MenuItem
+            onClick={handleCopyLink}
+            size="300"
+            after={<Icon size="100" src={Icons.Link} />}
             radii="300"
           >
             <Text style={{ flexGrow: 1 }} as="span" size="T300" truncate>
-              Event Timeline
+              Copy Link
             </Text>
           </MenuItem>
-        )}
-      </Box>
-      <Line variant="Surface" size="300" />
-      <Box direction="Column" gap="100" style={{ padding: config.space.S100 }}>
-        <UseStateProvider initial={false}>
-          {(promptLeave, setPromptLeave) => (
-            <>
-              <MenuItem
-                onClick={() => setPromptLeave(true)}
-                variant="Critical"
-                fill="None"
-                size="300"
-                after={<Icon size="100" src={Icons.ArrowGoLeft} />}
-                radii="300"
-                aria-pressed={promptLeave}
-              >
-                <Text style={{ flexGrow: 1 }} as="span" size="T300" truncate>
-                  Leave Space
-                </Text>
-              </MenuItem>
-              {promptLeave && (
-                <LeaveSpacePrompt
-                  roomId={room.roomId}
-                  onDone={onClose}
-                  onCancel={() => setPromptLeave(false)}
-                />
-              )}
-            </>
+          <MenuItem
+            onClick={handleRoomSettings}
+            size="300"
+            after={<Icon size="100" src={Icons.Setting} />}
+            radii="300"
+          >
+            <Text style={{ flexGrow: 1 }} as="span" size="T300" truncate>
+              Space Settings
+            </Text>
+          </MenuItem>
+          {developerTools && (
+            <MenuItem
+              onClick={handleOpenTimeline}
+              size="300"
+              after={<Icon size="100" src={Icons.Terminal} />}
+              radii="300"
+            >
+              <Text style={{ flexGrow: 1 }} as="span" size="T300" truncate>
+                Event Timeline
+              </Text>
+            </MenuItem>
           )}
-        </UseStateProvider>
-      </Box>
-    </Menu>
-  );
-});
+          <PageNavLayoutMenuItems isDrawerMode={isDrawerMode} onClose={onClose} />
+        </Box>
+        <Line variant="Surface" size="300" />
+        <Box direction="Column" gap="100" style={{ padding: config.space.S100 }}>
+          <UseStateProvider initial={false}>
+            {(promptLeave, setPromptLeave) => (
+              <>
+                <MenuItem
+                  onClick={() => setPromptLeave(true)}
+                  variant="Critical"
+                  fill="None"
+                  size="300"
+                  after={<Icon size="100" src={Icons.ArrowGoLeft} />}
+                  radii="300"
+                  aria-pressed={promptLeave}
+                >
+                  <Text style={{ flexGrow: 1 }} as="span" size="T300" truncate>
+                    Leave Space
+                  </Text>
+                </MenuItem>
+                {promptLeave && (
+                  <LeaveSpacePrompt
+                    roomId={room.roomId}
+                    onDone={onClose}
+                    onCancel={() => setPromptLeave(false)}
+                  />
+                )}
+              </>
+            )}
+          </UseStateProvider>
+        </Box>
+      </Menu>
+    );
+  }
+);
 
-function SpaceHeader() {
+function SpaceHeader({ isDrawerMode }: { isDrawerMode?: boolean }) {
   const space = useSpace();
   const spaceName = useRoomName(space);
   const [menuAnchor, setMenuAnchor] = useState<RectCords>();
@@ -264,9 +274,7 @@ function SpaceHeader() {
       <PageNavHeader>
         <Box alignItems="Center" grow="Yes" gap="300">
           <Box grow="Yes" alignItems="Center" gap="100">
-            <Text size="H4" truncate>
-              {spaceName}
-            </Text>
+            <TruncatedText size="H4">{spaceName}</TruncatedText>
             {joinRules?.join_rule !== JoinRule.Public && <Icon src={Icons.Lock} size="50" />}
           </Box>
           <Box shrink="No">
@@ -294,7 +302,11 @@ function SpaceHeader() {
                 escapeDeactivates: stopPropagation,
               }}
             >
-              <SpaceMenu room={space} onClose={() => setMenuAnchor(undefined)} />
+              <SpaceMenu
+                room={space}
+                isDrawerMode={isDrawerMode}
+                onClose={() => setMenuAnchor(undefined)}
+              />
             </FocusTrap>
           }
         />
@@ -488,8 +500,8 @@ export function Space({ isDrawerMode, extra }: SpaceProps = {}) {
     getSpaceRoomPath(spaceIdOrAlias, getCanonicalAliasOrRoomId(mx, roomId));
 
   return (
-    <PageNav>
-      <SpaceHeader />
+    <AdjustablePageNav isDrawerMode={isDrawerMode}>
+      <SpaceHeader isDrawerMode={isDrawerMode} />
       <PageNavContent scrollRef={scrollRef}>
         <Box
           direction="Column"
@@ -511,9 +523,9 @@ export function Space({ isDrawerMode, extra }: SpaceProps = {}) {
                       <Icon src={Icons.Flag} size="100" filled={lobbySelected} />
                     </Avatar>
                     <Box as="span" grow="Yes">
-                      <Text as="span" size="Inherit" truncate>
+                      <TruncatedText as="span" size="Inherit">
                         Lobby
-                      </Text>
+                      </TruncatedText>
                     </Box>
                   </Box>
                 </NavItemContent>
@@ -527,9 +539,9 @@ export function Space({ isDrawerMode, extra }: SpaceProps = {}) {
                       <Icon src={Icons.Search} size="100" filled={searchSelected} />
                     </Avatar>
                     <Box as="span" grow="Yes">
-                      <Text as="span" size="Inherit" truncate>
+                      <TruncatedText as="span" size="Inherit">
                         Message Search
-                      </Text>
+                      </TruncatedText>
                     </Box>
                   </Box>
                 </NavItemContent>
@@ -630,6 +642,6 @@ export function Space({ isDrawerMode, extra }: SpaceProps = {}) {
         </Box>
       </PageNavContent>
       {extra}
-    </PageNav>
+    </AdjustablePageNav>
   );
 }

@@ -9,10 +9,18 @@ type SettingTileProps = {
   before?: ReactNode;
   after?: ReactNode;
   children?: ReactNode;
+  disabled?: boolean;
 };
-export function SettingTile({ title, description, before, after, children }: SettingTileProps) {
+export function SettingTile({
+  title,
+  description,
+  before,
+  after,
+  children,
+  disabled,
+}: SettingTileProps) {
   return (
-    <Box alignItems="Center" gap="300">
+    <Box alignItems="Center" gap="300" style={disabled ? { opacity: 0.5 } : undefined}>
       {before && <Box shrink="No">{before}</Box>}
       <Box grow="Yes" direction="Column" gap="100">
         {title && (

@@ -32,7 +32,11 @@ function CallOverflowParticipantComponent({
     entry.participant.identity,
     memberships
   );
-  const { handleContextMenu, volumeMenu } = useCallUserVolumeMenu(userId, displayName);
+  const { handleContextMenu, volumeMenu } = useCallUserVolumeMenu(
+    userId,
+    displayName,
+    entry.isScreenshareAudioEnabled
+  );
 
   const participantContent = (
     <>
@@ -91,13 +95,21 @@ type CallTileGridProps = {
   room: Room;
   entries: CallParticipantEntry[];
   memberships: CallMembership[];
+  tileAspectRatio?: number;
   onFocus: (key: string) => void;
 };
-export function CallTileGrid({ room, entries, memberships, onFocus }: CallTileGridProps) {
+export function CallTileGrid({
+  room,
+  entries,
+  memberships,
+  tileAspectRatio,
+  onFocus,
+}: CallTileGridProps) {
   const gridAreaRef = useRef<HTMLDivElement>(null);
   const { columnCount, tileWidth, tileHeight, visibleTileCount } = useCallTileGridLayout(
     gridAreaRef,
-    entries.length
+    entries.length,
+    tileAspectRatio
   );
 
   const visibleEntries = entries.slice(0, visibleTileCount);

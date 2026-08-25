@@ -27,7 +27,7 @@ export const getLinkedTimelines = (timeline: EventTimeline): EventTimeline[] => 
   return timelines;
 };
 
-export const timelineToEventsCount = (t: EventTimeline) => t.getEvents().length;
+const timelineToEventsCount = (t: EventTimeline) => t.getEvents().length;
 
 export const getTimelinesEventsCount = (timelines: EventTimeline[]): number => {
   const timelineEventCountReducer = (count: number, tm: EventTimeline) =>

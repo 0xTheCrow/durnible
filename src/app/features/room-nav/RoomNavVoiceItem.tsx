@@ -20,8 +20,8 @@ import FocusTrap from 'focus-trap-react';
 import { useFocusWithin, useHover } from 'react-aria';
 import { NavItem, NavItemContent, NavItemOptions, NavButton } from '../../components/nav';
 import { useActiveCallParticipantIds } from '../../hooks/call/useActiveCallParticipantIds';
-import type { CallParticipantAudioState } from '../../hooks/call/useCallParticipantAudioStates';
-import { useCallParticipantAudioStates } from '../../hooks/call/useCallParticipantAudioStates';
+import type { CallParticipantState } from '../../hooks/call/useCallParticipantStates';
+import { useCallParticipantStates } from '../../hooks/call/useCallParticipantStates';
 import { useVoiceRoomEntry } from '../call/useVoiceRoomEntry';
 import { CallMemberAvatar } from '../call/CallMemberAvatar';
 import { useCallUserVolumeMenu } from '../call/useCallUserVolumeMenu';
@@ -29,24 +29,30 @@ import { useCallUserIsMuted } from '../../state/hooks/callVolumePreferences';
 import { getMemberDisplayName } from '../../utils/room';
 import { stopPropagation } from '../../utils/keyboard';
 import { RoomNavItemMenu } from './RoomNavItem';
+import { TruncatedText } from '../../components/TruncatedText';
 
 type VoiceParticipantProps = {
   room: Room;
   userId: string;
-  audioState?: CallParticipantAudioState;
+  participantState?: CallParticipantState;
 };
-function VoiceParticipant({ room, userId, audioState }: VoiceParticipantProps) {
+function VoiceParticipant({ room, userId, participantState }: VoiceParticipantProps) {
   const displayName = getMemberDisplayName(room, userId) ?? userId;
   const isMutedLocally = useCallUserIsMuted(userId);
-  const { handleContextMenu, volumeMenu } = useCallUserVolumeMenu(userId, displayName);
+  const { handleContextMenu, volumeMenu } = useCallUserVolumeMenu(
+    userId,
+    displayName,
+    participantState?.isScreenshareAudioEnabled === true
+  );
+  const audioState = participantState?.audioState;
 
   return (
     <>
       <Box as="span" alignItems="Center" gap="200" onContextMenu={handleContextMenu}>
         <CallMemberAvatar room={room} userId={userId} size="200" textSize="O400" />
-        <Text as="span" size="T200" truncate>
+        <TruncatedText as="span" size="T200">
           {displayName}
-        </Text>
+        </TruncatedText>
         {isMutedLocally && <Icon size="50" src={Icons.VolumeMute} filled />}
         {audioState === 'muted' && <Icon size="50" src={Icons.MicMute} filled />}
         {audioState === 'deafened' && <Icon size="50" src={Icons.Headphone} filled />}
@@ -64,7 +70,7 @@ type RoomNavVoiceItemProps = {
 };
 export function RoomNavVoiceItem({ room, selected, isDrawerMode, tall }: RoomNavVoiceItemProps) {
   const participantIds = useActiveCallParticipantIds(room);
-  const participantAudioStates = useCallParticipantAudioStates(room);
+  const participantStates = useCallParticipantStates(room);
   const { entryState, enterVoiceRoom } = useVoiceRoomEntry(room);
   const isConnected = entryState.status === 'connected';
   const [hover, setHover] = useState(false);
@@ -111,9 +117,9 @@ export function RoomNavVoiceItem({ room, selected, isDrawerMode, tall }: RoomNav
                 )}
               </Avatar>
               <Box as="span" grow="Yes">
-                <Text as="span" size="Inherit" truncate>
+                <TruncatedText as="span" size="Inherit">
                   {room.name}
-                </Text>
+                </TruncatedText>
               </Box>
               {entryState.status === 'failed' && (
                 <TooltipProvider
@@ -192,7 +198,7 @@ export function RoomNavVoiceItem({ room, selected, isDrawerMode, tall }: RoomNav
               key={userId}
               room={room}
               userId={userId}
-              audioState={participantAudioStates.get(userId)}
+              participantState={participantStates.get(userId)}
             />
           ))}
         </Box>

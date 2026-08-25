@@ -157,17 +157,43 @@ export type ScrollGeometry = {
   setScrollHeight: (value: number) => void;
   getScrollTop: () => number;
   setScrollTop: (value: number) => void;
+  setNewestMessageBottom: (value: number) => void;
   getLastScrollBehavior: () => string | undefined;
 };
 
 export function stubScrollGeometry(
   scrollElement: HTMLElement,
-  initial: { scrollHeight: number; offsetHeight: number }
+  initial: {
+    scrollHeight: number;
+    offsetHeight: number;
+    anchorElement?: HTMLElement | null;
+    latestMessageBottom?: number;
+  }
 ): ScrollGeometry {
   let scrollTop = 0;
   let scrollHeight = initial.scrollHeight;
   let lastBehavior: string | undefined;
+  let latestMessageBottom = initial.latestMessageBottom;
   const { offsetHeight } = initial;
+
+  const getNewestMessageBottom = () => latestMessageBottom ?? scrollHeight;
+
+  Object.defineProperty(scrollElement, 'getBoundingClientRect', {
+    configurable: true,
+    writable: true,
+    value: () => ({ top: 0, bottom: offsetHeight, height: offsetHeight } as DOMRect),
+  });
+
+  if (initial.anchorElement) {
+    Object.defineProperty(initial.anchorElement, 'getBoundingClientRect', {
+      configurable: true,
+      writable: true,
+      value: () => {
+        const viewportTop = getNewestMessageBottom() - scrollTop;
+        return { top: viewportTop, bottom: viewportTop, height: 0 } as DOMRect;
+      },
+    });
+  }
 
   Object.defineProperty(scrollElement, 'scrollHeight', {
     configurable: true,
@@ -210,6 +236,9 @@ export function stubScrollGeometry(
     getScrollTop: () => scrollTop,
     setScrollTop: (value) => {
       scrollTop = value;
+    },
+    setNewestMessageBottom: (value) => {
+      latestMessageBottom = value;
     },
     getLastScrollBehavior: () => lastBehavior,
   };

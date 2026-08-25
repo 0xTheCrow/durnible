@@ -1,6 +1,13 @@
 import { test, expect } from '@playwright/test';
 import type { BrowserContext, Page } from '@playwright/test';
-import { seedSession, stubHomeserver, imageEvent, TEST_ROOM_ID } from './fixtures/homeserver';
+import {
+  seedSession,
+  seedSettings,
+  stubHomeserver,
+  imageEvent,
+  TEST_ROOM_ID,
+} from './fixtures/homeserver';
+import type { Settings } from '../src/app/state/settings';
 import type { Count } from '../src/app/components/message/imageGridLayout';
 import {
   GRID_MAX_CELLS,
@@ -10,9 +17,12 @@ import {
   gridColumnsForCount,
   stackColumnsForCount,
 } from '../src/app/components/message/imageGridLayout';
-import { MOBILE_BREAKPOINT, TABLET_BREAKPOINT } from '../src/app/hooks/useScreenSize';
+import { MOBILE_BREAKPOINT, TABLET_BREAKPOINT } from '../src/app/styles/breakpoints';
+import { PAGE_NAV_MAX_CONTAINER_FRACTION } from '../src/app/components/page/pageNavLayout';
 
 const roomPath = `/home/${encodeURIComponent(TEST_ROOM_ID)}/`;
+
+const CELL_TEST_ID = 'image-grid-cell';
 
 const NATURAL_WIDTH = 2000;
 const NATURAL_HEIGHT = 800;
@@ -23,13 +33,19 @@ const NARROWEST_DESKTOP_VIEWPORT = { width: TABLET_BREAKPOINT + 1, height: VIEWP
 const NARROWEST_NON_MOBILE_VIEWPORT = { width: MOBILE_BREAKPOINT + 1, height: VIEWPORT_HEIGHT };
 const MOBILE_VIEWPORT = { width: MOBILE_BREAKPOINT, height: VIEWPORT_HEIGHT };
 
+const WIDEST_PAGE_NAV_WIDTH = Math.floor(
+  NARROWEST_NON_MOBILE_VIEWPORT.width * PAGE_NAV_MAX_CONTAINER_FRACTION
+);
+
 const openRoomWithGallery = async (
   context: BrowserContext,
   page: Page,
   imageCount: Count,
-  viewport: { width: number; height: number }
+  viewport: { width: number; height: number },
+  settings?: Partial<Settings>
 ) => {
   await seedSession(context);
+  if (settings) await seedSettings(page, settings);
   await stubHomeserver(page, {
     timelineEvents: Array.from({ length: imageCount }, (_, index) =>
       imageEvent(index, NATURAL_WIDTH, NATURAL_HEIGHT)
@@ -38,8 +54,10 @@ const openRoomWithGallery = async (
   await page.setViewportSize(viewport);
   await page.goto(roomPath);
   await expect(page.getByTestId('image-grid')).toBeVisible();
-  await expect(page.getByTestId('image-grid-cell')).toHaveCount(imageCount);
+  await expect(page.getByTestId(CELL_TEST_ID)).toHaveCount(imageCount);
 };
+
+type CellBox = { x: number; y: number; width: number; height: number };
 
 const boxOf = async (page: Page, testId: string) => {
   const box = await page.getByTestId(testId).boundingBox();
@@ -47,17 +65,24 @@ const boxOf = async (page: Page, testId: string) => {
   return box;
 };
 
-const cellBoxes = async (page: Page) => {
-  const cells = page.getByTestId('image-grid-cell');
-  const count = await cells.count();
-  const boxes = [];
-  for (let i = 0; i < count; i += 1) {
-    // eslint-disable-next-line no-await-in-loop
-    const box = await cells.nth(i).boundingBox();
-    if (!box) throw new Error(`cell ${i} has no bounding box`);
-    boxes.push(box);
-  }
-  return boxes;
+const readCellBoxes = (page: Page): Promise<CellBox[]> =>
+  page.evaluate(
+    (testId) =>
+      Array.from(document.querySelectorAll(`[data-testid="${testId}"]`)).map((cell) => {
+        const { x, y, width, height } = cell.getBoundingClientRect();
+        return { x, y, width, height };
+      }),
+    CELL_TEST_ID
+  );
+
+const cellBoxes = async (page: Page): Promise<CellBox[]> => {
+  await expect
+    .poll(async () => {
+      const boxes = await readCellBoxes(page);
+      return boxes.length > 0 && boxes.every((box) => box.width > 0 && box.height > 0);
+    })
+    .toBe(true);
+  return readCellBoxes(page);
 };
 
 const cellsInFirstRow = async (page: Page): Promise<number> => {
@@ -91,11 +116,13 @@ test('grid clamps to the content column instead of overflowing it', async ({ con
   await expectCellsWithinContainer(page);
 });
 
-test('narrow non-mobile window falls back to the stack layout instead of clipping', async ({
+test('narrow content column falls back to the stack layout instead of clipping', async ({
   context,
   page,
 }) => {
-  await openRoomWithGallery(context, page, GRID_MAX_CELLS, NARROWEST_NON_MOBILE_VIEWPORT);
+  await openRoomWithGallery(context, page, GRID_MAX_CELLS, NARROWEST_NON_MOBILE_VIEWPORT, {
+    pageNavWidth: WIDEST_PAGE_NAV_WIDTH,
+  });
 
   const bodyWidth = await page.evaluate(() => document.body.clientWidth);
   expect(
@@ -143,7 +170,7 @@ test('layout tracks the container across resizes', async ({ context, page }) => 
   await openRoomWithGallery(context, page, GRID_MAX_CELLS, NARROWEST_DESKTOP_VIEWPORT);
   expect(await cellsInFirstRow(page)).toBe(gridColumnsForCount[GRID_MAX_CELLS]);
 
-  await page.setViewportSize(NARROWEST_NON_MOBILE_VIEWPORT);
+  await page.setViewportSize(MOBILE_VIEWPORT);
   await expect.poll(() => cellsInFirstRow(page)).toBe(stackColumnsForCount[GRID_MAX_CELLS]);
   await expectCellsWithinContainer(page);
 

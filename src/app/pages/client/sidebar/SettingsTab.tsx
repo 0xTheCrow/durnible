@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { lazy, Suspense, useState } from 'react';
 import { Text } from 'folds';
 import { SidebarItem, SidebarItemTooltip, SidebarAvatar } from '../../../components/sidebar';
 import { UserAvatar } from '../../../components/user-avatar';
@@ -6,9 +6,12 @@ import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { getMxIdLocalPart, mxcUrlToHttp } from '../../../utils/matrix';
 import { nameInitials } from '../../../utils/common';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
-import { Settings } from '../../../features/settings';
 import { useUserProfile } from '../../../hooks/useUserProfile';
 import { Modal500 } from '../../../components/Modal500';
+
+const Settings = lazy(() =>
+  import('../../../features/settings/Settings').then((module) => ({ default: module.Settings }))
+);
 
 export function SettingsTab() {
   const mx = useMatrixClient();
@@ -40,9 +43,11 @@ export function SettingsTab() {
         )}
       </SidebarItemTooltip>
       {settings && (
-        <Modal500 onClose={closeSettings} focusTrapOptions={{ escapeDeactivates: true }}>
-          <Settings onClose={closeSettings} />
-        </Modal500>
+        <Suspense fallback={null}>
+          <Modal500 onClose={closeSettings} focusTrapOptions={{ escapeDeactivates: true }}>
+            <Settings onClose={closeSettings} />
+          </Modal500>
+        </Suspense>
       )}
     </SidebarItem>
   );

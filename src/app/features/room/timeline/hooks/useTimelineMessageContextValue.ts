@@ -74,6 +74,7 @@ export const useTimelineMessageContextValue = ({
   const [hour24Clock] = useSetting(settingsAtom, 'hour24Clock');
   const [dateFormatString] = useSetting(settingsAtom, 'dateFormatString');
   const [pauseGifs] = useSetting(settingsAtom, 'pauseGifs');
+  const [pauseGifEmojis] = useSetting(settingsAtom, 'pauseGifEmojis');
 
   const direct = useIsDirectRoom();
 
@@ -122,8 +123,18 @@ export const useTimelineMessageContextValue = ({
         handleSpoilerClick: spoilerClickHandler,
         handleMentionClick: mentionClickHandler,
         pauseGifs,
+        pauseGifEmojis,
       }),
-    [mx, room, linkifyOpts, spoilerClickHandler, mentionClickHandler, useAuthentication, pauseGifs]
+    [
+      mx,
+      room,
+      linkifyOpts,
+      spoilerClickHandler,
+      mentionClickHandler,
+      useAuthentication,
+      pauseGifs,
+      pauseGifEmojis,
+    ]
   );
 
   const { handleUserClick, handleUsernameClick, handleReplyClick, handleReactionToggle } =

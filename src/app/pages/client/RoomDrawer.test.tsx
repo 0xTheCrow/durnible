@@ -44,10 +44,7 @@ const mockSpace = { roomId: '!space:example.com' } as Room;
 
 function renderDrawer(opts: { screenSize: ScreenSize; route: string; space?: Room | null }) {
   return render(
-    <MemoryRouter
-      initialEntries={[opts.route]}
-      future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
-    >
+    <MemoryRouter initialEntries={[opts.route]}>
       <ScreenSizeProvider value={opts.screenSize}>
         <SpaceProvider value={opts.space ?? null}>
           <Routes>

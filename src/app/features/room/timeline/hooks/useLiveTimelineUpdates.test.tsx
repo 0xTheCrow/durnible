@@ -5,14 +5,23 @@ import type { EventTimeline, MatrixEvent, Room } from 'matrix-js-sdk';
 import { RoomEvent, RelationType } from 'matrix-js-sdk';
 import { createEventEmitterRoom } from '../timelineTestHelpers';
 import type { Timeline } from '../timelineState';
+import { createTimelineWindow, getWindowRange } from '../utils/timelineWindow';
 import { useLiveTimelineUpdates } from './useLiveTimelineUpdates';
 import type { ScrollIntent } from './useScrollController';
 
 const INITIAL_RANGE = { oldest: 5, newest: 10 };
 const WINDOW_SIZE = INITIAL_RANGE.newest - INITIAL_RANGE.oldest;
 
-const linkedTimelinesWithCount = (count: number): EventTimeline[] =>
-  [{ getEvents: () => new Array(count) }] as unknown as EventTimeline[];
+const linkedTimelinesWithCount = (count: number): EventTimeline[] => {
+  const events = Array.from(
+    { length: count },
+    (_unused, index) => ({ getId: () => `$e${index}` } as MatrixEvent)
+  );
+  return [{ getEvents: () => events }] as unknown as EventTimeline[];
+};
+
+const derivedRange = (timeline: Timeline | null | undefined) =>
+  timeline ? getWindowRange(timeline.linkedTimelines, timeline.window) : undefined;
 
 const liveMessage = (): MatrixEvent =>
   ({
@@ -34,44 +43,49 @@ const reaction = (): MatrixEvent =>
 
 type HarnessProps = {
   room: Room;
-  followingLive: boolean;
-  atBottom: boolean;
+  followingLatestMessageBottom: boolean;
+  wasLatestMessageBottomInView: boolean;
   isInLivePaginationWindow: boolean;
   unfocusedAutoScroll: boolean;
   totalEvents: number;
-  pinToLiveEnd: () => void;
+  pinToLatestMessageBottom: () => void;
   onState: (timeline: Timeline) => void;
 };
 
 function Harness({
   room,
-  followingLive,
-  atBottom,
+  followingLatestMessageBottom,
+  wasLatestMessageBottomInView,
   isInLivePaginationWindow,
   unfocusedAutoScroll,
   totalEvents,
-  pinToLiveEnd,
+  pinToLatestMessageBottom,
   onState,
 }: HarnessProps) {
-  const [timeline, setTimeline] = useState<Timeline>({
-    linkedTimelines: linkedTimelinesWithCount(totalEvents),
-    range: { ...INITIAL_RANGE },
+  const [timeline, setTimeline] = useState<Timeline>(() => {
+    const linkedTimelines = linkedTimelinesWithCount(totalEvents);
+    return {
+      linkedTimelines,
+      window: createTimelineWindow(linkedTimelines, INITIAL_RANGE.oldest, INITIAL_RANGE.newest),
+    };
   });
   const scrollRef = useRef<HTMLDivElement>(null);
-  const atBottomRef = useRef(atBottom);
-  atBottomRef.current = atBottom;
+  const wasLatestMessageBottomInViewRef = useRef(wasLatestMessageBottomInView);
+  wasLatestMessageBottomInViewRef.current = wasLatestMessageBottomInView;
   const isInLivePaginationWindowRef = useRef(isInLivePaginationWindow);
   isInLivePaginationWindowRef.current = isInLivePaginationWindow;
   const intentRef = useRef<ScrollIntent>({ kind: 'free' });
-  intentRef.current = followingLive ? { kind: 'followLive' } : { kind: 'free' };
+  intentRef.current = followingLatestMessageBottom
+    ? { kind: 'latestMessageBottom' }
+    : { kind: 'free' };
   useLiveTimelineUpdates({
     room,
     setTimeline,
     scrollRef,
-    atBottomRef,
+    wasLatestMessageBottomInViewRef,
     isInLivePaginationWindowRef,
     intentRef,
-    pinToLiveEnd,
+    pinToLatestMessageBottom,
     unfocusedAutoScroll,
   });
   onState(timeline);
@@ -81,8 +95,8 @@ function Harness({
 type Setup = Partial<
   Pick<
     HarnessProps,
-    | 'followingLive'
-    | 'atBottom'
+    | 'followingLatestMessageBottom'
+    | 'wasLatestMessageBottomInView'
     | 'isInLivePaginationWindow'
     | 'unfocusedAutoScroll'
     | 'totalEvents'
@@ -94,23 +108,23 @@ type Setup = Partial<
 const setup = (overrides: Setup = {}) => {
   vi.spyOn(document, 'hasFocus').mockReturnValue(overrides.focused ?? true);
   const room = createEventEmitterRoom('!test:example.com');
-  const pinToLiveEnd = vi.fn();
+  const pinToLatestMessageBottom = vi.fn();
   const state: { current: Timeline | null } = { current: null };
   render(
     <Harness
       room={room}
-      followingLive={overrides.followingLive ?? false}
-      atBottom={overrides.atBottom ?? false}
+      followingLatestMessageBottom={overrides.followingLatestMessageBottom ?? false}
+      wasLatestMessageBottomInView={overrides.wasLatestMessageBottomInView ?? false}
       isInLivePaginationWindow={overrides.isInLivePaginationWindow ?? false}
       unfocusedAutoScroll={overrides.unfocusedAutoScroll ?? false}
       totalEvents={overrides.totalEvents ?? INITIAL_RANGE.newest}
-      pinToLiveEnd={pinToLiveEnd}
+      pinToLatestMessageBottom={pinToLatestMessageBottom}
       onState={(timeline) => {
         state.current = timeline;
       }}
     />
   );
-  return { room, pinToLiveEnd, state };
+  return { room, pinToLatestMessageBottom, state };
 };
 
 const emit = (
@@ -128,99 +142,101 @@ afterEach(() => {
 
 describe('useLiveTimelineUpdates', () => {
   it('re-renders without shifting the range for a modifier event', () => {
-    const { room, pinToLiveEnd, state } = setup({ followingLive: true });
+    const { room, pinToLatestMessageBottom, state } = setup({
+      followingLatestMessageBottom: true,
+    });
     emit(room, reaction());
-    expect(state.current?.range).toEqual(INITIAL_RANGE);
-    expect(pinToLiveEnd).not.toHaveBeenCalled();
+    expect(derivedRange(state.current)).toEqual(INITIAL_RANGE);
+    expect(pinToLatestMessageBottom).not.toHaveBeenCalled();
   });
 
-  it('anchors the range to the live edge and pins live when following live while focused', () => {
+  it('anchors the range to the newest event and pins to it while following the latest message bottom while focused', () => {
     const totalEvents = INITIAL_RANGE.newest + 1;
-    const { room, pinToLiveEnd, state } = setup({
-      followingLive: true,
+    const { room, pinToLatestMessageBottom, state } = setup({
+      followingLatestMessageBottom: true,
       focused: true,
       totalEvents,
     });
     emit(room, liveMessage());
-    expect(state.current?.range).toEqual({
+    expect(derivedRange(state.current)).toEqual({
       oldest: totalEvents - WINDOW_SIZE,
       newest: totalEvents,
     });
-    expect(pinToLiveEnd).toHaveBeenCalledTimes(1);
+    expect(pinToLatestMessageBottom).toHaveBeenCalledTimes(1);
   });
 
-  it('anchors the range to the live edge when at the bottom of the live window without the followLive intent', () => {
+  it('anchors the range to the newest event when the latest message bottom was last observed visible without the follow intent', () => {
     const totalEvents = INITIAL_RANGE.newest + 1;
-    const { room, pinToLiveEnd, state } = setup({
-      followingLive: false,
-      atBottom: true,
+    const { room, pinToLatestMessageBottom, state } = setup({
+      followingLatestMessageBottom: false,
+      wasLatestMessageBottomInView: true,
       isInLivePaginationWindow: true,
       focused: true,
       totalEvents,
     });
     emit(room, liveMessage());
-    expect(state.current?.range).toEqual({
+    expect(derivedRange(state.current)).toEqual({
       oldest: totalEvents - WINDOW_SIZE,
       newest: totalEvents,
     });
-    expect(pinToLiveEnd).toHaveBeenCalledTimes(1);
+    expect(pinToLatestMessageBottom).toHaveBeenCalledTimes(1);
   });
 
-  it('does not shift the range when at the bottom of a window that is behind the live edge', () => {
-    const { room, pinToLiveEnd, state } = setup({
-      followingLive: false,
-      atBottom: true,
+  it('does not shift the range when the latest message bottom was observed visible in a window behind the newest event', () => {
+    const { room, pinToLatestMessageBottom, state } = setup({
+      followingLatestMessageBottom: false,
+      wasLatestMessageBottomInView: true,
       isInLivePaginationWindow: false,
       focused: true,
       totalEvents: INITIAL_RANGE.newest + 1,
     });
     emit(room, liveMessage());
-    expect(state.current?.range).toEqual(INITIAL_RANGE);
-    expect(pinToLiveEnd).not.toHaveBeenCalled();
+    expect(derivedRange(state.current)).toEqual(INITIAL_RANGE);
+    expect(pinToLatestMessageBottom).not.toHaveBeenCalled();
   });
 
-  it('does not shift the range when neither following live nor at the bottom', () => {
-    const { room, pinToLiveEnd, state } = setup({
-      followingLive: false,
-      atBottom: false,
+  it('does not shift the range when neither following nor last observed at the latest message bottom', () => {
+    const { room, pinToLatestMessageBottom, state } = setup({
+      followingLatestMessageBottom: false,
+      wasLatestMessageBottomInView: false,
       isInLivePaginationWindow: true,
       focused: true,
       totalEvents: INITIAL_RANGE.newest + 1,
     });
     emit(room, liveMessage());
-    expect(state.current?.range).toEqual(INITIAL_RANGE);
-    expect(pinToLiveEnd).not.toHaveBeenCalled();
+    expect(derivedRange(state.current)).toEqual(INITIAL_RANGE);
+    expect(pinToLatestMessageBottom).not.toHaveBeenCalled();
   });
 
   it('advances the range without pinning while unfocused with unfocusedAutoScroll off', () => {
     const totalEvents = INITIAL_RANGE.newest + 1;
-    const { room, pinToLiveEnd, state } = setup({
-      followingLive: true,
+    const { room, pinToLatestMessageBottom, state } = setup({
+      followingLatestMessageBottom: true,
       focused: false,
       unfocusedAutoScroll: false,
       totalEvents,
     });
     emit(room, liveMessage());
-    expect(state.current?.range).toEqual({
+    expect(derivedRange(state.current)).toEqual({
       oldest: totalEvents - WINDOW_SIZE,
       newest: totalEvents,
     });
-    expect(pinToLiveEnd).not.toHaveBeenCalled();
+    expect(pinToLatestMessageBottom).not.toHaveBeenCalled();
   });
 
-  it('anchors the range to the live edge while unfocused when unfocusedAutoScroll is on', () => {
+  it('anchors the range to the newest event while unfocused when unfocusedAutoScroll is on', () => {
     const totalEvents = INITIAL_RANGE.newest + 1;
-    const { room, pinToLiveEnd, state } = setup({
-      followingLive: true,
+    const { room, pinToLatestMessageBottom, state } = setup({
+      followingLatestMessageBottom: true,
       focused: false,
       unfocusedAutoScroll: true,
       totalEvents,
     });
     emit(room, liveMessage());
-    expect(state.current?.range).toEqual({
+    expect(derivedRange(state.current)).toEqual({
       oldest: totalEvents - WINDOW_SIZE,
       newest: totalEvents,
     });
-    expect(pinToLiveEnd).toHaveBeenCalledTimes(1);
+    expect(pinToLatestMessageBottom).toHaveBeenCalledTimes(1);
   });
 });

@@ -9,12 +9,18 @@ export type CallParticipantEntry = {
   key: string;
   participant: Participant;
   isScreensharing: boolean;
+  isScreenshareAudioEnabled: boolean;
   isCameraEnabled: boolean;
   isMicrophoneMuted: boolean;
 };
 
 export const checkIsEntryStreamingVideo = (entry: CallParticipantEntry): boolean =>
   entry.isScreensharing || entry.isCameraEnabled;
+
+export const checkIsScreenshareAudioEnabled = (participant: Participant): boolean => {
+  const publication = participant.getTrackPublication(Track.Source.ScreenShareAudio);
+  return publication !== undefined && !publication.isMuted;
+};
 
 const getCallParticipantEntries = (livekitRoom?: LivekitRoom): CallParticipantEntry[] => {
   if (!livekitRoom) return [];
@@ -26,13 +32,14 @@ const getCallParticipantEntries = (livekitRoom?: LivekitRoom): CallParticipantEn
       key: participant.identity,
       participant,
       isScreensharing: screensharePublication !== undefined && !screensharePublication.isMuted,
+      isScreenshareAudioEnabled: checkIsScreenshareAudioEnabled(participant),
       isCameraEnabled: cameraPublication !== undefined && !cameraPublication.isMuted,
       isMicrophoneMuted: microphonePublication === undefined || microphonePublication.isMuted,
     };
   });
 };
 
-const PARTICIPANT_ENTRY_EVENTS = [
+export const PARTICIPANT_ENTRY_EVENTS = [
   RoomEvent.ParticipantConnected,
   RoomEvent.ParticipantDisconnected,
   RoomEvent.TrackPublished,

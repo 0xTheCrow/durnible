@@ -32,6 +32,7 @@ import {
 } from '../../hooks/useRoomsNotificationPreferences';
 import { RoomNavItem } from '../../features/room-nav';
 import * as css from './FavoriteRooms.css';
+import { TruncatedText } from '../../components/TruncatedText';
 
 function useFavoriteRoomPath() {
   const mx = useMatrixClient();
@@ -71,9 +72,9 @@ function FavoriteReorderItem({
     <NavItem variant="Background" radii="400">
       <NavItemContent>
         <Box as="span" grow="Yes" alignItems="Center">
-          <Text as="span" size="Inherit" truncate>
+          <TruncatedText as="span" size="Inherit">
             {room.name}
-          </Text>
+          </TruncatedText>
         </Box>
         <Box direction="Column" shrink="No">
           <IconButton
@@ -310,7 +311,7 @@ export function FavoriteRoomsSection({ isDrawerMode }: { isDrawerMode?: boolean 
             <Line variant="Background" size="300" />
             <NavCategoryHeader style={{ paddingTop: config.space.S200 }}>
               <Box grow="Yes" alignItems="Center" gap="200">
-                <Text size="L400" style={{ flexGrow: 1, paddingLeft: config.space.S400 }}>
+                <Text size="L400" style={{ flexGrow: 1, paddingLeft: config.space.S400 }} truncate>
                   Favorite Rooms
                 </Text>
                 {reorderMode && (

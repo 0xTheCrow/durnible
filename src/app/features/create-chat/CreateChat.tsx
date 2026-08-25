@@ -11,7 +11,7 @@ import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { AsyncStatus, useAsyncCallback } from '../../hooks/useAsyncCallback';
 import { ErrorCode } from '../../cs-errorcode';
 import { millisecondsToMinutes } from '../../utils/common';
-import { createRoomEncryptionState } from '../../components/create-room';
+import { createRoomEncryptionState } from '../../components/create-room/encryption';
 import { useAlive } from '../../hooks/useAlive';
 import { getDirectRoomPath } from '../../pages/pathUtils';
 

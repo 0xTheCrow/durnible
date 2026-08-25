@@ -18,11 +18,11 @@ const MSG_C_ID = '$msg-c:example.com';
 function Harness({
   lastMessageId = MSG_C_ID,
   renderRedactedLast = false,
-  atBottom,
+  isLatestMessageBottomVisible,
 }: {
   lastMessageId?: string | null;
   renderRedactedLast?: boolean;
-  atBottom: boolean;
+  isLatestMessageBottomVisible: boolean;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null) as RefObject<HTMLDivElement>;
   return (
@@ -41,7 +41,7 @@ function Harness({
       <JumpToLatestButton
         scrollRef={scrollRef}
         lastMessageId={lastMessageId}
-        atBottom={atBottom}
+        isLatestMessageBottomVisible={isLatestMessageBottomVisible}
         onClick={() => undefined}
       />
     </div>
@@ -70,7 +70,7 @@ describe('JumpToLatestButton', () => {
   });
 
   it('stays hidden while the user is at the bottom', () => {
-    const { container } = render(<Harness atBottom />);
+    const { container } = render(<Harness isLatestMessageBottomVisible />);
     const lastItemElement = container.querySelector('[data-testid="last-msg"]') as HTMLElement;
 
     act(() => {
@@ -81,7 +81,7 @@ describe('JumpToLatestButton', () => {
   });
 
   it('becomes visible when the user scrolls up and the last message leaves the viewport', () => {
-    const { container } = render(<Harness atBottom={false} />);
+    const { container } = render(<Harness isLatestMessageBottomVisible={false} />);
     const lastItemElement = container.querySelector('[data-testid="last-msg"]') as HTMLElement;
 
     act(() => {
@@ -92,12 +92,14 @@ describe('JumpToLatestButton', () => {
   });
 
   it('shows when lastMessageId is null and the user is not at the bottom', () => {
-    const { container } = render(<Harness atBottom={false} lastMessageId={null} />);
+    const { container } = render(
+      <Harness isLatestMessageBottomVisible={false} lastMessageId={null} />
+    );
     expect(getVisibility(container)).toBe('true');
   });
 
   it('hides again once the user returns to the bottom', () => {
-    const { container, rerender } = render(<Harness atBottom={false} />);
+    const { container, rerender } = render(<Harness isLatestMessageBottomVisible={false} />);
     const lastItemElement = container.querySelector('[data-testid="last-msg"]') as HTMLElement;
 
     act(() => {
@@ -105,7 +107,7 @@ describe('JumpToLatestButton', () => {
     });
     expect(getVisibility(container)).toBe('true');
 
-    rerender(<Harness atBottom />);
+    rerender(<Harness isLatestMessageBottomVisible />);
     expect(getVisibility(container)).toBe('false');
   });
 
@@ -115,7 +117,7 @@ describe('JumpToLatestButton', () => {
   // (button shows) and back down (button stays visible) because the observer
   // is stuck on a detached node.
   it('rebinds to the new last message after the previous last is filtered out (redaction)', () => {
-    const { container, rerender } = render(<Harness atBottom={false} />);
+    const { container, rerender } = render(<Harness isLatestMessageBottomVisible={false} />);
     const originalLast = container.querySelector('[data-testid="last-msg"]') as HTMLElement;
 
     act(() => {
@@ -123,7 +125,9 @@ describe('JumpToLatestButton', () => {
     });
     expect(getVisibility(container)).toBe('false');
 
-    rerender(<Harness atBottom={false} lastMessageId={MSG_B_ID} renderRedactedLast />);
+    rerender(
+      <Harness isLatestMessageBottomVisible={false} lastMessageId={MSG_B_ID} renderRedactedLast />
+    );
 
     const newLast = container.querySelector(`[data-message-id="${MSG_B_ID}"]`) as HTMLElement;
     expect(newLast).not.toBeNull();

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Box, Icon, Icons, Scroll, IconButton } from 'folds';
 import {
   Page,
@@ -10,8 +10,13 @@ import {
 } from '../../../components/page';
 import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
 import { BackRouteHandler } from '../../../components/BackRouteHandler';
-import { CreateRoomForm } from '../../../features/create-room';
 import { useRoomNavigate } from '../../../hooks/useRoomNavigate';
+
+const CreateRoomForm = lazy(() =>
+  import('../../../features/create-room/CreateRoom').then((module) => ({
+    default: module.CreateRoomForm,
+  }))
+);
 
 export function HomeCreateRoom() {
   const screenSize = useScreenSizeContext();
@@ -44,7 +49,9 @@ export function HomeCreateRoom() {
                     title="Create Room"
                     subTitle="Build a Room for Real-Time Conversations."
                   />
-                  <CreateRoomForm onCreate={navigateRoom} />
+                  <Suspense fallback={null}>
+                    <CreateRoomForm onCreate={navigateRoom} />
+                  </Suspense>
                 </Box>
               </PageHeroSection>
             </PageContentCenter>

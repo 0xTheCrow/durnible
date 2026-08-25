@@ -1,6 +1,5 @@
 import type { CompactEmoji } from 'emojibase';
 import { fromUnicodeToHexcode } from 'emojibase';
-import emojisData from 'emojibase-data/en/compact.json';
 import joypixels from 'emojibase-data/en/shortcodes/joypixels.json';
 import emojibase from 'emojibase-data/en/shortcodes/emojibase.json';
 import type { ImagePack } from './custom-emoji/ImagePack';
@@ -27,6 +26,11 @@ export type EmojiGroup = {
   emojis: Emoji[];
 };
 
+export type EmojiData = {
+  emojis: Emoji[];
+  emojiGroups: EmojiGroup[];
+};
+
 export const getShortcodesFor = (hexcode: string): string[] | string | undefined =>
   joypixels[hexcode] || emojibase[hexcode];
 
@@ -37,66 +41,35 @@ export const getShortcodeFor = (hexcode: string): string | undefined => {
 
 export const getHexcodeForEmoji = fromUnicodeToHexcode;
 
-export const emojiGroups: EmojiGroup[] = [
-  {
-    id: EmojiGroupId.People,
-    order: 0,
-    emojis: [],
-  },
-  {
-    id: EmojiGroupId.Nature,
-    order: 1,
-    emojis: [],
-  },
-  {
-    id: EmojiGroupId.Food,
-    order: 2,
-    emojis: [],
-  },
-  {
-    id: EmojiGroupId.Activity,
-    order: 3,
-    emojis: [],
-  },
-  {
-    id: EmojiGroupId.Travel,
-    order: 4,
-    emojis: [],
-  },
-  {
-    id: EmojiGroupId.Object,
-    order: 5,
-    emojis: [],
-  },
-  {
-    id: EmojiGroupId.Symbol,
-    order: 6,
-    emojis: [],
-  },
-  {
-    id: EmojiGroupId.Flag,
-    order: 7,
-    emojis: [],
-  },
-];
+const EMPTY_EMOJI_DATA: EmojiData = { emojis: [], emojiGroups: [] };
 
-export const emojis: Emoji[] = [];
+let loadedEmojiData: EmojiData = EMPTY_EMOJI_DATA;
+let emojiDataPromise: Promise<EmojiData> | undefined;
+const emojiDataListeners = new Set<() => void>();
 
-function addEmojiToGroup(groupIndex: number, emoji: Emoji) {
-  emojiGroups[groupIndex].emojis.push(emoji);
-}
+export const getEmojiData = (): EmojiData => loadedEmojiData;
 
-function getGroupIndex(emoji: Emoji): number | undefined {
-  if (emoji.group === 0 || emoji.group === 1) return 0;
-  if (emoji.group === 3) return 1;
-  if (emoji.group === 4) return 2;
-  if (emoji.group === 6) return 3;
-  if (emoji.group === 5) return 4;
-  if (emoji.group === 7) return 5;
-  if (emoji.group === 8 || typeof emoji.group === 'undefined') return 6;
-  if (emoji.group === 9) return 7;
-  return undefined;
-}
+export const subscribeToEmojiData = (listener: () => void): (() => void) => {
+  emojiDataListeners.add(listener);
+  return () => {
+    emojiDataListeners.delete(listener);
+  };
+};
+
+export const loadEmojiData = (): Promise<EmojiData> => {
+  emojiDataPromise ??= import('./emojiData')
+    .then((module) => {
+      loadedEmojiData = { emojis: module.emojis, emojiGroups: module.emojiGroups };
+      emojiDataListeners.forEach((listener) => listener());
+      return loadedEmojiData;
+    })
+    .catch((error) => {
+      emojiDataPromise = undefined;
+      throw error;
+    });
+
+  return emojiDataPromise;
+};
 
 export type ShortcodeMapEntry = { key: string; shortcode: string };
 
@@ -130,20 +103,4 @@ export const buildShortcodeMap = (
   return map;
 };
 
-emojisData.forEach((emoji) => {
-  const myShortCodes = getShortcodesFor(emoji.hexcode);
-  if (!myShortCodes) return;
-  if (Array.isArray(myShortCodes) && myShortCodes.length === 0) return;
-
-  const em: Emoji = {
-    ...emoji,
-    shortcode: Array.isArray(myShortCodes) ? myShortCodes[0] : myShortCodes,
-    shortcodes: Array.isArray(myShortCodes) ? myShortCodes : emoji.shortcodes,
-  };
-
-  const groupIndex = getGroupIndex(em);
-  if (groupIndex !== undefined) {
-    addEmojiToGroup(groupIndex, em);
-    emojis.push(em);
-  }
-});
+loadEmojiData().catch(() => undefined);

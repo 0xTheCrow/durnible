@@ -151,18 +151,23 @@ export function MicrophoneInputFloorSetting() {
     settingsAtom,
     'microphoneInputFloorLevel'
   );
+  const [isTestingMicrophone, setIsTestingMicrophone] = useState(false);
   const { inputLevel, isMicrophoneAvailable } = useMicrophoneInputLevel(
-    preferredAudioInputDeviceId
+    preferredAudioInputDeviceId,
+    isTestingMicrophone
   );
   const isInputAboveFloor = inputLevel > 0 && inputLevel >= microphoneInputFloorLevel;
+  const toggleTestingMicrophone = () => setIsTestingMicrophone((isTesting) => !isTesting);
 
   return (
     <SettingTile
       title="Input Floor"
       description={
-        isMicrophoneAvailable
-          ? 'Audio quieter than the cutoff is not sent to the call. The bar shows your current input volume.'
-          : 'Allow microphone access to preview your input volume.'
+        isTestingMicrophone
+          ? isMicrophoneAvailable
+            ? 'Audio quieter than the cutoff is not sent to the call. The bar shows your current input volume.'
+            : 'Could not access the microphone. Allow microphone access to continue the test.'
+          : 'Audio quieter than the cutoff is not sent to the call. Test your microphone to preview your input volume.'
       }
     >
       <Box direction="Column" gap="200" style={{ paddingTop: config.space.S200 }}>
@@ -207,11 +212,23 @@ export function MicrophoneInputFloorSetting() {
             />
           )}
         />
-        <Text size="T200" priority="300">
-          {microphoneInputFloorLevel === 0
-            ? 'Cutoff: Off'
-            : `Cutoff: ${Math.round(microphoneInputFloorLevel * 100)}%`}
-        </Text>
+        <Box gap="300" alignItems="Center" justifyContent="SpaceBetween">
+          <Text size="T200" priority="300">
+            {microphoneInputFloorLevel === 0
+              ? 'Cutoff: Off'
+              : `Cutoff: ${Math.round(microphoneInputFloorLevel * 100)}%`}
+          </Text>
+          <Button
+            size="300"
+            variant="Secondary"
+            outlined
+            fill="Soft"
+            radii="300"
+            onClick={toggleTestingMicrophone}
+          >
+            <Text size="B300">{isTestingMicrophone ? 'Stop' : 'Test'}</Text>
+          </Button>
+        </Box>
       </Box>
     </SettingTile>
   );

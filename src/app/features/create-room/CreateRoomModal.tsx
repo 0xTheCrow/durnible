@@ -1,8 +1,7 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Box, config, Header, Icon, IconButton, Icons, Modal, Scroll, Text } from 'folds';
 import { useAllJoinedRoomsSet, useGetRoom } from '../../hooks/useGetRoom';
 import { SpaceProvider } from '../../hooks/useSpace';
-import { CreateRoomForm } from './CreateRoom';
 import {
   useCloseCreateRoomModal,
   useCreateRoomModalState,
@@ -10,6 +9,10 @@ import {
 import type { CreateRoomModalState } from '../../state/createRoomModal';
 import { OverlayModal } from '../../components/OverlayModal';
 import { RoomType } from '../../../types/matrix/room';
+
+const CreateRoomForm = lazy(() =>
+  import('./CreateRoom').then((module) => ({ default: module.CreateRoomForm }))
+);
 
 type CreateRoomModalProps = {
   state: CreateRoomModalState;
@@ -25,40 +28,42 @@ function CreateRoomModal({ state }: CreateRoomModalProps) {
 
   return (
     <SpaceProvider value={space ?? null}>
-      <OverlayModal open onClose={closeDialog}>
-        <Modal size="300" flexHeight>
-          <Box direction="Column">
-            <Header
-              size="500"
-              style={{
-                padding: config.space.S200,
-                paddingLeft: config.space.S400,
-              }}
-            >
-              <Box grow="Yes">
-                <Text size="H4">{title}</Text>
-              </Box>
-              <Box shrink="No">
-                <IconButton size="300" radii="300" onClick={closeDialog}>
-                  <Icon src={Icons.Cross} />
-                </IconButton>
-              </Box>
-            </Header>
-            <Scroll size="300" hideTrack>
-              <Box
+      <Suspense fallback={null}>
+        <OverlayModal open onClose={closeDialog}>
+          <Modal size="300" flexHeight>
+            <Box direction="Column">
+              <Header
+                size="500"
                 style={{
-                  padding: config.space.S400,
-                  paddingRight: config.space.S200,
+                  padding: config.space.S200,
+                  paddingLeft: config.space.S400,
                 }}
-                direction="Column"
-                gap="500"
               >
-                <CreateRoomForm space={space} roomType={roomType} onCreate={closeDialog} />
-              </Box>
-            </Scroll>
-          </Box>
-        </Modal>
-      </OverlayModal>
+                <Box grow="Yes">
+                  <Text size="H4">{title}</Text>
+                </Box>
+                <Box shrink="No">
+                  <IconButton size="300" radii="300" onClick={closeDialog}>
+                    <Icon src={Icons.Cross} />
+                  </IconButton>
+                </Box>
+              </Header>
+              <Scroll size="300" hideTrack>
+                <Box
+                  style={{
+                    padding: config.space.S400,
+                    paddingRight: config.space.S200,
+                  }}
+                  direction="Column"
+                  gap="500"
+                >
+                  <CreateRoomForm space={space} roomType={roomType} onCreate={closeDialog} />
+                </Box>
+              </Scroll>
+            </Box>
+          </Modal>
+        </OverlayModal>
+      </Suspense>
     </SpaceProvider>
   );
 }

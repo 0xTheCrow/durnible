@@ -38,13 +38,14 @@ import {
   NEW_MESSAGES_DIVIDER_ANCHOR_ID,
 } from './components/NewMessagesDivider';
 import { DayDivider } from './components/DayDivider';
-import { useAtBottom } from './hooks/useAtBottom';
+import { useIsLatestMessageBottomVisible } from './hooks/useIsLatestMessageBottomVisible';
 import { useLiveTimelineUpdates } from './hooks/useLiveTimelineUpdates';
 import { useScrollController } from './hooks/useScrollController';
 import { useTimelineMessageContextValue } from './hooks/useTimelineMessageContextValue';
 import { usePaginationState } from './hooks/usePaginationState';
 import { useAutoMarkAsRead } from './hooks/useAutoMarkAsRead';
 import { resolveTimelineEvents } from './utils/resolveTimelineEvents';
+import { createTimelineWindow, getWindowRange } from './utils/timelineWindow';
 import { traceTimelineScroll } from './utils/scrollTrace';
 import { willEventRender } from './willEventRender';
 
@@ -67,6 +68,15 @@ export function RoomTimeline({
   const scrollRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [timeline, setTimeline] = useState<Timeline>(() => getInitialTimeline(room));
+  const windowStartIndexHintRef = useRef<number>();
+  const range = getWindowRange(
+    timeline.linkedTimelines,
+    timeline.window,
+    windowStartIndexHintRef.current
+  );
+  windowStartIndexHintRef.current = range.oldest;
+  const renderedRangeRef = useRef(range);
+  renderedRangeRef.current = range;
   const [editId, setEditId] = useState<string>();
   const [dividerReadUptoEventId, setDividerReadUptoEventId] = useState<string | undefined>(() =>
     getReadReceiptEventId(room, mx.getSafeUserId())
@@ -97,7 +107,7 @@ export function RoomTimeline({
     isForwardPaginating,
     liveTimelineLinked,
     rangeAtNewest,
-  } = usePaginationState(room, timeline, setTimeline);
+  } = usePaginationState(room, timeline, range, setTimeline);
 
   const { selectionMode, selectedIds, bulkDeleting, handleBulkDelete, handleCancelSelection } =
     useBulkSelection(mx, room);
@@ -115,19 +125,26 @@ export function RoomTimeline({
   const unfocusedAutoScrollRef = useRef(unfocusedAutoScroll);
   unfocusedAutoScrollRef.current = unfocusedAutoScroll;
 
+  const latestMessageBottomRef = useRef<HTMLSpanElement>(null);
+
   const scrollController = useScrollController({
     scrollRef,
     contentRef,
     isInLivePaginationWindowRef,
+    latestMessageBottomRef,
     unfocusedAutoScrollRef,
   });
 
-  const { atBottom, atBottomRef, atBottomAnchorRef } = useAtBottom({
-    scrollRef,
-    onChange: scrollController.syncFollowLive,
-  });
+  const { isLatestMessageBottomVisible, wasLatestMessageBottomInViewRef } =
+    useIsLatestMessageBottomVisible({
+      scrollRef,
+      latestMessageBottomRef,
+      isInLivePaginationWindow,
+      onChange: scrollController.syncLatestMessageBottomFollow,
+    });
+
   useLayoutEffect(() => {
-    if (!liveTimelineLinked) scrollController.releaseFollowLive();
+    if (!liveTimelineLinked) scrollController.releaseLatestMessageBottomFollow();
   }, [liveTimelineLinked, scrollController]);
 
   const clearNewMessagesDivider = useCallback(() => setDividerReadUptoEventId(undefined), []);
@@ -135,8 +152,7 @@ export function RoomTimeline({
     mx,
     room,
     hideActivity,
-    atBottom,
-    isInLivePaginationWindow,
+    isLatestMessageBottomVisible,
     onMarkAsRead: clearNewMessagesDivider,
   });
 
@@ -183,10 +199,11 @@ export function RoomTimeline({
       const totalCount = getTimelinesEventsCount(result.linkedTimelines);
       setTimeline({
         linkedTimelines: result.linkedTimelines,
-        range: {
-          oldest: Math.max(0, result.absoluteIndex - contextSize),
-          newest: Math.min(totalCount, result.absoluteIndex + contextSize),
-        },
+        window: createTimelineWindow(
+          result.linkedTimelines,
+          Math.max(0, result.absoluteIndex - contextSize),
+          Math.min(totalCount, result.absoluteIndex + contextSize)
+        ),
       });
       setFocusRequest({ eventId: targetEventId, nonce: requestId });
       setHighlightFocus(highlight);
@@ -221,11 +238,11 @@ export function RoomTimeline({
   const hadFocusRef = useRef(false);
   useLayoutEffect(() => {
     if (focusRequest) {
-      scrollController.pinToAnchor(
-        `[data-message-id="${CSS.escape(focusRequest.eventId)}"]`,
-        { align: 'start', offsetFraction: 0.12 },
-        { animate: true }
-      );
+      scrollController.haltMomentumScroll();
+      scrollController.pinToAnchor(`[data-message-id="${CSS.escape(focusRequest.eventId)}"]`, {
+        align: 'start',
+        offsetFraction: 0.12,
+      });
       hadFocusRef.current = true;
     } else if (hadFocusRef.current) {
       scrollController.release();
@@ -237,10 +254,10 @@ export function RoomTimeline({
     room,
     setTimeline,
     scrollRef,
-    atBottomRef,
+    wasLatestMessageBottomInViewRef,
     isInLivePaginationWindowRef,
     intentRef: scrollController.intentRef,
-    pinToLiveEnd: scrollController.pinToLiveEnd,
+    pinToLatestMessageBottom: scrollController.pinToLatestMessageBottom,
     unfocusedAutoScroll,
   });
 
@@ -282,6 +299,7 @@ export function RoomTimeline({
   };
 
   const handleJumpToUnread = async () => {
+    scrollController.haltMomentumScroll();
     if (dividerElement) {
       scrollController.pinToAnchor(
         `[data-anchor-id="${NEW_MESSAGES_DIVIDER_ANCHOR_ID}"]`,
@@ -297,16 +315,17 @@ export function RoomTimeline({
     const totalCount = getTimelinesEventsCount(result.linkedTimelines);
     setTimeline({
       linkedTimelines: result.linkedTimelines,
-      range: {
-        oldest: Math.max(0, result.absoluteIndex - contextSize),
-        newest: Math.min(totalCount, result.absoluteIndex + contextSize),
-      },
+      window: createTimelineWindow(
+        result.linkedTimelines,
+        Math.max(0, result.absoluteIndex - contextSize),
+        Math.min(totalCount, result.absoluteIndex + contextSize)
+      ),
     });
     setPendingJumpToDivider(true);
   };
 
   const eventsLength = getTimelinesEventsCount(timeline.linkedTimelines);
-  const { oldest: rangeOldest, newest: rangeNewest } = timeline.range;
+  const { oldest: rangeOldest, newest: rangeNewest } = range;
 
   useEffect(() => {
     traceTimelineScroll('timelineWindow:change', {
@@ -316,6 +335,7 @@ export function RoomTimeline({
       rangeOldest,
       rangeNewest,
       eventsLength,
+      scrollTop: scrollRef.current ? Math.round(scrollRef.current.scrollTop) : null,
     });
   }, [
     isInLivePaginationWindow,
@@ -337,22 +357,31 @@ export function RoomTimeline({
   const { getItems, observeBackAnchor, observeFrontAnchor } = useVirtualPaginator({
     count: eventsLength,
     limit: PAGINATION_LIMIT,
-    range: { start: timeline.range.oldest, end: timeline.range.newest },
-    onRangeChange: useCallback(
-      (range) =>
-        setTimeline((current) => ({
+    range: { start: range.oldest, end: range.newest },
+    onRangeChange: useCallback((nextRange) => {
+      const renderedRange = renderedRangeRef.current;
+      const startShift = nextRange.start - renderedRange.oldest;
+      setTimeline((current) => {
+        const currentStartIndex =
+          getWindowRange(current.linkedTimelines, current.window).oldest + startShift;
+        return {
           ...current,
-          range: { oldest: range.start, newest: range.end },
-        })),
-      []
-    ),
+          window: createTimelineWindow(
+            current.linkedTimelines,
+            Math.max(0, currentStartIndex),
+            Math.max(0, currentStartIndex) + (nextRange.end - nextRange.start)
+          ),
+        };
+      });
+    }, []),
     getScrollElement,
     getItemElement,
     onEnd: handleTimelinePagination,
     shouldRestoreScroll: useCallback(() => {
-      const isIntentFree = scrollController.intentRef.current?.kind === 'free';
-      traceTimelineScroll('paginator:shouldRestoreScroll', { isIntentFree });
-      return isIntentFree;
+      const intentKind = scrollController.intentRef.current?.kind;
+      const isAnchorPinned = intentKind === 'anchor';
+      traceTimelineScroll('paginator:shouldRestoreScroll', { intentKind, isAnchorPinned });
+      return !isAnchorPinned;
     }, [scrollController]),
   });
 
@@ -406,7 +435,9 @@ export function RoomTimeline({
   const isUnreadDividerMissing =
     mountResolved && roomIsUnread && !!readReceiptEventId && !firstUnreadEventId;
   const showUnreadChips =
-    mountResolved && !atBottom && (isDividerOffscreen || isUnreadDividerMissing);
+    mountResolved &&
+    !isLatestMessageBottomVisible &&
+    (isDividerOffscreen || isUnreadDividerMissing);
 
   useLayoutEffect(() => {
     if (didResolveMountRef.current) return;
@@ -415,7 +446,7 @@ export function RoomTimeline({
     if (!scrollElement) return;
     if (mountSnapshot.eventId) return;
     if (!(mountSnapshot.roomIsUnread && mountSnapshot.readReceiptEventId)) {
-      scrollController.pinToLiveEnd();
+      scrollController.pinToLatestMessageBottom();
       setMountResolved(true);
       return;
     }
@@ -435,10 +466,11 @@ export function RoomTimeline({
       const totalCount = getTimelinesEventsCount(result.linkedTimelines);
       setTimeline({
         linkedTimelines: result.linkedTimelines,
-        range: {
-          oldest: Math.max(0, result.absoluteIndex - contextSize),
-          newest: Math.min(totalCount, result.absoluteIndex + contextSize),
-        },
+        window: createTimelineWindow(
+          result.linkedTimelines,
+          Math.max(0, result.absoluteIndex - contextSize),
+          Math.min(totalCount, result.absoluteIndex + contextSize)
+        ),
       });
       setPendingMountPlacement(true);
     })();
@@ -468,9 +500,10 @@ export function RoomTimeline({
 
   const handleJumpToLatest = () => {
     traceTimelineScroll('jumpToLatest:click');
+    scrollController.haltMomentumScroll();
     if (eventId) navigateRoom(room.roomId, undefined, { replace: true });
     setTimeline(getInitialTimeline(room));
-    scrollController.pinToLiveEnd();
+    scrollController.pinToLatestMessageBottom();
     setSliderPosition(1);
   };
 
@@ -576,17 +609,17 @@ export function RoomTimeline({
               );
             })}
 
+            <span data-testid="latest-message-bottom" ref={latestMessageBottomRef} />
+
             {!isInLivePaginationWindow && <div ref={observeFrontAnchor} />}
             {isForwardPaginating && <ForwardPaginationSkeletons layout={messageLayout} />}
-
-            <span ref={atBottomAnchorRef} />
           </Box>
         </Scroll>
         {mountResolved && (
           <JumpToLatestButton
             scrollRef={scrollRef}
             lastMessageId={isInLivePaginationWindow ? lastRenderedEventId : null}
-            atBottom={atBottom}
+            isLatestMessageBottomVisible={isLatestMessageBottomVisible}
             onClick={handleJumpToLatest}
           />
         )}

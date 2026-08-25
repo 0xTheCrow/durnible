@@ -21,17 +21,12 @@ import {
 } from 'folds';
 
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
-import type { AutocompleteQuery, EditorController } from '../../../components/editor';
+import type { EditorController } from '../../../components/editor';
 import {
   CustomEditor,
   EditorToolbar,
   ActiveFormatBadges,
-  AutocompletePrefix,
-  RoomMentionAutocomplete,
-  UserMentionAutocomplete,
-  EmoticonAutocomplete,
   createEmoticonNode,
-  useEditorAutocomplete,
   customHtmlEqualsPlainText,
   trimCustomHtml,
   trimCommand,
@@ -87,7 +82,7 @@ import {
   getVideoMsgContent,
 } from './msgContent';
 import { getMemberDisplayName, getMentionContent, trimReplyFromBody } from '../../../utils/room';
-import { CommandAutocomplete } from './CommandAutocomplete';
+import { ComposerAutocomplete } from './ComposerAutocomplete';
 import { VoiceMessageRecorder } from './VoiceMessageRecorder';
 import { Command, SHRUG, TABLEFLIP, UNFLIP, useCommands } from '../../../hooks/useCommands';
 import { mobileOrTablet } from '../../../utils/user-agent';
@@ -99,7 +94,7 @@ import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
 import { useImagePackRooms } from '../../../hooks/useImagePackRooms';
 import { useRelevantImagePacks } from '../../../hooks/useImagePacks';
 import { ImageUsage } from '../../../plugins/custom-emoji/types';
-import { buildShortcodeMap, emojis as unicodeEmojis } from '../../../plugins/emoji';
+import { buildShortcodeMap, getEmojiData } from '../../../plugins/emoji';
 import { usePowerLevelsContext } from '../../../hooks/usePowerLevels';
 import colorMXID from '../../../../util/colorMXID';
 import { useIsDirectRoom } from '../../../hooks/useRoom';
@@ -127,7 +122,6 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     const useAuthentication = useMediaAuthentication();
     const [enterForNewline] = useSetting(settingsAtom, 'enterForNewline');
     const keybinds = useKeybinds();
-    const [isMarkdownEnabled] = useSetting(settingsAtom, 'isMarkdownEnabled');
     const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
     const [legacyUsernameColor] = useSetting(settingsAtom, 'legacyUsernameColor');
     const direct = useIsDirectRoom();
@@ -180,8 +174,8 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     const imagePacks = useRelevantImagePacks(ImageUsage.Emoticon, imagePackRooms);
 
     const [toolbar, setToolbar] = useSetting(settingsAtom, 'editorToolbar');
-    const [autocompleteQuery, setAutocompleteQuery] =
-      useState<AutocompleteQuery<AutocompletePrefix>>();
+    const isAutocompleteVisibleRef = useRef(false);
+    const closeAutocompleteRef = useRef<() => void>(() => {});
 
     const sendTypingStatus = useTypingStatusUpdater(mx, roomId);
 
@@ -385,15 +379,11 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       const inputElement = editorInputRef.current?.inputElement;
       if (!inputElement) return;
 
-      const shortcodeMap = buildShortcodeMap(imagePacks, unicodeEmojis);
+      const shortcodeMap = buildShortcodeMap(imagePacks, getEmojiData().emojis);
       replaceShortcodesInDom(inputElement, shortcodeMap, mx, useAuthentication);
 
       let plainText = domToPlainText(inputElement).trim();
-      let customHtml = trimCustomHtml(
-        domToMatrixCustomHTML(inputElement, {
-          allowMarkdown: isMarkdownEnabled,
-        })
-      );
+      let customHtml = trimCustomHtml(domToMatrixCustomHTML(inputElement));
       const commandName = getCommandFromDom(inputElement);
       let msgType = MsgType.Text;
 
@@ -501,38 +491,31 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       if (isKeyHotkey('escape', evt)) {
         evt.preventDefault();
         evt.stopPropagation();
-        if (autocompleteQuery) {
-          setAutocompleteQuery(undefined);
+        if (isAutocompleteVisibleRef.current) {
+          closeAutocompleteRef.current();
           return;
         }
         setReplyDraft(undefined);
       }
     };
 
-    const handleEditorChange = useCallback(() => {
-      const inputElement = editorInputRef.current?.inputElement;
-      const empty = inputElement ? isEditorEmpty(inputElement) : true;
-      setHasEditorContent(!empty);
-      latestDraftRef.current = inputElement && !empty ? inputElement.innerHTML : '';
-    }, [editorInputRef]);
+    const handleEditorChange = useCallback(
+      (isEmpty: boolean) => {
+        const inputElement = editorInputRef.current?.inputElement;
+        setHasEditorContent(!isEmpty);
+        latestDraftRef.current = inputElement && !isEmpty ? inputElement.innerHTML : '';
+      },
+      [editorInputRef]
+    );
 
-    const editorAutocomplete = useEditorAutocomplete({
-      editorInputRef: {
+    const editorElementRef = useMemo(
+      () => ({
         get current() {
           return editorInputRef.current?.inputElement ?? null;
         },
-      },
-      mx,
-      useAuthentication,
-      room,
-      roomId,
-    });
-    const {
-      handleMentionSelect,
-      handleRoomMentionSelect,
-      handleEmoticonSelect: handleAutocompleteEmoticonSelect,
-      handleCommandSelect,
-    } = editorAutocomplete;
+      }),
+      [editorInputRef]
+    );
 
     const handleKeyUp: KeyboardEventHandler = useCallback(
       (evt) => {
@@ -541,18 +524,12 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
           return;
         }
 
-        const inputElement = evt.currentTarget as HTMLDivElement;
         if (!hideActivity) {
-          sendTypingStatus(!isEditorEmpty(inputElement));
+          sendTypingStatus(!isEditorEmpty(evt.currentTarget as HTMLDivElement));
         }
-        setAutocompleteQuery(editorAutocomplete.detectAutocompleteQuery(inputElement));
       },
-      [sendTypingStatus, hideActivity, editorAutocomplete]
+      [sendTypingStatus, hideActivity]
     );
-
-    const handleCloseAutocomplete = useCallback(() => {
-      setAutocompleteQuery(undefined);
-    }, []);
 
     const handleEmoticonSelect = (key: string, shortcode: string) => {
       if (key.startsWith('mxc://')) {
@@ -657,37 +634,18 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
             </Dialog>
           </OverlayCenter>
         </Overlay>
-        {autocompleteQuery?.prefix === AutocompletePrefix.RoomMention && (
-          <RoomMentionAutocomplete
-            query={autocompleteQuery}
-            onClose={handleCloseAutocomplete}
-            onSelect={handleRoomMentionSelect}
-          />
-        )}
-        {autocompleteQuery?.prefix === AutocompletePrefix.UserMention && (
-          <UserMentionAutocomplete
-            room={room}
-            query={autocompleteQuery}
-            onClose={handleCloseAutocomplete}
-            onSelect={handleMentionSelect}
-          />
-        )}
-        {autocompleteQuery?.prefix === AutocompletePrefix.Emoticon && (
-          <EmoticonAutocomplete
-            imagePackRooms={imagePackRooms}
-            query={autocompleteQuery}
-            onClose={handleCloseAutocomplete}
-            onSelect={handleAutocompleteEmoticonSelect}
-          />
-        )}
-        {autocompleteQuery?.prefix === AutocompletePrefix.Command && (
-          <CommandAutocomplete
-            room={room}
-            query={autocompleteQuery}
-            onClose={handleCloseAutocomplete}
-            onSelect={handleCommandSelect}
-          />
-        )}
+        <ComposerAutocomplete
+          editorElementRef={editorElementRef}
+          room={room}
+          roomId={roomId}
+          imagePackRooms={imagePackRooms}
+          checkIsAutocompleteVisible={(isAutocompleteVisible) => {
+            isAutocompleteVisibleRef.current = isAutocompleteVisible;
+          }}
+          registerAutocompleteCloser={(closeAutocomplete) => {
+            closeAutocompleteRef.current = closeAutocomplete;
+          }}
+        />
         {isVoiceRecording ? (
           <VoiceMessageRecorder
             onSend={handleVoiceSend}
@@ -713,7 +671,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
                   />
                 )}
                 {replyDraft && (
-                  <div>
+                  <div data-testid="room-input-reply-draft">
                     <Box
                       alignItems="Center"
                       gap="300"
@@ -800,11 +758,18 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
                   )}
                 </EmojiBoardWrapper>
                 {hasEditorContent || !!replyDraft || selectedFiles.length > 0 ? (
-                  <IconButton onClick={submit} variant="SurfaceVariant" size="300" radii="300">
+                  <IconButton
+                    data-testid="room-input-send"
+                    onClick={submit}
+                    variant="SurfaceVariant"
+                    size="300"
+                    radii="300"
+                  >
                     <Icon src={Icons.Send} />
                   </IconButton>
                 ) : (
                   <IconButton
+                    data-testid="room-input-voice-record"
                     onClick={() => setIsVoiceRecording(true)}
                     variant="SurfaceVariant"
                     size="300"
@@ -819,28 +784,13 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
               toolbar && (
                 <div>
                   <Line variant="SurfaceVariant" size="300" />
-                  <EditorToolbar
-                    inputRef={{
-                      get current() {
-                        return editorInputRef.current?.inputElement ?? null;
-                      },
-                    }}
-                    controllerRef={editorInputRef}
-                  />
+                  <EditorToolbar inputRef={editorElementRef} />
                 </div>
               )
             }
           />
         )}
-        {!isVoiceRecording && !toolbar && (
-          <ActiveFormatBadges
-            inputRef={{
-              get current() {
-                return editorInputRef.current?.inputElement ?? null;
-              },
-            }}
-          />
-        )}
+        {!isVoiceRecording && !toolbar && <ActiveFormatBadges inputRef={editorElementRef} />}
       </div>
     );
   }

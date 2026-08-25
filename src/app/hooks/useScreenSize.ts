@@ -1,8 +1,6 @@
 import { createContext, useCallback, useContext, useState } from 'react';
+import { MOBILE_BREAKPOINT, TABLET_BREAKPOINT } from '../styles/breakpoints';
 import { useElementSizeObserver } from './useElementSizeObserver';
-
-export const TABLET_BREAKPOINT = 1124;
-export const MOBILE_BREAKPOINT = 750;
 
 export enum ScreenSize {
   Desktop = 'Desktop',

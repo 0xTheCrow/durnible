@@ -64,7 +64,6 @@ beforeEach(() => {
   store.set(settingsAtom, {
     ...store.get(settingsAtom),
     enterForNewline: false,
-    isMarkdownEnabled: true,
   });
 });
 

@@ -22,6 +22,7 @@ import {
   SelectDateFormat,
   SelectMessageLayout,
   SelectMessageSpacing,
+  SelectNotificationSound,
 } from '../components';
 
 // --- Appearance ---
@@ -98,15 +99,6 @@ function EnterForNewlineSetting() {
     />
   );
 }
-function MarkdownSetting() {
-  const [value, setValue] = useSetting(settingsAtom, 'isMarkdownEnabled');
-  return (
-    <SettingTile
-      title="Markdown Formatting"
-      after={<Switch variant="Primary" value={value} onChange={setValue} />}
-    />
-  );
-}
 function EditorToolbarGestureSetting() {
   const [value, setValue] = useSetting(settingsAtom, 'isEditorToolbarGestureRequired');
   return (
@@ -169,7 +161,8 @@ function UrlPreviewSetting() {
   const [value, setValue] = useSetting(settingsAtom, 'urlPreview');
   return (
     <SettingTile
-      title="URL Preview"
+      title="Url Preview"
+      description="Show rich link previews and embeds in unencrypted rooms."
       after={<Switch variant="Primary" value={value} onChange={setValue} />}
     />
   );
@@ -178,7 +171,8 @@ function EncUrlPreviewSetting() {
   const [value, setValue] = useSetting(settingsAtom, 'encUrlPreview');
   return (
     <SettingTile
-      title="URL Preview in Encrypted Room"
+      title="Url Preview in Encrypted Room"
+      description="Show rich link previews and embeds in encrypted rooms."
       after={<Switch variant="Primary" value={value} onChange={setValue} />}
     />
   );
@@ -220,15 +214,6 @@ function EmbedSoundCloudSetting() {
     />
   );
 }
-function EmbedNitterSetting() {
-  const [value, setValue] = useSetting(settingsAtom, 'embedNitter');
-  return (
-    <SettingTile
-      title="Embed Twitter / X (Nitter)"
-      after={<Switch variant="Primary" value={value} onChange={setValue} />}
-    />
-  );
-}
 function ShowHiddenEventsSetting() {
   const [value, setValue] = useSetting(settingsAtom, 'showHiddenEvents');
   return (
@@ -250,12 +235,55 @@ function UnfocusedAutoScrollSetting() {
 }
 function PauseGifsSetting() {
   const [value, setValue] = useSetting(settingsAtom, 'pauseGifs');
+  const [imagesValue, setImagesValue] = useSetting(settingsAtom, 'pauseGifImages');
+  const [stickersValue, setStickersValue] = useSetting(settingsAtom, 'pauseGifStickers');
+  const [emojisValue, setEmojisValue] = useSetting(settingsAtom, 'pauseGifEmojis');
   return (
-    <SettingTile
-      title="Play GIFs on Hover"
-      description="GIFs are paused by default and only animate while hovered."
-      after={<Switch variant="Primary" value={value} onChange={setValue} />}
-    />
+    <>
+      <SettingTile
+        title="Play GIFs on Hover"
+        description="GIFs are paused by default and only animate while hovered."
+        after={<Switch variant="Primary" value={value} onChange={setValue} />}
+      />
+      <Box direction="Column" gap="100">
+        <SettingTile
+          title="GIF Images"
+          disabled={!value}
+          after={
+            <Switch
+              variant="Primary"
+              value={imagesValue}
+              onChange={setImagesValue}
+              disabled={!value}
+            />
+          }
+        />
+        <SettingTile
+          title="Stickers"
+          disabled={!value}
+          after={
+            <Switch
+              variant="Primary"
+              value={stickersValue}
+              onChange={setStickersValue}
+              disabled={!value}
+            />
+          }
+        />
+        <SettingTile
+          title="Emojis"
+          disabled={!value}
+          after={
+            <Switch
+              variant="Primary"
+              value={emojisValue}
+              onChange={setEmojisValue}
+              disabled={!value}
+            />
+          }
+        />
+      </Box>
+    </>
   );
 }
 function ReplyHighlightSetting() {
@@ -320,12 +348,52 @@ function MessageSpacingSetting() {
 
 // --- Notifications ---
 function NotificationSoundSetting() {
-  const [value, setValue] = useSetting(settingsAtom, 'isNotificationSounds');
+  const [value, setValue] = useSetting(settingsAtom, 'isNotificationSoundEnabled');
   return (
     <SettingTile
       title="Notification Sound"
       description="Play sound when new messages arrive."
       after={<Switch variant="Primary" value={value} onChange={setValue} />}
+    />
+  );
+}
+function MessageNotificationSoundSetting() {
+  const [isNotificationSoundEnabled] = useSetting(settingsAtom, 'isNotificationSoundEnabled');
+  const [messageNotificationSoundId, setMessageNotificationSoundId] = useSetting(
+    settingsAtom,
+    'messageNotificationSoundId'
+  );
+  return (
+    <SettingTile
+      title="Message Sound"
+      description="Sound played when a new message arrive."
+      after={
+        <SelectNotificationSound
+          soundId={messageNotificationSoundId}
+          disabled={!isNotificationSoundEnabled}
+          onSelect={setMessageNotificationSoundId}
+        />
+      }
+    />
+  );
+}
+function InviteNotificationSoundSetting() {
+  const [isNotificationSoundEnabled] = useSetting(settingsAtom, 'isNotificationSoundEnabled');
+  const [inviteNotificationSoundId, setInviteNotificationSoundId] = useSetting(
+    settingsAtom,
+    'inviteNotificationSoundId'
+  );
+  return (
+    <SettingTile
+      title="Invite Sound"
+      description="Sound played when a new invitation arrive."
+      after={
+        <SelectNotificationSound
+          soundId={inviteNotificationSoundId}
+          disabled={!isNotificationSoundEnabled}
+          onSelect={setInviteNotificationSoundId}
+        />
+      }
     />
   );
 }
@@ -469,15 +537,6 @@ export const settingsSearchData: SettingsSearchEntry<SettingsPages>[] = [
     pageName: 'General',
     sectionName: 'Editor',
     Render: EnterForNewlineSetting,
-  },
-  {
-    id: 'markdown',
-    title: 'Markdown Formatting',
-    keywords: ['markdown', 'bold', 'italic', 'formatting', 'editor', 'markup', 'rich text'],
-    page: SettingsPages.GeneralPage,
-    pageName: 'General',
-    sectionName: 'Editor',
-    Render: MarkdownSetting,
   },
   {
     id: 'editor-toolbar-gesture',
@@ -628,15 +687,6 @@ export const settingsSearchData: SettingsSearchEntry<SettingsPages>[] = [
     Render: EmbedSoundCloudSetting,
   },
   {
-    id: 'embed-nitter',
-    title: 'Embed Twitter / X (Nitter)',
-    keywords: ['twitter', 'nitter', 'x', 'embed', 'social', 'media', 'tweet'],
-    page: SettingsPages.GeneralPage,
-    pageName: 'General',
-    sectionName: 'Messages',
-    Render: EmbedNitterSetting,
-  },
-  {
     id: 'show-hidden-events',
     title: 'Show Hidden Events',
     keywords: ['hidden', 'events', 'system', 'messages', 'debug', 'developer'],
@@ -659,7 +709,17 @@ export const settingsSearchData: SettingsSearchEntry<SettingsPages>[] = [
     id: 'pause-gifs',
     title: 'Play GIFs on Hover',
     description: 'GIFs are paused by default and only animate while hovered.',
-    keywords: ['gif', 'animate', 'animation', 'hover', 'pause', 'media'],
+    keywords: [
+      'gif',
+      'animate',
+      'animation',
+      'hover',
+      'pause',
+      'media',
+      'sticker',
+      'emoji',
+      'image',
+    ],
     page: SettingsPages.GeneralPage,
     pageName: 'General',
     sectionName: 'Messages',
@@ -717,6 +777,36 @@ export const settingsSearchData: SettingsSearchEntry<SettingsPages>[] = [
     Render: NotificationSoundSetting,
   },
   {
+    id: 'message-notification-sound',
+    title: 'Message Sound',
+    description: 'Sound played when a new message arrive.',
+    keywords: ['notification', 'sound', 'audio', 'message', 'tone', 'chime', 'ping', 'ringtone'],
+    page: SettingsPages.NotificationPage,
+    pageName: 'Notifications',
+    sectionName: 'System',
+    Render: MessageNotificationSoundSetting,
+  },
+  {
+    id: 'invite-notification-sound',
+    title: 'Invite Sound',
+    description: 'Sound played when a new invitation arrive.',
+    keywords: [
+      'notification',
+      'sound',
+      'audio',
+      'invite',
+      'invitation',
+      'tone',
+      'chime',
+      'ringtone',
+    ],
+    page: SettingsPages.NotificationPage,
+    pageName: 'Notifications',
+    sectionName: 'System',
+    Render: InviteNotificationSoundSetting,
+  },
+  /*
+  {
     id: 'email-notification',
     title: 'Email Notification',
     description: 'Send notifications to your email address.',
@@ -725,6 +815,7 @@ export const settingsSearchData: SettingsSearchEntry<SettingsPages>[] = [
     pageName: 'Notifications',
     sectionName: 'System',
   },
+  */
   {
     id: 'keyword-notifications',
     title: 'Keyword Messages',

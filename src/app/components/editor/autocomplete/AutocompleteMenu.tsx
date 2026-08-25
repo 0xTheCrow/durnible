@@ -8,6 +8,8 @@ import * as css from './AutocompleteMenu.css';
 import { preventScrollWithArrowKey, stopPropagation } from '../../../utils/keyboard';
 import { useAlive } from '../../../hooks/useAlive';
 
+const preventFocusLoss = (evt: React.MouseEvent) => evt.preventDefault();
+
 type AutocompleteMenuProps = {
   onClose: () => void;
   headerContent: ReactNode;
@@ -38,7 +40,7 @@ export function AutocompleteMenu({ headerContent, onClose, children }: Autocompl
             escapeDeactivates: stopPropagation,
           }}
         >
-          <Menu className={css.AutocompleteMenu}>
+          <Menu className={css.AutocompleteMenu} onMouseDown={preventFocusLoss}>
             <Header className={css.AutocompleteMenuHeader} size="400">
               {headerContent}
             </Header>

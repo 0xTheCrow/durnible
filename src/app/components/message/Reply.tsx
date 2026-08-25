@@ -146,6 +146,7 @@ export const Reply = as<'div', ReplyProps>(
             )
           }
           data-event-id={replyEventId}
+          data-testid="reply-chip"
           onClick={onClick}
         >
           {showContent ? (

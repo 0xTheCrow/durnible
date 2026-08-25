@@ -17,7 +17,7 @@ import { useRoomNavigate } from './useRoomNavigate';
 import { Membership, StateEvent } from '../../types/matrix/room';
 import { getStateEvent } from '../utils/room';
 import { splitWithSpace } from '../utils/common';
-import { createRoomEncryptionState } from '../components/create-room';
+import { createRoomEncryptionState } from '../components/create-room/encryption';
 
 export const SHRUG = '¯\\_(ツ)_/¯';
 export const TABLEFLIP = '(╯°□°)╯︵ ┻━┻';

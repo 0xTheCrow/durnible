@@ -11,8 +11,7 @@ type UseAutoMarkAsReadParams = {
   mx: MatrixClient;
   room: Room;
   hideActivity: boolean;
-  atBottom: boolean;
-  isInLivePaginationWindow: boolean;
+  isLatestMessageBottomVisible: boolean;
   onMarkAsRead?: () => void;
 };
 
@@ -25,8 +24,7 @@ export const useAutoMarkAsRead = ({
   mx,
   room,
   hideActivity,
-  atBottom,
-  isInLivePaginationWindow,
+  isLatestMessageBottomVisible,
   onMarkAsRead,
 }: UseAutoMarkAsReadParams): UseAutoMarkAsReadResult => {
   const [docFocused, setDocFocused] = useState(() =>
@@ -43,19 +41,17 @@ export const useAutoMarkAsRead = ({
 
   useEffect(() => {
     if (!docFocused) return;
-    if (!atBottom) return;
-    if (!isInLivePaginationWindow) return;
+    if (!isLatestMessageBottomVisible) return;
     markRoomAsRead();
-  }, [docFocused, atBottom, isInLivePaginationWindow, markRoomAsRead]);
+  }, [docFocused, isLatestMessageBottomVisible, markRoomAsRead]);
 
   useLiveEventArrive(
     room,
     useCallback(() => {
-      if (!atBottom) return;
-      if (!isInLivePaginationWindow) return;
+      if (!isLatestMessageBottomVisible) return;
       if (typeof document !== 'undefined' && !document.hasFocus()) return;
       markRoomAsRead();
-    }, [atBottom, isInLivePaginationWindow, markRoomAsRead])
+    }, [isLatestMessageBottomVisible, markRoomAsRead])
   );
 
   const readReceiptEventId = getReadReceiptEventId(room, mx.getSafeUserId());

@@ -30,7 +30,7 @@ import { settingsAtom } from '../../../state/settings';
 import { useKeybinds } from '../../../state/hooks/keybinds';
 import { useRelevantImagePacks } from '../../../hooks/useImagePacks';
 import { ImageUsage } from '../../../plugins/custom-emoji/types';
-import { buildShortcodeMap, emojis as unicodeEmojis } from '../../../plugins/emoji';
+import { buildShortcodeMap, getEmojiData } from '../../../plugins/emoji';
 import { EmojiBoardWrapper } from '../../../components/emoji-board';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
@@ -54,12 +54,17 @@ export const MessageEditor = as<'div', MessageEditorProps>(
     const [enterForNewline] = useSetting(settingsAtom, 'enterForNewline');
     const keybinds = useKeybinds();
     const [globalToolbar] = useSetting(settingsAtom, 'editorToolbar');
-    const [isMarkdownEnabled] = useSetting(settingsAtom, 'isMarkdownEnabled');
     const [toolbar, setToolbar] = useState(globalToolbar);
     const isComposing = useComposingCheck();
     const editorInputRef = useRef<EditorController | null>(null);
-    const editableElementRef = useRef<HTMLDivElement | null>(null);
-    editableElementRef.current = editorInputRef.current?.inputElement ?? null;
+    const editorElementRef = React.useMemo(
+      () => ({
+        get current() {
+          return editorInputRef.current?.inputElement ?? null;
+        },
+      }),
+      []
+    );
     const stableImagePackRooms = React.useMemo(() => imagePackRooms ?? [], [imagePackRooms]);
     const imagePacks = useRelevantImagePacks(ImageUsage.Emoticon, stableImagePackRooms);
 
@@ -67,11 +72,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
       useState<AutocompleteQuery<AutocompletePrefix>>();
 
     const editorAutocomplete = useEditorAutocomplete({
-      editorInputRef: {
-        get current() {
-          return editorInputRef.current?.inputElement ?? null;
-        },
-      },
+      editorInputRef: editorElementRef,
       mx,
       useAuthentication,
       room,
@@ -108,17 +109,13 @@ export const MessageEditor = as<'div', MessageEditorProps>(
     }, [room, mEvent]);
 
     const buildEditContent = useCallback((): IContent | undefined => {
-      const shortcodeMap = buildShortcodeMap(imagePacks, unicodeEmojis);
+      const shortcodeMap = buildShortcodeMap(imagePacks, getEmojiData().emojis);
       const inputElement = editorInputRef.current?.inputElement;
       if (!inputElement) return undefined;
 
       replaceShortcodesInDom(inputElement, shortcodeMap, mx, useAuthentication);
       const plainText = domToPlainText(inputElement).trim();
-      const customHtml = trimCustomHtml(
-        domToMatrixCustomHTML(inputElement, {
-          allowMarkdown: isMarkdownEnabled,
-        })
-      );
+      const customHtml = trimCustomHtml(domToMatrixCustomHTML(inputElement));
       const mentionData = getMentionsFromDom(inputElement, mx);
 
       const [prevBody, prevCustomHtml, prevMentions] = getPrevBodyAndFormattedBody();
@@ -163,7 +160,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
           rel_type: RelationType.Replace,
         },
       };
-    }, [mx, mEvent, isMarkdownEnabled, getPrevBodyAndFormattedBody, imagePacks, useAuthentication]);
+    }, [mx, mEvent, getPrevBodyAndFormattedBody, imagePacks, useAuthentication]);
 
     const [saveState, save] = useAsyncCallback(
       useCallback(async () => {
@@ -240,7 +237,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
         typeof customHtml === 'string'
           ? customHtml
           : sanitizeText(plainBody).replace(/\n/g, '<br>');
-      controller.setContent(html, { convertListsToMarkdown: isMarkdownEnabled });
+      controller.setContent(html);
       const inputElement = controller.inputElement;
       if (inputElement) {
         inputElement.focus();
@@ -259,7 +256,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
         sel?.removeAllRanges();
         sel?.addRange(range);
       }
-    }, [getPrevBodyAndFormattedBody, isMarkdownEnabled]);
+    }, [getPrevBodyAndFormattedBody]);
 
     useEffect(() => {
       if (saveState.status === AsyncStatus.Success) {
@@ -372,14 +369,7 @@ export const MessageEditor = as<'div', MessageEditorProps>(
               {toolbar && (
                 <div>
                   <Line variant="SurfaceVariant" size="300" />
-                  <EditorToolbar
-                    inputRef={{
-                      get current() {
-                        return editorInputRef.current?.inputElement ?? null;
-                      },
-                    }}
-                    controllerRef={editorInputRef}
-                  />
+                  <EditorToolbar inputRef={editorElementRef} />
                 </div>
               )}
             </>

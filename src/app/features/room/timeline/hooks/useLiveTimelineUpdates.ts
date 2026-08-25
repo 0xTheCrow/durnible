@@ -7,6 +7,7 @@ import type { Timeline } from '../timelineState';
 import { getTimelinesEventsCount } from '../timelineUtils';
 import { isModifierTimelineEvent } from '../../../../utils/room';
 import { getScrollBottomDistance } from '../../../../utils/dom';
+import { createTimelineWindow } from '../utils/timelineWindow';
 import { traceTimelineScroll } from '../utils/scrollTrace';
 import type { ScrollIntent } from './useScrollController';
 
@@ -14,10 +15,10 @@ type UseLiveTimelineUpdatesParams = {
   room: Room;
   setTimeline: Dispatch<SetStateAction<Timeline>>;
   scrollRef: RefObject<HTMLDivElement>;
-  atBottomRef: RefObject<boolean>;
+  wasLatestMessageBottomInViewRef: RefObject<boolean>;
   isInLivePaginationWindowRef: RefObject<boolean>;
   intentRef: RefObject<ScrollIntent>;
-  pinToLiveEnd: () => void;
+  pinToLatestMessageBottom: () => void;
   unfocusedAutoScroll: boolean;
 };
 
@@ -25,10 +26,10 @@ export const useLiveTimelineUpdates = ({
   room,
   setTimeline,
   scrollRef,
-  atBottomRef,
+  wasLatestMessageBottomInViewRef,
   isInLivePaginationWindowRef,
   intentRef,
-  pinToLiveEnd,
+  pinToLatestMessageBottom,
   unfocusedAutoScroll,
 }: UseLiveTimelineUpdatesParams): void => {
   const handleLiveEventArrive = useCallback(
@@ -42,36 +43,37 @@ export const useLiveTimelineUpdates = ({
 
       const focused = typeof document !== 'undefined' && document.hasFocus();
       const autoPinEnabled = focused || unfocusedAutoScroll;
-      const followingLive = intentRef.current?.kind === 'followLive';
-      const atBottom = !!atBottomRef.current;
+      const followingLatestMessageBottom = intentRef.current?.kind === 'latestMessageBottom';
+      const wasLatestMessageBottomInView = !!wasLatestMessageBottomInViewRef.current;
       const isInLivePaginationWindow = !!isInLivePaginationWindowRef.current;
-      const shouldFollowLiveEdge = followingLive || (atBottom && isInLivePaginationWindow);
+      const shouldFollowLatestMessageBottom =
+        followingLatestMessageBottom || (wasLatestMessageBottomInView && isInLivePaginationWindow);
       const scrollElement = scrollRef.current;
 
       traceTimelineScroll('liveEventArrive', {
         eventId: mEvent.getId(),
-        followingLive,
-        atBottom,
+        followingLatestMessageBottom,
+        wasLatestMessageBottomInView,
         isInLivePaginationWindow,
         focused,
         autoPinEnabled,
         scrollBottomDistance: scrollElement
           ? Math.round(getScrollBottomDistance(scrollElement))
           : null,
-        shouldFollowLiveEdge,
+        shouldFollowLatestMessageBottom,
       });
 
-      if (shouldFollowLiveEdge) {
-        if (autoPinEnabled) pinToLiveEnd();
+      if (shouldFollowLatestMessageBottom) {
+        if (autoPinEnabled) pinToLatestMessageBottom();
         setTimeline((current) => {
           const total = getTimelinesEventsCount(current.linkedTimelines);
-          const windowSize = current.range.newest - current.range.oldest;
           return {
             ...current,
-            range: {
-              oldest: Math.max(0, total - windowSize),
-              newest: total,
-            },
+            window: createTimelineWindow(
+              current.linkedTimelines,
+              Math.max(0, total - current.window.size),
+              total
+            ),
           };
         });
         return;
@@ -82,10 +84,10 @@ export const useLiveTimelineUpdates = ({
     [
       setTimeline,
       scrollRef,
-      atBottomRef,
+      wasLatestMessageBottomInViewRef,
       isInLivePaginationWindowRef,
       intentRef,
-      pinToLiveEnd,
+      pinToLatestMessageBottom,
       unfocusedAutoScroll,
     ]
   );

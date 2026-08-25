@@ -21,6 +21,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useAtomValue } from 'jotai';
 import {
   clearCacheAndReload,
+  clearLocalSessionData,
   clearLoginData,
   initClient,
   logoutClient,
@@ -123,10 +124,7 @@ function ClientRootOptions({ mx }: { mx?: MatrixClient }) {
 const useLogoutListener = (mx?: MatrixClient) => {
   useEffect(() => {
     const handleLogout: HttpApiEventHandlerMap[HttpApiEvent.SessionLoggedOut] = async () => {
-      mx?.stopClient();
-      await mx?.clearStores();
-      window.localStorage.clear();
-      window.location.reload();
+      await clearLocalSessionData(mx);
     };
 
     mx?.on(HttpApiEvent.SessionLoggedOut, handleLogout);

@@ -470,6 +470,7 @@ export const Message = as<'div', MessageProps>(
                 <IconButton
                   onClick={onReplyClick}
                   data-event-id={mEvent.getId()}
+                  data-testid="message-reply-btn"
                   variant="SurfaceVariant"
                   size="300"
                   radii="300"

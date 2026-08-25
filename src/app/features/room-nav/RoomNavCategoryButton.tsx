@@ -1,7 +1,8 @@
 import React from 'react';
-import { as, Chip, Icon, Icons, Text } from 'folds';
+import { as, Chip, Icon, Icons } from 'folds';
 import classNames from 'classnames';
 import * as css from './styles.css';
+import { TruncatedText } from '../../components/TruncatedText';
 
 export const RoomNavCategoryButton = as<'button', { closed?: boolean }>(
   ({ className, closed, children, ...props }, ref) => (
@@ -19,9 +20,9 @@ export const RoomNavCategoryButton = as<'button', { closed?: boolean }>(
       {...props}
       ref={ref}
     >
-      <Text size="O400" priority="300" truncate>
+      <TruncatedText size="O400" priority="300">
         {children}
-      </Text>
+      </TruncatedText>
     </Chip>
   )
 );

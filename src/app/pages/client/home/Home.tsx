@@ -52,7 +52,12 @@ import { makeNavCategoryId } from '../../../state/closedNavCategories';
 import { roomToUnreadAtom } from '../../../state/room/roomToUnread';
 import { useCategoryHandler } from '../../../hooks/useCategoryHandler';
 import { useNavToActivePathMapper } from '../../../hooks/useNavToActivePathMapper';
-import { PageNav, PageNavHeader, PageNavContent } from '../../../components/page';
+import {
+  AdjustablePageNav,
+  PageNavHeader,
+  PageNavContent,
+  PageNavLayoutMenuItems,
+} from '../../../components/page';
 import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
 import { useRoomsUnread } from '../../../state/hooks/unread';
 import { markAsRead } from '../../../utils/notifications';
@@ -67,11 +72,13 @@ import {
 import { UseStateProvider } from '../../../components/UseStateProvider';
 import { JoinAddressPrompt } from '../../../components/join-address-prompt';
 import type { _RoomSearchParams } from '../../paths';
+import { TruncatedText } from '../../../components/TruncatedText';
 
 type HomeMenuProps = {
+  isDrawerMode?: boolean;
   onClose: () => void;
 };
-const HomeMenu = forwardRef<HTMLDivElement, HomeMenuProps>(({ onClose }, ref) => {
+const HomeMenu = forwardRef<HTMLDivElement, HomeMenuProps>(({ isDrawerMode, onClose }, ref) => {
   const orphanRooms = useHomeRooms();
   const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
   const unread = useRoomsUnread(orphanRooms, roomToUnreadAtom);
@@ -97,12 +104,13 @@ const HomeMenu = forwardRef<HTMLDivElement, HomeMenuProps>(({ onClose }, ref) =>
             Mark as Read
           </Text>
         </MenuItem>
+        <PageNavLayoutMenuItems isDrawerMode={isDrawerMode} onClose={onClose} />
       </Box>
     </Menu>
   );
 });
 
-function HomeHeader() {
+function HomeHeader({ isDrawerMode }: { isDrawerMode?: boolean }) {
   const [menuAnchor, setMenuAnchor] = useState<RectCords>();
 
   const handleOpenMenu: MouseEventHandler<HTMLButtonElement> = (evt) => {
@@ -118,9 +126,7 @@ function HomeHeader() {
       <PageNavHeader>
         <Box alignItems="Center" grow="Yes" gap="300">
           <Box grow="Yes">
-            <Text size="H4" truncate>
-              Home
-            </Text>
+            <TruncatedText size="H4">Home</TruncatedText>
           </Box>
           <Box>
             <IconButton aria-pressed={!!menuAnchor} variant="Background" onClick={handleOpenMenu}>
@@ -146,7 +152,7 @@ function HomeHeader() {
               escapeDeactivates: stopPropagation,
             }}
           >
-            <HomeMenu onClose={() => setMenuAnchor(undefined)} />
+            <HomeMenu isDrawerMode={isDrawerMode} onClose={() => setMenuAnchor(undefined)} />
           </FocusTrap>
         }
       />
@@ -174,9 +180,7 @@ function HomeEmpty() {
         options={
           <>
             <Button onClick={() => navigate(getHomeCreatePath())} variant="Secondary" size="300">
-              <Text size="B300" truncate>
-                Create Room
-              </Text>
+              <TruncatedText size="B300">Create Room</TruncatedText>
             </Button>
             <Button
               onClick={() => navigate(getExplorePath())}
@@ -184,9 +188,7 @@ function HomeEmpty() {
               fill="Soft"
               size="300"
             >
-              <Text size="B300" truncate>
-                Explore Community Rooms
-              </Text>
+              <TruncatedText size="B300">Explore Community Rooms</TruncatedText>
             </Button>
           </>
         }
@@ -241,8 +243,8 @@ export function Home({ isDrawerMode, extra }: HomeProps = {}) {
   );
 
   return (
-    <PageNav>
-      <HomeHeader />
+    <AdjustablePageNav isDrawerMode={isDrawerMode}>
+      <HomeHeader isDrawerMode={isDrawerMode} />
       {noRoomToDisplay ? (
         <HomeEmpty />
       ) : (
@@ -261,9 +263,9 @@ export function Home({ isDrawerMode, extra }: HomeProps = {}) {
                         <Icon src={Icons.Plus} size="100" />
                       </Avatar>
                       <Box as="span" grow="Yes">
-                        <Text as="span" size="Inherit" truncate>
+                        <TruncatedText as="span" size="Inherit">
                           Create Room
-                        </Text>
+                        </TruncatedText>
                       </Box>
                     </Box>
                   </NavItemContent>
@@ -280,9 +282,9 @@ export function Home({ isDrawerMode, extra }: HomeProps = {}) {
                               <Icon src={Icons.Link} size="100" />
                             </Avatar>
                             <Box as="span" grow="Yes">
-                              <Text as="span" size="Inherit" truncate>
+                              <TruncatedText as="span" size="Inherit">
                                 Join with Address
-                              </Text>
+                              </TruncatedText>
                             </Box>
                           </Box>
                         </NavItemContent>
@@ -315,9 +317,9 @@ export function Home({ isDrawerMode, extra }: HomeProps = {}) {
                         <Icon src={Icons.Search} size="100" filled={searchSelected} />
                       </Avatar>
                       <Box as="span" grow="Yes">
-                        <Text as="span" size="Inherit" truncate>
+                        <TruncatedText as="span" size="Inherit">
                           Message Search
-                        </Text>
+                        </TruncatedText>
                       </Box>
                     </Box>
                   </NavItemContent>
@@ -372,6 +374,6 @@ export function Home({ isDrawerMode, extra }: HomeProps = {}) {
         </PageNavContent>
       )}
       {extra}
-    </PageNav>
+    </AdjustablePageNav>
   );
 }

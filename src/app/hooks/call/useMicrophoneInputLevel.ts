@@ -9,11 +9,20 @@ export type MicrophoneInputLevel = {
   isMicrophoneAvailable: boolean;
 };
 
-export const useMicrophoneInputLevel = (audioInputDeviceId?: string): MicrophoneInputLevel => {
+export const useMicrophoneInputLevel = (
+  audioInputDeviceId?: string,
+  isEnabled = false
+): MicrophoneInputLevel => {
   const [inputLevel, setInputLevel] = useState(0);
-  const [isMicrophoneAvailable, setIsMicrophoneAvailable] = useState(true);
+  const [isMicrophoneAvailable, setIsMicrophoneAvailable] = useState(false);
 
   useEffect(() => {
+    if (!isEnabled) {
+      setInputLevel(0);
+      setIsMicrophoneAvailable(false);
+      return undefined;
+    }
+
     let isCancelled = false;
     let mediaStream: MediaStream | undefined;
     let audioContext: AudioContext | undefined;
@@ -55,7 +64,7 @@ export const useMicrophoneInputLevel = (audioInputDeviceId?: string): Microphone
       setInputLevel(0);
       stopMonitoring();
     };
-  }, [audioInputDeviceId]);
+  }, [audioInputDeviceId, isEnabled]);
 
   return { inputLevel, isMicrophoneAvailable };
 };

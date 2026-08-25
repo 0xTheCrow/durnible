@@ -38,10 +38,7 @@ export function TestWrapper({
     []
   );
   return (
-    <MemoryRouter
-      initialEntries={[route]}
-      future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
-    >
+    <MemoryRouter initialEntries={[route]}>
       <ScreenSizeProvider value={screenSize}>
         <ClientConfigProvider value={clientConfig}>
           <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>

@@ -4,6 +4,7 @@ import {
   MATRIX_GALLERY_INDEX_PROPERTY_NAME,
 } from '../../src/types/matrix/common';
 import type { Settings } from '../../src/app/state/settings';
+import { AccountDataEvent } from '../../src/types/matrix/accountData';
 
 export const HOMESERVER_BASE_URL = 'https://matrix.test';
 export const TEST_USER_ID = '@tester:matrix.test';
@@ -106,12 +107,44 @@ export const textEvent = (index: number): Record<string, unknown> => ({
   origin_server_ts: 1700000000010 + index,
 });
 
-const initialSync = (
-  extraTimelineEvents: Record<string, unknown>[] = []
-): Record<string, unknown> => ({
+export const historyEvent = (index: number): Record<string, unknown> => ({
+  type: 'm.room.message',
+  sender: TEST_USER_ID,
+  content: { msgtype: 'm.text', body: `history message ${index}` },
+  event_id: `$history${index}`,
+  origin_server_ts: 1699999990000 + index,
+});
+
+export const replyEvent = (index: number, repliedToEventId: string): Record<string, unknown> => ({
+  type: 'm.room.message',
+  sender: TEST_USER_ID,
+  content: {
+    msgtype: 'm.text',
+    body: `> replied\n\nreply message ${index}`,
+    'm.relates_to': { 'm.in_reply_to': { event_id: repliedToEventId } },
+  },
+  event_id: `$reply${index}`,
+  origin_server_ts: 1700000000010 + index,
+});
+
+export const TEST_CUSTOM_EMOJI_SHORTCODE = 'durnibletestemoji';
+export const TEST_CUSTOM_EMOJI_MXC = 'mxc://matrix.test/customemoji';
+
+const userImagePackEvent = (): Record<string, unknown> => ({
+  type: AccountDataEvent.PoniesUserEmotes,
+  content: {
+    pack: { display_name: 'Test Pack', usage: ['emoticon'] },
+    images: { [TEST_CUSTOM_EMOJI_SHORTCODE]: { url: TEST_CUSTOM_EMOJI_MXC } },
+  },
+});
+
+const initialSync = ({
+  timelineEvents = [],
+  userImagePack = false,
+}: StubHomeserverOptions): Record<string, unknown> => ({
   next_batch: 's_1',
   device_one_time_keys_count: { signed_curve25519: 50 },
-  account_data: { events: [] },
+  account_data: { events: userImagePack ? [userImagePackEvent()] : [] },
   presence: { events: [] },
   rooms: {
     join: {
@@ -143,7 +176,7 @@ const initialSync = (
               event_id: '$first',
               origin_server_ts: 1700000000001,
             },
-            ...extraTimelineEvents,
+            ...timelineEvents,
           ],
           prev_batch: 'p_0',
           limited: false,
@@ -163,6 +196,50 @@ const emptySync = (): Record<string, unknown> => ({
   account_data: { events: [] },
   presence: { events: [] },
   rooms: { join: {}, invite: {}, leave: {} },
+});
+
+export const liveMessageEvent = (id: string, body: string): Record<string, unknown> => ({
+  type: 'm.room.message',
+  sender: TEST_USER_ID,
+  content: { msgtype: 'm.text', body },
+  event_id: id,
+  origin_server_ts: 1700000100000,
+});
+
+export const reactionEvent = (
+  id: string,
+  reactsToEventId: string,
+  key: string
+): Record<string, unknown> => ({
+  type: 'm.reaction',
+  sender: TEST_USER_ID,
+  content: { 'm.relates_to': { rel_type: 'm.annotation', event_id: reactsToEventId, key } },
+  event_id: id,
+  origin_server_ts: 1700000100000,
+});
+
+const liveSync = (
+  batch: number,
+  events: Record<string, unknown>[],
+  isLimited: boolean
+): Record<string, unknown> => ({
+  next_batch: `s_${batch}`,
+  account_data: { events: [] },
+  presence: { events: [] },
+  rooms: {
+    join: {
+      [TEST_ROOM_ID]: {
+        summary: {},
+        state: { events: [] },
+        timeline: { events, prev_batch: `p_${batch}`, limited: isLimited },
+        ephemeral: { events: [] },
+        account_data: { events: [] },
+        unread_notifications: { notification_count: 0, highlight_count: 0 },
+      },
+    },
+    invite: {},
+    leave: {},
+  },
 });
 
 const json = (route: Route, body: unknown, status = 200): Promise<void> =>
@@ -185,7 +262,6 @@ export const seedSession = (context: BrowserContext): Promise<void> =>
 
 export const RICH_TEXT_EDITOR_SETTINGS: Partial<Settings> = {
   editorToolbar: true,
-  isMarkdownEnabled: true,
 };
 
 export const seedSettings = (page: Page, settings: Partial<Settings>): Promise<void> =>
@@ -193,15 +269,27 @@ export const seedSettings = (page: Page, settings: Partial<Settings>): Promise<v
     localStorage.setItem('settings', serializedSettings);
   }, JSON.stringify(settings));
 
+export type PushTimelineOptions = {
+  isLimited?: boolean;
+};
+
 export type HomeserverStub = {
   sentEvents: SentEvent[];
   unmatched: string[];
+  pushTimeline: (events: Record<string, unknown>[], options?: PushTimelineOptions) => void;
+  historyRequested: Promise<void>;
 };
+
+const SYNC_LONG_POLL_MS = 30_000;
 
 export type StubHomeserverOptions = {
   timelineEvents?: Record<string, unknown>[];
+  echoSentEvents?: boolean;
+  userImagePack?: boolean;
   audioResponse?: { body: Buffer; contentType: string };
   videoResponse?: { body: Buffer; contentType: string };
+  historyEvents?: Record<string, unknown>[];
+  historyDelayMs?: number;
 };
 
 const TRANSPARENT_PNG = Buffer.from(
@@ -236,8 +324,39 @@ export const stubHomeserver = async (
   page: Page,
   options: StubHomeserverOptions = {}
 ): Promise<HomeserverStub> => {
-  const stub: HomeserverStub = { sentEvents: [], unmatched: [] };
+  const queuedSyncs: Record<string, unknown>[] = [];
+  const liveEventLog: Record<string, unknown>[] = [];
+  let releaseLongPoll: (() => void) | undefined;
+  let resolveHistoryRequested: (() => void) | undefined;
+  const stub: HomeserverStub = {
+    sentEvents: [],
+    unmatched: [],
+    pushTimeline: (events, { isLimited = false } = {}) => {
+      queuedSyncs.push(liveSync(queuedSyncs.length + 2, events, isLimited));
+      liveEventLog.push(...events);
+      releaseLongPoll?.();
+    },
+    historyRequested: new Promise((resolve) => {
+      resolveHistoryRequested = resolve;
+    }),
+  };
   let syncCount = 0;
+  let historyServed = false;
+
+  const takeQueuedSync = (): Promise<Record<string, unknown> | undefined> =>
+    new Promise((resolve) => {
+      const settle = () => {
+        clearTimeout(timeoutId);
+        releaseLongPoll = undefined;
+        resolve(queuedSyncs.shift());
+      };
+      const timeoutId = setTimeout(settle, SYNC_LONG_POLL_MS);
+      if (queuedSyncs.length > 0) {
+        settle();
+        return;
+      }
+      releaseLongPoll = settle;
+    });
 
   await page.route(`${HOMESERVER_BASE_URL}/**`, async (route) => {
     const url = new URL(route.request().url());
@@ -256,23 +375,46 @@ export const stubHomeserver = async (
 
     if (pathname.endsWith('/sync')) {
       syncCount += 1;
-      if (syncCount === 1) return json(route, initialSync(options.timelineEvents));
-      await new Promise((resolve) => {
-        setTimeout(resolve, 30_000);
-      });
-      return json(route, emptySync());
+      if (syncCount === 1) return json(route, initialSync(options));
+      const queued = await takeQueuedSync();
+      return json(route, queued ?? emptySync());
     }
 
     if (pathname.includes('/send/')) {
-      const eventType = pathname.split('/send/')[1].split('/')[0];
-      stub.sentEvents.push({
-        eventType,
-        content: route.request().postDataJSON() as Record<string, unknown>,
-      });
-      return json(route, { event_id: `$sent_${stub.sentEvents.length}` });
+      const [eventType, transactionId] = pathname.split('/send/')[1].split('/');
+      const content = route.request().postDataJSON() as Record<string, unknown>;
+      stub.sentEvents.push({ eventType, content });
+      const eventId = `$sent_${stub.sentEvents.length}`;
+      if (options.echoSentEvents) {
+        stub.pushTimeline([
+          {
+            type: eventType,
+            sender: TEST_USER_ID,
+            content,
+            event_id: eventId,
+            origin_server_ts: 1700000200000 + stub.sentEvents.length,
+            unsigned: { transaction_id: transactionId },
+          },
+        ]);
+      }
+      return json(route, { event_id: eventId });
     }
 
     if (pathname.endsWith('/messages')) {
+      const isBackwards = url.searchParams.get('dir') === 'b';
+      if (isBackwards && options.historyEvents?.length && !historyServed) {
+        historyServed = true;
+        resolveHistoryRequested?.();
+        if (options.historyDelayMs) {
+          await new Promise<void>((resolve) => {
+            setTimeout(resolve, options.historyDelayMs);
+          });
+        }
+        return json(route, { chunk: [...options.historyEvents].reverse(), start: 'p_0' });
+      }
+      if (!isBackwards && liveEventLog.length > 0) {
+        return json(route, { chunk: [...liveEventLog], start: 'p_0', end: 'p_forward' });
+      }
       return json(route, { chunk: [], start: 'p_0' });
     }
     if (pathname.endsWith('/members')) {

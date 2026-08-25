@@ -76,7 +76,7 @@ import { InviteUserPrompt } from '../../../components/invite-user-prompt';
 import { useActiveCallParticipantIds } from '../../../hooks/call/useActiveCallParticipantIds';
 import { useIsRoomCallAllowed } from '../../../hooks/call/useIsRoomCallAllowed';
 import { callStateAtom } from '../../../state/call';
-import { useCallActions } from '../../call';
+import { useCallActions } from '../../call/CallProvider';
 
 type RoomMenuProps = {
   room: Room;

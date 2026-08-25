@@ -1,11 +1,14 @@
-import React from 'react';
-import { SpaceSettings } from './SpaceSettings';
+import React, { lazy, Suspense } from 'react';
 import { Modal500 } from '../../components/Modal500';
 import { useCloseSpaceSettings, useSpaceSettingsState } from '../../state/hooks/spaceSettings';
 import { useAllJoinedRoomsSet, useGetRoom } from '../../hooks/useGetRoom';
 import type { SpaceSettingsState } from '../../state/spaceSettings';
 import { RoomProvider } from '../../hooks/useRoom';
 import { SpaceProvider } from '../../hooks/useSpace';
+
+const LazySpaceSettings = lazy(() =>
+  import('./SpaceSettings').then((module) => ({ default: module.SpaceSettings }))
+);
 
 type RenderSettingsProps = {
   state: SpaceSettingsState;
@@ -21,13 +24,15 @@ function RenderSettings({ state }: RenderSettingsProps) {
   if (!room) return null;
 
   return (
-    <Modal500 onClose={closeSettings}>
-      <SpaceProvider value={space ?? null}>
-        <RoomProvider value={room}>
-          <SpaceSettings initialPage={page} onClose={closeSettings} />
-        </RoomProvider>
-      </SpaceProvider>
-    </Modal500>
+    <Suspense fallback={null}>
+      <Modal500 onClose={closeSettings}>
+        <SpaceProvider value={space ?? null}>
+          <RoomProvider value={room}>
+            <LazySpaceSettings initialPage={page} onClose={closeSettings} />
+          </RoomProvider>
+        </SpaceProvider>
+      </Modal500>
+    </Suspense>
   );
 }
 

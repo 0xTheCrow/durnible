@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { MatrixClient } from 'matrix-js-sdk';
 import type { FavoriteEmojiEntry } from '../plugins/favorite-emoji';
 import { getFavoriteEmojis, getFavoriteEmojiItems } from '../plugins/favorite-emoji';
@@ -6,19 +6,25 @@ import { AccountDataEvent } from '../../types/matrix/accountData';
 import { useAccountDataCallback } from './useAccountDataCallback';
 import type { Emoji } from '../plugins/emoji';
 import type { PackImageReader } from '../plugins/custom-emoji';
+import { useEmojiData } from './useEmojiData';
 
 export const useFavoriteEmoji = (mx: MatrixClient): Array<Emoji | PackImageReader> => {
-  const [items, setItems] = useState(() => getFavoriteEmojiItems(mx));
+  const { emojis } = useEmojiData();
+  const [items, setItems] = useState(() => getFavoriteEmojiItems(mx, emojis));
+
+  useEffect(() => {
+    setItems(getFavoriteEmojiItems(mx, emojis));
+  }, [mx, emojis]);
 
   useAccountDataCallback(
     mx,
     useCallback(
       (evt) => {
         if (evt.getType() === AccountDataEvent.CinnyFavoriteEmoji) {
-          setItems(getFavoriteEmojiItems(mx));
+          setItems(getFavoriteEmojiItems(mx, emojis));
         }
       },
-      [mx]
+      [mx, emojis]
     )
   );
 

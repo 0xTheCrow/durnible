@@ -32,7 +32,7 @@ import { useRoom } from '../../../hooks/useRoom';
 import { HexColorPickerPopOut } from '../../../components/HexColorPickerPopOut';
 import { PowerColorBadge, PowerIcon } from '../../../components/power';
 import { UseStateProvider } from '../../../components/UseStateProvider';
-import { EmojiBoard } from '../../../components/emoji-board';
+import { EmojiBoard } from '../../../components/emoji-board/EmojiBoard';
 import { useImagePackRooms } from '../../../hooks/useImagePackRooms';
 import { roomToParentsAtom } from '../../../state/room/roomToParents';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';

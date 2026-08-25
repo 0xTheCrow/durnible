@@ -10,21 +10,21 @@ export type JumpToLatestButtonProps = {
   scrollRef: RefObject<HTMLDivElement>;
   // null when the caller has nothing to track (not live-linked, range not at
   // newest, or no rendered events). In that case we don't observe anything and
-  // let the button surface based on the other gates (atBottom).
+  // let the button surface based on the other gates (isLatestMessageBottomVisible).
   // Identified by event id rather than range index so that filtered events
   // (redactions) don't leave us observing a detached node.
   lastMessageId: string | null;
-  atBottom: boolean;
+  isLatestMessageBottomVisible: boolean;
   onClick: () => void;
 };
 
 export function JumpToLatestButton({
   scrollRef,
   lastMessageId,
-  atBottom,
+  isLatestMessageBottomVisible,
   onClick,
 }: JumpToLatestButtonProps) {
-  const [lastMsgVisible, setLastMsgVisible] = useState(true);
+  const [isLatestMessageVisible, setIsLatestMessageVisible] = useState(true);
   const [dismissed, setDismissed] = useState(false);
 
   const handleClick = () => {
@@ -50,14 +50,14 @@ export function JumpToLatestButton({
   useEffect(() => {
     const scrollElement = scrollRef.current;
     if (!scrollElement || lastMessageId === null) {
-      setLastMsgVisible(false);
+      setIsLatestMessageVisible(false);
       return undefined;
     }
     const lastItemElement = scrollElement.querySelector(
       `[data-message-id="${CSS.escape(lastMessageId)}"]`
     ) as HTMLElement | null;
     if (!lastItemElement) {
-      setLastMsgVisible(false);
+      setIsLatestMessageVisible(false);
       return undefined;
     }
 
@@ -65,7 +65,7 @@ export function JumpToLatestButton({
       (entries) => {
         const entry = entries.find((e) => e.target === lastItemElement);
         if (entry) {
-          setLastMsgVisible(entry.isIntersecting);
+          setIsLatestMessageVisible(entry.isIntersecting);
         }
       },
       { root: scrollElement }
@@ -78,7 +78,7 @@ export function JumpToLatestButton({
     <TimelineOverlay
       className={css.JumpToLatestOverlay}
       position="Bottom"
-      data-visible={!atBottom && !lastMsgVisible && !dismissed}
+      data-visible={!isLatestMessageBottomVisible && !isLatestMessageVisible && !dismissed}
       data-testid="jump-to-latest-overlay"
     >
       <Chip

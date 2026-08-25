@@ -267,7 +267,6 @@ function DateAndTime() {
 
 function Editor() {
   const [enterForNewline, setEnterForNewline] = useSetting(settingsAtom, 'enterForNewline');
-  const [isMarkdownEnabled, setIsMarkdownEnabled] = useSetting(settingsAtom, 'isMarkdownEnabled');
   const [isEditorToolbarGestureRequired, setIsEditorToolbarGestureRequired] = useSetting(
     settingsAtom,
     'isEditorToolbarGestureRequired'
@@ -283,14 +282,6 @@ function Editor() {
           title="ENTER for Newline"
           description={`Use ${sendKey} to send message and ENTER for newline.`}
           after={<Switch variant="Primary" value={enterForNewline} onChange={setEnterForNewline} />}
-        />
-      </SequenceCard>
-      <SequenceCard className={SettingsCardStyle} variant="SurfaceVariant" direction="Column">
-        <SettingTile
-          title="Markdown Formatting"
-          after={
-            <Switch variant="Primary" value={isMarkdownEnabled} onChange={setIsMarkdownEnabled} />
-          }
         />
       </SequenceCard>
       <SequenceCard className={SettingsCardStyle} variant="SurfaceVariant" direction="Column">
@@ -331,13 +322,15 @@ function Messages() {
     'hideNickAvatarEvents'
   );
   const [pauseGifs, setPauseGifs] = useSetting(settingsAtom, 'pauseGifs');
+  const [pauseGifImages, setPauseGifImages] = useSetting(settingsAtom, 'pauseGifImages');
+  const [pauseGifStickers, setPauseGifStickers] = useSetting(settingsAtom, 'pauseGifStickers');
+  const [pauseGifEmojis, setPauseGifEmojis] = useSetting(settingsAtom, 'pauseGifEmojis');
   const [mediaAutoLoad, setMediaAutoLoad] = useSetting(settingsAtom, 'mediaAutoLoad');
   const [urlPreview, setUrlPreview] = useSetting(settingsAtom, 'urlPreview');
   const [encUrlPreview, setEncUrlPreview] = useSetting(settingsAtom, 'encUrlPreview');
   const [embedYouTube, setEmbedYouTube] = useSetting(settingsAtom, 'embedYouTube');
   const [embedSpotify, setEmbedSpotify] = useSetting(settingsAtom, 'embedSpotify');
   const [embedSoundCloud, setEmbedSoundCloud] = useSetting(settingsAtom, 'embedSoundCloud');
-  const [embedNitter, setEmbedNitter] = useSetting(settingsAtom, 'embedNitter');
   const [embedLinks, setEmbedLinks] = useSetting(settingsAtom, 'embedLinks');
   const [showEmbedToggles, setShowEmbedToggles] = useState(false);
   const [showHiddenEvents, setShowHiddenEvents] = useSetting(settingsAtom, 'showHiddenEvents');
@@ -407,14 +400,16 @@ function Messages() {
       <SequenceCard className={SettingsCardStyle} variant="SurfaceVariant" direction="Column">
         <SettingTile
           title="Url Preview"
+          description="Show rich link previews and embeds in unencrypted rooms."
           after={<Switch variant="Primary" value={urlPreview} onChange={setUrlPreview} />}
         />
-      </SequenceCard>
-      <SequenceCard className={SettingsCardStyle} variant="SurfaceVariant" direction="Column">
-        <SettingTile
-          title="Url Preview in Encrypted Room"
-          after={<Switch variant="Primary" value={encUrlPreview} onChange={setEncUrlPreview} />}
-        />
+        <Box direction="Column" gap="100" style={{ paddingTop: config.space.S100 }}>
+          <SettingTile
+            title="Url Preview in Encrypted Room"
+            description="Show rich link previews and embeds in encrypted rooms."
+            after={<Switch variant="Primary" value={encUrlPreview} onChange={setEncUrlPreview} />}
+          />
+        </Box>
       </SequenceCard>
       <SequenceCard className={SettingsCardStyle} variant="SurfaceVariant" direction="Column">
         <SettingTile
@@ -463,10 +458,6 @@ function Messages() {
                 <Switch variant="Primary" value={embedSoundCloud} onChange={setEmbedSoundCloud} />
               }
             />
-            <SettingTile
-              title="Twitter / X (Nitter)"
-              after={<Switch variant="Primary" value={embedNitter} onChange={setEmbedNitter} />}
-            />
           </Box>
         )}
       </SequenceCard>
@@ -497,6 +488,44 @@ function Messages() {
           description="GIFs are paused by default and only animate while hovered."
           after={<Switch variant="Primary" value={pauseGifs} onChange={setPauseGifs} />}
         />
+        <Box direction="Column" gap="100" style={{ paddingTop: config.space.S100 }}>
+          <SettingTile
+            title="GIF Images"
+            disabled={!pauseGifs}
+            after={
+              <Switch
+                variant="Primary"
+                value={pauseGifImages}
+                onChange={setPauseGifImages}
+                disabled={!pauseGifs}
+              />
+            }
+          />
+          <SettingTile
+            title="Stickers"
+            disabled={!pauseGifs}
+            after={
+              <Switch
+                variant="Primary"
+                value={pauseGifStickers}
+                onChange={setPauseGifStickers}
+                disabled={!pauseGifs}
+              />
+            }
+          />
+          <SettingTile
+            title="Emojis"
+            disabled={!pauseGifs}
+            after={
+              <Switch
+                variant="Primary"
+                value={pauseGifEmojis}
+                onChange={setPauseGifEmojis}
+                disabled={!pauseGifs}
+              />
+            }
+          />
+        </Box>
       </SequenceCard>
       <SequenceCard className={SettingsCardStyle} variant="SurfaceVariant" direction="Column">
         <SettingTile
@@ -512,7 +541,6 @@ function Messages() {
 function Advanced() {
   const [pwaMode, setPwaMode] = useSetting(settingsAtom, 'pwaMode');
   const [swipeGestures, setSwipeGestures] = useSetting(settingsAtom, 'swipeGestures');
-  const [useTimelineV1, setUseTimelineV1] = useSetting(settingsAtom, 'useTimelineV1');
   return (
     <Box direction="Column" gap="100">
       <Text size="L400">Advanced</Text>
@@ -528,13 +556,6 @@ function Advanced() {
           title="PWA Mode"
           description="Show update notifications when a new version is available."
           after={<Switch variant="Primary" value={pwaMode} onChange={setPwaMode} />}
-        />
-      </SequenceCard>
-      <SequenceCard className={SettingsCardStyle} variant="SurfaceVariant" direction="Column">
-        <SettingTile
-          title="Use Legacy Timeline (V1)"
-          description="Switch back to the previous room timeline implementation."
-          after={<Switch variant="Primary" value={useTimelineV1} onChange={setUseTimelineV1} />}
         />
       </SequenceCard>
     </Box>

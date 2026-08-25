@@ -14,14 +14,27 @@ export type ActiveEditorFormat = {
   icon: IconSrc;
 };
 
-const getHeadingIcon = (inputElement: HTMLElement): IconSrc | null => {
-  if (isBlockFormatActive(inputElement, 'h1')) return Icons.Heading1;
-  if (isBlockFormatActive(inputElement, 'h2')) return Icons.Heading2;
-  if (isBlockFormatActive(inputElement, 'h3')) return Icons.Heading3;
-  return null;
+export type ActiveEditorFormatState = {
+  formats: ActiveEditorFormat[];
+  headingLevel: number;
 };
 
-const getActiveEditorFormats = (inputElement: HTMLElement): ActiveEditorFormat[] => {
+const HEADING_ICONS: Record<number, IconSrc> = {
+  1: Icons.Heading1,
+  2: Icons.Heading2,
+  3: Icons.Heading3,
+};
+
+const getHeadingLevel = (inputElement: HTMLElement): number => {
+  if (isBlockFormatActive(inputElement, 'h1')) return 1;
+  if (isBlockFormatActive(inputElement, 'h2')) return 2;
+  if (isBlockFormatActive(inputElement, 'h3')) return 3;
+  return 0;
+};
+
+const EMPTY_FORMAT_STATE: ActiveEditorFormatState = { formats: [], headingLevel: 0 };
+
+const getActiveEditorFormatState = (inputElement: HTMLElement): ActiveEditorFormatState => {
   const formats: ActiveEditorFormat[] = [];
   const isInsideCodeBlock = isBlockFormatActive(inputElement, 'pre');
 
@@ -50,24 +63,42 @@ const getActiveEditorFormats = (inputElement: HTMLElement): ActiveEditorFormat[]
   if (isBlockFormatActive(inputElement, 'ul')) {
     formats.push({ id: 'unorderedList', icon: Icons.UnorderList });
   }
-  const headingIcon = getHeadingIcon(inputElement);
-  if (headingIcon) formats.push({ id: 'heading', icon: headingIcon });
 
-  return formats;
+  const headingLevel = getHeadingLevel(inputElement);
+  if (headingLevel > 0) formats.push({ id: 'heading', icon: HEADING_ICONS[headingLevel] });
+
+  return { formats, headingLevel };
 };
+
+const checkIsSameFormatState = (
+  current: ActiveEditorFormatState,
+  next: ActiveEditorFormatState
+): boolean =>
+  current.headingLevel === next.headingLevel &&
+  current.formats.length === next.formats.length &&
+  current.formats.every((format, index) => format.id === next.formats[index].id);
 
 export const useEditorActiveFormats = (
   inputRef: RefObject<HTMLDivElement | null>
-): ActiveEditorFormat[] => {
-  const [, setTick] = useState(0);
+): ActiveEditorFormatState => {
+  const [formatState, setFormatState] = useState<ActiveEditorFormatState>(EMPTY_FORMAT_STATE);
 
   useEffect(() => {
-    const inputElement = inputRef.current;
-    if (!inputElement) return undefined;
-    const sync = () => setTick((n) => n + 1);
+    const sync = () => {
+      const inputElement = inputRef.current;
+      if (!inputElement) return;
+      const next = getActiveEditorFormatState(inputElement);
+      setFormatState((current) => (checkIsSameFormatState(current, next) ? current : next));
+    };
+    const syncOnInput = (event: Event) => {
+      const inputElement = inputRef.current;
+      if (inputElement && inputElement.contains(event.target as Node)) sync();
+    };
     const syncOnSelection = () => {
+      const inputElement = inputRef.current;
       const selection = document.getSelection();
       if (
+        inputElement &&
         selection &&
         selection.rangeCount > 0 &&
         inputElement.contains(selection.getRangeAt(0).startContainer)
@@ -75,14 +106,15 @@ export const useEditorActiveFormats = (
         sync();
       }
     };
-    inputElement.addEventListener('input', sync);
+
+    sync();
+    document.addEventListener('input', syncOnInput, true);
     document.addEventListener('selectionchange', syncOnSelection);
     return () => {
-      inputElement.removeEventListener('input', sync);
+      document.removeEventListener('input', syncOnInput, true);
       document.removeEventListener('selectionchange', syncOnSelection);
     };
   }, [inputRef]);
 
-  const inputElement = inputRef.current;
-  return inputElement ? getActiveEditorFormats(inputElement) : [];
+  return formatState;
 };

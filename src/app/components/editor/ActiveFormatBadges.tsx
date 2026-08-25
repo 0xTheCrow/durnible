@@ -9,7 +9,7 @@ type ActiveFormatBadgesProps = {
 };
 
 export function ActiveFormatBadges({ inputRef }: ActiveFormatBadgesProps) {
-  const formats = useEditorActiveFormats(inputRef);
+  const { formats } = useEditorActiveFormats(inputRef);
   if (formats.length === 0) return null;
   return (
     <Box className={css.ActiveFormatBadges} gap="100" alignItems="Center" aria-hidden>

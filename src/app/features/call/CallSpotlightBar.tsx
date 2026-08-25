@@ -2,11 +2,12 @@ import React from 'react';
 import type { Room } from 'matrix-js-sdk';
 import type { CallMembership } from 'matrix-js-sdk/lib/matrixrtc';
 import { Box, Chip, Icon, Icons, Text } from 'folds';
-import { LocalVideoTrack, RemoteVideoTrack, Track } from 'livekit-client';
+import { LocalAudioTrack, LocalVideoTrack, RemoteVideoTrack, Track } from 'livekit-client';
 import type { CallParticipantEntry } from '../../hooks/call/useCallParticipantEntries';
 import { useParticipantTrackPublications } from '../../hooks/call/useParticipantTrackPublications';
 import { useCallVideoStreamStats } from '../../hooks/call/useCallVideoStreamStats';
 import { useScreenshareSenderStats } from '../../hooks/call/useScreenshareSenderStats';
+import { useScreenshareAudioSenderStats } from '../../hooks/call/useScreenshareAudioSenderStats';
 import { resolveCallParticipant } from '../../utils/call';
 import { CallScreenQualityMenu } from './CallScreenQualityMenu';
 import * as css from './CallPane.css';
@@ -42,6 +43,12 @@ export function CallSpotlightBar({
   const senderStats = useScreenshareSenderStats(
     videoTrack instanceof LocalVideoTrack ? videoTrack : undefined
   );
+  const screenshareAudioTrack = trackPublications.find(
+    (publication) => publication.source === Track.Source.ScreenShareAudio
+  )?.track;
+  const audioSenderStats = useScreenshareAudioSenderStats(
+    screenshareAudioTrack instanceof LocalAudioTrack ? screenshareAudioTrack : undefined
+  );
   const stats = receiverStats ?? senderStats;
   const resolutionLabel = stats && getResolutionLabel(stats);
   const isOwnScreenshare = entry.participant.isLocal && entry.isScreensharing;
@@ -64,7 +71,13 @@ export function CallSpotlightBar({
           </Text>
         )}
       </Box>
-      {isOwnScreenshare && <CallScreenQualityMenu senderStats={senderStats} />}
+      {isOwnScreenshare && (
+        <CallScreenQualityMenu
+          senderStats={senderStats}
+          audioSenderStats={audioSenderStats}
+          isScreenshareAudioEnabled={entry.isScreenshareAudioEnabled}
+        />
+      )}
       <Chip
         as="button"
         size="400"

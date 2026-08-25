@@ -1,6 +1,7 @@
+import { isKeyHotkey } from 'is-hotkey';
 import { useAtomValue } from 'jotai';
 import type { ReactNode } from 'react';
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { MatrixEvent, RoomEventHandlerMap } from 'matrix-js-sdk';
 import { MatrixEventEvent, RoomEvent } from 'matrix-js-sdk';
@@ -8,9 +9,8 @@ import { roomToUnreadAtom, unreadEqual, unreadInfoToUnread } from '../../state/r
 import LogoSVG from '../../../../public/res/svg/durnible.svg';
 import LogoUnreadSVG from '../../../../public/res/svg/durnible-unread.svg';
 import LogoHighlightSVG from '../../../../public/res/svg/durnible-highlight.svg';
-import NotificationSound from '../../../../public/sound/notification.ogg';
-import InviteSound from '../../../../public/sound/invite.ogg';
 import { notificationPermission, setFavicon } from '../../utils/dom';
+import { getNotificationSoundUrl } from '../../plugins/notificationSounds';
 import { useSetting } from '../../state/hooks/settings';
 import { settingsAtom } from '../../state/settings';
 import { allInvitesAtom } from '../../state/room-list/inviteList';
@@ -30,6 +30,9 @@ import { useSelectedRoom } from '../../hooks/router/useSelectedRoom';
 import { useInboxNotificationsSelected } from '../../hooks/router/useInbox';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
 import { addLiveMessageToCache } from '../../services/localSearch';
+import { useKeyDown } from '../../hooks/useKeyDown';
+import { useKeybind } from '../../state/hooks/keybinds';
+import { KeybindAction } from '../../state/keybinds';
 
 function SearchCacheUpdater() {
   const mx = useMatrixClient();
@@ -107,6 +110,25 @@ function SearchCacheUpdater() {
   return null;
 }
 
+function PageNavToggleHotkey() {
+  const [, setIsPageNavCollapsed] = useSetting(settingsAtom, 'isPageNavCollapsed');
+  const togglePageNavHotkey = useKeybind(KeybindAction.GlobalTogglePageNav);
+
+  useKeyDown(
+    window,
+    useCallback(
+      (event) => {
+        if (!isKeyHotkey(togglePageNavHotkey, event)) return;
+        event.preventDefault();
+        setIsPageNavCollapsed((isCollapsed) => !isCollapsed);
+      },
+      [togglePageNavHotkey, setIsPageNavCollapsed]
+    )
+  );
+
+  return null;
+}
+
 function SyncRecovery() {
   const mx = useMatrixClient();
 
@@ -126,11 +148,12 @@ function SyncRecovery() {
 function SystemEmojiFeature() {
   const [twitterEmoji] = useSetting(settingsAtom, 'twitterEmoji');
 
-  if (twitterEmoji) {
-    document.documentElement.style.setProperty('--font-emoji', 'Twemoji');
-  } else {
-    document.documentElement.style.setProperty('--font-emoji', 'Twemoji_DISABLED');
-  }
+  useLayoutEffect(() => {
+    document.documentElement.style.setProperty(
+      '--font-emoji',
+      twitterEmoji ? 'Twemoji' : 'Twemoji_DISABLED'
+    );
+  }, [twitterEmoji]);
 
   return null;
 }
@@ -138,11 +161,13 @@ function SystemEmojiFeature() {
 function PageZoomFeature() {
   const [pageZoom] = useSetting(settingsAtom, 'pageZoom');
 
-  if (pageZoom === 100) {
-    document.documentElement.style.removeProperty('font-size');
-  } else {
-    document.documentElement.style.setProperty('font-size', `calc(1em * ${pageZoom / 100})`);
-  }
+  useLayoutEffect(() => {
+    if (pageZoom === 100) {
+      document.documentElement.style.removeProperty('font-size');
+    } else {
+      document.documentElement.style.setProperty('font-size', `calc(1em * ${pageZoom / 100})`);
+    }
+  }, [pageZoom]);
 
   return null;
 }
@@ -180,7 +205,8 @@ function InviteNotifications() {
 
   const navigate = useNavigate();
   const [showNotifications] = useSetting(settingsAtom, 'showNotifications');
-  const [notificationSound] = useSetting(settingsAtom, 'isNotificationSounds');
+  const [isNotificationSoundEnabled] = useSetting(settingsAtom, 'isNotificationSoundEnabled');
+  const [inviteNotificationSoundId] = useSetting(settingsAtom, 'inviteNotificationSoundId');
 
   const notify = useCallback(
     (count: number) => {
@@ -210,16 +236,26 @@ function InviteNotifications() {
         notify(invites.length - perviousInviteLen);
       }
 
-      if (notificationSound) {
+      if (isNotificationSoundEnabled) {
         playSound();
       }
     }
-  }, [mx, invites, perviousInviteLen, showNotifications, notificationSound, notify, playSound]);
+  }, [
+    mx,
+    invites,
+    perviousInviteLen,
+    showNotifications,
+    isNotificationSoundEnabled,
+    notify,
+    playSound,
+  ]);
 
   return (
-    <audio ref={audioRef} style={{ display: 'none' }}>
-      <source src={InviteSound} type="audio/ogg" />
-    </audio>
+    <audio
+      ref={audioRef}
+      src={getNotificationSoundUrl(inviteNotificationSoundId)}
+      style={{ display: 'none' }}
+    />
   );
 }
 
@@ -230,7 +266,8 @@ function MessageNotifications() {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
   const [showNotifications] = useSetting(settingsAtom, 'showNotifications');
-  const [notificationSound] = useSetting(settingsAtom, 'isNotificationSounds');
+  const [isNotificationSoundEnabled] = useSetting(settingsAtom, 'isNotificationSoundEnabled');
+  const [messageNotificationSoundId] = useSetting(settingsAtom, 'messageNotificationSoundId');
 
   const navigate = useNavigate();
   const notificationSelected = useInboxNotificationsSelected();
@@ -321,7 +358,7 @@ function MessageNotifications() {
         });
       }
 
-      if (notificationSound) {
+      if (isNotificationSoundEnabled) {
         playSound();
       }
     };
@@ -331,7 +368,7 @@ function MessageNotifications() {
     };
   }, [
     mx,
-    notificationSound,
+    isNotificationSoundEnabled,
     notificationSelected,
     showNotifications,
     playSound,
@@ -341,9 +378,11 @@ function MessageNotifications() {
   ]);
 
   return (
-    <audio ref={audioRef} style={{ display: 'none' }}>
-      <source src={NotificationSound} type="audio/ogg" />
-    </audio>
+    <audio
+      ref={audioRef}
+      src={getNotificationSoundUrl(messageNotificationSoundId)}
+      style={{ display: 'none' }}
+    />
   );
 }
 
@@ -355,6 +394,7 @@ export function ClientNonUIFeatures({ children }: ClientNonUIFeaturesProps) {
   return (
     <>
       <SyncRecovery />
+      <PageNavToggleHotkey />
       <SearchCacheUpdater />
       <SystemEmojiFeature />
       <PageZoomFeature />

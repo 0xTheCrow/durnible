@@ -1,14 +1,25 @@
 import type { Align, Position, RectCords } from 'folds';
 import { PopOut } from 'folds';
 import type { CSSProperties, ReactNode, Ref } from 'react';
-import React, { forwardRef, useCallback, useImperativeHandle, useRef, useState } from 'react';
+import React, {
+  forwardRef,
+  lazy,
+  Suspense,
+  useCallback,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react';
 import type { Room } from 'matrix-js-sdk';
-import { EmojiBoard } from './EmojiBoard';
 import { EmojiBoardTab } from './types';
 import type { GifItem } from '../../utils/gifServer';
 import { useVisualViewportHeight } from '../../hooks/useVisualViewportHeight';
 import { OverlayModal } from '../OverlayModal';
 import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
+
+const EmojiBoard = lazy(() =>
+  import('./EmojiBoard').then((module) => ({ default: module.EmojiBoard }))
+);
 
 const DEFAULT_OFFSET = 10;
 const BREATHING_ROOM = 16;
@@ -137,9 +148,11 @@ export const EmojiBoardWrapper = forwardRef<EmojiBoardWrapperHandle, EmojiBoardW
       return (
         <>
           {children({ triggerRef, open, isOpen, tab })}
-          <OverlayModal open={isOpen} onClose={close}>
-            {renderEmojiBoard(true)}
-          </OverlayModal>
+          <Suspense fallback={null}>
+            <OverlayModal open={isOpen} onClose={close}>
+              {renderEmojiBoard(true)}
+            </OverlayModal>
+          </Suspense>
         </>
       );
     }
@@ -186,7 +199,11 @@ export const EmojiBoardWrapper = forwardRef<EmojiBoardWrapperHandle, EmojiBoardW
         offset={effectiveOffset}
         alignOffset={overrides?.alignOffset ?? alignOffset}
         anchor={anchor}
-        content={<div style={contentStyle}>{renderEmojiBoard(false)}</div>}
+        content={
+          <Suspense fallback={null}>
+            <div style={contentStyle}>{renderEmojiBoard(false)}</div>
+          </Suspense>
+        }
       >
         {children({ triggerRef, open, isOpen, tab })}
       </PopOut>

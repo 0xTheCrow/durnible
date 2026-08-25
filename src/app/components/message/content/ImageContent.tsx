@@ -76,8 +76,11 @@ export const ImageContent = as<'div', ImageContentProps>(
     const blurHash = validBlurHash(info?.[MATRIX_BLUR_HASH_PROPERTY_NAME]);
 
     const [pauseGifs] = useSetting(settingsAtom, 'pauseGifs');
+    const [pauseGifImages] = useSetting(settingsAtom, 'pauseGifImages');
+    const [pauseGifStickers] = useSetting(settingsAtom, 'pauseGifStickers');
     const isAnimatedImage = isAnimatedImageMimetype(mimeType) || !!treatAsAnimated;
-    const shouldPauseAnimatedImage = pauseGifs && isAnimatedImage;
+    const pauseGifCategory = treatAsAnimated ? pauseGifStickers : pauseGifImages;
+    const shouldPauseAnimatedImage = pauseGifs && pauseGifCategory && isAnimatedImage;
 
     const setViewerState = useSetAtom(imageViewerAtom);
 

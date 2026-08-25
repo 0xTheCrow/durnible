@@ -11,7 +11,8 @@ type CallUserVolumeMenuState = {
 
 export const useCallUserVolumeMenu = (
   userId: string | undefined,
-  displayName: string
+  displayName: string,
+  isScreenshareAudioEnabled: boolean
 ): CallUserVolumeMenuState => {
   const mx = useMatrixClient();
   const [volumeMenuAnchor, setVolumeMenuAnchor] = useState<RectCords>();
@@ -29,6 +30,7 @@ export const useCallUserVolumeMenu = (
       <CallUserVolumeMenu
         userId={userId}
         displayName={displayName}
+        isScreenshareAudioEnabled={isScreenshareAudioEnabled}
         anchor={volumeMenuAnchor}
         onClose={() => setVolumeMenuAnchor(undefined)}
       />

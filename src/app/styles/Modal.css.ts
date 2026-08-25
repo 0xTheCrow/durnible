@@ -1,4 +1,5 @@
 import { style } from '@vanilla-extract/css';
+import { MOBILE_MEDIA_QUERY } from './breakpoints';
 
 export const ModalWide = style({
   minWidth: '85vw',
@@ -22,7 +23,7 @@ export const ImageViewerModal = style({
   maxHeight: '90vh',
   borderRadius: '0',
   '@media': {
-    'screen and (max-width: 750px)': {
+    [MOBILE_MEDIA_QUERY]: {
       width: '100vw',
       maxWidth: '100vw',
       minWidth: 'unset',
