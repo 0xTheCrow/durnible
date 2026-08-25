@@ -5,6 +5,7 @@ import {
   seedSettings,
   stubHomeserver,
   textEvent,
+  historyEvent,
   liveMessageEvent,
   reactionEvent,
   TEST_ROOM_ID,
@@ -32,9 +33,9 @@ const getDistanceFromBottom = (page: Page): Promise<number> =>
     return scrollElement.scrollHeight - scrollElement.scrollTop - scrollElement.clientHeight;
   }, timelineScrollSelector);
 
-const startSamplingDistanceFromBottom = (page: Page) =>
+const startSamplingDistanceFromBottom = (page: Page, durationMs: number = SAMPLE_DURATION_MS) =>
   page.evaluate(
-    ([selector, durationMs]) => {
+    ([selector, duration]) => {
       const scrollElement = document.querySelector(selector as string) as HTMLElement;
       const samples: number[] = [];
       (window as unknown as { __timelineScrollSamples: number[] }).__timelineScrollSamples =
@@ -44,11 +45,11 @@ const startSamplingDistanceFromBottom = (page: Page) =>
         samples.push(
           scrollElement.scrollHeight - scrollElement.scrollTop - scrollElement.clientHeight
         );
-        if (performance.now() - startedAt < (durationMs as number)) requestAnimationFrame(sample);
+        if (performance.now() - startedAt < (duration as number)) requestAnimationFrame(sample);
       };
       requestAnimationFrame(sample);
     },
-    [timelineScrollSelector, SAMPLE_DURATION_MS] as const
+    [timelineScrollSelector, durationMs] as const
   );
 
 const collectSamples = (page: Page): Promise<number[]> =>
@@ -423,4 +424,77 @@ test('holds position for an arriving message while unfocused when unfocusedAutoS
   await page.waitForTimeout(SAMPLE_DURATION_MS);
 
   expect(await getDistanceFromBottom(page)).toBeGreaterThan(STUCK_TO_BOTTOM_PX);
+});
+
+const SMALL_ROOM_FILLER_COUNT = 25;
+const HISTORY_PAGE_COUNT = 20;
+const HISTORY_DELAY_MS = 1000;
+const SMALL_ROOM_NEWEST_EVENT_ID = `$filler${SMALL_ROOM_FILLER_COUNT - 1}`;
+
+test('does not jump to the newest message while a delayed backward page is loading', async ({
+  context,
+  page,
+}) => {
+  await seedSession(context);
+  const stub = await stubHomeserver(page, {
+    timelineEvents: Array.from({ length: SMALL_ROOM_FILLER_COUNT }, (_unused, index) =>
+      textEvent(index)
+    ),
+    historyEvents: Array.from({ length: HISTORY_PAGE_COUNT }, (_unused, index) =>
+      historyEvent(index)
+    ),
+    historyDelayMs: HISTORY_DELAY_MS,
+  });
+
+  await page.goto(roomPath);
+  await expect(page.locator(`[data-message-id="${SMALL_ROOM_NEWEST_EVENT_ID}"]`)).toBeVisible({
+    timeout: BOOT_TIMEOUT_MS,
+  });
+
+  await page.locator(timelineScrollSelector).hover();
+  for (let step = 0; step < 8; step += 1) {
+    await page.mouse.wheel(0, -SCROLL_UP_PX);
+    await page.waitForTimeout(100);
+  }
+  await stub.historyRequested;
+
+  await startSamplingDistanceFromBottom(page, HISTORY_DELAY_MS + SAMPLE_DURATION_MS);
+  await page.waitForTimeout(HISTORY_DELAY_MS + SAMPLE_DURATION_MS);
+
+  await expect(page.locator('[data-message-id="$history0"]')).toBeVisible();
+  const samples = await collectSamples(page);
+  expect(samples.length).toBeGreaterThan(0);
+  expect(Math.min(...samples)).toBeGreaterThan(STUCK_TO_BOTTOM_PX);
+});
+
+test('does not jump to the newest message while scrolling down through older pages', async ({
+  context,
+  page,
+}) => {
+  await seedSession(context);
+  await stubHomeserver(page, {
+    timelineEvents: Array.from({ length: FILLER_COUNT }, (_unused, index) => textEvent(index)),
+  });
+
+  await page.goto(roomPath);
+  await expect(page.locator(`[data-message-id="${NEWEST_EVENT_ID}"]`)).toBeVisible({
+    timeout: BOOT_TIMEOUT_MS,
+  });
+  await expect.poll(() => getDistanceFromBottom(page)).toBeLessThan(LIVE_EDGE_TOLERANCE_PX);
+
+  await page.locator(timelineScrollSelector).hover();
+  for (let step = 0; step < 4; step += 1) {
+    await page.mouse.wheel(0, -SCROLL_UP_PX);
+    await page.waitForTimeout(150);
+  }
+  const distanceDeepInHistory = await getDistanceFromBottom(page);
+  expect(distanceDeepInHistory).toBeGreaterThan(MIN_DISPLACEMENT_PX * 2);
+
+  await startSamplingDistanceFromBottom(page);
+  await page.mouse.wheel(0, SCROLL_UP_PX);
+  await page.waitForTimeout(SAMPLE_DURATION_MS);
+
+  const samples = await collectSamples(page);
+  expect(samples.length).toBeGreaterThan(0);
+  expect(Math.min(...samples)).toBeGreaterThan(distanceDeepInHistory / 2);
 });

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import type { OnIntersectionCallback } from './useIntersectionObserver';
 import { useIntersectionObserver } from './useIntersectionObserver';
 import { getScrollInfo, isIntersectingScrollView } from '../utils/dom';
+import { traceTimelineScroll } from '../features/room/timeline/utils/scrollTrace';
 
 const PAGINATOR_ANCHOR_ATTR = 'data-paginator-anchor';
 
@@ -263,10 +264,22 @@ export const useVirtualPaginator = <TScrollElement extends HTMLElement>(
       scrollTop: oldScrollTop,
     } = restoreScrollRef.current;
 
-    if (!anchorElement.isConnected) return;
+    if (!anchorElement.isConnected) {
+      traceTimelineScroll('paginator:restoreScroll-skipped', { reason: 'anchor-disconnected' });
+      return;
+    }
     const { offsetTop } = anchorElement;
     const offsetAddition = offsetTop - oldOffsetTop;
     const restoreTop = oldScrollTop + offsetAddition;
+
+    traceTimelineScroll('paginator:restoreScroll', {
+      anchorIndex: anchorElement.getAttribute('data-message-item'),
+      oldOffsetTop,
+      offsetTop,
+      offsetAddition,
+      oldScrollTop: Math.round(oldScrollTop),
+      restoreTop: Math.round(restoreTop),
+    });
 
     scrollElement.scrollTo({
       top: restoreTop,

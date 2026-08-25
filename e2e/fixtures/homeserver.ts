@@ -107,6 +107,14 @@ export const textEvent = (index: number): Record<string, unknown> => ({
   origin_server_ts: 1700000000010 + index,
 });
 
+export const historyEvent = (index: number): Record<string, unknown> => ({
+  type: 'm.room.message',
+  sender: TEST_USER_ID,
+  content: { msgtype: 'm.text', body: `history message ${index}` },
+  event_id: `$history${index}`,
+  origin_server_ts: 1699999990000 + index,
+});
+
 export const replyEvent = (index: number, repliedToEventId: string): Record<string, unknown> => ({
   type: 'm.room.message',
   sender: TEST_USER_ID,
@@ -269,6 +277,7 @@ export type HomeserverStub = {
   sentEvents: SentEvent[];
   unmatched: string[];
   pushTimeline: (events: Record<string, unknown>[], options?: PushTimelineOptions) => void;
+  historyRequested: Promise<void>;
 };
 
 const SYNC_LONG_POLL_MS = 30_000;
@@ -279,6 +288,8 @@ export type StubHomeserverOptions = {
   userImagePack?: boolean;
   audioResponse?: { body: Buffer; contentType: string };
   videoResponse?: { body: Buffer; contentType: string };
+  historyEvents?: Record<string, unknown>[];
+  historyDelayMs?: number;
 };
 
 const TRANSPARENT_PNG = Buffer.from(
@@ -315,6 +326,7 @@ export const stubHomeserver = async (
 ): Promise<HomeserverStub> => {
   const queuedSyncs: Record<string, unknown>[] = [];
   let releaseLongPoll: (() => void) | undefined;
+  let resolveHistoryRequested: (() => void) | undefined;
   const stub: HomeserverStub = {
     sentEvents: [],
     unmatched: [],
@@ -322,8 +334,12 @@ export const stubHomeserver = async (
       queuedSyncs.push(liveSync(queuedSyncs.length + 2, events, isLimited));
       releaseLongPoll?.();
     },
+    historyRequested: new Promise((resolve) => {
+      resolveHistoryRequested = resolve;
+    }),
   };
   let syncCount = 0;
+  let historyServed = false;
 
   const takeQueuedSync = (): Promise<Record<string, unknown> | undefined> =>
     new Promise((resolve) => {
@@ -383,6 +399,17 @@ export const stubHomeserver = async (
     }
 
     if (pathname.endsWith('/messages')) {
+      const isBackwards = url.searchParams.get('dir') === 'b';
+      if (isBackwards && options.historyEvents?.length && !historyServed) {
+        historyServed = true;
+        resolveHistoryRequested?.();
+        if (options.historyDelayMs) {
+          await new Promise<void>((resolve) => {
+            setTimeout(resolve, options.historyDelayMs);
+          });
+        }
+        return json(route, { chunk: [...options.historyEvents].reverse(), start: 'p_0' });
+      }
       return json(route, { chunk: [], start: 'p_0' });
     }
     if (pathname.endsWith('/members')) {

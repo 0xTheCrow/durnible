@@ -86,12 +86,17 @@ const findAnchorElement = (
 const checkIsAnchorSatisfied = (intent: AnchorIntent, scrollElement: HTMLElement): boolean => {
   const targetElement = findAnchorElement(intent, scrollElement);
   if (!targetElement) return true;
+  if (intent.align === 'start') {
+    const targetScrollTop = computeAnchorScrollTop(
+      scrollElement,
+      targetElement,
+      'start',
+      anchorOffsetPx(intent, scrollElement)
+    );
+    return Math.abs(scrollElement.scrollTop - targetScrollTop) <= ANCHOR_SATISFIED_TOLERANCE_PX;
+  }
   const targetRect = targetElement.getBoundingClientRect();
   const scrollRect = scrollElement.getBoundingClientRect();
-  if (intent.align === 'start') {
-    const offset = anchorOffsetPx(intent, scrollElement);
-    return Math.abs(targetRect.top - (scrollRect.top + offset)) <= ANCHOR_SATISFIED_TOLERANCE_PX;
-  }
   const isTopInView = targetRect.top >= scrollRect.top && targetRect.top <= scrollRect.bottom;
   return isTopInView && targetRect.bottom <= scrollRect.bottom;
 };

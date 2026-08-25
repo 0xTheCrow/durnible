@@ -292,6 +292,47 @@ describe('useScrollController', () => {
     });
   });
 
+  describe('pinToAnchor', () => {
+    it('does not release an anchor whose ideal start position is clamped to the scroll boundary', () => {
+      const { controller, scrollElement } = renderController(ref(false));
+      const geometry = stubScrollGeometry(scrollElement, { scrollHeight: 500, offsetHeight: 400 });
+      const contentElement = scrollElement.querySelector('[data-testid="content"]') as HTMLElement;
+      const targetOffsetTop = 40;
+      const targetHeight = 30;
+      const targetRow = document.createElement('div');
+      targetRow.setAttribute('data-message-id', 'target');
+      Object.defineProperty(targetRow, 'getBoundingClientRect', {
+        configurable: true,
+        value: () => ({
+          top: targetOffsetTop - geometry.getScrollTop(),
+          bottom: targetOffsetTop - geometry.getScrollTop() + targetHeight,
+          height: targetHeight,
+        }),
+      });
+      Object.defineProperty(targetRow, 'offsetHeight', {
+        configurable: true,
+        get: () => targetHeight,
+      });
+      contentElement.appendChild(targetRow);
+
+      act(() =>
+        controller().pinToAnchor('[data-message-id="target"]', {
+          align: 'start',
+          offsetFraction: 0.12,
+        })
+      );
+
+      expect(geometry.getScrollTop()).toBe(0);
+      expect(controller().intentRef.current.kind).toBe('anchor');
+
+      act(() => {
+        scrollElement.dispatchEvent(new Event('scroll'));
+      });
+
+      expect(controller().intentRef.current.kind).toBe('anchor');
+    });
+  });
+
   describe('following across observer reports', () => {
     it('follows the newest message again once the observer reports it back in view', () => {
       vi.spyOn(document, 'hasFocus').mockReturnValue(true);
