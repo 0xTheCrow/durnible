@@ -281,6 +281,7 @@ const stubTimelineGeometry = (container: HTMLElement) => {
   return (scrollTop: number) => {
     geometry.setScrollTop(scrollTop);
     act(() => {
+      findObserverOf(anchorElement)?.trigger(scrollTop >= LATEST_MESSAGE_BOTTOM_SCROLL_TOP);
       scrollElement.dispatchEvent(new Event('scroll'));
     });
   };

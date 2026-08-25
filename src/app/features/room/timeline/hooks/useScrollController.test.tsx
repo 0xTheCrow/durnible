@@ -11,11 +11,19 @@ import type { ScrollController } from './useScrollController';
 
 type HarnessProps = {
   isInLivePaginationWindowRef: React.RefObject<boolean>;
+  wasLatestMessageBottomInViewRef: React.MutableRefObject<boolean>;
+  reportLatestMessageBottomInView: () => void;
   unfocusedAutoScrollRef: React.RefObject<boolean>;
   onHook: (controller: ScrollController) => void;
 };
 
-function Harness({ isInLivePaginationWindowRef, unfocusedAutoScrollRef, onHook }: HarnessProps) {
+function Harness({
+  isInLivePaginationWindowRef,
+  wasLatestMessageBottomInViewRef,
+  reportLatestMessageBottomInView,
+  unfocusedAutoScrollRef,
+  onHook,
+}: HarnessProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const latestMessageBottomRef = useRef<HTMLSpanElement>(null);
@@ -23,6 +31,8 @@ function Harness({ isInLivePaginationWindowRef, unfocusedAutoScrollRef, onHook }
     scrollRef,
     contentRef,
     isInLivePaginationWindowRef,
+    wasLatestMessageBottomInViewRef,
+    reportLatestMessageBottomInView,
     latestMessageBottomRef,
     unfocusedAutoScrollRef,
   });
@@ -39,12 +49,18 @@ const ref = (value: boolean) => ({ current: value });
 
 const renderController = (
   isInLivePaginationWindowRef: React.RefObject<boolean>,
-  unfocusedAutoScrollRef: React.RefObject<boolean> = ref(false)
+  unfocusedAutoScrollRef: React.RefObject<boolean> = ref(false),
+  isLatestMessageBottomInitiallyInView = true
 ) => {
+  const wasLatestMessageBottomInViewRef = ref(isLatestMessageBottomInitiallyInView);
   const hookRef: { current: ScrollController | null } = { current: null };
   const { container } = render(
     <Harness
       isInLivePaginationWindowRef={isInLivePaginationWindowRef}
+      wasLatestMessageBottomInViewRef={wasLatestMessageBottomInViewRef}
+      reportLatestMessageBottomInView={() => {
+        wasLatestMessageBottomInViewRef.current = true;
+      }}
       unfocusedAutoScrollRef={unfocusedAutoScrollRef}
       onHook={(controller) => {
         hookRef.current = controller;
@@ -55,7 +71,12 @@ const renderController = (
   const anchorElement = container.querySelector(
     '[data-testid="latest-message-bottom"]'
   ) as HTMLSpanElement;
-  return { controller: () => hookRef.current!, scrollElement, anchorElement };
+  return {
+    controller: () => hookRef.current!,
+    scrollElement,
+    anchorElement,
+    wasLatestMessageBottomInViewRef,
+  };
 };
 
 type StubbedRow = {
@@ -105,41 +126,20 @@ afterEach(() => {
 
 describe('useScrollController', () => {
   describe('checkIsLatestMessageBottomVisible', () => {
-    it('is true when the newest message is in view inside the live window', () => {
-      const { controller, scrollElement, anchorElement } = renderController(ref(true));
-      const geometry = stubScrollGeometry(scrollElement, {
-        scrollHeight: 2000,
-        offsetHeight: 400,
-        anchorElement,
-      });
-
-      geometry.setScrollTop(1600);
+    it('is true when the last observer report placed the newest message in view inside the live window', () => {
+      const { controller } = renderController(ref(true));
 
       expect(controller().checkIsLatestMessageBottomVisible()).toBe(true);
     });
 
     it('is false at the bottom of a window that is not the live window', () => {
-      const { controller, scrollElement, anchorElement } = renderController(ref(false));
-      const geometry = stubScrollGeometry(scrollElement, {
-        scrollHeight: 2000,
-        offsetHeight: 400,
-        anchorElement,
-      });
-
-      geometry.setScrollTop(1600);
+      const { controller } = renderController(ref(false));
 
       expect(controller().checkIsLatestMessageBottomVisible()).toBe(false);
     });
 
-    it('is false in the live window when the newest message is out of view', () => {
-      const { controller, scrollElement, anchorElement } = renderController(ref(true));
-      const geometry = stubScrollGeometry(scrollElement, {
-        scrollHeight: 2000,
-        offsetHeight: 400,
-        anchorElement,
-      });
-
-      geometry.setScrollTop(400);
+    it('is false in the live window when the last observer report placed the newest message out of view', () => {
+      const { controller } = renderController(ref(true), ref(false), false);
 
       expect(controller().checkIsLatestMessageBottomVisible()).toBe(false);
     });
@@ -216,7 +216,7 @@ describe('useScrollController', () => {
 
     it('does not scroll to the newest message when it is out of view', () => {
       vi.spyOn(document, 'hasFocus').mockReturnValue(true);
-      const { scrollElement, anchorElement } = renderController(ref(true));
+      const { scrollElement, anchorElement } = renderController(ref(true), ref(false), false);
       const geometry = stubScrollGeometry(scrollElement, {
         scrollHeight: 2000,
         offsetHeight: 400,
@@ -292,211 +292,31 @@ describe('useScrollController', () => {
     });
   });
 
-  describe('displacement without a bound input event', () => {
-    it('stops following the newest message once it scrolls out of view', () => {
+  describe('following across observer reports', () => {
+    it('follows the newest message again once the observer reports it back in view', () => {
       vi.spyOn(document, 'hasFocus').mockReturnValue(true);
-      const { controller, scrollElement, anchorElement } = renderController(ref(true));
+      const { scrollElement, anchorElement, wasLatestMessageBottomInViewRef } = renderController(
+        ref(true),
+        ref(false),
+        false
+      );
       const geometry = stubScrollGeometry(scrollElement, {
         scrollHeight: 2000,
         offsetHeight: 400,
         anchorElement,
       });
-
-      act(() => controller().pinToLatestMessageBottom());
-      expect(geometry.getScrollTop()).toBe(1600);
-      act(() => {
-        scrollElement.dispatchEvent(new Event('scroll'));
-      });
-
       const historyScrollTop = 400;
-      geometry.setScrollTop(historyScrollTop);
-      act(() => {
-        scrollElement.dispatchEvent(new Event('scroll'));
-      });
 
+      geometry.setScrollTop(historyScrollTop);
       geometry.setScrollHeight(2100);
       act(() => resizeObserverInstances[0].trigger());
-
       expect(geometry.getScrollTop()).toBe(historyScrollTop);
-    });
 
-    it('stops following the newest message when the displacement follows a pin to it', () => {
-      vi.spyOn(document, 'hasFocus').mockReturnValue(true);
-      const { controller, scrollElement, anchorElement } = renderController(ref(true));
-      const geometry = stubScrollGeometry(scrollElement, {
-        scrollHeight: 2000,
-        offsetHeight: 400,
-        anchorElement,
-      });
-
-      act(() => controller().pinToLatestMessageBottom());
-      act(() => controller().pinToLatestMessageBottom());
-      act(() => {
-        scrollElement.dispatchEvent(new Event('scroll'));
-      });
-
-      const historyScrollTop = 400;
-      geometry.setScrollTop(historyScrollTop);
-      act(() => {
-        scrollElement.dispatchEvent(new Event('scroll'));
-      });
-
-      geometry.setScrollHeight(2100);
+      wasLatestMessageBottomInViewRef.current = true;
+      geometry.setScrollHeight(2200);
       act(() => resizeObserverInstances[0].trigger());
 
-      expect(geometry.getScrollTop()).toBe(historyScrollTop);
-    });
-
-    it('keeps following the newest message when a shrink clamps the scroll offset down', () => {
-      vi.spyOn(document, 'hasFocus').mockReturnValue(true);
-      const { controller, scrollElement, anchorElement } = renderController(ref(true));
-      const geometry = stubScrollGeometry(scrollElement, {
-        scrollHeight: 2000,
-        offsetHeight: 400,
-        anchorElement,
-      });
-
-      act(() => controller().pinToLatestMessageBottom());
-      act(() => {
-        scrollElement.dispatchEvent(new Event('scroll'));
-      });
-
-      geometry.setScrollHeight(1500);
-      geometry.setScrollTop(1100);
-      act(() => {
-        scrollElement.dispatchEvent(new Event('scroll'));
-      });
-
-      geometry.setScrollHeight(1600);
-      act(() => resizeObserverInstances[0].trigger());
-
-      expect(geometry.getScrollTop()).toBe(1200);
-    });
-
-    it('keeps following the newest message when a shrink, a correction, and growth share one scroll event', () => {
-      vi.spyOn(document, 'hasFocus').mockReturnValue(true);
-      const { controller, scrollElement, anchorElement } = renderController(ref(true));
-      const geometry = stubScrollGeometry(scrollElement, {
-        scrollHeight: 1903,
-        offsetHeight: 400,
-        anchorElement,
-        latestMessageBottom: 1903,
-      });
-
-      act(() => controller().pinToLatestMessageBottom());
-      act(() => {
-        scrollElement.dispatchEvent(new Event('scroll'));
-      });
-      expect(geometry.getScrollTop()).toBe(1503);
-
-      act(() => controller().pinToLatestMessageBottom());
-
-      geometry.setScrollHeight(1898);
-      geometry.setNewestMessageBottom(1898);
-      geometry.setScrollTop(1499);
-      act(() => resizeObserverInstances[0].trigger());
-      expect(geometry.getScrollTop()).toBe(1498);
-
-      geometry.setScrollHeight(2348);
-      geometry.setNewestMessageBottom(2345);
-      act(() => {
-        scrollElement.dispatchEvent(new Event('scroll'));
-      });
-      act(() => resizeObserverInstances[0].trigger());
-
-      expect(geometry.getScrollTop()).toBe(1945);
-    });
-
-    it('keeps following the newest message when growth follows a rounding correction', () => {
-      vi.spyOn(document, 'hasFocus').mockReturnValue(true);
-      const { controller, scrollElement, anchorElement } = renderController(ref(true));
-      const geometry = stubScrollGeometry(scrollElement, {
-        scrollHeight: 7731,
-        offsetHeight: 400,
-        anchorElement,
-        latestMessageBottom: 7730,
-      });
-
-      geometry.setScrollTop(7331);
-      act(() => {
-        scrollElement.dispatchEvent(new Event('scroll'));
-      });
-
-      act(() => controller().pinToLatestMessageBottom());
-      expect(geometry.getScrollTop()).toBe(7330);
-
-      geometry.setScrollHeight(7781);
-      geometry.setNewestMessageBottom(7780);
-      act(() => {
-        scrollElement.dispatchEvent(new Event('scroll'));
-      });
-      act(() => resizeObserverInstances[0].trigger());
-
-      expect(geometry.getScrollTop()).toBe(7380);
-    });
-
-    it('keeps following the newest message when the correction lands on the clamped offset', () => {
-      vi.spyOn(document, 'hasFocus').mockReturnValue(true);
-      const { controller, scrollElement, anchorElement } = renderController(ref(true));
-      const geometry = stubScrollGeometry(scrollElement, {
-        scrollHeight: 1903,
-        offsetHeight: 400,
-        anchorElement,
-        latestMessageBottom: 1903,
-      });
-
-      act(() => controller().pinToLatestMessageBottom());
-      act(() => {
-        scrollElement.dispatchEvent(new Event('scroll'));
-      });
-      expect(geometry.getScrollTop()).toBe(1503);
-
-      geometry.setScrollHeight(1898);
-      geometry.setNewestMessageBottom(1898);
-      geometry.setScrollTop(1498);
-      act(() => resizeObserverInstances[0].trigger());
-
-      geometry.setScrollHeight(2348);
-      geometry.setNewestMessageBottom(2345);
-      act(() => {
-        scrollElement.dispatchEvent(new Event('scroll'));
-      });
-      act(() => resizeObserverInstances[0].trigger());
-
-      expect(geometry.getScrollTop()).toBe(1945);
-    });
-
-    it('keeps the pin through a shrink clamp while unfocused with unfocusedAutoScroll off', () => {
-      const hasFocus = vi.spyOn(document, 'hasFocus').mockReturnValue(false);
-      const { controller, scrollElement, anchorElement } = renderController(ref(true), ref(false));
-      const geometry = stubScrollGeometry(scrollElement, {
-        scrollHeight: 1903,
-        offsetHeight: 400,
-        anchorElement,
-        latestMessageBottom: 1903,
-      });
-
-      geometry.setScrollTop(1503);
-      act(() => controller().pinToLatestMessageBottom());
-      act(() => {
-        scrollElement.dispatchEvent(new Event('scroll'));
-      });
-
-      geometry.setScrollHeight(1898);
-      geometry.setNewestMessageBottom(1898);
-      geometry.setScrollTop(1499);
-      act(() => resizeObserverInstances[0].trigger());
-
-      geometry.setScrollHeight(2348);
-      geometry.setNewestMessageBottom(2345);
-      act(() => {
-        scrollElement.dispatchEvent(new Event('scroll'));
-      });
-
-      hasFocus.mockReturnValue(true);
-      act(() => resizeObserverInstances[0].trigger());
-
-      expect(geometry.getScrollTop()).toBe(1945);
+      expect(geometry.getScrollTop()).toBe(1800);
     });
   });
 });

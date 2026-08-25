@@ -126,7 +126,12 @@ export function RoomTimeline({
   const unfocusedAutoScrollRef = useRef(unfocusedAutoScroll);
   unfocusedAutoScrollRef.current = unfocusedAutoScroll;
 
-  const { isLatestMessageBottomVisible, latestMessageBottomRef } = useIsLatestMessageBottomVisible({
+  const {
+    isLatestMessageBottomVisible,
+    wasLatestMessageBottomInViewRef,
+    reportLatestMessageBottomInView,
+    latestMessageBottomRef,
+  } = useIsLatestMessageBottomVisible({
     scrollRef,
     isInLivePaginationWindow,
   });
@@ -135,6 +140,8 @@ export function RoomTimeline({
     scrollRef,
     contentRef,
     isInLivePaginationWindowRef,
+    wasLatestMessageBottomInViewRef,
+    reportLatestMessageBottomInView,
     latestMessageBottomRef,
     unfocusedAutoScrollRef,
   });

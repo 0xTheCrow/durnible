@@ -1,5 +1,5 @@
 import type { RefObject } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 type UseIsLatestMessageBottomVisibleParams = {
   scrollRef: RefObject<HTMLDivElement>;
@@ -8,6 +8,8 @@ type UseIsLatestMessageBottomVisibleParams = {
 
 type UseIsLatestMessageBottomVisibleResult = {
   isLatestMessageBottomVisible: boolean;
+  wasLatestMessageBottomInViewRef: RefObject<boolean>;
+  reportLatestMessageBottomInView: () => void;
   latestMessageBottomRef: RefObject<HTMLSpanElement>;
 };
 
@@ -18,6 +20,7 @@ export const useIsLatestMessageBottomVisible = ({
   isInLivePaginationWindow,
 }: UseIsLatestMessageBottomVisibleParams): UseIsLatestMessageBottomVisibleResult => {
   const [isRenderedBottomVisible, setIsRenderedBottomVisible] = useState(false);
+  const wasLatestMessageBottomInViewRef = useRef(false);
   const latestMessageBottomRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
@@ -27,6 +30,7 @@ export const useIsLatestMessageBottomVisible = ({
 
     const observer = new IntersectionObserver(
       ([entry]) => {
+        wasLatestMessageBottomInViewRef.current = entry.isIntersecting;
         setIsRenderedBottomVisible(entry.isIntersecting);
       },
       { root, rootMargin: `0px 0px ${LATEST_MESSAGE_BOTTOM_TOLERANCE_PX}px 0px`, threshold: 0 }
@@ -38,8 +42,14 @@ export const useIsLatestMessageBottomVisible = ({
     };
   }, [scrollRef]);
 
+  const reportLatestMessageBottomInView = useCallback(() => {
+    wasLatestMessageBottomInViewRef.current = true;
+  }, []);
+
   return {
     isLatestMessageBottomVisible: isRenderedBottomVisible && isInLivePaginationWindow,
+    wasLatestMessageBottomInViewRef,
+    reportLatestMessageBottomInView,
     latestMessageBottomRef,
   };
 };
