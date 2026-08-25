@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { render, act } from '@testing-library/react';
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   findObserverOf,
   installIntersectionObserverStub,
@@ -11,13 +11,17 @@ import { useIsLatestMessageBottomVisible } from './useIsLatestMessageBottomVisib
 type HarnessProps = {
   isInLivePaginationWindow: boolean;
   onRender: (isLatestMessageBottomVisible: boolean) => void;
+  onChange?: (isVisible: boolean) => void;
 };
 
-function Harness({ isInLivePaginationWindow, onRender }: HarnessProps) {
+function Harness({ isInLivePaginationWindow, onRender, onChange }: HarnessProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { isLatestMessageBottomVisible, latestMessageBottomRef } = useIsLatestMessageBottomVisible({
+  const latestMessageBottomRef = useRef<HTMLSpanElement>(null);
+  const { isLatestMessageBottomVisible } = useIsLatestMessageBottomVisible({
     scrollRef,
+    latestMessageBottomRef,
     isInLivePaginationWindow,
+    onChange,
   });
   onRender(isLatestMessageBottomVisible);
   return (
@@ -27,7 +31,7 @@ function Harness({ isInLivePaginationWindow, onRender }: HarnessProps) {
   );
 }
 
-const renderHook = (isInLivePaginationWindow: boolean) => {
+const renderHook = (isInLivePaginationWindow: boolean, onChange?: (isVisible: boolean) => void) => {
   let latest = false;
   const { container } = render(
     <Harness
@@ -35,6 +39,7 @@ const renderHook = (isInLivePaginationWindow: boolean) => {
       onRender={(value) => {
         latest = value;
       }}
+      onChange={onChange}
     />
   );
   const anchorElement = container.querySelector(
@@ -80,5 +85,16 @@ describe('useIsLatestMessageBottomVisible', () => {
     reportBottomVisible(false);
 
     expect(read()).toBe(false);
+  });
+
+  it('reports the raw intersection value to onChange synchronously', () => {
+    const onChange = vi.fn();
+    const { reportBottomVisible } = renderHook(true, onChange);
+
+    reportBottomVisible(true);
+    expect(onChange).toHaveBeenLastCalledWith(true);
+
+    reportBottomVisible(false);
+    expect(onChange).toHaveBeenLastCalledWith(false);
   });
 });

@@ -126,25 +126,27 @@ export function RoomTimeline({
   const unfocusedAutoScrollRef = useRef(unfocusedAutoScroll);
   unfocusedAutoScrollRef.current = unfocusedAutoScroll;
 
-  const {
-    isLatestMessageBottomVisible,
-    wasLatestMessageBottomInViewRef,
-    reportLatestMessageBottomInView,
-    latestMessageBottomRef,
-  } = useIsLatestMessageBottomVisible({
-    scrollRef,
-    isInLivePaginationWindow,
-  });
+  const latestMessageBottomRef = useRef<HTMLSpanElement>(null);
 
   const scrollController = useScrollController({
     scrollRef,
     contentRef,
     isInLivePaginationWindowRef,
-    wasLatestMessageBottomInViewRef,
-    reportLatestMessageBottomInView,
     latestMessageBottomRef,
     unfocusedAutoScrollRef,
   });
+
+  const { isLatestMessageBottomVisible, wasLatestMessageBottomInViewRef } =
+    useIsLatestMessageBottomVisible({
+      scrollRef,
+      latestMessageBottomRef,
+      isInLivePaginationWindow,
+      onChange: scrollController.syncLatestMessageBottomFollow,
+    });
+
+  useLayoutEffect(() => {
+    if (!liveTimelineLinked) scrollController.releaseLatestMessageBottomFollow();
+  }, [liveTimelineLinked, scrollController]);
 
   const clearNewMessagesDivider = useCallback(() => setDividerReadUptoEventId(undefined), []);
   const { readReceiptEventId, roomIsUnread } = useAutoMarkAsRead({
@@ -253,7 +255,9 @@ export function RoomTimeline({
     room,
     setTimeline,
     scrollRef,
-    checkIsLatestMessageBottomVisible: scrollController.checkIsLatestMessageBottomVisible,
+    wasLatestMessageBottomInViewRef,
+    isInLivePaginationWindowRef,
+    intentRef: scrollController.intentRef,
     pinToLatestMessageBottom: scrollController.pinToLatestMessageBottom,
     unfocusedAutoScroll,
   });

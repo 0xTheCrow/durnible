@@ -1,27 +1,30 @@
 import type { RefObject } from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 type UseIsLatestMessageBottomVisibleParams = {
   scrollRef: RefObject<HTMLDivElement>;
+  latestMessageBottomRef: RefObject<HTMLSpanElement>;
   isInLivePaginationWindow: boolean;
+  onChange?: (isVisible: boolean) => void;
 };
 
 type UseIsLatestMessageBottomVisibleResult = {
   isLatestMessageBottomVisible: boolean;
   wasLatestMessageBottomInViewRef: RefObject<boolean>;
-  reportLatestMessageBottomInView: () => void;
-  latestMessageBottomRef: RefObject<HTMLSpanElement>;
 };
 
 export const LATEST_MESSAGE_BOTTOM_TOLERANCE_PX = 8;
 
 export const useIsLatestMessageBottomVisible = ({
   scrollRef,
+  latestMessageBottomRef,
   isInLivePaginationWindow,
+  onChange,
 }: UseIsLatestMessageBottomVisibleParams): UseIsLatestMessageBottomVisibleResult => {
   const [isRenderedBottomVisible, setIsRenderedBottomVisible] = useState(false);
   const wasLatestMessageBottomInViewRef = useRef(false);
-  const latestMessageBottomRef = useRef<HTMLSpanElement>(null);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
 
   useEffect(() => {
     const anchorElement = latestMessageBottomRef.current;
@@ -32,6 +35,7 @@ export const useIsLatestMessageBottomVisible = ({
       ([entry]) => {
         wasLatestMessageBottomInViewRef.current = entry.isIntersecting;
         setIsRenderedBottomVisible(entry.isIntersecting);
+        onChangeRef.current?.(entry.isIntersecting);
       },
       { root, rootMargin: `0px 0px ${LATEST_MESSAGE_BOTTOM_TOLERANCE_PX}px 0px`, threshold: 0 }
     );
@@ -40,16 +44,10 @@ export const useIsLatestMessageBottomVisible = ({
     return () => {
       observer.disconnect();
     };
-  }, [scrollRef]);
-
-  const reportLatestMessageBottomInView = useCallback(() => {
-    wasLatestMessageBottomInViewRef.current = true;
-  }, []);
+  }, [scrollRef, latestMessageBottomRef]);
 
   return {
     isLatestMessageBottomVisible: isRenderedBottomVisible && isInLivePaginationWindow,
     wasLatestMessageBottomInViewRef,
-    reportLatestMessageBottomInView,
-    latestMessageBottomRef,
   };
 };

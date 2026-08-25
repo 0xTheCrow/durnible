@@ -9,12 +9,15 @@ import { isModifierTimelineEvent } from '../../../../utils/room';
 import { getScrollBottomDistance } from '../../../../utils/dom';
 import { createTimelineWindow } from '../utils/timelineWindow';
 import { traceTimelineScroll } from '../utils/scrollTrace';
+import type { ScrollIntent } from './useScrollController';
 
 type UseLiveTimelineUpdatesParams = {
   room: Room;
   setTimeline: Dispatch<SetStateAction<Timeline>>;
   scrollRef: RefObject<HTMLDivElement>;
-  checkIsLatestMessageBottomVisible: () => boolean;
+  wasLatestMessageBottomInViewRef: RefObject<boolean>;
+  isInLivePaginationWindowRef: RefObject<boolean>;
+  intentRef: RefObject<ScrollIntent>;
   pinToLatestMessageBottom: () => void;
   unfocusedAutoScroll: boolean;
 };
@@ -23,7 +26,9 @@ export const useLiveTimelineUpdates = ({
   room,
   setTimeline,
   scrollRef,
-  checkIsLatestMessageBottomVisible,
+  wasLatestMessageBottomInViewRef,
+  isInLivePaginationWindowRef,
+  intentRef,
   pinToLatestMessageBottom,
   unfocusedAutoScroll,
 }: UseLiveTimelineUpdatesParams): void => {
@@ -38,20 +43,27 @@ export const useLiveTimelineUpdates = ({
 
       const focused = typeof document !== 'undefined' && document.hasFocus();
       const autoPinEnabled = focused || unfocusedAutoScroll;
-      const isLatestMessageBottomVisible = checkIsLatestMessageBottomVisible();
+      const followingLatestMessageBottom = intentRef.current?.kind === 'latestMessageBottom';
+      const wasLatestMessageBottomInView = !!wasLatestMessageBottomInViewRef.current;
+      const isInLivePaginationWindow = !!isInLivePaginationWindowRef.current;
+      const shouldFollowLatestMessageBottom =
+        followingLatestMessageBottom || (wasLatestMessageBottomInView && isInLivePaginationWindow);
       const scrollElement = scrollRef.current;
 
       traceTimelineScroll('liveEventArrive', {
         eventId: mEvent.getId(),
-        isLatestMessageBottomVisible,
+        followingLatestMessageBottom,
+        wasLatestMessageBottomInView,
+        isInLivePaginationWindow,
         focused,
         autoPinEnabled,
         scrollBottomDistance: scrollElement
           ? Math.round(getScrollBottomDistance(scrollElement))
           : null,
+        shouldFollowLatestMessageBottom,
       });
 
-      if (isLatestMessageBottomVisible) {
+      if (shouldFollowLatestMessageBottom) {
         if (autoPinEnabled) pinToLatestMessageBottom();
         setTimeline((current) => {
           const total = getTimelinesEventsCount(current.linkedTimelines);
@@ -72,7 +84,9 @@ export const useLiveTimelineUpdates = ({
     [
       setTimeline,
       scrollRef,
-      checkIsLatestMessageBottomVisible,
+      wasLatestMessageBottomInViewRef,
+      isInLivePaginationWindowRef,
+      intentRef,
       pinToLatestMessageBottom,
       unfocusedAutoScroll,
     ]
