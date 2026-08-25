@@ -168,6 +168,15 @@ export const useVirtualPaginator = <TScrollElement extends HTMLElement>(
       const { range: currentRange, limit: currentLimit, count: currentCount } = propRef.current;
       let { start, end } = currentRange;
 
+      traceTimelineScroll('paginator:paginate', {
+        direction,
+        rangeStart: currentRange.start,
+        rangeEnd: currentRange.end,
+        count: currentCount,
+        scrollTop: scrollElement ? Math.round(scrollElement.scrollTop) : null,
+        scrollHeight: scrollElement ? Math.round(scrollElement.scrollHeight) : null,
+      });
+
       if (direction === Direction.Backward) {
         restoreScrollRef.current = undefined;
         if (start === 0) {
@@ -209,6 +218,7 @@ export const useVirtualPaginator = <TScrollElement extends HTMLElement>(
         end = Math.min(end + currentLimit, currentCount);
       }
 
+      traceTimelineScroll('paginator:rangeChange', { direction, start, end });
       onRangeChange({
         start,
         end,
@@ -274,6 +284,8 @@ export const useVirtualPaginator = <TScrollElement extends HTMLElement>(
 
     traceTimelineScroll('paginator:restoreScroll', {
       anchorIndex: anchorElement.getAttribute('data-message-item'),
+      anchorMessageId: anchorElement.getAttribute('data-message-id'),
+      scrollHeight: Math.round(scrollElement.scrollHeight),
       oldOffsetTop,
       offsetTop,
       offsetAddition,

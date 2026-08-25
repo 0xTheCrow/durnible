@@ -343,6 +343,7 @@ export function RoomTimeline({
       rangeOldest,
       rangeNewest,
       eventsLength,
+      scrollTop: scrollRef.current ? Math.round(scrollRef.current.scrollTop) : null,
     });
   }, [
     isInLivePaginationWindow,

@@ -43,6 +43,7 @@ export type ScrollController = {
 };
 
 const ANCHOR_SATISFIED_TOLERANCE_PX = 2;
+const LARGE_SCROLL_JUMP_PX = 600;
 
 const getElementTopInScroll = (element: HTMLElement, scrollElement: HTMLElement): number =>
   element.offsetTop - scrollElement.offsetTop;
@@ -253,8 +254,20 @@ export const useScrollController = ({
     const scrollElement = scrollRef.current;
     const contentElement = contentRef.current;
     if (!scrollElement || !contentElement) return undefined;
+    let lastTickSignature: string | null = null;
     const maintainPosition = () => {
       const intent = intentRef.current;
+      const tickSnapshot = {
+        intent: intent.kind,
+        scrollTop: Math.round(scrollElement.scrollTop),
+        scrollHeight: Math.round(scrollElement.scrollHeight),
+        isLatestMessageBottomVisible: checkIsLatestMessageBottomVisible(),
+      };
+      const tickSignature = JSON.stringify(tickSnapshot);
+      if (tickSignature !== lastTickSignature) {
+        lastTickSignature = tickSignature;
+        traceTimelineScroll('maintainPosition:tick', tickSnapshot);
+      }
       if (intent.kind === 'anchor') {
         traceTimelineScroll('maintainPosition:apply', { reason: 'anchor' });
         applyAnchor(intent, 'instant');
@@ -289,6 +302,7 @@ export const useScrollController = ({
     const scrollElement = scrollRef.current;
     if (!scrollElement) return undefined;
     let lastScrollSampleAt = 0;
+    let lastLoggedScrollTop = scrollElement.scrollTop;
     const handleScroll = () => {
       const { scrollTop } = scrollElement;
       const intent = intentRef.current;
@@ -297,13 +311,22 @@ export const useScrollController = ({
         intentRef.current = { kind: 'free' };
       }
       captureFreeScrollAnchor();
+      const isLargeJump = Math.abs(scrollTop - lastLoggedScrollTop) > LARGE_SCROLL_JUMP_PX;
+      if (isLargeJump) {
+        traceTimelineScroll('scroll:jump', {
+          from: Math.round(lastLoggedScrollTop),
+          to: Math.round(scrollTop),
+        });
+      }
       const now = performance.now();
-      if (now - lastScrollSampleAt < TRACE_COALESCE_WINDOW_MS) return;
+      if (!isLargeJump && now - lastScrollSampleAt < TRACE_COALESCE_WINDOW_MS) return;
       lastScrollSampleAt = now;
+      lastLoggedScrollTop = scrollTop;
       const latestMessageBottomScrollTop = getLatestMessageBottomTarget();
       traceTimelineScroll('scroll', {
         intent: intentRef.current.kind,
         isLatestMessageBottomVisible: checkIsLatestMessageBottomVisible(),
+        scrollTop: Math.round(scrollTop),
         distanceToLatestMessageBottom:
           latestMessageBottomScrollTop === null
             ? null
