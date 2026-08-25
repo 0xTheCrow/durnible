@@ -174,7 +174,8 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     const imagePacks = useRelevantImagePacks(ImageUsage.Emoticon, imagePackRooms);
 
     const [toolbar, setToolbar] = useSetting(settingsAtom, 'editorToolbar');
-    const [isAutocompleteOpen, setIsAutocompleteOpen] = useState(false);
+    const isAutocompleteVisibleRef = useRef(false);
+    const closeAutocompleteRef = useRef<() => void>(() => {});
 
     const sendTypingStatus = useTypingStatusUpdater(mx, roomId);
 
@@ -490,7 +491,10 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       if (isKeyHotkey('escape', evt)) {
         evt.preventDefault();
         evt.stopPropagation();
-        if (isAutocompleteOpen) return;
+        if (isAutocompleteVisibleRef.current) {
+          closeAutocompleteRef.current();
+          return;
+        }
         setReplyDraft(undefined);
       }
     };
@@ -635,7 +639,12 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
           room={room}
           roomId={roomId}
           imagePackRooms={imagePackRooms}
-          onOpenChange={setIsAutocompleteOpen}
+          checkIsAutocompleteVisible={(isAutocompleteVisible) => {
+            isAutocompleteVisibleRef.current = isAutocompleteVisible;
+          }}
+          registerAutocompleteCloser={(closeAutocomplete) => {
+            closeAutocompleteRef.current = closeAutocomplete;
+          }}
         />
         {isVoiceRecording ? (
           <VoiceMessageRecorder

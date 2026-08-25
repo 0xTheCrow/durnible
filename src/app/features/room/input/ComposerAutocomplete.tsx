@@ -1,7 +1,6 @@
 import type { RefObject } from 'react';
 import React, { useEffect, useState } from 'react';
 import type { Room } from 'matrix-js-sdk';
-import { isKeyHotkey } from 'is-hotkey';
 
 import type { AutocompleteQuery } from '../../../components/editor';
 import {
@@ -20,7 +19,8 @@ type ComposerAutocompleteProps = {
   room: Room;
   roomId: string;
   imagePackRooms: Room[];
-  onOpenChange: (isOpen: boolean) => void;
+  checkIsAutocompleteVisible: (isAutocompleteVisible: boolean) => void;
+  registerAutocompleteCloser: (closeAutocomplete: () => void) => void;
 };
 
 export function ComposerAutocomplete({
@@ -28,7 +28,8 @@ export function ComposerAutocomplete({
   room,
   roomId,
   imagePackRooms,
-  onOpenChange,
+  checkIsAutocompleteVisible,
+  registerAutocompleteCloser,
 }: ComposerAutocompleteProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
@@ -82,21 +83,11 @@ export function ComposerAutocomplete({
     };
   }, [editorElementRef, detectAutocompleteQuery]);
 
-  const isOpen = query !== undefined;
-  useEffect(() => {
-    onOpenChange(isOpen);
-  }, [isOpen, onOpenChange]);
-
-  useEffect(() => {
-    if (!isOpen) return undefined;
-    const closeOnEscape = (evt: KeyboardEvent) => {
-      if (isKeyHotkey('escape', evt)) setQuery(undefined);
-    };
-    document.addEventListener('keydown', closeOnEscape, true);
-    return () => document.removeEventListener('keydown', closeOnEscape, true);
-  }, [isOpen]);
+  const isAutocompleteVisible = query !== undefined;
+  checkIsAutocompleteVisible(isAutocompleteVisible);
 
   const closeQuery = () => setQuery(undefined);
+  registerAutocompleteCloser(closeQuery);
 
   return (
     <>
