@@ -16,10 +16,9 @@ import {
   getInitialTimeline,
   loadEventContext,
   useLiveTimelineRefresh,
-  useLiveTimelineReset,
   PAGINATION_LIMIT,
 } from './timelineState';
-import { getLiveTimeline, getTimelinesEventsCount } from './timelineUtils';
+import { getTimelinesEventsCount } from './timelineUtils';
 import { useVirtualPaginator } from '../../../hooks/useVirtualPaginator';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { useRoomNavigate } from '../../../hooks/useRoomNavigate';
@@ -268,17 +267,6 @@ export function RoomTimeline({
       if (liveTimelineLinked) {
         setTimeline(getInitialTimeline(room));
       }
-    }, [room, liveTimelineLinked])
-  );
-
-  useLiveTimelineReset(
-    room,
-    useCallback(() => {
-      if (!liveTimelineLinked) return;
-      setTimeline((current) => ({
-        ...current,
-        linkedTimelines: [...current.linkedTimelines, getLiveTimeline(room)],
-      }));
     }, [room, liveTimelineLinked])
   );
 

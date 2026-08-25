@@ -46,6 +46,14 @@ export const usePaginationState = (
     typeof timeline.linkedTimelines[0]?.getPaginationToken(Direction.Backward) === 'string';
   const rangeAtOldest = range.oldest === 0;
 
+  /*
+   * === here compares object identity, not content. On a gappy /sync (Room.timelineReset),
+   * matrix-js-sdk points getLiveTimeline(room) at a brand new, disconnected timeline object, so
+   * this goes false immediately, before any event data reflects the gap. That false un-suppresses
+   * forward pagination, letting the SDK re-link the old and new timelines once it catches up.
+   * Don't replace the === with a content/id comparison, and don't manually append the new live
+   * timeline to linkedTimelines — either kills gap recovery.
+   */
   const liveTimelineLinked =
     timeline.linkedTimelines[timeline.linkedTimelines.length - 1] === getLiveTimeline(room);
 

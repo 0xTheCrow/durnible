@@ -325,6 +325,7 @@ export const stubHomeserver = async (
   options: StubHomeserverOptions = {}
 ): Promise<HomeserverStub> => {
   const queuedSyncs: Record<string, unknown>[] = [];
+  const liveEventLog: Record<string, unknown>[] = [];
   let releaseLongPoll: (() => void) | undefined;
   let resolveHistoryRequested: (() => void) | undefined;
   const stub: HomeserverStub = {
@@ -332,6 +333,7 @@ export const stubHomeserver = async (
     unmatched: [],
     pushTimeline: (events, { isLimited = false } = {}) => {
       queuedSyncs.push(liveSync(queuedSyncs.length + 2, events, isLimited));
+      liveEventLog.push(...events);
       releaseLongPoll?.();
     },
     historyRequested: new Promise((resolve) => {
@@ -409,6 +411,9 @@ export const stubHomeserver = async (
           });
         }
         return json(route, { chunk: [...options.historyEvents].reverse(), start: 'p_0' });
+      }
+      if (!isBackwards && liveEventLog.length > 0) {
+        return json(route, { chunk: [...liveEventLog], start: 'p_0', end: 'p_forward' });
       }
       return json(route, { chunk: [], start: 'p_0' });
     }
