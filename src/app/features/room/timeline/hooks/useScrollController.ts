@@ -76,6 +76,18 @@ const anchorOffsetPx = (intent: AnchorIntent, scrollElement: HTMLElement): numbe
     ? Math.round(scrollElement.clientHeight * intent.offsetFraction)
     : intent.offset;
 
+const getTopVisibleMessageId = (scrollElement: HTMLElement): string | null => {
+  const scrollRect = scrollElement.getBoundingClientRect();
+  const rows = scrollElement.querySelectorAll<HTMLElement>('[data-message-id]');
+  for (let i = 0; i < rows.length; i += 1) {
+    const row = rows[i];
+    if (row.getBoundingClientRect().bottom > scrollRect.top) {
+      return row.getAttribute('data-message-id');
+    }
+  }
+  return null;
+};
+
 const findAnchorElement = (
   intent: AnchorIntent,
   scrollElement: HTMLElement
@@ -303,6 +315,7 @@ export const useScrollController = ({
     if (!scrollElement) return undefined;
     let lastScrollSampleAt = 0;
     let lastLoggedScrollTop = scrollElement.scrollTop;
+    let lastLoggedTopVisibleMessageId = getTopVisibleMessageId(scrollElement);
     const handleScroll = () => {
       const { scrollTop } = scrollElement;
       const intent = intentRef.current;
@@ -312,12 +325,16 @@ export const useScrollController = ({
       }
       captureFreeScrollAnchor();
       const isLargeJump = Math.abs(scrollTop - lastLoggedScrollTop) > LARGE_SCROLL_JUMP_PX;
+      const topVisibleMessageId = getTopVisibleMessageId(scrollElement);
       if (isLargeJump) {
         traceTimelineScroll('scroll:jump', {
           from: Math.round(lastLoggedScrollTop),
           to: Math.round(scrollTop),
+          topVisibleMessageIdBefore: lastLoggedTopVisibleMessageId,
+          topVisibleMessageIdAfter: topVisibleMessageId,
         });
       }
+      lastLoggedTopVisibleMessageId = topVisibleMessageId;
       const now = performance.now();
       if (!isLargeJump && now - lastScrollSampleAt < TRACE_COALESCE_WINDOW_MS) return;
       lastScrollSampleAt = now;
@@ -327,6 +344,7 @@ export const useScrollController = ({
         intent: intentRef.current.kind,
         isLatestMessageBottomVisible: checkIsLatestMessageBottomVisible(),
         scrollTop: Math.round(scrollTop),
+        topVisibleMessageId,
         distanceToLatestMessageBottom:
           latestMessageBottomScrollTop === null
             ? null
