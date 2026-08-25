@@ -451,7 +451,6 @@ export const useScrollController = ({
     };
     const handleScrollEnd = () => {
       traceTimelineScroll('scrollEnd', scrollStateDetail());
-      endAutoScroll();
     };
     scrollElement.addEventListener('wheel', handleUserInput, { passive: true });
     scrollElement.addEventListener('touchmove', handleUserInput, { passive: true });
