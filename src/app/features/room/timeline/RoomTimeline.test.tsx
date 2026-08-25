@@ -286,11 +286,11 @@ const stubTimelineGeometry = (container: HTMLElement) => {
   };
 };
 
-const scrollToLiveEdge = (container: HTMLElement) => {
+const scrollToLatestMessage = (container: HTMLElement) => {
   stubTimelineGeometry(container)(LATEST_MESSAGE_BOTTOM_SCROLL_TOP);
 };
 
-const scrollAwayFromLiveEdge = (container: HTMLElement) => {
+const scrollAwayFromLatestMessage = (container: HTMLElement) => {
   const scrollTo = stubTimelineGeometry(container);
   scrollTo(LATEST_MESSAGE_BOTTOM_SCROLL_TOP);
   scrollTo(HISTORY_SCROLL_TOP);
@@ -305,10 +305,10 @@ const triggerBackPagination = async (container: HTMLElement) => {
 };
 
 describe('RoomTimeline window stability during back pagination', () => {
-  it('renders an arriving live event while following the live edge', async () => {
+  it('renders an arriving live event while following the newest message', async () => {
     const fixture = createRoomWithPaginatableLiveTimeline(false);
     const { container } = renderTimeline(fixture);
-    scrollToLiveEdge(container);
+    scrollToLatestMessage(container);
 
     await act(async () => {
       fixture.arriveLiveEvents(1);
@@ -320,7 +320,7 @@ describe('RoomTimeline window stability during back pagination', () => {
   it('renders the same events when live events arrive during the pagination request', async () => {
     const fixture = createRoomWithPaginatableLiveTimeline(false);
     const { container } = renderTimeline(fixture);
-    scrollAwayFromLiveEdge(container);
+    scrollAwayFromLatestMessage(container);
     const eventIdsBeforePagination = renderedEventIds(container);
 
     fixture.mx.paginateEventTimeline = vi.fn(async () => {
@@ -337,7 +337,7 @@ describe('RoomTimeline window stability during back pagination', () => {
   it('renders the same events when a live event arrives while the fetched page is decrypting', async () => {
     const fixture = createRoomWithPaginatableLiveTimeline(true);
     const { container } = renderTimeline(fixture);
-    scrollAwayFromLiveEdge(container);
+    scrollAwayFromLatestMessage(container);
     const eventIdsBeforePagination = renderedEventIds(container);
 
     fixture.mx.paginateEventTimeline = vi.fn(async () => {
@@ -361,7 +361,7 @@ describe('RoomTimeline window stability during back pagination', () => {
 });
 
 describe('RoomTimeline auto mark as read', () => {
-  it('sends a read receipt at the live edge when the stored receipt sits in a detached timeline', () => {
+  it('sends a read receipt at the newest message when the stored receipt sits in a detached timeline', () => {
     const fixture = createRoomWithDetachedReceipt();
     const { container } = renderTimeline(fixture);
 
@@ -370,7 +370,7 @@ describe('RoomTimeline auto mark as read', () => {
     expect(vi.mocked(fixture.mx.sendReadReceipt)).toHaveBeenCalled();
   });
 
-  it('does not send a read receipt at the bottom of a window opened away from the live edge', async () => {
+  it('does not send a read receipt at the bottom of a window opened away from the newest event', async () => {
     const fixture = createRoomWithDetachedReceipt();
     const { container } = renderTimeline(fixture, RECEIPT_EVENT_ID);
     await act(async () => {

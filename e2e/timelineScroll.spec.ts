@@ -67,7 +67,7 @@ const getTopVisibleEventId = (page: Page): Promise<string> =>
 
 const indexOfFiller = (eventId: string): number => Number(eventId.replace('$filler', ''));
 
-const openRoomAtLiveEdge = async (page: Page) => {
+const openRoomAtLatestMessage = async (page: Page) => {
   await page.goto(roomPath);
   await expect(page.locator(`[data-message-id="${NEWEST_EVENT_ID}"]`)).toBeVisible({
     timeout: BOOT_TIMEOUT_MS,
@@ -280,16 +280,13 @@ test('rests the newest message on the viewport bottom when content renders below
   expect(await getLatestMessageBottomOffsetFromViewport(page)).toBeLessThan(TRAILING_SPACE_PX + 4);
 });
 
-test('stays at the live edge when a first reaction lands on the newest message', async ({
-  context,
-  page,
-}) => {
+test('stays at the newest message when a first reaction lands on it', async ({ context, page }) => {
   await seedSession(context);
   const stub = await stubHomeserver(page, {
     timelineEvents: Array.from({ length: FILLER_COUNT }, (_unused, index) => textEvent(index)),
   });
 
-  await openRoomAtLiveEdge(page);
+  await openRoomAtLatestMessage(page);
   stub.pushTimeline([reactionEvent('$reaction', NEWEST_EVENT_ID, '👍')]);
   await expect(
     page.locator(`[data-message-id="${NEWEST_EVENT_ID}"]`).getByText('👍')
@@ -298,7 +295,7 @@ test('stays at the live edge when a first reaction lands on the newest message',
   await expect.poll(() => getDistanceFromBottom(page)).toBeLessThan(STUCK_TO_BOTTOM_PX);
 });
 
-test('stays at the live edge when a first reaction lands on an older message', async ({
+test('stays at the newest message when a first reaction lands on an older message', async ({
   context,
   page,
 }) => {
@@ -307,7 +304,7 @@ test('stays at the live edge when a first reaction lands on an older message', a
     timelineEvents: Array.from({ length: FILLER_COUNT }, (_unused, index) => textEvent(index)),
   });
 
-  await openRoomAtLiveEdge(page);
+  await openRoomAtLatestMessage(page);
   stub.pushTimeline([reactionEvent('$reaction', OLDER_VISIBLE_EVENT_ID, '👍')]);
   await expect(
     page.locator(`[data-message-id="${OLDER_VISIBLE_EVENT_ID}"]`).getByText('👍')
@@ -333,7 +330,7 @@ test('follows the sent message when posting from the bottom of the timeline', as
     echoSentEvents: true,
   });
 
-  await openRoomAtLiveEdge(page);
+  await openRoomAtLatestMessage(page);
   await sendMessage(page, 'own send from the bottom');
   await expect(page.getByText('own send from the bottom')).toBeVisible();
   await page.waitForTimeout(SAMPLE_DURATION_MS);
@@ -368,7 +365,7 @@ test('does not drift into older messages when posting near the bottom', async ({
     echoSentEvents: true,
   });
 
-  await openRoomAtLiveEdge(page);
+  await openRoomAtLatestMessage(page);
   const oldestVisibleBeforeSend = await getTopVisibleEventId(page);
 
   await sendMessage(page, 'own send near the bottom');
@@ -399,7 +396,7 @@ test('follows an arriving message while unfocused when unfocusedAutoScroll is on
     timelineEvents: Array.from({ length: FILLER_COUNT }, (_unused, index) => textEvent(index)),
   });
 
-  await openRoomAtLiveEdge(page);
+  await openRoomAtLatestMessage(page);
   await blurTimelineWindow(page);
 
   stub.pushTimeline([liveMessageEvent('$arrived', 'arrived while unfocused')]);
@@ -418,7 +415,7 @@ test('holds position for an arriving message while unfocused when unfocusedAutoS
     timelineEvents: Array.from({ length: FILLER_COUNT }, (_unused, index) => textEvent(index)),
   });
 
-  await openRoomAtLiveEdge(page);
+  await openRoomAtLatestMessage(page);
   await blurTimelineWindow(page);
 
   stub.pushTimeline([liveMessageEvent('$arrived', 'arrived while unfocused')]);

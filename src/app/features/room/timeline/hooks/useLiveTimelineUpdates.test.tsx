@@ -126,7 +126,7 @@ describe('useLiveTimelineUpdates', () => {
     expect(pinToLatestMessageBottom).not.toHaveBeenCalled();
   });
 
-  it('anchors the range to the live edge and pins live when following live while focused', () => {
+  it('anchors the range to the newest event and pins to the newest message while focused', () => {
     const totalEvents = INITIAL_RANGE.newest + 1;
     const { room, pinToLatestMessageBottom, state } = setup({
       isLatestMessageBottomVisible: true,
@@ -141,7 +141,7 @@ describe('useLiveTimelineUpdates', () => {
     expect(pinToLatestMessageBottom).toHaveBeenCalledTimes(1);
   });
 
-  it('anchors the range to the live edge when at the bottom of the live window', () => {
+  it('anchors the range to the newest event when at the bottom of the live window', () => {
     const totalEvents = INITIAL_RANGE.newest + 1;
     const { room, pinToLatestMessageBottom, state } = setup({
       isLatestMessageBottomVisible: true,
@@ -156,7 +156,7 @@ describe('useLiveTimelineUpdates', () => {
     expect(pinToLatestMessageBottom).toHaveBeenCalledTimes(1);
   });
 
-  it('does not shift the range when at the bottom of a window that is behind the live edge', () => {
+  it('does not shift the range when at the bottom of a window that is behind the newest event', () => {
     const { room, pinToLatestMessageBottom, state } = setup({
       isLatestMessageBottomVisible: false,
       focused: true,
@@ -194,7 +194,7 @@ describe('useLiveTimelineUpdates', () => {
     expect(pinToLatestMessageBottom).not.toHaveBeenCalled();
   });
 
-  it('anchors the range to the live edge while unfocused when unfocusedAutoScroll is on', () => {
+  it('anchors the range to the newest event while unfocused when unfocusedAutoScroll is on', () => {
     const totalEvents = INITIAL_RANGE.newest + 1;
     const { room, pinToLatestMessageBottom, state } = setup({
       isLatestMessageBottomVisible: true,

@@ -107,15 +107,12 @@ export const useScrollController = ({
 
   const freeScrollAnchorRef = useRef<{ element: HTMLElement; viewportOffset: number } | null>(null);
 
-  const controllerAppliedScrollTopRef = useRef<number | null>(null);
+  const expectedScrollTopRef = useRef<number | null>(null);
 
   const applyScrollTop = useCallback(
     (scrollElement: HTMLElement, targetScrollTop: number, behavior: 'instant' | 'smooth') => {
-      const scrollTopBefore = scrollElement.scrollTop;
       scrollElement.scrollTo({ top: targetScrollTop, behavior });
-      if (behavior === 'instant' && scrollElement.scrollTop !== scrollTopBefore) {
-        controllerAppliedScrollTopRef.current = scrollElement.scrollTop;
-      }
+      expectedScrollTopRef.current = behavior === 'instant' ? scrollElement.scrollTop : null;
     },
     []
   );
@@ -268,9 +265,10 @@ export const useScrollController = ({
     const contentElement = contentRef.current;
     if (!scrollElement || !contentElement) return undefined;
     const maintainPosition = () => {
+      expectedScrollTopRef.current = scrollElement.scrollTop;
       const intent = intentRef.current;
       if (intent.kind === 'anchor') {
-        traceTimelineScroll('maintainPosition:apply', { intent: intent.kind });
+        traceTimelineScroll('maintainPosition:apply', { reason: 'anchor' });
         applyAnchor(intent, 'instant');
         return;
       }
@@ -280,7 +278,10 @@ export const useScrollController = ({
           return;
         }
         traceTimelineScroll('maintainPosition:apply', {
-          intent: intent.kind === 'latestMessageBottom' ? 'latestMessageBottom' : 'liveEdge',
+          reason:
+            intent.kind === 'latestMessageBottom'
+              ? 'pinnedToLatestMessageBottom'
+              : 'latestMessageBottomVisible',
         });
         scrollToLatestMessageBottom('instant');
         return;
@@ -308,20 +309,20 @@ export const useScrollController = ({
     let lastScrollTop = scrollElement.scrollTop;
     const handleScroll = () => {
       const { scrollTop } = scrollElement;
-      const isControllerScroll = scrollTop === controllerAppliedScrollTopRef.current;
-      controllerAppliedScrollTopRef.current = null;
+      const isExpectedScroll = scrollTop === expectedScrollTopRef.current;
+      expectedScrollTopRef.current = null;
       const isScrolledUp = scrollTop < lastScrollTop;
       lastScrollTop = scrollTop;
       const intent = intentRef.current;
       if (
-        !isControllerScroll &&
+        !isExpectedScroll &&
         intent.kind === 'anchor' &&
         !checkIsAnchorSatisfied(intent, scrollElement)
       ) {
         traceTimelineScroll('anchor:displaced-release', { selector: intent.selector });
         intentRef.current = { kind: 'free' };
       }
-      if (!isControllerScroll && intent.kind === 'latestMessageBottom' && isScrolledUp) {
+      if (!isExpectedScroll && intent.kind === 'latestMessageBottom' && isScrolledUp) {
         const latestMessageBottomScrollTop = getLatestMessageBottomTarget();
         if (
           latestMessageBottomScrollTop !== null &&
