@@ -16,6 +16,7 @@ import type { GifItem } from '../../utils/gifServer';
 import { useVisualViewportHeight } from '../../hooks/useVisualViewportHeight';
 import { OverlayModal } from '../OverlayModal';
 import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
+import { EMOJI_BOARD_WIDTH_PX, EMOJI_BOARD_HEIGHT_PX } from './components/styles.css';
 
 const EmojiBoard = lazy(() =>
   import('./EmojiBoard').then((module) => ({ default: module.EmojiBoard }))
@@ -23,7 +24,9 @@ const EmojiBoard = lazy(() =>
 
 const DEFAULT_OFFSET = 10;
 const BREATHING_ROOM = 16;
-const MIN_USABLE_HEIGHT = 450;
+
+const getRootFontSizePx = () =>
+  parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
 
 export type OpenAtRectOptions = {
   position?: Position;
@@ -149,7 +152,11 @@ export const EmojiBoardWrapper = forwardRef<EmojiBoardWrapperHandle, EmojiBoardW
         <>
           {children({ triggerRef, open, isOpen, tab })}
           <Suspense fallback={null}>
-            <OverlayModal open={isOpen} onClose={close}>
+            <OverlayModal
+              open={isOpen}
+              onClose={close}
+              overlayProps={{ onContextMenu: (evt) => evt.stopPropagation() }}
+            >
               {renderEmojiBoard(true)}
             </OverlayModal>
           </Suspense>
@@ -163,6 +170,10 @@ export const EmojiBoardWrapper = forwardRef<EmojiBoardWrapperHandle, EmojiBoardW
 
     const requestedPosition = overrides?.position ?? position;
     const effectiveOffset = overrides?.offset ?? offset ?? DEFAULT_OFFSET;
+    const rootFontSizePx = getRootFontSizePx();
+    const zoomScale = rootFontSizePx / 16;
+    const emojiBoardWidth = EMOJI_BOARD_WIDTH_PX * zoomScale;
+    const minUsableHeight = EMOJI_BOARD_HEIGHT_PX * zoomScale;
 
     let finalPosition = requestedPosition;
     let availableHeight: number | undefined;
@@ -173,13 +184,13 @@ export const EmojiBoardWrapper = forwardRef<EmojiBoardWrapperHandle, EmojiBoardW
       const spaceAbove = anchor.y - effectiveOffset - BREATHING_ROOM;
 
       if (requestedPosition === 'Bottom') {
-        if (spaceBelow >= MIN_USABLE_HEIGHT || spaceBelow >= spaceAbove) {
+        if (spaceBelow >= minUsableHeight || spaceBelow >= spaceAbove) {
           availableHeight = spaceBelow;
         } else {
           finalPosition = 'Top';
           availableHeight = spaceAbove;
         }
-      } else if (spaceAbove >= MIN_USABLE_HEIGHT || spaceAbove >= spaceBelow) {
+      } else if (spaceAbove >= minUsableHeight || spaceAbove >= spaceBelow) {
         availableHeight = spaceAbove;
       } else {
         finalPosition = 'Bottom';
@@ -192,16 +203,45 @@ export const EmojiBoardWrapper = forwardRef<EmojiBoardWrapperHandle, EmojiBoardW
         ? ({ '--emoji-board-max-height': `${Math.max(0, availableHeight)}px` } as CSSProperties)
         : undefined;
 
+    const requestedAlign = overrides?.align ?? align ?? 'Center';
+    const requestedAlignOffset = overrides?.alignOffset ?? alignOffset ?? 0;
+
+    let finalAlign = requestedAlign;
+    let finalAlignOffset = requestedAlignOffset;
+
+    if (anchor) {
+      const viewportWidth = document.documentElement.clientWidth;
+      let idealLeft: number;
+      if (requestedAlign === 'Start') {
+        idealLeft = anchor.x + requestedAlignOffset;
+      } else if (requestedAlign === 'End') {
+        idealLeft = anchor.x + anchor.width - emojiBoardWidth - requestedAlignOffset;
+      } else {
+        idealLeft = anchor.x + anchor.width / 2 - emojiBoardWidth / 2 + requestedAlignOffset;
+      }
+
+      const minLeft = BREATHING_ROOM;
+      const maxLeft = viewportWidth - emojiBoardWidth - BREATHING_ROOM;
+
+      if (idealLeft < minLeft || idealLeft > maxLeft) {
+        const clampedLeft = Math.min(Math.max(idealLeft, minLeft), Math.max(minLeft, maxLeft));
+        finalAlign = 'Start';
+        finalAlignOffset = clampedLeft - anchor.x;
+      }
+    }
+
     return (
       <PopOut
         position={finalPosition}
-        align={overrides?.align ?? align}
+        align={finalAlign}
         offset={effectiveOffset}
-        alignOffset={overrides?.alignOffset ?? alignOffset}
+        alignOffset={finalAlignOffset}
         anchor={anchor}
         content={
           <Suspense fallback={null}>
-            <div style={contentStyle}>{renderEmojiBoard(false)}</div>
+            <div style={contentStyle} onContextMenu={(evt) => evt.stopPropagation()}>
+              {renderEmojiBoard(false)}
+            </div>
           </Suspense>
         }
       >

@@ -6,7 +6,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 import { visualizer } from 'rollup-plugin-visualizer';
 import fs from 'fs';
 import path from 'path';
-import buildConfig from './build.config';
+import buildConfig from './build.config.ts';
 
 const isAnalyzeBuild = process.env.ANALYZE === 'true';
 
