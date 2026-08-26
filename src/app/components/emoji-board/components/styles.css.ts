@@ -6,10 +6,13 @@ import { skeletonShimmer } from '../../../styles/Skeleton.css';
  * Layout
  */
 
+export const EMOJI_BOARD_WIDTH_PX = 500;
+export const EMOJI_BOARD_HEIGHT_PX = 450;
+
 export const Base = style({
   width: '100vw',
-  maxWidth: toRem(500),
-  height: toRem(450),
+  maxWidth: toRem(EMOJI_BOARD_WIDTH_PX),
+  height: toRem(EMOJI_BOARD_HEIGHT_PX),
   maxHeight: `var(--emoji-board-max-height, calc(var(--app-height, 100vh) - ${toRem(96)}))`,
   backgroundColor: color.Surface.Container,
   color: color.Surface.OnContainer,
