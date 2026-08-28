@@ -128,21 +128,49 @@ const isVoidElement = (node: Node): boolean => {
 
 export const handleEditorBackspace = (inputElement: HTMLElement, range: Range): boolean => {
   if (!range.collapsed) return false;
-  const textNode = inputElement.firstChild;
-  if (!textNode || textNode.nodeType !== Node.TEXT_NODE) return false;
-  if ((textNode as Text).data !== INLINE_VOID_CARET_ANCHOR) return false;
-
   const { startContainer, startOffset } = range;
-  const atAnchor =
-    (startContainer === textNode && startOffset <= INLINE_VOID_CARET_ANCHOR.length) ||
-    (startContainer === inputElement && startOffset === 0);
-  if (!atAnchor) return false;
+
+  if (startContainer.nodeType === Node.TEXT_NODE) {
+    const container = startContainer as Text;
+    const previousOfContainer = container.previousSibling;
+    if (
+      startOffset === 1 &&
+      container.data.length === 1 &&
+      container.data !== INLINE_VOID_CARET_ANCHOR &&
+      previousOfContainer &&
+      isVoidElement(previousOfContainer)
+    ) {
+      container.data = INLINE_VOID_CARET_ANCHOR;
+      placeCaretAt(container, 0);
+      return true;
+    }
+  }
+
+  let textNode: Text | null = null;
+  if (
+    startContainer.nodeType === Node.TEXT_NODE &&
+    startOffset <= INLINE_VOID_CARET_ANCHOR.length
+  ) {
+    textNode = startContainer as Text;
+  } else if (startOffset === 0) {
+    const child = startContainer.childNodes[0];
+    if (child && child.nodeType === Node.TEXT_NODE) textNode = child as Text;
+  }
+  if (!textNode || textNode.data !== INLINE_VOID_CARET_ANCHOR) return false;
+
+  const previous = textNode.previousSibling;
+  if (previous && isVoidElement(previous)) {
+    previous.parentNode?.removeChild(previous);
+    return true;
+  }
 
   const next = textNode.nextSibling;
-  if (!next || !isVoidElement(next)) return false;
+  if (textNode === inputElement.firstChild && next && isVoidElement(next)) {
+    inputElement.removeChild(next);
+    return true;
+  }
 
-  inputElement.removeChild(next);
-  return true;
+  return false;
 };
 
 export const insertNodeAtRange = (
@@ -162,7 +190,7 @@ export const insertNodeAtRange = (
 
   let after = node.nextSibling;
   if (!after || after.nodeType !== Node.TEXT_NODE) {
-    after = document.createTextNode('');
+    after = document.createTextNode(INLINE_VOID_CARET_ANCHOR);
     node.parentNode?.insertBefore(after, node.nextSibling);
   }
 
@@ -208,13 +236,11 @@ const BLOCK_TAGS = new Set([
 
 const appendVoidToParent = (parent: Node, voidNode: HTMLElement) => {
   const last = parent.lastChild;
-  if (!last) {
+  if (!last || last.nodeType !== Node.TEXT_NODE) {
     parent.appendChild(document.createTextNode(INLINE_VOID_CARET_ANCHOR));
-  } else if (last.nodeType !== Node.TEXT_NODE) {
-    parent.appendChild(document.createTextNode(''));
   }
   parent.appendChild(voidNode);
-  parent.appendChild(document.createTextNode(''));
+  parent.appendChild(document.createTextNode(INLINE_VOID_CARET_ANCHOR));
 };
 
 const WHITESPACE_ONLY = /^\s*$/;
@@ -611,7 +637,7 @@ export const replaceRangeWithNode = (
   const after = textNode.substringData(end, textNode.data.length - end);
   textNode.deleteData(start, textNode.data.length - start);
   parent.insertBefore(replacement, textNode.nextSibling);
-  const afterNode = document.createTextNode(after);
+  const afterNode = document.createTextNode(after.length > 0 ? after : INLINE_VOID_CARET_ANCHOR);
   parent.insertBefore(afterNode, replacement.nextSibling);
   if (textNode.data.length === 0 && !textNode.previousSibling) {
     textNode.appendData(INLINE_VOID_CARET_ANCHOR);

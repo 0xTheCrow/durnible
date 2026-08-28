@@ -8,6 +8,7 @@ import {
   insertNodeAtRange,
   replaceTextInNode,
   replaceRangeWithNode,
+  handleEditorBackspace,
   htmlToEditorDom,
   isEditorEmpty,
   normalizeEditorRoot,
@@ -37,6 +38,13 @@ vi.mock('../../utils/matrix', async () => {
 });
 
 const mockMx = {} as MatrixClient;
+
+const setCollapsedSelection = (node: Node, offset: number): Range => {
+  const range = document.createRange();
+  range.setStart(node, offset);
+  range.collapse(true);
+  return range;
+};
 
 describe('createEmoticonNode', () => {
   it('builds a contenteditable span with an img for mxc emojis', () => {
@@ -148,6 +156,205 @@ describe('inline void leading anchor', () => {
     expect(first?.nodeType).toBe(Node.TEXT_NODE);
     expect((first as Text).data.length).toBeGreaterThan(0);
     expect(first?.nextSibling).toBe(replacement);
+  });
+});
+
+describe('inline void trailing anchor', () => {
+  it('keeps a renderable text node after a void inserted at the end of the input', () => {
+    const rootElement = document.createElement('div');
+    rootElement.appendChild(document.createTextNode('hello '));
+    const emoticon = createEmoticonNode({
+      mx: mockMx,
+      useAuthentication: false,
+      key: 'mxc://example/x',
+      shortcode: 'wave',
+    });
+
+    insertNodeAtRange(rootElement, null, emoticon);
+
+    const last = rootElement.lastChild;
+    expect(last).not.toBeNull();
+    expect(last?.nodeType).toBe(Node.TEXT_NODE);
+    expect((last as Text).data.length).toBeGreaterThan(0);
+    expect(emoticon.nextSibling).toBe(last);
+  });
+
+  it('keeps a renderable text node after a mention parsed from custom HTML that ends with it', () => {
+    const rootElement = document.createElement('div');
+    const fragment = htmlToEditorDom(
+      'hi <a href="https://matrix.to/#/@alice:example.org">@alice</a>',
+      ctx
+    );
+    rootElement.appendChild(fragment);
+
+    const mention = rootElement.querySelector(`[${NODE_TYPE_ATTR}]`);
+    expect(mention).not.toBeNull();
+    const last = rootElement.lastChild;
+    expect(last?.nodeType).toBe(Node.TEXT_NODE);
+    expect((last as Text).data.length).toBeGreaterThan(0);
+    expect(mention?.nextSibling).toBe(last);
+  });
+
+  it('keeps a renderable text node when autocomplete replaces a trailing shortcode with nothing following it', () => {
+    const rootElement = document.createElement('div');
+    const textNode = document.createTextNode('hello :wave:');
+    rootElement.appendChild(textNode);
+
+    const replacement = createEmoticonNode({
+      mx: mockMx,
+      useAuthentication: false,
+      key: 'mxc://example/x',
+      shortcode: 'wave',
+    });
+    const result = replaceRangeWithNode(textNode, 6, 12, replacement);
+
+    expect(result.node.data.length).toBeGreaterThan(0);
+    expect(replacement.nextSibling).toBe(result.node);
+  });
+
+  it('keeps a renderable text node when a void directly follows a non-text element like <br>', () => {
+    const fragment = htmlToEditorDom(
+      '<br /><img data-mx-emoticon src="mxc://example/x" alt="wave" />',
+      ctx
+    );
+    const rootElement = document.createElement('div');
+    rootElement.appendChild(fragment);
+
+    const br = rootElement.querySelector('br');
+    expect(br).not.toBeNull();
+    const separator = br?.nextSibling;
+    expect(separator?.nodeType).toBe(Node.TEXT_NODE);
+    expect((separator as Text).data.length).toBeGreaterThan(0);
+  });
+});
+
+describe('handleEditorBackspace', () => {
+  it('deletes a trailing custom emoji when backspacing right after it', () => {
+    const rootElement = document.createElement('div');
+    rootElement.appendChild(document.createTextNode('hello '));
+    const emoticon = createEmoticonNode({
+      mx: mockMx,
+      useAuthentication: false,
+      key: 'mxc://example/x',
+      shortcode: 'wave',
+    });
+
+    const range = insertNodeAtRange(rootElement, null, emoticon);
+    const handled = handleEditorBackspace(rootElement, range);
+
+    expect(handled).toBe(true);
+    expect(rootElement.contains(emoticon)).toBe(false);
+    expect(domToPlainText(rootElement)).toBe('hello ');
+  });
+
+  it('deletes a trailing user mention when backspacing right after it', () => {
+    const rootElement = document.createElement('div');
+    rootElement.appendChild(document.createTextNode('hey '));
+    const mention = createMentionNode({
+      id: '@alice:example.org',
+      name: '@alice',
+      highlight: false,
+    });
+
+    const range = insertNodeAtRange(rootElement, null, mention);
+    const handled = handleEditorBackspace(rootElement, range);
+
+    expect(handled).toBe(true);
+    expect(rootElement.contains(mention)).toBe(false);
+  });
+
+  it('deletes a trailing mention on a line other than the first without throwing', () => {
+    const rootElement = document.createElement('div');
+    const firstLine = document.createElement('div');
+    firstLine.textContent = 'line one';
+    rootElement.appendChild(firstLine);
+
+    const secondLine = document.createElement('div');
+    secondLine.appendChild(document.createTextNode('hey '));
+    rootElement.appendChild(secondLine);
+
+    const mention = createMentionNode({
+      id: '@alice:example.org',
+      name: '@alice',
+      highlight: false,
+    });
+    const initialRange = document.createRange();
+    initialRange.selectNodeContents(secondLine);
+    initialRange.collapse(false);
+    const range = insertNodeAtRange(rootElement, initialRange, mention);
+
+    let handled = false;
+    expect(() => {
+      handled = handleEditorBackspace(rootElement, range);
+    }).not.toThrow();
+
+    expect(handled).toBe(true);
+    expect(rootElement.contains(mention)).toBe(false);
+    expect(firstLine.textContent).toBe('line one');
+  });
+
+  it('does not require a second backspace once the void is already gone', () => {
+    const rootElement = document.createElement('div');
+    rootElement.appendChild(document.createTextNode('hello '));
+    const emoticon = createEmoticonNode({
+      mx: mockMx,
+      useAuthentication: false,
+      key: 'mxc://example/x',
+      shortcode: 'wave',
+    });
+    const range = insertNodeAtRange(rootElement, null, emoticon);
+
+    expect(handleEditorBackspace(rootElement, range)).toBe(true);
+    expect(handleEditorBackspace(rootElement, range)).toBe(false);
+  });
+
+  it('deletes a void that is the first thing in the input via its leading anchor', () => {
+    const rootElement = document.createElement('div');
+    const emoticon = createEmoticonNode({
+      mx: mockMx,
+      useAuthentication: false,
+      key: 'mxc://example/x',
+      shortcode: 'wave',
+    });
+    insertNodeAtRange(rootElement, null, emoticon);
+
+    const leadingAnchor = rootElement.firstChild as Text;
+    const range = setCollapsedSelection(leadingAnchor, 0);
+    const handled = handleEditorBackspace(rootElement, range);
+
+    expect(handled).toBe(true);
+    expect(rootElement.contains(emoticon)).toBe(false);
+  });
+
+  it('leaves ordinary text backspacing to the browser', () => {
+    const rootElement = document.createElement('div');
+    const textNode = document.createTextNode('hello');
+    rootElement.appendChild(textNode);
+    const range = setCollapsedSelection(textNode, 5);
+
+    const handled = handleEditorBackspace(rootElement, range);
+
+    expect(handled).toBe(false);
+    expect(rootElement.textContent).toBe('hello');
+  });
+
+  it('deletes the real trailing space after a mention instead of leaving an unrenderable empty node', () => {
+    const rootElement = document.createElement('div');
+    const mention = createMentionNode({
+      id: '@alice:example.org',
+      name: '@alice',
+      highlight: false,
+    });
+    rootElement.appendChild(mention);
+    const trailingSpace = document.createTextNode(' ');
+    rootElement.appendChild(trailingSpace);
+    const range = setCollapsedSelection(trailingSpace, 1);
+
+    const handled = handleEditorBackspace(rootElement, range);
+
+    expect(handled).toBe(true);
+    expect(mention.nextSibling).toBe(trailingSpace);
+    expect(trailingSpace.data.length).toBeGreaterThan(0);
   });
 });
 

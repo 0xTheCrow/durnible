@@ -1,6 +1,7 @@
 import { test, expect, devices, type CDPSession, type Page } from '@playwright/test';
 import type { Settings } from '../../src/app/state/settings';
 import {
+  HOMESERVER_BASE_URL,
   seedSession,
   seedSettings,
   stubHomeserver,
@@ -33,6 +34,7 @@ const SETTLE_MS = 3000;
 const RUN_LABEL = process.env.PERFORMANCE_LABEL ?? '';
 const IS_TRACING_RENDERER = process.env.PERFORMANCE_TRACE === '1';
 const BUSY_ROOM_MESSAGE_COUNT = Number(process.env.PERFORMANCE_ROOM_MESSAGES ?? 300);
+const PREFILLED_VOID_NODE_COUNT = Number(process.env.PERFORMANCE_VOID_NODES ?? 100);
 const REPETITION_COUNT = Number(process.env.PERFORMANCE_REPETITIONS ?? 1);
 const runFileName = (name: string): string => (RUN_LABEL ? `${name}-${RUN_LABEL}` : name);
 
@@ -152,6 +154,57 @@ const composeText = async (
   }
 };
 
+const prefillEditorWithVoidNodes = (page: Page, voidNodePairCount: number): Promise<void> =>
+  page.evaluate(
+    ({ pairCount, emojiImageUrl }) => {
+      const editor = document.querySelector<HTMLElement>('[data-testid="editor"]');
+      if (!editor) throw new Error('editor not found');
+
+      const createEmoticon = (): HTMLSpanElement => {
+        const span = document.createElement('span');
+        span.setAttribute('data-node-type', 'emoticon');
+        span.setAttribute('contenteditable', 'false');
+        span.dataset.key = 'mxc://matrix.test/customemoji';
+        span.dataset.shortcode = 'wave';
+        const img = document.createElement('img');
+        img.src = emojiImageUrl;
+        img.alt = 'wave';
+        span.appendChild(img);
+        return span;
+      };
+
+      const createMention = (): HTMLSpanElement => {
+        const span = document.createElement('span');
+        span.setAttribute('data-node-type', 'mention');
+        span.setAttribute('contenteditable', 'false');
+        span.dataset.id = '@alice:matrix.test';
+        span.dataset.name = '@alice';
+        span.textContent = '@alice';
+        return span;
+      };
+
+      const block = document.createElement('div');
+      for (let index = 0; index < pairCount; index += 1) {
+        block.append(createEmoticon(), document.createTextNode(' '));
+        block.append(createMention(), document.createTextNode(' '));
+      }
+      editor.replaceChildren(block);
+      editor.dispatchEvent(new Event('input', { bubbles: true }));
+
+      editor.focus();
+      const range = document.createRange();
+      range.selectNodeContents(editor);
+      range.collapse(false);
+      const selection = window.getSelection();
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+    },
+    {
+      pairCount: voidNodePairCount,
+      emojiImageUrl: `${HOMESERVER_BASE_URL}/_matrix/media/v3/download/matrix.test/customemoji`,
+    }
+  );
+
 const prefillEditorWithInlineCode = (page: Page): Promise<void> =>
   page.evaluate(() => {
     const editor = document.querySelector<HTMLElement>('[data-testid="editor"]');
@@ -172,6 +225,7 @@ type ScenarioOptions = {
   settings?: Partial<Settings>;
   prefill?: boolean;
   prefillInlineCode?: boolean;
+  prefillVoidNodes?: boolean;
   openAutocomplete?: boolean;
   useComposition?: boolean;
   busyRoom?: boolean;
@@ -185,6 +239,7 @@ const measureTypingScenario = async (
     settings,
     prefill,
     prefillInlineCode,
+    prefillVoidNodes,
     openAutocomplete,
     useComposition,
     busyRoom,
@@ -208,6 +263,7 @@ const measureTypingScenario = async (
 
   if (prefill) await prefillEditor(page, PREFILLED_CHARACTER_COUNT);
   if (prefillInlineCode) await prefillEditorWithInlineCode(page);
+  if (prefillVoidNodes) await prefillEditorWithVoidNodes(page, PREFILLED_VOID_NODE_COUNT);
 
   await page.keyboard.type('warmup', { delay: 20 });
   await page.waitForTimeout(SETTLE_MS);
@@ -449,6 +505,11 @@ const SCENARIOS: ScenarioOptions[] = [
     name: 'busy-room',
     description: `Typing into an empty composer in a room seeded with ${BUSY_ROOM_MESSAGE_COUNT} timeline messages, rather than the near-empty room every other scenario uses.`,
     busyRoom: true,
+  },
+  {
+    name: 'emoji-mention-heavy',
+    description: `Composer pre-filled with ${PREFILLED_VOID_NODE_COUNT} custom emoji and ${PREFILLED_VOID_NODE_COUNT} mentions, then typed at the end. Isolates per-keystroke work that scales with void-node count (stripDeadCaretAnchors, ensureInlineBoundaryAnchors, and isEditorEmpty all walk the whole document on every keystroke).`,
+    prefillVoidNodes: true,
   },
 ];
 
