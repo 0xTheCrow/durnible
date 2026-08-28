@@ -131,7 +131,6 @@ describe('replaceRangeWithNode', () => {
     expect(result.node).toBe(afterSplit);
     expect(result.offset).toBe(0);
 
-    // Siblings outside the target are untouched.
     expect(before.data).toBe('alpha');
     expect(after.data).toBe('bravo');
     expect(parent.firstChild).toBe(before);

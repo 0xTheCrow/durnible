@@ -10,10 +10,6 @@ import { useRoomEvent } from './useRoomEvent';
 import { MatrixClientProvider } from './useMatrixClient';
 import { createMockMatrixClient, createMockRoom } from '../../test/mocks';
 
-/**
- * Creates a mock MatrixEvent that supports event emission,
- * so tests can simulate Replaced / Decrypted signals.
- */
 function createEmittingEvent(opts: {
   id?: string;
   sender?: string;
@@ -58,7 +54,6 @@ function createEmittingEvent(opts: {
       emitter.removeListener(evt, handler);
       return event;
     }),
-    // Allow tests to emit events directly
     _emit: (evt: string, ...args: unknown[]) => emitter.emit(evt, ...args),
   };
 
@@ -110,7 +105,6 @@ describe('useRoomEvent', () => {
       },
     });
 
-    // Start with content that has no body (simulating unresolved edit)
     const event = createEmittingEvent({
       id: '$original',
       content: { body: 'original', msgtype: 'm.text' },
@@ -124,7 +118,6 @@ describe('useRoomEvent', () => {
 
     expect(result.current?.getContent()).toEqual({ body: 'original', msgtype: 'm.text' });
 
-    // Simulate an edit arriving — makeReplaced emits Replaced
     act(() => {
       event.makeReplaced(editEvent);
     });
@@ -144,10 +137,8 @@ describe('useRoomEvent', () => {
       wrapper: createWrapper(mx),
     });
 
-    // Initially empty content (not yet decrypted)
     expect(result.current?.getContent()).toEqual({});
 
-    // Simulate decryption completing — swap content and emit
     const decryptedContent = { body: 'secret', msgtype: 'm.text' };
     (event.getContent as ReturnType<typeof vi.fn>).mockReturnValue(decryptedContent);
 
@@ -159,14 +150,12 @@ describe('useRoomEvent', () => {
   });
 
   it('re-renders when the replacing event emits Decrypted', async () => {
-    // Replacing event starts encrypted — m.new_content not available
     const replacingEvt = createEmittingEvent({
       id: '$edit',
       content: {},
       encrypted: true,
     });
 
-    // Original event has the encrypted replacing event, so getContent() returns {}
     const event = createEmittingEvent({
       id: '$original',
       content: { body: 'original', msgtype: 'm.text' },
@@ -179,10 +168,8 @@ describe('useRoomEvent', () => {
       { wrapper: createWrapper(mx) }
     );
 
-    // getContent() follows the replacing event, which returns {} (no m.new_content yet)
     expect(result.current?.getContent()).toEqual({});
 
-    // Simulate the replacing event finishing decryption
     const decryptedEditContent = {
       'm.new_content': { body: 'edited secret', msgtype: 'm.text' },
       body: '* edited secret',
@@ -233,7 +220,6 @@ describe('useRoomEvent', () => {
       expect(result.current).not.toBeUndefined();
     });
 
-    // Verify fetchRoomEvent was called
     expect((mx as any).fetchRoomEvent).toHaveBeenCalledWith('!room:example.com', '$fetched');
   });
 });

@@ -1,9 +1,8 @@
 import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest';
 
-// The worker uses the dedicated-worker globals (self.onmessage / self.postMessage).
-// In jsdom, the global object is the window/self, so importing the module installs
-// the handler on `globalThis`. We then drive it directly by calling its onmessage
-// handler and stubbing postMessage to capture the response.
+// The worker installs its handler on the dedicated-worker globals (self.onmessage /
+// self.postMessage), which resolve to `globalThis` in the test environment. Tests
+// drive it by calling onmessage directly and stubbing postMessage to capture the reply.
 
 type WorkerInfo = {
   v: string;
@@ -83,9 +82,7 @@ describe('encryptAttachment.worker', () => {
     const plaintext = new TextEncoder().encode('hello world').buffer;
     const result = expectSuccess(await triggerWorker({ id: '1', buffer: plaintext }));
 
-    // Duck-type check: jsdom's webcrypto returns ArrayBuffers from a different
-    // realm than the test, so `instanceof ArrayBuffer` is unreliable here.
-    expect(Object.prototype.toString.call(result.data)).toBe('[object ArrayBuffer]');
+    expect(result.data).toBeInstanceOf(ArrayBuffer);
     // AES-CTR is length-preserving — ciphertext byte length matches plaintext.
     expect(result.data.byteLength).toBe(plaintext.byteLength);
 
@@ -150,13 +147,12 @@ describe('encryptAttachment.worker', () => {
     expect(a.info.key.k).toBeDefined();
     expect(a.info.key.k).not.toBe(b.info.key.k);
     expect(a.info.iv).not.toBe(b.info.iv);
-    // Encrypting identical plaintext twice should yield different ciphertext.
     expect(new Uint8Array(a.data)).not.toEqual(new Uint8Array(b.data));
   });
 
   it('reports errors back via { id, error } when encryption fails', async () => {
-    // Passing a non-ArrayBuffer plaintext causes crypto.subtle.encrypt to reject;
-    // the worker should catch and forward the error keyed by the same id.
+    // A null buffer makes crypto.subtle.encrypt reject; the worker must catch and
+    // forward the error keyed by the same id rather than throwing.
     const result = await triggerWorker({ id: 'err', buffer: null });
 
     expect(result.id).toBe('err');

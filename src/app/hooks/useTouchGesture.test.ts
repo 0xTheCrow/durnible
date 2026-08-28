@@ -3,7 +3,6 @@ import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useTouchGesture } from './useTouchGesture';
 
-// Helpers for constructing fake touch events
 const mockTouchList = (points: { clientX: number; clientY: number }[]) =>
   Object.assign([...points], {
     length: points.length,
@@ -33,7 +32,6 @@ const renderGesture = () =>
     return { zoom, pan, ...handlers };
   });
 
-// Simulate a complete tap: touchstart → touchend
 const tap = (result: ReturnType<typeof renderGesture>['result'], x = 100, y = 100) => {
   result.current.onTouchStart(mockTouchEvent([{ clientX: x, clientY: y }]));
   const endEvent = mockTouchEvent([], [{ clientX: x, clientY: y }]);
@@ -55,9 +53,7 @@ describe('useTouchGesture', () => {
     it('pans when zoomed in', () => {
       const { result } = renderGesture();
       act(() => result.current.onTouchStart(mockTouchEvent([{ clientX: 0, clientY: 0 }])));
-      // Force zoom > 1
       act(() => {
-        // two-finger pinch to zoom in
         result.current.onTouchStart(
           mockTouchEvent([
             { clientX: 0, clientY: 0 },
@@ -71,7 +67,6 @@ describe('useTouchGesture', () => {
           ])
         );
       });
-      // Now single-finger drag
       act(() => {
         result.current.onTouchStart(mockTouchEvent([{ clientX: 100, clientY: 100 }]));
         result.current.onTouchMove(mockTouchEvent([{ clientX: 130, clientY: 150 }]));
@@ -82,7 +77,6 @@ describe('useTouchGesture', () => {
 
     it('pan movement is divided by zoom level', () => {
       const { result } = renderGesture();
-      // Pinch to exactly zoom 2
       act(() => {
         result.current.onTouchStart(
           mockTouchEvent([
@@ -198,12 +192,10 @@ describe('useTouchGesture', () => {
 
     it('resets zoom to 1 and clears pan on double-tap when zoomed', () => {
       const { result } = renderGesture();
-      // First double-tap to zoom in
       act(() => {
         tap(result);
         tap(result);
       });
-      // Second double-tap to zoom out
       act(() => {
         tap(result);
         tap(result);
@@ -227,14 +219,12 @@ describe('useTouchGesture', () => {
 
     it('calls preventDefault on the second touchend to block synthesized dblclick (zoom out)', () => {
       const { result } = renderGesture();
-      // First double-tap to zoom in
       act(() => {
         tap(result);
         tap(result);
       });
       expect(result.current.zoom).toBe(2);
 
-      // Second double-tap to zoom out
       let secondEndEvent!: React.TouchEvent;
       act(() => {
         tap(result); // first tap of zoom-out sequence

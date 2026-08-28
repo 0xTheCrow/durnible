@@ -54,8 +54,6 @@ function memberEvent(opts: { membershipChanged: boolean }) {
   return event;
 }
 
-// ─── Ignored users / redacted message filtering ───────────────────────────
-
 describe('willEventRender — ignored users and redacted messages', () => {
   it('returns false for an event from an ignored sender', () => {
     const evt = withRelation(
@@ -88,8 +86,6 @@ describe('willEventRender — ignored users and redacted messages', () => {
   });
 });
 
-// ─── Reaction / edit filtering ────────────────────────────────────────────
-
 describe('willEventRender — reaction / edit filtering', () => {
   it('returns false for an annotation (reaction) even with showHiddenEvents on', () => {
     const evt = withRelation(createMockMatrixEvent({ type: 'm.reaction' }), {
@@ -106,8 +102,6 @@ describe('willEventRender — reaction / edit filtering', () => {
   });
 });
 
-// ─── Redaction gating ─────────────────────────────────────────────────────
-
 describe('willEventRender — redaction gating', () => {
   it('returns false for a redaction event when showHiddenEvents is off', () => {
     const evt = withRedaction(
@@ -123,8 +117,6 @@ describe('willEventRender — redaction gating', () => {
     expect(willEventRender(evt, { ...DEFAULT_SETTINGS, showHiddenEvents: true })).toBe(true);
   });
 });
-
-// ─── Event type allowlist ─────────────────────────────────────────────────
 
 describe('willEventRender — event type allowlist', () => {
   it('returns true for a regular m.room.message with default settings', () => {
@@ -146,8 +138,6 @@ describe('willEventRender — event type allowlist', () => {
     expect(willEventRender(evt, DEFAULT_SETTINGS)).toBe(true);
   });
 });
-
-// ─── Membership / nick+avatar filtering ───────────────────────────────────
 
 describe('willEventRender — member event filtering', () => {
   it('returns true for a membership change by default', () => {

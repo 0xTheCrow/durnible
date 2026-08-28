@@ -6,7 +6,6 @@ import { Reply } from './Reply';
 import { MatrixTestWrapper } from '../../../test/wrapper';
 import { createMockMatrixClient, createMockRoom } from '../../../test/mocks';
 
-// Simulates the common case of a room member whose message is being replied to.
 function addReplyAuthor(room: ReturnType<typeof createMockRoom>) {
   room._addMockMember('@bob:example.com', 'bob');
 }
@@ -16,8 +15,6 @@ function makeEmptyTimelineSet() {
   return { findEventById: vi.fn(() => undefined) } as any;
 }
 
-// Creates a minimal MatrixEvent-like object returned by fetchRoomEvent after
-// the SDK constructs a real MatrixEvent from the raw IEvent response.
 function makeRawServerEvent(body: string) {
   return {
     event_id: '$out-of-range-event',
@@ -64,13 +61,10 @@ describe('Reply — out-of-pagination preview', () => {
 
     renderReply(mx, room);
 
-    // While the fetch is in flight, the loading placeholder must be visible
-    // and none of the terminal states (body, deleted, failed) should render.
     expect(screen.getByTestId('reply-loading')).toBeInTheDocument();
     expect(screen.queryByTestId('reply-body')).not.toBeInTheDocument();
     expect(screen.queryByTestId('reply-failed')).not.toBeInTheDocument();
 
-    // The SDK must have tried to fetch the missing event from the server.
     expect((mx as any).fetchRoomEvent).toHaveBeenCalledWith(
       '!room:example.com',
       '$out-of-range-event'
@@ -100,7 +94,6 @@ describe('Reply — out-of-pagination preview', () => {
   });
 
   it('renders the body immediately without fetching when the event is in the local timeline', () => {
-    // Simulate an event that IS within the current pagination window.
     const localEvent = {
       getId: vi.fn(() => '$out-of-range-event'),
       getSender: vi.fn(() => '@bob:example.com'),
@@ -119,7 +112,6 @@ describe('Reply — out-of-pagination preview', () => {
     renderReply(mx, room, timelineSet);
 
     expect(screen.getByTestId('reply-body')).toHaveTextContent('local message');
-    // Event was local — the network must not have been hit.
     expect((mx as any).fetchRoomEvent).not.toHaveBeenCalled();
   });
 

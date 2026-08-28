@@ -1,5 +1,3 @@
-// FocusTrap throws in jsdom because there are no tabbable elements in the virtual DOM.
-// Replace it with a passthrough so modals can still render and be tested.
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
@@ -18,6 +16,7 @@ import {
   createMockRoom,
 } from '../../../../test/mocks';
 
+// focus-trap needs real layout to find tabbable nodes; it throws in the test DOM.
 vi.mock('focus-trap-react', () => ({
   default: ({ children }: { children: React.ReactNode }) => children,
 }));
@@ -26,12 +25,6 @@ vi.mock('../../../utils/user-agent', () => ({
   mobileOrTablet: () => true,
 }));
 
-// ─── Helpers ──────────────────────────────────────────────────────────────
-
-/**
- * Builds a mock m.reaction MatrixEvent.
- * The base createMockMatrixEvent doesn't include getRelation(), so we add it here.
- */
 function createMockReactionEvent(sender: string, key: string, targetEventId: string): MatrixEvent {
   const event = createMockMatrixEvent({
     id: `$reaction-${key}-${sender}`,
@@ -50,7 +43,6 @@ function createMockReactionEvent(sender: string, key: string, targetEventId: str
   return event;
 }
 
-/** Creates a mock Relations object backed by the supplied reaction events. */
 function createMockRelations(events: MatrixEvent[]): Relations {
   return {
     getRelations: vi.fn(() => events),
@@ -64,8 +56,6 @@ function createMockRelations(events: MatrixEvent[]): Relations {
 const ROOM_ID = '!testroom:example.com';
 const EVENT_ID = '$target:example.com';
 const THUMBS_UP = '👍';
-
-// ─── Message Deletion ─────────────────────────────────────────────────────
 
 describe('message deletion (MessageDeleteItem)', () => {
   function renderDeleteItem(overrides?: { rejectOnce?: boolean }) {
@@ -122,13 +112,8 @@ describe('message deletion (MessageDeleteItem)', () => {
 
     fireEvent.click(screen.getByTestId('message-delete-btn'));
 
-    // jsdom doesn't implement the HTML named-property access spec (form['inputName']),
-    // so MessageDeleteItem's `target.reasonInput` returns undefined without this patch.
-    // COUPLING: if the component changes how it reads the reason value (e.g. FormData,
-    // a React ref, or onChange state), this Object.defineProperty shim can be removed.
     const form = screen.getByTestId('message-delete-dialog') as HTMLFormElement;
     const reasonInput = form.querySelector('input[name="reasonInput"]') as HTMLInputElement;
-    Object.defineProperty(form, 'reasonInput', { get: () => reasonInput, configurable: true });
     fireEvent.change(reasonInput, { target: { value: 'Spam' } });
     await act(async () => {
       fireEvent.submit(form);
@@ -162,8 +147,6 @@ describe('message deletion (MessageDeleteItem)', () => {
   });
 
   it('marks the confirm button as loading while the request is in flight', async () => {
-    // During an in-flight delete, the confirm button exposes data-loading so the
-    // user gets visible feedback and the test can assert on pending/settled state.
     let resolveFn!: (v: unknown) => void;
     const mx = createMockMatrixClient();
     (mx.redactEvent as any).mockImplementationOnce(
@@ -195,8 +178,6 @@ describe('message deletion (MessageDeleteItem)', () => {
     });
   });
 });
-
-// ─── Message Editing ──────────────────────────────────────────────────────
 
 describe('message editing (MessageEditor)', () => {
   async function renderEditor(onCancel = vi.fn()) {
@@ -249,15 +230,7 @@ describe('message editing (MessageEditor)', () => {
   });
 });
 
-// ─── Emoji Reactions ──────────────────────────────────────────────────────
-
 describe('emoji reactions (Reactions)', () => {
-  /**
-   * Note: jsdom has a bug where emoji characters in CSS attribute value selectors
-   * (e.g. [data-reaction-key="👍"]) always return null even when the attribute is
-   * present. We query by [data-reaction-key] (no value) instead and rely on the
-   * test setup only ever creating one reaction type per test.
-   */
   const REACTION_BTN_SELECTOR = '[data-reaction-key]';
 
   function renderReactions(

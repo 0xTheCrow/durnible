@@ -7,8 +7,6 @@ import { handleUploadFiles } from './handleUploadFiles';
 import { MAX_UPLOAD_QUEUE_SIZE } from '../../../utils/uploadQueueCap';
 import { FALLBACK_MIMETYPE } from '../../../utils/mimeTypes';
 
-// ─── Fixtures ────────────────────────────────────────────────────────────────
-
 const FAKE_ENCRYPTION_INFO = { v: 'v2' } as unknown as EncryptedAttachmentInfo;
 
 const makeFile = (name: string, type = 'image/png'): File => new File(['fake'], name, { type });
@@ -60,8 +58,6 @@ const replacementOf = (action: ListAction<UploadItem>): UploadItem => {
   if (action.type !== 'REPLACE') throw new Error(`expected REPLACE, got ${action.type}`);
   return action.replacement;
 };
-
-// ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe('handleUploadFiles', () => {
   describe('side effects', () => {
