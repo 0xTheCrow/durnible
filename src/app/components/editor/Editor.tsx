@@ -8,6 +8,7 @@ import React, {
   useState,
 } from 'react';
 import { Box, Scroll } from 'folds';
+import { isKeyHotkey } from 'is-hotkey';
 import {
   ensureInlineBoundaryAnchors,
   handleEditorBackspace,
@@ -267,9 +268,17 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
           evt.preventDefault();
           evt.stopPropagation();
           inputElement.dispatchEvent(new Event('input', { bubbles: true }));
+          return;
+        }
+        if (isKeyHotkey('backspace', evt)) {
+          const sel = window.getSelection();
+          if (sel && sel.rangeCount > 0 && handleEditorBackspace(inputElement, sel.getRangeAt(0))) {
+            evt.preventDefault();
+            syncEditorState();
+          }
         }
       },
-      [onKeyDown, keybinds]
+      [onKeyDown, keybinds, syncEditorState]
     );
 
     return (
