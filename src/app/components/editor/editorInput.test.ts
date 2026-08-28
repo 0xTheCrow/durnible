@@ -9,6 +9,8 @@ import {
   replaceTextInNode,
   replaceRangeWithNode,
   handleEditorBackspace,
+  getSelectedVoidElement,
+  deleteVoidElement,
   htmlToEditorDom,
   isEditorEmpty,
   normalizeEditorRoot,
@@ -354,6 +356,100 @@ describe('handleEditorBackspace', () => {
     expect(handled).toBe(true);
     expect(mention.nextSibling).toBe(trailingSpace);
     expect(trailingSpace.data.length).toBeGreaterThan(0);
+  });
+});
+
+describe('getSelectedVoidElement', () => {
+  it('finds the void element when the range brackets it by child index', () => {
+    const rootElement = document.createElement('div');
+    rootElement.appendChild(document.createTextNode('hello '));
+    const emoticon = createEmoticonNode({
+      mx: mockMx,
+      useAuthentication: false,
+      key: 'mxc://example/x',
+      shortcode: 'wave',
+    });
+    insertNodeAtRange(rootElement, null, emoticon);
+
+    const voidIndex = Array.from(rootElement.childNodes).indexOf(emoticon);
+    const range = document.createRange();
+    range.setStart(rootElement, voidIndex);
+    range.setEnd(rootElement, voidIndex + 1);
+
+    expect(getSelectedVoidElement(range)).toBe(emoticon);
+  });
+
+  it('finds the void element when the range brackets it between its anchor text nodes', () => {
+    const rootElement = document.createElement('div');
+    const emoticon = createEmoticonNode({
+      mx: mockMx,
+      useAuthentication: false,
+      key: 'mxc://example/x',
+      shortcode: 'wave',
+    });
+    insertNodeAtRange(rootElement, null, emoticon);
+
+    const leadingAnchor = emoticon.previousSibling as Text;
+    const trailingAnchor = emoticon.nextSibling as Text;
+    const range = document.createRange();
+    range.setStart(leadingAnchor, leadingAnchor.data.length);
+    range.setEnd(trailingAnchor, 0);
+
+    expect(getSelectedVoidElement(range)).toBe(emoticon);
+  });
+
+  it('returns null when the bracketed node is not a void element', () => {
+    const rootElement = document.createElement('div');
+    rootElement.appendChild(document.createTextNode('hello'));
+
+    const range = document.createRange();
+    range.setStart(rootElement, 0);
+    range.setEnd(rootElement, 1);
+
+    expect(getSelectedVoidElement(range)).toBeNull();
+  });
+
+  it('returns null when the selection spans more than just the void element', () => {
+    const rootElement = document.createElement('div');
+    const emoticon = createEmoticonNode({
+      mx: mockMx,
+      useAuthentication: false,
+      key: 'mxc://example/x',
+      shortcode: 'wave',
+    });
+    insertNodeAtRange(rootElement, null, emoticon);
+
+    const voidIndex = Array.from(rootElement.childNodes).indexOf(emoticon);
+    const range = document.createRange();
+    range.setStart(rootElement, voidIndex);
+    range.setEnd(rootElement, voidIndex + 2);
+
+    expect(getSelectedVoidElement(range)).toBeNull();
+  });
+});
+
+describe('deleteVoidElement', () => {
+  it('removes the void element and places the caret at the start of the following anchor', () => {
+    const rootElement = document.createElement('div');
+    rootElement.appendChild(document.createTextNode('hello '));
+    const emoticon = createEmoticonNode({
+      mx: mockMx,
+      useAuthentication: false,
+      key: 'mxc://example/x',
+      shortcode: 'wave',
+    });
+    insertNodeAtRange(rootElement, null, emoticon);
+    document.body.appendChild(rootElement);
+
+    const trailingAnchor = emoticon.nextSibling as Text;
+    deleteVoidElement(emoticon);
+
+    expect(rootElement.contains(emoticon)).toBe(false);
+    const range = window.getSelection()!.getRangeAt(0);
+    expect(range.startContainer).toBe(trailingAnchor);
+    expect(range.startOffset).toBe(0);
+
+    rootElement.remove();
   });
 });
 

@@ -10,7 +10,9 @@ import React, {
 import { Box, Scroll } from 'folds';
 import { isKeyHotkey } from 'is-hotkey';
 import {
+  deleteVoidElement,
   ensureInlineBoundaryAnchors,
+  getSelectedVoidElement,
   handleEditorBackspace,
   htmlToEditorDom,
   insertNodeAtRange,
@@ -76,6 +78,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
     const [isEmpty, setIsEmpty] = useState(true);
     const inputRef = useRef<HTMLDivElement>(null);
     const savedRangeRef = useRef<Range | null>(null);
+    const pendingBackspaceRef = useRef(false);
 
     const syncEditorState = useCallback(() => {
       const inputElement = inputRef.current;
@@ -143,13 +146,24 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
         if (!sel || sel.rangeCount === 0) return;
         const range = sel.getRangeAt(0);
         if (!inputElement.contains(range.startContainer)) return;
+
+        if (pendingBackspaceRef.current) {
+          pendingBackspaceRef.current = false;
+          const selectedVoidElement = getSelectedVoidElement(range);
+          if (selectedVoidElement) {
+            deleteVoidElement(selectedVoidElement);
+            syncEditorState();
+            return;
+          }
+        }
+
         savedRangeRef.current = range.cloneRange();
       };
       document.addEventListener('selectionchange', handleSelectionChange);
       return () => {
         document.removeEventListener('selectionchange', handleSelectionChange);
       };
-    }, []);
+    }, [syncEditorState]);
 
     const handleInput: FormEventHandler<HTMLDivElement> = useCallback(
       (evt) => {
@@ -275,6 +289,8 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
           if (sel && sel.rangeCount > 0 && handleEditorBackspace(inputElement, sel.getRangeAt(0))) {
             evt.preventDefault();
             syncEditorState();
+          } else {
+            pendingBackspaceRef.current = true;
           }
         }
       },

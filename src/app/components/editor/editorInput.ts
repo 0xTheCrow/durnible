@@ -173,6 +173,38 @@ export const handleEditorBackspace = (inputElement: HTMLElement, range: Range): 
   return false;
 };
 
+export const getSelectedVoidElement = (range: Range): HTMLElement | null => {
+  if (range.collapsed) return null;
+  const { startContainer, endContainer, startOffset, endOffset } = range;
+
+  if (startContainer === endContainer && endOffset === startOffset + 1) {
+    const node = startContainer.childNodes[startOffset];
+    if (node && isVoidElement(node)) return node as HTMLElement;
+  }
+
+  if (
+    startContainer.nodeType === Node.TEXT_NODE &&
+    endContainer.nodeType === Node.TEXT_NODE &&
+    startOffset === (startContainer as Text).data.length &&
+    endOffset === 0
+  ) {
+    const between = startContainer.nextSibling;
+    if (between && between === endContainer.previousSibling && isVoidElement(between)) {
+      return between as HTMLElement;
+    }
+  }
+
+  return null;
+};
+
+export const deleteVoidElement = (voidElement: HTMLElement): void => {
+  const next = voidElement.nextSibling;
+  voidElement.parentNode?.removeChild(voidElement);
+  if (next && next.nodeType === Node.TEXT_NODE) {
+    placeCaretAt(next as Text, 0);
+  }
+};
+
 export const insertNodeAtRange = (
   inputElement: HTMLElement,
   savedRange: Range | null,
