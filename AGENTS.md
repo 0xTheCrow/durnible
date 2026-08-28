@@ -115,6 +115,29 @@ keystroke latency — that's still the feel worth aiming for. But they have no D
 React render cycle in the loop, so matching them exactly here is probably not attainable; don't
 block work on hitting that number.
 
+### TODO — extend the benchmark beyond composer typing
+
+The fixtures in `e2e/fixtures/performance.ts` are interaction-agnostic; only `typing.spec.ts` is
+composer-specific. Roughly in priority order:
+
+1. Generalize `installKeystrokeTiming` into `installInteractionTiming({ events })` — any event to
+   next paint, so clicks/scrolls/gestures get an INP-style number. Add a `long-animation-frame`
+   observer for script attribution. Unblocks the rest.
+2. Room switching — most frequent interaction, no coverage. Click between seeded rooms, measure
+   click to timeline painted + busy.
+3. Timeline scroll + backward pagination jank — `requestAnimationFrame` delta series, dropped-frame
+   count. Guards Timeline V2 and the pagination batch-jump stall.
+4. Cold boot to interactive — nav start to first timeline paint; gives the load-performance plan a
+   scoreboard.
+5. Send-message local echo; emoji board open + search; nav list with 200+ rooms.
+
+Primitives: `PERFORMANCE_BASELINE=<label>` diff mode (busy-time deltas, non-zero exit on
+regression) to make it CI-gate-able; heap-growth check across repeated room switches (leak canary);
+bundle-size budget on `vite build` output.
+
+Infra: no `.github/workflows/` yet — run this label-gated or nightly, not per-PR. `e2e/` isn't
+covered by `typecheck` or `check:eslint`.
+
 ## Git
 
 - The user is the only one who commits to this repo. No one and nothing else commits on their behalf — not you, not a script, not a hook. Never run `git commit` (or `git push`, `git reset --hard`, or any other history-rewriting or publishing command). The user owns every commit and reviews the diff before recording it. Stage work if asked, but stop before `commit`. This holds even when tests and lint pass, and even when an earlier plan appeared to include a commit step.
