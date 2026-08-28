@@ -129,9 +129,7 @@ describe('useRoomEvent', () => {
       event.makeReplaced(editEvent);
     });
 
-    await waitFor(() => {
-      expect(result.current?.getContent()).toEqual({ body: 'edited', msgtype: 'm.text' });
-    });
+    expect(result.current?.getContent()).toEqual({ body: 'edited', msgtype: 'm.text' });
   });
 
   it('re-renders when the event emits Decrypted', async () => {
@@ -157,9 +155,7 @@ describe('useRoomEvent', () => {
       (event as any)._emit(MatrixEventEvent.Decrypted, event);
     });
 
-    await waitFor(() => {
-      expect(result.current?.getContent()).toEqual(decryptedContent);
-    });
+    expect(result.current?.getContent()).toEqual(decryptedContent);
   });
 
   it('re-renders when the replacing event emits Decrypted', async () => {
@@ -198,9 +194,7 @@ describe('useRoomEvent', () => {
       (replacingEvt as any)._emit(MatrixEventEvent.Decrypted, replacingEvt);
     });
 
-    await waitFor(() => {
-      expect(result.current?.getContent()).toEqual({ body: 'edited secret', msgtype: 'm.text' });
-    });
+    expect(result.current?.getContent()).toEqual({ body: 'edited secret', msgtype: 'm.text' });
   });
 
   it('fetches and decrypts the replacing event when not found locally', async () => {

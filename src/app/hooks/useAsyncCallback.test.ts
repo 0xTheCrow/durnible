@@ -1,4 +1,4 @@
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { useAsyncCallback, useAutoLoadAsyncCallback, AsyncStatus } from './useAsyncCallback';
 
@@ -11,14 +11,11 @@ describe('useAsyncCallback', () => {
   it('transitions to success with returned data', async () => {
     const { result } = renderHook(() => useAsyncCallback(async () => 'hello'));
 
-    act(() => {
+    await act(async () => {
       result.current[1]();
     });
 
-    await waitFor(() => {
-      expect(result.current[0].status).toBe(AsyncStatus.Success);
-    });
-
+    expect(result.current[0].status).toBe(AsyncStatus.Success);
     expect((result.current[0] as { status: AsyncStatus.Success; data: string }).data).toBe('hello');
   });
 
@@ -30,15 +27,12 @@ describe('useAsyncCallback', () => {
       })
     );
 
-    act(() => {
+    await act(async () => {
       // suppress the unhandled rejection that propagates out of the hook
       result.current[1]().catch(() => {});
     });
 
-    await waitFor(() => {
-      expect(result.current[0].status).toBe(AsyncStatus.Error);
-    });
-
+    expect(result.current[0].status).toBe(AsyncStatus.Error);
     expect((result.current[0] as { status: AsyncStatus.Error; error: Error }).error).toBe(error);
   });
 
@@ -72,9 +66,7 @@ describe('useAsyncCallback', () => {
       resolveFast('fast');
     });
 
-    await waitFor(() => {
-      expect(result.current[0].status).toBe(AsyncStatus.Success);
-    });
+    expect(result.current[0].status).toBe(AsyncStatus.Success);
     expect((result.current[0] as { status: AsyncStatus.Success; data: string }).data).toBe('fast');
 
     // Resolving the slow (first) call afterwards must not overwrite the result
@@ -90,9 +82,9 @@ describe('useAutoLoadAsyncCallback', () => {
     const loader = vi.fn(async () => 'value');
     const { result } = renderHook(() => useAutoLoadAsyncCallback(loader, true));
 
-    await waitFor(() => {
-      expect(result.current[0].status).toBe(AsyncStatus.Success);
-    });
+    await act(async () => {});
+
+    expect(result.current[0].status).toBe(AsyncStatus.Success);
     expect(loader).toHaveBeenCalledTimes(1);
     expect((result.current[0] as { status: AsyncStatus.Success; data: string }).data).toBe('value');
   });
@@ -111,9 +103,8 @@ describe('useAutoLoadAsyncCallback', () => {
 
     // Flip to enabled — loader should fire once.
     rerender({ enabled: true });
-    await waitFor(() => {
-      expect(result.current[0].status).toBe(AsyncStatus.Success);
-    });
+    await act(async () => {});
+    expect(result.current[0].status).toBe(AsyncStatus.Success);
     expect(loader).toHaveBeenCalledTimes(1);
   });
 
@@ -129,9 +120,8 @@ describe('useAutoLoadAsyncCallback', () => {
       useAutoLoadAsyncCallback(async () => asyncFn(), true)
     );
 
-    await waitFor(() => {
-      expect(result.current[0].status).toBe(AsyncStatus.Success);
-    });
+    await act(async () => {});
+    expect(result.current[0].status).toBe(AsyncStatus.Success);
     expect(asyncFn).toHaveBeenCalledTimes(1);
 
     // Force several re-renders — each produces a new callback identity.
@@ -158,9 +148,8 @@ describe('useAutoLoadAsyncCallback', () => {
 
     const { result } = renderHook(() => useAutoLoadAsyncCallback(loader, true));
 
-    await waitFor(() => {
-      expect(result.current[0].status).toBe(AsyncStatus.Error);
-    });
+    await act(async () => {});
+    expect(result.current[0].status).toBe(AsyncStatus.Error);
     expect(loader).toHaveBeenCalledTimes(1);
 
     // Simulate the user clicking a retry button.
@@ -169,9 +158,7 @@ describe('useAutoLoadAsyncCallback', () => {
       await result.current[1]().catch(() => {});
     });
 
-    await waitFor(() => {
-      expect(result.current[0].status).toBe(AsyncStatus.Success);
-    });
+    expect(result.current[0].status).toBe(AsyncStatus.Success);
     expect(loader).toHaveBeenCalledTimes(2);
     expect((result.current[0] as { status: AsyncStatus.Success; data: string }).data).toBe(
       'recovered'

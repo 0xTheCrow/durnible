@@ -241,11 +241,11 @@ describe('message editing (MessageEditor)', () => {
     // callback, which resolves the promise and triggers Success without a network call.
     const { onCancel } = await renderEditor();
 
-    fireEvent.click(screen.getByTestId('message-editor-save'));
-
-    await waitFor(() => {
-      expect(onCancel).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('message-editor-save'));
     });
+
+    expect(onCancel).toHaveBeenCalledTimes(1);
   });
 });
 
