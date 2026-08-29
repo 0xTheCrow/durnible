@@ -18,6 +18,7 @@ import {
   insertNodeAtRange,
   isEditorEmpty,
   normalizeEditorRoot,
+  removeEditedInlineReferences,
   stripDeadCaretAnchors,
 } from './editorInput';
 import { handleEditorShortcut } from './editorKeyboard';
@@ -98,7 +99,6 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
     const [isEmpty, setIsEmpty] = useState(true);
     const inputRef = useRef<HTMLDivElement>(null);
     const savedRangeRef = useRef<Range | null>(null);
-    const pendingBackspaceRef = useRef(false);
 
     const syncEditorState = useCallback(() => {
       const inputElement = inputRef.current;
@@ -176,21 +176,17 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
         }
 
         console.log('[backspace-debug] selectionchange', {
-          pending: pendingBackspaceRef.current,
           collapsed: range.collapsed,
           start: describeRangeBoundary(range.startContainer, range.startOffset),
           end: describeRangeBoundary(range.endContainer, range.endOffset),
         });
 
-        if (pendingBackspaceRef.current) {
-          pendingBackspaceRef.current = false;
-          const selectedVoidElement = getSelectedVoidElement(range);
-          console.log('[backspace-debug] getSelectedVoidElement matched?', !!selectedVoidElement);
-          if (selectedVoidElement) {
-            deleteVoidElement(selectedVoidElement);
-            syncEditorState();
-            return;
-          }
+        const selectedVoidElement = getSelectedVoidElement(range);
+        if (selectedVoidElement) {
+          console.log('[backspace-debug] getSelectedVoidElement matched, deleting');
+          deleteVoidElement(selectedVoidElement);
+          syncEditorState();
+          return;
         }
 
         savedRangeRef.current = range.cloneRange();
@@ -207,6 +203,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
         const nativeEvent = evt.nativeEvent as InputEvent;
         if (inputElement && !nativeEvent.isComposing) {
           normalizeEditorRoot(inputElement);
+          removeEditedInlineReferences(inputElement);
           stripDeadCaretAnchors(inputElement);
           ensureInlineBoundaryAnchors(inputElement);
           if (isEditorEmpty(inputElement) && !hasInlineStyleElement(inputElement)) {
@@ -341,8 +338,6 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
           if (handled) {
             evt.preventDefault();
             syncEditorState();
-          } else {
-            pendingBackspaceRef.current = true;
           }
         }
       },

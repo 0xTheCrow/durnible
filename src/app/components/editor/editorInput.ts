@@ -80,7 +80,6 @@ export const createMentionNode = ({
 }: CreateMentionNodeArgs): HTMLSpanElement => {
   const wrapper = document.createElement('span');
   wrapper.setAttribute(NODE_TYPE_ATTR, MENTION_NODE);
-  wrapper.setAttribute('contenteditable', 'false');
   wrapper.dataset.id = id;
   wrapper.dataset.name = name;
   wrapper.dataset.highlight = highlight ? 'true' : 'false';
@@ -98,7 +97,6 @@ type CreateCommandNodeArgs = {
 export const createCommandNode = ({ command }: CreateCommandNodeArgs): HTMLSpanElement => {
   const wrapper = document.createElement('span');
   wrapper.setAttribute(NODE_TYPE_ATTR, COMMAND_NODE);
-  wrapper.setAttribute('contenteditable', 'false');
   wrapper.dataset.command = command;
   wrapper.className = css.Command({ active: false, focus: false });
   wrapper.textContent = `/${command}`;
@@ -123,7 +121,7 @@ const ensureLeadingAnchor = (node: Node) => {
 
 const isVoidElement = (node: Node): boolean => {
   if (node.nodeType !== Node.ELEMENT_NODE) return false;
-  return (node as HTMLElement).hasAttribute(NODE_TYPE_ATTR);
+  return (node as HTMLElement).getAttribute(NODE_TYPE_ATTR) === EMOTICON_NODE;
 };
 
 export const handleEditorBackspace = (inputElement: HTMLElement, range: Range): boolean => {
@@ -177,21 +175,15 @@ export const getSelectedVoidElement = (range: Range): HTMLElement | null => {
   if (range.collapsed) return null;
   const { startContainer, endContainer, startOffset, endOffset } = range;
 
-  if (startContainer === endContainer && endOffset === startOffset + 1) {
-    const node = startContainer.childNodes[startOffset];
-    if (node && isVoidElement(node)) return node as HTMLElement;
-  }
-
   if (
     startContainer.nodeType === Node.TEXT_NODE &&
-    endContainer.nodeType === Node.TEXT_NODE &&
     startOffset === (startContainer as Text).data.length &&
-    endOffset === 0
+    startContainer.nextSibling === endContainer &&
+    endContainer.nodeType === Node.ELEMENT_NODE &&
+    endOffset === endContainer.childNodes.length &&
+    isVoidElement(endContainer)
   ) {
-    const between = startContainer.nextSibling;
-    if (between && between === endContainer.previousSibling && isVoidElement(between)) {
-      return between as HTMLElement;
-    }
+    return endContainer as HTMLElement;
   }
 
   return null;
@@ -430,8 +422,7 @@ const walkHtmlNodes = (
       if (testMatrixTo(href)) {
         const mention = resolveMentionFromAnchor(element, href);
         if (mention) {
-          const voidNode = createMentionNode(mention);
-          appendVoidToParent(parent, voidNode);
+          parent.appendChild(createMentionNode(mention));
           isFirstBlockChild = false;
           return;
         }
@@ -639,6 +630,54 @@ export const ensureInlineBoundaryAnchors = (element: HTMLElement): void => {
       span.parentNode?.appendChild(document.createTextNode(INLINE_VOID_CARET_ANCHOR));
     }
   });
+};
+
+const MENTION_SELECTOR = `[${NODE_TYPE_ATTR}="${MENTION_NODE}"]`;
+const COMMAND_SELECTOR = `[${NODE_TYPE_ATTR}="${COMMAND_NODE}"]`;
+
+export const removeEditedInlineReferences = (element: HTMLElement): boolean => {
+  const selection = window.getSelection();
+  const range = selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+  const caretNode = range && range.collapsed ? range.startContainer : null;
+
+  let changed = false;
+  const reconcile = (span: HTMLElement, expectedText: string) => {
+    const currentText = span.textContent ?? '';
+    if (currentText === expectedText) return;
+
+    if (currentText.length < expectedText.length) {
+      const parent = span.parentNode;
+      if (!parent) return;
+      if (caretNode && span.contains(caretNode)) {
+        const marker = document.createTextNode('');
+        parent.insertBefore(marker, span);
+        parent.removeChild(span);
+        placeCaretAt(marker, 0);
+      } else {
+        parent.removeChild(span);
+      }
+    } else {
+      span.removeAttribute(NODE_TYPE_ATTR);
+      span.removeAttribute('class');
+      span.removeAttribute('data-id');
+      span.removeAttribute('data-name');
+      span.removeAttribute('data-highlight');
+      span.removeAttribute('data-event-id');
+      span.removeAttribute('data-via');
+      span.removeAttribute('data-command');
+    }
+    changed = true;
+  };
+
+  element
+    .querySelectorAll<HTMLElement>(MENTION_SELECTOR)
+    .forEach((span) => reconcile(span, span.dataset.name ?? ''));
+
+  element
+    .querySelectorAll<HTMLElement>(COMMAND_SELECTOR)
+    .forEach((span) => reconcile(span, `/${span.dataset.command ?? ''}`));
+
+  return changed;
 };
 
 // Parse the draft as-is; routing it through htmlToEditorDom/sanitize strips the

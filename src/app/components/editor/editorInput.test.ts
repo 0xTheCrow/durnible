@@ -14,6 +14,7 @@ import {
   htmlToEditorDom,
   isEditorEmpty,
   normalizeEditorRoot,
+  removeEditedInlineReferences,
   restoreEditorDraft,
   stripDeadCaretAnchors,
   NODE_TYPE_ATTR,
@@ -180,22 +181,6 @@ describe('inline void trailing anchor', () => {
     expect(emoticon.nextSibling).toBe(last);
   });
 
-  it('keeps a renderable text node after a mention parsed from custom HTML that ends with it', () => {
-    const rootElement = document.createElement('div');
-    const fragment = htmlToEditorDom(
-      'hi <a href="https://matrix.to/#/@alice:example.org">@alice</a>',
-      ctx
-    );
-    rootElement.appendChild(fragment);
-
-    const mention = rootElement.querySelector(`[${NODE_TYPE_ATTR}]`);
-    expect(mention).not.toBeNull();
-    const last = rootElement.lastChild;
-    expect(last?.nodeType).toBe(Node.TEXT_NODE);
-    expect((last as Text).data.length).toBeGreaterThan(0);
-    expect(mention?.nextSibling).toBe(last);
-  });
-
   it('keeps a renderable text node when autocomplete replaces a trailing shortcode with nothing following it', () => {
     const rootElement = document.createElement('div');
     const textNode = document.createTextNode('hello :wave:');
@@ -248,23 +233,7 @@ describe('handleEditorBackspace', () => {
     expect(domToPlainText(rootElement)).toBe('hello ');
   });
 
-  it('deletes a trailing user mention when backspacing right after it', () => {
-    const rootElement = document.createElement('div');
-    rootElement.appendChild(document.createTextNode('hey '));
-    const mention = createMentionNode({
-      id: '@alice:example.org',
-      name: '@alice',
-      highlight: false,
-    });
-
-    const range = insertNodeAtRange(rootElement, null, mention);
-    const handled = handleEditorBackspace(rootElement, range);
-
-    expect(handled).toBe(true);
-    expect(rootElement.contains(mention)).toBe(false);
-  });
-
-  it('deletes a trailing mention on a line other than the first without throwing', () => {
+  it('deletes a trailing void on a line other than the first without throwing', () => {
     const rootElement = document.createElement('div');
     const firstLine = document.createElement('div');
     firstLine.textContent = 'line one';
@@ -274,15 +243,16 @@ describe('handleEditorBackspace', () => {
     secondLine.appendChild(document.createTextNode('hey '));
     rootElement.appendChild(secondLine);
 
-    const mention = createMentionNode({
-      id: '@alice:example.org',
-      name: '@alice',
-      highlight: false,
+    const emoticon = createEmoticonNode({
+      mx: mockMx,
+      useAuthentication: false,
+      key: 'mxc://example/x',
+      shortcode: 'wave',
     });
     const initialRange = document.createRange();
     initialRange.selectNodeContents(secondLine);
     initialRange.collapse(false);
-    const range = insertNodeAtRange(rootElement, initialRange, mention);
+    const range = insertNodeAtRange(rootElement, initialRange, emoticon);
 
     let handled = false;
     expect(() => {
@@ -290,8 +260,24 @@ describe('handleEditorBackspace', () => {
     }).not.toThrow();
 
     expect(handled).toBe(true);
-    expect(rootElement.contains(mention)).toBe(false);
+    expect(rootElement.contains(emoticon)).toBe(false);
     expect(firstLine.textContent).toBe('line one');
+  });
+
+  it('leaves a mention to ordinary text backspacing since it is no longer void', () => {
+    const rootElement = document.createElement('div');
+    const mention = createMentionNode({
+      id: '@alice:example.org',
+      name: '@alice',
+      highlight: false,
+    });
+    rootElement.appendChild(mention);
+    const range = setCollapsedSelection(rootElement, 1);
+
+    const handled = handleEditorBackspace(rootElement, range);
+
+    expect(handled).toBe(false);
+    expect(rootElement.contains(mention)).toBe(true);
   });
 
   it('does not require a second backspace once the void is already gone', () => {
@@ -339,14 +325,15 @@ describe('handleEditorBackspace', () => {
     expect(rootElement.textContent).toBe('hello');
   });
 
-  it('deletes the real trailing space after a mention instead of leaving an unrenderable empty node', () => {
+  it('deletes the real trailing space after a void instead of leaving an unrenderable empty node', () => {
     const rootElement = document.createElement('div');
-    const mention = createMentionNode({
-      id: '@alice:example.org',
-      name: '@alice',
-      highlight: false,
+    const emoticon = createEmoticonNode({
+      mx: mockMx,
+      useAuthentication: false,
+      key: 'mxc://example/x',
+      shortcode: 'wave',
     });
-    rootElement.appendChild(mention);
+    rootElement.appendChild(emoticon);
     const trailingSpace = document.createTextNode(' ');
     rootElement.appendChild(trailingSpace);
     const range = setCollapsedSelection(trailingSpace, 1);
@@ -354,63 +341,48 @@ describe('handleEditorBackspace', () => {
     const handled = handleEditorBackspace(rootElement, range);
 
     expect(handled).toBe(true);
-    expect(mention.nextSibling).toBe(trailingSpace);
+    expect(emoticon.nextSibling).toBe(trailingSpace);
     expect(trailingSpace.data.length).toBeGreaterThan(0);
   });
 });
 
 describe('getSelectedVoidElement', () => {
-  it('finds the void element when the range brackets it by child index', () => {
-    const rootElement = document.createElement('div');
-    rootElement.appendChild(document.createTextNode('hello '));
-    const emoticon = createEmoticonNode({
-      mx: mockMx,
-      useAuthentication: false,
-      key: 'mxc://example/x',
-      shortcode: 'wave',
-    });
-    insertNodeAtRange(rootElement, null, emoticon);
-
-    const voidIndex = Array.from(rootElement.childNodes).indexOf(emoticon);
-    const range = document.createRange();
-    range.setStart(rootElement, voidIndex);
-    range.setEnd(rootElement, voidIndex + 1);
-
-    expect(getSelectedVoidElement(range)).toBe(emoticon);
-  });
-
-  it('finds the void element when the range brackets it between its anchor text nodes', () => {
-    const rootElement = document.createElement('div');
-    const emoticon = createEmoticonNode({
-      mx: mockMx,
-      useAuthentication: false,
-      key: 'mxc://example/x',
-      shortcode: 'wave',
-    });
-    insertNodeAtRange(rootElement, null, emoticon);
-
-    const leadingAnchor = emoticon.previousSibling as Text;
-    const trailingAnchor = emoticon.nextSibling as Text;
-    const range = document.createRange();
-    range.setStart(leadingAnchor, leadingAnchor.data.length);
-    range.setEnd(trailingAnchor, 0);
-
-    expect(getSelectedVoidElement(range)).toBe(emoticon);
-  });
-
-  it('returns null when the bracketed node is not a void element', () => {
+  it('finds the void element when the selection ends inside its own children, per the observed Android selection shape', () => {
     const rootElement = document.createElement('div');
     rootElement.appendChild(document.createTextNode('hello'));
+    const emoticon = createEmoticonNode({
+      mx: mockMx,
+      useAuthentication: false,
+      key: 'mxc://example/x',
+      shortcode: 'wave',
+    });
+    insertNodeAtRange(rootElement, null, emoticon);
+
+    const precedingText = emoticon.previousSibling as Text;
+    const range = document.createRange();
+    range.setStart(precedingText, precedingText.data.length);
+    range.setEnd(emoticon, emoticon.childNodes.length);
+
+    expect(getSelectedVoidElement(range)).toBe(emoticon);
+  });
+
+  it('returns null when the bracketed element is not a void', () => {
+    const rootElement = document.createElement('div');
+    const precedingText = document.createTextNode('hello');
+    const bold = document.createElement('b');
+    bold.textContent = 'world';
+    rootElement.append(precedingText, bold);
 
     const range = document.createRange();
-    range.setStart(rootElement, 0);
-    range.setEnd(rootElement, 1);
+    range.setStart(precedingText, precedingText.data.length);
+    range.setEnd(bold, bold.childNodes.length);
 
     expect(getSelectedVoidElement(range)).toBeNull();
   });
 
-  it('returns null when the selection spans more than just the void element', () => {
+  it('returns null when the selection does not reach the end of the void', () => {
     const rootElement = document.createElement('div');
+    rootElement.appendChild(document.createTextNode('hello'));
     const emoticon = createEmoticonNode({
       mx: mockMx,
       useAuthentication: false,
@@ -419,10 +391,10 @@ describe('getSelectedVoidElement', () => {
     });
     insertNodeAtRange(rootElement, null, emoticon);
 
-    const voidIndex = Array.from(rootElement.childNodes).indexOf(emoticon);
+    const precedingText = emoticon.previousSibling as Text;
     const range = document.createRange();
-    range.setStart(rootElement, voidIndex);
-    range.setEnd(rootElement, voidIndex + 2);
+    range.setStart(precedingText, precedingText.data.length);
+    range.setEnd(emoticon, 0);
 
     expect(getSelectedVoidElement(range)).toBeNull();
   });
@@ -450,6 +422,24 @@ describe('deleteVoidElement', () => {
     expect(range.startOffset).toBe(0);
 
     rootElement.remove();
+  });
+});
+
+describe('removeEditedInlineReferences', () => {
+  it('removes a mention entirely once it has been backspaced shorter than its name', () => {
+    const rootElement = document.createElement('div');
+    const mention = createMentionNode({
+      id: '@alice:example.org',
+      name: '@alice',
+      highlight: false,
+    });
+    rootElement.appendChild(mention);
+    mention.textContent = '@alic';
+
+    const changed = removeEditedInlineReferences(rootElement);
+
+    expect(changed).toBe(true);
+    expect(rootElement.contains(mention)).toBe(false);
   });
 });
 
