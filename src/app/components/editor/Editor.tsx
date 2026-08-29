@@ -28,6 +28,18 @@ import { useKeybinds } from '../../state/hooks/keybinds';
 import * as css from './Editor.css';
 import { getImageUrlBlob } from '../../utils/dom';
 
+const describeNode = (node: Node): string => {
+  if (node.nodeType === Node.TEXT_NODE) {
+    return `#text(${JSON.stringify((node as Text).data)})`;
+  }
+  if (node.nodeType === Node.ELEMENT_NODE) {
+    const element = node as HTMLElement;
+    const nodeType = element.getAttribute('data-node-type');
+    return `<${element.tagName.toLowerCase()}${nodeType ? ` data-node-type=${nodeType}` : ''}>`;
+  }
+  return `node(${node.nodeType})`;
+};
+
 export type EditorController = {
   inputElement: HTMLDivElement | null;
   focus: () => void;
@@ -148,8 +160,16 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
         if (!inputElement.contains(range.startContainer)) return;
 
         if (pendingBackspaceRef.current) {
+          console.log('[backspace-debug] selectionchange while pending', {
+            collapsed: range.collapsed,
+            startContainer: describeNode(range.startContainer),
+            startOffset: range.startOffset,
+            endContainer: describeNode(range.endContainer),
+            endOffset: range.endOffset,
+          });
           pendingBackspaceRef.current = false;
           const selectedVoidElement = getSelectedVoidElement(range);
+          console.log('[backspace-debug] getSelectedVoidElement matched?', !!selectedVoidElement);
           if (selectedVoidElement) {
             deleteVoidElement(selectedVoidElement);
             syncEditorState();
@@ -229,14 +249,16 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
         const ie = e.nativeEvent as InputEvent;
 
         if (ie.inputType === 'deleteContentBackward') {
+          console.log('[backspace-debug] beforeinput deleteContentBackward');
           const sel = window.getSelection();
           const inputElement = inputRef.current;
-          if (
+          const handled =
             sel &&
             sel.rangeCount > 0 &&
             inputElement &&
-            handleEditorBackspace(inputElement, sel.getRangeAt(0))
-          ) {
+            handleEditorBackspace(inputElement, sel.getRangeAt(0));
+          console.log('[backspace-debug] beforeinput handleEditorBackspace handled?', handled);
+          if (handled) {
             e.preventDefault();
             syncEditorState();
           }
@@ -284,9 +306,23 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
           inputElement.dispatchEvent(new Event('input', { bubbles: true }));
           return;
         }
-        if (isKeyHotkey('backspace', evt)) {
+        const looksLikeBackspace =
+          evt.key === 'Backspace' || evt.code === 'Backspace' || evt.keyCode === 8;
+        const matchedBackspaceHotkey = isKeyHotkey('backspace', evt);
+        if (looksLikeBackspace || matchedBackspaceHotkey) {
+          console.log('[backspace-debug] keydown', {
+            key: evt.key,
+            code: evt.code,
+            keyCode: evt.keyCode,
+            matchedBackspaceHotkey,
+          });
+        }
+        if (matchedBackspaceHotkey) {
           const sel = window.getSelection();
-          if (sel && sel.rangeCount > 0 && handleEditorBackspace(inputElement, sel.getRangeAt(0))) {
+          const handled =
+            sel && sel.rangeCount > 0 && handleEditorBackspace(inputElement, sel.getRangeAt(0));
+          console.log('[backspace-debug] keydown handleEditorBackspace handled?', handled);
+          if (handled) {
             evt.preventDefault();
             syncEditorState();
           } else {
