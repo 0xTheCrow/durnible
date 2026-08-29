@@ -40,6 +40,14 @@ const describeNode = (node: Node): string => {
   return `node(${node.nodeType})`;
 };
 
+const describeRangeBoundary = (container: Node, offset: number): string => {
+  if (container.nodeType !== Node.ELEMENT_NODE) {
+    return `${describeNode(container)}@${offset}`;
+  }
+  const child = container.childNodes[offset];
+  return `${describeNode(container)}[${offset}]=${child ? describeNode(child) : 'none'}`;
+};
+
 export type EditorController = {
   inputElement: HTMLDivElement | null;
   focus: () => void;
@@ -155,18 +163,26 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
         const inputElement = inputRef.current;
         if (!inputElement) return;
         const sel = document.getSelection();
-        if (!sel || sel.rangeCount === 0) return;
+        if (!sel || sel.rangeCount === 0) {
+          console.log('[backspace-debug] selectionchange with no range');
+          return;
+        }
         const range = sel.getRangeAt(0);
-        if (!inputElement.contains(range.startContainer)) return;
+        if (!inputElement.contains(range.startContainer)) {
+          console.log('[backspace-debug] selectionchange outside editor', {
+            startContainer: describeNode(range.startContainer),
+          });
+          return;
+        }
+
+        console.log('[backspace-debug] selectionchange', {
+          pending: pendingBackspaceRef.current,
+          collapsed: range.collapsed,
+          start: describeRangeBoundary(range.startContainer, range.startOffset),
+          end: describeRangeBoundary(range.endContainer, range.endOffset),
+        });
 
         if (pendingBackspaceRef.current) {
-          console.log('[backspace-debug] selectionchange while pending', {
-            collapsed: range.collapsed,
-            startContainer: describeNode(range.startContainer),
-            startOffset: range.startOffset,
-            endContainer: describeNode(range.endContainer),
-            endOffset: range.endOffset,
-          });
           pendingBackspaceRef.current = false;
           const selectedVoidElement = getSelectedVoidElement(range);
           console.log('[backspace-debug] getSelectedVoidElement matched?', !!selectedVoidElement);
