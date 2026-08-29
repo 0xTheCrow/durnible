@@ -12,12 +12,14 @@ import './index.css';
 import { trimTrailingSlash } from './app/utils/common';
 import { getSettings } from './app/state/settings';
 import { isIOS, mobileOrTablet } from './app/utils/user-agent';
+import { checkIsDesktopApp, syncDesktopMediaAuth } from './app/platform/desktop';
 import App from './app/pages/App';
 
 document.body.classList.add(configClass, varsClass);
 
-// Register Service Worker
-if ('serviceWorker' in navigator) {
+syncDesktopMediaAuth();
+
+if ('serviceWorker' in navigator && !checkIsDesktopApp()) {
   const swUrl =
     import.meta.env.MODE === 'production'
       ? `${trimTrailingSlash(import.meta.env.BASE_URL)}/sw.js`

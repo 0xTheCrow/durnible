@@ -86,14 +86,26 @@ export const useLocalMediaControls = (
 
   const toggleScreenshare = useCallback(async () => {
     const { localParticipant } = livekitRoom;
-    await localParticipant.setScreenShareEnabled(
-      !localParticipant.isScreenShareEnabled,
-      getScreenshareCaptureOptions(screenshareResolution, screenshareMaxFrameRate),
-      {
-        screenShareEncoding: getScreenshareEncoding(screenshareResolution, screenshareMaxFrameRate),
-        degradationPreference: 'maintain-framerate',
+    try {
+      await localParticipant.setScreenShareEnabled(
+        !localParticipant.isScreenShareEnabled,
+        getScreenshareCaptureOptions(screenshareResolution, screenshareMaxFrameRate),
+        {
+          screenShareEncoding: getScreenshareEncoding(
+            screenshareResolution,
+            screenshareMaxFrameRate
+          ),
+          degradationPreference: 'maintain-framerate',
+        }
+      );
+    } catch (error) {
+      const isCancelled =
+        error instanceof DOMException &&
+        (error.name === 'NotAllowedError' || error.name === 'AbortError');
+      if (!isCancelled) {
+        console.error('useLocalMediaControls: failed to toggle screenshare', error);
       }
-    );
+    }
     setLocalMediaState(getLocalMediaState(livekitRoom));
   }, [livekitRoom, screenshareResolution, screenshareMaxFrameRate]);
 

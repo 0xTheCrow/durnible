@@ -22,6 +22,8 @@
     "performance": "playwright test --config playwright.performance.config.ts",
     "performance:production": "PERFORMANCE_TARGET=production playwright test --config playwright.performance.config.ts",
     "performance:trace": "PERFORMANCE_TRACE=1 playwright test --config playwright.performance.config.ts",
+    "desktop:compile": "tsc -p platform/desktop/tsconfig.json",
+    "desktop:dev": "npm run build && npm run desktop:compile && electron platform/desktop/dist/main.cjs",
     "prepare": "husky"
   },
   "keywords": [],
@@ -98,6 +100,7 @@
     "@typescript-eslint/parser": "5.46.1",
     "@vitejs/plugin-react": "6.0.2",
     "buffer": "6.0.3",
+    "electron": "44.0.0",
     "eslint": "8.29.0",
     "eslint-config-airbnb": "19.0.4",
     "eslint-config-prettier": "8.5.0",

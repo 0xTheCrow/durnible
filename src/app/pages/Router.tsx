@@ -72,7 +72,12 @@ import { CreateSpaceModalRenderer } from '../features/create-space';
 import { SearchModalRenderer } from '../features/search';
 import { ImageViewerRenderer } from '../components/image-viewer/ImageViewerRenderer';
 import { getFallbackSession } from '../state/sessions';
-import { CallPaneGate, CallBarGate, CallScreenGate } from '../features/call/CallMounts';
+import {
+  CallPaneGate,
+  CallBarGate,
+  CallScreenGate,
+  ScreenshareSourcePickerMount,
+} from '../features/call/CallMounts';
 import { CallProvider } from '../features/call/CallProvider';
 
 const Lobby = lazy(() => import('../features/lobby').then((module) => ({ default: module.Lobby })));
@@ -145,6 +150,7 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
                           </ClientLayout>
                         </Box>
                         <CallScreenGate />
+                        <ScreenshareSourcePickerMount />
                         <SearchModalRenderer />
                         <ImageViewerRenderer />
                         <UserRoomProfileRenderer />

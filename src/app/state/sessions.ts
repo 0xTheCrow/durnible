@@ -1,3 +1,5 @@
+import { syncDesktopMediaAuth } from '../platform/desktop';
+
 export type Session = {
   baseUrl: string;
   userId: string;
@@ -27,12 +29,14 @@ export function setFallbackSession(
   localStorage.setItem('cinny_device_id', deviceId);
   localStorage.setItem('cinny_user_id', userId);
   localStorage.setItem('cinny_hs_base_url', baseUrl);
+  syncDesktopMediaAuth();
 }
 export const removeFallbackSession = () => {
   localStorage.removeItem('cinny_hs_base_url');
   localStorage.removeItem('cinny_user_id');
   localStorage.removeItem('cinny_device_id');
   localStorage.removeItem('cinny_access_token');
+  syncDesktopMediaAuth();
 };
 export const getFallbackSession = (): Session | undefined => {
   const baseUrl = localStorage.getItem('cinny_hs_base_url');

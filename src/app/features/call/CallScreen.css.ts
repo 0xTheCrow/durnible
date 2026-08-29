@@ -2,6 +2,7 @@ import { style } from '@vanilla-extract/css';
 import { color, config } from 'folds';
 
 export const CallScreen = style({
+  position: 'relative',
   display: 'grid',
   gridTemplateRows: 'auto minmax(0, 1fr) auto',
   maxWidth: '100%',
