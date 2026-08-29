@@ -312,6 +312,33 @@ describe('browser line break fillers', () => {
 
     expect(trimCustomHtml(domToMatrixCustomHTML(root))).toBe('a<br/><br/>b');
   });
+
+  it('converts a literal newline typed between inline nodes into <br/>', () => {
+    const root = createRootElement();
+    root.appendChild(document.createTextNode('a\n\nb'));
+
+    expect(trimCustomHtml(domToMatrixCustomHTML(root))).toBe('a<br/><br/>b');
+  });
+
+  it('converts literal newlines surrounding a custom emoji into <br/>', () => {
+    const root = createRootElement();
+    root.appendChild(emoticonNode('mxc://example/smug', 'smug'));
+    root.appendChild(document.createTextNode('\n\n'));
+    root.appendChild(emoticonNode('❤️', 'heart'));
+
+    expect(trimCustomHtml(domToMatrixCustomHTML(root))).toBe(
+      '<img data-mx-emoticon src="mxc://example/smug" alt="smug" title="smug" height="32" /><br/><br/>❤️'
+    );
+  });
+
+  it('keeps literal newlines inside a code block', () => {
+    const root = createRootElement();
+    const pre = document.createElement('pre');
+    pre.appendChild(document.createTextNode('line1\nline2'));
+    root.appendChild(pre);
+
+    expect(domToMatrixCustomHTML(root)).toContain('line1\nline2');
+  });
 });
 
 describe('trimCustomHtml', () => {

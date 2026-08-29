@@ -23,8 +23,6 @@ import type { RoomToParents } from '../../../types/matrix/room';
 import { MessageEvent, RoomType } from '../../../types/matrix/room';
 import { createMockMatrixClient, createMockMatrixEvent, createMockRoom } from '../../../test/mocks';
 
-// ─── Helpers ──────────────────────────────────────────────────────────────
-
 function withRelation(event: MatrixEvent, relation: unknown): MatrixEvent {
   Object.defineProperty(event, 'getRelation', {
     value: vi.fn(() => relation),
@@ -46,8 +44,6 @@ function setRoomCreateState(
     .getState();
   state.getStateEvents.mockReturnValue(createEvent);
 }
-
-// ─── Reply formatting ─────────────────────────────────────────────────────
 
 describe('trimReplyFromBody', () => {
   it('strips the quoted reply header and returns the remainder', () => {
@@ -77,8 +73,6 @@ describe('trimReplyFromFormattedBody', () => {
     expect(trimReplyFromFormattedBody('<p>plain</p>')).toBe('<p>plain</p>');
   });
 });
-
-// ─── Space hierarchy ──────────────────────────────────────────────────────
 
 describe('getAllParents', () => {
   it('returns an empty set when the room has no parents', () => {
@@ -136,12 +130,9 @@ describe('mapParentWithChildren', () => {
     // !parent has ancestor !child already, so adding !child as a child of !parent is a cycle.
     const map: RoomToParents = new Map([['!parent:ex', new Set(['!child:ex'])]]);
     mapParentWithChildren(map, '!parent:ex', ['!child:ex']);
-    // !child must not have gained !parent as an ancestor
     expect(map.get('!child:ex')).toBeUndefined();
   });
 });
-
-// ─── Muted push rules ─────────────────────────────────────────────────────
 
 const mutedRule = {
   rule_id: '!room:ex',
@@ -199,8 +190,6 @@ describe('findMutedRule', () => {
   });
 });
 
-// ─── Mention content ──────────────────────────────────────────────────────
-
 describe('getMentionContent', () => {
   it('returns an empty object when there are no user mentions and no room mention', () => {
     expect(getMentionContent([], false)).toEqual({});
@@ -217,8 +206,6 @@ describe('getMentionContent', () => {
     });
   });
 });
-
-// ─── Notification event filter ────────────────────────────────────────────
 
 describe('isNotificationEvent', () => {
   function messageEvent() {
@@ -266,8 +253,6 @@ describe('isNotificationEvent', () => {
     ).toBe(false);
   });
 });
-
-// ─── Edit predicates ──────────────────────────────────────────────────────
 
 describe('canEditEvent', () => {
   const me = '@me:example.com';
@@ -326,8 +311,6 @@ describe('canEditEvent', () => {
   });
 });
 
-// ─── Reaction / edit / poll detector ──────────────────────────────────────
-
 describe('reactionOrEditEvent', () => {
   it('returns true for an annotation (reaction)', () => {
     const evt = withRelation(createMockMatrixEvent({ type: 'm.reaction' }), {
@@ -370,8 +353,6 @@ describe('reactionOrEditEvent', () => {
   });
 });
 
-// ─── Latest edit selection ────────────────────────────────────────────────
-
 describe('getLatestEdit', () => {
   function editBy(sender: string, ts: number): MatrixEvent {
     return createMockMatrixEvent({
@@ -400,8 +381,6 @@ describe('getLatestEdit', () => {
     expect(getLatestEdit(target, edits)).toBeUndefined();
   });
 });
-
-// ─── Room-type predicates ─────────────────────────────────────────────────
 
 describe('isSpace / isRoom / isUnsupportedRoom', () => {
   function roomWithCreateType(type: string | undefined) {

@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { findAndReplace } from './findAndReplace';
 
-// Helpers to keep test callbacks readable
 const toSpan = (match: RegExpExecArray | RegExpMatchArray) => `<match>${match[0]}</match>`;
 const toText = (text: string) => text;
 

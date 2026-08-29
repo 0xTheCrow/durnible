@@ -133,6 +133,16 @@ export const PreviewImg = style([
   },
 ]);
 
+export const FavoriteMenuItemEmoji = style([
+  DefaultReset,
+  {
+    display: 'block',
+    width: toRem(26),
+    height: toRem(26),
+    objectFit: 'contain',
+  },
+]);
+
 /**
  * Group
  */

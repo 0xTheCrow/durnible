@@ -125,7 +125,6 @@ describe('edit mode', () => {
     expect(screen.queryByTestId('message-editor-save')).not.toBeInTheDocument();
     expect(screen.queryByTestId('message-editor-cancel')).not.toBeInTheDocument();
 
-    // Flip edit prop — simulates MemoizedTimelineEvent receiving isEditing=true.
     // Drain Slate's deferred microtask state update with async act so it doesn't
     // escape the act() boundary and produce an "update not wrapped in act" warning.
     await act(async () => {
@@ -138,7 +137,6 @@ describe('edit mode', () => {
       );
     });
 
-    // Editor must appear immediately — no additional events should be needed
     expect(screen.getByTestId('message-editor-save')).toBeInTheDocument();
     expect(screen.getByTestId('message-editor-cancel')).toBeInTheDocument();
   });

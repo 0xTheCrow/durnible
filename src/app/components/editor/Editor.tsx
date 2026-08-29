@@ -8,13 +8,17 @@ import React, {
   useState,
 } from 'react';
 import { Box, Scroll } from 'folds';
+import { isKeyHotkey } from 'is-hotkey';
 import {
+  deleteVoidElement,
   ensureInlineBoundaryAnchors,
+  getSelectedVoidElement,
   handleEditorBackspace,
   htmlToEditorDom,
   insertNodeAtRange,
   isEditorEmpty,
   normalizeEditorRoot,
+  removeEditedInlineReferences,
   stripDeadCaretAnchors,
 } from './editorInput';
 import { handleEditorShortcut } from './editorKeyboard';
@@ -142,13 +146,21 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
         if (!sel || sel.rangeCount === 0) return;
         const range = sel.getRangeAt(0);
         if (!inputElement.contains(range.startContainer)) return;
+
+        const selectedVoidElement = getSelectedVoidElement(range);
+        if (selectedVoidElement) {
+          deleteVoidElement(selectedVoidElement);
+          syncEditorState();
+          return;
+        }
+
         savedRangeRef.current = range.cloneRange();
       };
       document.addEventListener('selectionchange', handleSelectionChange);
       return () => {
         document.removeEventListener('selectionchange', handleSelectionChange);
       };
-    }, []);
+    }, [syncEditorState]);
 
     const handleInput: FormEventHandler<HTMLDivElement> = useCallback(
       (evt) => {
@@ -156,6 +168,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
         const nativeEvent = evt.nativeEvent as InputEvent;
         if (inputElement && !nativeEvent.isComposing) {
           normalizeEditorRoot(inputElement);
+          removeEditedInlineReferences(inputElement);
           stripDeadCaretAnchors(inputElement);
           ensureInlineBoundaryAnchors(inputElement);
           if (isEditorEmpty(inputElement) && !hasInlineStyleElement(inputElement)) {
@@ -216,12 +229,12 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
         if (ie.inputType === 'deleteContentBackward') {
           const sel = window.getSelection();
           const inputElement = inputRef.current;
-          if (
+          const handled =
             sel &&
             sel.rangeCount > 0 &&
             inputElement &&
-            handleEditorBackspace(inputElement, sel.getRangeAt(0))
-          ) {
+            handleEditorBackspace(inputElement, sel.getRangeAt(0));
+          if (handled) {
             e.preventDefault();
             syncEditorState();
           }
@@ -267,9 +280,19 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
           evt.preventDefault();
           evt.stopPropagation();
           inputElement.dispatchEvent(new Event('input', { bubbles: true }));
+          return;
+        }
+        if (isKeyHotkey('backspace', evt)) {
+          const sel = window.getSelection();
+          const handled =
+            sel && sel.rangeCount > 0 && handleEditorBackspace(inputElement, sel.getRangeAt(0));
+          if (handled) {
+            evt.preventDefault();
+            syncEditorState();
+          }
         }
       },
-      [onKeyDown, keybinds]
+      [onKeyDown, keybinds, syncEditorState]
     );
 
     return (

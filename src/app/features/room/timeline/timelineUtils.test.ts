@@ -10,7 +10,6 @@ import {
 } from './timelineUtils';
 import { createMockMatrixEvent } from '../../../../test/mocks';
 
-// ─── Fake EventTimeline chain ─────────────────────────────────────────────
 // These functions only use `getEvents()` and `getNeighbouringTimeline(direction)`,
 // so a minimal shape is enough — no need to construct real matrix-js-sdk timelines.
 
@@ -45,8 +44,6 @@ function makeEvent(id: string): MatrixEvent {
   return createMockMatrixEvent({ id });
 }
 
-// ─── getFirstLinkedTimeline ───────────────────────────────────────────────
-
 describe('getFirstLinkedTimeline', () => {
   it('returns the same timeline when it has no neighbour in that direction', () => {
     const only = makeTimeline([makeEvent('$a')]);
@@ -65,8 +62,6 @@ describe('getFirstLinkedTimeline', () => {
   });
 });
 
-// ─── getLinkedTimelines ───────────────────────────────────────────────────
-
 describe('getLinkedTimelines', () => {
   it('returns a single-element array for an isolated timeline', () => {
     const only = makeTimeline([makeEvent('$a')]);
@@ -81,8 +76,6 @@ describe('getLinkedTimelines', () => {
   });
 });
 
-// ─── getTimelinesEventsCount ──────────────────────────────────────────────
-
 describe('getTimelinesEventsCount', () => {
   it('returns 0 for an empty list', () => {
     expect(getTimelinesEventsCount([])).toBe(0);
@@ -95,8 +88,6 @@ describe('getTimelinesEventsCount', () => {
     expect(getTimelinesEventsCount([a, b, c])).toBe(6);
   });
 });
-
-// ─── getTimelineAndBaseIndex ──────────────────────────────────────────────
 
 describe('getTimelineAndBaseIndex', () => {
   // a: indices 0, 1 — b: 2, 3, 4 — c: 5
@@ -127,8 +118,6 @@ describe('getTimelineAndBaseIndex', () => {
     expect(getTimelineAndBaseIndex(chain, 6)).toEqual([undefined, 0]);
   });
 });
-
-// ─── getEventIdAbsoluteIndex ──────────────────────────────────────────────
 
 describe('getEventIdAbsoluteIndex', () => {
   it('returns the correct absolute index for an event in the first timeline', () => {

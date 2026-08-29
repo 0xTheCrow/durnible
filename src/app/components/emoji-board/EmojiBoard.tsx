@@ -833,6 +833,43 @@ const SEARCH_OPTIONS: UseAsyncSearchOptions = {
 
 const VIRTUAL_OVER_SCAN = 2;
 
+type FavoriteMenuItemLabelProps = {
+  emojiInfo: EmojiItemInfo;
+  isFavorite: boolean;
+};
+function FavoriteMenuItemLabel({ emojiInfo, isFavorite }: FavoriteMenuItemLabelProps) {
+  const mx = useMatrixClient();
+  const useAuthentication = useMediaAuthentication();
+
+  if (isFavorite) {
+    return <Text size="T300">Remove from Favorites</Text>;
+  }
+
+  const { type, data, label } = emojiInfo;
+
+  return (
+    <Box as="span" alignItems="Center" gap="100">
+      <Text as="span" size="T300">
+        Add
+      </Text>
+      {type === EmojiType.Emoji ? (
+        <Text as="span" size="T300">
+          {data}
+        </Text>
+      ) : (
+        <img
+          className={css.FavoriteMenuItemEmoji}
+          src={mxcUrlToHttp(mx, data, useAuthentication) ?? data}
+          alt={label}
+        />
+      )}
+      <Text as="span" size="T300">
+        to Favorites
+      </Text>
+    </Box>
+  );
+}
+
 type EmojiBoardProps = {
   tab?: EmojiBoardTab;
   onTabChange?: (tab: EmojiBoardTab) => void;
@@ -1195,16 +1232,16 @@ export function EmojiBoard({
                     radii="300"
                     before={<Icon size="100" src={Icons.Star} />}
                   >
-                    <Text size="T300">
-                      {contextMenuEmojiInfo &&
-                      isFavoriteEmoji(
-                        favoriteEntries,
-                        contextMenuEmojiInfo.type,
-                        contextMenuEmojiInfo.data
-                      )
-                        ? 'Remove from Favorites'
-                        : 'Add to Favorites'}
-                    </Text>
+                    {contextMenuEmojiInfo && (
+                      <FavoriteMenuItemLabel
+                        emojiInfo={contextMenuEmojiInfo}
+                        isFavorite={isFavoriteEmoji(
+                          favoriteEntries,
+                          contextMenuEmojiInfo.type,
+                          contextMenuEmojiInfo.data
+                        )}
+                      />
+                    )}
                   </MenuItem>
                 </Box>
               </Menu>

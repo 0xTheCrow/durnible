@@ -151,7 +151,6 @@ describe('MessageEditor — save path', () => {
     await act(async () => {
       fireEvent.click(screen.getByTestId('message-editor-save'));
     });
-    // wait for async send-then-cancel effect
     await act(async () => {
       await Promise.resolve();
     });

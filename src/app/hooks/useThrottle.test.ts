@@ -88,7 +88,6 @@ describe('useThrottle', () => {
     expect(cb).toHaveBeenCalledTimes(1);
     expect(cb).toHaveBeenCalledWith('a');
 
-    // Timer fires with the latest args
     act(() => {
       vi.runAllTimers();
     });

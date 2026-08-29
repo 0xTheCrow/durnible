@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { OverlayModal } from './OverlayModal';
 
-// FocusTrap doesn't work well in jsdom without real layout
+// focus-trap needs real layout to find tabbable nodes; it throws in the test DOM.
 vi.mock('focus-trap-react', () => ({
   default: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));

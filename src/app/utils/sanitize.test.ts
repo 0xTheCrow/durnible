@@ -91,7 +91,6 @@ describe('sanitizeCustomHtml', () => {
 
   it('preserves the Matrix color attribute value through sanitization', () => {
     // data-mx-color is the Matrix spec attribute for text colour.
-    // The value should survive sanitization regardless of how it is applied.
     const result = sanitizeCustomHtml('<font data-mx-color="#ff0000">red</font>');
     expect(result).toContain('red'); // text content preserved
     expect(result).toContain('#ff0000'); // colour value preserved in some form

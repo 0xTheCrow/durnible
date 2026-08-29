@@ -7,8 +7,6 @@ import { initClient } from '../../../client/initMatrix';
 import { getFallbackSession } from '../../state/sessions';
 import { checkSessionLockFree, getSessionLock } from '../../utils/sessionLock';
 
-// ── Module mocks ─────────────────────────────────────────────────────────────
-
 vi.mock('../../../client/initMatrix', () => ({
   initClient: vi.fn(),
   startClient: vi.fn(),
@@ -43,8 +41,6 @@ const MOCK_SESSION = {
   homeserver: 'example.com',
 };
 
-// ── isChunkLoadError ──────────────────────────────────────────────────────────
-
 describe('isChunkLoadError', () => {
   it('detects the Chrome "Failed to fetch dynamically imported module" message', () => {
     const err = new Error(
@@ -74,8 +70,6 @@ describe('isChunkLoadError', () => {
     expect(isChunkLoadError(new Error('Network request failed'))).toBe(false);
   });
 });
-
-// ── ClientRoot error dialog ───────────────────────────────────────────────────
 
 const CHUNK_ERROR = new Error(
   'Failed to fetch dynamically imported module: https://app.example.com/assets/index-D882sB8o.js'
@@ -113,7 +107,6 @@ describe('ClientRoot error dialog', () => {
       await waitFor(() =>
         expect(screen.getByTestId('client-root-load-error-chunk')).toBeInTheDocument()
       );
-      // The generic load-error text must NOT render when the error is a chunk error.
       expect(screen.queryByTestId('client-root-load-error-generic')).not.toBeInTheDocument();
       expect(screen.getByTestId('client-root-error-action')).toHaveAttribute(
         'data-variant',
@@ -126,7 +119,6 @@ describe('ClientRoot error dialog', () => {
       await waitFor(() =>
         expect(screen.getByTestId('client-root-load-error-chunk')).toBeInTheDocument()
       );
-      // Raw module URL must not appear anywhere in the dialog.
       expect(screen.getByTestId('client-root-error-dialog').textContent).not.toMatch(
         /index-D882sB8o/
       );
@@ -180,8 +172,6 @@ describe('ClientRoot error dialog', () => {
     });
   });
 });
-
-// ── ClientRoot single-tab session lock ────────────────────────────────────────
 
 describe('ClientRoot single-tab session lock', () => {
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;

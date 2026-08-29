@@ -86,7 +86,6 @@ describe('EditorController', () => {
     editable.appendChild(text);
     act(() => ref.current?.focus());
     placeCaretAt(text, 5);
-    // Simulate losing focus (e.g. user clicked a toolbar button)
     editable.blur();
     act(() => ref.current?.insertText('ITEM'));
     expect(editable.textContent).toBe('helloITEM world');
@@ -153,7 +152,6 @@ describe('CustomEditor — paste handling', () => {
           type === 'text/html' ? '<div><img src="https://example.com/pic.gif"/></div>' : '',
       },
     });
-    // fetchUrlAsFile is async; flush microtasks
     await act(async () => {
       await Promise.resolve();
     });
@@ -161,7 +159,7 @@ describe('CustomEditor — paste handling', () => {
   });
 
   it('paste with plain text calls document.execCommand(insertText)', () => {
-    // jsdom doesn't implement execCommand; install a mock, run, then remove.
+    // The test DOM doesn't implement execCommand; install a spy, run, then remove.
     const execCommand = vi.fn().mockReturnValue(true);
     Object.defineProperty(document, 'execCommand', {
       value: execCommand,

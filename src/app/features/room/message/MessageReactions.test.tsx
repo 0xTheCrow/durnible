@@ -19,8 +19,6 @@ beforeEach(() => {
   useRecentEmojiMock.mockReturnValue([]);
 });
 
-// ─── MessageQuickReactions ──────────────────────────────────────────────
-
 describe('MessageQuickReactions', () => {
   function renderQuick() {
     const mx = createMockMatrixClient();
@@ -62,8 +60,6 @@ describe('MessageQuickReactions', () => {
   });
 });
 
-// ─── MessageAllReactionButton ───────────────────────────────────────────
-
 describe('MessageAllReactionButton', () => {
   it('calls onOpen when clicked', () => {
     const onOpen = vi.fn();
@@ -78,8 +74,6 @@ describe('MessageAllReactionButton', () => {
     expect(onOpen).toHaveBeenCalledTimes(1);
   });
 });
-
-// ─── MessageAllReactionItem ─────────────────────────────────────────────
 
 describe('MessageAllReactionItem', () => {
   it('calls onOpen when clicked', () => {

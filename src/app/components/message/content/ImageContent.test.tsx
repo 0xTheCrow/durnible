@@ -25,7 +25,6 @@ const renderImageWithTestId = ({ alt, title, src, onLoad, onError, onClick, tabI
 
 describe('ImageContent', () => {
   beforeEach(() => {
-    // Default: "Play GIFs on Hover" is off
     vi.mocked(useSetting).mockReturnValue([false, vi.fn()] as any);
   });
 
@@ -81,7 +80,6 @@ describe('ImageContent', () => {
   });
 
   describe('Play GIFs on Hover (pauseGifs setting)', () => {
-    // renderImage that forwards style so we can test visibility
     const gifRenderImage = ({
       alt,
       title,
@@ -170,7 +168,6 @@ describe('ImageContent', () => {
         </MatrixTestWrapper>
       );
       await act(async () => {});
-      // load event NOT fired — img is not yet in paused state
       const img = screen.getByTestId('test-image');
       expect(img).not.toHaveStyle({ visibility: 'hidden' });
     });
@@ -186,13 +183,11 @@ describe('ImageContent', () => {
       const canvas = screen.getByTestId('animated-image-overlay-canvas');
       const container = screen.getByTestId('image-content');
 
-      // Frozen frame visible before hover
       expect(canvas).toHaveStyle({ visibility: 'visible' });
 
       fireEvent.mouseEnter(container);
       expect(canvas).toHaveStyle({ visibility: 'hidden' });
 
-      // Leave: frozen frame returns
       fireEvent.mouseLeave(container);
       expect(canvas).toHaveStyle({ visibility: 'visible' });
     });
@@ -208,7 +203,6 @@ describe('ImageContent', () => {
       const canvas = screen.getByTestId('animated-image-overlay-canvas');
       expect(canvas).toHaveStyle({ visibility: 'visible' });
 
-      // Frozen: hovering must not reveal the animation behind the blur
       fireEvent.mouseEnter(screen.getByTestId('image-content'));
       expect(canvas).toHaveStyle({ visibility: 'visible' });
     });
@@ -223,12 +217,10 @@ describe('ImageContent', () => {
       fireEvent.load(screen.getByTestId('test-image'));
       const canvas = screen.getByTestId('animated-image-overlay-canvas');
 
-      // Hover the blurred sticker, then reveal it without moving the pointer
       fireEvent.mouseEnter(screen.getByTestId('image-content'));
       expect(canvas).toHaveStyle({ visibility: 'visible' });
 
       fireEvent.click(screen.getByTestId('image-content-spoiler-chip'));
-      // No longer frozen and still hovered — the GIF should animate
       expect(canvas).toHaveStyle({ visibility: 'hidden' });
     });
 

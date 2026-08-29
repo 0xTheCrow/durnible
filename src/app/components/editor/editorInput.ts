@@ -80,7 +80,6 @@ export const createMentionNode = ({
 }: CreateMentionNodeArgs): HTMLSpanElement => {
   const wrapper = document.createElement('span');
   wrapper.setAttribute(NODE_TYPE_ATTR, MENTION_NODE);
-  wrapper.setAttribute('contenteditable', 'false');
   wrapper.dataset.id = id;
   wrapper.dataset.name = name;
   wrapper.dataset.highlight = highlight ? 'true' : 'false';
@@ -98,7 +97,6 @@ type CreateCommandNodeArgs = {
 export const createCommandNode = ({ command }: CreateCommandNodeArgs): HTMLSpanElement => {
   const wrapper = document.createElement('span');
   wrapper.setAttribute(NODE_TYPE_ATTR, COMMAND_NODE);
-  wrapper.setAttribute('contenteditable', 'false');
   wrapper.dataset.command = command;
   wrapper.className = css.Command({ active: false, focus: false });
   wrapper.textContent = `/${command}`;
@@ -123,26 +121,80 @@ const ensureLeadingAnchor = (node: Node) => {
 
 const isVoidElement = (node: Node): boolean => {
   if (node.nodeType !== Node.ELEMENT_NODE) return false;
-  return (node as HTMLElement).hasAttribute(NODE_TYPE_ATTR);
+  return (node as HTMLElement).getAttribute(NODE_TYPE_ATTR) === EMOTICON_NODE;
 };
 
 export const handleEditorBackspace = (inputElement: HTMLElement, range: Range): boolean => {
   if (!range.collapsed) return false;
-  const textNode = inputElement.firstChild;
-  if (!textNode || textNode.nodeType !== Node.TEXT_NODE) return false;
-  if ((textNode as Text).data !== INLINE_VOID_CARET_ANCHOR) return false;
-
   const { startContainer, startOffset } = range;
-  const atAnchor =
-    (startContainer === textNode && startOffset <= INLINE_VOID_CARET_ANCHOR.length) ||
-    (startContainer === inputElement && startOffset === 0);
-  if (!atAnchor) return false;
+
+  if (startContainer.nodeType === Node.TEXT_NODE) {
+    const container = startContainer as Text;
+    const previousOfContainer = container.previousSibling;
+    if (
+      startOffset === 1 &&
+      container.data.length === 1 &&
+      container.data !== INLINE_VOID_CARET_ANCHOR &&
+      previousOfContainer &&
+      isVoidElement(previousOfContainer)
+    ) {
+      container.data = INLINE_VOID_CARET_ANCHOR;
+      placeCaretAt(container, 0);
+      return true;
+    }
+  }
+
+  let textNode: Text | null = null;
+  if (
+    startContainer.nodeType === Node.TEXT_NODE &&
+    startOffset <= INLINE_VOID_CARET_ANCHOR.length
+  ) {
+    textNode = startContainer as Text;
+  } else if (startOffset === 0) {
+    const child = startContainer.childNodes[0];
+    if (child && child.nodeType === Node.TEXT_NODE) textNode = child as Text;
+  }
+  if (!textNode || textNode.data !== INLINE_VOID_CARET_ANCHOR) return false;
+
+  const previous = textNode.previousSibling;
+  if (previous && isVoidElement(previous)) {
+    previous.parentNode?.removeChild(previous);
+    return true;
+  }
 
   const next = textNode.nextSibling;
-  if (!next || !isVoidElement(next)) return false;
+  if (textNode === inputElement.firstChild && next && isVoidElement(next)) {
+    inputElement.removeChild(next);
+    return true;
+  }
 
-  inputElement.removeChild(next);
-  return true;
+  return false;
+};
+
+export const getSelectedVoidElement = (range: Range): HTMLElement | null => {
+  if (range.collapsed) return null;
+  const { startContainer, endContainer, startOffset, endOffset } = range;
+
+  if (
+    startContainer.nodeType === Node.TEXT_NODE &&
+    startOffset === (startContainer as Text).data.length &&
+    startContainer.nextSibling === endContainer &&
+    endContainer.nodeType === Node.ELEMENT_NODE &&
+    endOffset === endContainer.childNodes.length &&
+    isVoidElement(endContainer)
+  ) {
+    return endContainer as HTMLElement;
+  }
+
+  return null;
+};
+
+export const deleteVoidElement = (voidElement: HTMLElement): void => {
+  const next = voidElement.nextSibling;
+  voidElement.parentNode?.removeChild(voidElement);
+  if (next && next.nodeType === Node.TEXT_NODE) {
+    placeCaretAt(next as Text, 0);
+  }
 };
 
 export const insertNodeAtRange = (
@@ -162,7 +214,7 @@ export const insertNodeAtRange = (
 
   let after = node.nextSibling;
   if (!after || after.nodeType !== Node.TEXT_NODE) {
-    after = document.createTextNode('');
+    after = document.createTextNode(INLINE_VOID_CARET_ANCHOR);
     node.parentNode?.insertBefore(after, node.nextSibling);
   }
 
@@ -208,13 +260,11 @@ const BLOCK_TAGS = new Set([
 
 const appendVoidToParent = (parent: Node, voidNode: HTMLElement) => {
   const last = parent.lastChild;
-  if (!last) {
+  if (!last || last.nodeType !== Node.TEXT_NODE) {
     parent.appendChild(document.createTextNode(INLINE_VOID_CARET_ANCHOR));
-  } else if (last.nodeType !== Node.TEXT_NODE) {
-    parent.appendChild(document.createTextNode(''));
   }
   parent.appendChild(voidNode);
-  parent.appendChild(document.createTextNode(''));
+  parent.appendChild(document.createTextNode(INLINE_VOID_CARET_ANCHOR));
 };
 
 const WHITESPACE_ONLY = /^\s*$/;
@@ -372,8 +422,7 @@ const walkHtmlNodes = (
       if (testMatrixTo(href)) {
         const mention = resolveMentionFromAnchor(element, href);
         if (mention) {
-          const voidNode = createMentionNode(mention);
-          appendVoidToParent(parent, voidNode);
+          parent.appendChild(createMentionNode(mention));
           isFirstBlockChild = false;
           return;
         }
@@ -583,6 +632,54 @@ export const ensureInlineBoundaryAnchors = (element: HTMLElement): void => {
   });
 };
 
+const MENTION_SELECTOR = `[${NODE_TYPE_ATTR}="${MENTION_NODE}"]`;
+const COMMAND_SELECTOR = `[${NODE_TYPE_ATTR}="${COMMAND_NODE}"]`;
+
+export const removeEditedInlineReferences = (element: HTMLElement): boolean => {
+  const selection = window.getSelection();
+  const range = selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+  const caretNode = range && range.collapsed ? range.startContainer : null;
+
+  let changed = false;
+  const reconcile = (span: HTMLElement, expectedText: string) => {
+    const currentText = span.textContent ?? '';
+    if (currentText === expectedText) return;
+
+    if (currentText.length < expectedText.length) {
+      const parent = span.parentNode;
+      if (!parent) return;
+      if (caretNode && span.contains(caretNode)) {
+        const marker = document.createTextNode('');
+        parent.insertBefore(marker, span);
+        parent.removeChild(span);
+        placeCaretAt(marker, 0);
+      } else {
+        parent.removeChild(span);
+      }
+    } else {
+      span.removeAttribute(NODE_TYPE_ATTR);
+      span.removeAttribute('class');
+      span.removeAttribute('data-id');
+      span.removeAttribute('data-name');
+      span.removeAttribute('data-highlight');
+      span.removeAttribute('data-event-id');
+      span.removeAttribute('data-via');
+      span.removeAttribute('data-command');
+    }
+    changed = true;
+  };
+
+  element
+    .querySelectorAll<HTMLElement>(MENTION_SELECTOR)
+    .forEach((span) => reconcile(span, span.dataset.name ?? ''));
+
+  element
+    .querySelectorAll<HTMLElement>(COMMAND_SELECTOR)
+    .forEach((span) => reconcile(span, `/${span.dataset.command ?? ''}`));
+
+  return changed;
+};
+
 // Parse the draft as-is; routing it through htmlToEditorDom/sanitize strips the
 // internal void-node attributes and flattens mentions/emojis to text.
 export const restoreEditorDraft = (element: HTMLElement, html: string): void => {
@@ -611,7 +708,7 @@ export const replaceRangeWithNode = (
   const after = textNode.substringData(end, textNode.data.length - end);
   textNode.deleteData(start, textNode.data.length - start);
   parent.insertBefore(replacement, textNode.nextSibling);
-  const afterNode = document.createTextNode(after);
+  const afterNode = document.createTextNode(after.length > 0 ? after : INLINE_VOID_CARET_ANCHOR);
   parent.insertBefore(afterNode, replacement.nextSibling);
   if (textNode.data.length === 0 && !textNode.previousSibling) {
     textNode.appendData(INLINE_VOID_CARET_ANCHOR);

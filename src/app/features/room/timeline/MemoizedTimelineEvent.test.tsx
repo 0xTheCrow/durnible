@@ -110,7 +110,6 @@ describe('MemoizedTimelineEvent edit mode', () => {
     expect(screen.queryByTestId('message-editor-save')).not.toBeInTheDocument();
     expect(screen.queryByTestId('message-editor-cancel')).not.toBeInTheDocument();
 
-    // Flip isEditing — simulates editId matching this event's ID in RoomTimeline.
     // Drain Slate's deferred microtask state update with async act.
     await act(async () => {
       rerender(
@@ -122,8 +121,6 @@ describe('MemoizedTimelineEvent edit mode', () => {
       );
     });
 
-    // Editor must appear immediately — the memo comparator must detect isEditing changed.
-    // If this fails, the comparator is incorrectly returning true (equal) and bailing out.
     expect(screen.getByTestId('message-editor-save')).toBeInTheDocument();
     expect(screen.getByTestId('message-editor-cancel')).toBeInTheDocument();
   });
@@ -424,9 +421,7 @@ describe('MemoizedTimelineEvent edit — full handleEdit chain', () => {
     expect(screen.getByTestId('message-body')).toHaveTextContent('Edit me');
     expect(screen.queryByTestId('message-editor-save')).not.toBeInTheDocument();
 
-    // Fire the trigger — state updates, Wrapper re-renders, isEditing becomes
-    // true. The editor must appear from this single state update with no
-    // additional events. This is the path that intermittently failed in prod.
+    // This is the path that intermittently failed in prod.
     await act(async () => {
       fireEvent.click(screen.getByTestId('trigger-edit'));
     });

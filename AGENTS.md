@@ -102,12 +102,41 @@ Writes a markdown report and per-scenario `.cpuprofile` files to `performance-re
 | `PERFORMANCE_CPU_THROTTLING` | `4`     | CDP CPU throttle (4x ≈ mid-tier mobile)                            |
 | `PERFORMANCE_LABEL`          | —       | Suffixes output filenames so runs don't clobber each other         |
 | `PERFORMANCE_ROOM_MESSAGES`  | `300`   | Messages seeded for the `busy-room` scenario                       |
+| `PERFORMANCE_VOID_NODES`     | `100`   | Emoji/mention pairs seeded for the `emoji-mention-heavy` scenario  |
 | `PERFORMANCE_TRACE`          | —       | `1` enables renderer tracing                                       |
 | `PERFORMANCE_TARGET`         | —       | `production` builds and serves via `vite preview`                  |
 
 Rank on `busy` (total main-thread work) — it is far more reproducible than p50. Run with
 `PERFORMANCE_REPETITIONS=3` and treat scenarios whose ranges overlap as indistinguishable. When
 comparing two versions, label both runs and run them in the same session.
+
+Native terminal emulators (xterm, mlterm) hit ~2-10ms input-to-paint and are the gold standard for
+keystroke latency — that's still the feel worth aiming for. But they have no DOM, virtual DOM, or
+React render cycle in the loop, so matching them exactly here is probably not attainable; don't
+block work on hitting that number.
+
+### TODO — extend the benchmark beyond composer typing
+
+The fixtures in `e2e/fixtures/performance.ts` are interaction-agnostic; only `typing.spec.ts` is
+composer-specific. Roughly in priority order:
+
+1. Generalize `installKeystrokeTiming` into `installInteractionTiming({ events })` — any event to
+   next paint, so clicks/scrolls/gestures get an INP-style number. Add a `long-animation-frame`
+   observer for script attribution. Unblocks the rest.
+2. Room switching — most frequent interaction, no coverage. Click between seeded rooms, measure
+   click to timeline painted + busy.
+3. Timeline scroll + backward pagination jank — `requestAnimationFrame` delta series, dropped-frame
+   count. Guards Timeline V2 and the pagination batch-jump stall.
+4. Cold boot to interactive — nav start to first timeline paint; gives the load-performance plan a
+   scoreboard.
+5. Send-message local echo; emoji board open + search; nav list with 200+ rooms.
+
+Primitives: `PERFORMANCE_BASELINE=<label>` diff mode (busy-time deltas, non-zero exit on
+regression) to make it CI-gate-able; heap-growth check across repeated room switches (leak canary);
+bundle-size budget on `vite build` output.
+
+Infra: no `.github/workflows/` yet — run this label-gated or nightly, not per-PR. `e2e/` isn't
+covered by `typecheck` or `check:eslint`.
 
 ## Git
 
@@ -153,21 +182,16 @@ Vite env vars use `VITE_` prefix, accessed via `import.meta.env.VITE_*`:
 
 ## Lazy Loading
 
-Build-time lazy-loading work on the main bundle.
-
 ### How to verify a split landed
 
-The metric is the **eager set**: the entry `<script>` plus every `<link rel="modulepreload">` in `dist/index.html`. That is what the browser fetches before the app can render. A shrinking `index.js` proves nothing — a `manualChunks` rule can move code into a separate file the entry still statically imports, leaving it eagerly preloaded. After every change, check that `dist/index.html` no longer preloads the chunk you split out, and that the build prints no `INEFFECTIVE_DYNAMIC_IMPORT` (that warning means a `React.lazy` body is also statically imported, usually through a barrel `index.ts`, and will not move).
-
-`npm run build:analyze` shows chunk sizes but not whether a chunk is eager, so it cannot confirm a split. Two earlier entries here claimed wins that had not happened because they tracked entry-chunk size alone.
+The metric is the **eager set**: the entry `<script>` plus every `<link rel="modulepreload">` in `dist/index.html` — what the browser fetches before the app can render. A shrinking `index.js` proves nothing; a `manualChunks` rule can move code into a separate file the entry still statically imports. After every change, check that `dist/index.html` no longer preloads the split-out chunk and that the build prints no `INEFFECTIVE_DYNAMIC_IMPORT` — that warning means the `React.lazy` body is also statically imported (usually through a barrel `index.ts`) and will not move. `npm run build:analyze` shows chunk sizes but not eagerness, so it cannot confirm a split.
 
 ### Rules
 
-- A `React.lazy` body must not be statically imported anywhere else, or it will not move. Keep heavy bodies out of feature `index.ts` barrels and import concrete paths.
+- A `React.lazy` body must not be statically imported anywhere else, or it will not move. Keep heavy bodies out of feature `index.ts` barrels; import concrete paths.
 - **`Suspense` goes above the modal, never inside it.** `OverlayModal` renders `FocusTrap`, whose `componentDidMount` calls `activate()` synchronously and throws when the container holds no tabbable node. A `fallback={null}` inside the modal commits an empty modal, and that throw escapes to the React root, which has no error boundary, unmounting the whole tree. `initialFocus: false` does not prevent it.
-- **No `manualChunks` for app code.** Rolldown pulls a matched module's shared dependencies into the named chunk. Naming a feature directory produced a 1.2 MB chunk of 65 shared app modules that the entry then statically imported. Reserve it for large `node_modules` packages reachable only from a lazy path.
-- **Stylesheet order is the cascade.** Vanilla Extract emits single-class rules, so equal-specificity ties go to whichever stylesheet loads first, and chunking decides that — rolldown's automatic shared-chunk extraction relocates CSS with no `manualChunks` rule involved. `src/index.css` puts folds in `@layer folds` so unlayered app CSS wins regardless of order; app-vs-app ties are unprotected. `cssCodeSplit: false` does not help, and chunking `.css.ts` together is worse.
-- A chunk far under estimate usually means another importer is still pinning the shared code eager.
+- **No `manualChunks` for app code.** Rolldown pulls a matched module's shared dependencies into the named chunk — naming a feature directory produced a 1.2 MB chunk of 65 shared app modules the entry then statically imported. A chunk far under its estimate usually means another importer is still pinning the shared code eager. Reserve `manualChunks` for large `node_modules` packages reachable only from a lazy path.
+- **Chunking relocates CSS**, no `manualChunks` rule involved. Vanilla Extract emits single-class rules, so load order breaks equal-specificity ties and chunking decides load order. `src/index.css` puts folds in `@layer folds` so unlayered app CSS always wins; app-vs-app ties are unprotected. `cssCodeSplit: false` does not help; chunking `.css.ts` together is worse.
 
 ### Conditional
 

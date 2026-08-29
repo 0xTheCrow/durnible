@@ -77,11 +77,9 @@ describe('useDebounce', () => {
       result.current('c'); // timer reset, no immediate
     });
 
-    // Only the leading edge has fired so far
     expect(cb).toHaveBeenCalledTimes(1);
     expect(cb).toHaveBeenCalledWith('a');
 
-    // Timer fires (trailing edge)
     act(() => {
       vi.runAllTimers();
     });

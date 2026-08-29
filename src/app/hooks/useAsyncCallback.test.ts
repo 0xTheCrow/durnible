@@ -1,4 +1,4 @@
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { useAsyncCallback, useAutoLoadAsyncCallback, AsyncStatus } from './useAsyncCallback';
 
@@ -11,14 +11,11 @@ describe('useAsyncCallback', () => {
   it('transitions to success with returned data', async () => {
     const { result } = renderHook(() => useAsyncCallback(async () => 'hello'));
 
-    act(() => {
+    await act(async () => {
       result.current[1]();
     });
 
-    await waitFor(() => {
-      expect(result.current[0].status).toBe(AsyncStatus.Success);
-    });
-
+    expect(result.current[0].status).toBe(AsyncStatus.Success);
     expect((result.current[0] as { status: AsyncStatus.Success; data: string }).data).toBe('hello');
   });
 
@@ -30,15 +27,12 @@ describe('useAsyncCallback', () => {
       })
     );
 
-    act(() => {
+    await act(async () => {
       // suppress the unhandled rejection that propagates out of the hook
       result.current[1]().catch(() => {});
     });
 
-    await waitFor(() => {
-      expect(result.current[0].status).toBe(AsyncStatus.Error);
-    });
-
+    expect(result.current[0].status).toBe(AsyncStatus.Error);
     expect((result.current[0] as { status: AsyncStatus.Error; error: Error }).error).toBe(error);
   });
 
@@ -64,20 +58,16 @@ describe('useAsyncCallback', () => {
     act(() => {
       // First call will be superseded — suppress the intentional 'Request replaced!' rejection.
       result.current[1]().catch(() => {});
-      result.current[1](); // second call should win
+      result.current[1]();
     });
 
-    // Resolve the fast (second) call first
     await act(async () => {
       resolveFast('fast');
     });
 
-    await waitFor(() => {
-      expect(result.current[0].status).toBe(AsyncStatus.Success);
-    });
+    expect(result.current[0].status).toBe(AsyncStatus.Success);
     expect((result.current[0] as { status: AsyncStatus.Success; data: string }).data).toBe('fast');
 
-    // Resolving the slow (first) call afterwards must not overwrite the result
     await act(async () => {
       resolveSlow('slow');
     });
@@ -90,9 +80,9 @@ describe('useAutoLoadAsyncCallback', () => {
     const loader = vi.fn(async () => 'value');
     const { result } = renderHook(() => useAutoLoadAsyncCallback(loader, true));
 
-    await waitFor(() => {
-      expect(result.current[0].status).toBe(AsyncStatus.Success);
-    });
+    await act(async () => {});
+
+    expect(result.current[0].status).toBe(AsyncStatus.Success);
     expect(loader).toHaveBeenCalledTimes(1);
     expect((result.current[0] as { status: AsyncStatus.Success; data: string }).data).toBe('value');
   });
@@ -104,16 +94,13 @@ describe('useAutoLoadAsyncCallback', () => {
       { initialProps: { enabled: false } }
     );
 
-    // Give the effect a chance to run — it should NOT fire while disabled.
     await act(async () => {});
     expect(result.current[0].status).toBe(AsyncStatus.Idle);
     expect(loader).not.toHaveBeenCalled();
 
-    // Flip to enabled — loader should fire once.
     rerender({ enabled: true });
-    await waitFor(() => {
-      expect(result.current[0].status).toBe(AsyncStatus.Success);
-    });
+    await act(async () => {});
+    expect(result.current[0].status).toBe(AsyncStatus.Success);
     expect(loader).toHaveBeenCalledTimes(1);
   });
 
@@ -125,23 +112,18 @@ describe('useAutoLoadAsyncCallback', () => {
     // Success. The gate makes the load strictly one-shot per mount.
     const asyncFn = vi.fn(async () => 'value');
     const { result, rerender } = renderHook(() =>
-      // New callback identity on every render.
       useAutoLoadAsyncCallback(async () => asyncFn(), true)
     );
 
-    await waitFor(() => {
-      expect(result.current[0].status).toBe(AsyncStatus.Success);
-    });
+    await act(async () => {});
+    expect(result.current[0].status).toBe(AsyncStatus.Success);
     expect(asyncFn).toHaveBeenCalledTimes(1);
 
-    // Force several re-renders — each produces a new callback identity.
     for (let i = 0; i < 5; i += 1) {
       rerender();
-      // eslint-disable-next-line no-await-in-loop
-      await act(async () => {});
     }
+    await act(async () => {});
 
-    // The loader must not have been invoked again.
     expect(asyncFn).toHaveBeenCalledTimes(1);
     expect(result.current[0].status).toBe(AsyncStatus.Success);
   });
@@ -158,20 +140,16 @@ describe('useAutoLoadAsyncCallback', () => {
 
     const { result } = renderHook(() => useAutoLoadAsyncCallback(loader, true));
 
-    await waitFor(() => {
-      expect(result.current[0].status).toBe(AsyncStatus.Error);
-    });
+    await act(async () => {});
+    expect(result.current[0].status).toBe(AsyncStatus.Error);
     expect(loader).toHaveBeenCalledTimes(1);
 
-    // Simulate the user clicking a retry button.
     shouldFail = false;
     await act(async () => {
       await result.current[1]().catch(() => {});
     });
 
-    await waitFor(() => {
-      expect(result.current[0].status).toBe(AsyncStatus.Success);
-    });
+    expect(result.current[0].status).toBe(AsyncStatus.Success);
     expect(loader).toHaveBeenCalledTimes(2);
     expect((result.current[0] as { status: AsyncStatus.Success; data: string }).data).toBe(
       'recovered'

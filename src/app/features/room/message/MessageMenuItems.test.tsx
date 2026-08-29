@@ -51,8 +51,6 @@ beforeEach(() => {
   useRoomPinnedEventsMock.mockReturnValue([]);
 });
 
-// ─── MessageCopyLinkItem ────────────────────────────────────────────────
-
 describe('MessageCopyLinkItem', () => {
   function renderCopy() {
     const mx = createMockMatrixClient();
@@ -82,8 +80,6 @@ describe('MessageCopyLinkItem', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 });
-
-// ─── MessagePinItem ─────────────────────────────────────────────────────
 
 describe('MessagePinItem', () => {
   function renderPin() {
@@ -126,8 +122,6 @@ describe('MessagePinItem', () => {
   });
 });
 
-// ─── MessageSourceCodeItem ──────────────────────────────────────────────
-
 describe('MessageSourceCodeItem', () => {
   it('opens the source code dialog when clicked', () => {
     const mx = createMockMatrixClient();
@@ -145,8 +139,6 @@ describe('MessageSourceCodeItem', () => {
   });
 });
 
-// ─── MessageReadReceiptItem ─────────────────────────────────────────────
-
 describe('MessageReadReceiptItem', () => {
   it('opens the read receipts dialog when clicked', () => {
     const mx = createMockMatrixClient();
@@ -162,8 +154,6 @@ describe('MessageReadReceiptItem', () => {
     expect(screen.getByTestId('message-read-receipts-dialog')).toBeInTheDocument();
   });
 });
-
-// ─── MessageReportItem ──────────────────────────────────────────────────
 
 describe('MessageReportItem', () => {
   it('opens the report dialog when the trigger is clicked', () => {
@@ -197,12 +187,6 @@ describe('MessageReportItem', () => {
 
     const form = screen.getByTestId('message-report-dialog') as HTMLFormElement;
     const reasonInput = form.querySelector('input[name="reasonInput"]') as HTMLInputElement;
-    // jsdom does not expose form named-property access; patch to mirror the runtime DOM API
-    // the component reads (target.reasonInput).
-    Object.defineProperty(form, 'reasonInput', {
-      get: () => reasonInput,
-      configurable: true,
-    });
     fireEvent.change(reasonInput, { target: { value: 'abusive' } });
     await act(async () => {
       fireEvent.submit(form);

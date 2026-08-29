@@ -120,7 +120,9 @@ const nodeToCustomHtml = (node: Node, root: HTMLElement): string => {
   if (node.nodeType === Node.TEXT_NODE) {
     const raw = stripCaretAnchors((node as Text).data);
     if (raw.length === 0) return '';
-    return sanitizeText(raw);
+    const escaped = sanitizeText(raw);
+    if (isInsideTag(node, root, 'PRE')) return escaped;
+    return escaped.replace(/\r\n?|\n/g, '<br/>');
   }
 
   if (node.nodeType !== Node.ELEMENT_NODE) return '';
