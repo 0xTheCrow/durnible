@@ -12,7 +12,7 @@ import { useFormattedKeybind } from '../../../state/hooks/keybinds';
 import { KeybindAction } from '../../../state/keybinds';
 import type { Theme } from '../../../hooks/useTheme';
 import {
-  DarkTheme,
+  AbyssTheme,
   LightTheme,
   ThemeKind,
   useSystemThemeKind,
@@ -42,7 +42,7 @@ function SystemThemePreferences() {
   const darkThemes = themes.filter((theme) => theme.kind === ThemeKind.Dark);
 
   const selectedLightTheme = lightThemes.find((theme) => theme.id === lightThemeId) ?? LightTheme;
-  const selectedDarkTheme = darkThemes.find((theme) => theme.id === darkThemeId) ?? DarkTheme;
+  const selectedDarkTheme = darkThemes.find((theme) => theme.id === darkThemeId) ?? AbyssTheme;
 
   const [ltCords, setLTCords] = useState<RectCords>();
   const [dtCords, setDTCords] = useState<RectCords>();

@@ -45,7 +45,7 @@ export const AbyssTheme: Theme = {
 
 export const useThemes = (): Theme[] => {
   const themes: Theme[] = useMemo(
-    () => [LightTheme, SilverTheme, DarkTheme, ButterTheme, AbyssTheme],
+    () => [LightTheme, SilverTheme, AbyssTheme, DarkTheme, ButterTheme],
     []
   );
 
@@ -100,7 +100,7 @@ export const useActiveTheme = (): Theme => {
 
   const selectedTheme =
     systemThemeKind === ThemeKind.Dark
-      ? themes.find((theme) => theme.id === darkThemeId) ?? DarkTheme
+      ? themes.find((theme) => theme.id === darkThemeId) ?? AbyssTheme
       : themes.find((theme) => theme.id === lightThemeId) ?? LightTheme;
 
   return selectedTheme;

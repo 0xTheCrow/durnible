@@ -100,7 +100,7 @@ const defaultSettings: Settings = {
   themeId: undefined,
   useSystemTheme: true,
   lightThemeId: undefined,
-  darkThemeId: undefined,
+  darkThemeId: 'abyss-theme',
   monochromeMode: false,
   editorToolbar: false,
   isEditorToolbarGestureRequired: false,
