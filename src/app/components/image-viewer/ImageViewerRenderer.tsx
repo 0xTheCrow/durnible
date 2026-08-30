@@ -9,7 +9,7 @@ import { OverlayModal } from '../OverlayModal';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
 import { decryptFile, downloadEncryptedMedia, mxcUrlToHttp } from '../../utils/matrix';
-import { FALLBACK_MIMETYPE } from '../../utils/mimeTypes';
+import { getBlobSafeImageMimeType } from '../../utils/mimeTypes';
 
 export function ImageViewerRenderer() {
   const [viewerState, setViewerState] = useAtom(imageViewerAtom);
@@ -34,7 +34,7 @@ export function ImageViewerRenderer() {
       const enc = item.encryptionInfo;
       if (enc) {
         const blob = await downloadEncryptedMedia(httpUrl, (encBuf) =>
-          decryptFile(encBuf, item.mimeType ?? FALLBACK_MIMETYPE, enc)
+          decryptFile(encBuf, getBlobSafeImageMimeType(item.mimeType ?? ''), enc)
         );
         const objectUrl = URL.createObjectURL(blob);
         resolvedObjectUrlsRef.current.push(objectUrl);

@@ -14,7 +14,7 @@ import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
 import * as css from './style.css';
 import { bytesToSize } from '../../../utils/common';
-import { FALLBACK_MIMETYPE, isAnimatedImageMimetype } from '../../../utils/mimeTypes';
+import { getBlobSafeImageMimeType, isAnimatedImageMimetype } from '../../../utils/mimeTypes';
 import { decryptFile, downloadEncryptedMedia, mxcUrlToHttp } from '../../../utils/matrix';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
 import { validBlurHash } from '../../../utils/blurHash';
@@ -99,7 +99,7 @@ export const ImageContent = as<'div', ImageContentProps>(
         const mediaUrl = mxcUrlToHttp(mx, url, useAuthentication) ?? url;
         if (encryptionInfo) {
           const fileContent = await downloadEncryptedMedia(mediaUrl, (encBuf) =>
-            decryptFile(encBuf, mimeType ?? FALLBACK_MIMETYPE, encryptionInfo)
+            decryptFile(encBuf, getBlobSafeImageMimeType(mimeType ?? ''), encryptionInfo)
           );
           return URL.createObjectURL(fileContent);
         }

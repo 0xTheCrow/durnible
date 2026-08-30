@@ -1,13 +1,24 @@
 import React from 'react';
-import { render, screen, act, fireEvent } from '@testing-library/react';
+import { render, screen, act, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ImageContent } from './ImageContent';
 import { MatrixTestWrapper } from '../../../../test/wrapper';
 import { useSetting } from '../../../state/hooks/settings';
+import { decryptFile } from '../../../utils/matrix';
+import type * as MatrixUtils from '../../../utils/matrix';
+import { FALLBACK_MIMETYPE } from '../../../utils/mimeTypes';
 
 vi.mock('../../../state/hooks/settings', () => ({
   useSetting: vi.fn(),
   useSetSetting: vi.fn(() => vi.fn()),
+}));
+
+vi.mock('../../../utils/matrix', async (importOriginal) => ({
+  ...(await importOriginal<typeof MatrixUtils>()),
+  downloadEncryptedMedia: vi.fn((_url: string, processData: (buf: ArrayBuffer) => unknown) =>
+    Promise.resolve(processData(new ArrayBuffer(8)))
+  ),
+  decryptFile: vi.fn().mockResolvedValue(new Blob(['decrypted'])),
 }));
 
 const renderImageWithTestId = ({ alt, title, src, onLoad, onError, onClick, tabIndex }: any) => (
@@ -234,6 +245,54 @@ describe('ImageContent', () => {
       await act(async () => {});
       fireEvent.load(screen.getByTestId('test-image'));
       expect(screen.getByTestId('animated-image-overlay-canvas')).toBeInTheDocument();
+    });
+  });
+
+  describe('encrypted blob mime type', () => {
+    const encryptionInfo = { key: 'k', iv: 'iv', hashes: {}, v: 'v2' } as any;
+
+    beforeEach(() => {
+      globalThis.URL.createObjectURL = vi.fn().mockReturnValue('blob:test');
+    });
+
+    const renderEncryptedImage = (mimeType: string) =>
+      render(
+        <MatrixTestWrapper>
+          <ImageContent
+            body="image"
+            mimeType={mimeType}
+            url="mxc://matrix.org/encrypted"
+            encryptionInfo={encryptionInfo}
+            autoPlay
+            renderImage={renderImageWithTestId}
+          />
+        </MatrixTestWrapper>
+      );
+
+    it('degrades a sender-controlled script-capable mime type to the safe fallback', async () => {
+      renderEncryptedImage('image/svg+xml');
+      await waitFor(() => expect(decryptFile).toHaveBeenCalled());
+      expect(decryptFile).toHaveBeenCalledWith(
+        expect.anything(),
+        FALLBACK_MIMETYPE,
+        encryptionInfo
+      );
+    });
+
+    it('degrades a non-image document mime type to the safe fallback', async () => {
+      renderEncryptedImage('text/html');
+      await waitFor(() => expect(decryptFile).toHaveBeenCalled());
+      expect(decryptFile).toHaveBeenCalledWith(
+        expect.anything(),
+        FALLBACK_MIMETYPE,
+        encryptionInfo
+      );
+    });
+
+    it('preserves an allowed image mime type', async () => {
+      renderEncryptedImage('image/png');
+      await waitFor(() => expect(decryptFile).toHaveBeenCalled());
+      expect(decryptFile).toHaveBeenCalledWith(expect.anything(), 'image/png', encryptionInfo);
     });
   });
 });
