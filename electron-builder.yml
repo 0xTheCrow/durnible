@@ -58,15 +58,12 @@ linux:
     - target: AppImage
       arch:
         - x64
-        - arm64
     - target: deb
       arch:
         - x64
-        - arm64
     - target: pacman
       arch:
         - x64
-        - arm64
   category: Network
   synopsis: Matrix chat client
   description: Durnible is a Matrix chat client for encrypted messaging, voice and video calls.
