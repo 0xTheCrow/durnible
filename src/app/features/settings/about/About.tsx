@@ -35,7 +35,7 @@ export function About({ onBack, onClose }: AboutProps) {
                   <Box direction="Column" gap="100">
                     <Box gap="100" alignItems="End">
                       <Text size="H3">Durnible</Text>
-                      <Text size="T200">v4.10.2</Text>
+                      <Text size="T200">{`v${__APP_VERSION__}`}</Text>
                     </Box>
                   </Box>
                 </Box>

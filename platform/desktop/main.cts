@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain, protocol, session, shell } from 'electron'
 import type { IpcMainEvent } from 'electron';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { installAppUpdate } from './appUpdate.cjs';
 import { installMediaAuth, setMediaAuth } from './mediaAuth.cjs';
 import { enableScreenshareLoopbackFeatures, installScreenshareAudio } from './screenshareAudio.cjs';
 import { getInitialWindowBounds, persistWindowState } from './windowState.cjs';
@@ -178,6 +179,7 @@ if (!app.requestSingleInstanceLock()) {
     installScreenshareAudio(appSession, checkIsRendererFrame);
     registerMediaAuthChannel();
     registerDevToolsMenuChannel();
+    installAppUpdate(checkIsTrustedSender);
 
     protocol.handle(APP_SCHEME, serveWebBuild);
     createMainWindow();

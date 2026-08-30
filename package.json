@@ -1,9 +1,14 @@
 {
   "name": "durnible",
-  "version": "4.10.2",
+  "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "platform/desktop/dist/main.cjs",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/0xTheCrow/durnible.git"
+  },
+  "desktopName": "durnible.desktop",
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
   },
@@ -24,6 +29,9 @@
     "performance:trace": "PERFORMANCE_TRACE=1 playwright test --config playwright.performance.config.ts",
     "desktop:compile": "tsc -p platform/desktop/tsconfig.json",
     "desktop:dev": "npm run build && npm run desktop:compile && electron platform/desktop/dist/main.cjs",
+    "desktop:build": "npm run build && npm run desktop:compile",
+    "desktop:pack": "npm run desktop:build && electron-builder --dir",
+    "desktop:dist": "npm run desktop:build && electron-builder",
     "prepare": "husky"
   },
   "keywords": [],
@@ -47,6 +55,7 @@
     "classnames": "2.3.2",
     "dayjs": "1.11.10",
     "domhandler": "5.0.3",
+    "electron-updater": "6.8.9",
     "emojibase": "15.3.1",
     "emojibase-data": "15.3.2",
     "file-saver": "2.0.5",
@@ -101,6 +110,7 @@
     "@vitejs/plugin-react": "6.0.2",
     "buffer": "6.0.3",
     "electron": "44.0.0",
+    "electron-builder": "26.15.3",
     "eslint": "8.29.0",
     "eslint-config-airbnb": "19.0.4",
     "eslint-config-prettier": "8.5.0",

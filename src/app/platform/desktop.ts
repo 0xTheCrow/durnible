@@ -20,6 +20,10 @@ export type DesktopScreenshareSourceChoice = {
   shareSystemAudio: boolean;
 };
 
+export type DesktopAppUpdateStatus =
+  | { availability: 'ready-to-install'; version: string }
+  | { availability: 'manual-download'; version: string; releaseUrl: string };
+
 type DesktopBridge = {
   isDesktop: true;
   platform: string;
@@ -32,6 +36,8 @@ type DesktopBridge = {
     requestId: string,
     choice: DesktopScreenshareSourceChoice | null
   ) => void;
+  onAppUpdateStatus: (handler: (status: DesktopAppUpdateStatus) => void) => () => void;
+  restartForAppUpdate: () => void;
 };
 
 declare global {
@@ -71,4 +77,16 @@ export const respondDesktopScreenshareSource = (
 
 export const setDesktopDevToolsEnabled = (enabled: boolean): void => {
   getDesktopBridge()?.setDevToolsEnabled(enabled);
+};
+
+export const subscribeDesktopAppUpdateStatus = (
+  handler: (status: DesktopAppUpdateStatus) => void
+): (() => void) => {
+  const bridge = getDesktopBridge();
+  if (!bridge) return () => undefined;
+  return bridge.onAppUpdateStatus(handler);
+};
+
+export const restartDesktopAppForUpdate = (): void => {
+  getDesktopBridge()?.restartForAppUpdate();
 };
