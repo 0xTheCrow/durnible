@@ -24,6 +24,9 @@ export function CallEncryptionDebugPanel({ livekitRoom }: CallEncryptionDebugPan
 
   return (
     <Box className={css.CallEncryptionDebugPanel} direction="Column" gap="100">
+      <Text size="T200" priority="300">
+        Developer tool
+      </Text>
       <Text size="T200">
         <b>Room E2EE: {livekitRoom.isE2EEEnabled ? 'enabled' : 'disabled'}</b>
       </Text>

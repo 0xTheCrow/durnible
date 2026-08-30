@@ -1,3 +1,5 @@
+import { checkIsServiceWorkerEnabled } from './featureCheck';
+
 export const MEDIA_CACHE_MARKER = 'durnible_cache';
 export const MEDIA_CACHE_PREFIX = 'durnible-media-cache';
 
@@ -11,6 +13,8 @@ export const MEDIA_CACHE_BUCKETS: Record<MediaCacheBucket, BucketConfig> = {
 };
 
 export const markCachedMediaUrl = (httpUrl: string, bucket: MediaCacheBucket): string => {
+  if (!checkIsServiceWorkerEnabled()) return httpUrl;
+
   try {
     const url = new URL(httpUrl);
     if (!url.protocol.startsWith('http') || !url.pathname.includes('/media/')) {

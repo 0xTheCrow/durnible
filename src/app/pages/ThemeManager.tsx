@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import React, { useEffect } from 'react';
 import { configClass, varsClass } from 'folds';
 import {
-  DarkTheme,
+  AbyssTheme,
   LightTheme,
   ThemeContextProvider,
   ThemeKind,
@@ -19,7 +19,7 @@ export function UnAuthRouteThemeManager() {
     document.body.className = '';
     document.body.classList.add(configClass, varsClass);
     if (systemThemeKind === ThemeKind.Dark) {
-      document.body.classList.add(...DarkTheme.classNames);
+      document.body.classList.add(...AbyssTheme.classNames);
     }
     if (systemThemeKind === ThemeKind.Light) {
       document.body.classList.add(...LightTheme.classNames);

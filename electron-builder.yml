@@ -1,0 +1,75 @@
+appId: org.durnible.desktop
+productName: Durnible
+copyright: Copyright © 2026 Durnible
+
+directories:
+  output: release
+  buildResources: platform/desktop/build
+
+files:
+  - dist/**
+  - platform/desktop/dist/**
+  - package.json
+  - '!node_modules'
+  - node_modules/argparse/**
+  - node_modules/builder-util-runtime/**
+  - node_modules/debug/**
+  - node_modules/electron-updater/**
+  - node_modules/fs-extra/**
+  - node_modules/graceful-fs/**
+  - node_modules/js-yaml/**
+  - node_modules/jsonfile/**
+  - node_modules/lazy-val/**
+  - node_modules/lodash.escaperegexp/**
+  - node_modules/lodash.isequal/**
+  - node_modules/ms/**
+  - node_modules/sax/**
+  - node_modules/semver/**
+  - node_modules/tiny-typed-emitter/**
+  - node_modules/universalify/**
+
+publish:
+  provider: github
+  owner: 0xTheCrow
+  repo: durnible
+
+win:
+  target: nsis
+  artifactName: ${productName}-${version}-win-${arch}.${ext}
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  shortcutName: Durnible
+
+mac:
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+  category: public.app-category.social-networking
+  identity: null
+  artifactName: ${productName}-${version}-mac-${arch}.${ext}
+
+linux:
+  target:
+    - target: AppImage
+      arch:
+        - x64
+        - arm64
+    - target: deb
+      arch:
+        - x64
+        - arm64
+    - target: pacman
+      arch:
+        - x64
+        - arm64
+  category: Network
+  synopsis: Matrix chat client
+  description: Durnible is a Matrix chat client for encrypted messaging, voice and video calls.
+  maintainer: 0xTheCrow <0xTheCrow@users.noreply.github.com>
+  syncDesktopName: true
+  artifactName: ${productName}-${version}-linux-${arch}.${ext}

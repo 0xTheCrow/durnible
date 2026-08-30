@@ -55,25 +55,13 @@ function TwitterEmojiSetting() {
   );
 }
 function EmojiSearchAutoFocusSetting() {
-  const [desktopValue, setDesktopValue] = useSetting(settingsAtom, 'emojiSearchAutoFocusDesktop');
-  const [mobileValue, setMobileValue] = useSetting(settingsAtom, 'emojiSearchAutoFocusMobile');
+  const [value, setValue] = useSetting(settingsAtom, 'emojiSearchAutoFocus');
   return (
-    <>
-      <SettingTile
-        title="Emoji Search Auto Focus"
-        description="Focus the emoji board search input when opened."
-      />
-      <Box direction="Column" gap="100">
-        <SettingTile
-          title="Desktop"
-          after={<Switch variant="Primary" value={desktopValue} onChange={setDesktopValue} />}
-        />
-        <SettingTile
-          title="Mobile"
-          after={<Switch variant="Primary" value={mobileValue} onChange={setMobileValue} />}
-        />
-      </Box>
-    </>
+    <SettingTile
+      title="Emoji Search Auto Focus"
+      description="Focus the emoji board search input when opened."
+      after={<Switch variant="Primary" value={value} onChange={setValue} />}
+    />
   );
 }
 

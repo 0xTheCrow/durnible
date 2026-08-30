@@ -1,6 +1,14 @@
-import React, { lazy, Suspense } from 'react';
+import React, { lazy, Suspense, useEffect, useState } from 'react';
 import { useAtomValue } from 'jotai';
 import { callStateAtom } from '../../state/call';
+import {
+  respondDesktopScreenshareSource,
+  subscribeDesktopScreenshareSourceRequest,
+} from '../../platform/desktop';
+import type {
+  DesktopScreenshareSourceChoice,
+  DesktopScreenshareSourceRequest,
+} from '../../platform/desktop';
 
 const LazyCallBar = lazy(() => import('./CallBar').then((module) => ({ default: module.CallBar })));
 const LazyCallScreen = lazy(() =>
@@ -8,6 +16,11 @@ const LazyCallScreen = lazy(() =>
 );
 const LazyCallPane = lazy(() =>
   import('./CallPane').then((module) => ({ default: module.CallPane }))
+);
+const LazyScreenshareSourcePicker = lazy(() =>
+  import('./ScreenshareSourcePicker').then((module) => ({
+    default: module.ScreenshareSourcePicker,
+  }))
 );
 
 const useIsCallActive = (): boolean => {
@@ -41,6 +54,25 @@ export function CallPaneGate() {
   return (
     <Suspense fallback={null}>
       <LazyCallPane />
+    </Suspense>
+  );
+}
+
+export function ScreenshareSourcePickerMount() {
+  const [request, setRequest] = useState<DesktopScreenshareSourceRequest | null>(null);
+
+  useEffect(() => subscribeDesktopScreenshareSourceRequest(setRequest), []);
+
+  if (!request) return null;
+
+  const handleComplete = (choice: DesktopScreenshareSourceChoice | null) => {
+    respondDesktopScreenshareSource(request.requestId, choice);
+    setRequest(null);
+  };
+
+  return (
+    <Suspense fallback={null}>
+      <LazyScreenshareSourcePicker request={request} onComplete={handleComplete} />
     </Suspense>
   );
 }

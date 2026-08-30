@@ -145,6 +145,11 @@ export const getBlobSafeMimeType = (mimeType: string) => {
   return type;
 };
 
+export const getBlobSafeImageMimeType = (mimeType: string): string => {
+  const [type] = mimeType.split(';');
+  return IMAGE_MIME_TYPES.includes(type) ? type : FALLBACK_MIMETYPE;
+};
+
 export const safeFile = (f: File) => {
   const safeType = getBlobSafeMimeType(f.type);
   if (safeType !== f.type) {

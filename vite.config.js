@@ -10,6 +10,8 @@ import buildConfig from './build.config.ts';
 
 const isAnalyzeBuild = process.env.ANALYZE === 'true';
 
+const { version: appVersion } = JSON.parse(fs.readFileSync(path.resolve('package.json'), 'utf8'));
+
 const copyFiles = {
   targets: [
     {
@@ -67,6 +69,7 @@ export default defineConfig({
   base: buildConfig.base,
   define: {
     global: 'globalThis',
+    __APP_VERSION__: JSON.stringify(appVersion),
   },
   server: {
     port: 8080,

@@ -57,7 +57,7 @@ import {
   MessageAllReactionButton,
   MessageAllReactionItem,
   MessageQuickReactions,
-} from './reactions';
+} from './reaction-controls';
 import {
   MessageCopyLinkItem,
   MessageCopyTextItem,
@@ -69,12 +69,12 @@ import {
 } from './menu';
 import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
 
-export type { ReactionHandler } from './reactions';
+export type { ReactionHandler } from './reaction-controls';
 export {
   MessageQuickReactions,
   MessageAllReactionButton,
   MessageAllReactionItem,
-} from './reactions';
+} from './reaction-controls';
 export {
   MessageReadReceiptItem,
   MessageSourceCodeItem,

@@ -903,9 +903,7 @@ export function EmojiBoard({
 }: EmojiBoardProps) {
   const mx = useMatrixClient();
   const isMobile = useScreenSize() !== ScreenSize.Desktop;
-  const [emojiSearchAutoFocusMobile] = useSetting(settingsAtom, 'emojiSearchAutoFocusMobile');
-  const [emojiSearchAutoFocusDesktop] = useSetting(settingsAtom, 'emojiSearchAutoFocusDesktop');
-  const searchAutoFocus = isMobile ? emojiSearchAutoFocusMobile : emojiSearchAutoFocusDesktop;
+  const [searchAutoFocus] = useSetting(settingsAtom, 'emojiSearchAutoFocus');
 
   const emojiTab = tab === EmojiBoardTab.Emoji;
   const usage = emojiTab ? ImageUsage.Emoticon : ImageUsage.Sticker;

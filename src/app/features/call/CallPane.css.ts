@@ -128,11 +128,16 @@ export const CallSpotlight = style({
 });
 
 export const CallEncryptionDebugPanel = style({
-  margin: `0 ${config.space.S200}`,
-  padding: config.space.S100,
+  position: 'absolute',
+  zIndex: 1,
+  top: config.space.S200,
+  left: config.space.S200,
+  maxWidth: `calc(100% - ${config.space.S400})`,
+  padding: `${config.space.S100} ${config.space.S200}`,
   borderRadius: config.radii.R300,
   backgroundColor: color.SurfaceVariant.Container,
   color: color.SurfaceVariant.OnContainer,
+  pointerEvents: 'none',
 });
 
 export const CallSpotlightBar = style({

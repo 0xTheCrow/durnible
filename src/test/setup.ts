@@ -13,6 +13,14 @@ Object.defineProperty(window.navigator, 'platform', {
   configurable: true,
 });
 
+// happy-dom omits navigator.serviceWorker, which checkIsServiceWorkerEnabled
+// reads to decide whether media URLs get a cache marker. Without this the DOM
+// tests would exercise the no-service-worker path instead of the browser one.
+Object.defineProperty(window.navigator, 'serviceWorker', {
+  value: {},
+  configurable: true,
+});
+
 // jsdom doesn't implement canvas — mock it to suppress the warning
 HTMLCanvasElement.prototype.getContext = vi.fn();
 

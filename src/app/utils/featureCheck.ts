@@ -1,3 +1,8 @@
+import { checkIsDesktopApp } from '../platform/desktop';
+
+export const checkIsServiceWorkerEnabled = (): boolean =>
+  'serviceWorker' in navigator && !checkIsDesktopApp();
+
 export const checkIndexedDBSupport = async (): Promise<boolean> => {
   const ts = new Date().getTime();
   const dbName = `checkIndexedDBSupport-${ts}`;
