@@ -54,8 +54,22 @@ mac:
   artifactName: ${productName}-${version}-mac-${arch}.${ext}
 
 linux:
-  target: AppImage
+  target:
+    - target: AppImage
+      arch:
+        - x64
+        - arm64
+    - target: deb
+      arch:
+        - x64
+        - arm64
+    - target: pacman
+      arch:
+        - x64
+        - arm64
   category: Network
   synopsis: Matrix chat client
+  description: Durnible is a Matrix chat client for encrypted messaging, voice and video calls.
+  maintainer: 0xTheCrow <0xTheCrow@users.noreply.github.com>
   syncDesktopName: true
   artifactName: ${productName}-${version}-linux-${arch}.${ext}

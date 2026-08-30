@@ -1,5 +1,7 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import type { IpcMainEvent } from 'electron';
+import { existsSync } from 'node:fs';
+import path from 'node:path';
 import { autoUpdater } from 'electron-updater';
 
 const APP_UPDATE_STATUS_CHANNEL = 'durnible:app-update:status';
@@ -14,10 +16,13 @@ type AppUpdateStatus =
   | { availability: 'ready-to-install'; version: string }
   | { availability: 'manual-download'; version: string; releaseUrl: string };
 
+const PACKAGE_TYPE_MARKER_FILENAME = 'package-type';
+
 const checkIsSelfInstallSupported = (): boolean => {
   if (process.platform === 'darwin') return false;
-  if (process.platform === 'linux') return typeof process.env.APPIMAGE === 'string';
-  return true;
+  if (process.platform !== 'linux') return true;
+  if (existsSync(path.join(process.resourcesPath, PACKAGE_TYPE_MARKER_FILENAME))) return true;
+  return typeof process.env.APPIMAGE === 'string';
 };
 
 const broadcastAppUpdateStatus = (status: AppUpdateStatus): void => {
