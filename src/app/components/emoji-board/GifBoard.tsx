@@ -61,7 +61,6 @@ import {
 } from './components';
 import * as css from './components/styles.css';
 import { useDebounce } from '../../hooks/useDebounce';
-import { mobileOrTablet } from '../../utils/user-agent';
 import { useSetting } from '../../state/hooks/settings';
 import { settingsAtom } from '../../state/settings';
 import { stopPropagation } from '../../utils/keyboard';
@@ -874,6 +873,7 @@ export function GifBoard({
   const [showNsfw, setShowNsfw] = useSetting(settingsAtom, 'gifShowNsfw');
   const [showHidden, setShowHidden] = useSetting(settingsAtom, 'gifShowHidden');
   const [randomFeatured, setRandomFeatured] = useSetting(settingsAtom, 'gifRandomFeatured');
+  const [searchAutoFocus] = useSetting(settingsAtom, 'emojiSearchAutoFocus');
   const [editingGif, setEditingGif] = useState<GifItem | undefined>(undefined);
 
   const [activeSection, setActiveSection] = useState<GifSection>('all');
@@ -1259,7 +1259,7 @@ export function GifBoard({
                     maxLength={100}
                     after={<Icon src={Icons.Search} size="50" />}
                     onChange={handleSearchChange}
-                    autoFocus={!mobileOrTablet()}
+                    autoFocus={searchAutoFocus}
                     style={{ width: '100%' }}
                   />
                 </Box>

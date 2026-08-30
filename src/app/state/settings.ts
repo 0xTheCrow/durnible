@@ -1,4 +1,5 @@
 import { atom } from 'jotai';
+import { mobileOrTablet } from '../utils/user-agent';
 
 export const SETTINGS_STORAGE_KEY = 'settings';
 export type DateFormat = 'D MMM YYYY' | 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY/MM/DD' | '';
@@ -33,8 +34,7 @@ export interface Settings {
   editorToolbar: boolean;
   isEditorToolbarGestureRequired: boolean;
   twitterEmoji: boolean;
-  emojiSearchAutoFocusMobile: boolean;
-  emojiSearchAutoFocusDesktop: boolean;
+  emojiSearchAutoFocus: boolean;
   pageZoom: number;
   hideActivity: boolean;
 
@@ -105,8 +105,7 @@ const defaultSettings: Settings = {
   editorToolbar: false,
   isEditorToolbarGestureRequired: false,
   twitterEmoji: false,
-  emojiSearchAutoFocusMobile: false,
-  emojiSearchAutoFocusDesktop: true,
+  emojiSearchAutoFocus: !mobileOrTablet(),
   pageZoom: 100,
   hideActivity: true,
 
@@ -126,7 +125,7 @@ const defaultSettings: Settings = {
   embedLinks: true,
   showHiddenEvents: false,
   legacyUsernameColor: false,
-  unfocusedAutoScroll: false,
+  unfocusedAutoScroll: !mobileOrTablet(),
   pauseGifs: false,
   pauseGifImages: true,
   pauseGifStickers: true,
@@ -170,6 +169,8 @@ const defaultSettings: Settings = {
 
 type LegacySettings = Settings & {
   isNotificationSounds?: boolean;
+  emojiSearchAutoFocusMobile?: boolean;
+  emojiSearchAutoFocusDesktop?: boolean;
 };
 
 export const getSettings = () => {
@@ -183,6 +184,12 @@ export const getSettings = () => {
       storedSettings.isNotificationSoundEnabled ??
       storedSettings.isNotificationSounds ??
       defaultSettings.isNotificationSoundEnabled,
+    emojiSearchAutoFocus:
+      storedSettings.emojiSearchAutoFocus ??
+      (mobileOrTablet()
+        ? storedSettings.emojiSearchAutoFocusMobile
+        : storedSettings.emojiSearchAutoFocusDesktop) ??
+      defaultSettings.emojiSearchAutoFocus,
   };
 };
 

@@ -156,13 +156,9 @@ function Appearance() {
   const [systemTheme, setSystemTheme] = useSetting(settingsAtom, 'useSystemTheme');
   const [monochromeMode, setMonochromeMode] = useSetting(settingsAtom, 'monochromeMode');
   const [twitterEmoji, setTwitterEmoji] = useSetting(settingsAtom, 'twitterEmoji');
-  const [emojiSearchAutoFocusMobile, setEmojiSearchAutoFocusMobile] = useSetting(
+  const [emojiSearchAutoFocus, setEmojiSearchAutoFocus] = useSetting(
     settingsAtom,
-    'emojiSearchAutoFocusMobile'
-  );
-  const [emojiSearchAutoFocusDesktop, setEmojiSearchAutoFocusDesktop] = useSetting(
-    settingsAtom,
-    'emojiSearchAutoFocusDesktop'
+    'emojiSearchAutoFocus'
   );
 
   return (
@@ -204,38 +200,18 @@ function Appearance() {
         />
       </SequenceCard>
 
-      <SequenceCard
-        className={SettingsCardStyle}
-        variant="SurfaceVariant"
-        direction="Column"
-        gap="400"
-      >
+      <SequenceCard className={SettingsCardStyle} variant="SurfaceVariant" direction="Column">
         <SettingTile
           title="Emoji Search Auto Focus"
           description="Focus the emoji board search input when opened."
+          after={
+            <Switch
+              variant="Primary"
+              value={emojiSearchAutoFocus}
+              onChange={setEmojiSearchAutoFocus}
+            />
+          }
         />
-        <Box direction="Column" gap="100">
-          <SettingTile
-            title="Desktop"
-            after={
-              <Switch
-                variant="Primary"
-                value={emojiSearchAutoFocusDesktop}
-                onChange={setEmojiSearchAutoFocusDesktop}
-              />
-            }
-          />
-          <SettingTile
-            title="Mobile"
-            after={
-              <Switch
-                variant="Primary"
-                value={emojiSearchAutoFocusMobile}
-                onChange={setEmojiSearchAutoFocusMobile}
-              />
-            }
-          />
-        </Box>
       </SequenceCard>
 
       <SequenceCard className={SettingsCardStyle} variant="SurfaceVariant" direction="Column">
