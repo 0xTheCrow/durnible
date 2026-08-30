@@ -15,6 +15,13 @@ const DEVTOOLS_ENABLED_IPC_CHANNEL = 'durnible:devtools-enabled:set';
 
 const webBuildDirectory = path.join(__dirname, '..', '..', '..', 'dist');
 const indexHtmlPath = path.join(webBuildDirectory, 'index.html');
+const appIconPath = path.join(
+  webBuildDirectory,
+  'public',
+  'res',
+  'android',
+  'android-chrome-512x512.png'
+);
 
 const GRANTED_PERMISSIONS = new Set([
   'media',
@@ -125,6 +132,7 @@ const createMainWindow = (): void => {
     minWidth: 640,
     minHeight: 480,
     backgroundColor: '#000000',
+    icon: appIconPath,
     show: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),

@@ -1,6 +1,6 @@
 {
   "name": "durnible",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "",
   "main": "platform/desktop/dist/main.cjs",
   "type": "module",
