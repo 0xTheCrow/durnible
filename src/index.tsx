@@ -13,11 +13,11 @@ import { trimTrailingSlash } from './app/utils/common';
 import { getSettings } from './app/state/settings';
 import { isIOS, mobileOrTablet } from './app/utils/user-agent';
 import {
-  checkIsDesktopApp,
   restartDesktopAppForUpdate,
   subscribeDesktopAppUpdateStatus,
   syncDesktopMediaAuth,
 } from './app/platform/desktop';
+import { checkIsServiceWorkerEnabled } from './app/utils/featureCheck';
 import { showUpdateToast } from './app/utils/updateToast';
 import App from './app/pages/App';
 
@@ -41,7 +41,7 @@ subscribeDesktopAppUpdateStatus((status) => {
   });
 });
 
-if ('serviceWorker' in navigator && !checkIsDesktopApp()) {
+if (checkIsServiceWorkerEnabled()) {
   const swUrl =
     import.meta.env.MODE === 'production'
       ? `${trimTrailingSlash(import.meta.env.BASE_URL)}/sw.js`
