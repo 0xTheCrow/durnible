@@ -3,6 +3,7 @@ import type { IpcMainEvent } from 'electron';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { installAppUpdate } from './appUpdate.cjs';
+import { installTextContextMenu } from './contextMenu.cjs';
 import { installMediaAuthResponseHeaders, setMediaAuth } from './mediaAuth.cjs';
 import { installRequestHeaders } from './requestHeaders.cjs';
 import { enableScreenshareLoopbackFeatures, installScreenshareAudio } from './screenshareAudio.cjs';
@@ -145,6 +146,7 @@ const createMainWindow = (): void => {
 
   persistWindowState(mainWindow);
   mainWindow.setMenuBarVisibility(false);
+  installTextContextMenu(mainWindow.webContents);
 
   mainWindow.once('ready-to-show', () => mainWindow.show());
 
