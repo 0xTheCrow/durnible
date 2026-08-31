@@ -31,6 +31,32 @@ To build the app:
 npm run build # Compiles the app into the dist/ directory
 ```
 
+### Android app
+
+The Android app wraps the web build in a [Capacitor](https://capacitorjs.com/) shell. The generated
+native project lives in [`platform/mobile/android`](platform/mobile/android).
+
+You need a JDK 21 and an Android SDK with `platform-tools`, `platforms;android-36` and
+`build-tools;36.0.0`. Android Studio is not required — the commands below drive Gradle directly.
+
+Gradle finds the SDK through `platform/mobile/android/local.properties`, which is **not** in version
+control because the path differs per machine. Create it before the first build:
+
+```sh
+echo "sdk.dir=$HOME/Android/Sdk" > platform/mobile/android/local.properties
+```
+
+Then:
+```sh
+npm run mobile:sync  # Rebuilds dist/ and copies it into the native project
+npm run mobile:build # Assembles a debug APK
+npm run mobile:run   # Assembles and installs on the durnible-api371 emulator
+```
+
+`mobile:run` installs onto the emulator named `durnible-api371` specifically, so it stays predictable
+when several devices are attached. Start that emulator first; the script prints the command if it is
+not running.
+
 ### Running with Docker
 This repository includes a Dockerfile, which builds the application from source and serves it with Nginx on port 80. To use this locally, you can build the container like so:
 ```
