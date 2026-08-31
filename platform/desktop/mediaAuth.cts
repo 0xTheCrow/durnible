@@ -1,4 +1,4 @@
-import type { Session } from 'electron';
+import type { OnBeforeSendHeadersListenerDetails, Session } from 'electron';
 
 const RENDERER_ORIGIN = 'app://durnible';
 
@@ -65,24 +65,20 @@ const checkIsHomeserverMediaRequest = (requestUrl: string): boolean => {
   );
 };
 
-export const installMediaAuth = (targetSession: Session): void => {
-  targetSession.webRequest.onBeforeSendHeaders(MEDIA_REQUEST_URL_FILTER, (details, callback) => {
-    if (
-      details.method === 'GET' &&
-      homeserverAccessToken &&
-      checkIsHomeserverMediaRequest(details.url)
-    ) {
-      callback({
-        requestHeaders: {
-          ...details.requestHeaders,
-          Authorization: `Bearer ${homeserverAccessToken}`,
-        },
-      });
-      return;
-    }
-    callback({ requestHeaders: details.requestHeaders });
-  });
+export const getMediaAuthorizationRequestHeaders = (
+  details: OnBeforeSendHeadersListenerDetails
+): Record<string, string> => {
+  if (
+    details.method !== 'GET' ||
+    !homeserverAccessToken ||
+    !checkIsHomeserverMediaRequest(details.url)
+  ) {
+    return {};
+  }
+  return { Authorization: `Bearer ${homeserverAccessToken}` };
+};
 
+export const installMediaAuthResponseHeaders = (targetSession: Session): void => {
   targetSession.webRequest.onHeadersReceived(MEDIA_REQUEST_URL_FILTER, (details, callback) => {
     if (!checkIsHomeserverMediaRequest(details.url)) {
       callback({ responseHeaders: details.responseHeaders });

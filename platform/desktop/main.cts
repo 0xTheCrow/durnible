@@ -3,7 +3,8 @@ import type { IpcMainEvent } from 'electron';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { installAppUpdate } from './appUpdate.cjs';
-import { installMediaAuth, setMediaAuth } from './mediaAuth.cjs';
+import { installMediaAuthResponseHeaders, setMediaAuth } from './mediaAuth.cjs';
+import { installRequestHeaders } from './requestHeaders.cjs';
 import { enableScreenshareLoopbackFeatures, installScreenshareAudio } from './screenshareAudio.cjs';
 import { getInitialWindowBounds, persistWindowState } from './windowState.cjs';
 
@@ -183,7 +184,8 @@ if (!app.requestSingleInstanceLock()) {
       GRANTED_PERMISSIONS.has(permission)
     );
 
-    installMediaAuth(appSession);
+    installRequestHeaders(appSession);
+    installMediaAuthResponseHeaders(appSession);
     installScreenshareAudio(appSession, checkIsRendererFrame);
     registerMediaAuthChannel();
     registerDevToolsMenuChannel();
