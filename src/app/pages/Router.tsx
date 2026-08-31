@@ -49,6 +49,8 @@ import { FavoriteRoomsSection } from './client/FavoriteRooms';
 import { Explore, FeaturedRooms, PublicRooms } from './client/explore';
 import { Notifications, Inbox, Invites } from './client/inbox';
 import { setAfterLoginRedirectPath } from './afterLoginRedirectPath';
+import { getLastVisitedRoomPath } from './lastVisitedRoomPath';
+import { getSettings } from '../state/settings';
 import { Room } from '../features/room';
 import { WelcomePage } from './client/WelcomePage';
 import { SidebarNav } from './client/SidebarNav';
@@ -91,7 +93,12 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
       <Route
         index
         loader={() => {
-          if (getFallbackSession()) return redirect(getHomePath());
+          if (getFallbackSession()) {
+            const lastVisitedRoomPath = getSettings().isStartingInLastVisitedRoom
+              ? getLastVisitedRoomPath()
+              : undefined;
+            return redirect(lastVisitedRoomPath ?? getHomePath());
+          }
           const afterLoginPath = getAppPathFromHref(getOriginBaseUrl(), window.location.href);
           if (afterLoginPath) setAfterLoginRedirectPath(afterLoginPath);
           return redirect(getLoginPath());

@@ -286,6 +286,16 @@ function ReplyHighlightSetting() {
 }
 
 // --- Advanced ---
+function StartInLastVisitedRoomSetting() {
+  const [value, setValue] = useSetting(settingsAtom, 'isStartingInLastVisitedRoom');
+  return (
+    <SettingTile
+      title="Start in Last Visited Room"
+      description="Open the room you were last in when starting the app, instead of the welcome screen."
+      after={<Switch variant="Primary" value={value} onChange={setValue} />}
+    />
+  );
+}
 function SwipeGesturesSetting() {
   const [value, setValue] = useSetting(settingsAtom, 'swipeGestures');
   return (
@@ -724,6 +734,17 @@ export const settingsSearchData: SettingsSearchEntry<SettingsPages>[] = [
     Render: ReplyHighlightSetting,
   },
   // Advanced
+  {
+    id: 'start-in-last-visited-room',
+    title: 'Start in Last Visited Room',
+    description:
+      'Open the room you were last in when starting the app, instead of the welcome screen.',
+    keywords: ['start', 'startup', 'launch', 'last', 'room', 'restore', 'welcome', 'open'],
+    page: SettingsPages.GeneralPage,
+    pageName: 'General',
+    sectionName: 'Advanced',
+    Render: StartInLastVisitedRoomSetting,
+  },
   {
     id: 'swipe-gestures',
     title: 'Swipe Gestures',

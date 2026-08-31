@@ -78,6 +78,8 @@ export interface Settings {
 
   pwaMode: boolean;
 
+  isStartingInLastVisitedRoom: boolean;
+
   timelineSliderRange: TimelineSliderRange;
 
   pageNavWidth: number;
@@ -148,6 +150,8 @@ const defaultSettings: Settings = {
   swipeGestures: true,
 
   pwaMode: false,
+
+  isStartingInLastVisitedRoom: true,
 
   timelineSliderRange: 'day',
 

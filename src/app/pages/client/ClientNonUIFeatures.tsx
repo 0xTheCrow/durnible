@@ -2,7 +2,7 @@ import { isKeyHotkey } from 'is-hotkey';
 import { useAtomValue } from 'jotai';
 import type { ReactNode } from 'react';
 import React, { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import type { MatrixEvent, RoomEventHandlerMap } from 'matrix-js-sdk';
 import { MatrixEventEvent, RoomEvent } from 'matrix-js-sdk';
 import { roomToUnreadAtom, unreadEqual, unreadInfoToUnread } from '../../state/room/roomToUnread';
@@ -17,6 +17,7 @@ import { allInvitesAtom } from '../../state/room-list/inviteList';
 import { usePreviousValue } from '../../hooks/usePreviousValue';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { getInboxInvitesPath, getInboxNotificationsPath } from '../pathUtils';
+import { getRoomPathWithoutEventId, setLastVisitedRoomPath } from '../lastVisitedRoomPath';
 import {
   getMemberDisplayName,
   getNotificationType,
@@ -141,6 +142,17 @@ function SyncRecovery() {
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [mx]);
+
+  return null;
+}
+
+function LastVisitedRoomRecorder() {
+  const location = useLocation();
+
+  useEffect(() => {
+    const roomPath = getRoomPathWithoutEventId(location.pathname);
+    if (roomPath) setLastVisitedRoomPath(roomPath);
+  }, [location.pathname]);
 
   return null;
 }
@@ -396,6 +408,7 @@ export function ClientNonUIFeatures({ children }: ClientNonUIFeaturesProps) {
       <SyncRecovery />
       <PageNavToggleHotkey />
       <SearchCacheUpdater />
+      <LastVisitedRoomRecorder />
       <SystemEmojiFeature />
       <PageZoomFeature />
       <FaviconUpdater />
