@@ -1,5 +1,5 @@
 import { app, BrowserWindow, ipcMain, protocol, session, shell } from 'electron';
-import type { IpcMainEvent } from 'electron';
+import type { IpcMainEvent, IpcMainInvokeEvent } from 'electron';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { installAppUpdate } from './appUpdate.cjs';
@@ -105,7 +105,7 @@ const serveWebBuild = async (request: Request): Promise<Response> => {
 const checkIsRendererFrame = (frameUrl: string | undefined): boolean =>
   typeof frameUrl === 'string' && frameUrl.startsWith(`${APP_ORIGIN}/`);
 
-const checkIsTrustedSender = (event: IpcMainEvent): boolean => {
+const checkIsTrustedSender = (event: IpcMainEvent | IpcMainInvokeEvent): boolean => {
   const { senderFrame } = event;
   return !!senderFrame && !senderFrame.parent && checkIsRendererFrame(senderFrame.url);
 };

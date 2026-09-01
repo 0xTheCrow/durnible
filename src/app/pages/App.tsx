@@ -13,6 +13,7 @@ import { FeatureCheck } from './FeatureCheck';
 import { createRouter } from './Router';
 import { ScreenSizeProvider, useScreenSize } from '../hooks/useScreenSize';
 import { DesktopMenuBarSync } from '../platform/DesktopMenuBarSync';
+import { DesktopAppUpdatePrompt } from '../platform/DesktopAppUpdatePrompt';
 import { useCompositionEndTracking } from '../hooks/useComposingCheck';
 import i18n, { setupI18n } from '../i18n';
 
@@ -48,6 +49,7 @@ function App() {
                         <QueryClientProvider client={queryClient}>
                           <JotaiProvider>
                             <DesktopMenuBarSync />
+                            <DesktopAppUpdatePrompt />
                             <Suspense>
                               <RouterProvider router={createRouter(clientConfig, screenSize)} />
                             </Suspense>

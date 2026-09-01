@@ -12,11 +12,7 @@ import './index.css';
 import { trimTrailingSlash } from './app/utils/common';
 import { getSettings } from './app/state/settings';
 import { isIOS, mobileOrTablet } from './app/utils/user-agent';
-import {
-  restartDesktopAppForUpdate,
-  subscribeDesktopAppUpdateStatus,
-  syncDesktopMediaAuth,
-} from './app/platform/desktop';
+import { syncDesktopMediaAuth } from './app/platform/desktop';
 import { checkIsServiceWorkerEnabled } from './app/utils/featureCheck';
 import { showUpdateToast } from './app/utils/updateToast';
 import App from './app/pages/App';
@@ -24,22 +20,6 @@ import App from './app/pages/App';
 document.body.classList.add(configClass, varsClass);
 
 syncDesktopMediaAuth();
-
-subscribeDesktopAppUpdateStatus((status) => {
-  if (status.availability === 'ready-to-install') {
-    showUpdateToast({
-      message: `Durnible ${status.version} is ready to install`,
-      actionLabel: 'Restart',
-      onAction: restartDesktopAppForUpdate,
-    });
-    return;
-  }
-  showUpdateToast({
-    message: `Durnible ${status.version} is available`,
-    actionLabel: 'Download',
-    onAction: () => window.open(status.releaseUrl),
-  });
-});
 
 if (checkIsServiceWorkerEnabled()) {
   const swUrl =

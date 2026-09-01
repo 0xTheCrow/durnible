@@ -21,8 +21,16 @@ export type DesktopScreenshareSourceChoice = {
 };
 
 export type DesktopAppUpdateStatus =
-  | { availability: 'ready-to-install'; version: string }
-  | { availability: 'manual-download'; version: string; releaseUrl: string };
+  | { availability: 'unsupported' }
+  | { availability: 'unknown' }
+  | { availability: 'checking' }
+  | { availability: 'up-to-date' }
+  | { availability: 'available'; version: string }
+  | { availability: 'downloading'; version: string; percent: number }
+  | { availability: 'installing'; version: string }
+  | { availability: 'install-failed'; version: string; message: string }
+  | { availability: 'manual-download'; version: string; releaseUrl: string; message?: string }
+  | { availability: 'check-failed'; message: string };
 
 type DesktopBridge = {
   isDesktop: true;
@@ -37,7 +45,10 @@ type DesktopBridge = {
     choice: DesktopScreenshareSourceChoice | null
   ) => void;
   onAppUpdateStatus: (handler: (status: DesktopAppUpdateStatus) => void) => () => void;
-  restartForAppUpdate: () => void;
+  getAppUpdateStatus: () => Promise<DesktopAppUpdateStatus>;
+  checkForAppUpdate: () => void;
+  installAppUpdate: () => void;
+  cancelAppUpdateDownload: () => void;
 };
 
 declare global {
@@ -87,6 +98,20 @@ export const subscribeDesktopAppUpdateStatus = (
   return bridge.onAppUpdateStatus(handler);
 };
 
-export const restartDesktopAppForUpdate = (): void => {
-  getDesktopBridge()?.restartForAppUpdate();
+export const getDesktopAppUpdateStatus = async (): Promise<DesktopAppUpdateStatus> => {
+  const bridge = getDesktopBridge();
+  if (!bridge) return { availability: 'unsupported' };
+  return bridge.getAppUpdateStatus();
+};
+
+export const checkForDesktopAppUpdate = (): void => {
+  getDesktopBridge()?.checkForAppUpdate();
+};
+
+export const installDesktopAppUpdate = (): void => {
+  getDesktopBridge()?.installAppUpdate();
+};
+
+export const cancelDesktopAppUpdateDownload = (): void => {
+  getDesktopBridge()?.cancelAppUpdateDownload();
 };

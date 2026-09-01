@@ -8,6 +8,7 @@ import LogoSVG from '../../../../../public/res/svg/durnible.svg';
 import { clearCacheAndReload } from '../../../../client/initMatrix';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { SettingsPageHeader } from '../components';
+import { AppUpdateTile } from './AppUpdateTile';
 
 type AboutProps = {
   onBack: () => void;
@@ -48,6 +49,7 @@ export function About({ onBack, onClose }: AboutProps) {
                   direction="Column"
                   gap="400"
                 >
+                  <AppUpdateTile />
                   <SettingTile
                     title="Clear Cache & Reload"
                     description="Clear all your locally stored data and reload from server."
