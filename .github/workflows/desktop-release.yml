@@ -24,6 +24,7 @@ jobs:
     name: Build ${{ matrix.platform }}
     needs: verify
     runs-on: ${{ matrix.os }}
+    environment: desktop
     strategy:
       fail-fast: false
       matrix:
@@ -47,7 +48,25 @@ jobs:
         run: sudo apt-get update && sudo apt-get install --yes libarchive-tools
       - name: Install dependencies
         run: npm ci
+      - name: Verify GIF server URL is available
+        shell: bash
+        env:
+          VITE_GIF_SERVER_URL: ${{ vars.VITE_GIF_SERVER_URL }}
+        run: |
+          if [ -z "$VITE_GIF_SERVER_URL" ]; then
+            echo "::error::VITE_GIF_SERVER_URL is empty, so this build would ship with no GIFs tab."
+            echo ""
+            echo "The tab is compiled out when the variable is unset at build time, and nothing"
+            echo "fails at runtime - the tab is simply absent."
+            echo ""
+            echo "Set VITE_GIF_SERVER_URL to the GIF server origin at"
+            echo "Settings > Environments > desktop > Environment variables,"
+            echo "and check that this job declares 'environment: desktop'."
+            exit 1
+          fi
       - name: Build web and desktop sources
+        env:
+          VITE_GIF_SERVER_URL: ${{ vars.VITE_GIF_SERVER_URL }}
         run: npm run desktop:build
       - name: Package
         env:
