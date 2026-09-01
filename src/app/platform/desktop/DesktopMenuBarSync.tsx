@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
-import { settingsAtom } from '../state/settings';
-import { useSetting } from '../state/hooks/settings';
-import { setDesktopDevToolsEnabled } from './desktop';
+import { settingsAtom } from '../../state/settings';
+import { useSetting } from '../../state/hooks/settings';
+import { setDesktopDevToolsEnabled } from './bridge';
 
 export function DesktopMenuBarSync() {
   const [developerTools] = useSetting(settingsAtom, 'developerTools');

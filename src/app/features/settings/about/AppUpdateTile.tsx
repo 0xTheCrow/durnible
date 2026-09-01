@@ -3,7 +3,7 @@ import { Button, Text } from 'folds';
 import { SettingTile } from '../../../components/setting-tile';
 import type { DesktopAppUpdateStatus } from '../../../platform/desktop';
 import { checkForDesktopAppUpdate, installDesktopAppUpdate } from '../../../platform/desktop';
-import { useDesktopAppUpdateStatus } from '../../../platform/useDesktopAppUpdateStatus';
+import { useDesktopAppUpdateStatus } from '../../../platform/desktop/useDesktopAppUpdateStatus';
 
 type UpdateAction = {
   label: string;

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import type { DesktopAppUpdateStatus } from './desktop';
-import { getDesktopAppUpdateStatus, subscribeDesktopAppUpdateStatus } from './desktop';
+import type { DesktopAppUpdateStatus } from './bridge';
+import { getDesktopAppUpdateStatus, subscribeDesktopAppUpdateStatus } from './bridge';
 
 export const useDesktopAppUpdateStatus = (): DesktopAppUpdateStatus => {
   const [status, setStatus] = useState<DesktopAppUpdateStatus>({ availability: 'unsupported' });

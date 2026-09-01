@@ -12,12 +12,12 @@ import {
   Spinner,
   Text,
 } from 'folds';
-import type { DesktopAppUpdateStatus } from './desktop';
+import type { DesktopAppUpdateStatus } from './bridge';
 import {
   cancelDesktopAppUpdateDownload,
   checkForDesktopAppUpdate,
   installDesktopAppUpdate,
-} from './desktop';
+} from './bridge';
 import { useDesktopAppUpdateStatus } from './useDesktopAppUpdateStatus';
 import { useAppUpdateSnooze } from './appUpdateSnooze';
 import * as css from './DesktopAppUpdatePrompt.css';
