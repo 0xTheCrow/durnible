@@ -12,6 +12,7 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: process.env.CI ? [['github'], ['list'], ['html', { open: 'never' }]] : [['list']],
+  globalSetup: './e2e/globalSetup.ts',
   use: {
     baseURL: BASE_URL,
     trace: 'on-first-retry',
