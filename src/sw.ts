@@ -1,6 +1,11 @@
 /// <reference lib="WebWorker" />
 
-import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
+import {
+  cleanupOutdatedCaches,
+  createHandlerBoundToURL,
+  precacheAndRoute,
+} from 'workbox-precaching';
+import { NavigationRoute, registerRoute } from 'workbox-routing';
 import { CacheExpiration } from 'workbox-expiration';
 import type { MediaCacheBucket } from './app/utils/mediaCache';
 import {
@@ -28,6 +33,11 @@ const getExpiration = (bucket: MediaCacheBucket): CacheExpiration => {
 // This ensures lazy-loaded chunks survive deploys.
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
+
+// Capacitor's asset server treats any path whose last segment contains a dot as a
+// filename and 404s it, and Matrix routes carry server names and room aliases.
+// Handling navigations here runs before that classifier ever sees the path.
+registerRoute(new NavigationRoute(createHandlerBoundToURL('index.html')));
 
 // Token pushed proactively by the main page on every load (including hard refresh).
 // Used as fallback when the requesting client is uncontrolled (i.e. clients.get() fails).
