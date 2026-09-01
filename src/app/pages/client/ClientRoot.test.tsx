@@ -4,7 +4,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { MatrixClient } from 'matrix-js-sdk';
 import { ClientRoot, isChunkLoadError } from './ClientRoot';
 import { initClient } from '../../../client/initMatrix';
-import { getFallbackSession } from '../../state/sessions';
+import { getStoredSession } from '../../state/sessions';
 import { checkSessionLockFree, getSessionLock } from '../../utils/sessionLock';
 
 vi.mock('../../../client/initMatrix', () => ({
@@ -15,7 +15,7 @@ vi.mock('../../../client/initMatrix', () => ({
 }));
 
 vi.mock('../../state/sessions', () => ({
-  getFallbackSession: vi.fn(),
+  getStoredSession: vi.fn(),
 }));
 
 // Render children directly — avoids SpecVersionsLoader making network calls.
@@ -29,7 +29,7 @@ vi.mock('../../utils/sessionLock', () => ({
 }));
 
 const mockInitClient = vi.mocked(initClient);
-const mockGetFallbackSession = vi.mocked(getFallbackSession);
+const mockGetStoredSession = vi.mocked(getStoredSession);
 const mockCheckSessionLockFree = vi.mocked(checkSessionLockFree);
 const mockGetSessionLock = vi.mocked(getSessionLock);
 
@@ -86,7 +86,7 @@ describe('ClientRoot error dialog', () => {
       configurable: true,
       value: { reload: reloadSpy },
     });
-    mockGetFallbackSession.mockReturnValue(MOCK_SESSION as ReturnType<typeof getFallbackSession>);
+    mockGetStoredSession.mockReturnValue(MOCK_SESSION as ReturnType<typeof getStoredSession>);
     // ClientRoot logs failed loads via console.error; these tests intentionally
     // reject initClient, so silence the expected noise.
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -177,7 +177,7 @@ describe('ClientRoot single-tab session lock', () => {
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    mockGetFallbackSession.mockReturnValue(MOCK_SESSION as ReturnType<typeof getFallbackSession>);
+    mockGetStoredSession.mockReturnValue(MOCK_SESSION as ReturnType<typeof getStoredSession>);
     mockCheckSessionLockFree.mockReset().mockReturnValue(true);
     mockGetSessionLock.mockReset().mockResolvedValue(true);
     mockInitClient.mockReset();

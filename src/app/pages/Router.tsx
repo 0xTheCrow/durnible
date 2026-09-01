@@ -73,7 +73,7 @@ import { Create } from './client/create';
 import { CreateSpaceModalRenderer } from '../features/create-space';
 import { SearchModalRenderer } from '../features/search';
 import { ImageViewerRenderer } from '../components/image-viewer/ImageViewerRenderer';
-import { getFallbackSession } from '../state/sessions';
+import { getStoredSession } from '../state/sessions';
 import {
   CallPaneGate,
   CallBarGate,
@@ -93,7 +93,7 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
       <Route
         index
         loader={() => {
-          if (getFallbackSession()) {
+          if (getStoredSession()) {
             const lastVisitedRoomPath = getSettings().isStartingInLastVisitedRoom
               ? getLastVisitedRoomPath()
               : undefined;
@@ -106,7 +106,7 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
       />
       <Route
         loader={() => {
-          if (getFallbackSession()) {
+          if (getStoredSession()) {
             return redirect(getHomePath());
           }
 
@@ -126,7 +126,7 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
 
       <Route
         loader={() => {
-          if (!getFallbackSession()) {
+          if (!getStoredSession()) {
             const afterLoginPath = getAppPathFromHref(
               getOriginBaseUrl(hashRouter),
               window.location.href

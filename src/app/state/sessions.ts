@@ -7,19 +7,9 @@ export type Session = {
   accessToken: string;
   expiresInMs?: number;
   refreshToken?: string;
-  fallbackSdkStores?: boolean;
 };
 
-export type Sessions = Session[];
-export type SessionStoreName = {
-  sync: string;
-  crypto: string;
-};
-
-/**
- * Migration code for old session
- */
-export function setFallbackSession(
+export function setStoredSession(
   accessToken: string,
   deviceId: string,
   userId: string,
@@ -31,14 +21,14 @@ export function setFallbackSession(
   localStorage.setItem('cinny_hs_base_url', baseUrl);
   syncDesktopMediaAuth();
 }
-export const removeFallbackSession = () => {
+export const removeStoredSession = () => {
   localStorage.removeItem('cinny_hs_base_url');
   localStorage.removeItem('cinny_user_id');
   localStorage.removeItem('cinny_device_id');
   localStorage.removeItem('cinny_access_token');
   syncDesktopMediaAuth();
 };
-export const getFallbackSession = (): Session | undefined => {
+export const getStoredSession = (): Session | undefined => {
   const baseUrl = localStorage.getItem('cinny_hs_base_url');
   const userId = localStorage.getItem('cinny_user_id');
   const deviceId = localStorage.getItem('cinny_device_id');
@@ -50,7 +40,6 @@ export const getFallbackSession = (): Session | undefined => {
       userId,
       deviceId,
       accessToken,
-      fallbackSdkStores: true,
     };
 
     return session;
@@ -58,6 +47,6 @@ export const getFallbackSession = (): Session | undefined => {
 
   return undefined;
 };
-/**
- * End of migration code for old session
- */
+
+export const getStoredAccessToken = (): string | undefined =>
+  localStorage.getItem('cinny_access_token') ?? undefined;
