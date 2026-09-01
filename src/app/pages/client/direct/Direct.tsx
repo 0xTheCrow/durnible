@@ -1,5 +1,5 @@
 import type { MouseEventHandler } from 'react';
-import React, { forwardRef, useMemo, useRef, useState } from 'react';
+import React, { forwardRef, useMemo, useState } from 'react';
 import { useAtom, useAtomValue } from 'jotai';
 import type { RectCords } from 'folds';
 import {
@@ -183,7 +183,7 @@ export function Direct({ isDrawerMode, extra }: DirectProps = {}) {
   useNavToActivePathMapper('direct');
   const screenSize = useScreenSizeContext();
   const isDesktop = screenSize === ScreenSize.Desktop;
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [scrollElement, setScrollElement] = useState<HTMLDivElement | null>(null);
   const directs = useDirectRooms();
   const notificationPreferences = useRoomsNotificationPreferencesContext();
   const roomToUnread = useAtomValue(roomToUnreadAtom);
@@ -205,7 +205,7 @@ export function Direct({ isDrawerMode, extra }: DirectProps = {}) {
 
   const virtualizer = useVirtualizer({
     count: sortedDirects.length,
-    getScrollElement: () => scrollRef.current,
+    getScrollElement: () => scrollElement,
     estimateSize: () => 38,
     overscan: 10,
   });
@@ -220,7 +220,7 @@ export function Direct({ isDrawerMode, extra }: DirectProps = {}) {
       {noRoomToDisplay ? (
         <DirectEmpty />
       ) : (
-        <PageNavContent scrollRef={scrollRef}>
+        <PageNavContent scrollRef={setScrollElement}>
           <Box
             direction="Column"
             gap="300"

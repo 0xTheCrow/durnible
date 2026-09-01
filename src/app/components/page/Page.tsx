@@ -1,4 +1,4 @@
-import type { ComponentProps, MutableRefObject, ReactNode } from 'react';
+import type { ComponentProps, ReactNode, Ref } from 'react';
 import React, { useRef } from 'react';
 import { Box, Header, Icon, Icons, Line, Scroll, Text, as } from 'folds';
 import classNames from 'classnames';
@@ -160,7 +160,7 @@ export function PageNavContent({
   children,
 }: {
   children: ReactNode;
-  scrollRef?: MutableRefObject<HTMLDivElement | null>;
+  scrollRef?: Ref<HTMLDivElement>;
 }) {
   return (
     <Box grow="Yes" direction="Column">

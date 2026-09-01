@@ -1,5 +1,5 @@
 import type { MouseEventHandler } from 'react';
-import React, { forwardRef, useCallback, useMemo, useRef, useState } from 'react';
+import React, { forwardRef, useCallback, useMemo, useState } from 'react';
 import { useAtom, useAtomValue } from 'jotai';
 import type { RectCords } from 'folds';
 import {
@@ -401,7 +401,7 @@ export function Space({ isDrawerMode, extra }: SpaceProps = {}) {
   const space = useSpace();
   useNavToActivePathMapper(space.roomId);
   const spaceIdOrAlias = getCanonicalAliasOrRoomId(mx, space.roomId);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [scrollElement, setScrollElement] = useState<HTMLDivElement | null>(null);
   const mDirects = useAtomValue(mDirectAtom);
   const roomToUnread = useAtomValue(roomToUnreadAtom);
   const allRooms = useAtomValue(allRoomsAtom);
@@ -487,7 +487,7 @@ export function Space({ isDrawerMode, extra }: SpaceProps = {}) {
 
   const virtualizer = useVirtualizer({
     count: navRows.length,
-    getScrollElement: () => scrollRef.current,
+    getScrollElement: () => scrollElement,
     estimateSize: () => 0,
     overscan: 10,
   });
@@ -502,7 +502,7 @@ export function Space({ isDrawerMode, extra }: SpaceProps = {}) {
   return (
     <AdjustablePageNav isDrawerMode={isDrawerMode}>
       <SpaceHeader isDrawerMode={isDrawerMode} />
-      <PageNavContent scrollRef={scrollRef}>
+      <PageNavContent scrollRef={setScrollElement}>
         <Box
           direction="Column"
           gap="300"
