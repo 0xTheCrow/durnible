@@ -41,10 +41,12 @@ export const showMobileNotification = async ({
   id,
   title,
   body,
+  extra,
 }: {
   id: number;
   title: string;
   body: string;
+  extra?: unknown;
 }): Promise<void> => {
   if (!checkIsNativeMobileApp()) return;
 
@@ -54,6 +56,7 @@ export const showMobileNotification = async ({
         id,
         title,
         body,
+        extra,
         channelId: NOTIFICATION_CHANNEL_ID,
         foreground: true,
         isExactNotification: false,
@@ -63,11 +66,11 @@ export const showMobileNotification = async ({
 };
 
 export const addMobileNotificationClickListener = (
-  handleClick: (id: number) => void
+  handleClick: (extra: unknown) => void
 ): Promise<PluginListenerHandle | undefined> => {
   if (!checkIsNativeMobileApp()) return Promise.resolve(undefined);
 
   return LocalNotifications.addListener('localNotificationActionPerformed', (action) => {
-    handleClick(action.notification.id);
+    handleClick(action.notification.extra);
   });
 };

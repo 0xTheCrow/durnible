@@ -22,7 +22,8 @@ import { settingsAtom } from '../../state/settings';
 import { allInvitesAtom } from '../../state/room-list/inviteList';
 import { usePreviousValue } from '../../hooks/usePreviousValue';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
-import { getInboxInvitesPath, getInboxNotificationsPath } from '../pathUtils';
+import { getInboxInvitesPath } from '../pathUtils';
+import { useRoomNavigate } from '../../hooks/useRoomNavigate';
 import { getRoomPathWithoutEventId, setLastVisitedRoomPath } from '../lastVisitedRoomPath';
 import {
   getMemberDisplayName,
@@ -227,7 +228,7 @@ function InviteNotifications() {
 
   const notify = useCallback((count: number) => {
     showSystemNotification({
-      target: 'inboxInvites',
+      target: { kind: 'inboxInvites' },
       title: 'Invitation',
       body: `You have ${count} new invitation request.`,
       iconUrl: LogoSVG,
@@ -281,25 +282,30 @@ function MessageNotifications() {
 
   const notificationSelected = useInboxNotificationsSelected();
   const selectedRoomId = useSelectedRoom();
+  const { getRoomPath } = useRoomNavigate();
 
   const notify = useCallback(
     ({
       roomName,
       roomAvatar,
       username,
+      roomId,
+      eventId,
     }: {
       roomName: string;
       roomAvatar?: string;
       username: string;
+      roomId: string;
+      eventId: string;
     }) => {
       showSystemNotification({
-        target: 'inboxNotifications',
+        target: { kind: 'room', roomId, eventId, path: getRoomPath(roomId, eventId) },
         title: roomName,
-        body: `New inbox notification from ${username}`,
+        body: `New message from ${username}`,
         iconUrl: roomAvatar,
       });
     },
-    []
+    [getRoomPath]
   );
 
   const playSound = useCallback(() => {
@@ -351,6 +357,8 @@ function MessageNotifications() {
             ? mxcUrlToHttp(mx, avatarMxc, useAuthentication, 96, 96, 'crop') ?? undefined
             : undefined,
           username: getMemberDisplayName(room, sender) ?? getMxIdLocalPart(sender) ?? sender,
+          roomId: room.roomId,
+          eventId,
         });
       }
 
@@ -384,14 +392,19 @@ function MessageNotifications() {
 
 function SystemNotificationRouter() {
   const navigate = useNavigate();
+  const { navigateRoom } = useRoomNavigate();
 
   useEffect(() => {
     prepareSystemNotifications();
 
     return addSystemNotificationClickListener((target) => {
-      navigate(target === 'inboxInvites' ? getInboxInvitesPath() : getInboxNotificationsPath());
+      if (target.kind === 'inboxInvites') {
+        navigate(getInboxInvitesPath());
+        return;
+      }
+      navigateRoom(target.roomId, target.eventId);
     });
-  }, [navigate]);
+  }, [navigate, navigateRoom]);
 
   return null;
 }

@@ -1,4 +1,4 @@
-import { getInboxInvitesPath, getInboxNotificationsPath } from '../pages/pathUtils';
+import { getInboxInvitesPath } from '../pages/pathUtils';
 import { checkIsNativeMobileApp } from '../platform/mobile';
 import {
   addMobileNotificationClickListener,
@@ -8,22 +8,38 @@ import {
   showMobileNotification,
 } from '../platform/mobile/notifications';
 
-export type SystemNotificationTarget = 'inboxInvites' | 'inboxNotifications';
+export type SystemNotificationTarget =
+  | { kind: 'inboxInvites' }
+  | { kind: 'room'; roomId: string; eventId?: string; path: string };
 
-const NOTIFICATION_ID_BY_TARGET: Record<SystemNotificationTarget, number> = {
-  inboxInvites: 1,
-  inboxNotifications: 2,
+const INBOX_INVITES_NOTIFICATION_ID = 1;
+
+const getRoomNotificationId = (roomId: string): number => {
+  let hash = 5381;
+  for (let index = 0; index < roomId.length; index += 1) {
+    hash = ((hash << 5) + hash + roomId.charCodeAt(index)) | 0;
+  }
+  return hash === INBOX_INVITES_NOTIFICATION_ID ? hash + 1 : hash;
 };
 
-const getPathForTarget = (target: SystemNotificationTarget): string =>
-  target === 'inboxInvites' ? getInboxInvitesPath() : getInboxNotificationsPath();
+const getNotificationId = (target: SystemNotificationTarget): number =>
+  target.kind === 'inboxInvites'
+    ? INBOX_INVITES_NOTIFICATION_ID
+    : getRoomNotificationId(target.roomId);
 
-const TARGET_BY_NOTIFICATION_ID = new Map<number, SystemNotificationTarget>(
-  Object.entries(NOTIFICATION_ID_BY_TARGET).map(([target, id]) => [
-    id,
-    target as SystemNotificationTarget,
-  ])
-);
+const getTargetKey = (target: SystemNotificationTarget): string =>
+  target.kind === 'inboxInvites' ? 'inboxInvites' : `room:${target.roomId}`;
+
+const getPathForTarget = (target: SystemNotificationTarget): string =>
+  target.kind === 'inboxInvites' ? getInboxInvitesPath() : target.path;
+
+const checkIsNotificationTarget = (value: unknown): value is SystemNotificationTarget => {
+  if (typeof value !== 'object' || value === null) return false;
+
+  const { kind, roomId, path } = value as { kind?: unknown; roomId?: unknown; path?: unknown };
+  if (kind === 'inboxInvites') return true;
+  return kind === 'room' && typeof roomId === 'string' && typeof path === 'string';
+};
 
 const clickHandlers = new Set<(target: SystemNotificationTarget) => void>();
 
@@ -43,16 +59,12 @@ export const addSystemNotificationClickListener = (
 let mobileClickListener: ReturnType<typeof addMobileNotificationClickListener> | undefined;
 let isServiceWorkerClickListenerAdded = false;
 
-const checkIsNotificationTarget = (value: unknown): value is SystemNotificationTarget =>
-  value === 'inboxInvites' || value === 'inboxNotifications';
-
 export const prepareSystemNotifications = async (): Promise<void> => {
   if (checkIsNativeMobileApp()) {
     await prepareMobileNotifications();
 
-    mobileClickListener ??= addMobileNotificationClickListener((id) => {
-      const target = TARGET_BY_NOTIFICATION_ID.get(id);
-      if (target) emitClick(target);
+    mobileClickListener ??= addMobileNotificationClickListener((extra) => {
+      if (checkIsNotificationTarget(extra)) emitClick(extra);
     });
     await mobileClickListener;
     return;
@@ -83,7 +95,7 @@ export const requestSystemNotificationPermission = async (): Promise<PermissionS
   return permission === 'default' ? 'prompt' : permission;
 };
 
-const webNotificationByTarget = new Map<SystemNotificationTarget, Notification>();
+const webNotificationByTargetKey = new Map<string, Notification>();
 
 const showWebNotification = ({
   target,
@@ -96,6 +108,7 @@ const showWebNotification = ({
   body: string;
   iconUrl?: string;
 }): void => {
+  const targetKey = getTargetKey(target);
   const notification = new window.Notification(title, {
     icon: iconUrl,
     badge: iconUrl,
@@ -106,11 +119,11 @@ const showWebNotification = ({
   notification.onclick = () => {
     if (!window.closed) emitClick(target);
     notification.close();
-    webNotificationByTarget.delete(target);
+    webNotificationByTargetKey.delete(targetKey);
   };
 
-  webNotificationByTarget.get(target)?.close();
-  webNotificationByTarget.set(target, notification);
+  webNotificationByTargetKey.get(targetKey)?.close();
+  webNotificationByTargetKey.set(targetKey, notification);
 };
 
 const showServiceWorkerNotification = async ({
@@ -132,7 +145,7 @@ const showServiceWorkerNotification = async ({
     badge: iconUrl,
     body,
     silent: true,
-    tag: target,
+    tag: getTargetKey(target),
     data: { target, path: getPathForTarget(target) },
   });
 };
@@ -148,14 +161,17 @@ export const showSystemNotification = async ({
   body: string;
   iconUrl?: string;
 }): Promise<void> => {
+  if (checkIsNativeMobileApp() && document.visibilityState === 'visible') return;
+
   const permission = await getSystemNotificationPermission();
   if (permission !== 'granted') return;
 
   if (checkIsNativeMobileApp()) {
     await showMobileNotification({
-      id: NOTIFICATION_ID_BY_TARGET[target],
+      id: getNotificationId(target),
       title,
       body,
+      extra: target,
     });
     return;
   }

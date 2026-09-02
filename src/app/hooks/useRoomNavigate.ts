@@ -33,8 +33,8 @@ export const useRoomNavigate = () => {
     [mx, navigate]
   );
 
-  const navigateRoom = useCallback(
-    (roomId: string, eventId?: string, opts?: NavigateOptions) => {
+  const getRoomPath = useCallback(
+    (roomId: string, eventId?: string): string => {
       const roomIdOrAlias = getCanonicalAliasOrRoomId(mx, roomId);
       const openSpaceTimeline = developerTools && spaceSelectedId === roomId;
 
@@ -49,25 +49,32 @@ export const useRoomNavigate = () => {
 
         const pSpaceIdOrAlias = getCanonicalAliasOrRoomId(mx, parentSpace);
 
-        navigate(
-          getSpaceRoomPath(pSpaceIdOrAlias, openSpaceTimeline ? roomId : roomIdOrAlias, eventId),
-          opts
+        return getSpaceRoomPath(
+          pSpaceIdOrAlias,
+          openSpaceTimeline ? roomId : roomIdOrAlias,
+          eventId
         );
-        return;
       }
 
       if (mDirects.has(roomId)) {
-        navigate(getDirectRoomPath(roomIdOrAlias, eventId), opts);
-        return;
+        return getDirectRoomPath(roomIdOrAlias, eventId);
       }
 
-      navigate(getHomeRoomPath(roomIdOrAlias, eventId), opts);
+      return getHomeRoomPath(roomIdOrAlias, eventId);
     },
-    [mx, navigate, spaceSelectedId, roomToParents, mDirects, developerTools]
+    [mx, spaceSelectedId, roomToParents, mDirects, developerTools]
+  );
+
+  const navigateRoom = useCallback(
+    (roomId: string, eventId?: string, opts?: NavigateOptions) => {
+      navigate(getRoomPath(roomId, eventId), opts);
+    },
+    [navigate, getRoomPath]
   );
 
   return {
     navigateSpace,
     navigateRoom,
+    getRoomPath,
   };
 };
