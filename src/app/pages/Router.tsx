@@ -6,7 +6,7 @@ import {
   createBrowserRouter,
   createHashRouter,
   createRoutesFromElements,
-  redirect,
+  replace,
 } from 'react-router-dom';
 
 import type { ClientConfig } from '../hooks/useClientConfig';
@@ -97,17 +97,17 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
             const lastVisitedRoomPath = getSettings().isStartingInLastVisitedRoom
               ? getLastVisitedRoomPath()
               : undefined;
-            return redirect(lastVisitedRoomPath ?? getHomePath());
+            return replace(lastVisitedRoomPath ?? getHomePath());
           }
           const afterLoginPath = getAppPathFromHref(getOriginBaseUrl(), window.location.href);
           if (afterLoginPath) setAfterLoginRedirectPath(afterLoginPath);
-          return redirect(getLoginPath());
+          return replace(getLoginPath());
         }}
       />
       <Route
         loader={() => {
           if (getStoredSession()) {
-            return redirect(getHomePath());
+            return replace(getHomePath());
           }
 
           return null;
@@ -132,7 +132,7 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
               window.location.href
             );
             if (afterLoginPath) setAfterLoginRedirectPath(afterLoginPath);
-            return redirect(getLoginPath());
+            return replace(getLoginPath());
           }
           return null;
         }}
@@ -260,7 +260,7 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
               loader={({ params }) => {
                 const { spaceIdOrAlias } = params;
                 if (spaceIdOrAlias) {
-                  return redirect(getSpaceLobbyPath(spaceIdOrAlias));
+                  return replace(getSpaceLobbyPath(spaceIdOrAlias));
                 }
                 return null;
               }}
@@ -303,7 +303,7 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
           {mobile ? null : (
             <Route
               index
-              loader={() => redirect(getExploreFeaturedPath())}
+              loader={() => replace(getExploreFeaturedPath())}
               element={<WelcomePage />}
             />
           )}
@@ -331,7 +331,7 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
           {mobile ? null : (
             <Route
               index
-              loader={() => redirect(getInboxNotificationsPath())}
+              loader={() => replace(getInboxNotificationsPath())}
               element={<WelcomePage />}
             />
           )}
