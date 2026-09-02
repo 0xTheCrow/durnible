@@ -132,6 +132,31 @@ self.addEventListener('message', (event: ExtendableMessageEvent) => {
   }
 });
 
+self.addEventListener('notificationclick', (event: NotificationEvent) => {
+  event.notification.close();
+  const { target, path } = event.notification.data ?? {};
+
+  event.waitUntil(
+    (async () => {
+      const windowClients = await self.clients.matchAll({
+        type: 'window',
+        includeUncontrolled: true,
+      });
+      const [windowClient] = windowClients;
+
+      if (windowClient) {
+        await windowClient.focus();
+        windowClient.postMessage({ type: 'durnible_notification_click', target });
+        return;
+      }
+
+      if (typeof path === 'string') {
+        await self.clients.openWindow(path);
+      }
+    })()
+  );
+});
+
 self.addEventListener('fetch', (event: FetchEvent) => {
   const { url, method } = event.request;
   if (method !== 'GET') return;

@@ -9,7 +9,13 @@ import { roomToUnreadAtom, unreadEqual, unreadInfoToUnread } from '../../state/r
 import LogoSVG from '../../../../public/res/svg/durnible.svg';
 import LogoUnreadSVG from '../../../../public/res/svg/durnible-unread.svg';
 import LogoHighlightSVG from '../../../../public/res/svg/durnible-highlight.svg';
-import { notificationPermission, setFavicon } from '../../utils/dom';
+import { setFavicon } from '../../utils/dom';
+import {
+  addSystemNotificationClickListener,
+  prepareSystemNotifications,
+  showSystemNotification,
+} from '../../utils/systemNotifications';
+import { checkIsNativeMobileApp } from '../../platform/mobile';
 import { getNotificationSoundUrl } from '../../plugins/notificationSounds';
 import { useSetting } from '../../state/hooks/settings';
 import { settingsAtom } from '../../state/settings';
@@ -215,27 +221,18 @@ function InviteNotifications() {
   const perviousInviteLen = usePreviousValue(invites.length, 0);
   const mx = useMatrixClient();
 
-  const navigate = useNavigate();
   const [showNotifications] = useSetting(settingsAtom, 'showNotifications');
   const [isNotificationSoundEnabled] = useSetting(settingsAtom, 'isNotificationSoundEnabled');
   const [inviteNotificationSoundId] = useSetting(settingsAtom, 'inviteNotificationSoundId');
 
-  const notify = useCallback(
-    (count: number) => {
-      const noti = new window.Notification('Invitation', {
-        icon: LogoSVG,
-        badge: LogoSVG,
-        body: `You have ${count} new invitation request.`,
-        silent: true,
-      });
-
-      noti.onclick = () => {
-        if (!window.closed) navigate(getInboxInvitesPath());
-        noti.close();
-      };
-    },
-    [navigate]
-  );
+  const notify = useCallback((count: number) => {
+    showSystemNotification({
+      target: 'inboxInvites',
+      title: 'Invitation',
+      body: `You have ${count} new invitation request.`,
+      iconUrl: LogoSVG,
+    });
+  }, []);
 
   const playSound = useCallback(() => {
     const audioElement = audioRef.current;
@@ -244,11 +241,11 @@ function InviteNotifications() {
 
   useEffect(() => {
     if (invites.length > perviousInviteLen && mx.getSyncState() === 'SYNCING') {
-      if (showNotifications && notificationPermission('granted')) {
+      if (showNotifications) {
         notify(invites.length - perviousInviteLen);
       }
 
-      if (isNotificationSoundEnabled) {
+      if (isNotificationSoundEnabled && !checkIsNativeMobileApp()) {
         playSound();
       }
     }
@@ -262,6 +259,8 @@ function InviteNotifications() {
     playSound,
   ]);
 
+  if (checkIsNativeMobileApp()) return null;
+
   return (
     <audio
       ref={audioRef}
@@ -273,7 +272,6 @@ function InviteNotifications() {
 
 function MessageNotifications() {
   const audioRef = useRef<HTMLAudioElement>(null);
-  const notifRef = useRef<Notification>();
   const unreadCacheRef = useRef<Map<string, UnreadInfo>>(new Map());
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
@@ -281,7 +279,6 @@ function MessageNotifications() {
   const [isNotificationSoundEnabled] = useSetting(settingsAtom, 'isNotificationSoundEnabled');
   const [messageNotificationSoundId] = useSetting(settingsAtom, 'messageNotificationSoundId');
 
-  const navigate = useNavigate();
   const notificationSelected = useInboxNotificationsSelected();
   const selectedRoomId = useSelectedRoom();
 
@@ -294,26 +291,15 @@ function MessageNotifications() {
       roomName: string;
       roomAvatar?: string;
       username: string;
-      roomId: string;
-      eventId: string;
     }) => {
-      const noti = new window.Notification(roomName, {
-        icon: roomAvatar,
-        badge: roomAvatar,
+      showSystemNotification({
+        target: 'inboxNotifications',
+        title: roomName,
         body: `New inbox notification from ${username}`,
-        silent: true,
+        iconUrl: roomAvatar,
       });
-
-      noti.onclick = () => {
-        if (!window.closed) navigate(getInboxNotificationsPath());
-        noti.close();
-        notifRef.current = undefined;
-      };
-
-      notifRef.current?.close();
-      notifRef.current = noti;
     },
-    [navigate]
+    []
   );
 
   const playSound = useCallback(() => {
@@ -356,7 +342,7 @@ function MessageNotifications() {
         return;
       }
 
-      if (showNotifications && notificationPermission('granted')) {
+      if (showNotifications) {
         const avatarMxc =
           room.getAvatarFallbackMember()?.getMxcAvatarUrl() ?? room.getMxcAvatarUrl();
         notify({
@@ -365,12 +351,10 @@ function MessageNotifications() {
             ? mxcUrlToHttp(mx, avatarMxc, useAuthentication, 96, 96, 'crop') ?? undefined
             : undefined,
           username: getMemberDisplayName(room, sender) ?? getMxIdLocalPart(sender) ?? sender,
-          roomId: room.roomId,
-          eventId,
         });
       }
 
-      if (isNotificationSoundEnabled) {
+      if (isNotificationSoundEnabled && !checkIsNativeMobileApp()) {
         playSound();
       }
     };
@@ -398,6 +382,20 @@ function MessageNotifications() {
   );
 }
 
+function SystemNotificationRouter() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    prepareSystemNotifications();
+
+    return addSystemNotificationClickListener((target) => {
+      navigate(target === 'inboxInvites' ? getInboxInvitesPath() : getInboxNotificationsPath());
+    });
+  }, [navigate]);
+
+  return null;
+}
+
 type ClientNonUIFeaturesProps = {
   children: ReactNode;
 };
@@ -412,6 +410,7 @@ export function ClientNonUIFeatures({ children }: ClientNonUIFeaturesProps) {
       <SystemEmojiFeature />
       <PageZoomFeature />
       <FaviconUpdater />
+      <SystemNotificationRouter />
       <InviteNotifications />
       <MessageNotifications />
       {children}
