@@ -1,4 +1,17 @@
+import groovy.json.JsonSlurper
+
 apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+def packageVersion = new JsonSlurper().parse(rootProject.file('../../../package.json')).version
+def semanticVersion = (packageVersion =~ /^(\d+)\.(\d+)\.(\d+)/)
+if (!semanticVersion) {
+    throw new GradleException("package.json version '${packageVersion}' is not major.minor.patch")
+}
+def (majorVersion, minorVersion, patchVersion) = semanticVersion[0][1..3]*.toInteger()
+if (minorVersion > 99 || patchVersion > 99) {
+    throw new GradleException("package.json version '${packageVersion}' overflows the versionCode formula")
+}
 
 android {
     namespace = "org.durnible.app"
@@ -7,8 +20,8 @@ android {
         applicationId "org.durnible.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode majorVersion * 10000 + minorVersion * 100 + patchVersion
+        versionName packageVersion
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -22,6 +35,10 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+}
+
+kotlin {
+    jvmToolchain(21)
 }
 
 repositories {
