@@ -1,14 +1,15 @@
 import React, { useRef, useState } from 'react';
 import { usePausedFirstFrameCanvas } from '../hooks/usePausedFirstFrameCanvas';
 
-type AnimatedEmojiOverlayProps = React.ImgHTMLAttributes<HTMLImageElement> & {
+interface AnimatedEmojiOverlayProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   pauseGifs: boolean;
   hovered?: boolean;
-};
+}
 
 export function AnimatedEmojiOverlay({
   pauseGifs,
   hovered: hoveredProp,
+  alt,
   ...imgProps
 }: AnimatedEmojiOverlayProps) {
   const imgRef = useRef<HTMLImageElement | null>(null);
@@ -22,8 +23,7 @@ export function AnimatedEmojiOverlay({
   usePausedFirstFrameCanvas(imgRef, canvasRef, loaded, pauseGifs);
 
   if (!pauseGifs) {
-    // eslint-disable-next-line jsx-a11y/alt-text
-    return <img {...imgProps} data-testid="animated-emoji-overlay" />;
+    return <img alt={alt} draggable={false} {...imgProps} data-testid="animated-emoji-overlay" />;
   }
 
   return (
@@ -33,8 +33,9 @@ export function AnimatedEmojiOverlay({
       onMouseEnter={selfManaged ? () => setHoveredSelf(true) : undefined}
       onMouseLeave={selfManaged ? () => setHoveredSelf(false) : undefined}
     >
-      {/* eslint-disable-next-line jsx-a11y/alt-text */}
       <img
+        alt={alt}
+        draggable={false}
         {...imgProps}
         ref={imgRef}
         data-testid="animated-emoji-overlay"

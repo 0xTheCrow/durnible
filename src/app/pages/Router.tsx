@@ -6,7 +6,7 @@ import {
   createBrowserRouter,
   createHashRouter,
   createRoutesFromElements,
-  redirect,
+  replace,
 } from 'react-router-dom';
 
 import type { ClientConfig } from '../hooks/useClientConfig';
@@ -49,6 +49,8 @@ import { FavoriteRoomsSection } from './client/FavoriteRooms';
 import { Explore, FeaturedRooms, PublicRooms } from './client/explore';
 import { Notifications, Inbox, Invites } from './client/inbox';
 import { setAfterLoginRedirectPath } from './afterLoginRedirectPath';
+import { getLastVisitedRoomPath } from './lastVisitedRoomPath';
+import { getSettings } from '../state/settings';
 import { Room } from '../features/room';
 import { WelcomePage } from './client/WelcomePage';
 import { SidebarNav } from './client/SidebarNav';
@@ -71,7 +73,7 @@ import { Create } from './client/create';
 import { CreateSpaceModalRenderer } from '../features/create-space';
 import { SearchModalRenderer } from '../features/search';
 import { ImageViewerRenderer } from '../components/image-viewer/ImageViewerRenderer';
-import { getFallbackSession } from '../state/sessions';
+import { getStoredSession } from '../state/sessions';
 import {
   CallPaneGate,
   CallBarGate,
@@ -91,16 +93,21 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
       <Route
         index
         loader={() => {
-          if (getFallbackSession()) return redirect(getHomePath());
+          if (getStoredSession()) {
+            const lastVisitedRoomPath = getSettings().isStartingInLastVisitedRoom
+              ? getLastVisitedRoomPath()
+              : undefined;
+            return replace(lastVisitedRoomPath ?? getHomePath());
+          }
           const afterLoginPath = getAppPathFromHref(getOriginBaseUrl(), window.location.href);
           if (afterLoginPath) setAfterLoginRedirectPath(afterLoginPath);
-          return redirect(getLoginPath());
+          return replace(getLoginPath());
         }}
       />
       <Route
         loader={() => {
-          if (getFallbackSession()) {
-            return redirect(getHomePath());
+          if (getStoredSession()) {
+            return replace(getHomePath());
           }
 
           return null;
@@ -119,13 +126,13 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
 
       <Route
         loader={() => {
-          if (!getFallbackSession()) {
+          if (!getStoredSession()) {
             const afterLoginPath = getAppPathFromHref(
               getOriginBaseUrl(hashRouter),
               window.location.href
             );
             if (afterLoginPath) setAfterLoginRedirectPath(afterLoginPath);
-            return redirect(getLoginPath());
+            return replace(getLoginPath());
           }
           return null;
         }}
@@ -253,7 +260,7 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
               loader={({ params }) => {
                 const { spaceIdOrAlias } = params;
                 if (spaceIdOrAlias) {
-                  return redirect(getSpaceLobbyPath(spaceIdOrAlias));
+                  return replace(getSpaceLobbyPath(spaceIdOrAlias));
                 }
                 return null;
               }}
@@ -296,7 +303,7 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
           {mobile ? null : (
             <Route
               index
-              loader={() => redirect(getExploreFeaturedPath())}
+              loader={() => replace(getExploreFeaturedPath())}
               element={<WelcomePage />}
             />
           )}
@@ -324,7 +331,7 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
           {mobile ? null : (
             <Route
               index
-              loader={() => redirect(getInboxNotificationsPath())}
+              loader={() => replace(getInboxNotificationsPath())}
               element={<WelcomePage />}
             />
           )}

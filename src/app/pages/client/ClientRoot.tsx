@@ -39,7 +39,7 @@ import { useSyncState } from '../../hooks/useSyncState';
 import { stopPropagation } from '../../utils/keyboard';
 import { setGifServerClient } from '../../utils/gifServer';
 import { AuthMetadataProvider } from '../../hooks/useAuthMetadata';
-import { getFallbackSession } from '../../state/sessions';
+import { getStoredSession } from '../../state/sessions';
 import { overlayVisibleAtom, useReadinessGate } from '../../state/readiness';
 import { logStartupSummary, startupMark } from '../../utils/startupPerf';
 import { checkSessionLockFree, getSessionLock } from '../../utils/sessionLock';
@@ -147,7 +147,7 @@ export function ClientRoot({ children }: ClientRootProps) {
   const [sessionActiveInOtherTab, setSessionActiveInOtherTab] = useState(false);
   const startupLoggedRef = useRef(false);
   const mxRef = useRef<MatrixClient | undefined>(undefined);
-  const { baseUrl } = getFallbackSession() ?? {};
+  const { baseUrl } = getStoredSession() ?? {};
 
   const handleOtherTabTakeover = useCallback(async () => {
     setSessionActiveInOtherTab(true);
@@ -160,7 +160,7 @@ export function ClientRoot({ children }: ClientRootProps) {
 
   const [loadState, loadMatrix] = useAsyncCallback<MatrixClient, Error, []>(
     useCallback(async () => {
-      const session = getFallbackSession();
+      const session = getStoredSession();
       if (!session) {
         throw new Error('No session Found!');
       }

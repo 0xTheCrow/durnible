@@ -14,6 +14,7 @@ import type { ImageInfo, ThumbnailContent, VideoInfo } from '../../types/matrix/
 import { getStateEvent } from './room';
 import { Membership, StateEvent } from '../../types/matrix/room';
 import { markCachedMediaUrl } from './mediaCache';
+import { getStoredAccessToken } from '../state/sessions';
 
 const DOMAIN_REGEX = /\b(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}\b/;
 
@@ -361,8 +362,14 @@ export const mxcUrlToEmojiHttp = (
 };
 
 export const downloadMedia = async (src: string): Promise<Blob> => {
-  // this request is authenticated by service worker
-  const res = await fetch(src, { method: 'GET' });
+  // On iOS this header is the only thing authenticating the request: WKWebView
+  // supports no service worker on any scheme. Redundant but benign everywhere
+  // else, where the SW or the desktop webRequest handler already sets it.
+  const accessToken = getStoredAccessToken();
+  const res = await fetch(src, {
+    method: 'GET',
+    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+  });
   const blob = await res.blob();
   return blob;
 };

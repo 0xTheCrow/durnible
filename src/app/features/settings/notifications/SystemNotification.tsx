@@ -5,7 +5,8 @@ import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { SettingTile } from '../../../components/setting-tile';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
-import { getNotificationState, usePermissionState } from '../../../hooks/usePermission';
+import { useSystemNotificationPermission } from '../../../hooks/useSystemNotificationPermission';
+import { checkIsNativeMobileApp } from '../../../platform/mobile';
 import { SelectNotificationSound } from '../components';
 
 /*
@@ -84,7 +85,7 @@ function EmailNotification() {
 */
 
 export function SystemNotification() {
-  const notifPermission = usePermissionState('notifications', getNotificationState());
+  const [notifPermission, requestNotificationPermission] = useSystemNotificationPermission();
   const [showNotifications, setShowNotifications] = useSetting(settingsAtom, 'showNotifications');
   const [isNotificationSoundEnabled, setIsNotificationSoundEnabled] = useSetting(
     settingsAtom,
@@ -99,9 +100,17 @@ export function SystemNotification() {
     'inviteNotificationSoundId'
   );
 
-  const requestNotificationPermission = () => {
-    window.Notification.requestPermission();
-  };
+  const isNativeMobileApp = checkIsNativeMobileApp();
+
+  const blockedPermissionMessage = (() => {
+    if (isNativeMobileApp) {
+      return 'Notification permission is blocked. Please allow notifications for Durnible in your device settings.';
+    }
+    if ('Notification' in window) {
+      return 'Notification permission is blocked. Please allow notification permission from browser address bar.';
+    }
+    return 'Notifications are not supported by the system.';
+  })();
 
   return (
     <Box direction="Column" gap="100">
@@ -113,16 +122,18 @@ export function SystemNotification() {
         gap="400"
       >
         <SettingTile
-          title="Desktop Notifications"
+          title={isNativeMobileApp ? 'System Notifications' : 'Desktop Notifications'}
           description={
             notifPermission === 'denied' ? (
               <Text as="span" style={{ color: color.Critical.Main }} size="T200">
-                {'Notification' in window
-                  ? 'Notification permission is blocked. Please allow notification permission from browser address bar.'
-                  : 'Notifications are not supported by the system.'}
+                {blockedPermissionMessage}
               </Text>
             ) : (
-              <span>Show desktop notifications when message arrive.</span>
+              <span>
+                {isNativeMobileApp
+                  ? 'Show system notifications when message arrive.'
+                  : 'Show desktop notifications when message arrive.'}
+              </span>
             )
           }
           after={
@@ -140,42 +151,56 @@ export function SystemNotification() {
           }
         />
       </SequenceCard>
-      <SequenceCard
-        className={SettingsCardStyle}
-        variant="SurfaceVariant"
-        direction="Column"
-        gap="400"
-      >
-        <SettingTile
-          title="Notification Sound"
-          description="Play sound when new message arrive."
-          after={
-            <Switch value={isNotificationSoundEnabled} onChange={setIsNotificationSoundEnabled} />
-          }
-        />
-        <SettingTile
-          title="Message Sound"
-          description="Sound played when a new message arrive."
-          after={
-            <SelectNotificationSound
-              soundId={messageNotificationSoundId}
-              disabled={!isNotificationSoundEnabled}
-              onSelect={setMessageNotificationSoundId}
-            />
-          }
-        />
-        <SettingTile
-          title="Invite Sound"
-          description="Sound played when a new invitation arrive."
-          after={
-            <SelectNotificationSound
-              soundId={inviteNotificationSoundId}
-              disabled={!isNotificationSoundEnabled}
-              onSelect={setInviteNotificationSoundId}
-            />
-          }
-        />
-      </SequenceCard>
+      {isNativeMobileApp ? (
+        <SequenceCard
+          className={SettingsCardStyle}
+          variant="SurfaceVariant"
+          direction="Column"
+          gap="400"
+        >
+          <SettingTile
+            title="Notification Sound"
+            description="Sound and vibration are managed by your device. Change them for Durnible in your system notification settings."
+          />
+        </SequenceCard>
+      ) : (
+        <SequenceCard
+          className={SettingsCardStyle}
+          variant="SurfaceVariant"
+          direction="Column"
+          gap="400"
+        >
+          <SettingTile
+            title="Notification Sound"
+            description="Play sound when new message arrive."
+            after={
+              <Switch value={isNotificationSoundEnabled} onChange={setIsNotificationSoundEnabled} />
+            }
+          />
+          <SettingTile
+            title="Message Sound"
+            description="Sound played when a new message arrive."
+            after={
+              <SelectNotificationSound
+                soundId={messageNotificationSoundId}
+                disabled={!isNotificationSoundEnabled}
+                onSelect={setMessageNotificationSoundId}
+              />
+            }
+          />
+          <SettingTile
+            title="Invite Sound"
+            description="Sound played when a new invitation arrive."
+            after={
+              <SelectNotificationSound
+                soundId={inviteNotificationSoundId}
+                disabled={!isNotificationSoundEnabled}
+                onSelect={setInviteNotificationSoundId}
+              />
+            }
+          />
+        </SequenceCard>
+      )}
       {/*
       <SequenceCard
         className={SettingsCardStyle}

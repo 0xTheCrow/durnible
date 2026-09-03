@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import React, { useEffect, useRef } from 'react';
 import { useLocation, useMatch } from 'react-router-dom';
 import { Box } from 'folds';
+import classNames from 'classnames';
 import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
 import { useSwipeDrawer } from '../../hooks/useSwipeDrawer';
 import { SwipeDrawer } from '../../components/swipe-drawer';
@@ -14,6 +15,7 @@ import { Space } from './space';
 import { Direct } from './direct/Direct';
 import { Home } from './home/Home';
 import { FavoriteRoomsSection } from './FavoriteRooms';
+import * as css from './RoomDrawer.css';
 
 type RoomDrawerProps = {
   children: ReactNode;
@@ -95,8 +97,7 @@ export function RoomDrawer({ children }: RoomDrawerProps) {
           grow="Yes"
           direction="Column"
           justifyContent={isFullNav ? undefined : 'End'}
-          className={ContainerColor({ variant: 'Background' })}
-          style={{ height: '100%' }}
+          className={classNames(ContainerColor({ variant: 'Background' }), css.DrawerContent)}
         >
           {drawerNav}
         </Box>

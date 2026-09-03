@@ -23,6 +23,7 @@ import { useVirtualPaginator } from '../../../hooks/useVirtualPaginator';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { useRoomNavigate } from '../../../hooks/useRoomNavigate';
 import { useAlive } from '../../../hooks/useAlive';
+import { useCanHover } from '../../../hooks/useCanHover';
 import { useIgnoredUsers } from '../../../hooks/useIgnoredUsers';
 import { RoomIntro } from '../../../components/room-intro';
 import { getEditedEvent } from '../../../utils/room';
@@ -48,6 +49,8 @@ import { resolveTimelineEvents } from './utils/resolveTimelineEvents';
 import { createTimelineWindow, getWindowRange } from './utils/timelineWindow';
 import { traceTimelineScroll } from './utils/scrollTrace';
 import { willEventRender } from './willEventRender';
+
+const TOUCH_SCROLLBAR_GUTTER = toRem(16);
 
 type RoomTimelineProps = {
   room: Room;
@@ -99,6 +102,7 @@ export function RoomTimeline({
   const ignoredUsersList = useIgnoredUsers();
   const ignoredUsersSet = useMemo(() => new Set(ignoredUsersList), [ignoredUsersList]);
   const sliderVisible = useAtomValue(timelineSliderVisibleAtom);
+  const canHover = useCanHover();
 
   const {
     handleTimelinePagination,
@@ -544,7 +548,12 @@ export function RoomTimeline({
         <Scroll
           ref={scrollRef}
           visibility="Hover"
-          style={{ overscrollBehavior: 'none', overflowAnchor: 'none' }}
+          size={canHover ? '400' : '0'}
+          style={{
+            overscrollBehavior: 'none',
+            overflowAnchor: 'none',
+            paddingRight: canHover ? undefined : TOUCH_SCROLLBAR_GUTTER,
+          }}
           data-testid="timeline-scroll"
         >
           <Box

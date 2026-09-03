@@ -529,7 +529,8 @@ export const getReactCustomHtmlParser = (
               </span>
             );
           }
-          if (htmlSrc) return <img {...props} className={css.Img} src={htmlSrc} />;
+          if (htmlSrc)
+            return <img draggable={false} {...props} className={css.Img} src={htmlSrc} />;
         }
       }
 

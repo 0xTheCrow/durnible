@@ -2,21 +2,29 @@ import { isKeyHotkey } from 'is-hotkey';
 import { useAtomValue } from 'jotai';
 import type { ReactNode } from 'react';
 import React, { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import type { MatrixEvent, RoomEventHandlerMap } from 'matrix-js-sdk';
 import { MatrixEventEvent, RoomEvent } from 'matrix-js-sdk';
 import { roomToUnreadAtom, unreadEqual, unreadInfoToUnread } from '../../state/room/roomToUnread';
 import LogoSVG from '../../../../public/res/svg/durnible.svg';
 import LogoUnreadSVG from '../../../../public/res/svg/durnible-unread.svg';
 import LogoHighlightSVG from '../../../../public/res/svg/durnible-highlight.svg';
-import { notificationPermission, setFavicon } from '../../utils/dom';
+import { setFavicon } from '../../utils/dom';
+import {
+  addSystemNotificationClickListener,
+  prepareSystemNotifications,
+  showSystemNotification,
+} from '../../utils/systemNotifications';
+import { checkIsNativeMobileApp } from '../../platform/mobile';
 import { getNotificationSoundUrl } from '../../plugins/notificationSounds';
 import { useSetting } from '../../state/hooks/settings';
 import { settingsAtom } from '../../state/settings';
 import { allInvitesAtom } from '../../state/room-list/inviteList';
 import { usePreviousValue } from '../../hooks/usePreviousValue';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
-import { getInboxInvitesPath, getInboxNotificationsPath } from '../pathUtils';
+import { getInboxInvitesPath } from '../pathUtils';
+import { useRoomNavigate } from '../../hooks/useRoomNavigate';
+import { getRoomPathWithoutEventId, setLastVisitedRoomPath } from '../lastVisitedRoomPath';
 import {
   getMemberDisplayName,
   getNotificationType,
@@ -145,6 +153,17 @@ function SyncRecovery() {
   return null;
 }
 
+function LastVisitedRoomRecorder() {
+  const location = useLocation();
+
+  useEffect(() => {
+    const roomPath = getRoomPathWithoutEventId(location.pathname);
+    if (roomPath) setLastVisitedRoomPath(roomPath);
+  }, [location.pathname]);
+
+  return null;
+}
+
 function SystemEmojiFeature() {
   const [twitterEmoji] = useSetting(settingsAtom, 'twitterEmoji');
 
@@ -203,27 +222,18 @@ function InviteNotifications() {
   const perviousInviteLen = usePreviousValue(invites.length, 0);
   const mx = useMatrixClient();
 
-  const navigate = useNavigate();
   const [showNotifications] = useSetting(settingsAtom, 'showNotifications');
   const [isNotificationSoundEnabled] = useSetting(settingsAtom, 'isNotificationSoundEnabled');
   const [inviteNotificationSoundId] = useSetting(settingsAtom, 'inviteNotificationSoundId');
 
-  const notify = useCallback(
-    (count: number) => {
-      const noti = new window.Notification('Invitation', {
-        icon: LogoSVG,
-        badge: LogoSVG,
-        body: `You have ${count} new invitation request.`,
-        silent: true,
-      });
-
-      noti.onclick = () => {
-        if (!window.closed) navigate(getInboxInvitesPath());
-        noti.close();
-      };
-    },
-    [navigate]
-  );
+  const notify = useCallback((count: number) => {
+    showSystemNotification({
+      target: { kind: 'inboxInvites' },
+      title: 'Invitation',
+      body: `You have ${count} new invitation request.`,
+      iconUrl: LogoSVG,
+    });
+  }, []);
 
   const playSound = useCallback(() => {
     const audioElement = audioRef.current;
@@ -232,11 +242,11 @@ function InviteNotifications() {
 
   useEffect(() => {
     if (invites.length > perviousInviteLen && mx.getSyncState() === 'SYNCING') {
-      if (showNotifications && notificationPermission('granted')) {
+      if (showNotifications) {
         notify(invites.length - perviousInviteLen);
       }
 
-      if (isNotificationSoundEnabled) {
+      if (isNotificationSoundEnabled && !checkIsNativeMobileApp()) {
         playSound();
       }
     }
@@ -250,6 +260,8 @@ function InviteNotifications() {
     playSound,
   ]);
 
+  if (checkIsNativeMobileApp()) return null;
+
   return (
     <audio
       ref={audioRef}
@@ -261,7 +273,6 @@ function InviteNotifications() {
 
 function MessageNotifications() {
   const audioRef = useRef<HTMLAudioElement>(null);
-  const notifRef = useRef<Notification>();
   const unreadCacheRef = useRef<Map<string, UnreadInfo>>(new Map());
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
@@ -269,15 +280,17 @@ function MessageNotifications() {
   const [isNotificationSoundEnabled] = useSetting(settingsAtom, 'isNotificationSoundEnabled');
   const [messageNotificationSoundId] = useSetting(settingsAtom, 'messageNotificationSoundId');
 
-  const navigate = useNavigate();
   const notificationSelected = useInboxNotificationsSelected();
   const selectedRoomId = useSelectedRoom();
+  const { getRoomPath } = useRoomNavigate();
 
   const notify = useCallback(
     ({
       roomName,
       roomAvatar,
       username,
+      roomId,
+      eventId,
     }: {
       roomName: string;
       roomAvatar?: string;
@@ -285,23 +298,14 @@ function MessageNotifications() {
       roomId: string;
       eventId: string;
     }) => {
-      const noti = new window.Notification(roomName, {
-        icon: roomAvatar,
-        badge: roomAvatar,
-        body: `New inbox notification from ${username}`,
-        silent: true,
+      showSystemNotification({
+        target: { kind: 'room', roomId, eventId, path: getRoomPath(roomId, eventId) },
+        title: roomName,
+        body: `New message from ${username}`,
+        iconUrl: roomAvatar,
       });
-
-      noti.onclick = () => {
-        if (!window.closed) navigate(getInboxNotificationsPath());
-        noti.close();
-        notifRef.current = undefined;
-      };
-
-      notifRef.current?.close();
-      notifRef.current = noti;
     },
-    [navigate]
+    [getRoomPath]
   );
 
   const playSound = useCallback(() => {
@@ -344,7 +348,7 @@ function MessageNotifications() {
         return;
       }
 
-      if (showNotifications && notificationPermission('granted')) {
+      if (showNotifications) {
         const avatarMxc =
           room.getAvatarFallbackMember()?.getMxcAvatarUrl() ?? room.getMxcAvatarUrl();
         notify({
@@ -358,7 +362,7 @@ function MessageNotifications() {
         });
       }
 
-      if (isNotificationSoundEnabled) {
+      if (isNotificationSoundEnabled && !checkIsNativeMobileApp()) {
         playSound();
       }
     };
@@ -386,6 +390,25 @@ function MessageNotifications() {
   );
 }
 
+function SystemNotificationRouter() {
+  const navigate = useNavigate();
+  const { navigateRoom } = useRoomNavigate();
+
+  useEffect(() => {
+    prepareSystemNotifications();
+
+    return addSystemNotificationClickListener((target) => {
+      if (target.kind === 'inboxInvites') {
+        navigate(getInboxInvitesPath());
+        return;
+      }
+      navigateRoom(target.roomId, target.eventId);
+    });
+  }, [navigate, navigateRoom]);
+
+  return null;
+}
+
 type ClientNonUIFeaturesProps = {
   children: ReactNode;
 };
@@ -396,9 +419,11 @@ export function ClientNonUIFeatures({ children }: ClientNonUIFeaturesProps) {
       <SyncRecovery />
       <PageNavToggleHotkey />
       <SearchCacheUpdater />
+      <LastVisitedRoomRecorder />
       <SystemEmojiFeature />
       <PageZoomFeature />
       <FaviconUpdater />
+      <SystemNotificationRouter />
       <InviteNotifications />
       <MessageNotifications />
       {children}

@@ -1,5 +1,5 @@
 import type { MouseEventHandler } from 'react';
-import React, { forwardRef, useMemo, useRef, useState } from 'react';
+import React, { forwardRef, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { RectCords } from 'folds';
 import {
@@ -207,7 +207,7 @@ export function Home({ isDrawerMode, extra }: HomeProps = {}) {
   useNavToActivePathMapper('home');
   const screenSize = useScreenSizeContext();
   const isDesktop = screenSize === ScreenSize.Desktop;
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [scrollElement, setScrollElement] = useState<HTMLDivElement | null>(null);
   const rooms = useHomeRooms();
   const notificationPreferences = useRoomsNotificationPreferencesContext();
   const roomToUnread = useAtomValue(roomToUnreadAtom);
@@ -233,7 +233,7 @@ export function Home({ isDrawerMode, extra }: HomeProps = {}) {
 
   const virtualizer = useVirtualizer({
     count: sortedRooms.length,
-    getScrollElement: () => scrollRef.current,
+    getScrollElement: () => scrollElement,
     estimateSize: () => 38,
     overscan: 10,
   });
@@ -248,7 +248,7 @@ export function Home({ isDrawerMode, extra }: HomeProps = {}) {
       {noRoomToDisplay ? (
         <HomeEmpty />
       ) : (
-        <PageNavContent scrollRef={scrollRef}>
+        <PageNavContent scrollRef={setScrollElement}>
           <Box
             direction="Column"
             gap="300"

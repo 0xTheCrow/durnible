@@ -517,9 +517,26 @@ function Messages() {
 function Advanced() {
   const [pwaMode, setPwaMode] = useSetting(settingsAtom, 'pwaMode');
   const [swipeGestures, setSwipeGestures] = useSetting(settingsAtom, 'swipeGestures');
+  const [isStartingInLastVisitedRoom, setIsStartingInLastVisitedRoom] = useSetting(
+    settingsAtom,
+    'isStartingInLastVisitedRoom'
+  );
   return (
     <Box direction="Column" gap="100">
       <Text size="L400">Advanced</Text>
+      <SequenceCard className={SettingsCardStyle} variant="SurfaceVariant" direction="Column">
+        <SettingTile
+          title="Start in Last Visited Room"
+          description="Open the room you were last in when starting the app, instead of the welcome screen."
+          after={
+            <Switch
+              variant="Primary"
+              value={isStartingInLastVisitedRoom}
+              onChange={setIsStartingInLastVisitedRoom}
+            />
+          }
+        />
+      </SequenceCard>
       <SequenceCard className={SettingsCardStyle} variant="SurfaceVariant" direction="Column">
         <SettingTile
           title="Swipe Gestures"

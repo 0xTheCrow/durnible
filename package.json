@@ -1,6 +1,6 @@
 {
   "name": "durnible",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "",
   "main": "platform/desktop/dist/main.cjs",
   "type": "module",
@@ -23,7 +23,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "e2e": "playwright test",
+    "e2e": "E2E_TARGET=production playwright test",
+    "e2e:dev": "playwright test",
     "performance": "playwright test --config playwright.performance.config.ts",
     "performance:production": "PERFORMANCE_TARGET=production playwright test --config playwright.performance.config.ts",
     "performance:trace": "PERFORMANCE_TRACE=1 playwright test --config playwright.performance.config.ts",
@@ -32,6 +33,10 @@
     "desktop:build": "npm run build && npm run desktop:compile",
     "desktop:pack": "npm run desktop:build && electron-builder --dir",
     "desktop:dist": "npm run desktop:build && electron-builder",
+    "mobile:sync": "npm run build && cap sync android",
+    "mobile:build": "npm run mobile:sync && platform/mobile/android/gradlew -p platform/mobile/android assembleDebug",
+    "mobile:release": "npm run mobile:sync && platform/mobile/android/gradlew -p platform/mobile/android assembleRelease",
+    "mobile:run": "npm run mobile:sync && platform/mobile/runOnEmulator.sh",
     "prepare": "husky"
   },
   "keywords": [],
@@ -40,6 +45,8 @@
     "@atlaskit/pragmatic-drag-and-drop": "1.1.6",
     "@atlaskit/pragmatic-drag-and-drop-auto-scroll": "1.3.0",
     "@atlaskit/pragmatic-drag-and-drop-hitbox": "1.0.3",
+    "@capacitor/core": "8.5.0",
+    "@capacitor/local-notifications": "8.3.1",
     "@fontsource/inter": "4.5.14",
     "@tanstack/react-query": "5.24.1",
     "@tanstack/react-query-devtools": "5.24.1",
@@ -91,6 +98,8 @@
     "ua-parser-js": "1.0.35"
   },
   "devDependencies": {
+    "@capacitor/android": "8.5.0",
+    "@capacitor/cli": "8.5.0",
     "@playwright/test": "1.61.1",
     "@testing-library/dom": "10.4.1",
     "@testing-library/jest-dom": "6.9.1",
@@ -130,7 +139,8 @@
     "vite-plugin-static-copy": "4.1.0",
     "vitest": "4.1.0",
     "workbox-expiration": "7.4.0",
-    "workbox-precaching": "7.4.0"
+    "workbox-precaching": "7.4.0",
+    "workbox-routing": "7.4.0"
   },
   "overrides": {
     "serialize-javascript": "7.0.5"

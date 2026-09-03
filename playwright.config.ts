@@ -1,6 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const PORT = 8080;
+const IS_PRODUCTION_TARGET = process.env.E2E_TARGET === 'production';
+
+const PORT = IS_PRODUCTION_TARGET ? 4173 : 8080;
 
 export const BASE_URL = `http://localhost:${PORT}`;
 
@@ -12,8 +14,10 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: process.env.CI ? [['github'], ['list'], ['html', { open: 'never' }]] : [['list']],
+  globalSetup: './e2e/globalSetup.ts',
   use: {
     baseURL: BASE_URL,
+    serviceWorkers: 'block',
     trace: 'on-first-retry',
     video: 'retain-on-failure',
     screenshot: 'only-on-failure',
@@ -35,9 +39,11 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm start',
+    command: IS_PRODUCTION_TARGET
+      ? `npm run build && npx vite preview --port ${PORT} --strictPort`
+      : 'npm start',
     url: BASE_URL,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: !IS_PRODUCTION_TARGET && !process.env.CI,
     timeout: 120_000,
   },
 });

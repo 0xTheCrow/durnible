@@ -12,11 +12,8 @@ import './index.css';
 import { trimTrailingSlash } from './app/utils/common';
 import { getSettings } from './app/state/settings';
 import { isIOS, mobileOrTablet } from './app/utils/user-agent';
-import {
-  restartDesktopAppForUpdate,
-  subscribeDesktopAppUpdateStatus,
-  syncDesktopMediaAuth,
-} from './app/platform/desktop';
+import { syncDesktopMediaAuth } from './app/platform/desktop';
+import { getStoredAccessToken } from './app/state/sessions';
 import { checkIsServiceWorkerEnabled } from './app/utils/featureCheck';
 import { showUpdateToast } from './app/utils/updateToast';
 import App from './app/pages/App';
@@ -24,22 +21,6 @@ import App from './app/pages/App';
 document.body.classList.add(configClass, varsClass);
 
 syncDesktopMediaAuth();
-
-subscribeDesktopAppUpdateStatus((status) => {
-  if (status.availability === 'ready-to-install') {
-    showUpdateToast({
-      message: `Durnible ${status.version} is ready to install`,
-      actionLabel: 'Restart',
-      onAction: restartDesktopAppForUpdate,
-    });
-    return;
-  }
-  showUpdateToast({
-    message: `Durnible ${status.version} is available`,
-    actionLabel: 'Download',
-    onAction: () => window.open(status.releaseUrl),
-  });
-});
 
 if (checkIsServiceWorkerEnabled()) {
   const swUrl =
@@ -97,8 +78,7 @@ if (checkIsServiceWorkerEnabled()) {
 
   navigator.serviceWorker.addEventListener('message', (event) => {
     if (event.data?.type === 'token' && event.data?.responseKey && event.source) {
-      // Get the token for SW.
-      const token = localStorage.getItem('cinny_access_token') ?? undefined;
+      const token = getStoredAccessToken();
       event.source.postMessage({
         responseKey: event.data.responseKey,
         token,
@@ -110,7 +90,7 @@ if (checkIsServiceWorkerEnabled()) {
   // pages (e.g. hard refresh) where the SW cannot ask the client for the token because
   // the client↔SW message channel may not be bidirectional for uncontrolled clients.
   navigator.serviceWorker.ready.then((reg) => {
-    const token = localStorage.getItem('cinny_access_token');
+    const token = getStoredAccessToken();
     if (token) reg.active?.postMessage({ type: 'setToken', token });
   });
 }

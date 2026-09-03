@@ -1,9 +1,11 @@
 import { app, BrowserWindow, ipcMain, protocol, session, shell } from 'electron';
-import type { IpcMainEvent } from 'electron';
+import type { IpcMainEvent, IpcMainInvokeEvent } from 'electron';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { installAppUpdate } from './appUpdate.cjs';
-import { installMediaAuth, setMediaAuth } from './mediaAuth.cjs';
+import { installTextContextMenu } from './contextMenu.cjs';
+import { installMediaAuthResponseHeaders, setMediaAuth } from './mediaAuth.cjs';
+import { installRequestHeaders } from './requestHeaders.cjs';
 import { enableScreenshareLoopbackFeatures, installScreenshareAudio } from './screenshareAudio.cjs';
 import { getInitialWindowBounds, persistWindowState } from './windowState.cjs';
 
@@ -103,7 +105,7 @@ const serveWebBuild = async (request: Request): Promise<Response> => {
 const checkIsRendererFrame = (frameUrl: string | undefined): boolean =>
   typeof frameUrl === 'string' && frameUrl.startsWith(`${APP_ORIGIN}/`);
 
-const checkIsTrustedSender = (event: IpcMainEvent): boolean => {
+const checkIsTrustedSender = (event: IpcMainEvent | IpcMainInvokeEvent): boolean => {
   const { senderFrame } = event;
   return !!senderFrame && !senderFrame.parent && checkIsRendererFrame(senderFrame.url);
 };
@@ -144,6 +146,7 @@ const createMainWindow = (): void => {
 
   persistWindowState(mainWindow);
   mainWindow.setMenuBarVisibility(false);
+  installTextContextMenu(mainWindow.webContents);
 
   mainWindow.once('ready-to-show', () => mainWindow.show());
 
@@ -183,7 +186,8 @@ if (!app.requestSingleInstanceLock()) {
       GRANTED_PERMISSIONS.has(permission)
     );
 
-    installMediaAuth(appSession);
+    installRequestHeaders(appSession);
+    installMediaAuthResponseHeaders(appSession);
     installScreenshareAudio(appSession, checkIsRendererFrame);
     registerMediaAuthChannel();
     registerDevToolsMenuChannel();

@@ -114,8 +114,10 @@ export default defineConfig({
     target: 'es2022',
     sourcemap: true,
     copyPublicDir: false,
-    rollupOptions: {
-      inject: { Buffer: ['buffer', 'Buffer'] },
+    rolldownOptions: {
+      transform: {
+        inject: { Buffer: ['buffer', 'Buffer'] },
+      },
       output: {
         manualChunks(id) {
           if (id.includes('node_modules/livekit-client')) {
