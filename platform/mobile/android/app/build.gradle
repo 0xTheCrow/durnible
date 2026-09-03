@@ -13,6 +13,19 @@ if (minorVersion > 99 || patchVersion > 99) {
     throw new GradleException("package.json version '${packageVersion}' overflows the versionCode formula")
 }
 
+def releaseSigningEnvironment = [
+    DURNIBLE_KEYSTORE_PATH: System.getenv('DURNIBLE_KEYSTORE_PATH'),
+    DURNIBLE_KEYSTORE_PASSWORD: System.getenv('DURNIBLE_KEYSTORE_PASSWORD'),
+    DURNIBLE_KEY_ALIAS: System.getenv('DURNIBLE_KEY_ALIAS'),
+]
+def isSigningConfigured = releaseSigningEnvironment.every { it.value }
+gradle.taskGraph.whenReady { taskGraph ->
+    if (taskGraph.hasTask("${project.path}:packageRelease") && !isSigningConfigured) {
+        def missingVariables = releaseSigningEnvironment.findAll { !it.value }.keySet()
+        throw new GradleException("Release build needs signing credentials; unset: ${missingVariables.join(', ')}")
+    }
+}
+
 android {
     namespace = "org.durnible.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -29,8 +42,23 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        if (isSigningConfigured) {
+            release {
+                storeFile file(releaseSigningEnvironment.DURNIBLE_KEYSTORE_PATH)
+                storePassword releaseSigningEnvironment.DURNIBLE_KEYSTORE_PASSWORD
+                keyAlias releaseSigningEnvironment.DURNIBLE_KEY_ALIAS
+                keyPassword System.getenv('DURNIBLE_KEY_PASSWORD')
+                    ?: releaseSigningEnvironment.DURNIBLE_KEYSTORE_PASSWORD
+                enableV1Signing = false
+                enableV2Signing = true
+                enableV3Signing = true
+            }
+        }
+    }
     buildTypes {
         release {
+            signingConfig isSigningConfigured ? signingConfigs.release : null
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

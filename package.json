@@ -1,6 +1,6 @@
 {
   "name": "durnible",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "",
   "main": "platform/desktop/dist/main.cjs",
   "type": "module",
@@ -35,6 +35,7 @@
     "desktop:dist": "npm run desktop:build && electron-builder",
     "mobile:sync": "npm run build && cap sync android",
     "mobile:build": "npm run mobile:sync && platform/mobile/android/gradlew -p platform/mobile/android assembleDebug",
+    "mobile:release": "npm run mobile:sync && platform/mobile/android/gradlew -p platform/mobile/android assembleRelease",
     "mobile:run": "npm run mobile:sync && platform/mobile/runOnEmulator.sh",
     "prepare": "husky"
   },
