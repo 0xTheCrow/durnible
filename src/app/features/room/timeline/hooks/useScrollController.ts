@@ -341,7 +341,7 @@ export const useScrollController = ({
     const contentElement = contentRef.current;
     if (!scrollElement || !contentElement) return undefined;
     let lastTickSignature: string | null = null;
-    const maintainPosition = () => {
+    const maintainPosition = (isScrollViewportResize: boolean) => {
       const intent = intentRef.current;
       const tickSnapshot = {
         intent: intent.kind,
@@ -359,16 +359,22 @@ export const useScrollController = ({
       }
       if (
         intent.kind === 'latestMessageBottom' &&
+        !isScrollViewportResize &&
         !document.hasFocus() &&
         !unfocusedAutoScrollRef.current
       ) {
         traceTimelineScroll('maintainPosition:unfocused-skip');
         return;
       }
-      traceTimelineScroll('maintainPosition:apply', { intent: intent.kind });
+      traceTimelineScroll('maintainPosition:apply', {
+        intent: intent.kind,
+        isScrollViewportResize,
+      });
       apply('instant');
     };
-    const resizeObserver = new ResizeObserver(maintainPosition);
+    const resizeObserver = new ResizeObserver((entries) =>
+      maintainPosition(entries.some((entry) => entry.target === scrollElement))
+    );
     resizeObserver.observe(contentElement);
     resizeObserver.observe(scrollElement);
     return () => resizeObserver.disconnect();

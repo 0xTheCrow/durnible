@@ -262,9 +262,10 @@ describe('useScrollController', () => {
   });
 
   describe('maintainPosition on resize', () => {
-    it('does not re-pin latestMessageBottom while unfocused with unfocusedAutoScroll off', () => {
+    it('does not re-pin latestMessageBottom when content grows while unfocused with unfocusedAutoScroll off', () => {
       vi.spyOn(document, 'hasFocus').mockReturnValue(false);
       const { controller, scrollElement, anchorElement } = renderController(ref(true), ref(false));
+      const contentElement = scrollElement.querySelector('[data-testid="content"]') as HTMLElement;
       const geometry = stubScrollGeometry(scrollElement, {
         scrollHeight: 500,
         offsetHeight: 400,
@@ -275,7 +276,7 @@ describe('useScrollController', () => {
       expect(geometry.getScrollTop()).toBe(100);
 
       geometry.setScrollHeight(600);
-      act(() => resizeObserverInstances[0].trigger());
+      act(() => resizeObserverInstances[0].trigger([contentElement]));
 
       expect(geometry.getScrollTop()).toBe(100);
     });
@@ -322,6 +323,25 @@ describe('useScrollController', () => {
       act(() => resizeObserverInstances[0].trigger());
 
       expect(geometry.getScrollTop()).toBe(200);
+    });
+
+    it('re-pins latestMessageBottom when the viewport shrinks while unfocused', () => {
+      vi.spyOn(document, 'hasFocus').mockReturnValue(false);
+      const { controller, scrollElement, anchorElement } = renderController(ref(true), ref(false));
+      const geometry = stubScrollGeometry(scrollElement, {
+        scrollHeight: 2000,
+        offsetHeight: 900,
+        anchorElement,
+      });
+
+      act(() => controller().pinToLatestMessageBottom());
+      expect(geometry.getScrollTop()).toBe(1100);
+
+      const virtualKeyboardHeightPx = 300;
+      geometry.setOffsetHeight(900 - virtualKeyboardHeightPx);
+      act(() => resizeObserverInstances[0].trigger([scrollElement]));
+
+      expect(geometry.getScrollTop()).toBe(1400);
     });
   });
 });
