@@ -229,6 +229,10 @@ export const useVirtualPaginator = <TScrollElement extends HTMLElement>(
 
   const handlePaginatorElIntersection: OnIntersectionCallback = useCallback(
     (entries) => {
+      // The timeline is covered while something is fullscreen, and paginating
+      // would unmount the fullscreen element.
+      if (document.fullscreenElement) return;
+
       const anchorB = entries.find(
         (entry) => entry.target.getAttribute(PAGINATOR_ANCHOR_ATTR) === Direction.Backward
       );
