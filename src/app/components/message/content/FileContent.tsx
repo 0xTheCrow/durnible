@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import React, { useCallback, useState } from 'react';
 import { Box, Button, Icon, Icons, Modal, Spinner, Text, Tooltip, as } from 'folds';
-import FileSaver from 'file-saver';
 import type { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
 import { TooltipProvider } from '../../TooltipProvider';
 import type { FileInfo } from '../../../../types/matrix/common';
@@ -23,6 +22,7 @@ import {
 } from '../../../utils/matrix';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
 import { useRevokeObjectURL } from '../../../hooks/useObjectURL';
+import { saveFile } from '../../../utils/saveFile';
 import { ModalWide, PdfViewerModal } from '../../../styles/Modal.css';
 
 const renderErrorButton = (retry: () => void, text: string) => (
@@ -189,7 +189,11 @@ export function ReadPdfFile({
               name: body,
               src: pdfState.data,
               onClose: () => setPdfViewer(false),
-              onDownload: () => FileSaver.saveAs(pdfState.data, body),
+              onDownload: () => {
+                saveFile(pdfState.data, body).catch((error) =>
+                  console.error('Saving the PDF failed', error)
+                );
+              },
             })}
           </Modal>
         </OverlayModal>
@@ -242,7 +246,7 @@ export function DownloadFile({ body, mimeType, url, info, encryptionInfo }: Down
         : await downloadMedia(mediaUrl);
 
       const fileURL = URL.createObjectURL(fileContent);
-      FileSaver.saveAs(fileURL, body);
+      await saveFile(fileURL, body);
       return fileURL;
     }, [mx, url, useAuthentication, mimeType, encryptionInfo, body])
   );
@@ -256,11 +260,15 @@ export function DownloadFile({ body, mimeType, url, info, encryptionInfo }: Down
       fill="Soft"
       radii="300"
       size="400"
-      onClick={() =>
-        downloadState.status === AsyncStatus.Success
-          ? FileSaver.saveAs(downloadState.data, body)
-          : download()
-      }
+      onClick={() => {
+        if (downloadState.status !== AsyncStatus.Success) {
+          download();
+          return;
+        }
+        saveFile(downloadState.data, body).catch((error) =>
+          console.error('Saving the file failed', error)
+        );
+      }}
       disabled={downloadState.status === AsyncStatus.Loading}
       before={
         downloadState.status === AsyncStatus.Loading ? (

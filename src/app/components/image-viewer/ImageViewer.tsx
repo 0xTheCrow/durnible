@@ -1,6 +1,4 @@
-/* eslint-disable jsx-a11y/no-noninteractive-element-interactions */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import FileSaver from 'file-saver';
 import classNames from 'classnames';
 import { Box, Icon, Icons, Spinner, Text, as } from 'folds';
 import * as css from './ImageViewer.css';
@@ -9,6 +7,7 @@ import { usePan } from '../../hooks/usePan';
 import type { Pan } from '../../hooks/usePan';
 import { useTouchGesture } from '../../hooks/useTouchGesture';
 import { downloadMedia } from '../../utils/matrix';
+import { saveFile } from '../../utils/saveFile';
 import { clampPanWithinBounds, clampZoom, panToKeepPointFixed } from '../../utils/zoom';
 import type { ImageViewerGalleryItem } from '../../state/imageViewer';
 import { MediaFrame, MediaFrameZoomControls } from '../media';
@@ -192,9 +191,10 @@ export const ImageViewer = as<'div', ImageViewerProps>(
       [zoom, applyZoomAtPoint]
     );
 
-    const handleDownload = async () => {
-      const fileContent = await downloadMedia(src);
-      FileSaver.saveAs(fileContent, alt);
+    const handleDownload = () => {
+      downloadMedia(src)
+        .then((fileContent) => saveFile(fileContent, alt))
+        .catch((error) => console.error('Saving the image failed', error));
     };
 
     const inGallery = !!gallery && gallery.items.length > 1;
@@ -233,7 +233,6 @@ export const ImageViewer = as<'div', ImageViewerProps>(
         {...props}
         ref={ref}
       >
-        {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
         <Box
           ref={contentRef}
           grow="Yes"

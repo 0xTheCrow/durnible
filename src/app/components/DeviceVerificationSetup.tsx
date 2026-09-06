@@ -14,10 +14,10 @@ import {
   color,
   Spinner,
 } from 'folds';
-import FileSaver from 'file-saver';
 import to from 'await-to-js';
 import type { AuthDict, IAuthData, UIAuthCallback } from 'matrix-js-sdk';
 import { MatrixError } from 'matrix-js-sdk';
+import { saveFile } from '../utils/saveFile';
 import { PasswordInput } from './password-input';
 import { ContainerColor } from '../styles/ContainerColor.css';
 import { copyToClipboard } from '../utils/dom';
@@ -240,7 +240,9 @@ function RecoveryKeyDisplay({ recoveryKey }: RecoveryKeyDisplayProps) {
     const blob = new Blob([recoveryKey], {
       type: 'text/plain;charset=us-ascii',
     });
-    FileSaver.saveAs(blob, 'recovery-key.txt');
+    saveFile(blob, 'recovery-key.txt').catch((error) =>
+      console.error('Saving the recovery key failed', error)
+    );
   };
 
   const safeToDisplayKey = show ? recoveryKey : recoveryKey.replace(/[^\s]/g, '*');

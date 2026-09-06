@@ -2,8 +2,8 @@ import { Badge, Box, Icon, IconButton, Icons, Spinner, Text, as, toRem } from 'f
 import type { ReactNode } from 'react';
 import React, { useCallback } from 'react';
 import type { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
-import FileSaver from 'file-saver';
 import { mimeTypeToExt } from '../../utils/mimeTypes';
+import { saveFile } from '../../utils/saveFile';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
 import { useRevokeObjectURL } from '../../hooks/useObjectURL';
@@ -42,7 +42,7 @@ export function FileDownloadButton({
         : await downloadMedia(mediaUrl);
 
       const fileURL = URL.createObjectURL(fileContent);
-      FileSaver.saveAs(fileURL, filename);
+      await saveFile(fileURL, filename);
       return fileURL;
     }, [mx, url, useAuthentication, mimeType, encryptionInfo, filename])
   );
