@@ -15,7 +15,6 @@ import * as css from './styles.css';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
-import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
 import { useOpenReactionViewer } from '../../../state/hooks/reactionViewer';
 
 type ReactionBucketsProps = {
@@ -29,7 +28,6 @@ const ReactionBuckets = as<'div', ReactionBucketsProps>(
   ({ className, room, relations, mEventId, canSendReaction, onReactionToggle, ...props }, ref) => {
     const mx = useMatrixClient();
     const useAuthentication = useMediaAuthentication();
-    const screenSize = useScreenSizeContext();
     const [pauseGifs] = useSetting(settingsAtom, 'pauseGifs');
     const [pauseGifEmojis] = useSetting(settingsAtom, 'pauseGifEmojis');
     const openReactionViewer = useOpenReactionViewer();
@@ -66,13 +64,11 @@ const ReactionBuckets = as<'div', ReactionBucketsProps>(
               key={key}
               position="Top"
               tooltip={
-                screenSize === ScreenSize.Mobile ? undefined : (
-                  <Tooltip style={{ maxWidth: toRem(200) }}>
-                    <Text className={css.ReactionsTooltipText} size="T300">
-                      <ReactionTooltipMsg room={room} reaction={key} events={rEvents} />
-                    </Text>
-                  </Tooltip>
-                )
+                <Tooltip style={{ maxWidth: toRem(200) }}>
+                  <Text className={css.ReactionsTooltipText} size="T300">
+                    <ReactionTooltipMsg room={room} reaction={key} events={rEvents} />
+                  </Text>
+                </Tooltip>
               }
             >
               {(targetRef) => (
