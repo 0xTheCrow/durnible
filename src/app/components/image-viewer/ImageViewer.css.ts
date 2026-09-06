@@ -11,7 +11,7 @@ export {
 
 export const ImageViewerGalleryMode = style({
   width: '90vw',
-  height: '90vh',
+  height: 'calc(var(--safe-viewport-height) * 0.9)',
   '@media': {
     [MOBILE_MEDIA_QUERY]: {
       width: '100vw',
@@ -67,7 +67,7 @@ export const ImageViewerImg = style([
     width: 'auto',
     height: 'auto',
     maxWidth: '85vw',
-    maxHeight: `calc(85vh - ${HEADER_HEIGHT})`,
+    maxHeight: `calc(var(--safe-viewport-height) * 0.9 - ${HEADER_HEIGHT})`,
     margin: 'auto',
     touchAction: 'none',
     userSelect: 'none',
@@ -75,7 +75,6 @@ export const ImageViewerImg = style([
     '@media': {
       [MOBILE_MEDIA_QUERY]: {
         maxWidth: '100vw',
-        maxHeight: `calc(85vh - ${HEADER_HEIGHT})`,
       },
     },
   },

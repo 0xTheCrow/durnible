@@ -8,7 +8,7 @@ export const Frame = style([DefaultReset, { height: '100%', flexGrow: 1 }]);
 
 export const FrameExpanded = style({
   width: '90vw',
-  height: '90vh',
+  height: 'calc(var(--safe-viewport-height) * 0.9)',
   '@media': {
     [MOBILE_MEDIA_QUERY]: {
       width: '100vw',
