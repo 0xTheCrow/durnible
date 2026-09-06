@@ -42,7 +42,9 @@ export const useLiveTimelineUpdates = ({
       }
 
       const focused = typeof document !== 'undefined' && document.hasFocus();
-      const autoPinEnabled = focused || unfocusedAutoScroll;
+      const isDocumentVisible =
+        typeof document === 'undefined' || document.visibilityState === 'visible';
+      const autoPinEnabled = isDocumentVisible && (focused || unfocusedAutoScroll);
       const followingLatestMessageBottom = intentRef.current?.kind === 'latestMessageBottom';
       const wasLatestMessageBottomInView = !!wasLatestMessageBottomInViewRef.current;
       const isInLivePaginationWindow = !!isInLivePaginationWindowRef.current;
@@ -56,6 +58,7 @@ export const useLiveTimelineUpdates = ({
         wasLatestMessageBottomInView,
         isInLivePaginationWindow,
         focused,
+        isDocumentVisible,
         autoPinEnabled,
         scrollBottomDistance: scrollElement
           ? Math.round(getScrollBottomDistance(scrollElement))

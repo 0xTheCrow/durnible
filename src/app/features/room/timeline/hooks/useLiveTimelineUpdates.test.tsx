@@ -103,10 +103,14 @@ type Setup = Partial<
   >
 > & {
   focused?: boolean;
+  visible?: boolean;
 };
 
 const setup = (overrides: Setup = {}) => {
   vi.spyOn(document, 'hasFocus').mockReturnValue(overrides.focused ?? true);
+  vi.spyOn(document, 'visibilityState', 'get').mockReturnValue(
+    overrides.visible === false ? 'hidden' : 'visible'
+  );
   const room = createEventEmitterRoom('!test:example.com');
   const pinToLatestMessageBottom = vi.fn();
   const state: { current: Timeline | null } = { current: null };
@@ -238,5 +242,22 @@ describe('useLiveTimelineUpdates', () => {
       newest: totalEvents,
     });
     expect(pinToLatestMessageBottom).toHaveBeenCalledTimes(1);
+  });
+
+  it('advances the range without pinning while hidden even when unfocusedAutoScroll is on', () => {
+    const totalEvents = INITIAL_RANGE.newest + 1;
+    const { room, pinToLatestMessageBottom, state } = setup({
+      followingLatestMessageBottom: true,
+      focused: false,
+      visible: false,
+      unfocusedAutoScroll: true,
+      totalEvents,
+    });
+    emit(room, liveMessage());
+    expect(derivedRange(state.current)).toEqual({
+      oldest: totalEvents - WINDOW_SIZE,
+      newest: totalEvents,
+    });
+    expect(pinToLatestMessageBottom).not.toHaveBeenCalled();
   });
 });
