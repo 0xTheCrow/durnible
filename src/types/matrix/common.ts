@@ -26,6 +26,7 @@ export type VideoInfo = {
   mimetype?: string;
   size?: number;
   duration?: number;
+  [MATRIX_BLUR_HASH_PROPERTY_NAME]?: string;
 };
 
 export type AudioInfo = {

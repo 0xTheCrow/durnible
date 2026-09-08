@@ -48,6 +48,10 @@ export function AudioContent({
     }, [mx, url, useAuthentication, mimeType, encryptionInfo, info.duration])
   );
 
+  const handleRequestSource = () => {
+    loadSrc().catch(() => {});
+  };
+
   const objectUrl = srcState.status === AsyncStatus.Success ? srcState.data.objectUrl : undefined;
   useEffect(
     () => () => {
@@ -67,7 +71,7 @@ export function AudioContent({
       }
       durationSeconds={(infoDuration >= 0 ? infoDuration : 0) / 1000}
       isSourceLoading={srcState.status === AsyncStatus.Loading}
-      onRequestSource={loadSrc}
+      onRequestSource={handleRequestSource}
       renderMediaControl={renderMediaControl}
     />
   );

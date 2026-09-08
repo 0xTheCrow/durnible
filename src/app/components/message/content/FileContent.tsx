@@ -206,7 +206,13 @@ export function ReadPdfFile({
           fill="Solid"
           radii="300"
           size="400"
-          onClick={() => (pdfState.status === AsyncStatus.Success ? setPdfViewer(true) : loadPdf())}
+          onClick={() => {
+            if (pdfState.status === AsyncStatus.Success) {
+              setPdfViewer(true);
+              return;
+            }
+            loadPdf().catch(() => {});
+          }}
           disabled={pdfState.status === AsyncStatus.Loading}
           before={
             pdfState.status === AsyncStatus.Loading ? (
@@ -262,7 +268,7 @@ export function DownloadFile({ body, mimeType, url, info, encryptionInfo }: Down
       size="400"
       onClick={() => {
         if (downloadState.status !== AsyncStatus.Success) {
-          download();
+          download().catch(() => {});
           return;
         }
         saveFile(downloadState.data, body).catch((error) =>

@@ -370,6 +370,9 @@ export const downloadMedia = async (src: string): Promise<Blob> => {
     method: 'GET',
     headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
   });
+  if (!res.ok) {
+    throw new Error(`Failed to download media: ${res.status} ${res.statusText}`);
+  }
   const blob = await res.blob();
   return blob;
 };

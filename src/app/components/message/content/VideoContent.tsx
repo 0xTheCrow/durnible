@@ -26,7 +26,7 @@ import { hiddenImagesAtom, MessageEventIdContext } from '../../../state/hiddenIm
 type RenderVideoProps = {
   title: string;
   src: string;
-  onLoadedMetadata: () => void;
+  onLoadedData: () => void;
   onError: () => void;
   autoPlay: boolean;
   controls: boolean;
@@ -63,7 +63,9 @@ export const VideoContent = as<'div', VideoContentProps>(
   ) => {
     const mx = useMatrixClient();
     const useAuthentication = useMediaAuthentication();
-    const blurHash = validBlurHash(info.thumbnail_info?.[MATRIX_BLUR_HASH_PROPERTY_NAME]);
+    const blurHash = validBlurHash(
+      info.thumbnail_info?.[MATRIX_BLUR_HASH_PROPERTY_NAME] ?? info[MATRIX_BLUR_HASH_PROPERTY_NAME]
+    );
 
     const messageEventId = useContext(MessageEventIdContext);
     const [hiddenImages, setHiddenImages] = useAtom(hiddenImagesAtom);
@@ -96,9 +98,13 @@ export const VideoContent = as<'div', VideoContentProps>(
       setError(true);
     };
 
+    const handleWatch = () => {
+      loadSrc().catch(() => {});
+    };
+
     const handleRetry = () => {
       setError(false);
-      loadSrc();
+      loadSrc().catch(() => {});
     };
 
     const containerRef = useRef<HTMLDivElement | null>(null);
@@ -157,7 +163,7 @@ export const VideoContent = as<'div', VideoContentProps>(
               fill="Solid"
               radii="400"
               size="500"
-              onClick={loadSrc}
+              onClick={handleWatch}
               before={<Icon size="Inherit" src={Icons.Play} filled />}
               data-testid="video-content-watch-btn"
             >
@@ -168,12 +174,15 @@ export const VideoContent = as<'div', VideoContentProps>(
         {srcState.status === AsyncStatus.Success && (
           <Box
             className={classNames(css.AbsoluteContainer, effectiveBlurred && css.Blur)}
-            style={effectiveBlurred ? { opacity: 0.6 } : undefined}
+            style={{
+              opacity: effectiveBlurred ? 0.6 : undefined,
+              visibility: load ? undefined : 'hidden',
+            }}
           >
             {renderVideo({
               title: body,
               src: srcState.data,
-              onLoadedMetadata: handleLoad,
+              onLoadedData: handleLoad,
               onError: handleError,
               autoPlay: true,
               controls: true,
