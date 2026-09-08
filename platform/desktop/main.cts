@@ -141,6 +141,7 @@ const createMainWindow = (): void => {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      spellcheck: true,
       disableHtmlFullscreenWindowResize: true,
     },
   });
