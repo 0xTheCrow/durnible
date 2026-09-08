@@ -28,6 +28,7 @@
     "performance": "playwright test --config playwright.performance.config.ts",
     "performance:production": "PERFORMANCE_TARGET=production playwright test --config playwright.performance.config.ts",
     "performance:trace": "PERFORMANCE_TRACE=1 playwright test --config playwright.performance.config.ts",
+    "performance:desktop": "npm run desktop:build && playwright test --config playwright.desktop.config.ts",
     "desktop:compile": "tsc -p platform/desktop/tsconfig.json",
     "desktop:dev": "npm run build && npm run desktop:compile && electron platform/desktop/dist/main.cjs",
     "desktop:build": "npm run build && npm run desktop:compile",
