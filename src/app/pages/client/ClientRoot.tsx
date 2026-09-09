@@ -43,6 +43,7 @@ import { getStoredSession } from '../../state/sessions';
 import { overlayVisibleAtom, useReadinessGate } from '../../state/readiness';
 import { logStartupSummary, startupMark } from '../../utils/startupPerf';
 import { checkSessionLockFree, getSessionLock } from '../../utils/sessionLock';
+import { checkIsNativeMobileApp } from '../../platform/mobile';
 
 class OtherTabActiveError extends Error {}
 
@@ -143,7 +144,9 @@ export const isChunkLoadError = (err: Error) =>
 
 export function ClientRoot({ children }: ClientRootProps) {
   const [loading, setLoading] = useState(true);
-  const [needsTakeoverConfirm, setNeedsTakeoverConfirm] = useState(() => !checkSessionLockFree());
+  const [needsTakeoverConfirm, setNeedsTakeoverConfirm] = useState(
+    () => !checkIsNativeMobileApp() && !checkSessionLockFree()
+  );
   const [sessionActiveInOtherTab, setSessionActiveInOtherTab] = useState(false);
   const startupLoggedRef = useRef(false);
   const mxRef = useRef<MatrixClient | undefined>(undefined);
@@ -164,9 +167,11 @@ export function ClientRoot({ children }: ClientRootProps) {
       if (!session) {
         throw new Error('No session Found!');
       }
-      const acquired = await getSessionLock(handleOtherTabTakeover);
-      if (!acquired) {
-        throw new OtherTabActiveError();
+      if (!checkIsNativeMobileApp()) {
+        const acquired = await getSessionLock(handleOtherTabTakeover);
+        if (!acquired) {
+          throw new OtherTabActiveError();
+        }
       }
       const mx = await initClient(session);
       mxRef.current = mx;
