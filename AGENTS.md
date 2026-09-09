@@ -17,6 +17,11 @@ Durnible is a Matrix chat client built with React, TypeScript, and Vite. Forked 
 | `npm run fix:prettier`        | Auto-format with Prettier                                                                |
 | `npm run performance`         | Composer typing benchmark (chromium only; excluded from `npm run e2e`)                   |
 | `npm run performance:desktop` | Electron CPU/RAM measurement (builds the desktop app first; excluded from `npm run e2e`) |
+| `npm run desktop:dev`         | Build web + main, launch Electron                                                        |
+| `npm run desktop:dist`        | Full installers via electron-builder (`desktop:pack` for unpacked)                       |
+| `npm run mobile:sync`         | Rebuild `dist/` and copy it into the native Android project                              |
+| `npm run mobile:build`        | Assemble a debug APK (`mobile:release` for a signed release APK)                         |
+| `npm run mobile:run`          | Assemble and install on the `durnible-api371` emulator                                   |
 
 ## Tech Stack
 
@@ -84,6 +89,13 @@ Durnible is a Matrix chat client built with React, TypeScript, and Vite. Forked 
 - Don't hardcode values in tests that are defined as constants in source. If the test needs a value that depends on a source constant — a timeout, a cap, a threshold, a mime type, an event type, a URL path — import that constant and reference it (or derive from it, e.g. `WINDOW_MS / 2`). If the value isn't currently exported but is useful in a test, make it exportable first rather than copying the literal over. Copy-pasted literals desync silently when the source constant is retuned: the test either passes with stale semantics or fails in a way that looks like a regression when it isn't.
 - Don't write tests that only verify behavior the type system already guarantees (e.g., that a function compares the correct fields on a typed object). Focus test effort on behavior types can't catch: state transitions, async sequencing, side effects, edge cases in runtime logic.
 - Never write a test that passes while the behavior it covers is broken. If a behavior is misbehaving, its test must fail — that is the entire point of the test. Don't reach for expected-failure markers (Playwright's `test.fail()`), skips, or inverted assertions to keep a suite green around a known defect, and don't weaken an assertion until it stops failing. A green run has to mean the behavior works; the moment it can mean "works, or is broken in a way we wrote down," the suite stops being a signal and starts being noise. A real defect gets a genuinely failing test that stays red until it's fixed.
+
+## Platform Builds
+
+- Desktop is Electron (`platform/desktop/`); targets and GitHub publish config are in `electron-builder.yml`. A `v*` tag runs `.github/workflows/desktop-release.yml`, which fails unless the tag matches `package.json` version.
+- Android is a [Capacitor](https://capacitorjs.com/) shell in `platform/mobile/android`. Needs JDK 21 and an SDK with `platform-tools`, `platforms;android-36`, `build-tools;36.0.0`. Android Studio isn't required.
+- Gradle finds the SDK through `platform/mobile/android/local.properties`, which is **not** in version control because the path differs per machine. Create it before the first build: `echo "sdk.dir=$HOME/Android/Sdk" > platform/mobile/android/local.properties`
+- `mobile:run` targets the `durnible-api371` emulator specifically so it stays predictable with several devices attached. Start it first; the script prints the command if it isn't running.
 
 ## Performance Benchmarking
 

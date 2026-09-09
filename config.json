@@ -1,14 +1,6 @@
 {
   "defaultHomeserver": 0,
-  "homeserverList": [
-    "banter.durnugga.org",
-    "converser.eu",
-    "envs.net",
-    "matrix.org",
-    "monero.social",
-    "mozilla.org",
-    "xmr.se"
-  ],
+  "homeserverList": ["matrix.org", "mozilla.org"],
   "allowCustomHomeservers": true,
 
   "featuredCommunities": {
