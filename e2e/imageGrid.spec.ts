@@ -166,6 +166,35 @@ test('a two image gallery stacks one per row on mobile', async ({ context, page 
   await expectCellsWithinContainer(page);
 });
 
+const ENLARGED_ROOT_FONT_SIZE = 20;
+
+test('grid tracks stay inside the column when the root font size is enlarged', async ({
+  context,
+  page,
+}) => {
+  await openRoomWithGallery(context, page, GRID_MAX_CELLS, {
+    width: 1400,
+    height: VIEWPORT_HEIGHT,
+  });
+
+  await page.evaluate((fontSizePx) => {
+    document.documentElement.style.fontSize = `${fontSizePx}px`;
+  }, ENLARGED_ROOT_FONT_SIZE);
+
+  await expect
+    .poll(async () => (await boxOf(page, 'image-grid-container')).width)
+    .toBeGreaterThanOrEqual(GRID_MIN_WIDTH);
+
+  const container = await boxOf(page, 'image-grid-container');
+  const grid = await boxOf(page, 'image-grid');
+  expect(
+    grid.width * (ENLARGED_ROOT_FONT_SIZE / 16),
+    'column must be narrower than the grid would be if its tracks scaled with the root font size, or nothing is being tested'
+  ).toBeGreaterThan(container.width);
+
+  await expectCellsWithinContainer(page);
+});
+
 test('layout tracks the container across resizes', async ({ context, page }) => {
   await openRoomWithGallery(context, page, GRID_MAX_CELLS, NARROWEST_DESKTOP_VIEWPORT);
   expect(await cellsInFirstRow(page)).toBe(gridColumnsForCount[GRID_MAX_CELLS]);

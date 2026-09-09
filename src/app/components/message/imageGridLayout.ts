@@ -1,7 +1,6 @@
 // Mirrors MImage's MAX_HEIGHT.
 export const SINGLE_IMAGE_MAX_HEIGHT = 400;
 export const GRID_MIN_WIDTH = 400;
-// Must match `gap` in ImageGrid.css.ts.
 export const GRID_GAP = 12;
 export const STACK_MAX_WIDTH = 500;
 // Cells are square, so capping width caps height at the same limit MImage uses.

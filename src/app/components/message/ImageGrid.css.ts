@@ -1,5 +1,6 @@
 import { style } from '@vanilla-extract/css';
-import { DefaultReset, color, toRem } from 'folds';
+import { DefaultReset, color } from 'folds';
+import { GRID_GAP } from './imageGridLayout';
 
 export const ImageGridContainer = style([
   DefaultReset,
@@ -14,7 +15,7 @@ export const ImageGrid = style([
   DefaultReset,
   {
     display: 'grid',
-    gap: toRem(12),
+    gap: `${GRID_GAP}px`,
     maxWidth: '100%',
     minWidth: 0,
   },

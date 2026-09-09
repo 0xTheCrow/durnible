@@ -1,7 +1,6 @@
 import React, { useCallback, useLayoutEffect, useMemo, useState } from 'react';
 import classNames from 'classnames';
 import { useSetAtom } from 'jotai';
-import { toRem } from 'folds';
 import { ImageContent as ImageContentView } from './content';
 import { Image } from '../media';
 import * as css from './ImageGrid.css';
@@ -54,34 +53,35 @@ const buildDesktopStyle = (count: Count, widthBudget: number): React.CSSProperti
   const gap = GRID_GAP;
   const maxHeight = SINGLE_IMAGE_MAX_HEIGHT;
   const columns = gridColumnsForCount[count];
-  const rem = (n: number) => toRem(n);
-  const repeatTrack = (n: number, size: number) => Array(n).fill(rem(size)).join(' ');
+  const toPixels = (value: number) => `${value}px`;
+  const repeatTrack = (trackCount: number, size: number) =>
+    Array(trackCount).fill(toPixels(size)).join(' ');
 
   switch (count) {
     case 2: {
       const cellSize = Math.min((widthBudget - gap) / 2, maxHeight);
       return {
-        width: rem(2 * cellSize + gap),
-        height: rem(cellSize),
+        width: toPixels(2 * cellSize + gap),
+        height: toPixels(cellSize),
         gridTemplateColumns: repeatTrack(columns, cellSize),
-        gridTemplateRows: rem(cellSize),
+        gridTemplateRows: toPixels(cellSize),
       };
     }
     case 3: {
       const cellSize = Math.min((widthBudget - 2 * gap) / 3, (maxHeight - gap) / 2);
       const heroSide = 2 * cellSize + gap;
       return {
-        width: rem(3 * cellSize + 2 * gap),
-        height: rem(heroSide),
-        gridTemplateColumns: `${rem(heroSide)} ${repeatTrack(columns - 1, cellSize)}`,
+        width: toPixels(3 * cellSize + 2 * gap),
+        height: toPixels(heroSide),
+        gridTemplateColumns: `${toPixels(heroSide)} ${repeatTrack(columns - 1, cellSize)}`,
         gridTemplateRows: repeatTrack(2, cellSize),
       };
     }
     case 4: {
       const cellSize = Math.min((widthBudget - gap) / 2, (maxHeight - gap) / 2);
       return {
-        width: rem(2 * cellSize + gap),
-        height: rem(2 * cellSize + gap),
+        width: toPixels(2 * cellSize + gap),
+        height: toPixels(2 * cellSize + gap),
         gridTemplateColumns: repeatTrack(columns, cellSize),
         gridTemplateRows: repeatTrack(2, cellSize),
       };
@@ -90,17 +90,17 @@ const buildDesktopStyle = (count: Count, widthBudget: number): React.CSSProperti
       const cellSize = Math.min((widthBudget - 3 * gap) / 4, (maxHeight - gap) / 2);
       const heroSide = 2 * cellSize + gap;
       return {
-        width: rem(4 * cellSize + 3 * gap),
-        height: rem(heroSide),
-        gridTemplateColumns: `${rem(heroSide)} ${repeatTrack(columns - 1, cellSize)}`,
+        width: toPixels(4 * cellSize + 3 * gap),
+        height: toPixels(heroSide),
+        gridTemplateColumns: `${toPixels(heroSide)} ${repeatTrack(columns - 1, cellSize)}`,
         gridTemplateRows: repeatTrack(2, cellSize),
       };
     }
     case 6: {
       const cellSize = Math.min((widthBudget - 2 * gap) / 3, (maxHeight - gap) / 2);
       return {
-        width: rem(3 * cellSize + 2 * gap),
-        height: rem(2 * cellSize + gap),
+        width: toPixels(3 * cellSize + 2 * gap),
+        height: toPixels(2 * cellSize + gap),
         gridTemplateColumns: repeatTrack(columns, cellSize),
         gridTemplateRows: repeatTrack(2, cellSize),
       };
@@ -112,7 +112,7 @@ const buildDesktopStyle = (count: Count, widthBudget: number): React.CSSProperti
 
 const buildStackStyle = (count: Count, maxWidth: number): React.CSSProperties => ({
   width: '100%',
-  maxWidth: toRem(maxWidth),
+  maxWidth: `${maxWidth}px`,
   gridTemplateColumns: `repeat(${stackColumnsForCount[count]}, 1fr)`,
   gridTemplateRows: `repeat(${stackRowsForCount[count]}, auto)`,
 });
