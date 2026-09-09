@@ -32,6 +32,23 @@ export const AbsoluteFooter = style([
   },
 ]);
 
+export const UnsupportedFormatContainer = style([
+  DefaultReset,
+  {
+    padding: config.space.S200,
+  },
+]);
+
+export const UnsupportedFormatMessage = style([
+  DefaultReset,
+  {
+    padding: config.space.S200,
+    borderRadius: config.radii.R300,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    color: 'white',
+  },
+]);
+
 export const Blur = style([
   DefaultReset,
   {

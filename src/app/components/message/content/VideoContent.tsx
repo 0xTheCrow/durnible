@@ -26,6 +26,7 @@ import { hiddenImagesAtom, MessageEventIdContext } from '../../../state/hiddenIm
 type RenderVideoProps = {
   title: string;
   src: string;
+  onLoadedMetadata: (event: React.SyntheticEvent<HTMLVideoElement>) => void;
   onLoadedData: () => void;
   onError: () => void;
   autoPlay: boolean;
@@ -73,6 +74,7 @@ export const VideoContent = as<'div', VideoContentProps>(
 
     const [load, setLoad] = useState(false);
     const [error, setError] = useState(false);
+    const [isFormatSupported, setIsFormatSupported] = useState(true);
     const [blurred, setBlurred] = useState(markedAsSpoiler ?? false);
     const effectiveBlurred = blurred || isForceHidden;
 
@@ -89,6 +91,14 @@ export const VideoContent = as<'div', VideoContentProps>(
       !!autoPlay
     );
     useRevokeObjectURL(srcState.status === AsyncStatus.Success ? srcState.data : undefined);
+
+    const handleLoadedMetadata = (event: React.SyntheticEvent<HTMLVideoElement>) => {
+      const hasDeclaredDimensions =
+        typeof info.w === 'number' && info.w > 0 && typeof info.h === 'number' && info.h > 0;
+      if (hasDeclaredDimensions && event.currentTarget.videoWidth === 0) {
+        setIsFormatSupported(false);
+      }
+    };
 
     const handleLoad = () => {
       setLoad(true);
@@ -171,7 +181,7 @@ export const VideoContent = as<'div', VideoContentProps>(
             </Button>
           </Box>
         )}
-        {srcState.status === AsyncStatus.Success && (
+        {srcState.status === AsyncStatus.Success && isFormatSupported && (
           <Box
             className={classNames(css.AbsoluteContainer, effectiveBlurred && css.Blur)}
             style={{
@@ -182,6 +192,7 @@ export const VideoContent = as<'div', VideoContentProps>(
             {renderVideo({
               title: body,
               src: srcState.data,
+              onLoadedMetadata: handleLoadedMetadata,
               onLoadedData: handleLoad,
               onError: handleError,
               autoPlay: true,
@@ -228,11 +239,25 @@ export const VideoContent = as<'div', VideoContentProps>(
         )}
         {(srcState.status === AsyncStatus.Loading || srcState.status === AsyncStatus.Success) &&
           !load &&
+          isFormatSupported &&
           !effectiveBlurred && (
             <Box className={css.AbsoluteContainer} alignItems="Center" justifyContent="Center">
               <Spinner variant="Secondary" />
             </Box>
           )}
+        {!isFormatSupported && (
+          <Box
+            className={classNames(css.AbsoluteContainer, css.UnsupportedFormatContainer)}
+            alignItems="Center"
+            justifyContent="Center"
+          >
+            <Box className={css.UnsupportedFormatMessage} shrink="Yes">
+              <Text size="T300" align="Center" data-testid="video-content-unsupported-format">
+                {`Durnible can't play this video format. Download it to watch in another player.`}
+              </Text>
+            </Box>
+          </Box>
+        )}
         {(error || srcState.status === AsyncStatus.Error) && (
           <Box className={css.AbsoluteContainer} alignItems="Center" justifyContent="Center">
             <TooltipProvider
