@@ -1,7 +1,6 @@
 import type { ChangeEvent, ChangeEventHandler, MouseEventHandler } from 'react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAtom, useSetAtom } from 'jotai';
-import FileSaver from 'file-saver';
 import FocusTrap from 'focus-trap-react';
 import type { RectCords } from 'folds';
 import {
@@ -23,6 +22,7 @@ import {
   config,
   toRem,
 } from 'folds';
+import { saveFile } from '../../utils/saveFile';
 import type { GifItem, GifListResponse, GifMetaPatch, GifVisibility } from '../../utils/gifServer';
 import {
   GIF_MAX_UPLOAD_SIZE_BYTES,
@@ -1156,7 +1156,7 @@ export function GifBoard({
     setContextMenuGif(undefined);
     if (!gif) return;
     fetchGifBlob(gif.renditions.original.url)
-      .then((blob) => FileSaver.saveAs(blob, gif.filename))
+      .then((blob) => saveFile(blob, gif.filename))
       .catch((e) => console.error('GIF download failed', e));
   }, [contextMenuGif]);
 

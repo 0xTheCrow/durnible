@@ -81,7 +81,7 @@ export type FakeResizeObserver = {
   observe: (target: Element) => void;
   unobserve: (target: Element) => void;
   disconnect: () => void;
-  trigger: () => void;
+  trigger: (resizedTargets?: Element[]) => void;
 };
 
 export const resizeObserverInstances: FakeResizeObserver[] = [];
@@ -99,8 +99,11 @@ export function createFakeResizeObserver(cb: ResizeObserverCallback): FakeResize
     disconnect() {
       instance.observed.clear();
     },
-    trigger() {
-      instance.callback([], instance as unknown as ResizeObserver);
+    trigger(resizedTargets = []) {
+      const entries = resizedTargets.map(
+        (target) => ({ target } as unknown as ResizeObserverEntry)
+      );
+      instance.callback(entries, instance as unknown as ResizeObserver);
     },
   };
   return instance;
@@ -155,6 +158,7 @@ export function createFakeEvent(type: string): MatrixEvent {
 
 export type ScrollGeometry = {
   setScrollHeight: (value: number) => void;
+  setOffsetHeight: (value: number) => void;
   getScrollTop: () => number;
   setScrollTop: (value: number) => void;
   setNewestMessageBottom: (value: number) => void;
@@ -174,7 +178,7 @@ export function stubScrollGeometry(
   let scrollHeight = initial.scrollHeight;
   let lastBehavior: string | undefined;
   let latestMessageBottom = initial.latestMessageBottom;
-  const { offsetHeight } = initial;
+  let { offsetHeight } = initial;
 
   const getNewestMessageBottom = () => latestMessageBottom ?? scrollHeight;
 
@@ -232,6 +236,9 @@ export function stubScrollGeometry(
   return {
     setScrollHeight: (value) => {
       scrollHeight = value;
+    },
+    setOffsetHeight: (value) => {
+      offsetHeight = value;
     },
     getScrollTop: () => scrollTop,
     setScrollTop: (value) => {

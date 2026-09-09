@@ -717,6 +717,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
                 variant="SurfaceVariant"
                 size="300"
                 radii="300"
+                data-testid="room-input-attach"
               >
                 <Icon src={Icons.PlusCircle} />
               </IconButton>

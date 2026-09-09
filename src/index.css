@@ -24,6 +24,11 @@
 
   --font-emoji: 'Twemoji_DISABLED';
   --font-secondary: 'InterVariable', var(--font-emoji), sans-serif;
+
+  --safe-viewport-height: calc(
+    100dvh - var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) -
+      var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))
+  );
 }
 
 .dark-theme,

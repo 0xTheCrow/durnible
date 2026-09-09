@@ -117,9 +117,13 @@ export const ImageContent = as<'div', ImageContentProps>(
       setError(true);
     };
 
+    const handleLoadSource = () => {
+      loadSrc().catch(() => {});
+    };
+
     const handleRetry = () => {
       setError(false);
-      loadSrc();
+      loadSrc().catch(() => {});
     };
 
     const viewerLabel = filename || body;
@@ -165,7 +169,7 @@ export const ImageContent = as<'div', ImageContentProps>(
                 fill="Solid"
                 radii="300"
                 size="300"
-                onClick={loadSrc}
+                onClick={handleLoadSource}
                 before={<Icon size="Inherit" src={Icons.Photo} filled />}
               >
                 <Text size="B300">View</Text>
@@ -244,7 +248,7 @@ export const ImageContent = as<'div', ImageContentProps>(
                     }
                     setBlurred(false);
                     if (srcState.status === AsyncStatus.Idle) {
-                      loadSrc();
+                      loadSrc().catch(() => {});
                     }
                   }}
                 >

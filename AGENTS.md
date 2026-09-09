@@ -4,18 +4,24 @@ Durnible is a Matrix chat client built with React, TypeScript, and Vite. Forked 
 
 ## Quick Reference
 
-| Command                 | Purpose                                                         |
-| ----------------------- | --------------------------------------------------------------- |
-| `npm start`             | Dev server                                                      |
-| `npm run build`         | Production build                                                |
-| `npm run build:analyze` | Build + emit bundle treemap (`dist/bundle-visualizer.html`)     |
-| `npm run lint`          | Prettier write, then ESLint check                               |
-| `npm run typecheck`     | TypeScript type checking (`tsc --noEmit`)                       |
-| `npm test`              | Run tests (Vitest)                                              |
-| `npm run test:watch`    | Watch mode tests                                                |
-| `npm run e2e`           | Run Playwright e2e (auto-starts dev server; chromium + firefox) |
-| `npm run fix:prettier`  | Auto-format with Prettier                                       |
-| `npm run performance`   | Composer typing benchmark (chromium only; not part of `e2e`)    |
+| Command                       | Purpose                                                                                  |
+| ----------------------------- | ---------------------------------------------------------------------------------------- |
+| `npm start`                   | Dev server                                                                               |
+| `npm run build`               | Production build                                                                         |
+| `npm run build:analyze`       | Build + emit bundle treemap (`dist/bundle-visualizer.html`)                              |
+| `npm run lint`                | Prettier write, then ESLint check                                                        |
+| `npm run typecheck`           | TypeScript type checking (`tsc --noEmit`)                                                |
+| `npm test`                    | Run tests (Vitest)                                                                       |
+| `npm run test:watch`          | Watch mode tests                                                                         |
+| `npm run e2e`                 | Run Playwright e2e (auto-starts dev server; chromium + firefox)                          |
+| `npm run fix:prettier`        | Auto-format with Prettier                                                                |
+| `npm run performance`         | Composer typing benchmark (chromium only; excluded from `npm run e2e`)                   |
+| `npm run performance:desktop` | Electron CPU/RAM measurement (builds the desktop app first; excluded from `npm run e2e`) |
+| `npm run desktop:dev`         | Build web + main, launch Electron                                                        |
+| `npm run desktop:dist`        | Full installers via electron-builder (`desktop:pack` for unpacked)                       |
+| `npm run mobile:sync`         | Rebuild `dist/` and copy it into the native Android project                              |
+| `npm run mobile:build`        | Assemble a debug APK (`mobile:release` for a signed release APK)                         |
+| `npm run mobile:run`          | Assemble and install on the `durnible-api371` emulator                                   |
 
 ## Tech Stack
 
@@ -73,6 +79,7 @@ Durnible is a Matrix chat client built with React, TypeScript, and Vite. Forked 
 - Docs (AGENTS.md included) describe how things are, not how they were. When something changes, rewrite the text to match and delete what it replaced — no corrections, before/after framing, changelog entries, or "Done — X" sections. Why it changed belongs in the commit message or PR.
 - Watch for reuse opportunities. Before writing a new helper, check whether an existing utility in `src/app/utils/`, hook in `src/app/hooks/`, or component already does the job. If you're writing something that looks like code elsewhere in the repo, stop and consolidate — extract a shared function rather than duplicating. When editing, flag nearby duplication you notice even if it's out of scope, and ask before refactoring.
 - This project uses vite 8 / Rolldown, which resolves CJS default imports by Node semantics (`import x from 'pkg'` yields `module.exports`, ignoring a runtime `__esModule`+`exports.default`). A bare-CJS package (no `exports`/`module` field in its `package.json`) that's TS-compiled with `exports.default` will break on a default import — `x` becomes the module object, not the function. Import the **named** export instead (`import { thing } from 'pkg'`), or read `.default` explicitly. This bit `millify` (fixed in `src/app/plugins/millify.ts`).
+- `toRem` divides by a hardcoded 16, not the real root font size, which the Page Zoom setting (`pageZoom`, 75-150%, `ClientNonUIFeatures.tsx`) controls. Emit measured values (`clientWidth`, `info.w`) as `px`; keep `toRem` for constants meant to scale with text. Reproduce any overflow or clipping at Page Zoom 150%, since the default 100% pins the root to 16px and hides it. This bit `ImageGrid`.
 
 ## Testing
 
@@ -84,9 +91,17 @@ Durnible is a Matrix chat client built with React, TypeScript, and Vite. Forked 
 - Don't write tests that only verify behavior the type system already guarantees (e.g., that a function compares the correct fields on a typed object). Focus test effort on behavior types can't catch: state transitions, async sequencing, side effects, edge cases in runtime logic.
 - Never write a test that passes while the behavior it covers is broken. If a behavior is misbehaving, its test must fail — that is the entire point of the test. Don't reach for expected-failure markers (Playwright's `test.fail()`), skips, or inverted assertions to keep a suite green around a known defect, and don't weaken an assertion until it stops failing. A green run has to mean the behavior works; the moment it can mean "works, or is broken in a way we wrote down," the suite stops being a signal and starts being noise. A real defect gets a genuinely failing test that stays red until it's fixed.
 
+## Platform Builds
+
+- Desktop is Electron (`platform/desktop/`); targets and GitHub publish config are in `electron-builder.yml`. A `v*` tag runs `.github/workflows/desktop-release.yml`, which fails unless the tag matches `package.json` version.
+- Android is a [Capacitor](https://capacitorjs.com/) shell in `platform/mobile/android`. Needs JDK 21 and an SDK with `platform-tools`, `platforms;android-36`, `build-tools;36.0.0`. Android Studio isn't required.
+- Gradle finds the SDK through `platform/mobile/android/local.properties`, which is **not** in version control because the path differs per machine. Create it before the first build: `echo "sdk.dir=$HOME/Android/Sdk" > platform/mobile/android/local.properties`
+- `mobile:run` targets the `durnible-api371` emulator specifically so it stays predictable with several devices attached. Start it first; the script prints the command if it isn't running.
+
 ## Performance Benchmarking
 
-Composer typing benchmark in `e2e/performance/`, excluded from the normal suite so CI never runs it.
+Composer typing benchmark in `e2e/performance/`. Benchmarks live under `e2e/` but each has its own
+config and `playwright.config.ts` ignores them, so `npm run e2e` never picks them up.
 Writes a markdown report and per-scenario `.cpuprofile` files to `performance-results/` (gitignored).
 
 | Command                          | Purpose                                                     |
@@ -115,6 +130,30 @@ keystroke latency — that's still the feel worth aiming for. But they have no D
 React render cycle in the loop, so matching them exactly here is probably not attainable; don't
 block work on hitting that number.
 
+### Desktop resource usage
+
+`npm run performance:desktop` launches the real Electron app (`e2e/desktop/`, config
+`playwright.desktop.config.ts`) and measures CPU seconds and memory instead of latency, across
+`idle-in-room`, `idle-on-room-list`, `timeline-scroll`, `typing-burst`, `incoming-messages` and
+`leak-cycle`. Each
+scenario gets its own launch and `--user-data-dir`, so a desktop app already running is untouched.
+Report-only: writes `performance-results/desktop-resources.md`, asserts nothing, and is comparable
+only against another run on the same machine (`PERFORMANCE_LABEL` keeps reports apart;
+`PERFORMANCE_DESKTOP_IDLE_MS` and `PERFORMANCE_DESKTOP_INCOMING_MS` set those two window lengths).
+`PERFORMANCE_DESKTOP_PROFILE=1` adds a renderer CPU profile and devtools.timeline phases. If it
+shows no JS but a busy process, read the trace counts — 60 frame lifecycles/s with no paint means
+something is animating; `document.getAnimations()` names it.
+
+CPU is average cores — `cumulativeCPUUsage` deltas over wall clock, as in Chrome's `cpuTimeMetric`.
+`percentCPUUsage` is normalized across all cores; don't substitute it. Long tasks and total blocking
+time cover main-thread responsiveness, which cores can't show; both read 0 on unthrottled desktop
+hardware until something actually stalls. Work driven through `page.evaluate` is not attributed as a
+page task, so a synthetic block there will not register.
+
+`leak-cycle` compares DOM nodes and listeners before and after; both must return to where they
+started. Its warm-up cycle and post-drive settle are load-bearing — without them, the first room
+open (~830 nodes) and React's not-yet-released detached subtree both read as leaks.
+
 ### TODO — extend the benchmark beyond composer typing
 
 The fixtures in `e2e/fixtures/performance.ts` are interaction-agnostic; only `typing.spec.ts` is
@@ -135,8 +174,21 @@ Primitives: `PERFORMANCE_BASELINE=<label>` diff mode (busy-time deltas, non-zero
 regression) to make it CI-gate-able; heap-growth check across repeated room switches (leak canary);
 bundle-size budget on `vite build` output.
 
-Infra: no `.github/workflows/` yet — run this label-gated or nightly, not per-PR. `e2e/` isn't
-covered by `typecheck` or `check:eslint`.
+Infra: no `.github/workflows/` yet — run this label-gated or nightly, not per-PR.
+
+### TODO — put `e2e/` under `typecheck`
+
+`tsconfig.json` includes only `src`, so nothing in `e2e/` is type checked and Playwright transpiles
+specs without checking them. Four errors block turning it on:
+
+- `e2e/fixtures/homeserver.ts:253,268` — `seedSession`/`seedSettings` return `Promise<void>`, but
+  `addInitScript` returns `Promise<Disposable>`.
+- `e2e/fixtures/performance.ts:97,110` — the `Tracing.dataCollected` listener types its payload as
+  `{ value?: TraceEvent[] }`; Playwright declares `{ [key: string]: string }[]`. Needs a narrow
+  local type, not an `as` cast.
+
+Then add `tsconfig.e2e.json` including `e2e/` with node types, and run it from `typecheck`.
+`check:eslint` is still `src`-only and has the same gap.
 
 ## Git
 

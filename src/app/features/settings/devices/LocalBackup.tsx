@@ -1,8 +1,8 @@
 import type { FormEventHandler } from 'react';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Box, Button, color, Icon, Icons, Spinner, Text, toRem } from 'folds';
-import FileSaver from 'file-saver';
 import { SequenceCard } from '../../../components/sequence-card';
+import { saveFile } from '../../../utils/saveFile';
 import { SettingTile } from '../../../components/setting-tile';
 import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { PasswordInput } from '../../../components/password-input';
@@ -29,7 +29,7 @@ function ExportKeys() {
         const blob = new Blob([encKeys], {
           type: 'text/plain;charset=us-ascii',
         });
-        FileSaver.saveAs(blob, 'durnible-keys.txt');
+        await saveFile(blob, 'durnible-keys.txt');
       },
       [mx]
     )

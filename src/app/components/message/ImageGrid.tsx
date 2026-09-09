@@ -1,7 +1,5 @@
 import React, { useCallback, useLayoutEffect, useMemo, useState } from 'react';
-import classNames from 'classnames';
 import { useSetAtom } from 'jotai';
-import { toRem } from 'folds';
 import { ImageContent as ImageContentView } from './content';
 import { Image } from '../media';
 import * as css from './ImageGrid.css';
@@ -17,15 +15,17 @@ import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
 import { useElementSizeObserver } from '../../hooks/useElementSizeObserver';
 import type { Count } from './imageGridLayout';
 import {
-  GRID_GAP,
   GRID_MAX_CELLS,
+  GRID_MAX_HEIGHT,
   GRID_MIN_WIDTH,
+  WIDE_LAYOUT_MIN_WIDTH,
   MOBILE_STACK_MAX_WIDTH,
-  SINGLE_IMAGE_MAX_HEIGHT,
   STACK_MAX_WIDTH,
-  gridColumnsForCount,
-  stackColumnsForCount,
-  stackRowsForCount,
+  buildImageGridLayout,
+  buildNarrowTile,
+  cellAspectRatio,
+  chooseImageGridLayout,
+  maxHeightForCount,
 } from './imageGridLayout';
 
 const useAvailableWidth = (): [number | null, (element: HTMLDivElement | null) => void] => {
@@ -44,78 +44,13 @@ const useAvailableWidth = (): [number | null, (element: HTMLDivElement | null) =
   return [availableWidth, setContainer];
 };
 
-const singleImageWidth = (content: ImageContent): number => {
-  const w = content.info?.w || GRID_MIN_WIDTH;
-  const h = content.info?.h || GRID_MIN_WIDTH;
-  return h > SINGLE_IMAGE_MAX_HEIGHT ? Math.round(w * (SINGLE_IMAGE_MAX_HEIGHT / h)) : w;
+const FALLBACK_IMAGE_SIZE = 400;
+
+const naturalDisplayWidth = (content: ImageContent): number => {
+  const width = content.info?.w || FALLBACK_IMAGE_SIZE;
+  const height = content.info?.h || FALLBACK_IMAGE_SIZE;
+  return height > GRID_MAX_HEIGHT ? Math.round(width * (GRID_MAX_HEIGHT / height)) : width;
 };
-
-const buildDesktopStyle = (count: Count, widthBudget: number): React.CSSProperties => {
-  const gap = GRID_GAP;
-  const maxHeight = SINGLE_IMAGE_MAX_HEIGHT;
-  const columns = gridColumnsForCount[count];
-  const rem = (n: number) => toRem(n);
-  const repeatTrack = (n: number, size: number) => Array(n).fill(rem(size)).join(' ');
-
-  switch (count) {
-    case 2: {
-      const cellSize = Math.min((widthBudget - gap) / 2, maxHeight);
-      return {
-        width: rem(2 * cellSize + gap),
-        height: rem(cellSize),
-        gridTemplateColumns: repeatTrack(columns, cellSize),
-        gridTemplateRows: rem(cellSize),
-      };
-    }
-    case 3: {
-      const cellSize = Math.min((widthBudget - 2 * gap) / 3, (maxHeight - gap) / 2);
-      const heroSide = 2 * cellSize + gap;
-      return {
-        width: rem(3 * cellSize + 2 * gap),
-        height: rem(heroSide),
-        gridTemplateColumns: `${rem(heroSide)} ${repeatTrack(columns - 1, cellSize)}`,
-        gridTemplateRows: repeatTrack(2, cellSize),
-      };
-    }
-    case 4: {
-      const cellSize = Math.min((widthBudget - gap) / 2, (maxHeight - gap) / 2);
-      return {
-        width: rem(2 * cellSize + gap),
-        height: rem(2 * cellSize + gap),
-        gridTemplateColumns: repeatTrack(columns, cellSize),
-        gridTemplateRows: repeatTrack(2, cellSize),
-      };
-    }
-    case 5: {
-      const cellSize = Math.min((widthBudget - 3 * gap) / 4, (maxHeight - gap) / 2);
-      const heroSide = 2 * cellSize + gap;
-      return {
-        width: rem(4 * cellSize + 3 * gap),
-        height: rem(heroSide),
-        gridTemplateColumns: `${rem(heroSide)} ${repeatTrack(columns - 1, cellSize)}`,
-        gridTemplateRows: repeatTrack(2, cellSize),
-      };
-    }
-    case 6: {
-      const cellSize = Math.min((widthBudget - 2 * gap) / 3, (maxHeight - gap) / 2);
-      return {
-        width: rem(3 * cellSize + 2 * gap),
-        height: rem(2 * cellSize + gap),
-        gridTemplateColumns: repeatTrack(columns, cellSize),
-        gridTemplateRows: repeatTrack(2, cellSize),
-      };
-    }
-    default:
-      throw new Error(`Unsupported image grid count: ${count}`);
-  }
-};
-
-const buildStackStyle = (count: Count, maxWidth: number): React.CSSProperties => ({
-  width: '100%',
-  maxWidth: toRem(maxWidth),
-  gridTemplateColumns: `repeat(${stackColumnsForCount[count]}, 1fr)`,
-  gridTemplateRows: `repeat(${stackRowsForCount[count]}, auto)`,
-});
 
 type ImageGridProps = {
   contents: ImageContent[];
@@ -124,19 +59,32 @@ type ImageGridProps = {
 
 export function ImageGrid({ contents, autoPlay }: ImageGridProps) {
   const cells = contents.slice(0, GRID_MAX_CELLS);
-  const count = cells.length as Count;
-  const firstIsHero = count === 3 || count === 5;
 
   const isMobile = useScreenSizeContext() === ScreenSize.Mobile;
   const [availableWidth, containerRef] = useAvailableWidth();
-  const isStackLayout = isMobile || availableWidth === null || availableWidth < GRID_MIN_WIDTH;
+  const isNarrowLayout =
+    isMobile || availableWidth === null || availableWidth < WIDE_LAYOUT_MIN_WIDTH;
 
-  let gridStyle: React.CSSProperties;
-  if (isStackLayout) {
-    gridStyle = buildStackStyle(count, isMobile ? MOBILE_STACK_MAX_WIDTH : STACK_MAX_WIDTH);
+  const aspectRatios = cells.map((content) => {
+    const mxcUrl = content.file?.url ?? content.url;
+    if (typeof mxcUrl !== 'string') return 1;
+    return cellAspectRatio(content.info?.w, content.info?.h);
+  });
+
+  const maxHeight = maxHeightForCount(cells.length as Count);
+
+  let layout;
+  if (isNarrowLayout) {
+    const stackMaxWidth = isMobile ? MOBILE_STACK_MAX_WIDTH : STACK_MAX_WIDTH;
+    const widthBudget = Math.min(availableWidth ?? stackMaxWidth, stackMaxWidth);
+    layout = buildImageGridLayout(buildNarrowTile(aspectRatios), widthBudget, maxHeight);
   } else {
-    const naturalBudget = Math.max(GRID_MIN_WIDTH, ...cells.map(singleImageWidth));
-    gridStyle = buildDesktopStyle(count, Math.min(naturalBudget, availableWidth));
+    const naturalBudget = Math.max(GRID_MIN_WIDTH, ...cells.map(naturalDisplayWidth));
+    layout = chooseImageGridLayout(
+      aspectRatios,
+      Math.min(naturalBudget, availableWidth),
+      maxHeight
+    );
   }
 
   const setViewerState = useSetAtom(imageViewerAtom);
@@ -165,25 +113,40 @@ export function ImageGrid({ contents, autoPlay }: ImageGridProps) {
 
   return (
     <div ref={containerRef} className={css.ImageGridContainer} data-testid="image-grid-container">
-      <div className={css.ImageGrid} style={gridStyle} data-testid="image-grid">
-        {cells.map((content, idx) => {
-          const heroCell = firstIsHero && idx === 0;
-          const cellClassName = classNames(
-            css.ImageGridCell,
-            heroCell &&
-              (isStackLayout ? css.ImageGridCellSpanFullRow : css.ImageGridCellSpanFullColumn)
-          );
+      <div
+        className={css.ImageGrid}
+        style={{ width: `${layout.width}px`, height: `${layout.height}px` }}
+        data-testid="image-grid"
+      >
+        {layout.cells.map((rect) => {
+          const content = cells[rect.index];
           const mxcUrl = content.file?.url ?? content.url;
           const cellKey = typeof mxcUrl === 'string' ? `image-grid-cell-${mxcUrl}` : undefined;
+          const cellStyle: React.CSSProperties = {
+            left: `${rect.left}px`,
+            top: `${rect.top}px`,
+            width: `${rect.width}px`,
+            height: `${rect.height}px`,
+          };
           if (typeof mxcUrl !== 'string') {
             return (
-              <div key={cellKey} className={cellClassName} data-testid="image-grid-cell">
+              <div
+                key={cellKey}
+                className={css.ImageGridCell}
+                style={cellStyle}
+                data-testid="image-grid-cell"
+              >
                 <BrokenContent />
               </div>
             );
           }
           return (
-            <div key={cellKey} className={cellClassName} data-testid="image-grid-cell">
+            <div
+              key={cellKey}
+              className={css.ImageGridCell}
+              style={cellStyle}
+              data-testid="image-grid-cell"
+            >
               <ImageContentView
                 body={content.body || content.filename || 'Image'}
                 filename={content.filename}
@@ -194,7 +157,7 @@ export function ImageGrid({ contents, autoPlay }: ImageGridProps) {
                 autoPlay={autoPlay}
                 markedAsSpoiler={content[MATRIX_SPOILER_PROPERTY_NAME]}
                 spoilerReason={content[MATRIX_SPOILER_REASON_PROPERTY_NAME]}
-                onView={(resolvedSrc, alt) => handleViewCell(idx, resolvedSrc, alt)}
+                onView={(resolvedSrc, alt) => handleViewCell(rect.index, resolvedSrc, alt)}
                 renderImage={(p) => (
                   <Image
                     {...p}

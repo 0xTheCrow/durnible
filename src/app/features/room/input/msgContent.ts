@@ -22,7 +22,7 @@ import {
   probeAudioDurationMs,
 } from '../../../utils/matrix';
 import type { UploadItem } from '../../../state/room/roomInputDrafts';
-import { encodeBlurHash } from '../../../utils/blurHash';
+import { BLUR_HASH_ENCODE_WIDTH, encodeBlurHash } from '../../../utils/blurHash';
 import { scaleYDimension } from '../../../utils/common';
 
 const generateThumbnailContent = async (
@@ -71,8 +71,8 @@ export const getImageMsgContent = async (
     if (imageElement) {
       const blurHash = encodeBlurHash(
         imageElement,
-        512,
-        scaleYDimension(imageElement.width, 512, imageElement.height)
+        BLUR_HASH_ENCODE_WIDTH,
+        scaleYDimension(imageElement.width, BLUR_HASH_ENCODE_WIDTH, imageElement.height)
       );
 
       content.info = {
@@ -121,18 +121,32 @@ export const getVideoMsgContent = async (
           !!encryptionInfo
         )
       );
-      if (thumbContent && thumbContent.thumbnail_info) {
-        thumbContent.thumbnail_info[MATRIX_BLUR_HASH_PROPERTY_NAME] = encodeBlurHash(
-          videoElement,
-          512,
-          scaleYDimension(videoElement.videoWidth, 512, videoElement.videoHeight)
-        );
-      }
       if (thumbError) console.warn(thumbError);
+
+      const hasVideoDimensions = videoElement.videoWidth > 0 && videoElement.videoHeight > 0;
+      const blurHash = hasVideoDimensions
+        ? encodeBlurHash(
+            videoElement,
+            BLUR_HASH_ENCODE_WIDTH,
+            scaleYDimension(
+              videoElement.videoWidth,
+              BLUR_HASH_ENCODE_WIDTH,
+              videoElement.videoHeight
+            )
+          )
+        : undefined;
+
       content.info = {
         ...getVideoInfo(videoElement, file),
         ...thumbContent,
       };
+      if (blurHash) {
+        if (content.info.thumbnail_info) {
+          content.info.thumbnail_info[MATRIX_BLUR_HASH_PROPERTY_NAME] = blurHash;
+        } else {
+          content.info[MATRIX_BLUR_HASH_PROPERTY_NAME] = blurHash;
+        }
+      }
     }
     if (encryptionInfo) {
       content.file = {

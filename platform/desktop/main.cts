@@ -141,12 +141,30 @@ const createMainWindow = (): void => {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      spellcheck: true,
+      disableHtmlFullscreenWindowResize: true,
     },
   });
 
   persistWindowState(mainWindow);
   mainWindow.setMenuBarVisibility(false);
   installTextContextMenu(mainWindow.webContents);
+
+  // This is needed to prevent video fullscreen from breaking
+  let isWindowFullScreenBeforeHtmlFullscreen = false;
+  mainWindow.on('enter-html-full-screen', () => {
+    isWindowFullScreenBeforeHtmlFullscreen = mainWindow.isFullScreen();
+    if (isWindowFullScreenBeforeHtmlFullscreen) return;
+    setImmediate(() => {
+      if (!mainWindow.isDestroyed()) mainWindow.setFullScreen(true);
+    });
+  });
+  mainWindow.on('leave-html-full-screen', () => {
+    if (isWindowFullScreenBeforeHtmlFullscreen) return;
+    setImmediate(() => {
+      if (!mainWindow.isDestroyed()) mainWindow.setFullScreen(false);
+    });
+  });
 
   mainWindow.once('ready-to-show', () => mainWindow.show());
 

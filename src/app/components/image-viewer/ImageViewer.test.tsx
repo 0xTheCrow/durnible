@@ -9,8 +9,8 @@ vi.mock('../../utils/matrix', () => ({
   downloadMedia: vi.fn().mockResolvedValue(new Blob(['img'], { type: 'image/png' })),
 }));
 
-vi.mock('file-saver', () => ({
-  default: { saveAs: vi.fn() },
+vi.mock('../../utils/saveFile', () => ({
+  saveFile: vi.fn().mockResolvedValue(undefined),
 }));
 
 const defaultProps = {

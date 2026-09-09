@@ -451,7 +451,15 @@ export const stubHomeserver = async (
       return json(route, { one_time_key_counts: { signed_curve25519: 50 } });
     }
     if (pathname.endsWith('/keys/query')) {
-      return json(route, { device_keys: {}, master_keys: {}, self_signing_keys: {} });
+      const requestBody = route.request().postDataJSON() as {
+        device_keys?: Record<string, unknown>;
+      } | null;
+      const requestedUserIds = Object.keys(requestBody?.device_keys ?? {});
+      return json(route, {
+        device_keys: Object.fromEntries(requestedUserIds.map((userId) => [userId, {}])),
+        master_keys: {},
+        self_signing_keys: {},
+      });
     }
     if (pathname.endsWith('/keys/claim')) return json(route, { one_time_keys: {} });
     if (pathname.includes('/keys/changes')) return json(route, { changed: [], left: [] });

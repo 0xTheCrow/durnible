@@ -354,6 +354,46 @@ export const collectKeystrokeTiming = async (page: Page): Promise<KeystrokeTimin
       }
   );
 
+declare global {
+  interface Window {
+    __longTaskDurationsMs?: number[];
+  }
+}
+
+export const installLongTaskTiming = (page: Page): Promise<void> =>
+  page.evaluate(() => {
+    const durationsMs: number[] = [];
+    window.__longTaskDurationsMs = durationsMs;
+    new PerformanceObserver((list) => {
+      list.getEntries().forEach((entry) => durationsMs.push(entry.duration));
+    }).observe({ type: 'longtask', buffered: false });
+  });
+
+export const collectLongTaskTiming = async (page: Page): Promise<number[]> => {
+  const durationsMs = await page.evaluate(() => window.__longTaskDurationsMs);
+  if (!durationsMs) {
+    throw new Error('long task observer is gone — the page navigated after installLongTaskTiming');
+  }
+  return durationsMs;
+};
+
+export type LongTaskStats = {
+  count: number;
+  totalBlockingMs: number;
+  longestMs: number;
+};
+
+const LONG_TASK_THRESHOLD_MS = 50;
+
+export const summarizeLongTasks = (durationsMs: number[]): LongTaskStats => ({
+  count: durationsMs.length,
+  totalBlockingMs: durationsMs.reduce(
+    (total, duration) => total + Math.max(0, duration - LONG_TASK_THRESHOLD_MS),
+    0
+  ),
+  longestMs: durationsMs.length > 0 ? Math.max(...durationsMs) : 0,
+});
+
 export type SampleStats = {
   count: number;
   meanMs: number;

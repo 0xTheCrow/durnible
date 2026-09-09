@@ -9,6 +9,7 @@ import {
   getSpacePath,
 } from '../pages/pathUtils';
 import { DIRECT_PATH, EXPLORE_PATH, HOME_PATH, INBOX_PATH, SPACE_PATH } from '../pages/paths';
+import { tryDecodeURIComponent } from '../utils/dom';
 
 type BackRouteHandlerProps = {
   children: (onBack: () => void) => ReactNode;
@@ -53,7 +54,7 @@ export function BackRouteHandler({ children }: BackRouteHandlerProps) {
       location.pathname
     );
     if (spaceMatch?.params.spaceIdOrAlias) {
-      navigate(getSpacePath(spaceMatch.params.spaceIdOrAlias));
+      navigate(getSpacePath(tryDecodeURIComponent(spaceMatch.params.spaceIdOrAlias)));
       return;
     }
     if (

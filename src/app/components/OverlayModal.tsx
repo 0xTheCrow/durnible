@@ -2,8 +2,10 @@ import type { ReactNode } from 'react';
 import React, { useEffect, useRef } from 'react';
 import FocusTrap from 'focus-trap-react';
 import type { Options as FocusTrapOptions } from 'focus-trap';
+import classNames from 'classnames';
 import { Overlay, OverlayBackdrop, OverlayCenter } from 'folds';
 import { stopPropagation } from '../utils/keyboard';
+import { OverlayCenterSafeArea } from '../styles/Modal.css';
 
 let overlayModalCounter = 0;
 
@@ -81,6 +83,7 @@ export function OverlayModal({
     >
       <OverlayCenter
         {...overlayCenterProps}
+        className={classNames(OverlayCenterSafeArea, overlayCenterProps?.className)}
         onClick={(e: React.MouseEvent) => {
           if (e.target !== e.currentTarget) return;
           e.stopPropagation();

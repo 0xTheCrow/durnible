@@ -6,6 +6,7 @@ import { ClientRoot, isChunkLoadError } from './ClientRoot';
 import { initClient } from '../../../client/initMatrix';
 import { getStoredSession } from '../../state/sessions';
 import { checkSessionLockFree, getSessionLock } from '../../utils/sessionLock';
+import { checkIsNativeMobileApp } from '../../platform/mobile';
 
 vi.mock('../../../client/initMatrix', () => ({
   initClient: vi.fn(),
@@ -28,10 +29,15 @@ vi.mock('../../utils/sessionLock', () => ({
   getSessionLock: vi.fn(async () => true),
 }));
 
+vi.mock('../../platform/mobile', () => ({
+  checkIsNativeMobileApp: vi.fn(() => false),
+}));
+
 const mockInitClient = vi.mocked(initClient);
 const mockGetStoredSession = vi.mocked(getStoredSession);
 const mockCheckSessionLockFree = vi.mocked(checkSessionLockFree);
 const mockGetSessionLock = vi.mocked(getSessionLock);
+const mockCheckIsNativeMobileApp = vi.mocked(checkIsNativeMobileApp);
 
 const MOCK_SESSION = {
   baseUrl: 'https://matrix.example.com',
@@ -180,6 +186,7 @@ describe('ClientRoot single-tab session lock', () => {
     mockGetStoredSession.mockReturnValue(MOCK_SESSION as ReturnType<typeof getStoredSession>);
     mockCheckSessionLockFree.mockReset().mockReturnValue(true);
     mockGetSessionLock.mockReset().mockResolvedValue(true);
+    mockCheckIsNativeMobileApp.mockReset().mockReturnValue(false);
     mockInitClient.mockReset();
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   });
@@ -201,6 +208,18 @@ describe('ClientRoot single-tab session lock', () => {
     fireEvent.click(screen.getByTestId('client-root-takeover-confirm-action'));
 
     await waitFor(() => expect(mockInitClient).toHaveBeenCalledTimes(1));
+  });
+
+  it('skips the lock on the native mobile app even when a stale lock is held', async () => {
+    mockCheckIsNativeMobileApp.mockReturnValue(true);
+    mockCheckSessionLockFree.mockReturnValue(false);
+    mockInitClient.mockImplementation(() => new Promise<MatrixClient>(() => {}));
+
+    render(<ClientRoot>loaded</ClientRoot>);
+
+    await waitFor(() => expect(mockInitClient).toHaveBeenCalledTimes(1));
+    expect(screen.queryByTestId('client-root-takeover-confirm')).not.toBeInTheDocument();
+    expect(mockGetSessionLock).not.toHaveBeenCalled();
   });
 
   it('stops the client and shows the other-tab view when the lock is taken over', async () => {

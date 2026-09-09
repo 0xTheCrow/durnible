@@ -26,7 +26,8 @@ import { hiddenImagesAtom, MessageEventIdContext } from '../../../state/hiddenIm
 type RenderVideoProps = {
   title: string;
   src: string;
-  onLoadedMetadata: () => void;
+  onLoadedMetadata: (event: React.SyntheticEvent<HTMLVideoElement>) => void;
+  onLoadedData: () => void;
   onError: () => void;
   autoPlay: boolean;
   controls: boolean;
@@ -63,7 +64,9 @@ export const VideoContent = as<'div', VideoContentProps>(
   ) => {
     const mx = useMatrixClient();
     const useAuthentication = useMediaAuthentication();
-    const blurHash = validBlurHash(info.thumbnail_info?.[MATRIX_BLUR_HASH_PROPERTY_NAME]);
+    const blurHash = validBlurHash(
+      info.thumbnail_info?.[MATRIX_BLUR_HASH_PROPERTY_NAME] ?? info[MATRIX_BLUR_HASH_PROPERTY_NAME]
+    );
 
     const messageEventId = useContext(MessageEventIdContext);
     const [hiddenImages, setHiddenImages] = useAtom(hiddenImagesAtom);
@@ -71,6 +74,7 @@ export const VideoContent = as<'div', VideoContentProps>(
 
     const [load, setLoad] = useState(false);
     const [error, setError] = useState(false);
+    const [isFormatSupported, setIsFormatSupported] = useState(true);
     const [blurred, setBlurred] = useState(markedAsSpoiler ?? false);
     const effectiveBlurred = blurred || isForceHidden;
 
@@ -88,6 +92,14 @@ export const VideoContent = as<'div', VideoContentProps>(
     );
     useRevokeObjectURL(srcState.status === AsyncStatus.Success ? srcState.data : undefined);
 
+    const handleLoadedMetadata = (event: React.SyntheticEvent<HTMLVideoElement>) => {
+      const hasDeclaredDimensions =
+        typeof info.w === 'number' && info.w > 0 && typeof info.h === 'number' && info.h > 0;
+      if (hasDeclaredDimensions && event.currentTarget.videoWidth === 0) {
+        setIsFormatSupported(false);
+      }
+    };
+
     const handleLoad = () => {
       setLoad(true);
     };
@@ -96,9 +108,13 @@ export const VideoContent = as<'div', VideoContentProps>(
       setError(true);
     };
 
+    const handleWatch = () => {
+      loadSrc().catch(() => {});
+    };
+
     const handleRetry = () => {
       setError(false);
-      loadSrc();
+      loadSrc().catch(() => {});
     };
 
     const containerRef = useRef<HTMLDivElement | null>(null);
@@ -157,7 +173,7 @@ export const VideoContent = as<'div', VideoContentProps>(
               fill="Solid"
               radii="400"
               size="500"
-              onClick={loadSrc}
+              onClick={handleWatch}
               before={<Icon size="Inherit" src={Icons.Play} filled />}
               data-testid="video-content-watch-btn"
             >
@@ -165,15 +181,19 @@ export const VideoContent = as<'div', VideoContentProps>(
             </Button>
           </Box>
         )}
-        {srcState.status === AsyncStatus.Success && (
+        {srcState.status === AsyncStatus.Success && isFormatSupported && (
           <Box
             className={classNames(css.AbsoluteContainer, effectiveBlurred && css.Blur)}
-            style={effectiveBlurred ? { opacity: 0.6 } : undefined}
+            style={{
+              opacity: effectiveBlurred ? 0.6 : undefined,
+              visibility: load ? undefined : 'hidden',
+            }}
           >
             {renderVideo({
               title: body,
               src: srcState.data,
-              onLoadedMetadata: handleLoad,
+              onLoadedMetadata: handleLoadedMetadata,
+              onLoadedData: handleLoad,
               onError: handleError,
               autoPlay: true,
               controls: true,
@@ -219,11 +239,25 @@ export const VideoContent = as<'div', VideoContentProps>(
         )}
         {(srcState.status === AsyncStatus.Loading || srcState.status === AsyncStatus.Success) &&
           !load &&
+          isFormatSupported &&
           !effectiveBlurred && (
             <Box className={css.AbsoluteContainer} alignItems="Center" justifyContent="Center">
               <Spinner variant="Secondary" />
             </Box>
           )}
+        {!isFormatSupported && (
+          <Box
+            className={classNames(css.AbsoluteContainer, css.UnsupportedFormatContainer)}
+            alignItems="Center"
+            justifyContent="Center"
+          >
+            <Box className={css.UnsupportedFormatMessage} shrink="Yes">
+              <Text size="T300" align="Center" data-testid="video-content-unsupported-format">
+                {`Durnible can't play this video format. Download it to watch in another player.`}
+              </Text>
+            </Box>
+          </Box>
+        )}
         {(error || srcState.status === AsyncStatus.Error) && (
           <Box className={css.AbsoluteContainer} alignItems="Center" justifyContent="Center">
             <TooltipProvider
