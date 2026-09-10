@@ -154,6 +154,32 @@ page task, so a synthetic block there will not register.
 started. Its warm-up cycle and post-drive settle are load-bearing — without them, the first room
 open (~830 nodes) and React's not-yet-released detached subtree both read as leaks.
 
+### TODO: load and resource improvements
+
+These are speculative. None has been measured end to end or designed in detail; each needs
+research and a decision on whether it is worth doing before any code is written. Route splitting is
+tracked under Lazy Loading.
+
+- **Emoji shortcode data is eager.** `plugins/emoji.ts` statically imports `emojibase-data`'s
+  `joypixels.json` and `emojibase.json` (~65 kB gzip together), and the `emoji` chunk is in the
+  eager set. Candidate: move them into the lazy `plugins/emojiData.ts` next to `compact.json`.
+- **Crypto WASM is not precached.** `injectManifest.globPatterns` in `vite.config.js` covers
+  `js,css,html` only, so the 5.5 MB `matrix_sdk_crypto_wasm_bg.wasm` is refetched whenever the HTTP
+  cache drops it. Adding `wasm` would help the web build only; desktop registers no service worker.
+- **Vanilla Extract class names.** `vite.config.js` sets `identifiers: 'debug'` for every build.
+  `'short'` in production would trim class strings from CSS and JS. Yield unknown, and debug names
+  are what make `document.getAnimations()` output readable.
+- **Brotli on Amplify.** Unverified whether production JS is served with Brotli or only gzip.
+- **Session lock heartbeat.** `utils/sessionLock.ts` writes localStorage every 5 s for the life of
+  the document on web and desktop. An on-demand liveness probe (owner writes its key once, a
+  challenger writes a probe key and waits ~1 s for the owner's `storage` reply) would remove the
+  timer and the dead-owner-looks-alive-for-15 s prompt. Cost: `checkSessionLockFree()` becomes
+  async, so `ClientRoot`'s takeover check moves into an effect with a third boot state.
+- **`ImageContent` never revokes its object URL.** With `mediaAutoLoad` on (the default), every
+  decrypted image's blob lives for the life of the tab. Measure retained size before changing it.
+  An unmount revoke breaks an open lightbox because the URL escapes into `imageViewerAtom`; the
+  candidate fix puts the `Blob` on the atom and lets the viewer mint and revoke its own URL.
+
 ### TODO — extend the benchmark beyond composer typing
 
 The fixtures in `e2e/fixtures/performance.ts` are interaction-agnostic; only `typing.spec.ts` is
