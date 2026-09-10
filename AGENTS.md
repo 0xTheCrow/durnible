@@ -150,6 +150,13 @@ time cover main-thread responsiveness, which cores can't show; both read 0 on un
 hardware until something actually stalls. Work driven through `page.evaluate` is not attributed as a
 page task, so a synthetic block there will not register.
 
+Memory is reported per process as RSS (Electron's `workingSetSize`), PSS and private, the last two
+read from `/proc/<pid>/smaps_rollup`, so the benchmark runs on Linux only. Only PSS and private are
+summed: PSS totals the RAM the app occupies, private is close to what a task manager shows, and a
+summed RSS counts the shared Electron binary once per process. The totals leave out Electron's
+zygote processes, which `getAppMetrics` doesn't list (about 28MB PSS, 1MB private). That offset is
+near-constant and cancels out of before/after comparisons.
+
 `leak-cycle` compares DOM nodes and listeners before and after; both must return to where they
 started. Its warm-up cycle and post-drive settle are load-bearing — without them, the first room
 open (~830 nodes) and React's not-yet-released detached subtree both read as leaks.
