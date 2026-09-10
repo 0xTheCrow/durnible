@@ -1,3 +1,6 @@
+import type { VideoRotationDegrees } from './videoRotation';
+import { getVideoRotationDegrees } from './videoRotation';
+
 export const targetFromEvent = (evt: Event, selector: string): Element | undefined => {
   const targets = evt.composedPath() as Element[];
   return targets.find((target) => target.matches?.(selector));
@@ -199,27 +202,162 @@ export const getThumbnailDimensions = (width: number, height: number): [number, 
   return [targetWidth, targetHeight];
 };
 
-export const getThumbnail = (
-  img: HTMLImageElement | SVGImageElement | HTMLVideoElement,
-  width: number,
-  height: number,
-  thumbnailMimeType?: string
-): Promise<Blob | undefined> =>
-  new Promise((resolve) => {
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    const context = canvas.getContext('2d');
-    if (!context) {
-      resolve(undefined);
-      return;
-    }
-    context.drawImage(img, 0, 0, width, height);
+const checkIsCanvasBlank = (context: CanvasRenderingContext2D): boolean => {
+  const { data } = context.getImageData(0, 0, context.canvas.width, context.canvas.height);
+  for (let i = 0; i < data.length; i += 4) {
+    if (data[i] !== 0 || data[i + 1] !== 0 || data[i + 2] !== 0) return false;
+  }
+  return true;
+};
 
-    canvas.toBlob((thumbnail) => {
-      resolve(thumbnail ?? undefined);
-    }, thumbnailMimeType ?? 'image/jpeg');
-  });
+const checkIsAnyPixelTransparent = (pixels: Uint8Array): boolean => {
+  for (let i = 3; i < pixels.length; i += 4) {
+    if (pixels[i] === 0) return true;
+  }
+  return false;
+};
+
+const checkIsQuarterTurn = (rotationDegrees: VideoRotationDegrees): boolean =>
+  rotationDegrees === 90 || rotationDegrees === 270;
+
+const readVideoTexturePixels = (
+  webglContext: WebGLRenderingContext,
+  video: HTMLVideoElement,
+  textureWidth: number,
+  textureHeight: number
+): Uint8Array | undefined => {
+  const texture = webglContext.createTexture();
+  webglContext.bindTexture(webglContext.TEXTURE_2D, texture);
+  webglContext.texParameteri(
+    webglContext.TEXTURE_2D,
+    webglContext.TEXTURE_WRAP_S,
+    webglContext.CLAMP_TO_EDGE
+  );
+  webglContext.texParameteri(
+    webglContext.TEXTURE_2D,
+    webglContext.TEXTURE_WRAP_T,
+    webglContext.CLAMP_TO_EDGE
+  );
+  webglContext.texParameteri(
+    webglContext.TEXTURE_2D,
+    webglContext.TEXTURE_MIN_FILTER,
+    webglContext.LINEAR
+  );
+  webglContext.texImage2D(
+    webglContext.TEXTURE_2D,
+    0,
+    webglContext.RGBA,
+    webglContext.RGBA,
+    webglContext.UNSIGNED_BYTE,
+    video
+  );
+
+  const framebuffer = webglContext.createFramebuffer();
+  webglContext.bindFramebuffer(webglContext.FRAMEBUFFER, framebuffer);
+  webglContext.framebufferTexture2D(
+    webglContext.FRAMEBUFFER,
+    webglContext.COLOR_ATTACHMENT0,
+    webglContext.TEXTURE_2D,
+    texture,
+    0
+  );
+  const isFramebufferComplete =
+    webglContext.checkFramebufferStatus(webglContext.FRAMEBUFFER) ===
+    webglContext.FRAMEBUFFER_COMPLETE;
+  if (!isFramebufferComplete) return undefined;
+
+  const pixels = new Uint8Array(textureWidth * textureHeight * 4);
+  webglContext.readPixels(
+    0,
+    0,
+    textureWidth,
+    textureHeight,
+    webglContext.RGBA,
+    webglContext.UNSIGNED_BYTE,
+    pixels
+  );
+  return pixels;
+};
+
+const copyVideoTextureWithWebgl = (
+  video: HTMLVideoElement,
+  textureWidth: number,
+  textureHeight: number
+): HTMLCanvasElement | undefined => {
+  const webglContext = document.createElement('canvas').getContext('webgl');
+  if (!webglContext) return undefined;
+
+  let pixels: Uint8Array | undefined;
+  try {
+    pixels = readVideoTexturePixels(webglContext, video, textureWidth, textureHeight);
+  } finally {
+    webglContext.getExtension('WEBGL_lose_context')?.loseContext();
+  }
+  if (!pixels || checkIsAnyPixelTransparent(pixels)) return undefined;
+
+  const frameCanvas = document.createElement('canvas');
+  frameCanvas.width = textureWidth;
+  frameCanvas.height = textureHeight;
+  frameCanvas
+    .getContext('2d')
+    ?.putImageData(
+      new ImageData(new Uint8ClampedArray(pixels.buffer), textureWidth, textureHeight),
+      0,
+      0
+    );
+  return frameCanvas;
+};
+
+const drawRotatedFrame = (
+  context: CanvasRenderingContext2D,
+  frameCanvas: HTMLCanvasElement,
+  rotationDegrees: VideoRotationDegrees
+) => {
+  const { width, height } = context.canvas;
+  const isQuarterTurn = checkIsQuarterTurn(rotationDegrees);
+  const drawWidth = isQuarterTurn ? height : width;
+  const drawHeight = isQuarterTurn ? width : height;
+  context.translate(width / 2, height / 2);
+  context.rotate((rotationDegrees * Math.PI) / 180);
+  context.drawImage(frameCanvas, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+};
+
+export const captureVideoFrame = async (
+  video: HTMLVideoElement,
+  videoFile: Blob,
+  width: number,
+  height: number
+): Promise<HTMLCanvasElement | undefined> => {
+  if (width === 0 || height === 0) return undefined;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext('2d');
+  if (!context) return undefined;
+
+  context.drawImage(video, 0, 0, width, height);
+  if (!checkIsCanvasBlank(context)) return canvas;
+
+  const { videoWidth, videoHeight } = video;
+  const rotationDegrees = await getVideoRotationDegrees(videoFile);
+  const isQuarterTurn = checkIsQuarterTurn(rotationDegrees);
+  const unrotatedFrameCanvas = isQuarterTurn
+    ? copyVideoTextureWithWebgl(video, videoHeight, videoWidth)
+    : copyVideoTextureWithWebgl(video, videoWidth, videoHeight);
+  const alreadyRotatedFrameCanvas =
+    !unrotatedFrameCanvas && isQuarterTurn
+      ? copyVideoTextureWithWebgl(video, videoWidth, videoHeight)
+      : undefined;
+
+  if (unrotatedFrameCanvas) {
+    drawRotatedFrame(context, unrotatedFrameCanvas, rotationDegrees);
+  } else if (alreadyRotatedFrameCanvas) {
+    context.drawImage(alreadyRotatedFrameCanvas, 0, 0, width, height);
+  } else {
+    return undefined;
+  }
+  return checkIsCanvasBlank(context) ? undefined : canvas;
+};
 
 export type ScrollInfo = {
   offsetTop: number;
