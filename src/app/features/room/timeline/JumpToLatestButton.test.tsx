@@ -1,145 +1,197 @@
 import type { RefObject } from 'react';
 import React, { useRef } from 'react';
-import { render, act } from '@testing-library/react';
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { render, act, fireEvent } from '@testing-library/react';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { JumpToLatestButton } from './JumpToLatestButton';
-import {
-  findObserverOf,
-  installIntersectionObserverStub,
-  ioInstances,
-} from './timelineTestHelpers';
+import { installResizeObserverStub, resizeObserverInstances } from './timelineTestHelpers';
 
-let originalIO: typeof IntersectionObserver | undefined;
+type HarnessRow = { id: string; isMessage: boolean; top: number; bottom: number };
 
-const MSG_A_ID = '$msg-a:example.com';
-const MSG_B_ID = '$msg-b:example.com';
-const MSG_C_ID = '$msg-c:example.com';
+const VIEWPORT_TOP = 0;
+const VIEWPORT_BOTTOM = 500;
+
+const messageRow = (id: string, top: number, bottom: number): HarnessRow => ({
+  id,
+  isMessage: true,
+  top,
+  bottom,
+});
+
+const systemRow = (id: string, top: number, bottom: number): HarnessRow => ({
+  id,
+  isMessage: false,
+  top,
+  bottom,
+});
+
+const pendingFrameCallbacks = new Map<number, FrameRequestCallback>();
+let nextFrameId = 1;
+let originalResizeObserver: typeof ResizeObserver;
 
 function Harness({
-  lastMessageId = MSG_C_ID,
-  renderRedactedLast = false,
-  isLatestMessageBottomVisible,
+  rows,
+  isInLivePaginationWindow = true,
 }: {
-  lastMessageId?: string | null;
-  renderRedactedLast?: boolean;
-  isLatestMessageBottomVisible: boolean;
+  rows: HarnessRow[];
+  isInLivePaginationWindow?: boolean;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null) as RefObject<HTMLDivElement>;
+  const contentRef = useRef<HTMLDivElement>(null) as RefObject<HTMLDivElement>;
   return (
-    <div ref={scrollRef} data-testid="timeline-scroll">
-      <div data-message-id={MSG_A_ID} data-testid="msg-0">
-        msg A
-      </div>
-      <div data-message-id={MSG_B_ID} data-testid="msg-1">
-        msg B
-      </div>
-      {!renderRedactedLast && (
-        <div data-message-id={MSG_C_ID} data-testid="last-msg">
-          msg C
+    <>
+      <div ref={scrollRef} data-testid="timeline-scroll">
+        <div ref={contentRef}>
+          {rows.map((row) => (
+            <div key={row.id} data-testid={row.id} data-is-message={row.isMessage || undefined}>
+              {row.id}
+            </div>
+          ))}
+          <span data-testid="latest-message-bottom" />
         </div>
-      )}
+      </div>
       <JumpToLatestButton
         scrollRef={scrollRef}
-        lastMessageId={lastMessageId}
-        isLatestMessageBottomVisible={isLatestMessageBottomVisible}
+        contentRef={contentRef}
+        isInLivePaginationWindow={isInLivePaginationWindow}
         onClick={() => undefined}
       />
-    </div>
+    </>
   );
 }
 
-function getVisibility(container: HTMLElement): string | null {
-  const overlayElement = container.querySelector('[data-testid="jump-to-latest-overlay"]');
-  return overlayElement?.getAttribute('data-visible') ?? null;
-}
+const getScrollElement = (container: HTMLElement) =>
+  container.querySelector('[data-testid="timeline-scroll"]') as HTMLElement;
+
+const getRow = (container: HTMLElement, id: string) =>
+  container.querySelector(`[data-testid="${id}"]`) as HTMLElement;
+
+const createRect = (top: number, bottom: number): DOMRect => ({
+  top,
+  bottom,
+  left: 0,
+  right: 0,
+  width: 0,
+  height: bottom - top,
+  x: 0,
+  y: top,
+  toJSON: () => ({}),
+});
+
+const stubRect = (element: HTMLElement, top: number, bottom: number) => {
+  vi.spyOn(element, 'getBoundingClientRect').mockReturnValue(createRect(top, bottom));
+};
+
+const placeRows = (container: HTMLElement, rows: HarnessRow[]) => {
+  stubRect(getScrollElement(container), VIEWPORT_TOP, VIEWPORT_BOTTOM);
+  rows.forEach((row) => stubRect(getRow(container, row.id), row.top, row.bottom));
+};
+
+const flushAnimationFrames = () => {
+  act(() => {
+    const callbacks = [...pendingFrameCallbacks.values()];
+    pendingFrameCallbacks.clear();
+    callbacks.forEach((callback) => callback(0));
+  });
+};
+
+const getVisibility = (container: HTMLElement) =>
+  container.querySelector('[data-testid="jump-to-latest-overlay"]')?.getAttribute('data-visible') ??
+  null;
+
+const renderTimeline = (rows: HarnessRow[], isInLivePaginationWindow = true) => {
+  const result = render(
+    <Harness rows={rows} isInLivePaginationWindow={isInLivePaginationWindow} />
+  );
+  placeRows(result.container, rows);
+  flushAnimationFrames();
+  return result;
+};
 
 describe('JumpToLatestButton', () => {
   beforeEach(() => {
-    originalIO = (globalThis as unknown as { IntersectionObserver: typeof IntersectionObserver })
-      .IntersectionObserver;
-    installIntersectionObserverStub();
+    pendingFrameCallbacks.clear();
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      const frameId = nextFrameId;
+      nextFrameId += 1;
+      pendingFrameCallbacks.set(frameId, callback);
+      return frameId;
+    });
+    vi.stubGlobal('cancelAnimationFrame', (frameId: number) => {
+      pendingFrameCallbacks.delete(frameId);
+    });
+    originalResizeObserver = globalThis.ResizeObserver;
+    installResizeObserverStub();
   });
 
   afterEach(() => {
-    if (originalIO) {
-      (
-        globalThis as unknown as { IntersectionObserver: typeof IntersectionObserver }
-      ).IntersectionObserver = originalIO;
-    }
-    ioInstances.length = 0;
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+    globalThis.ResizeObserver = originalResizeObserver;
+    resizeObserverInstances.length = 0;
   });
 
-  it('stays hidden while the user is at the bottom', () => {
-    const { container } = render(<Harness isLatestMessageBottomVisible />);
-    const lastItemElement = container.querySelector('[data-testid="last-msg"]') as HTMLElement;
+  it('stays hidden while only the top of the latest message is on screen', () => {
+    const { container } = renderTimeline([
+      messageRow('first', 300, 380),
+      messageRow('latest', 480, 560),
+    ]);
+    expect(getVisibility(container)).toBe('false');
+  });
 
+  it('shows once a scroll moves the latest message below the viewport', () => {
+    const { container } = renderTimeline([messageRow('latest', 400, 480)]);
+    expect(getVisibility(container)).toBe('false');
+
+    stubRect(getRow(container, 'latest'), 520, 600);
+    fireEvent.scroll(getScrollElement(container));
+    flushAnimationFrames();
+
+    expect(getVisibility(container)).toBe('true');
+  });
+
+  it('hides when a resize brings the latest message back on screen without a scroll event', () => {
+    const { container } = renderTimeline([messageRow('latest', 520, 600)]);
+    expect(getVisibility(container)).toBe('true');
+
+    const scrollElement = getScrollElement(container);
+    stubRect(getRow(container, 'latest'), 420, 500);
     act(() => {
-      findObserverOf(lastItemElement)?.trigger(true);
+      resizeObserverInstances
+        .find((instance) => instance.observed.has(scrollElement))
+        ?.trigger([scrollElement]);
     });
+    flushAnimationFrames();
 
     expect(getVisibility(container)).toBe('false');
   });
 
-  it('becomes visible when the user scrolls up and the last message leaves the viewport', () => {
-    const { container } = render(<Harness isLatestMessageBottomVisible={false} />);
-    const lastItemElement = container.querySelector('[data-testid="last-msg"]') as HTMLElement;
+  it('measures the new latest message after a render adds it', () => {
+    const { container, rerender } = renderTimeline([messageRow('first', 400, 480)]);
+    expect(getVisibility(container)).toBe('false');
 
-    act(() => {
-      findObserverOf(lastItemElement)?.trigger(false);
-    });
+    const nextRows = [messageRow('first', 400, 480), messageRow('arrived', 520, 600)];
+    rerender(<Harness rows={nextRows} />);
+    placeRows(container, nextRows);
+    flushAnimationFrames();
 
     expect(getVisibility(container)).toBe('true');
   });
 
-  it('shows when lastMessageId is null and the user is not at the bottom', () => {
-    const { container } = render(
-      <Harness isLatestMessageBottomVisible={false} lastMessageId={null} />
-    );
-    expect(getVisibility(container)).toBe('true');
-  });
-
-  it('hides again once the user returns to the bottom', () => {
-    const { container, rerender } = render(<Harness isLatestMessageBottomVisible={false} />);
-    const lastItemElement = container.querySelector('[data-testid="last-msg"]') as HTMLElement;
-
-    act(() => {
-      findObserverOf(lastItemElement)?.trigger(false);
-    });
-    expect(getVisibility(container)).toBe('true');
-
-    rerender(<Harness isLatestMessageBottomVisible />);
+  it('ignores system rows after the latest message', () => {
+    const { container } = renderTimeline([
+      messageRow('latest', 400, 480),
+      systemRow('member-join', 520, 560),
+    ]);
     expect(getVisibility(container)).toBe('false');
   });
 
-  // When the most recent message is redacted, the parent filters it out and
-  // passes the previous message's id as the new last. The button must rebind
-  // its observer to the new last element, otherwise the user can scroll up
-  // (button shows) and back down (button stays visible) because the observer
-  // is stuck on a detached node.
-  it('rebinds to the new last message after the previous last is filtered out (redaction)', () => {
-    const { container, rerender } = render(<Harness isLatestMessageBottomVisible={false} />);
-    const originalLast = container.querySelector('[data-testid="last-msg"]') as HTMLElement;
-
-    act(() => {
-      findObserverOf(originalLast)?.trigger(true);
-    });
-    expect(getVisibility(container)).toBe('false');
-
-    rerender(
-      <Harness isLatestMessageBottomVisible={false} lastMessageId={MSG_B_ID} renderRedactedLast />
-    );
-
-    const newLast = container.querySelector(`[data-message-id="${MSG_B_ID}"]`) as HTMLElement;
-    expect(newLast).not.toBeNull();
-
-    act(() => {
-      findObserverOf(newLast)?.trigger(false);
-    });
+  it('shows outside the live window even with the latest rendered message on screen', () => {
+    const { container } = renderTimeline([messageRow('latest', 400, 480)], false);
     expect(getVisibility(container)).toBe('true');
+  });
 
-    act(() => {
-      findObserverOf(newLast)?.trigger(true);
-    });
+  it('stays hidden in a live window with no message rows', () => {
+    const { container } = renderTimeline([systemRow('member-join', 520, 560)]);
     expect(getVisibility(container)).toBe('false');
   });
 });

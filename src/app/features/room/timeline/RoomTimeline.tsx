@@ -494,14 +494,6 @@ export function RoomTimeline({
     setMountResolved(true);
   }, [pendingMountPlacement, firstUnreadEventId, scrollController]);
 
-  const lastRenderedEventId = (() => {
-    for (let i = timelineItems.length - 1; i >= 0; i -= 1) {
-      const descriptor = timelineItems[i];
-      if (descriptor.type === 'event') return descriptor.mEventId;
-    }
-    return null;
-  })();
-
   const handleJumpToLatest = () => {
     traceTimelineScroll('jumpToLatest:click');
     scrollController.haltMomentumScroll();
@@ -627,8 +619,8 @@ export function RoomTimeline({
         {mountResolved && (
           <JumpToLatestButton
             scrollRef={scrollRef}
-            lastMessageId={isInLivePaginationWindow ? lastRenderedEventId : null}
-            isLatestMessageBottomVisible={isLatestMessageBottomVisible}
+            contentRef={contentRef}
+            isInLivePaginationWindow={isInLivePaginationWindow}
             onClick={handleJumpToLatest}
           />
         )}
