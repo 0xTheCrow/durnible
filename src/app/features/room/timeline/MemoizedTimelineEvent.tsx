@@ -180,6 +180,7 @@ function TimelineEventComponent({
     const baseMessageProps = {
       'data-message-item': item,
       'data-message-id': mEventId,
+      'data-is-message': true,
       room,
       mEvent,
       messageSpacing,

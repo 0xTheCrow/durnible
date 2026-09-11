@@ -290,19 +290,26 @@ const renderScenario = (result: ScenarioResult): string => {
     '',
     `Window: ${formatNumber(usage.wallClockSeconds)}s, ${usage.sampleCount} samples`,
     '',
-    '| process | CPU seconds | cores | mean RSS (MB) | peak RSS (MB) |',
-    '| --- | --- | --- | --- | --- |',
+    '| process | CPU seconds | cores | mean RSS (MB) | peak RSS (MB) | mean PSS (MB) | ' +
+      'peak PSS (MB) | mean private (MB) | peak private (MB) |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
     ...usage.byProcess.map(
       (process) =>
         `| ${process.processLabel} | ${process.cpuSeconds.toFixed(2)} | ` +
         `${formatCores(process.cpuCores)} | ` +
         `${formatNumber(process.meanWorkingSetMegabytes)} | ` +
-        `${formatNumber(process.peakWorkingSetMegabytes)} |`
+        `${formatNumber(process.peakWorkingSetMegabytes)} | ` +
+        `${formatNumber(process.meanProportionalSetMegabytes)} | ` +
+        `${formatNumber(process.peakProportionalSetMegabytes)} | ` +
+        `${formatNumber(process.meanPrivateMegabytes)} | ` +
+        `${formatNumber(process.peakPrivateMegabytes)} |`
     ),
     `| **all processes** | **${usage.totalCpuSeconds.toFixed(2)}** | ` +
-      `**${formatCores(usage.totalCpuCores)}** | ` +
-      `**${formatNumber(usage.meanTotalWorkingSetMegabytes)}** | ` +
-      `**${formatNumber(usage.peakTotalWorkingSetMegabytes)}** |`,
+      `**${formatCores(usage.totalCpuCores)}** | not summed | not summed | ` +
+      `**${formatNumber(usage.meanTotalProportionalSetMegabytes)}** | ` +
+      `**${formatNumber(usage.peakTotalProportionalSetMegabytes)}** | ` +
+      `**${formatNumber(usage.meanTotalPrivateMegabytes)}** | ` +
+      `**${formatNumber(usage.peakTotalPrivateMegabytes)}** |`,
     '',
     '| main thread | value |',
     '| --- | --- |',
@@ -372,20 +379,37 @@ const renderProfileTables = (result: ScenarioResult): string[] => {
   ];
 };
 
+type PeakMemoryMegabytes = {
+  workingSetMegabytes: number;
+  proportionalSetMegabytes: number;
+  privateMegabytes: number;
+};
+
 const renderMemorySummary = (scenarioResults: ScenarioResult[]): string[] => {
-  const peakByLabel = new Map<string, number>();
+  const peakByLabel = new Map<string, PeakMemoryMegabytes>();
   scenarioResults.forEach((result) => {
     result.usage.byProcess.forEach((process) => {
-      peakByLabel.set(
-        process.processLabel,
-        Math.max(peakByLabel.get(process.processLabel) ?? 0, process.peakWorkingSetMegabytes)
-      );
+      const existing = peakByLabel.get(process.processLabel);
+      peakByLabel.set(process.processLabel, {
+        workingSetMegabytes: Math.max(
+          existing?.workingSetMegabytes ?? 0,
+          process.peakWorkingSetMegabytes
+        ),
+        proportionalSetMegabytes: Math.max(
+          existing?.proportionalSetMegabytes ?? 0,
+          process.peakProportionalSetMegabytes
+        ),
+        privateMegabytes: Math.max(existing?.privateMegabytes ?? 0, process.peakPrivateMegabytes),
+      });
     });
   });
 
   const peakScenario = [...scenarioResults].sort(
-    (a, b) => b.usage.peakTotalWorkingSetMegabytes - a.usage.peakTotalWorkingSetMegabytes
+    (a, b) => b.usage.peakTotalProportionalSetMegabytes - a.usage.peakTotalProportionalSetMegabytes
   )[0];
+  const peakTotalPrivateMegabytes = Math.max(
+    ...scenarioResults.map((result) => result.usage.peakTotalPrivateMegabytes)
+  );
   const peakHeapScenario = [...scenarioResults].sort(
     (a, b) => b.rendererAfter.jsHeapUsedMegabytes - a.rendererAfter.jsHeapUsedMegabytes
   )[0];
@@ -393,18 +417,23 @@ const renderMemorySummary = (scenarioResults: ScenarioResult[]): string[] => {
   return [
     '## Memory across the whole run',
     '',
-    '| process | peak RSS (MB) |',
-    '| --- | --- |',
+    '| process | peak RSS (MB) | peak PSS (MB) | peak private (MB) |',
+    '| --- | --- | --- | --- |',
     ...[...peakByLabel.entries()]
-      .sort((a, b) => b[1] - a[1])
+      .sort((a, b) => b[1].proportionalSetMegabytes - a[1].proportionalSetMegabytes)
       .map(
-        ([processLabel, peakMegabytes]) => `| ${processLabel} | ${formatNumber(peakMegabytes)} |`
+        ([processLabel, peak]) =>
+          `| ${processLabel} | ${formatNumber(peak.workingSetMegabytes)} | ` +
+          `${formatNumber(peak.proportionalSetMegabytes)} | ` +
+          `${formatNumber(peak.privateMegabytes)} |`
       ),
-    `| **all processes** | **${formatNumber(peakScenario.usage.peakTotalWorkingSetMegabytes)}** |`,
+    `| **all processes** | not summed | ` +
+      `**${formatNumber(peakScenario.usage.peakTotalProportionalSetMegabytes)}** | ` +
+      `**${formatNumber(peakTotalPrivateMegabytes)}** |`,
     '',
-    `Highest total was \`${peakScenario.name}\` at ` +
+    `Highest PSS total was \`${peakScenario.name}\` at ` +
       `${formatNumber(
-        peakScenario.usage.peakTotalWorkingSetMegabytes
+        peakScenario.usage.peakTotalProportionalSetMegabytes
       )}MB. Highest renderer JS heap ` +
       `was \`${peakHeapScenario.name}\` at ` +
       `${formatNumber(peakHeapScenario.rendererAfter.jsHeapUsedMegabytes)}MB.`,
@@ -458,7 +487,14 @@ test.describe('desktop resource usage', () => {
       'Cores: CPU seconds summed across processes divided by wall clock (Chrome `cpuTimeMetric`).',
       '1.00 means one core saturated for the window; processes run in parallel, so totals exceed it.',
       'Total blocking time: the portion of each main-thread task beyond 50ms (Lighthouse).',
-      'RSS: Chromium working set, counting shared pages in every process that maps them.',
+      'RSS: Chromium working set. Accurate per process, but shared pages are counted in every',
+      'process that maps them, so it is not summed.',
+      'PSS: each shared page split between the processes that map it (`/proc/<pid>/smaps_rollup`).',
+      "Sums to the RAM the app occupies, except Electron's zygote processes, which",
+      "`getAppMetrics` doesn't list (about 28MB PSS and 1MB private at the login screen,",
+      'measured 2026-09-10).',
+      'Private: resident pages no other process maps. Close to what a task manager shows. Pages',
+      "shared between processes, mostly Electron's own code, are counted in no one's private total.",
       '',
       'These are report-only numbers. They are comparable between runs on the same machine and',
       'nowhere else; a scenario is a regression only against a baseline captured on the same box.',
@@ -481,9 +517,11 @@ test.describe('desktop resource usage', () => {
           `${formatNumber(usage.wallClockSeconds).padStart(5)}s (${formatCores(
             usage.totalCpuCores
           )} cores)  blocking ${formatNumber(result.longTasks.totalBlockingMs).padStart(6)}ms in ` +
-          `${String(result.longTasks.count).padStart(3)} long tasks  peak RSS ${formatNumber(
-            usage.peakTotalWorkingSetMegabytes
-          ).padStart(7)}MB  heap ${formatNumber(result.rendererAfter.jsHeapUsedMegabytes).padStart(
+          `${String(result.longTasks.count).padStart(3)} long tasks  peak PSS ${formatNumber(
+            usage.peakTotalProportionalSetMegabytes
+          ).padStart(7)}MB  private ${formatNumber(usage.peakTotalPrivateMegabytes).padStart(
+            7
+          )}MB  heap ${formatNumber(result.rendererAfter.jsHeapUsedMegabytes).padStart(
             6
           )}MB (${formatSignedNumber(
             result.rendererAfter.jsHeapUsedMegabytes - result.rendererBefore.jsHeapUsedMegabytes

@@ -7,8 +7,8 @@ import {
   MATRIX_SPOILER_PROPERTY_NAME,
 } from '../../../../types/matrix/common';
 import {
+  captureVideoFrame,
   getImageFileUrl,
-  getThumbnail,
   getThumbnailDimensions,
   getVideoFileUrl,
   loadImageElement,
@@ -27,11 +27,12 @@ import { scaleYDimension } from '../../../utils/common';
 
 const generateThumbnailContent = async (
   mx: MatrixClient,
-  img: HTMLImageElement | HTMLVideoElement,
-  dimensions: [number, number],
+  videoFrame: HTMLCanvasElement,
   encrypt: boolean
 ): Promise<ThumbnailContent> => {
-  const thumbnail = await getThumbnail(img, ...dimensions);
+  const thumbnail = await new Promise<Blob | null>((resolve) => {
+    videoFrame.toBlob(resolve, 'image/jpeg');
+  });
   if (!thumbnail) throw new Error('Can not create thumbnail!');
   const encThumbData = encrypt ? await encryptFile(thumbnail) : undefined;
   const thumbnailFile = encThumbData?.file ?? thumbnail;
@@ -44,8 +45,8 @@ const generateThumbnailContent = async (
     thumbnail: thumbnailFile,
     encryptionInfo: encThumbData?.encryptionInfo,
     mxc: thumbMxc,
-    width: dimensions[0],
-    height: dimensions[1],
+    width: videoFrame.width,
+    height: videoFrame.height,
   });
   return thumbnailContent;
 };
@@ -113,39 +114,39 @@ export const getVideoMsgContent = async (
       [MATRIX_SPOILER_PROPERTY_NAME]: metadata.markedAsSpoiler,
     };
     if (videoElement) {
-      const [thumbError, thumbContent] = await to(
-        generateThumbnailContent(
-          mx,
-          videoElement,
-          getThumbnailDimensions(videoElement.videoWidth, videoElement.videoHeight),
-          !!encryptionInfo
-        )
-      );
-      if (thumbError) console.warn(thumbError);
+      content.info = getVideoInfo(videoElement, file);
 
       const hasVideoDimensions = videoElement.videoWidth > 0 && videoElement.videoHeight > 0;
-      const blurHash = hasVideoDimensions
-        ? encodeBlurHash(
-            videoElement,
-            BLUR_HASH_ENCODE_WIDTH,
-            scaleYDimension(
-              videoElement.videoWidth,
-              BLUR_HASH_ENCODE_WIDTH,
-              videoElement.videoHeight
-            )
-          )
-        : undefined;
+      const [captureError, videoFrame] = await to(
+        captureVideoFrame(
+          videoElement,
+          originalFile,
+          ...getThumbnailDimensions(videoElement.videoWidth, videoElement.videoHeight)
+        )
+      );
+      if (captureError) console.warn(captureError);
 
-      content.info = {
-        ...getVideoInfo(videoElement, file),
-        ...thumbContent,
-      };
-      if (blurHash) {
-        if (content.info.thumbnail_info) {
-          content.info.thumbnail_info[MATRIX_BLUR_HASH_PROPERTY_NAME] = blurHash;
-        } else {
-          content.info[MATRIX_BLUR_HASH_PROPERTY_NAME] = blurHash;
+      if (videoFrame) {
+        const [thumbError, thumbContent] = await to(
+          generateThumbnailContent(mx, videoFrame, !!encryptionInfo)
+        );
+        if (thumbError) console.warn(thumbError);
+        content.info = { ...content.info, ...thumbContent };
+
+        const blurHash = encodeBlurHash(
+          videoFrame,
+          BLUR_HASH_ENCODE_WIDTH,
+          scaleYDimension(videoFrame.width, BLUR_HASH_ENCODE_WIDTH, videoFrame.height)
+        );
+        if (blurHash) {
+          if (content.info.thumbnail_info) {
+            content.info.thumbnail_info[MATRIX_BLUR_HASH_PROPERTY_NAME] = blurHash;
+          } else {
+            content.info[MATRIX_BLUR_HASH_PROPERTY_NAME] = blurHash;
+          }
         }
+      } else if (hasVideoDimensions) {
+        console.warn(`Could not capture a preview frame from ${file.name}`);
       }
     }
     if (encryptionInfo) {

@@ -3,7 +3,7 @@ import { encode, isBlurhashValid } from 'blurhash';
 export const BLUR_HASH_ENCODE_WIDTH = 128;
 
 export const encodeBlurHash = (
-  img: HTMLImageElement | HTMLVideoElement,
+  img: HTMLImageElement | HTMLVideoElement | HTMLCanvasElement,
   width?: number,
   height?: number
 ): string | undefined => {

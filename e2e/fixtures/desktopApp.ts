@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { _electron as electron } from '@playwright/test';
@@ -49,11 +49,16 @@ type ElectronProcessMetric = {
   memory: { workingSetSize: number };
 };
 
-type ProcessResourceSample = {
+type MemoryKilobytes = {
+  workingSetKilobytes: number;
+  proportionalSetKilobytes: number;
+  privateKilobytes: number;
+};
+
+type ProcessResourceSample = MemoryKilobytes & {
   processLabel: string;
   pid: number;
   cumulativeCpuSeconds: number;
-  workingSetKilobytes: number;
 };
 
 export type ProcessResourceUsage = {
@@ -62,6 +67,10 @@ export type ProcessResourceUsage = {
   cpuCores: number;
   meanWorkingSetMegabytes: number;
   peakWorkingSetMegabytes: number;
+  meanProportionalSetMegabytes: number;
+  peakProportionalSetMegabytes: number;
+  meanPrivateMegabytes: number;
+  peakPrivateMegabytes: number;
 };
 
 export type ResourceUsage = {
@@ -70,8 +79,10 @@ export type ResourceUsage = {
   byProcess: ProcessResourceUsage[];
   totalCpuSeconds: number;
   totalCpuCores: number;
-  meanTotalWorkingSetMegabytes: number;
-  peakTotalWorkingSetMegabytes: number;
+  meanTotalProportionalSetMegabytes: number;
+  peakTotalProportionalSetMegabytes: number;
+  meanTotalPrivateMegabytes: number;
+  peakTotalPrivateMegabytes: number;
 };
 
 export type ResourceSampler = {
@@ -79,9 +90,44 @@ export type ResourceSampler = {
 };
 
 const KILOBYTES_PER_MEGABYTE = 1024;
+const EXITED_PROCESS_ERROR_CODES = new Set(['ENOENT', 'ESRCH']);
+const EMPTY_MEMORY: MemoryKilobytes = {
+  workingSetKilobytes: 0,
+  proportionalSetKilobytes: 0,
+  privateKilobytes: 0,
+};
 
-const sampleProcessMetrics = (electronApp: ElectronApplication): Promise<ProcessResourceSample[]> =>
-  electronApp.evaluate(({ app }) =>
+const checkIsExitedProcessError = (error: unknown): boolean =>
+  error instanceof Error && 'code' in error && EXITED_PROCESS_ERROR_CODES.has(String(error.code));
+
+const readSmapsRollupKilobytes = (smapsRollup: string, fieldName: string): number => {
+  const match = new RegExp(`^${fieldName}:\\s+(\\d+) kB$`, 'm').exec(smapsRollup);
+  if (!match) throw new Error(`smaps_rollup has no ${fieldName} line`);
+  return Number(match[1]);
+};
+
+const readProcessMemory = async (
+  pid: number
+): Promise<Omit<MemoryKilobytes, 'workingSetKilobytes'> | undefined> => {
+  let smapsRollup: string;
+  try {
+    smapsRollup = await readFile(`/proc/${pid}/smaps_rollup`, 'utf8');
+  } catch (error) {
+    if (checkIsExitedProcessError(error)) return undefined;
+    throw error;
+  }
+  return {
+    proportionalSetKilobytes: readSmapsRollupKilobytes(smapsRollup, 'Pss'),
+    privateKilobytes:
+      readSmapsRollupKilobytes(smapsRollup, 'Private_Clean') +
+      readSmapsRollupKilobytes(smapsRollup, 'Private_Dirty'),
+  };
+};
+
+const sampleProcessMetrics = async (
+  electronApp: ElectronApplication
+): Promise<ProcessResourceSample[]> => {
+  const metrics = await electronApp.evaluate(({ app }) =>
     (app.getAppMetrics() as ElectronProcessMetric[]).map((metric) => ({
       processLabel: metric.serviceName ? `${metric.type} (${metric.serviceName})` : metric.type,
       pid: metric.pid,
@@ -89,6 +135,26 @@ const sampleProcessMetrics = (electronApp: ElectronApplication): Promise<Process
       workingSetKilobytes: metric.memory.workingSetSize,
     }))
   );
+  const samples = await Promise.all(
+    metrics.map(async (metric) => {
+      const memory = await readProcessMemory(metric.pid);
+      return memory ? { ...metric, ...memory } : undefined;
+    })
+  );
+  return samples.filter((sample): sample is ProcessResourceSample => sample !== undefined);
+};
+
+const addMemory = (sum: MemoryKilobytes, sample: MemoryKilobytes): MemoryKilobytes => ({
+  workingSetKilobytes: sum.workingSetKilobytes + sample.workingSetKilobytes,
+  proportionalSetKilobytes: sum.proportionalSetKilobytes + sample.proportionalSetKilobytes,
+  privateKilobytes: sum.privateKilobytes + sample.privateKilobytes,
+});
+
+const meanMegabytes = (kilobytes: number[]): number =>
+  kilobytes.reduce((sum, value) => sum + value, 0) / kilobytes.length / KILOBYTES_PER_MEGABYTE;
+
+const peakMegabytes = (kilobytes: number[]): number =>
+  Math.max(...kilobytes) / KILOBYTES_PER_MEGABYTE;
 
 const summarizeResourceSamples = (
   sampleRounds: ProcessResourceSample[][],
@@ -96,22 +162,22 @@ const summarizeResourceSamples = (
 ): ResourceUsage => {
   const firstByPid = new Map<number, ProcessResourceSample>();
   const lastByPid = new Map<number, ProcessResourceSample>();
-  const workingSetKilobytesByLabel = new Map<string, number[]>();
+  const memoryRoundsByLabel = new Map<string, MemoryKilobytes[]>();
 
   sampleRounds.forEach((round) => {
-    const roundKilobytesByLabel = new Map<string, number>();
+    const roundMemoryByLabel = new Map<string, MemoryKilobytes>();
     round.forEach((sample) => {
       if (!firstByPid.has(sample.pid)) firstByPid.set(sample.pid, sample);
       lastByPid.set(sample.pid, sample);
-      roundKilobytesByLabel.set(
+      roundMemoryByLabel.set(
         sample.processLabel,
-        (roundKilobytesByLabel.get(sample.processLabel) ?? 0) + sample.workingSetKilobytes
+        addMemory(roundMemoryByLabel.get(sample.processLabel) ?? EMPTY_MEMORY, sample)
       );
     });
-    roundKilobytesByLabel.forEach((kilobytes, processLabel) => {
-      const existing = workingSetKilobytesByLabel.get(processLabel);
-      if (existing) existing.push(kilobytes);
-      else workingSetKilobytesByLabel.set(processLabel, [kilobytes]);
+    roundMemoryByLabel.forEach((memory, processLabel) => {
+      const existing = memoryRoundsByLabel.get(processLabel);
+      if (existing) existing.push(memory);
+      else memoryRoundsByLabel.set(processLabel, [memory]);
     });
   });
 
@@ -126,24 +192,33 @@ const summarizeResourceSamples = (
     );
   });
 
-  const byProcess = [...workingSetKilobytesByLabel.entries()]
-    .map(([processLabel, workingSetKilobytes]) => {
+  const byProcess = [...memoryRoundsByLabel.entries()]
+    .map(([processLabel, memoryRounds]) => {
       const cpuSeconds = cpuSecondsByLabel.get(processLabel) ?? 0;
-      const totalKilobytes = workingSetKilobytes.reduce((sum, value) => sum + value, 0);
+      const workingSetKilobytes = memoryRounds.map((memory) => memory.workingSetKilobytes);
+      const proportionalSetKilobytes = memoryRounds.map(
+        (memory) => memory.proportionalSetKilobytes
+      );
+      const privateKilobytes = memoryRounds.map((memory) => memory.privateKilobytes);
       return {
         processLabel,
         cpuSeconds,
         cpuCores: wallClockSeconds > 0 ? cpuSeconds / wallClockSeconds : 0,
-        meanWorkingSetMegabytes:
-          totalKilobytes / workingSetKilobytes.length / KILOBYTES_PER_MEGABYTE,
-        peakWorkingSetMegabytes: Math.max(...workingSetKilobytes) / KILOBYTES_PER_MEGABYTE,
+        meanWorkingSetMegabytes: meanMegabytes(workingSetKilobytes),
+        peakWorkingSetMegabytes: peakMegabytes(workingSetKilobytes),
+        meanProportionalSetMegabytes: meanMegabytes(proportionalSetKilobytes),
+        peakProportionalSetMegabytes: peakMegabytes(proportionalSetKilobytes),
+        meanPrivateMegabytes: meanMegabytes(privateKilobytes),
+        peakPrivateMegabytes: peakMegabytes(privateKilobytes),
       };
     })
     .sort((a, b) => b.cpuSeconds - a.cpuSeconds);
 
-  const totalWorkingSetKilobytesPerRound = sampleRounds.map((round) =>
-    round.reduce((sum, sample) => sum + sample.workingSetKilobytes, 0)
+  const totalMemoryPerRound = sampleRounds.map((round) => round.reduce(addMemory, EMPTY_MEMORY));
+  const totalProportionalSetKilobytes = totalMemoryPerRound.map(
+    (memory) => memory.proportionalSetKilobytes
   );
+  const totalPrivateKilobytes = totalMemoryPerRound.map((memory) => memory.privateKilobytes);
   const totalCpuSeconds = [...cpuSecondsByLabel.values()].reduce((sum, value) => sum + value, 0);
 
   return {
@@ -152,12 +227,10 @@ const summarizeResourceSamples = (
     byProcess,
     totalCpuSeconds,
     totalCpuCores: wallClockSeconds > 0 ? totalCpuSeconds / wallClockSeconds : 0,
-    meanTotalWorkingSetMegabytes:
-      totalWorkingSetKilobytesPerRound.reduce((sum, value) => sum + value, 0) /
-      totalWorkingSetKilobytesPerRound.length /
-      KILOBYTES_PER_MEGABYTE,
-    peakTotalWorkingSetMegabytes:
-      Math.max(...totalWorkingSetKilobytesPerRound) / KILOBYTES_PER_MEGABYTE,
+    meanTotalProportionalSetMegabytes: meanMegabytes(totalProportionalSetKilobytes),
+    peakTotalProportionalSetMegabytes: peakMegabytes(totalProportionalSetKilobytes),
+    meanTotalPrivateMegabytes: meanMegabytes(totalPrivateKilobytes),
+    peakTotalPrivateMegabytes: peakMegabytes(totalPrivateKilobytes),
   };
 };
 
@@ -165,6 +238,11 @@ export const startResourceSampling = async (
   electronApp: ElectronApplication,
   sampleIntervalMs: number
 ): Promise<ResourceSampler> => {
+  if (process.platform !== 'linux') {
+    throw new Error(
+      'Desktop memory sampling reads /proc/<pid>/smaps_rollup, which only exists on Linux'
+    );
+  }
   const sampleRounds: ProcessResourceSample[][] = [await sampleProcessMetrics(electronApp)];
   const startedAt = Date.now();
   let isSampling = true;

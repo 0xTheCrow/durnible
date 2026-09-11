@@ -1,31 +1,68 @@
 import type { RefObject } from 'react';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Chip, Icon, Icons, Text } from 'folds';
 import * as css from './TimelineOverlay.css';
 import { TimelineOverlay } from './TimelineOverlay';
+import { traceTimelineScroll } from './utils/scrollTrace';
 
 export const SCROLL_AWAY_RESET_PX = 300;
 
 export type JumpToLatestButtonProps = {
   scrollRef: RefObject<HTMLDivElement>;
-  // null when the caller has nothing to track (not live-linked, range not at
-  // newest, or no rendered events). In that case we don't observe anything and
-  // let the button surface based on the other gates (isLatestMessageBottomVisible).
-  // Identified by event id rather than range index so that filtered events
-  // (redactions) don't leave us observing a detached node.
-  lastMessageId: string | null;
-  isLatestMessageBottomVisible: boolean;
+  contentRef: RefObject<HTMLDivElement>;
+  isInLivePaginationWindow: boolean;
   onClick: () => void;
 };
 
+type LatestMessageRowGeometry = {
+  latestMessageRowTop: number;
+  latestMessageRowBottom: number;
+  viewportTop: number;
+  viewportBottom: number;
+};
+
+const findLatestMessageRow = (contentElement: HTMLElement): Element | null => {
+  let rowElement = contentElement.lastElementChild;
+  while (rowElement && !rowElement.hasAttribute('data-is-message')) {
+    rowElement = rowElement.previousElementSibling;
+  }
+  return rowElement;
+};
+
+const measureLatestMessageRowGeometry = (
+  scrollElement: HTMLElement,
+  contentElement: HTMLElement
+): LatestMessageRowGeometry | null => {
+  const latestMessageRow = findLatestMessageRow(contentElement);
+  if (!latestMessageRow) return null;
+  const rowRect = latestMessageRow.getBoundingClientRect();
+  const viewportRect = scrollElement.getBoundingClientRect();
+  return {
+    latestMessageRowTop: rowRect.top,
+    latestMessageRowBottom: rowRect.bottom,
+    viewportTop: viewportRect.top,
+    viewportBottom: viewportRect.bottom,
+  };
+};
+
+const checkIsLatestMessageRowOnScreen = ({
+  latestMessageRowTop,
+  latestMessageRowBottom,
+  viewportTop,
+  viewportBottom,
+}: LatestMessageRowGeometry): boolean =>
+  latestMessageRowTop < viewportBottom && latestMessageRowBottom > viewportTop;
+
 export function JumpToLatestButton({
   scrollRef,
-  lastMessageId,
-  isLatestMessageBottomVisible,
+  contentRef,
+  isInLivePaginationWindow,
   onClick,
 }: JumpToLatestButtonProps) {
-  const [isLatestMessageVisible, setIsLatestMessageVisible] = useState(true);
+  const [isLatestMessageRowOnScreen, setIsLatestMessageRowOnScreen] = useState(true);
   const [dismissed, setDismissed] = useState(false);
+  const pendingMeasureFrameRef = useRef(0);
+  const latestMessageRowGeometryRef = useRef<LatestMessageRowGeometry | null>(null);
 
   const handleClick = () => {
     setDismissed(true);
@@ -47,38 +84,63 @@ export function JumpToLatestButton({
     return () => scrollElement.removeEventListener('scroll', handleScroll);
   }, [dismissed, scrollRef]);
 
+  const scheduleLatestMessageRowMeasure = useCallback(() => {
+    if (pendingMeasureFrameRef.current !== 0) return;
+    pendingMeasureFrameRef.current = requestAnimationFrame(() => {
+      pendingMeasureFrameRef.current = 0;
+      const scrollElement = scrollRef.current;
+      const contentElement = contentRef.current;
+      if (!scrollElement || !contentElement) return;
+      const latestMessageRowGeometry = measureLatestMessageRowGeometry(
+        scrollElement,
+        contentElement
+      );
+      latestMessageRowGeometryRef.current = latestMessageRowGeometry;
+      setIsLatestMessageRowOnScreen(
+        latestMessageRowGeometry === null ||
+          checkIsLatestMessageRowOnScreen(latestMessageRowGeometry)
+      );
+    });
+  }, [scrollRef, contentRef]);
+
+  useEffect(() => {
+    scheduleLatestMessageRowMeasure();
+  });
+
   useEffect(() => {
     const scrollElement = scrollRef.current;
-    if (!scrollElement || lastMessageId === null) {
-      setIsLatestMessageVisible(false);
-      return undefined;
-    }
-    const lastItemElement = scrollElement.querySelector(
-      `[data-message-id="${CSS.escape(lastMessageId)}"]`
-    ) as HTMLElement | null;
-    if (!lastItemElement) {
-      setIsLatestMessageVisible(false);
-      return undefined;
-    }
+    const contentElement = contentRef.current;
+    if (!scrollElement || !contentElement) return undefined;
+    const resizeObserver = new ResizeObserver(scheduleLatestMessageRowMeasure);
+    resizeObserver.observe(scrollElement);
+    resizeObserver.observe(contentElement);
+    scrollElement.addEventListener('scroll', scheduleLatestMessageRowMeasure, { passive: true });
+    return () => {
+      resizeObserver.disconnect();
+      scrollElement.removeEventListener('scroll', scheduleLatestMessageRowMeasure);
+      cancelAnimationFrame(pendingMeasureFrameRef.current);
+      pendingMeasureFrameRef.current = 0;
+    };
+  }, [scrollRef, contentRef, scheduleLatestMessageRowMeasure]);
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries.find((e) => e.target === lastItemElement);
-        if (entry) {
-          setIsLatestMessageVisible(entry.isIntersecting);
-        }
-      },
-      { root: scrollElement }
-    );
-    observer.observe(lastItemElement);
-    return () => observer.disconnect();
-  }, [lastMessageId, scrollRef]);
+  const isLatestMessageVisible = isInLivePaginationWindow && isLatestMessageRowOnScreen;
+  const isButtonVisible = !isLatestMessageVisible && !dismissed;
+
+  useEffect(() => {
+    traceTimelineScroll('jumpToLatest:visibility', {
+      isButtonVisible,
+      isInLivePaginationWindow,
+      isLatestMessageRowOnScreen,
+      dismissed,
+      latestMessageRowGeometry: latestMessageRowGeometryRef.current,
+    });
+  }, [isButtonVisible, isInLivePaginationWindow, isLatestMessageRowOnScreen, dismissed]);
 
   return (
     <TimelineOverlay
       className={css.JumpToLatestOverlay}
       position="Bottom"
-      data-visible={!isLatestMessageBottomVisible && !isLatestMessageVisible && !dismissed}
+      data-visible={isButtonVisible}
       data-testid="jump-to-latest-overlay"
     >
       <Chip
