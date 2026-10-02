@@ -44,6 +44,7 @@ export function PageRoot({ nav, aside, children }: PageRootProps) {
         grow="Yes"
         direction={checkIsSideDock(dock) ? 'Row' : 'Column'}
         className={css.PageRootContent}
+        data-testid="page-root-content"
       >
         {isAsideBeforeContent && aside}
         {children}

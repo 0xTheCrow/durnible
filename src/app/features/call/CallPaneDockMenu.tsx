@@ -53,6 +53,8 @@ export function CallPaneDockMenu({ dock, availableDocks, onDock }: CallPaneDockM
                     radii="300"
                     before={<Icon size="100" src={option.icon} />}
                     onClick={() => handleSelect(option.dock)}
+                    data-testid="call-pane-dock-option"
+                    data-dock={option.dock}
                   >
                     <Text size="T300">{option.label}</Text>
                   </MenuItem>
@@ -69,6 +71,7 @@ export function CallPaneDockMenu({ dock, availableDocks, onDock }: CallPaneDockM
         onClick={(evt) => setMenuAnchor(evt.currentTarget.getBoundingClientRect())}
         aria-pressed={!!menuAnchor}
         aria-label="Move Call Panel"
+        data-testid="call-pane-dock-menu"
       >
         <Icon size="100" src={Icons.Category} />
       </IconButton>

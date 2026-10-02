@@ -16,10 +16,11 @@ import { useParticipantTrackPublications } from '../../hooks/call/useParticipant
 
 type AudioTrackPlayerProps = {
   track: RemoteAudioTrack;
+  userId?: string;
   isDeafened: boolean;
   volumeLevel: number;
 };
-function AudioTrackPlayer({ track, isDeafened, volumeLevel }: AudioTrackPlayerProps) {
+function AudioTrackPlayer({ track, userId, isDeafened, volumeLevel }: AudioTrackPlayerProps) {
   const audioElementRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
@@ -35,17 +36,28 @@ function AudioTrackPlayer({ track, isDeafened, volumeLevel }: AudioTrackPlayerPr
     track.setVolume(volumeLevel);
   }, [track, volumeLevel]);
 
-  return <audio ref={audioElementRef} autoPlay muted={isDeafened} />;
+  return (
+    <audio
+      ref={audioElementRef}
+      autoPlay
+      muted={isDeafened}
+      data-testid="call-participant-audio"
+      data-user-id={userId}
+      data-track-source={track.source}
+    />
+  );
 }
 
 type ParticipantAudioProps = {
   participant: Participant;
+  userId?: string;
   isDeafened: boolean;
   microphoneVolumeLevel: number;
   screenshareVolumeLevel: number;
 };
 function ParticipantAudio({
   participant,
+  userId,
   isDeafened,
   microphoneVolumeLevel,
   screenshareVolumeLevel,
@@ -61,6 +73,7 @@ function ParticipantAudio({
             <AudioTrackPlayer
               key={publication.trackSid}
               track={publication.track}
+              userId={userId}
               isDeafened={isDeafened}
               volumeLevel={
                 publication.source === Track.Source.ScreenShareAudio
@@ -93,6 +106,7 @@ function ConnectedCallAudio({ connection }: ConnectedCallAudioProps) {
             <ParticipantAudio
               key={participant.identity}
               participant={participant}
+              userId={userId}
               isDeafened={isDeafened}
               microphoneVolumeLevel={getCallUserPlaybackVolumeLevel(volumePreferences, userId)}
               screenshareVolumeLevel={getCallScreensharePlaybackVolumeLevel(

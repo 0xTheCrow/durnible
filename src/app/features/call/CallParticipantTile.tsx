@@ -85,6 +85,12 @@ function CallParticipantTileComponent({
     return <CallMemberAvatar room={room} userId={userId} size="500" textSize="H4" />;
   };
 
+  const tileTestProps = {
+    'data-testid': 'call-tile',
+    'data-user-id': userId,
+    'data-video-source': source,
+  };
+
   const tileClassName = classNames(
     css.CallTile,
     className,
@@ -105,6 +111,7 @@ function CallParticipantTileComponent({
           autoPlay
           playsInline
           muted
+          data-testid="call-tile-video"
         />
       ) : (
         renderPlaceholder()
@@ -121,7 +128,9 @@ function CallParticipantTileComponent({
         <Box className={css.CallTileName} alignItems="Center" gap="100">
           {isDeafenedLocally && <Icon size="50" src={Icons.Headphone} filled />}
           {isMutedLocally && <Icon size="50" src={Icons.VolumeMute} filled />}
-          {isMuted && <Icon size="50" src={Icons.MicMute} filled />}
+          {isMuted && (
+            <Icon size="50" src={Icons.MicMute} filled data-testid="call-tile-microphone-muted" />
+          )}
           <Text as="span" size="T200" truncate>
             {displayName}
           </Text>
@@ -143,6 +152,7 @@ function CallParticipantTileComponent({
           className={classNames(tileClassName, css.CallTileInteractive)}
           alignItems="Center"
           justifyContent="Center"
+          {...tileTestProps}
         >
           {tileContent}
         </Box>
@@ -158,6 +168,7 @@ function CallParticipantTileComponent({
         onContextMenu={handleContextMenu}
         alignItems="Center"
         justifyContent="Center"
+        {...tileTestProps}
       >
         {tileContent}
       </Box>

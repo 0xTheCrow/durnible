@@ -5,6 +5,7 @@ const STORAGE_KEY = 'durnible_call_volume_preferences';
 export const CALL_VOLUME_LEVEL_MIN = 0;
 export const CALL_VOLUME_LEVEL_MAX = 1;
 export const CALL_VOLUME_LEVEL_DEFAULT = 1;
+export const CALL_VOLUME_LEVEL_STEP = 0.01;
 export const CALL_VOLUME_USER_PREFERENCE_LIMIT = 500;
 
 export type CallUserVolumePreference = {

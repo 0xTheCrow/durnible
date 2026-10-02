@@ -6,9 +6,13 @@ const PORT = IS_PRODUCTION_TARGET ? 4173 : 8080;
 
 export const BASE_URL = `http://localhost:${PORT}`;
 
+const SEPARATELY_RUN_SPECS = ['**/performance/**', '**/desktop/**'];
+const CALL_SPECS = '**/call/**';
+const CALL_PROJECT_WORKERS = 2;
+
 export default defineConfig({
   testDir: './e2e',
-  testIgnore: ['**/performance/**', '**/desktop/**'],
+  testIgnore: SEPARATELY_RUN_SPECS,
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
@@ -25,13 +29,30 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
+      testIgnore: [...SEPARATELY_RUN_SPECS, CALL_SPECS],
       use: {
         ...devices['Desktop Chrome'],
         launchOptions: { args: ['--autoplay-policy=no-user-gesture-required'] },
       },
     },
     {
+      name: 'chromium-call',
+      testMatch: CALL_SPECS,
+      workers: CALL_PROJECT_WORKERS,
+      use: {
+        ...devices['Desktop Chrome'],
+        launchOptions: {
+          args: [
+            '--autoplay-policy=no-user-gesture-required',
+            '--use-fake-ui-for-media-stream',
+            '--use-fake-device-for-media-stream',
+          ],
+        },
+      },
+    },
+    {
       name: 'firefox',
+      testIgnore: [...SEPARATELY_RUN_SPECS, CALL_SPECS],
       use: {
         ...devices['Desktop Firefox'],
         launchOptions: { firefoxUserPrefs: { 'media.autoplay.default': 0 } },

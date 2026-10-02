@@ -12,12 +12,15 @@ import {
   toRem,
 } from 'folds';
 import { Range } from 'react-range';
-import { CALL_VOLUME_LEVEL_MAX, CALL_VOLUME_LEVEL_MIN } from '../../state/callVolumePreferences';
-
-const VOLUME_LEVEL_STEP = 0.01;
+import {
+  CALL_VOLUME_LEVEL_MAX,
+  CALL_VOLUME_LEVEL_MIN,
+  CALL_VOLUME_LEVEL_STEP,
+} from '../../state/callVolumePreferences';
 
 type CallVolumeSliderProps = {
   label: string;
+  thumbTestId?: string;
   volumeLevel: number;
   isDisabled?: boolean;
   isMuted?: boolean;
@@ -28,6 +31,7 @@ type CallVolumeSliderProps = {
 };
 export function CallVolumeSlider({
   label,
+  thumbTestId,
   volumeLevel,
   isDisabled,
   isMuted,
@@ -63,7 +67,7 @@ export function CallVolumeSlider({
       </Box>
       <Range
         disabled={isDisabled}
-        step={VOLUME_LEVEL_STEP}
+        step={CALL_VOLUME_LEVEL_STEP}
         min={CALL_VOLUME_LEVEL_MIN}
         max={CALL_VOLUME_LEVEL_MAX}
         values={[volumeLevel]}
@@ -99,6 +103,7 @@ export function CallVolumeSlider({
             fill="Solid"
             radii="Pill"
             outlined
+            data-testid={thumbTestId}
             {...params.props}
             style={{ ...params.props.style, zIndex: 1 }}
           />

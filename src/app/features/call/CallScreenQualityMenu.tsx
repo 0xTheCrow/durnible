@@ -132,6 +132,8 @@ export function CallScreenQualityMenu({ stats }: CallScreenQualityMenuProps) {
                   radii="300"
                   aria-pressed={resolutionOption === resolution}
                   onClick={() => handleSelectResolution(resolutionOption)}
+                  data-testid="screenshare-resolution-option"
+                  data-value={resolutionOption}
                 >
                   <Text size="T300">{SCREENSHARE_RESOLUTIONS[resolutionOption].label}</Text>
                 </MenuItem>
@@ -146,6 +148,8 @@ export function CallScreenQualityMenu({ stats }: CallScreenQualityMenuProps) {
                   radii="300"
                   aria-pressed={frameRateOption === maxFrameRate}
                   onClick={() => handleSelectMaxFrameRate(frameRateOption)}
+                  data-testid="screenshare-frame-rate-option"
+                  data-value={frameRateOption}
                 >
                   <Text size="T300">{frameRateOption} fps</Text>
                 </MenuItem>
@@ -160,6 +164,8 @@ export function CallScreenQualityMenu({ stats }: CallScreenQualityMenuProps) {
                   radii="300"
                   aria-pressed={audioBitrateOption === audioBitrateKbps}
                   onClick={() => handleSelectAudioBitrate(audioBitrateOption)}
+                  data-testid="screenshare-audio-bitrate-option"
+                  data-value={audioBitrateOption}
                 >
                   <Text size="T300">{audioBitrateOption} kbps</Text>
                 </MenuItem>
@@ -175,6 +181,7 @@ export function CallScreenQualityMenu({ stats }: CallScreenQualityMenuProps) {
         onClick={handleOpenMenu}
         aria-pressed={!!menuAnchor}
         aria-label="Screen Quality"
+        data-testid="screenshare-quality-menu"
         variant="SurfaceVariant"
         radii="Pill"
         outlined

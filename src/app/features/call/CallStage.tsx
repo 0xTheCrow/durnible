@@ -37,7 +37,7 @@ export function CallStage({ room, entries, memberships, tileAspectRatio }: CallS
 
   return (
     <div className={css.CallSpotlightLayout}>
-      <div className={css.CallSpotlight}>
+      <div className={css.CallSpotlight} data-testid="call-spotlight">
         <CallParticipantTile
           room={room}
           participant={focusedEntry.participant}

@@ -61,6 +61,7 @@ export function CallPaneFrame({
       ref={paneRef}
       className={classNames(css.CallPane, css.CallPaneDockBorder[dock])}
       style={isFullscreen ? undefined : { [isSideDock ? 'width' : 'height']: paneSize }}
+      data-testid="call-pane"
     >
       <TooltipContainerProvider value={portalContainer}>
         <PopOutContainerProvider value={portalContainer}>

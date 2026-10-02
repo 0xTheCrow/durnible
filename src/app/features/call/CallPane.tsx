@@ -58,6 +58,7 @@ function ConnectedCallPane({ connection, isReconnecting }: ConnectedCallPaneProp
           onClick={() => setIsCollapsed(true)}
           label="Collapse Call"
           icon={Icons.ChevronLeft}
+          data-testid="call-collapse"
         />
       }
     >
@@ -74,6 +75,7 @@ function ConnectedCallPane({ connection, isReconnecting }: ConnectedCallPaneProp
           label={isMicrophoneEnabled ? 'Mute Microphone' : 'Unmute Microphone'}
           icon={isMicrophoneEnabled ? Icons.Mic : Icons.MicMute}
           aria-pressed={!isMicrophoneEnabled}
+          data-testid="call-microphone-toggle"
         />
         <CallControlButton
           size="400"
@@ -84,6 +86,7 @@ function ConnectedCallPane({ connection, isReconnecting }: ConnectedCallPaneProp
           icon={Icons.Headphone}
           isIconFilled={isDeafened}
           aria-pressed={isDeafened}
+          data-testid="call-deafen-toggle"
         />
         <CallMasterVolumeMenu room={matrixRoom} entries={entries} memberships={memberships} />
         <CallControlButton
@@ -94,6 +97,7 @@ function ConnectedCallPane({ connection, isReconnecting }: ConnectedCallPaneProp
           label={isCameraEnabled ? 'Turn Off Camera' : 'Turn On Camera'}
           icon={isCameraEnabled ? Icons.VideoCamera : Icons.VideoCameraMute}
           aria-pressed={isCameraEnabled}
+          data-testid="call-camera-toggle"
         />
         {isScreenshareSupported() && (
           <CallControlButton
@@ -104,6 +108,7 @@ function ConnectedCallPane({ connection, isReconnecting }: ConnectedCallPaneProp
             label={isScreenshareEnabled ? 'Stop Sharing Screen' : 'Share Screen'}
             icon={Icons.Monitor}
             aria-pressed={isScreenshareEnabled}
+            data-testid="call-screenshare-toggle"
           />
         )}
         {checkIsFullscreenSupported() && (
@@ -125,6 +130,7 @@ function ConnectedCallPane({ connection, isReconnecting }: ConnectedCallPaneProp
           label="Leave Call"
           icon={Icons.Phone}
           isIconFilled
+          data-testid="call-leave"
         />
       </Box>
     </CallPaneFrame>

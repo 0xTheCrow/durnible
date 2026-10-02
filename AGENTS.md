@@ -13,7 +13,7 @@ Durnible is a Matrix chat client built with React, TypeScript, and Vite. Forked 
 | `npm run typecheck`           | TypeScript type checking (`tsc --noEmit`)                                                |
 | `npm test`                    | Run tests (Vitest)                                                                       |
 | `npm run test:watch`          | Watch mode tests                                                                         |
-| `npm run e2e`                 | Run Playwright e2e (auto-starts dev server; chromium + firefox)                          |
+| `npm run e2e`                 | Run Playwright e2e (starts dev server + LiveKit in Docker; chromium + firefox)           |
 | `npm run fix:prettier`        | Auto-format with Prettier                                                                |
 | `npm run performance`         | Composer typing benchmark (chromium only; excluded from `npm run e2e`)                   |
 | `npm run performance:desktop` | Electron CPU/RAM measurement (builds the desktop app first; excluded from `npm run e2e`) |

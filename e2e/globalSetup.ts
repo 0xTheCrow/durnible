@@ -9,11 +9,13 @@ import {
   textEvent,
   videoEvent,
 } from './fixtures/homeserver';
+import { startLivekitServer } from './fixtures/livekitServer';
 
 // Vite's source-transform cache is in-memory and dies with the dev server, so every run starts
 // cold and the first specs to reach it race the transforms.
-const globalSetup = async (config: FullConfig): Promise<void> => {
+const globalSetup = async (config: FullConfig): Promise<() => Promise<void>> => {
   const baseURL = config.projects[0]?.use.baseURL;
+  const stopLivekitServer = await startLivekitServer();
   const browser = await chromium.launch();
 
   try {
@@ -27,9 +29,14 @@ const globalSetup = async (config: FullConfig): Promise<void> => {
 
     await page.goto(`/home/${encodeURIComponent(TEST_ROOM_ID)}/`);
     await expect(page.getByTestId('editor')).toBeVisible();
+  } catch (error) {
+    await stopLivekitServer();
+    throw error;
   } finally {
     await browser.close();
   }
+
+  return stopLivekitServer;
 };
 
 export default globalSetup;

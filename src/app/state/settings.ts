@@ -1,5 +1,10 @@
 import { atom } from 'jotai';
 import { mobileOrTablet } from '../utils/user-agent';
+import {
+  DEFAULT_SCREENSHARE_AUDIO_BITRATE_KBPS,
+  DEFAULT_SCREENSHARE_MAX_FRAME_RATE,
+  DEFAULT_SCREENSHARE_RESOLUTION,
+} from '../plugins/call/screenshare';
 
 export const SETTINGS_STORAGE_KEY = 'settings';
 export type DateFormat = 'D MMM YYYY' | 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY/MM/DD' | '';
@@ -165,9 +170,9 @@ const defaultSettings: Settings = {
   preferredVideoInputDeviceId: undefined,
   preferredAudioOutputDeviceId: undefined,
   microphoneInputFloorLevel: 0,
-  screenshareResolution: '1080p',
-  screenshareMaxFrameRate: 30,
-  screenshareAudioBitrateKbps: 96,
+  screenshareResolution: DEFAULT_SCREENSHARE_RESOLUTION,
+  screenshareMaxFrameRate: DEFAULT_SCREENSHARE_MAX_FRAME_RATE,
+  screenshareAudioBitrateKbps: DEFAULT_SCREENSHARE_AUDIO_BITRATE_KBPS,
   showCallPreJoinScreen: false,
   callPaneDock: 'Top',
   callPaneWidth: 360,

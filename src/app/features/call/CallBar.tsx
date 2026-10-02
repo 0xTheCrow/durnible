@@ -27,7 +27,7 @@ function ConnectedCallBar({ connection, isReconnecting }: ConnectedCallBarProps)
   const roomName = useRoomName(connection.matrixRoom);
 
   return (
-    <Box className={css.CallStrip} alignItems="Center" gap="200" shrink="No">
+    <Box className={css.CallStrip} alignItems="Center" gap="200" shrink="No" data-testid="call-bar">
       {isReconnecting ? (
         <Spinner size="100" variant="Secondary" />
       ) : (
@@ -59,6 +59,7 @@ function ConnectedCallBar({ connection, isReconnecting }: ConnectedCallBarProps)
         onClick={() => setIsCallPaneCollapsed(false)}
         label="Expand Call"
         icon={Icons.ChevronRight}
+        data-testid="call-expand"
       />
       <CallControlButton
         size="300"
@@ -67,6 +68,7 @@ function ConnectedCallBar({ connection, isReconnecting }: ConnectedCallBarProps)
         label={isMicrophoneEnabled ? 'Mute Microphone' : 'Unmute Microphone'}
         icon={isMicrophoneEnabled ? Icons.Mic : Icons.MicMute}
         aria-pressed={!isMicrophoneEnabled}
+        data-testid="call-microphone-toggle"
       />
       <CallControlButton
         size="300"
@@ -85,6 +87,7 @@ function ConnectedCallBar({ connection, isReconnecting }: ConnectedCallBarProps)
         label="Leave Call"
         icon={Icons.Phone}
         isIconFilled
+        data-testid="call-leave"
       />
     </Box>
   );

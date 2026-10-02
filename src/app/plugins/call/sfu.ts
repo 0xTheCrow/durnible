@@ -1,6 +1,8 @@
 import type { MatrixClient } from 'matrix-js-sdk';
 import { trimTrailingSlash } from '../../utils/common';
 
+export const RTC_FOCI_WELL_KNOWN_KEY = 'org.matrix.msc4143.rtc_foci';
+
 export class SfuAuthError extends Error {}
 
 export type SfuConnectionDetails = {

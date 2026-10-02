@@ -65,6 +65,7 @@ export function CallUserVolumeMenu({
               </MenuItem>
               <CallVolumeSlider
                 label={displayName}
+                thumbTestId="call-user-volume-slider"
                 volumeLevel={volumeLevel}
                 isDisabled={isMuted}
                 onChange={(nextVolumeLevel) =>

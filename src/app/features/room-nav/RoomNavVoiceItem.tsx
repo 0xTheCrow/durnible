@@ -48,13 +48,27 @@ function VoiceParticipant({ room, userId, participantState }: VoiceParticipantPr
 
   return (
     <>
-      <Box as="span" alignItems="Center" gap="200" onContextMenu={handleContextMenu}>
+      <Box
+        as="span"
+        alignItems="Center"
+        gap="200"
+        onContextMenu={handleContextMenu}
+        data-testid="voice-room-participant"
+        data-user-id={userId}
+      >
         <CallMemberAvatar room={room} userId={userId} size="200" textSize="O400" />
         <TruncatedText as="span" size="T200">
           {displayName}
         </TruncatedText>
         {isMutedLocally && <Icon size="50" src={Icons.VolumeMute} filled />}
-        {audioState === 'muted' && <Icon size="50" src={Icons.MicMute} filled />}
+        {audioState === 'muted' && (
+          <Icon
+            size="50"
+            src={Icons.MicMute}
+            filled
+            data-testid="voice-room-participant-microphone-muted"
+          />
+        )}
         {audioState === 'deafened' && <Icon size="50" src={Icons.Headphone} filled />}
       </Box>
       {volumeMenu}
@@ -106,7 +120,13 @@ export function RoomNavVoiceItem({ room, selected, isDrawerMode, tall }: RoomNav
         {...hoverProps}
         {...focusWithinProps}
       >
-        <NavButton type="button" onClick={enterVoiceRoom}>
+        <NavButton
+          type="button"
+          onClick={enterVoiceRoom}
+          data-testid="voice-room-entry"
+          data-room-id={room.roomId}
+          data-call-entry-status={entryState.status}
+        >
           <NavItemContent>
             <Box as="span" grow="Yes" alignItems="Center" gap="200">
               <Avatar size="200" radii="400">

@@ -28,6 +28,10 @@ export const SCREENSHARE_RESOLUTIONS: Record<ScreenshareResolution, ScreenshareR
 
 export const SCREENSHARE_RESOLUTION_OPTIONS: ScreenshareResolution[] = ['720p', '1080p', '1440p'];
 
+export const DEFAULT_SCREENSHARE_RESOLUTION: ScreenshareResolution = '1080p';
+export const DEFAULT_SCREENSHARE_MAX_FRAME_RATE: ScreenshareMaxFrameRate = 30;
+export const DEFAULT_SCREENSHARE_AUDIO_BITRATE_KBPS: ScreenshareAudioBitrateKbps = 96;
+
 export const SCREENSHARE_MAX_FRAME_RATE_OPTIONS: ScreenshareMaxFrameRate[] = [15, 30, 60];
 
 export const SCREENSHARE_AUDIO_BITRATE_KBPS_OPTIONS: ScreenshareAudioBitrateKbps[] = [

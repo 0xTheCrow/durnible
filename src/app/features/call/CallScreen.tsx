@@ -65,6 +65,7 @@ function ConnectedCallScreen({ connection, isReconnecting, onMinimize }: Connect
 
   return (
     <Modal
+      data-testid="call-screen"
       className={css.CallScreen}
       style={{
         transform: isDragging ? `translateY(${dragOffset}px)` : undefined,
@@ -94,6 +95,7 @@ function ConnectedCallScreen({ connection, isReconnecting, onMinimize }: Connect
           onClick={onMinimize}
           label="Minimize Call"
           icon={Icons.ChevronBottom}
+          data-testid="call-minimize"
         />
       </Header>
 
