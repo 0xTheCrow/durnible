@@ -20,6 +20,7 @@ export type CallConnection = {
   rtcSession: MatrixRTCSession;
   livekitRoom: LivekitRoom;
   keyProvider?: MatrixKeyProvider;
+  playbackAudioContext: AudioContext | undefined;
 };
 
 export const getActiveLivekitServiceUrl = (
@@ -38,7 +39,8 @@ export const connectToCall = async (
   matrixClient: MatrixClient,
   matrixRoom: Room,
   preferredFoci: LivekitTransportConfig[],
-  devicePreferences: MediaDevicePreferences = {}
+  devicePreferences: MediaDevicePreferences,
+  playbackAudioContext: AudioContext | undefined
 ): Promise<CallConnection> => {
   const userId = matrixClient.getUserId();
   const deviceId = matrixClient.getDeviceId();
@@ -85,11 +87,12 @@ export const connectToCall = async (
     throw error;
   }
 
-  return { matrixClient, matrixRoom, rtcSession, livekitRoom, keyProvider };
+  return { matrixClient, matrixRoom, rtcSession, livekitRoom, keyProvider, playbackAudioContext };
 };
 
 export const disconnectFromCall = async (connection: CallConnection): Promise<void> => {
   await connection.livekitRoom.disconnect();
+  connection.playbackAudioContext?.close();
   connection.keyProvider?.clearRtcSession();
   await connection.rtcSession.leaveRoomSession(LEAVE_MEMBERSHIP_TIMEOUT_MS);
 };

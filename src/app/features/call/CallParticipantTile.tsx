@@ -64,7 +64,7 @@ function CallParticipantTileComponent({
   const { userId, displayName } = resolveCallParticipant(room, participant.identity, memberships);
 
   const isMutedLocally = useCallUserIsMuted(userId);
-  const { handleContextMenu, volumeMenu } = useCallUserVolumeMenu(
+  const { volumeMenuTriggerProps, volumeMenu } = useCallUserVolumeMenu(
     userId,
     displayName,
     isScreenshareAudioEnabled
@@ -151,7 +151,7 @@ function CallParticipantTileComponent({
           as="button"
           type="button"
           onClick={() => onSelect(participant.identity)}
-          onContextMenu={handleContextMenu}
+          {...volumeMenuTriggerProps}
           aria-label={`Focus ${displayName}`}
           aria-pressed={isFocused}
           className={classNames(tileClassName, css.CallTileInteractive)}
@@ -170,7 +170,7 @@ function CallParticipantTileComponent({
     <>
       <Box
         className={tileClassName}
-        onContextMenu={handleContextMenu}
+        {...volumeMenuTriggerProps}
         alignItems="Center"
         justifyContent="Center"
         {...tileTestProps}

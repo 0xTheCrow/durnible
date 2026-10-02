@@ -26,28 +26,37 @@ type AudioTrackPlayerProps = {
   userId?: string;
   isDeafened: boolean;
   volumeLevel: number;
+  playbackAudioContext: AudioContext | undefined;
 };
-function AudioTrackPlayer({ track, userId, isDeafened, volumeLevel }: AudioTrackPlayerProps) {
+function AudioTrackPlayer({
+  track,
+  userId,
+  isDeafened,
+  volumeLevel,
+  playbackAudioContext,
+}: AudioTrackPlayerProps) {
   const audioElementRef = useRef<HTMLAudioElement>(null);
+  const playbackVolumeLevel = isDeafened ? 0 : volumeLevel;
 
   useEffect(() => {
     const audioElement = audioElementRef.current;
     if (!audioElement) return undefined;
+    track.setAudioContext(playbackAudioContext);
     track.attach(audioElement);
     return () => {
       track.detach(audioElement);
     };
-  }, [track]);
+  }, [track, playbackAudioContext]);
 
   useEffect(() => {
-    track.setVolume(volumeLevel);
-  }, [track, volumeLevel]);
+    track.setVolume(playbackVolumeLevel);
+  }, [track, playbackVolumeLevel]);
 
   return (
     <audio
       ref={audioElementRef}
       autoPlay
-      muted={isDeafened}
+      muted={isDeafened || playbackAudioContext !== undefined}
       data-testid="call-participant-audio"
       data-user-id={userId}
       data-track-source={track.source}
@@ -62,6 +71,7 @@ type ParticipantAudioProps = {
   microphoneVolumeLevel: number;
   screenshareVolumeLevel: number;
   isWatchingScreenshare: boolean;
+  playbackAudioContext: AudioContext | undefined;
 };
 function ParticipantAudio({
   participant,
@@ -70,6 +80,7 @@ function ParticipantAudio({
   microphoneVolumeLevel,
   screenshareVolumeLevel,
   isWatchingScreenshare,
+  playbackAudioContext,
 }: ParticipantAudioProps) {
   const trackPublications = useParticipantTrackPublications(participant);
   const store = useStore();
@@ -113,6 +124,7 @@ function ParticipantAudio({
                   ? screenshareVolumeLevel
                   : microphoneVolumeLevel
               }
+              playbackAudioContext={playbackAudioContext}
             />
           ) : null
         )}
@@ -149,6 +161,7 @@ function ConnectedCallAudio({ connection }: ConnectedCallAudioProps) {
                 userId
               )}
               isWatchingScreenshare={participant.identity === focusedParticipantKey}
+              playbackAudioContext={connection.playbackAudioContext}
             />
           );
         })}

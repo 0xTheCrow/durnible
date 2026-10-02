@@ -10,7 +10,7 @@ const MOBILE_OR_TABLET =
 
 const IS_MAC_OS = parsed.os.name === 'Mac OS';
 
-const IS_IOS = parsed.os.name === 'iOS';
+const IS_IOS = parsed.os.name === 'iOS' || (IS_MAC_OS && window.navigator.maxTouchPoints > 1);
 
 export const ua = () => parsed;
 

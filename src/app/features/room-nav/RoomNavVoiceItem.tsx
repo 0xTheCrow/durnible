@@ -39,7 +39,7 @@ type VoiceParticipantProps = {
 function VoiceParticipant({ room, userId, participantState }: VoiceParticipantProps) {
   const displayName = getMemberDisplayName(room, userId) ?? userId;
   const isMutedLocally = useCallUserIsMuted(userId);
-  const { handleContextMenu, volumeMenu } = useCallUserVolumeMenu(
+  const { volumeMenuTriggerProps, volumeMenu } = useCallUserVolumeMenu(
     userId,
     displayName,
     participantState?.isScreenshareAudioEnabled === true
@@ -52,7 +52,7 @@ function VoiceParticipant({ room, userId, participantState }: VoiceParticipantPr
         as="span"
         alignItems="Center"
         gap="200"
-        onContextMenu={handleContextMenu}
+        {...volumeMenuTriggerProps}
         data-testid="voice-room-participant"
         data-user-id={userId}
       >

@@ -14,12 +14,16 @@ const switchToCall = async (
   room: Room,
   livekitFoci: LivekitTransportConfig[],
   devicePreferences: MediaDevicePreferences,
+  playbackAudioContext: AudioContext | undefined,
   getCallState: () => CallState,
   setCallState: CallStateSetter
 ): Promise<void> => {
   const callState = getCallState();
   if (callState.status === 'connected' || callState.status === 'reconnecting') {
-    if (callState.roomId === room.roomId) return;
+    if (callState.roomId === room.roomId) {
+      playbackAudioContext?.close();
+      return;
+    }
     try {
       await disconnectFromCall(callState.connection);
     } catch (error) {
@@ -30,9 +34,16 @@ const switchToCall = async (
   setCallState({ status: 'connecting', roomId: room.roomId });
   try {
     const foci = await resolveLivekitFoci(matrixClient, livekitFoci);
-    const connection = await connectToCall(matrixClient, room, foci, devicePreferences);
+    const connection = await connectToCall(
+      matrixClient,
+      room,
+      foci,
+      devicePreferences,
+      playbackAudioContext
+    );
     setCallState({ status: 'connected', roomId: room.roomId, connection });
   } catch (error) {
+    playbackAudioContext?.close();
     setCallState({
       status: 'failed',
       roomId: room.roomId,
@@ -46,10 +57,14 @@ export const startCall = async (
   room: Room,
   livekitFoci: LivekitTransportConfig[],
   devicePreferences: MediaDevicePreferences,
+  playbackAudioContext: AudioContext | undefined,
   getCallState: () => CallState,
   setCallState: CallStateSetter
 ): Promise<void> => {
-  if (isStartingCall) return;
+  if (isStartingCall) {
+    playbackAudioContext?.close();
+    return;
+  }
   isStartingCall = true;
   try {
     await switchToCall(
@@ -57,6 +72,7 @@ export const startCall = async (
       room,
       livekitFoci,
       devicePreferences,
+      playbackAudioContext,
       getCallState,
       setCallState
     );

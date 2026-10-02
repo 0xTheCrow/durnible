@@ -32,7 +32,7 @@ function CallOverflowParticipantComponent({
     entry.participant.identity,
     memberships
   );
-  const { handleContextMenu, volumeMenu } = useCallUserVolumeMenu(
+  const { volumeMenuTriggerProps, volumeMenu } = useCallUserVolumeMenu(
     userId,
     displayName,
     entry.isScreenshareAudioEnabled
@@ -64,7 +64,7 @@ function CallOverflowParticipantComponent({
           as="button"
           type="button"
           onClick={() => onSelect(entry.participant.identity)}
-          onContextMenu={handleContextMenu}
+          {...volumeMenuTriggerProps}
           aria-label={`Focus ${displayName}`}
           className={participantClassName}
           alignItems="Center"
@@ -75,7 +75,7 @@ function CallOverflowParticipantComponent({
         </Box>
       ) : (
         <Box
-          onContextMenu={handleContextMenu}
+          {...volumeMenuTriggerProps}
           className={participantClassName}
           alignItems="Center"
           gap="100"
