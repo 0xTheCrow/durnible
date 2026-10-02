@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import React, { createContext, lazy, Suspense, useCallback, useContext, useMemo } from 'react';
-import { useAtomValue, useSetAtom } from 'jotai';
+import { useAtomValue, useSetAtom, useStore } from 'jotai';
 import type { Room } from 'matrix-js-sdk';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { useLivekitFoci } from '../../hooks/useLivekitFoci';
@@ -29,6 +29,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const matrixClient = useMatrixClient();
   const callState = useAtomValue(callStateAtom);
   const setCallState = useSetAtom(callStateAtom);
+  const store = useStore();
   const livekitFoci = useLivekitFoci();
   const [preferredAudioInputDeviceId] = useSetting(settingsAtom, 'preferredAudioInputDeviceId');
   const [preferredVideoInputDeviceId] = useSetting(settingsAtom, 'preferredVideoInputDeviceId');
@@ -46,13 +47,13 @@ export function CallProvider({ children }: { children: ReactNode }) {
           videoInputDeviceId: preferredVideoInputDeviceId,
           audioOutputDeviceId: preferredAudioOutputDeviceId,
         },
-        () => callState,
+        () => store.get(callStateAtom),
         setCallState
       );
     },
     [
       matrixClient,
-      callState,
+      store,
       livekitFoci,
       preferredAudioInputDeviceId,
       preferredVideoInputDeviceId,
@@ -63,8 +64,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
   const endCall = useCallback(async () => {
     const { endCall: endLazyCall } = await import('../../plugins/call/callActions');
-    await endLazyCall(() => callState, setCallState);
-  }, [callState, setCallState]);
+    await endLazyCall(() => store.get(callStateAtom), setCallState);
+  }, [store, setCallState]);
 
   const callActions = useMemo(() => ({ startCall, endCall }), [startCall, endCall]);
 

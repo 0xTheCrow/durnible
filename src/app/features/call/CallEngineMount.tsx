@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useAtom } from 'jotai';
 import type { Participant } from 'livekit-client';
-import { DisconnectReason, RoomEvent } from 'livekit-client';
+import { ConnectionState, DisconnectReason, RoomEvent } from 'livekit-client';
 import { callStateAtom } from '../../state/call';
 import type { CallState } from '../../state/call';
 import { LEAVE_MEMBERSHIP_TIMEOUT_MS } from '../../plugins/call/CallConnection';
@@ -49,6 +49,7 @@ export function CallEngineMount() {
     livekitRoom.on(RoomEvent.Reconnected, handleReconnected);
     livekitRoom.on(RoomEvent.Disconnected, handleDisconnected);
     livekitRoom.on(RoomEvent.EncryptionError, handleEncryptionError);
+    if (livekitRoom.state === ConnectionState.Disconnected) handleDisconnected();
     return () => {
       livekitRoom.off(RoomEvent.Reconnecting, handleReconnecting);
       livekitRoom.off(RoomEvent.Reconnected, handleReconnected);
