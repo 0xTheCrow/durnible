@@ -22,11 +22,17 @@ export const SCREENSHARE_MAX_FRAME_RATE_OPTIONS: ScreenshareMaxFrameRate[] = [15
 
 export const getScreenshareCaptureOptions = (
   resolution: ScreenshareResolution,
-  maxFrameRate: ScreenshareMaxFrameRate
+  maxFrameRate: ScreenshareMaxFrameRate,
+  isAudioProcessingEnabled = false
 ): ScreenShareCaptureOptions => {
   const { width, height } = SCREENSHARE_RESOLUTIONS[resolution];
   return {
-    audio: true,
+    audio: {
+      echoCancellation: isAudioProcessingEnabled,
+      noiseSuppression: isAudioProcessingEnabled,
+      autoGainControl: isAudioProcessingEnabled,
+      restrictOwnAudio: true,
+    },
     resolution: { width, height, frameRate: maxFrameRate },
     contentHint: 'motion',
   };
