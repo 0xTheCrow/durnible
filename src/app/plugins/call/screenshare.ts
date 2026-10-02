@@ -1,5 +1,15 @@
-import type { LocalVideoTrack, ScreenShareCaptureOptions, VideoEncoding } from 'livekit-client';
-import type { ScreenshareMaxFrameRate, ScreenshareResolution } from '../../state/settings';
+import type {
+  AudioPreset,
+  LocalAudioTrack,
+  LocalVideoTrack,
+  ScreenShareCaptureOptions,
+  VideoEncoding,
+} from 'livekit-client';
+import type {
+  ScreenshareAudioBitrateKbps,
+  ScreenshareMaxFrameRate,
+  ScreenshareResolution,
+} from '../../state/settings';
 
 const BASE_FRAME_RATE = 30;
 
@@ -19,6 +29,10 @@ export const SCREENSHARE_RESOLUTIONS: Record<ScreenshareResolution, ScreenshareR
 export const SCREENSHARE_RESOLUTION_OPTIONS: ScreenshareResolution[] = ['720p', '1080p', '1440p'];
 
 export const SCREENSHARE_MAX_FRAME_RATE_OPTIONS: ScreenshareMaxFrameRate[] = [15, 30, 60];
+
+export const SCREENSHARE_AUDIO_BITRATE_KBPS_OPTIONS: ScreenshareAudioBitrateKbps[] = [
+  48, 64, 96, 128,
+];
 
 export const getScreenshareCaptureOptions = (
   resolution: ScreenshareResolution,
@@ -72,5 +86,23 @@ export const applyScreenshareQuality = async (
     maxFramerate,
     maxBitrate: Math.round(maxBitrate / (layerEncoding.scaleResolutionDownBy ?? 1) ** 2),
   }));
+  await sender.setParameters(parameters);
+};
+
+export const getScreenshareAudioPreset = (
+  bitrateKbps: ScreenshareAudioBitrateKbps
+): AudioPreset => ({
+  maxBitrate: bitrateKbps * 1000,
+});
+
+export const applyScreenshareAudioBitrate = async (
+  track: LocalAudioTrack,
+  bitrateKbps: ScreenshareAudioBitrateKbps
+): Promise<void> => {
+  const { sender } = track;
+  if (!sender) return;
+  const { maxBitrate } = getScreenshareAudioPreset(bitrateKbps);
+  const parameters = sender.getParameters();
+  parameters.encodings = parameters.encodings.map((encoding) => ({ ...encoding, maxBitrate }));
   await sender.setParameters(parameters);
 };

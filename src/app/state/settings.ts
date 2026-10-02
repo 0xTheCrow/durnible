@@ -24,6 +24,7 @@ export type NotificationSoundId =
 
 export type ScreenshareResolution = '720p' | '1080p' | '1440p';
 export type ScreenshareMaxFrameRate = 15 | 30 | 60;
+export type ScreenshareAudioBitrateKbps = 48 | 64 | 96 | 128;
 
 export interface Settings {
   themeId?: string;
@@ -92,6 +93,7 @@ export interface Settings {
   microphoneInputFloorLevel: number;
   screenshareResolution: ScreenshareResolution;
   screenshareMaxFrameRate: ScreenshareMaxFrameRate;
+  screenshareAudioBitrateKbps: ScreenshareAudioBitrateKbps;
   showCallPreJoinScreen: boolean;
   callPaneDock: CallPaneDock;
   callPaneWidth: number;
@@ -165,6 +167,7 @@ const defaultSettings: Settings = {
   microphoneInputFloorLevel: 0,
   screenshareResolution: '1080p',
   screenshareMaxFrameRate: 30,
+  screenshareAudioBitrateKbps: 96,
   showCallPreJoinScreen: false,
   callPaneDock: 'Top',
   callPaneWidth: 360,

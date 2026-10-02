@@ -4,11 +4,16 @@ import type { RectCords } from 'folds';
 import { Box, Chip, Icon, Icons, Menu, MenuItem, PopOut, Text, config, toRem } from 'folds';
 import FocusTrap from 'focus-trap-react';
 import { settingsAtom } from '../../state/settings';
-import type { ScreenshareMaxFrameRate, ScreenshareResolution } from '../../state/settings';
+import type {
+  ScreenshareAudioBitrateKbps,
+  ScreenshareMaxFrameRate,
+  ScreenshareResolution,
+} from '../../state/settings';
 import { useSetting } from '../../state/hooks/settings';
 import type { ScreenshareSenderStats } from '../../hooks/call/useScreenshareSenderStats';
 import type { ScreenshareAudioSenderStats } from '../../hooks/call/useScreenshareAudioSenderStats';
 import {
+  SCREENSHARE_AUDIO_BITRATE_KBPS_OPTIONS,
   SCREENSHARE_MAX_FRAME_RATE_OPTIONS,
   SCREENSHARE_RESOLUTIONS,
   SCREENSHARE_RESOLUTION_OPTIONS,
@@ -28,6 +33,10 @@ export function CallScreenQualityMenu({
   const [menuAnchor, setMenuAnchor] = useState<RectCords>();
   const [resolution, setResolution] = useSetting(settingsAtom, 'screenshareResolution');
   const [maxFrameRate, setMaxFrameRate] = useSetting(settingsAtom, 'screenshareMaxFrameRate');
+  const [audioBitrateKbps, setAudioBitrateKbps] = useSetting(
+    settingsAtom,
+    'screenshareAudioBitrateKbps'
+  );
 
   const handleOpenMenu: MouseEventHandler<HTMLButtonElement> = (evt) => {
     setMenuAnchor(evt.currentTarget.getBoundingClientRect());
@@ -39,6 +48,10 @@ export function CallScreenQualityMenu({
   };
   const handleSelectMaxFrameRate = (nextMaxFrameRate: ScreenshareMaxFrameRate) => {
     setMaxFrameRate(nextMaxFrameRate);
+    setMenuAnchor(undefined);
+  };
+  const handleSelectAudioBitrate = (nextAudioBitrateKbps: ScreenshareAudioBitrateKbps) => {
+    setAudioBitrateKbps(nextAudioBitrateKbps);
     setMenuAnchor(undefined);
   };
 
@@ -135,6 +148,20 @@ export function CallScreenQualityMenu({
                   onClick={() => handleSelectMaxFrameRate(frameRateOption)}
                 >
                   <Text size="T300">{frameRateOption} fps</Text>
+                </MenuItem>
+              ))}
+
+              <Text size="L400">Audio bitrate</Text>
+              {SCREENSHARE_AUDIO_BITRATE_KBPS_OPTIONS.map((audioBitrateOption) => (
+                <MenuItem
+                  key={audioBitrateOption}
+                  size="300"
+                  variant={audioBitrateOption === audioBitrateKbps ? 'Primary' : 'Surface'}
+                  radii="300"
+                  aria-pressed={audioBitrateOption === audioBitrateKbps}
+                  onClick={() => handleSelectAudioBitrate(audioBitrateOption)}
+                >
+                  <Text size="T300">{audioBitrateOption} kbps</Text>
                 </MenuItem>
               ))}
             </Box>
