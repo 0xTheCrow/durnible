@@ -5,6 +5,7 @@ import { ConnectionState, DisconnectReason, RoomEvent } from 'livekit-client';
 import { callStateAtom } from '../../state/call';
 import type { CallState } from '../../state/call';
 import { LEAVE_MEMBERSHIP_TIMEOUT_MS } from '../../plugins/call/CallConnection';
+import { setAudioSessionType } from '../../plugins/call/audioSession';
 import { useActiveCallParticipantEntriesStore } from '../../hooks/call/useActiveCallParticipantEntriesStore';
 import { CallAudioRenderer } from './CallAudioRenderer';
 import { CallMicrophoneGate } from './CallMicrophoneGate';
@@ -17,6 +18,15 @@ export function CallEngineMount() {
       : undefined;
 
   useActiveCallParticipantEntriesStore(connection?.livekitRoom);
+
+  useEffect(() => {
+    if (!connection) return undefined;
+    setAudioSessionType('play-and-record');
+    return () => {
+      setAudioSessionType('auto');
+      connection.playbackAudioContext?.close();
+    };
+  }, [connection]);
 
   useEffect(() => {
     if (!connection) return undefined;

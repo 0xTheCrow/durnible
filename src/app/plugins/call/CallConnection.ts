@@ -92,7 +92,6 @@ export const connectToCall = async (
 
 export const disconnectFromCall = async (connection: CallConnection): Promise<void> => {
   await connection.livekitRoom.disconnect();
-  connection.playbackAudioContext?.close();
   connection.keyProvider?.clearRtcSession();
   await connection.rtcSession.leaveRoomSession(LEAVE_MEMBERSHIP_TIMEOUT_MS);
 };
