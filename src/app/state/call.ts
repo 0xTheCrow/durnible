@@ -22,6 +22,21 @@ export const callPreJoinRoomIdAtom = atom<string | undefined>(undefined);
 
 export const isCallDeafenedAtom = atom(false);
 
+export type CallFocusedParticipant = {
+  connection: CallConnection;
+  participantKey: string;
+};
+
+export const callFocusedParticipantAtom = atom<CallFocusedParticipant | undefined>(undefined);
+
+export const getCallFocusedParticipantKey = (
+  focusedParticipant: CallFocusedParticipant | undefined,
+  connection: CallConnection | undefined
+): string | undefined =>
+  connection && focusedParticipant?.connection === connection
+    ? focusedParticipant.participantKey
+    : undefined;
+
 export type ActiveCallParticipantEntry = {
   identity: string;
   isLocal: boolean;

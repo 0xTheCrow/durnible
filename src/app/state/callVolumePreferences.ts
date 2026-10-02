@@ -173,6 +173,6 @@ export const getCallScreensharePlaybackVolumeLevel = (
   userId: string | undefined
 ): number => {
   const userPreference = getCallUserVolumePreference(preferences, userId);
-  if (userPreference.isMuted || userPreference.isScreenshareMuted) return 0;
+  if (userPreference.isScreenshareMuted) return 0;
   return preferences.masterVolumeLevel * userPreference.screenshareVolumeLevel;
 };

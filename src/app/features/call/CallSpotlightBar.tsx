@@ -86,6 +86,7 @@ export function CallSpotlightBar({
         as="button"
         size="400"
         onClick={onStopWatching}
+        data-testid="call-spotlight-stop-watching"
         variant="SurfaceVariant"
         radii="Pill"
         outlined

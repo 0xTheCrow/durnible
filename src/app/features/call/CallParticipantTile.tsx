@@ -117,21 +117,26 @@ function CallParticipantTileComponent({
         renderPlaceholder()
       )}
       {!isScreenshareSource && isScreensharing && !isFocused && (
-        <Box className={css.CallTileScreenshareBadge} alignItems="Center" gap="100">
-          <Icon size="50" src={Icons.Monitor} filled />
-          <Text as="span" size="T200">
-            Sharing
+        <Box
+          className={css.CallTileScreenshareBadge}
+          alignItems="Center"
+          gap="100"
+          data-testid="call-tile-sharing-badge"
+        >
+          <Icon size="100" src={Icons.Monitor} filled />
+          <Text as="span" size="T300">
+            Sharing screen
           </Text>
         </Box>
       )}
       {!isScreenshareSource && (
         <Box className={css.CallTileName} alignItems="Center" gap="100">
-          {isDeafenedLocally && <Icon size="50" src={Icons.Headphone} filled />}
-          {isMutedLocally && <Icon size="50" src={Icons.VolumeMute} filled />}
+          {isDeafenedLocally && <Icon size="100" src={Icons.Headphone} filled />}
+          {isMutedLocally && <Icon size="100" src={Icons.VolumeMute} filled />}
           {isMuted && (
-            <Icon size="50" src={Icons.MicMute} filled data-testid="call-tile-microphone-muted" />
+            <Icon size="100" src={Icons.MicMute} filled data-testid="call-tile-microphone-muted" />
           )}
-          <Text as="span" size="T200" truncate>
+          <Text as="span" size="T400" truncate>
             {displayName}
           </Text>
         </Box>

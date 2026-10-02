@@ -214,8 +214,8 @@ export const CallTileScreenshareBadge = style({
   position: 'absolute',
   top: config.space.S100,
   left: config.space.S100,
-  padding: `0 ${config.space.S100}`,
-  borderRadius: config.radii.R300,
+  padding: `${config.space.S100} ${config.space.S300}`,
+  borderRadius: config.radii.Pill,
   backgroundColor: color.Primary.Container,
   color: color.Primary.OnContainer,
   transition: 'background-color 100ms ease, color 100ms ease',
@@ -229,10 +229,13 @@ export const CallTileScreenshareBadge = style({
 
 export const CallTileName = style({
   position: 'absolute',
-  left: config.space.S200,
-  right: config.space.S200,
+  left: config.space.S100,
   bottom: config.space.S100,
-  color: color.SurfaceVariant.OnContainer,
+  maxWidth: `calc(100% - 2 * ${config.space.S100})`,
+  padding: `0 ${config.space.S200}`,
+  borderRadius: config.radii.Pill,
+  backgroundColor: 'rgba(0, 0, 0, 0.55)',
+  color: 'white',
 });
 
 export const CallPreJoinStage = style({

@@ -16,6 +16,7 @@ import type {
   ScreenshareMaxFrameRate,
   ScreenshareResolution,
 } from '../../src/app/state/settings';
+import { CALL_VOLUME_LEVEL_DEFAULT } from '../../src/app/state/callVolumePreferences';
 import { CALL_TEST_USERS } from '../fixtures/callHomeserver';
 import type { CallClient } from '../fixtures/call';
 import {
@@ -98,7 +99,15 @@ const chooseQualityOption = async (page: Page, optionTestId: string, value: stri
   await page.locator(`[data-testid="${optionTestId}"][data-value="${value}"]`).click();
 };
 
-test("a screenshare plays in the other participant's spotlight until it stops", async ({
+const watchScreenshare = async (viewer: CallClient, sharer: CallClient): Promise<void> => {
+  const sharerTile = getCallTile(viewer.page, sharer.user.userId);
+  await expect(sharerTile.getByTestId('call-tile-sharing-badge')).toBeVisible({
+    timeout: MEDIA_FLOW_TIMEOUT_MS,
+  });
+  await sharerTile.click();
+};
+
+test("a screenshare plays in the other participant's spotlight once picked, until it stops", async ({
   callSession,
 }) => {
   const [voiceRoomId] = callSession.homeserver.voiceRoomIds;
@@ -112,6 +121,13 @@ test("a screenshare plays in the other participant's spotlight until it stops", 
     .getByTestId('call-tile-video');
 
   await startScreenshare(alice);
+  await expect(
+    getCallTile(bob.page, alice.user.userId).getByTestId('call-tile-sharing-badge')
+  ).toBeVisible({ timeout: MEDIA_FLOW_TIMEOUT_MS });
+
+  await expect(bob.page.getByTestId('call-spotlight')).toBeHidden();
+
+  await watchScreenshare(bob, alice);
 
   await expect(aliceScreenOnBob).toBeVisible({ timeout: MEDIA_FLOW_TIMEOUT_MS });
   await expectToKeepGrowing(() => readDecodedFrameCount(aliceScreenOnBob));
@@ -123,7 +139,7 @@ test("a screenshare plays in the other participant's spotlight until it stops", 
   });
 });
 
-test('screenshare audio is captured without voice processing and reaches the other participant', async ({
+test('screenshare audio is captured without voice processing and plays only while watched', async ({
   callSession,
 }) => {
   const [voiceRoomId] = callSession.homeserver.voiceRoomIds;
@@ -131,8 +147,14 @@ test('screenshare audio is captured without voice processing and reaches the oth
   const alice = await callSession.openClient(CALL_TEST_USERS.alice);
   await joinVoiceRoom(bob.page, voiceRoomId);
   await joinVoiceRoom(alice.page, voiceRoomId);
+  const aliceScreenshareAudioOnBob = getParticipantAudio(
+    bob.page,
+    alice.user.userId,
+    Track.Source.ScreenShareAudio
+  );
 
   await startScreenshare(alice);
+  await watchScreenshare(bob, alice);
 
   const screenshareAudio = await readLocalSender(alice.page, {
     kind: 'audio',
@@ -143,11 +165,42 @@ test('screenshare audio is captured without voice processing and reaches the oth
     noiseSuppression: false,
     autoGainControl: false,
   });
-  await expectToKeepGrowing(() =>
-    readReceivedBytes(
-      getParticipantAudio(bob.page, alice.user.userId, Track.Source.ScreenShareAudio)
-    )
-  );
+  await expectToKeepGrowing(() => readReceivedBytes(aliceScreenshareAudioOnBob));
+
+  await bob.page.getByTestId('call-spotlight-stop-watching').click();
+
+  await expect(aliceScreenshareAudioOnBob).toHaveCount(0);
+});
+
+test("a voice-muted participant's screenshare audio starts muted and can be unmuted", async ({
+  callSession,
+}) => {
+  const [voiceRoomId] = callSession.homeserver.voiceRoomIds;
+  const bob = await callSession.openClient(CALL_TEST_USERS.bob);
+  const alice = await callSession.openClient(CALL_TEST_USERS.alice);
+  await joinVoiceRoom(bob.page, voiceRoomId);
+  await joinVoiceRoom(alice.page, voiceRoomId);
+  const readAliceScreenshareVolumeOnBob = () =>
+    getParticipantAudio(bob.page, alice.user.userId, Track.Source.ScreenShareAudio).evaluate(
+      (element) => (element as HTMLAudioElement).volume
+    );
+
+  await getCallTile(bob.page, alice.user.userId).click({ button: 'right' });
+  await bob.page.getByTestId('call-user-voice-mute-toggle').click();
+  await bob.page.keyboard.press('Escape');
+
+  await startScreenshare(alice);
+  await watchScreenshare(bob, alice);
+
+  await expect.poll(readAliceScreenshareVolumeOnBob, { timeout: MEDIA_FLOW_TIMEOUT_MS }).toBe(0);
+
+  await getCallTile(bob.page, alice.user.userId).click({ button: 'right' });
+  await bob.page.getByTestId('call-user-screenshare-mute-toggle').click();
+  await bob.page.keyboard.press('Escape');
+
+  await expect
+    .poll(readAliceScreenshareVolumeOnBob)
+    .toBeCloseTo(CALL_VOLUME_LEVEL_DEFAULT * CALL_VOLUME_LEVEL_DEFAULT, 2);
 });
 
 test('a screenshare publishes with the stored quality settings', async ({ callSession }) => {
@@ -172,7 +225,7 @@ test('changing quality during a screenshare updates the live senders', async ({ 
   await joinVoiceRoom(alice.page, voiceRoomId);
   await startScreenshare(alice);
   const sendersBeforeChange = await readScreenshareSenders(alice.page);
-  await getCallTile(alice.page, alice.user.userId).click();
+  await watchScreenshare(alice, alice);
 
   await chooseQualityOption(
     alice.page,

@@ -53,6 +53,7 @@ export function CallUserVolumeMenu({
                 radii="300"
                 before={<Icon size="100" src={isMuted ? Icons.VolumeMute : Icons.VolumeHigh} />}
                 aria-pressed={isMuted}
+                data-testid="call-user-voice-mute-toggle"
                 onClick={() =>
                   setUserVolumePreference({
                     userId,
@@ -61,7 +62,7 @@ export function CallUserVolumeMenu({
                   })
                 }
               >
-                <Text size="T300">{isMuted ? 'Unmute' : 'Mute'}</Text>
+                <Text size="T300">{isMuted ? 'Unmute Voice' : 'Mute Voice'}</Text>
               </MenuItem>
               <CallVolumeSlider
                 label={displayName}
@@ -96,6 +97,7 @@ export function CallUserVolumeMenu({
                       />
                     }
                     aria-pressed={isScreenshareMuted}
+                    data-testid="call-user-screenshare-mute-toggle"
                     onClick={() =>
                       setUserVolumePreference({
                         userId,
