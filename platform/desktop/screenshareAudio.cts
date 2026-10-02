@@ -1,6 +1,7 @@
 import { app, desktopCapturer, ipcMain, webContents } from 'electron';
 import type { IpcMainEvent, Session, Streams, WebContents } from 'electron';
 import { randomUUID } from 'node:crypto';
+import { restoreLoopbackMonitorVolumeOnce } from './loopbackMonitorVolume.cjs';
 
 const CHROMIUM_ENABLE_FEATURES_SWITCH = 'enable-features';
 
@@ -132,6 +133,7 @@ export const installScreenshareAudio = (
 
       const streams: Streams = { video: chosenSource };
       if (choice.shareSystemAudio) {
+        await restoreLoopbackMonitorVolumeOnce();
         streams.audio = 'loopback';
       }
       callback(streams);
