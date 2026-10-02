@@ -1,7 +1,9 @@
 import { useCallback } from 'react';
-import { useAtomValue } from 'jotai';
+import { useAtomValue, useSetAtom } from 'jotai';
 import type { Room } from 'matrix-js-sdk';
-import { callStateAtom } from '../../state/call';
+import { callPreJoinRoomIdAtom, callStateAtom } from '../../state/call';
+import { settingsAtom } from '../../state/settings';
+import { useSetting } from '../../state/hooks/settings';
 import { useCallActions } from './CallProvider';
 
 export type VoiceRoomEntryState =
@@ -14,6 +16,8 @@ export const useVoiceRoomEntry = (
   room: Room
 ): { entryState: VoiceRoomEntryState; enterVoiceRoom: () => Promise<void> } => {
   const callState = useAtomValue(callStateAtom);
+  const setPreJoinRoomId = useSetAtom(callPreJoinRoomIdAtom);
+  const [showCallPreJoinScreen] = useSetting(settingsAtom, 'showCallPreJoinScreen');
   const { startCall } = useCallActions();
 
   let entryState: VoiceRoomEntryState = { status: 'idle' };
@@ -24,7 +28,15 @@ export const useVoiceRoomEntry = (
     else entryState = { status: 'connected' };
   }
 
-  const enterVoiceRoom = useCallback(() => startCall(room), [startCall, room]);
+  const isInThisRoomCall = entryState.status === 'connecting' || entryState.status === 'connected';
+
+  const enterVoiceRoom = useCallback(async () => {
+    if (showCallPreJoinScreen && !isInThisRoomCall) {
+      setPreJoinRoomId(room.roomId);
+      return;
+    }
+    await startCall(room);
+  }, [showCallPreJoinScreen, isInThisRoomCall, setPreJoinRoomId, startCall, room]);
 
   return { entryState, enterVoiceRoom };
 };

@@ -1,6 +1,6 @@
 import React, { lazy, Suspense, useEffect, useState } from 'react';
 import { useAtomValue } from 'jotai';
-import { callStateAtom } from '../../state/call';
+import { callPreJoinRoomIdAtom, callStateAtom } from '../../state/call';
 import {
   respondDesktopScreenshareSource,
   subscribeDesktopScreenshareSourceRequest,
@@ -28,6 +28,12 @@ const useIsCallActive = (): boolean => {
   return callState.status !== 'idle' && callState.status !== 'failed';
 };
 
+const useIsCallSurfaceVisible = (): boolean => {
+  const isCallActive = useIsCallActive();
+  const preJoinRoomId = useAtomValue(callPreJoinRoomIdAtom);
+  return isCallActive || preJoinRoomId !== undefined;
+};
+
 export function CallBarGate() {
   const isCallActive = useIsCallActive();
   if (!isCallActive) return null;
@@ -39,8 +45,8 @@ export function CallBarGate() {
 }
 
 export function CallScreenGate() {
-  const isCallActive = useIsCallActive();
-  if (!isCallActive) return null;
+  const isCallSurfaceVisible = useIsCallSurfaceVisible();
+  if (!isCallSurfaceVisible) return null;
   return (
     <Suspense fallback={null}>
       <LazyCallScreen />
@@ -49,8 +55,8 @@ export function CallScreenGate() {
 }
 
 export function CallPaneGate() {
-  const isCallActive = useIsCallActive();
-  if (!isCallActive) return null;
+  const isCallSurfaceVisible = useIsCallSurfaceVisible();
+  if (!isCallSurfaceVisible) return null;
   return (
     <Suspense fallback={null}>
       <LazyCallPane />

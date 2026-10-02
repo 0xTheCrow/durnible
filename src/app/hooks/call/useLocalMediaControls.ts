@@ -10,6 +10,7 @@ import {
   getScreenshareCaptureOptions,
   getScreenshareEncoding,
 } from '../../plugins/call/screenshare';
+import { checkIsCaptureCancelled } from '../../plugins/call/localMedia';
 
 export type LocalMediaState = {
   isMicrophoneEnabled: boolean;
@@ -116,10 +117,7 @@ export const useLocalMediaControls = (
         }
       );
     } catch (error) {
-      const isCancelled =
-        error instanceof DOMException &&
-        (error.name === 'NotAllowedError' || error.name === 'AbortError');
-      if (!isCancelled) {
+      if (!checkIsCaptureCancelled(error)) {
         console.error('useLocalMediaControls: failed to toggle screenshare', error);
       }
     }

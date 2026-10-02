@@ -9,7 +9,7 @@ import { useCallVideoStreamStats } from '../../hooks/call/useCallVideoStreamStat
 import { useScreenshareSenderStats } from '../../hooks/call/useScreenshareSenderStats';
 import { useScreenshareAudioSenderStats } from '../../hooks/call/useScreenshareAudioSenderStats';
 import { resolveCallParticipant } from '../../utils/call';
-import { CallScreenQualityMenu } from './CallScreenQualityMenu';
+import { CallScreenQualityMenu, ScreenshareSenderStatsSummary } from './CallScreenQualityMenu';
 import * as css from './CallPane.css';
 
 const getResolutionLabel = (stats: {
@@ -73,9 +73,13 @@ export function CallSpotlightBar({
       </Box>
       {isOwnScreenshare && (
         <CallScreenQualityMenu
-          senderStats={senderStats}
-          audioSenderStats={audioSenderStats}
-          isScreenshareAudioEnabled={entry.isScreenshareAudioEnabled}
+          stats={
+            <ScreenshareSenderStatsSummary
+              senderStats={senderStats}
+              audioSenderStats={audioSenderStats}
+              isScreenshareAudioEnabled={entry.isScreenshareAudioEnabled}
+            />
+          }
         />
       )}
       <Chip

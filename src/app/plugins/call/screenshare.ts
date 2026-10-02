@@ -34,6 +34,16 @@ export const SCREENSHARE_AUDIO_BITRATE_KBPS_OPTIONS: ScreenshareAudioBitrateKbps
   48, 64, 96, 128,
 ];
 
+export const formatScreenshareStreamLine = (
+  width: number | undefined,
+  height: number | undefined,
+  frameRate: number | undefined
+): string => {
+  const size = width && height ? `${width}×${height}` : 'unknown';
+  const rate = frameRate !== undefined ? `${Math.round(frameRate)} fps` : 'unknown';
+  return `${size} · ${rate}`;
+};
+
 export const getScreenshareCaptureOptions = (
   resolution: ScreenshareResolution,
   maxFrameRate: ScreenshareMaxFrameRate,

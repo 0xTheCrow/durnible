@@ -1,8 +1,8 @@
 import type { TouchEvent as ReactTouchEvent } from 'react';
 import React from 'react';
-import { useAtomValue, useSetAtom } from 'jotai';
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { Box, Header, Icon, Icons, Modal, Text } from 'folds';
-import { callStateAtom, isCallPaneCollapsedAtom } from '../../state/call';
+import { callPreJoinRoomIdAtom, callStateAtom, isCallPaneCollapsedAtom } from '../../state/call';
 import { settingsAtom } from '../../state/settings';
 import { useSetting } from '../../state/hooks/settings';
 import type { CallConnection } from '../../plugins/call/CallConnection';
@@ -25,6 +25,7 @@ import { CallStage } from './CallStage';
 import { CallControlButton } from './CallControlButton';
 import { CallMasterVolumeMenu } from './CallMasterVolumeMenu';
 import { CallEncryptionDebugPanel } from './CallEncryptionDebugPanel';
+import { CallPreJoinScreen } from './CallPreJoin';
 import * as paneCss from './CallPane.css';
 import * as css from './CallScreen.css';
 
@@ -182,12 +183,27 @@ export function CallScreen() {
   const callState = useAtomValue(callStateAtom);
   const isCollapsed = useAtomValue(isCallPaneCollapsedAtom);
   const setIsCollapsed = useSetAtom(isCallPaneCollapsedAtom);
+  const [preJoinRoomId, setPreJoinRoomId] = useAtom(callPreJoinRoomIdAtom);
+
+  const isMobile = screenSize === ScreenSize.Mobile;
+  if (isMobile && preJoinRoomId) {
+    return (
+      <OverlayModal
+        open
+        onClose={() => setPreJoinRoomId(undefined)}
+        backdrop={false}
+        focusTrapOptions={{ clickOutsideDeactivates: false }}
+      >
+        <CallPreJoinScreen roomId={preJoinRoomId} />
+      </OverlayModal>
+    );
+  }
 
   const connection =
     callState.status === 'connected' || callState.status === 'reconnecting'
       ? callState.connection
       : undefined;
-  const isOpen = screenSize === ScreenSize.Mobile && connection !== undefined && !isCollapsed;
+  const isOpen = isMobile && connection !== undefined && !isCollapsed;
 
   return (
     <OverlayModal

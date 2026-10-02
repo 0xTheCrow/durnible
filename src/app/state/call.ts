@@ -18,6 +18,8 @@ export const activeCallRoomIdAtom = atom<string | undefined>((get) => {
 
 export const isCallPaneCollapsedAtom = atom(false);
 
+export const callPreJoinRoomIdAtom = atom<string | undefined>(undefined);
+
 export const isCallDeafenedAtom = atom(false);
 
 export type ActiveCallParticipantEntry = {

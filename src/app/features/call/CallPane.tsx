@@ -1,17 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef } from 'react';
 import { useAtomValue, useSetAtom } from 'jotai';
-import {
-  Box,
-  Header,
-  Icon,
-  Icons,
-  PopOutContainerProvider,
-  Text,
-  TooltipContainerProvider,
-} from 'folds';
-import { draggable } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
-import classNames from 'classnames';
-import { callStateAtom, isCallPaneCollapsedAtom } from '../../state/call';
+import { Box, Icons } from 'folds';
+import { callPreJoinRoomIdAtom, callStateAtom, isCallPaneCollapsedAtom } from '../../state/call';
 import { settingsAtom } from '../../state/settings';
 import { useSetting } from '../../state/hooks/settings';
 import type { CallConnection } from '../../plugins/call/CallConnection';
@@ -21,16 +11,14 @@ import { useLocalMediaControls } from '../../hooks/call/useLocalMediaControls';
 import { useCallDeafen } from '../../hooks/call/useCallDeafen';
 import { useCallMemberships } from '../../hooks/useCallMemberships';
 import { checkIsFullscreenSupported, useFullscreen } from '../../hooks/useFullscreen';
-import { checkIsSideDock, useCallPaneDock, useCallPaneResize } from '../../hooks/useCallPaneLayout';
 import { useRoomName } from '../../hooks/useRoomMeta';
 import { useCallActions } from './CallProvider';
 import { CallStage } from './CallStage';
-import { CallPaneDockMenu } from './CallPaneDockMenu';
 import { CallControlButton } from './CallControlButton';
 import { CallMasterVolumeMenu } from './CallMasterVolumeMenu';
 import { CallEncryptionDebugPanel } from './CallEncryptionDebugPanel';
-import { CALL_PANE_DRAG_TYPE, CallPaneDockZones } from './CallPaneDockZones';
-import * as paneResizeCss from '../../styles/PaneResizeHandle.css';
+import { CallPaneFrame } from './CallPaneFrame';
+import { CallPreJoinPane } from './CallPreJoin';
 import * as css from './CallPane.css';
 
 type ConnectedCallPaneProps = {
@@ -45,29 +33,7 @@ function ConnectedCallPane({ connection, isReconnecting }: ConnectedCallPaneProp
   const memberships = useCallMemberships(matrixRoom);
   const roomName = useRoomName(matrixRoom);
   const paneRef = useRef<HTMLDivElement>(null);
-  const headerRef = useRef<HTMLDivElement>(null);
   const { isFullscreen, toggleFullscreen } = useFullscreen(paneRef);
-  const { dock, setDock, availableDocks, isDockDragEnabled } = useCallPaneDock();
-  const { paneSize, isResizing, handleResizePointerDown, handleResizeKeyDown } = useCallPaneResize(
-    paneRef,
-    dock
-  );
-  const isDockDraggable = isDockDragEnabled && !isFullscreen;
-  const [isDraggingPane, setIsDraggingPane] = useState(false);
-
-  useEffect(() => {
-    const headerElement = headerRef.current;
-    if (!headerElement || !isDockDraggable) return undefined;
-    return draggable({
-      element: headerElement,
-      getInitialData: () => ({ type: CALL_PANE_DRAG_TYPE }),
-      onDragStart: () => setIsDraggingPane(true),
-      onDrop: () => setIsDraggingPane(false),
-    });
-  }, [isDockDraggable]);
-
-  const isSideDock = checkIsSideDock(dock);
-  const portalContainer = isFullscreen ? paneRef.current ?? undefined : undefined;
   const {
     isMicrophoneEnabled,
     isCameraEnabled,
@@ -80,144 +46,97 @@ function ConnectedCallPane({ connection, isReconnecting }: ConnectedCallPaneProp
   const [developerTools] = useSetting(settingsAtom, 'developerTools');
 
   return (
-    <div
-      ref={paneRef}
-      className={classNames(css.CallPane, css.CallPaneDockBorder[dock])}
-      style={isFullscreen ? undefined : { [isSideDock ? 'width' : 'height']: paneSize }}
+    <CallPaneFrame
+      paneRef={paneRef}
+      title={roomName}
+      subtitle={isReconnecting ? 'Reconnecting…' : undefined}
+      isFullscreen={isFullscreen}
+      headerActions={
+        <CallControlButton
+          size="300"
+          radii="300"
+          onClick={() => setIsCollapsed(true)}
+          label="Collapse Call"
+          icon={Icons.ChevronLeft}
+        />
+      }
     >
-      <TooltipContainerProvider value={portalContainer}>
-        <PopOutContainerProvider value={portalContainer}>
-          {!isFullscreen && (
-            <button
-              type="button"
-              className={classNames(
-                paneResizeCss.PaneResizeHandle,
-                isSideDock
-                  ? paneResizeCss.PaneResizeHandleSide
-                  : paneResizeCss.PaneResizeHandleHorizontal,
-                paneResizeCss.PaneResizeHandleAnchor[dock]
-              )}
-              data-resizing={isResizing}
-              onPointerDown={handleResizePointerDown}
-              onKeyDown={handleResizeKeyDown}
-              aria-label="Resize Call Panel"
-            />
-          )}
-          <Header
-            ref={headerRef}
-            size="600"
-            variant="Surface"
-            className={classNames(
-              css.CallPaneHeader,
-              isDockDraggable && css.CallPaneHeaderDraggable
-            )}
-          >
-            <Icon size="100" src={Icons.Phone} filled />
-            <Box grow="Yes" direction="Column">
-              <Text size="T300" truncate>
-                <b>{roomName}</b>
-              </Text>
-              {isReconnecting && (
-                <Text size="T200" priority="300">
-                  Reconnecting…
-                </Text>
-              )}
-            </Box>
-            {!isFullscreen && (
-              <CallPaneDockMenu dock={dock} availableDocks={availableDocks} onDock={setDock} />
-            )}
-            <CallControlButton
-              size="300"
-              radii="300"
-              onClick={() => setIsCollapsed(true)}
-              label="Collapse Call"
-              icon={Icons.ChevronLeft}
-            />
-          </Header>
+      {developerTools && <CallEncryptionDebugPanel livekitRoom={livekitRoom} />}
 
-          {developerTools && <CallEncryptionDebugPanel livekitRoom={livekitRoom} />}
+      <CallStage room={matrixRoom} entries={entries} memberships={memberships} />
 
-          <CallStage room={matrixRoom} entries={entries} memberships={memberships} />
-
-          <Box
-            className={css.CallPaneControls}
-            alignItems="Center"
-            justifyContent="Center"
-            gap="200"
-          >
-            <CallControlButton
-              size="400"
-              radii="Pill"
-              variant={isMicrophoneEnabled ? 'SurfaceVariant' : 'Critical'}
-              onClick={() => toggleMicrophone()}
-              label={isMicrophoneEnabled ? 'Mute Microphone' : 'Unmute Microphone'}
-              icon={isMicrophoneEnabled ? Icons.Mic : Icons.MicMute}
-              aria-pressed={!isMicrophoneEnabled}
-            />
-            <CallControlButton
-              size="400"
-              radii="Pill"
-              variant={isDeafened ? 'Critical' : 'SurfaceVariant'}
-              onClick={() => toggleDeafen()}
-              label={isDeafened ? 'Undeafen' : 'Deafen'}
-              icon={Icons.Headphone}
-              isIconFilled={isDeafened}
-              aria-pressed={isDeafened}
-            />
-            <CallMasterVolumeMenu room={matrixRoom} entries={entries} memberships={memberships} />
-            <CallControlButton
-              size="400"
-              radii="Pill"
-              variant={isCameraEnabled ? 'Success' : 'SurfaceVariant'}
-              onClick={() => toggleCamera()}
-              label={isCameraEnabled ? 'Turn Off Camera' : 'Turn On Camera'}
-              icon={isCameraEnabled ? Icons.VideoCamera : Icons.VideoCameraMute}
-              aria-pressed={isCameraEnabled}
-            />
-            {isScreenshareSupported() && (
-              <CallControlButton
-                size="400"
-                radii="Pill"
-                variant={isScreenshareEnabled ? 'Success' : 'SurfaceVariant'}
-                onClick={() => toggleScreenshare()}
-                label={isScreenshareEnabled ? 'Stop Sharing Screen' : 'Share Screen'}
-                icon={Icons.Monitor}
-                aria-pressed={isScreenshareEnabled}
-              />
-            )}
-            {checkIsFullscreenSupported() && (
-              <CallControlButton
-                size="400"
-                radii="Pill"
-                variant={isFullscreen ? 'Success' : 'SurfaceVariant'}
-                onClick={toggleFullscreen}
-                label={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
-                icon={Icons.External}
-                aria-pressed={isFullscreen}
-              />
-            )}
-            <CallControlButton
-              size="400"
-              radii="Pill"
-              variant="Critical"
-              onClick={() => endCall()}
-              label="Leave Call"
-              icon={Icons.Phone}
-              isIconFilled
-            />
-          </Box>
-
-          {isDraggingPane && <CallPaneDockZones availableDocks={availableDocks} onDock={setDock} />}
-        </PopOutContainerProvider>
-      </TooltipContainerProvider>
-    </div>
+      <Box className={css.CallPaneControls} alignItems="Center" justifyContent="Center" gap="200">
+        <CallControlButton
+          size="400"
+          radii="Pill"
+          variant={isMicrophoneEnabled ? 'SurfaceVariant' : 'Critical'}
+          onClick={() => toggleMicrophone()}
+          label={isMicrophoneEnabled ? 'Mute Microphone' : 'Unmute Microphone'}
+          icon={isMicrophoneEnabled ? Icons.Mic : Icons.MicMute}
+          aria-pressed={!isMicrophoneEnabled}
+        />
+        <CallControlButton
+          size="400"
+          radii="Pill"
+          variant={isDeafened ? 'Critical' : 'SurfaceVariant'}
+          onClick={() => toggleDeafen()}
+          label={isDeafened ? 'Undeafen' : 'Deafen'}
+          icon={Icons.Headphone}
+          isIconFilled={isDeafened}
+          aria-pressed={isDeafened}
+        />
+        <CallMasterVolumeMenu room={matrixRoom} entries={entries} memberships={memberships} />
+        <CallControlButton
+          size="400"
+          radii="Pill"
+          variant={isCameraEnabled ? 'Success' : 'SurfaceVariant'}
+          onClick={() => toggleCamera()}
+          label={isCameraEnabled ? 'Turn Off Camera' : 'Turn On Camera'}
+          icon={isCameraEnabled ? Icons.VideoCamera : Icons.VideoCameraMute}
+          aria-pressed={isCameraEnabled}
+        />
+        {isScreenshareSupported() && (
+          <CallControlButton
+            size="400"
+            radii="Pill"
+            variant={isScreenshareEnabled ? 'Success' : 'SurfaceVariant'}
+            onClick={() => toggleScreenshare()}
+            label={isScreenshareEnabled ? 'Stop Sharing Screen' : 'Share Screen'}
+            icon={Icons.Monitor}
+            aria-pressed={isScreenshareEnabled}
+          />
+        )}
+        {checkIsFullscreenSupported() && (
+          <CallControlButton
+            size="400"
+            radii="Pill"
+            variant={isFullscreen ? 'Success' : 'SurfaceVariant'}
+            onClick={toggleFullscreen}
+            label={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+            icon={Icons.External}
+            aria-pressed={isFullscreen}
+          />
+        )}
+        <CallControlButton
+          size="400"
+          radii="Pill"
+          variant="Critical"
+          onClick={() => endCall()}
+          label="Leave Call"
+          icon={Icons.Phone}
+          isIconFilled
+        />
+      </Box>
+    </CallPaneFrame>
   );
 }
 
 export function CallPane() {
   const callState = useAtomValue(callStateAtom);
   const isCollapsed = useAtomValue(isCallPaneCollapsedAtom);
+  const preJoinRoomId = useAtomValue(callPreJoinRoomIdAtom);
 
+  if (preJoinRoomId) return <CallPreJoinPane roomId={preJoinRoomId} />;
   if (isCollapsed) return null;
   if (callState.status !== 'connected' && callState.status !== 'reconnecting') return null;
 

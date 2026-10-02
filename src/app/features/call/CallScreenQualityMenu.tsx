@@ -1,4 +1,4 @@
-import type { MouseEventHandler } from 'react';
+import type { MouseEventHandler, ReactNode } from 'react';
 import React, { useState } from 'react';
 import type { RectCords } from 'folds';
 import { Box, Chip, Icon, Icons, Menu, MenuItem, PopOut, Text, config, toRem } from 'folds';
@@ -17,19 +17,62 @@ import {
   SCREENSHARE_MAX_FRAME_RATE_OPTIONS,
   SCREENSHARE_RESOLUTIONS,
   SCREENSHARE_RESOLUTION_OPTIONS,
+  formatScreenshareStreamLine,
 } from '../../plugins/call/screenshare';
 import { stopPropagation } from '../../utils/keyboard';
 
-type CallScreenQualityMenuProps = {
+type ScreenshareSenderStatsSummaryProps = {
   senderStats?: ScreenshareSenderStats;
   audioSenderStats?: ScreenshareAudioSenderStats;
   isScreenshareAudioEnabled: boolean;
 };
-export function CallScreenQualityMenu({
+export function ScreenshareSenderStatsSummary({
   senderStats,
   audioSenderStats,
   isScreenshareAudioEnabled,
-}: CallScreenQualityMenuProps) {
+}: ScreenshareSenderStatsSummaryProps) {
+  const formatAudioLine = (): string => {
+    if (!isScreenshareAudioEnabled) return 'not shared';
+    if (!audioSenderStats) return 'unknown';
+    return `${Math.round(audioSenderStats.bitsPerSecond / 1000)} kbps`;
+  };
+
+  return (
+    <>
+      {senderStats && (
+        <>
+          <Text size="T200" priority="400">
+            Capturing{' '}
+            {formatScreenshareStreamLine(
+              senderStats.captureWidth,
+              senderStats.captureHeight,
+              senderStats.captureFrameRate
+            )}
+          </Text>
+          <Text size="T200" priority="400">
+            Sending{' '}
+            {formatScreenshareStreamLine(
+              senderStats.frameWidth,
+              senderStats.frameHeight,
+              senderStats.framesPerSecond
+            )}
+          </Text>
+          <Text size="T200" priority="400">
+            Limited by {senderStats.qualityLimitationReason ?? 'unknown'}
+          </Text>
+        </>
+      )}
+      <Text size="T200" priority="400">
+        Audio {formatAudioLine()}
+      </Text>
+    </>
+  );
+}
+
+type CallScreenQualityMenuProps = {
+  stats?: ReactNode;
+};
+export function CallScreenQualityMenu({ stats }: CallScreenQualityMenuProps) {
   const [menuAnchor, setMenuAnchor] = useState<RectCords>();
   const [resolution, setResolution] = useSetting(settingsAtom, 'screenshareResolution');
   const [maxFrameRate, setMaxFrameRate] = useSetting(settingsAtom, 'screenshareMaxFrameRate');
@@ -55,22 +98,6 @@ export function CallScreenQualityMenu({
     setMenuAnchor(undefined);
   };
 
-  const formatStreamLine = (
-    width: number | undefined,
-    height: number | undefined,
-    frameRate: number | undefined
-  ): string => {
-    const size = width && height ? `${width}×${height}` : 'unknown';
-    const rate = frameRate !== undefined ? `${Math.round(frameRate)} fps` : 'unknown';
-    return `${size} · ${rate}`;
-  };
-
-  const formatAudioLine = (): string => {
-    if (!isScreenshareAudioEnabled) return 'not shared';
-    if (!audioSenderStats) return 'unknown';
-    return `${Math.round(audioSenderStats.bitsPerSecond / 1000)} kbps`;
-  };
-
   return (
     <PopOut
       anchor={menuAnchor}
@@ -94,34 +121,7 @@ export function CallScreenQualityMenu({
               gap="100"
               style={{ padding: config.space.S200, width: toRem(232) }}
             >
-              <Box direction="Column">
-                {senderStats && (
-                  <>
-                    <Text size="T200" priority="400">
-                      Capturing{' '}
-                      {formatStreamLine(
-                        senderStats.captureWidth,
-                        senderStats.captureHeight,
-                        senderStats.captureFrameRate
-                      )}
-                    </Text>
-                    <Text size="T200" priority="400">
-                      Sending{' '}
-                      {formatStreamLine(
-                        senderStats.frameWidth,
-                        senderStats.frameHeight,
-                        senderStats.framesPerSecond
-                      )}
-                    </Text>
-                    <Text size="T200" priority="400">
-                      Limited by {senderStats.qualityLimitationReason ?? 'unknown'}
-                    </Text>
-                  </>
-                )}
-                <Text size="T200" priority="400">
-                  Audio {formatAudioLine()}
-                </Text>
-              </Box>
+              {stats && <Box direction="Column">{stats}</Box>}
 
               <Text size="L400">Resolution</Text>
               {SCREENSHARE_RESOLUTION_OPTIONS.map((resolutionOption) => (

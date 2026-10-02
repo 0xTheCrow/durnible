@@ -7,6 +7,10 @@ export type MediaDevicePreferences = {
 export const isScreenshareSupported = (): boolean =>
   typeof navigator.mediaDevices?.getDisplayMedia === 'function';
 
+export const checkIsCaptureCancelled = (error: unknown): boolean =>
+  error instanceof DOMException &&
+  (error.name === 'NotAllowedError' || error.name === 'AbortError');
+
 export const requestMediaPermission = async (
   constraints: MediaStreamConstraints
 ): Promise<boolean> => {

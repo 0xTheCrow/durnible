@@ -235,6 +235,24 @@ export const CallTileName = style({
   color: color.SurfaceVariant.OnContainer,
 });
 
+export const CallPreJoinStage = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: config.space.S300,
+  padding: config.space.S300,
+  minWidth: 0,
+  minHeight: 0,
+  overflowY: 'auto',
+});
+
+export const CallPreJoinPreview = style({
+  flex: '1 1 0',
+  minHeight: toRem(120),
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+});
+
 export const CallPaneControls = style({
   padding: config.space.S200,
   borderTop: `${config.borderWidth.B300} solid ${color.Surface.ContainerLine}`,
