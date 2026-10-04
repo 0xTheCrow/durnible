@@ -16,8 +16,8 @@ import {
 import * as css from './UploadQueue.css';
 import { UploadStatus, useBindUploadAtom } from '../../state/upload';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
-import { useMediaConfig } from '../../hooks/useMediaConfig';
-import { useObjectURL } from '../../hooks/useObjectURL';
+import { useMediaConfig } from '../../hooks/server/useMediaConfig';
+import { useObjectURL } from '../../hooks/browser/useObjectURL';
 import type { UploadContent } from '../../utils/matrix';
 import { bytesToSize, getFileTypeIcon } from '../../utils/common';
 import type { UploadItem, UploadMetadata } from '../../state/room/roomInputDrafts';

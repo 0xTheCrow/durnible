@@ -21,9 +21,9 @@ import { SettingTile } from '../../../components/setting-tile';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { StateEvent } from '../../../../types/matrix/room';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
-import { useRoom } from '../../../hooks/useRoom';
-import { useStateEvent } from '../../../hooks/useStateEvent';
-import type { RoomPermissionsAPI } from '../../../hooks/useRoomPermissions';
+import { useRoom } from '../../../hooks/room/useRoom';
+import { useStateEvent } from '../../../hooks/events/useStateEvent';
+import type { RoomPermissionsAPI } from '../../../hooks/members/useRoomPermissions';
 import { OverlayModal } from '../../../components/OverlayModal';
 
 const ROOM_ENC_ALGO = 'm.megolm.v1.aes-sha2';

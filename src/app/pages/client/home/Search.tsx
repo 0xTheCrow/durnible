@@ -2,7 +2,7 @@ import React, { lazy, Suspense, useRef } from 'react';
 import { Box, Icon, Icons, Text, Scroll, IconButton } from 'folds';
 import { Page, PageContent, PageContentCenter, PageHeader } from '../../../components/page';
 import { useHomeRooms } from './useHomeRooms';
-import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
+import { ScreenSize, useScreenSizeContext } from '../../../hooks/browser/useScreenSize';
 import { BackRouteHandler } from '../../../components/BackRouteHandler';
 
 const MessageSearch = lazy(() =>

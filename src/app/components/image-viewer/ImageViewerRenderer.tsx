@@ -7,7 +7,7 @@ import { ImageViewer } from './ImageViewer';
 import { ImageViewerModal } from '../../styles/Modal.css';
 import { OverlayModal } from '../OverlayModal';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
-import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
+import { useMediaAuthentication } from '../../hooks/server/useMediaAuthentication';
 import { decryptFile, downloadEncryptedMedia, mxcUrlToHttp } from '../../utils/matrix';
 import { getBlobSafeImageMimeType } from '../../utils/mimeTypes';
 

@@ -3,7 +3,7 @@ import { Box, Button, config, Icon, IconButton, Icons, Scroll, Text } from 'fold
 import { Page, PageContent, PageHeader } from '../page';
 import { SequenceCard } from '../sequence-card';
 import { SettingTile } from '../setting-tile';
-import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
+import { ScreenSize, useScreenSizeContext } from '../../hooks/browser/useScreenSize';
 import { SettingsCardStyle } from '../../styles/SettingsCard.css';
 import type { SettingsSearchEntry } from './types';
 import type { SettingsSearchState } from './useSettingsSearch';

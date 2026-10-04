@@ -11,7 +11,11 @@ import {
 } from 'folds';
 import { draggable } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import classNames from 'classnames';
-import { checkIsSideDock, useCallPaneDock, useCallPaneResize } from '../../hooks/useCallPaneLayout';
+import {
+  checkIsSideDock,
+  useCallPaneDock,
+  useCallPaneResize,
+} from '../../hooks/call/useCallPaneLayout';
 import { CallPaneDockMenu } from './CallPaneDockMenu';
 import { CALL_PANE_DRAG_TYPE, CallPaneDockZones } from './CallPaneDockZones';
 import * as paneResizeCss from '../../styles/PaneResizeHandle.css';

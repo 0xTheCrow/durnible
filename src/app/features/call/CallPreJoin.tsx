@@ -9,7 +9,7 @@ import { callPreJoinRoomIdAtom, isCallPaneCollapsedAtom } from '../../state/call
 import { settingsAtom } from '../../state/settings';
 import { useSetting } from '../../state/hooks/settings';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
-import { useRoomName } from '../../hooks/useRoomMeta';
+import { useRoomName } from '../../hooks/room/useRoomMeta';
 import { useInterval } from '../../hooks/useInterval';
 import { useMicrophoneInputLevel } from '../../hooks/call/useMicrophoneInputLevel';
 import { useAudioTrackLevel } from '../../hooks/call/useAudioTrackLevel';

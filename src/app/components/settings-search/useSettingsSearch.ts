@@ -1,6 +1,6 @@
 import type { ChangeEventHandler, FormEventHandler } from 'react';
 import { useState } from 'react';
-import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
+import { ScreenSize, useScreenSizeContext } from '../../hooks/browser/useScreenSize';
 
 export type SettingsSearchState = {
   searchInput: string;

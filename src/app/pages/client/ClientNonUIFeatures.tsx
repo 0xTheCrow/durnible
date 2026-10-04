@@ -23,7 +23,7 @@ import { allInvitesAtom } from '../../state/room-list/inviteList';
 import { usePreviousValue } from '../../hooks/usePreviousValue';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { getInboxInvitesPath } from '../pathUtils';
-import { useRoomNavigate } from '../../hooks/useRoomNavigate';
+import { useRoomNavigate } from '../../hooks/router/useRoomNavigate';
 import { getRoomPathWithoutEventId, setLastVisitedRoomPath } from '../lastVisitedRoomPath';
 import {
   getMemberDisplayName,
@@ -36,9 +36,9 @@ import { NotificationType } from '../../../types/matrix/room';
 import { getMxIdLocalPart, mxcUrlToHttp } from '../../utils/matrix';
 import { useSelectedRoom } from '../../hooks/router/useSelectedRoom';
 import { useInboxNotificationsSelected } from '../../hooks/router/useInbox';
-import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
+import { useMediaAuthentication } from '../../hooks/server/useMediaAuthentication';
 import { addLiveMessageToCache } from '../../services/localSearch';
-import { useKeyDown } from '../../hooks/useKeyDown';
+import { useKeyDown } from '../../hooks/browser/useKeyDown';
 import { useKeybind } from '../../state/hooks/keybinds';
 import { KeybindAction } from '../../state/keybinds';
 

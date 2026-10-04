@@ -20,8 +20,8 @@ import {
   downloadMedia,
   mxcUrlToHttp,
 } from '../../../utils/matrix';
-import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
-import { useRevokeObjectURL } from '../../../hooks/useObjectURL';
+import { useMediaAuthentication } from '../../../hooks/server/useMediaAuthentication';
+import { useRevokeObjectURL } from '../../../hooks/browser/useObjectURL';
 import { saveFile } from '../../../utils/saveFile';
 import { ModalWide, PdfViewerModal } from '../../../styles/Modal.css';
 

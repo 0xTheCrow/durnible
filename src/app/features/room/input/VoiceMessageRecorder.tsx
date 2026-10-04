@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Box, Chip, Icon, IconButton, Icons, Text, color, config, toRem } from 'folds';
 import { Slider } from '../../../components/Slider';
-import { useVoiceRecording, VoiceRecordingStatus } from '../../../hooks/useVoiceRecording';
+import { useVoiceRecording, VoiceRecordingStatus } from '../../../hooks/media/useVoiceRecording';
 import { useMediaPlay, useMediaPlayTimeCallback, useMediaSeek } from '../../../hooks/media';
 import { useThrottle } from '../../../hooks/useThrottle';
 import { secondsToMinutesAndSeconds } from '../../../utils/common';

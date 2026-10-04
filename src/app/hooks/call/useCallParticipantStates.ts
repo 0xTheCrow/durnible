@@ -2,7 +2,7 @@ import { useAtomValue } from 'jotai';
 import type { Room } from 'matrix-js-sdk';
 import { activeCallParticipantEntriesAtom, isCallDeafenedAtom } from '../../state/call';
 import { findCallParticipantUserId } from '../../utils/call';
-import { useCallMemberships } from '../useCallMemberships';
+import { useCallMemberships } from './useCallMemberships';
 
 export type CallParticipantAudioState = 'active' | 'muted' | 'deafened';
 

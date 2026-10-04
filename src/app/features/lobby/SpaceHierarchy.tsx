@@ -8,9 +8,9 @@ import type {
   HierarchyItem,
   HierarchyItemRoom,
   HierarchyItemSpace,
-} from '../../hooks/useSpaceHierarchy';
-import { useFetchSpaceHierarchyLevel } from '../../hooks/useSpaceHierarchy';
-import type { PowerLevels } from '../../hooks/usePowerLevels';
+} from '../../hooks/space/useSpaceHierarchy';
+import { useFetchSpaceHierarchyLevel } from '../../hooks/space/useSpaceHierarchy';
+import type { PowerLevels } from '../../hooks/members/usePowerLevels';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { SpaceItemCard } from './SpaceItem';
 import type { CanDropCallback } from './DnD';
@@ -19,8 +19,8 @@ import { HierarchyItemMenu } from './HierarchyItemMenu';
 import { RoomItemCard } from './RoomItem';
 import { RoomType, StateEvent } from '../../../types/matrix/room';
 import { SequenceCard } from '../../components/sequence-card';
-import { getRoomCreatorsForRoomId } from '../../hooks/useRoomCreators';
-import { getRoomPermissionsAPI } from '../../hooks/useRoomPermissions';
+import { getRoomCreatorsForRoomId } from '../../hooks/room/useRoomCreators';
+import { getRoomPermissionsAPI } from '../../hooks/members/useRoomPermissions';
 
 type SpaceHierarchyProps = {
   summary: IHierarchyRoom | undefined;

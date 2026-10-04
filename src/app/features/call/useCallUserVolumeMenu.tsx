@@ -2,8 +2,8 @@ import type { HTMLAttributes, ReactNode } from 'react';
 import React, { useState } from 'react';
 import type { RectCords } from 'folds';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
-import type { LongPressPosition } from '../../hooks/useLongPress';
-import { useLongPress } from '../../hooks/useLongPress';
+import type { LongPressPosition } from '../../hooks/gesture/useLongPress';
+import { useLongPress } from '../../hooks/gesture/useLongPress';
 import { CallUserVolumeMenu } from './CallUserVolumeMenu';
 
 type CallUserVolumeMenuState = {

@@ -3,7 +3,7 @@ import React from 'react';
 import type { AuthDict, IAuthData, UIAFlow } from 'matrix-js-sdk';
 import { AuthType } from 'matrix-js-sdk';
 import { getUIAFlowForStages } from '../utils/matrix-uia';
-import { useSupportedUIAFlows, useUIACompleted, useUIAFlow } from '../hooks/useUIAFlows';
+import { useSupportedUIAFlows, useUIACompleted, useUIAFlow } from '../hooks/auth/useUIAFlows';
 import { UIAFlowOverlay } from './UIAFlowOverlay';
 import { PasswordStage, SSOStage } from './uia-stages';
 import { useMatrixClient } from '../hooks/useMatrixClient';

@@ -23,7 +23,7 @@ import { OverlayModal } from '../../components/OverlayModal';
 import { RoomAvatar, RoomIcon } from '../../components/room-avatar';
 import { SequenceCard } from '../../components/sequence-card';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
-import type { HierarchyItem } from '../../hooks/useSpaceHierarchy';
+import type { HierarchyItem } from '../../hooks/space/useSpaceHierarchy';
 import { millify } from '../../plugins/millify';
 import { LocalRoomSummaryLoader } from '../../components/RoomSummaryLoader';
 import { UseStateProvider } from '../../components/UseStateProvider';
@@ -36,7 +36,7 @@ import { AsyncStatus, useAsyncCallback } from '../../hooks/useAsyncCallback';
 import { getDirectRoomAvatarUrl, getRoomAvatarUrl, isCallRoom } from '../../utils/room';
 import { ItemDraggableTarget, useDraggableItem } from './DnD';
 import { mxcUrlToHttp } from '../../utils/matrix';
-import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
+import { useMediaAuthentication } from '../../hooks/server/useMediaAuthentication';
 
 type RoomJoinButtonProps = {
   roomId: string;

@@ -7,9 +7,9 @@ import { useCallActions } from './CallProvider';
 import { CallControlButton } from './CallControlButton';
 import { useLocalMediaControls } from '../../hooks/call/useLocalMediaControls';
 import { useCallDeafen } from '../../hooks/call/useCallDeafen';
-import { useRoomNavigate } from '../../hooks/useRoomNavigate';
-import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
-import { useRoomName } from '../../hooks/useRoomMeta';
+import { useRoomNavigate } from '../../hooks/router/useRoomNavigate';
+import { ScreenSize, useScreenSizeContext } from '../../hooks/browser/useScreenSize';
+import { useRoomName } from '../../hooks/room/useRoomMeta';
 import * as css from './CallStrip.css';
 
 type ConnectedCallBarProps = {

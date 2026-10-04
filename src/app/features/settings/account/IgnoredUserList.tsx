@@ -7,7 +7,7 @@ import { SettingTile } from '../../../components/setting-tile';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { isUserId } from '../../../utils/matrix';
-import { useIgnoredUsers } from '../../../hooks/useIgnoredUsers';
+import { useIgnoredUsers } from '../../../hooks/members/useIgnoredUsers';
 import { useAlive } from '../../../hooks/useAlive';
 
 function IgnoreUserInput({ userList }: { userList: string[] }) {

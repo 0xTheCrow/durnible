@@ -5,11 +5,15 @@ import { EventType } from 'matrix-js-sdk';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { SettingTile } from '../../../components/setting-tile';
-import type { PowerLevels, PermissionLocation } from '../../../hooks/usePowerLevels';
-import { applyPermissionPower, getPermissionPower } from '../../../hooks/usePowerLevels';
+import type { PowerLevels, PermissionLocation } from '../../../hooks/members/usePowerLevels';
+import { applyPermissionPower, getPermissionPower } from '../../../hooks/members/usePowerLevels';
 import type { PermissionGroup } from './types';
-import { getPowerLevelTag, getPowers, usePowerLevelTags } from '../../../hooks/usePowerLevelTags';
-import { useRoom } from '../../../hooks/useRoom';
+import {
+  getPowerLevelTag,
+  getPowers,
+  usePowerLevelTags,
+} from '../../../hooks/members/usePowerLevelTags';
+import { useRoom } from '../../../hooks/room/useRoom';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { PowerSwitcher } from '../../../components/power';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';

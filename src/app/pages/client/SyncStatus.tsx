@@ -2,9 +2,9 @@ import type { MatrixClient } from 'matrix-js-sdk';
 import { SyncState } from 'matrix-js-sdk';
 import React, { useCallback, useState } from 'react';
 import { Box, config, Line, Text } from 'folds';
-import { useSyncState } from '../../hooks/useSyncState';
+import { useSyncState } from '../../hooks/server/useSyncState';
 import { ContainerColor } from '../../styles/ContainerColor.css';
-import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
+import { ScreenSize, useScreenSizeContext } from '../../hooks/browser/useScreenSize';
 
 type StateData = {
   current: SyncState | null;

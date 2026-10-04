@@ -4,7 +4,7 @@ import { UrlPreview, UrlPreviewContent } from './UrlPreview';
 import {
   getIntersectionObserverEntry,
   useIntersectionObserver,
-} from '../../hooks/useIntersectionObserver';
+} from '../../hooks/browser/useIntersectionObserver';
 import * as css from './UrlPreviewCard.css';
 import { tryDecodeURIComponent } from '../../utils/dom';
 

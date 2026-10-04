@@ -5,7 +5,7 @@ import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { useSpaces } from '../../../state/hooks/roomList';
 import { allRoomsAtom } from '../../../state/room-list/roomList';
 import { useSelectedSpace } from '../../../hooks/router/useSelectedSpace';
-import { SpaceProvider } from '../../../hooks/useSpace';
+import { SpaceProvider } from '../../../hooks/space/useSpace';
 import { JoinBeforeNavigate } from '../../../features/join-before-navigate';
 import { useSearchParamsViaServers } from '../../../hooks/router/useSearchParamsViaServers';
 import { ROUTE_GATE_DEADLINE_MS, useReadinessGate } from '../../../state/readiness';

@@ -10,12 +10,12 @@ import { SequenceCard } from '../../../components/sequence-card';
 import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { SettingTile } from '../../../components/setting-tile';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
-import { useRoom } from '../../../hooks/useRoom';
+import { useRoom } from '../../../hooks/room/useRoom';
 import { StateEvent } from '../../../../types/matrix/room';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
-import { useStateEvent } from '../../../hooks/useStateEvent';
+import { useStateEvent } from '../../../hooks/events/useStateEvent';
 import { stopPropagation } from '../../../utils/keyboard';
-import type { RoomPermissionsAPI } from '../../../hooks/useRoomPermissions';
+import type { RoomPermissionsAPI } from '../../../hooks/members/useRoomPermissions';
 
 const useVisibilityStr = () =>
   useMemo(

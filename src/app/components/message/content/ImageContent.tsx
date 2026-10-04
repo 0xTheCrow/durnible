@@ -16,7 +16,7 @@ import * as css from './style.css';
 import { bytesToSize } from '../../../utils/common';
 import { getBlobSafeImageMimeType, isAnimatedImageMimetype } from '../../../utils/mimeTypes';
 import { decryptFile, downloadEncryptedMedia, mxcUrlToHttp } from '../../../utils/matrix';
-import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
+import { useMediaAuthentication } from '../../../hooks/server/useMediaAuthentication';
 import { validBlurHash } from '../../../utils/blurHash';
 import { imageViewerAtom } from '../../../state/imageViewer';
 import { hiddenImagesAtom, MessageEventIdContext } from '../../../state/hiddenImages';

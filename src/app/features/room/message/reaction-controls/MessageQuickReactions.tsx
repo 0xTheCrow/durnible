@@ -1,7 +1,7 @@
 import { Box, IconButton, Line, Text, as, config } from 'folds';
 import React from 'react';
 import { useMatrixClient } from '../../../../hooks/useMatrixClient';
-import { useRecentEmoji } from '../../../../hooks/useRecentEmoji';
+import { useRecentEmoji } from '../../../../hooks/emoji/useRecentEmoji';
 import * as css from '../styles.css';
 
 export type ReactionHandler = (keyOrMxc: string, shortcode: string) => void;

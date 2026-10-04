@@ -14,7 +14,7 @@ import {
 } from 'folds';
 import React, { useCallback, useRef, useState } from 'react';
 import { OverlayModal } from '../OverlayModal';
-import { useRoom } from '../../hooks/useRoom';
+import { useRoom } from '../../hooks/room/useRoom';
 import { CutoutCard } from '../cutout-card';
 import { SettingTile } from '../setting-tile';
 import { AsyncStatus, useAsyncCallback } from '../../hooks/useAsyncCallback';

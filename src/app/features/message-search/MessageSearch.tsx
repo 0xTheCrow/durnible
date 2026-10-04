@@ -13,7 +13,7 @@ import type { _SearchPathSearchParams } from '../../pages/paths';
 import { useSetting } from '../../state/hooks/settings';
 import { settingsAtom } from '../../state/settings';
 import { SequenceCard } from '../../components/sequence-card';
-import { useRoomNavigate } from '../../hooks/useRoomNavigate';
+import { useRoomNavigate } from '../../hooks/router/useRoomNavigate';
 import { ScrollTopContainer } from '../../components/scroll-top-container';
 import { ContainerColor } from '../../styles/ContainerColor.css';
 import { decodeSearchParamValueArray, encodeSearchParamValueArray } from '../../pages/pathUtils';

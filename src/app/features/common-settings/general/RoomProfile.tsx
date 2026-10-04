@@ -20,13 +20,13 @@ import type { MatrixError } from 'matrix-js-sdk';
 import { EventType, JoinRule } from 'matrix-js-sdk';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
-import { useRoom } from '../../../hooks/useRoom';
+import { useRoom } from '../../../hooks/room/useRoom';
 import {
   useRoomAvatar,
   useRoomJoinRule,
   useRoomName,
   useRoomTopic,
-} from '../../../hooks/useRoomMeta';
+} from '../../../hooks/room/useRoomMeta';
 import { mDirectAtom } from '../../../state/mDirectList';
 import { BreakWord, LineClamp3 } from '../../../styles/Text.css';
 import { LINKIFY_OPTS } from '../../../plugins/react-custom-html-parser';
@@ -34,16 +34,16 @@ import { RoomAvatar, RoomIcon } from '../../../components/room-avatar';
 import { mxcUrlToHttp } from '../../../utils/matrix';
 import { isCallRoom } from '../../../utils/room';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
-import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
+import { useMediaAuthentication } from '../../../hooks/server/useMediaAuthentication';
 import { StateEvent } from '../../../../types/matrix/room';
 import { CompactUploadCardRenderer } from '../../../components/upload-card';
-import { useObjectURL } from '../../../hooks/useObjectURL';
+import { useObjectURL } from '../../../hooks/browser/useObjectURL';
 import type { UploadSuccess } from '../../../state/upload';
 import { createUploadAtom } from '../../../state/upload';
-import { useFilePicker } from '../../../hooks/useFilePicker';
+import { useFilePicker } from '../../../hooks/browser/useFilePicker';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { useAlive } from '../../../hooks/useAlive';
-import type { RoomPermissionsAPI } from '../../../hooks/useRoomPermissions';
+import type { RoomPermissionsAPI } from '../../../hooks/members/useRoomPermissions';
 
 type RoomProfileEditProps = {
   canEditAvatar: boolean;

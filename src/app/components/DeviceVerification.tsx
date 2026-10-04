@@ -9,7 +9,7 @@ import {
   useVerificationRequestReceived,
   useVerifierCancel,
   useVerifierShowSas,
-} from '../hooks/useVerificationRequest';
+} from '../hooks/encryption/useVerificationRequest';
 import { AsyncStatus, useAsyncCallback } from '../hooks/useAsyncCallback';
 import { ContainerColor } from '../styles/ContainerColor.css';
 import { OverlayModal } from './OverlayModal';

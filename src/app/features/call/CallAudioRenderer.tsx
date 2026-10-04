@@ -16,7 +16,7 @@ import {
   setCallUserVolumePreferenceAtom,
 } from '../../state/callVolumePreferences';
 import type { CallConnection } from '../../plugins/call/CallConnection';
-import { useCallMemberships } from '../../hooks/useCallMemberships';
+import { useCallMemberships } from '../../hooks/call/useCallMemberships';
 import { findCallParticipantUserId } from '../../utils/call';
 import { useLivekitParticipants } from '../../hooks/call/useLivekitParticipants';
 import { useParticipantTrackPublications } from '../../hooks/call/useParticipantTrackPublications';

@@ -24,11 +24,11 @@ import LogoSVG from '../../../../public/res/svg/durnible.svg';
 import { ServerPicker } from './ServerPicker';
 import { AutoDiscoveryAction, autoDiscovery } from '../../cs-api';
 import { SpecVersionsLoader } from '../../components/SpecVersionsLoader';
-import { SpecVersionsProvider } from '../../hooks/useSpecVersions';
-import { AutoDiscoveryInfoProvider } from '../../hooks/useAutoDiscoveryInfo';
+import { SpecVersionsProvider } from '../../hooks/server/useSpecVersions';
+import { AutoDiscoveryInfoProvider } from '../../hooks/auth/useAutoDiscoveryInfo';
 import { AuthFlowsLoader } from '../../components/AuthFlowsLoader';
-import { AuthFlowsProvider } from '../../hooks/useAuthFlows';
-import { AuthServerProvider } from '../../hooks/useAuthServer';
+import { AuthFlowsProvider } from '../../hooks/auth/useAuthFlows';
+import { AuthServerProvider } from '../../hooks/auth/useAuthServer';
 import { tryDecodeURIComponent } from '../../utils/dom';
 
 const currentAuthPath = (pathname: string): string => {

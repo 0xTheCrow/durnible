@@ -6,14 +6,14 @@ import type { RoomJoinRulesEventContent } from 'matrix-js-sdk/lib/types';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { SettingTile } from '../../../components/setting-tile';
-import { useRoom } from '../../../hooks/useRoom';
-import { useRoomDirectoryVisibility } from '../../../hooks/useRoomDirectoryVisibility';
+import { useRoom } from '../../../hooks/room/useRoom';
+import { useRoomDirectoryVisibility } from '../../../hooks/room/useRoomDirectoryVisibility';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { StateEvent } from '../../../../types/matrix/room';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
-import { useStateEvent } from '../../../hooks/useStateEvent';
+import { useStateEvent } from '../../../hooks/events/useStateEvent';
 import type { ExtendedJoinRules } from '../../../components/JoinRulesSwitcher';
-import type { RoomPermissionsAPI } from '../../../hooks/useRoomPermissions';
+import type { RoomPermissionsAPI } from '../../../hooks/members/useRoomPermissions';
 
 type RoomPublishProps = {
   permissions: RoomPermissionsAPI;

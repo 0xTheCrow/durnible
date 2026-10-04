@@ -15,7 +15,7 @@ import {
   renderMatrixMention,
 } from '../../plugins/react-custom-html-parser';
 import { getMxIdLocalPart, mxcUrlToHttp } from '../../utils/matrix';
-import { useMatrixEventRenderer } from '../../hooks/useMatrixEventRenderer';
+import { useMatrixEventRenderer } from '../../hooks/message/useMatrixEventRenderer';
 import type { GetContentCallback } from '../../../types/matrix/room';
 import { MessageEvent, StateEvent } from '../../../types/matrix/room';
 import type { EncryptedFile, ImageInfo } from '../../../types/matrix/common';
@@ -38,13 +38,13 @@ import { getMemberAvatarMxc, getMemberDisplayName, getRoomAvatarUrl } from '../.
 import type { ResultItem } from './useMessageSearch';
 import { SequenceCard } from '../../components/sequence-card';
 import { UserAvatar } from '../../components/user-avatar';
-import { useMentionClickHandler } from '../../hooks/useMentionClickHandler';
-import { useSpoilerClickHandler } from '../../hooks/useSpoilerClickHandler';
-import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
+import { useMentionClickHandler } from '../../hooks/message/useMentionClickHandler';
+import { useSpoilerClickHandler } from '../../hooks/message/useSpoilerClickHandler';
+import { useMediaAuthentication } from '../../hooks/server/useMediaAuthentication';
 import { useSetting } from '../../state/hooks/settings';
 import { settingsAtom } from '../../state/settings';
-import { usePowerLevels } from '../../hooks/usePowerLevels';
-import { usePowerLevelTags } from '../../hooks/usePowerLevelTags';
+import { usePowerLevels } from '../../hooks/members/usePowerLevels';
+import { usePowerLevelTags } from '../../hooks/members/usePowerLevelTags';
 import { useTheme } from '../../hooks/useTheme';
 import { PowerIcon } from '../../components/power';
 import colorMXID from '../../../util/colorMXID';
@@ -52,9 +52,9 @@ import {
   getPowerTagIconSrc,
   useAccessiblePowerTagColors,
   useGetMemberPowerTag,
-} from '../../hooks/useMemberPowerTag';
-import { useRoomCreators } from '../../hooks/useRoomCreators';
-import { useRoomCreatorsTag } from '../../hooks/useRoomCreatorsTag';
+} from '../../hooks/members/useMemberPowerTag';
+import { useRoomCreators } from '../../hooks/room/useRoomCreators';
+import { useRoomCreatorsTag } from '../../hooks/members/useRoomCreatorsTag';
 
 type SearchResultGroupProps = {
   room: Room;

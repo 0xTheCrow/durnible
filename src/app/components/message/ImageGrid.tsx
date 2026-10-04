@@ -11,8 +11,8 @@ import {
 import { BrokenContent } from './MsgTypeRenderers';
 import type { ImageViewerGalleryItem } from '../../state/imageViewer';
 import { imageViewerAtom } from '../../state/imageViewer';
-import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
-import { useElementSizeObserver } from '../../hooks/useElementSizeObserver';
+import { ScreenSize, useScreenSizeContext } from '../../hooks/browser/useScreenSize';
+import { useElementSizeObserver } from '../../hooks/browser/useElementSizeObserver';
 import type { Count } from './imageGridLayout';
 import {
   GRID_MAX_CELLS,

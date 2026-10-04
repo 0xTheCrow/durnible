@@ -8,7 +8,7 @@ import type { ImageUsage } from '../../plugins/custom-emoji';
 import { imageUsageEqual, PackImageReader } from '../../plugins/custom-emoji';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { SettingTile } from '../setting-tile';
-import { useObjectURL } from '../../hooks/useObjectURL';
+import { useObjectURL } from '../../hooks/browser/useObjectURL';
 import type { UploadAtom } from '../../state/upload';
 import { createUploadAtom } from '../../state/upload';
 import { replaceSpaceWithDash } from '../../utils/common';

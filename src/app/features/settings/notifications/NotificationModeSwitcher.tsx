@@ -4,7 +4,10 @@ import type { IPushRule } from 'matrix-js-sdk';
 import type { MouseEventHandler } from 'react';
 import React, { useMemo, useState } from 'react';
 import FocusTrap from 'focus-trap-react';
-import { NotificationMode, useNotificationActionsMode } from '../../../hooks/useNotificationMode';
+import {
+  NotificationMode,
+  useNotificationActionsMode,
+} from '../../../hooks/notifications/useNotificationMode';
 import { stopPropagation } from '../../../utils/keyboard';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 

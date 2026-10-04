@@ -8,13 +8,13 @@ import { DeviceDeleteBtn, DeviceTile } from './DeviceTile';
 import type { AsyncState } from '../../../hooks/useAsyncCallback';
 import { AsyncStatus, useAsync } from '../../../hooks/useAsyncCallback';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
-import { useUIAMatrixError } from '../../../hooks/useUIAFlows';
+import { useUIAMatrixError } from '../../../hooks/auth/useUIAFlows';
 import { DeviceVerificationStatus } from '../../../components/DeviceVerificationStatus';
 import { VerifyOtherDeviceTile } from './Verification';
-import { VerificationStatus } from '../../../hooks/useDeviceVerificationStatus';
-import { useAuthMetadata } from '../../../hooks/useAuthMetadata';
+import { VerificationStatus } from '../../../hooks/encryption/useDeviceVerificationStatus';
+import { useAuthMetadata } from '../../../hooks/auth/useAuthMetadata';
 import { withSearchParam } from '../../../pages/pathUtils';
-import { useAccountManagementActions } from '../../../hooks/useAccountManagement';
+import { useAccountManagementActions } from '../../../hooks/auth/useAccountManagement';
 import { SettingTile } from '../../../components/setting-tile';
 
 type OtherDevicesProps = {

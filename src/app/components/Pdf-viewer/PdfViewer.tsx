@@ -22,7 +22,7 @@ import {
 import FocusTrap from 'focus-trap-react';
 import * as css from './PdfViewer.css';
 import { AsyncStatus } from '../../hooks/useAsyncCallback';
-import { useZoom } from '../../hooks/useZoom';
+import { useZoom } from '../../hooks/gesture/useZoom';
 import { clampZoom } from '../../utils/zoom';
 import { createPage, usePdfDocumentLoader, usePdfJSLoader } from '../../plugins/pdfjs-dist';
 import { stopPropagation } from '../../utils/keyboard';

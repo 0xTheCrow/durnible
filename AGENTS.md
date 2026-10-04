@@ -280,7 +280,7 @@ The metric is the **eager set**: the entry `<script>` plus every `<link rel="mod
 
 ### Conditional
 
-- **Route splitting** in `Router.tsx` — real yield unknown and probably low; measure before committing to it. `components/create-room` is pinned eager by `hooks/useCommands.ts`.
+- **Route splitting** in `Router.tsx` — real yield unknown and probably low; measure before committing to it. `components/create-room` is pinned eager by `hooks/composer/useCommands.ts`.
 - **Auth vs client split** — removing auth from the logged-in bundle (`pages/auth` + `oidc-client-ts`) is ~18 kB gzip; removing the client from the logged-out bundle is ~700 kB, but only for visitors on the login page.
 - **`sanitize-html` + `postcss`** — ~17 kB. Removal, not deferral: it sits on the timeline render path via `utils/sanitize.ts`.
 

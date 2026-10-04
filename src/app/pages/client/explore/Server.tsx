@@ -33,10 +33,10 @@ import type { ExploreServerPathSearchParams } from '../../paths';
 import { getExploreServerPath, withSearchParam } from '../../pathUtils';
 import * as css from './style.css';
 import { allRoomsAtom } from '../../../state/room-list/roomList';
-import { useRoomNavigate } from '../../../hooks/useRoomNavigate';
+import { useRoomNavigate } from '../../../hooks/router/useRoomNavigate';
 import { getMxIdServer } from '../../../utils/matrix';
 import { stopPropagation } from '../../../utils/keyboard';
-import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
+import { ScreenSize, useScreenSizeContext } from '../../../hooks/browser/useScreenSize';
 import { BackRouteHandler } from '../../../components/BackRouteHandler';
 
 const useServerSearchParams = (searchParams: URLSearchParams): ExploreServerPathSearchParams =>

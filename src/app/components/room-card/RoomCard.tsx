@@ -26,11 +26,11 @@ import { AsyncStatus, useAsyncCallback } from '../../hooks/useAsyncCallback';
 import { onEnterOrSpace } from '../../utils/keyboard';
 import { OverlayModal } from '../OverlayModal';
 import { RoomType, StateEvent } from '../../../types/matrix/room';
-import { useJoinedRoomId } from '../../hooks/useJoinedRoomId';
-import { useElementSizeObserver } from '../../hooks/useElementSizeObserver';
+import { useJoinedRoomId } from '../../hooks/room/useJoinedRoomId';
+import { useElementSizeObserver } from '../../hooks/browser/useElementSizeObserver';
 import { getRoomAvatarUrl, getStateEvent } from '../../utils/room';
-import { useStateEventCallback } from '../../hooks/useStateEventCallback';
-import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
+import { useStateEventCallback } from '../../hooks/events/useStateEventCallback';
+import { useMediaAuthentication } from '../../hooks/server/useMediaAuthentication';
 
 type GridColumnCount = '1' | '2' | '3';
 const getGridColumnCount = (gridWidth: number): GridColumnCount => {

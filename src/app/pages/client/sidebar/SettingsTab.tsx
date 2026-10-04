@@ -5,8 +5,8 @@ import { UserAvatar } from '../../../components/user-avatar';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { getMxIdLocalPart, mxcUrlToHttp } from '../../../utils/matrix';
 import { nameInitials } from '../../../utils/common';
-import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
-import { useUserProfile } from '../../../hooks/useUserProfile';
+import { useMediaAuthentication } from '../../../hooks/server/useMediaAuthentication';
+import { useUserProfile } from '../../../hooks/members/useUserProfile';
 import { Modal500 } from '../../../components/Modal500';
 
 const Settings = lazy(() =>

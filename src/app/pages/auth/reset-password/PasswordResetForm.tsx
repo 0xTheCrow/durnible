@@ -16,10 +16,10 @@ import {
 import { useNavigate } from 'react-router-dom';
 import type { AuthDict, MatrixError } from 'matrix-js-sdk';
 import { AuthType, createClient } from 'matrix-js-sdk';
-import { useAutoDiscoveryInfo } from '../../../hooks/useAutoDiscoveryInfo';
+import { useAutoDiscoveryInfo } from '../../../hooks/auth/useAutoDiscoveryInfo';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
-import { useAuthServer } from '../../../hooks/useAuthServer';
-import { usePasswordEmail } from '../../../hooks/usePasswordEmail';
+import { useAuthServer } from '../../../hooks/auth/useAuthServer';
+import { usePasswordEmail } from '../../../hooks/auth/usePasswordEmail';
 import { PasswordInput } from '../../../components/password-input';
 import { ConfirmPasswordMatch } from '../../../components/ConfirmPasswordMatch';
 import { FieldError } from '../FiledError';

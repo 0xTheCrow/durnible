@@ -1,8 +1,8 @@
-import { useRoom } from '../../hooks/useRoom';
-import { usePowerLevels } from '../../hooks/usePowerLevels';
-import { useRoomCreators } from '../../hooks/useRoomCreators';
-import type { RoomPermissionsAPI } from '../../hooks/useRoomPermissions';
-import { useRoomPermissions } from '../../hooks/useRoomPermissions';
+import { useRoom } from '../../hooks/room/useRoom';
+import { usePowerLevels } from '../../hooks/members/usePowerLevels';
+import { useRoomCreators } from '../../hooks/room/useRoomCreators';
+import type { RoomPermissionsAPI } from '../../hooks/members/useRoomPermissions';
+import { useRoomPermissions } from '../../hooks/members/useRoomPermissions';
 
 export const useRoomSettingsPermissions = (): RoomPermissionsAPI => {
   const room = useRoom();

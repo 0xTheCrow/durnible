@@ -13,9 +13,9 @@ import React, {
 import type { Room } from 'matrix-js-sdk';
 import { EmojiBoardTab } from './types';
 import type { GifItem } from '../../utils/gifServer';
-import { useVisualViewportHeight } from '../../hooks/useVisualViewportHeight';
+import { useVisualViewportHeight } from '../../hooks/browser/useVisualViewportHeight';
 import { OverlayModal } from '../OverlayModal';
-import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
+import { ScreenSize, useScreenSizeContext } from '../../hooks/browser/useScreenSize';
 import { EMOJI_BOARD_WIDTH_PX, EMOJI_BOARD_HEIGHT_PX } from './components/styles.css';
 
 const EmojiBoard = lazy(() =>

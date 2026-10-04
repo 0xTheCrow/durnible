@@ -13,12 +13,12 @@ import {
 } from '../../hooks/call/useCallParticipantEntries';
 import { useLocalMediaControls } from '../../hooks/call/useLocalMediaControls';
 import { useCallDeafen } from '../../hooks/call/useCallDeafen';
-import { useCallMemberships } from '../../hooks/useCallMemberships';
-import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
-import { useRoomName } from '../../hooks/useRoomMeta';
+import { useCallMemberships } from '../../hooks/call/useCallMemberships';
+import { ScreenSize, useScreenSizeContext } from '../../hooks/browser/useScreenSize';
+import { useRoomName } from '../../hooks/room/useRoomMeta';
 import { CALL_TILE_PORTRAIT_ASPECT_RATIO } from '../../utils/call';
-import { useSwipeDownDismiss } from '../../hooks/useSwipeDownDismiss';
-import { useScreenWakeLock } from '../../hooks/useScreenWakeLock';
+import { useSwipeDownDismiss } from '../../hooks/gesture/useSwipeDownDismiss';
+import { useScreenWakeLock } from '../../hooks/browser/useScreenWakeLock';
 import { OverlayModal } from '../../components/OverlayModal';
 import { useCallActions } from './CallProvider';
 import { CallStage } from './CallStage';

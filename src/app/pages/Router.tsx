@@ -55,7 +55,7 @@ import { Room } from '../features/room';
 import { WelcomePage } from './client/WelcomePage';
 import { SidebarNav } from './client/SidebarNav';
 import { PageRoot } from '../components/page';
-import { ScreenSize } from '../hooks/useScreenSize';
+import { ScreenSize } from '../hooks/browser/useScreenSize';
 import { MobileFriendlyPageNav, MobileFriendlyClientNav } from './MobileFriendly';
 import { ClientInitStorageAtom } from './client/ClientInitStorageAtom';
 import { ClientNonUIFeatures } from './client/ClientNonUIFeatures';

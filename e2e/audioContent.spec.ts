@@ -8,7 +8,7 @@ import {
   type StubHomeserverOptions,
 } from './fixtures/homeserver';
 import { BASE_URL } from '../playwright.config';
-import { VOICE_RECORDING_MIME_TYPE_CANDIDATES } from '../src/app/hooks/useVoiceRecording';
+import { VOICE_RECORDING_MIME_TYPE_CANDIDATES } from '../src/app/hooks/media/useVoiceRecording';
 
 const roomPath = `/home/${encodeURIComponent(TEST_ROOM_ID)}/`;
 const RECORDER_PAGE_PATH = '/e2e-recorder-blank';

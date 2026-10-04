@@ -7,7 +7,7 @@ import { useSetting } from '../../../state/hooks/settings';
 import type { MessageLayout } from '../../../state/settings';
 import { settingsAtom } from '../../../state/settings';
 import { stopPropagation } from '../../../utils/keyboard';
-import { useMessageLayoutItems } from '../../../hooks/useMessageLayout';
+import { useMessageLayoutItems } from '../../../hooks/message/useMessageLayout';
 
 export function SelectMessageLayout() {
   const [menuCords, setMenuCords] = useState<RectCords>();

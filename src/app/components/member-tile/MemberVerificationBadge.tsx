@@ -4,7 +4,7 @@ import type { MatrixClient } from 'matrix-js-sdk';
 import {
   CrossSigningStatus,
   useUserCrossSigningStatus,
-} from '../../hooks/useUserCrossSigningStatus';
+} from '../../hooks/encryption/useUserCrossSigningStatus';
 
 type MemberVerificationBadgeProps = {
   mx: MatrixClient;

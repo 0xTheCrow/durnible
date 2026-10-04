@@ -6,7 +6,7 @@ import { UploadStatus, useBindUploadAtom } from '../../state/upload';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import type { UploadContent } from '../../utils/matrix';
 import { bytesToSize, getFileTypeIcon } from '../../utils/common';
-import { useMediaConfig } from '../../hooks/useMediaConfig';
+import { useMediaConfig } from '../../hooks/server/useMediaConfig';
 
 type CompactUploadCardRendererProps = {
   isEncrypted?: boolean;

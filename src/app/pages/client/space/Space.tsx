@@ -40,16 +40,16 @@ import {
   useSpaceLobbySelected,
   useSpaceSearchSelected,
 } from '../../../hooks/router/useSelectedSpace';
-import { useSpace } from '../../../hooks/useSpace';
+import { useSpace } from '../../../hooks/space/useSpace';
 import { VirtualTile } from '../../../components/virtualizer';
 import { RoomNavCategoryButton, RoomNavItem, RoomNavVoiceItem } from '../../../features/room-nav';
 import { makeNavCategoryId } from '../../../state/closedNavCategories';
 import { roomToUnreadAtom } from '../../../state/room/roomToUnread';
-import { useCategoryHandler } from '../../../hooks/useCategoryHandler';
-import { useNavToActivePathMapper } from '../../../hooks/useNavToActivePathMapper';
-import { useRoomName } from '../../../hooks/useRoomMeta';
-import type { HierarchyItem } from '../../../hooks/useSpaceHierarchy';
-import { useSpaceJoinedHierarchy } from '../../../hooks/useSpaceHierarchy';
+import { useCategoryHandler } from '../../../hooks/space/useCategoryHandler';
+import { useNavToActivePathMapper } from '../../../hooks/router/useNavToActivePathMapper';
+import { useRoomName } from '../../../hooks/room/useRoomMeta';
+import type { HierarchyItem } from '../../../hooks/space/useSpaceHierarchy';
+import { useSpaceJoinedHierarchy } from '../../../hooks/space/useSpaceHierarchy';
 import { allRoomsAtom } from '../../../state/room-list/roomList';
 import {
   AdjustablePageNav,
@@ -57,7 +57,7 @@ import {
   PageNavHeader,
   PageNavLayoutMenuItems,
 } from '../../../components/page';
-import { usePowerLevels } from '../../../hooks/usePowerLevels';
+import { usePowerLevels } from '../../../hooks/members/usePowerLevels';
 import { useRecursiveChildScopeFactory, useSpaceChildren } from '../../../state/hooks/roomList';
 import { roomToParentsAtom } from '../../../state/room/roomToParents';
 import { markAsRead } from '../../../utils/notifications';
@@ -68,7 +68,7 @@ import { UseStateProvider } from '../../../components/UseStateProvider';
 import { LeaveSpacePrompt } from '../../../components/leave-space-prompt';
 import { copyToClipboard } from '../../../utils/dom';
 import { useClosedNavCategoriesAtom } from '../../../state/hooks/closedNavCategories';
-import { useStateEvent } from '../../../hooks/useStateEvent';
+import { useStateEvent } from '../../../hooks/events/useStateEvent';
 import { Membership, StateEvent } from '../../../../types/matrix/room';
 import { stopPropagation } from '../../../utils/keyboard';
 import { getMatrixToRoom } from '../../../plugins/matrix-to';
@@ -78,11 +78,11 @@ import { settingsAtom } from '../../../state/settings';
 import {
   getRoomNotificationMode,
   useRoomsNotificationPreferencesContext,
-} from '../../../hooks/useRoomsNotificationPreferences';
+} from '../../../hooks/notifications/useRoomsNotificationPreferences';
 import { useOpenSpaceSettings } from '../../../state/hooks/spaceSettings';
-import { useRoomNavigate } from '../../../hooks/useRoomNavigate';
-import { useRoomCreators } from '../../../hooks/useRoomCreators';
-import { useRoomPermissions } from '../../../hooks/useRoomPermissions';
+import { useRoomNavigate } from '../../../hooks/router/useRoomNavigate';
+import { useRoomCreators } from '../../../hooks/room/useRoomCreators';
+import { useRoomPermissions } from '../../../hooks/members/useRoomPermissions';
 import { ContainerColor } from '../../../styles/ContainerColor.css';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { BreakWord } from '../../../styles/Text.css';

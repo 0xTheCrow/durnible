@@ -8,23 +8,23 @@ import type { EditorController } from '../../../../components/editor';
 import { useMatrixClient } from '../../../../hooks/useMatrixClient';
 import { useSetting } from '../../../../state/hooks/settings';
 import { settingsAtom } from '../../../../state/settings';
-import { useIsDirectRoom } from '../../../../hooks/useRoom';
-import { useMediaAuthentication } from '../../../../hooks/useMediaAuthentication';
-import { usePowerLevelsContext } from '../../../../hooks/usePowerLevels';
-import { useRoomCreators } from '../../../../hooks/useRoomCreators';
-import { useRoomCreatorsTag } from '../../../../hooks/useRoomCreatorsTag';
-import { usePowerLevelTags } from '../../../../hooks/usePowerLevelTags';
-import { useRoomPermissions } from '../../../../hooks/useRoomPermissions';
+import { useIsDirectRoom } from '../../../../hooks/room/useRoom';
+import { useMediaAuthentication } from '../../../../hooks/server/useMediaAuthentication';
+import { usePowerLevelsContext } from '../../../../hooks/members/usePowerLevels';
+import { useRoomCreators } from '../../../../hooks/room/useRoomCreators';
+import { useRoomCreatorsTag } from '../../../../hooks/members/useRoomCreatorsTag';
+import { usePowerLevelTags } from '../../../../hooks/members/usePowerLevelTags';
+import { useRoomPermissions } from '../../../../hooks/members/useRoomPermissions';
 import {
   useAccessiblePowerTagColors,
   useGetMemberPowerTag,
-} from '../../../../hooks/useMemberPowerTag';
+} from '../../../../hooks/members/useMemberPowerTag';
 import { useTheme } from '../../../../hooks/useTheme';
-import { useImagePackRooms } from '../../../../hooks/useImagePackRooms';
-import { useMentionClickHandler } from '../../../../hooks/useMentionClickHandler';
-import { useSpoilerClickHandler } from '../../../../hooks/useSpoilerClickHandler';
+import { useImagePackRooms } from '../../../../hooks/emoji/useImagePackRooms';
+import { useMentionClickHandler } from '../../../../hooks/message/useMentionClickHandler';
+import { useSpoilerClickHandler } from '../../../../hooks/message/useSpoilerClickHandler';
 import { useOpenUserRoomProfile } from '../../../../state/hooks/userRoomProfile';
-import { useSpaceOptionally } from '../../../../hooks/useSpace';
+import { useSpaceOptionally } from '../../../../hooks/space/useSpace';
 import { roomToParentsAtom } from '../../../../state/room/roomToParents';
 import { roomIdToReplyDraftAtomFamily } from '../../../../state/room/roomInputDrafts';
 import { MessageEvent, StateEvent } from '../../../../../types/matrix/room';

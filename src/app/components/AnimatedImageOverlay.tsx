@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode, SyntheticEvent } from 'react';
 import React, { useRef, useState } from 'react';
-import { usePausedFirstFrameCanvas } from '../hooks/usePausedFirstFrameCanvas';
+import { usePausedFirstFrameCanvas } from '../hooks/media/usePausedFirstFrameCanvas';
 
 export type AnimatedImageOverlayRenderImageProps = {
   alt: string;

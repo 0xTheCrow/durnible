@@ -9,7 +9,7 @@ import {
 } from '../../../hooks/router/useInbox';
 import { UnreadBadge } from '../../../components/unread-badge';
 import { allInvitesAtom } from '../../../state/room-list/inviteList';
-import { useNavToActivePathMapper } from '../../../hooks/useNavToActivePathMapper';
+import { useNavToActivePathMapper } from '../../../hooks/router/useNavToActivePathMapper';
 import { AdjustablePageNav, PageNavContent, PageNavHeader } from '../../../components/page';
 import { TruncatedText } from '../../../components/TruncatedText';
 

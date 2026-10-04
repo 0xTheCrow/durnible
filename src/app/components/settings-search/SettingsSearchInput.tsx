@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Button, Icon, IconButton, Icons, Input, Text } from 'folds';
-import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
+import { ScreenSize, useScreenSizeContext } from '../../hooks/browser/useScreenSize';
 import type { SettingsSearchState } from './useSettingsSearch';
 
 type SettingsSearchInputProps = {

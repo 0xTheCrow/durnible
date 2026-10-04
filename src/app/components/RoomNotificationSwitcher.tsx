@@ -8,7 +8,7 @@ import {
   getRoomNotificationModeIcon,
   RoomNotificationMode,
   useSetRoomNotificationPreference,
-} from '../hooks/useRoomsNotificationPreferences';
+} from '../hooks/notifications/useRoomsNotificationPreferences';
 import { AsyncStatus } from '../hooks/useAsyncCallback';
 
 const useRoomNotificationModes = (): RoomNotificationMode[] =>

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { MatrixClient, Room } from 'matrix-js-sdk';
-import { useDocumentFocusChange } from '../../../../hooks/useDocumentFocusChange';
+import { useDocumentFocusChange } from '../../../../hooks/browser/useDocumentFocusChange';
 import { useRoomUnread } from '../../../../state/hooks/unread';
 import { roomToUnreadAtom } from '../../../../state/room/roomToUnread';
 import { markAsRead } from '../../../../utils/notifications';

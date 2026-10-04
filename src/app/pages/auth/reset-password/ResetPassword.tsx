@@ -2,7 +2,7 @@ import { Box, Text } from 'folds';
 import React, { useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { getLoginPath } from '../../pathUtils';
-import { useAuthServer } from '../../../hooks/useAuthServer';
+import { useAuthServer } from '../../../hooks/auth/useAuthServer';
 import { PasswordResetForm } from './PasswordResetForm';
 import type { ResetPasswordPathSearchParams } from '../../paths';
 

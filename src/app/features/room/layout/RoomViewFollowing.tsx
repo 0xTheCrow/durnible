@@ -7,8 +7,8 @@ import { getMemberDisplayName } from '../../../utils/room';
 import { getMxIdLocalPart } from '../../../utils/matrix';
 import * as css from './RoomViewFollowing.css';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
-import { useRoomLatestRenderedEvent } from '../../../hooks/useRoomLatestRenderedEvent';
-import { useRoomEventReaders } from '../../../hooks/useRoomEventReaders';
+import { useRoomLatestRenderedEvent } from '../../../hooks/room/useRoomLatestRenderedEvent';
+import { useRoomEventReaders } from '../../../hooks/room/useRoomEventReaders';
 import { EventReaders } from '../../../components/event-readers';
 import { OverlayModal } from '../../../components/OverlayModal';
 

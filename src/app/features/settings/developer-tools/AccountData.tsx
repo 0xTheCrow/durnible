@@ -4,7 +4,7 @@ import { SequenceCard } from '../../../components/sequence-card';
 import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { SettingTile } from '../../../components/setting-tile';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
-import { useAccountDataCallback } from '../../../hooks/useAccountDataCallback';
+import { useAccountDataCallback } from '../../../hooks/events/useAccountDataCallback';
 import { CutoutCard } from '../../../components/cutout-card';
 
 type AccountDataProps = {

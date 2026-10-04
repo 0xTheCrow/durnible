@@ -8,9 +8,9 @@ import {
   PageHero,
   PageHeroSection,
 } from '../../../components/page';
-import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
+import { ScreenSize, useScreenSizeContext } from '../../../hooks/browser/useScreenSize';
 import { BackRouteHandler } from '../../../components/BackRouteHandler';
-import { useRoomNavigate } from '../../../hooks/useRoomNavigate';
+import { useRoomNavigate } from '../../../hooks/router/useRoomNavigate';
 
 const CreateRoomForm = lazy(() =>
   import('../../../features/create-room/CreateRoom').then((module) => ({

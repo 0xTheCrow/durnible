@@ -26,21 +26,21 @@ import { SequenceCard } from '../../../components/sequence-card';
 import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { SettingTile } from '../../../components/setting-tile';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
-import type { UserProfile } from '../../../hooks/useUserProfile';
-import { useUserProfile, setBannerUrlCache } from '../../../hooks/useUserProfile';
+import type { UserProfile } from '../../../hooks/members/useUserProfile';
+import { useUserProfile, setBannerUrlCache } from '../../../hooks/members/useUserProfile';
 import { getMxIdLocalPart, mxcUrlToHttp } from '../../../utils/matrix';
 import { UserAvatar } from '../../../components/user-avatar';
-import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
+import { useMediaAuthentication } from '../../../hooks/server/useMediaAuthentication';
 import { nameInitials } from '../../../utils/common';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
-import { useFilePicker } from '../../../hooks/useFilePicker';
-import { useObjectURL } from '../../../hooks/useObjectURL';
+import { useFilePicker } from '../../../hooks/browser/useFilePicker';
+import { useObjectURL } from '../../../hooks/browser/useObjectURL';
 import { stopPropagation } from '../../../utils/keyboard';
 import { ModalWide } from '../../../styles/Modal.css';
 import type { UploadSuccess } from '../../../state/upload';
 import { createUploadAtom } from '../../../state/upload';
 import { CompactUploadCardRenderer } from '../../../components/upload-card';
-import { useCapabilities } from '../../../hooks/useCapabilities';
+import { useCapabilities } from '../../../hooks/server/useCapabilities';
 
 const ImageEditor = lazy(() =>
   import('../../../components/image-editor').then((module) => ({ default: module.ImageEditor }))

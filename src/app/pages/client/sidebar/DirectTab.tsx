@@ -20,7 +20,7 @@ import {
 } from '../../../components/sidebar';
 import { useDirectSelected } from '../../../hooks/router/useDirectSelected';
 import { UnreadBadge } from '../../../components/unread-badge';
-import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
+import { ScreenSize, useScreenSizeContext } from '../../../hooks/browser/useScreenSize';
 import { useNavToActivePathAtom } from '../../../state/hooks/navToActivePath';
 import { useDirectRooms } from '../direct/useDirectRooms';
 import { markAsRead } from '../../../utils/notifications';

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import React from 'react';
-import { useLongPress } from '../../hooks/useLongPress';
+import { useLongPress } from '../../hooks/gesture/useLongPress';
 
 type LongPressWrapperProps = {
   onLongPress: () => void;

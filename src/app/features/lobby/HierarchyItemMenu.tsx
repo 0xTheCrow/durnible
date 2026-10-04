@@ -17,7 +17,7 @@ import {
   toRem,
 } from 'folds';
 import { EventType } from 'matrix-js-sdk';
-import type { HierarchyItem } from '../../hooks/useSpaceHierarchy';
+import type { HierarchyItem } from '../../hooks/space/useSpaceHierarchy';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import type { MSpaceChildContent } from '../../../types/matrix/room';
 import { AsyncStatus, useAsyncCallback } from '../../hooks/useAsyncCallback';
@@ -26,11 +26,11 @@ import { LeaveSpacePrompt } from '../../components/leave-space-prompt';
 import { LeaveRoomPrompt } from '../../components/leave-room-prompt';
 import { stopPropagation } from '../../utils/keyboard';
 import { useOpenRoomSettings } from '../../state/hooks/roomSettings';
-import { useSpaceOptionally } from '../../hooks/useSpace';
+import { useSpaceOptionally } from '../../hooks/space/useSpace';
 import { useOpenSpaceSettings } from '../../state/hooks/spaceSettings';
-import type { PowerLevels } from '../../hooks/usePowerLevels';
-import { getRoomCreatorsForRoomId } from '../../hooks/useRoomCreators';
-import { getRoomPermissionsAPI } from '../../hooks/useRoomPermissions';
+import type { PowerLevels } from '../../hooks/members/usePowerLevels';
+import { getRoomCreatorsForRoomId } from '../../hooks/room/useRoomCreators';
+import { getRoomPermissionsAPI } from '../../hooks/members/useRoomPermissions';
 import { InviteUserPrompt } from '../../components/invite-user-prompt';
 
 type HierarchyItemWithParent = HierarchyItem & {

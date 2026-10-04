@@ -23,7 +23,7 @@ import { Page, PageHeader } from './page';
 import { useAlive } from '../hooks/useAlive';
 import { SequenceCard } from './sequence-card';
 import { TextViewerContent } from './text-viewer';
-import { useTextAreaCodeEditor } from '../hooks/useTextAreaCodeEditor';
+import { useTextAreaCodeEditor } from '../hooks/composer/useTextAreaCodeEditor';
 
 const EDITOR_INTENT_SPACE_COUNT = 2;
 

@@ -3,7 +3,7 @@ import React, { createContext, lazy, Suspense, useCallback, useContext, useMemo 
 import { useAtomValue, useSetAtom, useStore } from 'jotai';
 import type { Room } from 'matrix-js-sdk';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
-import { useLivekitFoci } from '../../hooks/useLivekitFoci';
+import { useLivekitFoci } from '../../hooks/call/useLivekitFoci';
 import { useSetting } from '../../state/hooks/settings';
 import { settingsAtom } from '../../state/settings';
 import { callStateAtom } from '../../state/call';

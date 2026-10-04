@@ -2,7 +2,7 @@ import { Avatar, AvatarImage, Box, Button, Text } from 'folds';
 import type { IIdentityProvider, SSOAction } from 'matrix-js-sdk';
 import { createClient } from 'matrix-js-sdk';
 import React, { useMemo } from 'react';
-import { useAutoDiscoveryInfo } from '../../hooks/useAutoDiscoveryInfo';
+import { useAutoDiscoveryInfo } from '../../hooks/auth/useAutoDiscoveryInfo';
 
 type SSOLoginProps = {
   providers?: IIdentityProvider[];

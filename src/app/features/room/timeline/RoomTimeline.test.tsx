@@ -43,11 +43,11 @@ vi.mock('./hooks/useTimelineMessageContextValue', () => ({
   useTimelineMessageContextValue: () => ({}),
 }));
 
-vi.mock('../../../hooks/useRoomNavigate', () => ({
+vi.mock('../../../hooks/router/useRoomNavigate', () => ({
   useRoomNavigate: () => ({ navigateRoom: vi.fn() }),
 }));
 
-vi.mock('../../../hooks/useIgnoredUsers', () => ({
+vi.mock('../../../hooks/members/useIgnoredUsers', () => ({
   useIgnoredUsers: () => [],
 }));
 

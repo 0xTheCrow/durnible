@@ -5,9 +5,9 @@ import classNames from 'classnames';
 import { ContainerColor } from '../../styles/ContainerColor.css';
 import * as paneResizeCss from '../../styles/PaneResizeHandle.css';
 import * as css from './style.css';
-import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
-import { checkIsSideDock, useCallPaneDock } from '../../hooks/useCallPaneLayout';
-import { usePaneResize } from '../../hooks/usePaneResize';
+import { ScreenSize, useScreenSizeContext } from '../../hooks/browser/useScreenSize';
+import { checkIsSideDock, useCallPaneDock } from '../../hooks/call/useCallPaneLayout';
+import { usePaneResize } from '../../hooks/gesture/usePaneResize';
 import { useSetting } from '../../state/hooks/settings';
 import { settingsAtom } from '../../state/settings';
 import {

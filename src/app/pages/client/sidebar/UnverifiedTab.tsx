@@ -6,15 +6,19 @@ import {
   SidebarItemBadge,
   SidebarItemTooltip,
 } from '../../../components/sidebar';
-import { useDeviceIds, useDeviceList, useSplitCurrentDevice } from '../../../hooks/useDeviceList';
+import {
+  useDeviceIds,
+  useDeviceList,
+  useSplitCurrentDevice,
+} from '../../../hooks/encryption/useDeviceList';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import * as css from './UnverifiedTab.css';
 import {
   useDeviceVerificationStatus,
   useUnverifiedDeviceCount,
   VerificationStatus,
-} from '../../../hooks/useDeviceVerificationStatus';
-import { useCrossSigningActive } from '../../../hooks/useCrossSigning';
+} from '../../../hooks/encryption/useDeviceVerificationStatus';
+import { useCrossSigningActive } from '../../../hooks/encryption/useCrossSigning';
 import { Modal500 } from '../../../components/Modal500';
 import { SettingsPages } from '../../../features/settings';
 

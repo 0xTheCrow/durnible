@@ -3,8 +3,8 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { describe, it, expect, vi } from 'vitest';
 import type { Room } from 'matrix-js-sdk';
-import { ScreenSize, ScreenSizeProvider } from '../../hooks/useScreenSize';
-import { SpaceProvider } from '../../hooks/useSpace';
+import { ScreenSize, ScreenSizeProvider } from '../../hooks/browser/useScreenSize';
+import { SpaceProvider } from '../../hooks/space/useSpace';
 import { RoomDrawer } from './RoomDrawer';
 
 vi.mock('./space', () => ({
@@ -31,11 +31,11 @@ vi.mock('../../hooks/useMatrixClient', () => ({
   useMatrixClient: () => ({}),
 }));
 
-vi.mock('../../hooks/useFavoriteRooms', () => ({
+vi.mock('../../hooks/room/useFavoriteRooms', () => ({
   useFavoriteRooms: vi.fn().mockReturnValue([]),
 }));
 
-vi.mock('../../hooks/useRoomsNotificationPreferences', () => ({
+vi.mock('../../hooks/notifications/useRoomsNotificationPreferences', () => ({
   useRoomsNotificationPreferencesContext: () => ({}),
   getRoomNotificationMode: () => undefined,
 }));

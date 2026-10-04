@@ -4,7 +4,7 @@ import type { MatrixEvent, Room } from 'matrix-js-sdk';
 import { EventType } from 'matrix-js-sdk';
 import type { RoomPinnedEventsEventContent } from 'matrix-js-sdk/lib/types';
 import { useMatrixClient } from '../../../../hooks/useMatrixClient';
-import { useRoomPinnedEvents } from '../../../../hooks/useRoomPinnedEvents';
+import { useRoomPinnedEvents } from '../../../../hooks/room/useRoomPinnedEvents';
 import * as css from '../styles.css';
 
 export const MessagePinItem = as<

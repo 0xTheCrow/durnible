@@ -10,7 +10,7 @@ import { createMockMatrixClient } from '../../../../test/mocks';
 const { useRecentEmojiMock } = vi.hoisted(() => ({
   useRecentEmojiMock: vi.fn((_mx: unknown, _limit?: number): Emoji[] => []),
 }));
-vi.mock('../../../hooks/useRecentEmoji', () => ({
+vi.mock('../../../hooks/emoji/useRecentEmoji', () => ({
   useRecentEmoji: useRecentEmojiMock,
 }));
 

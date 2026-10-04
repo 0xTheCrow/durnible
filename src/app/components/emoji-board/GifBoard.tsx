@@ -47,8 +47,8 @@ import {
   uploadGif,
 } from '../../utils/gifServer';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
-import type { ItemRange } from '../../hooks/useVirtualPaginator';
-import { useVirtualPaginator } from '../../hooks/useVirtualPaginator';
+import type { ItemRange } from '../../hooks/message/useVirtualPaginator';
+import { useVirtualPaginator } from '../../hooks/message/useVirtualPaginator';
 import { OverlayModal } from '../OverlayModal';
 import type { EmojiBoardTab } from './types';
 import {

@@ -9,29 +9,29 @@ import { EventType, JoinRule, RestrictedAllowType } from 'matrix-js-sdk';
 import type { RoomJoinRulesEventContent } from 'matrix-js-sdk/lib/types';
 import type { IHierarchyRoom } from 'matrix-js-sdk/lib/@types/spaces';
 import produce from 'immer';
-import { useSpace } from '../../hooks/useSpace';
+import { useSpace } from '../../hooks/space/useSpace';
 import { Page, PageContent, PageContentCenter, PageHeroSection } from '../../components/page';
-import type { HierarchyItem, HierarchyItemSpace } from '../../hooks/useSpaceHierarchy';
-import { useSpaceHierarchy } from '../../hooks/useSpaceHierarchy';
+import type { HierarchyItem, HierarchyItemSpace } from '../../hooks/space/useSpaceHierarchy';
+import { useSpaceHierarchy } from '../../hooks/space/useSpaceHierarchy';
 import { VirtualTile } from '../../components/virtualizer';
 import { spaceRoomsAtom } from '../../state/spaceRooms';
 import { MembersDrawer } from '../room/layout/MembersDrawer';
 import { useSetting } from '../../state/hooks/settings';
-import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
+import { ScreenSize, useScreenSizeContext } from '../../hooks/browser/useScreenSize';
 import { settingsAtom } from '../../state/settings';
 import { LobbyHeader } from './LobbyHeader';
 import { LobbyHero } from './LobbyHero';
 import { ScrollTopContainer } from '../../components/scroll-top-container';
-import { useElementSizeObserver } from '../../hooks/useElementSizeObserver';
-import type { PowerLevels } from '../../hooks/usePowerLevels';
+import { useElementSizeObserver } from '../../hooks/browser/useElementSizeObserver';
+import type { PowerLevels } from '../../hooks/members/usePowerLevels';
 import {
   PowerLevelsContextProvider,
   usePowerLevels,
   useRoomsPowerLevels,
-} from '../../hooks/usePowerLevels';
+} from '../../hooks/members/usePowerLevels';
 import { mDirectAtom } from '../../state/mDirectList';
 import { makeLobbyCategoryId } from '../../state/closedLobbyCategories';
-import { useCategoryHandler } from '../../hooks/useCategoryHandler';
+import { useCategoryHandler } from '../../hooks/space/useCategoryHandler';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { allRoomsAtom } from '../../state/room-list/roomList';
 import { getCanonicalAliasOrRoomId, rateLimitedActions } from '../../utils/matrix';
@@ -46,16 +46,16 @@ import {
   makeCinnySpacesContent,
   sidebarItemWithout,
   useSidebarItems,
-} from '../../hooks/useSidebarItems';
+} from '../../hooks/space/useSidebarItems';
 import { useOrphanSpaces } from '../../state/hooks/roomList';
 import { roomToParentsAtom } from '../../state/room/roomToParents';
 import { AccountDataEvent } from '../../../types/matrix/accountData';
-import { useRoomMembers } from '../../hooks/useRoomMembers';
+import { useRoomMembers } from '../../hooks/members/useRoomMembers';
 import { SpaceHierarchy } from './SpaceHierarchy';
-import { useGetRoom } from '../../hooks/useGetRoom';
+import { useGetRoom } from '../../hooks/room/useGetRoom';
 import { AsyncStatus, useAsyncCallback } from '../../hooks/useAsyncCallback';
-import { getRoomPermissionsAPI } from '../../hooks/useRoomPermissions';
-import { getRoomCreatorsForRoomId } from '../../hooks/useRoomCreators';
+import { getRoomPermissionsAPI } from '../../hooks/members/useRoomPermissions';
+import { getRoomCreatorsForRoomId } from '../../hooks/room/useRoomCreators';
 
 const useCanDropLobbyItem = (
   space: Room,

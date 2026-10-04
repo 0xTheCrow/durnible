@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { useSelectedRoom } from '../../../hooks/router/useSelectedRoom';
-import { IsDirectRoomProvider, RoomProvider } from '../../../hooks/useRoom';
+import { IsDirectRoomProvider, RoomProvider } from '../../../hooks/room/useRoom';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { JoinBeforeNavigate } from '../../../features/join-before-navigate';
 import { useDirectRooms } from './useDirectRooms';

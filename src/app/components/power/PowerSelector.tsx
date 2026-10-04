@@ -3,8 +3,8 @@ import React, { forwardRef, useState } from 'react';
 import FocusTrap from 'focus-trap-react';
 import type { RectCords } from 'folds';
 import { Box, config, Menu, MenuItem, PopOut, Scroll, Text, toRem } from 'folds';
-import type { PowerLevelTags } from '../../hooks/usePowerLevelTags';
-import { getPowers } from '../../hooks/usePowerLevelTags';
+import type { PowerLevelTags } from '../../hooks/members/usePowerLevelTags';
+import { getPowers } from '../../hooks/members/usePowerLevelTags';
 import { PowerColorBadge } from './PowerColorBadge';
 import { stopPropagation } from '../../utils/keyboard';
 

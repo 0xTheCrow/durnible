@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Icon, IconButton, Icons, Text } from 'folds';
 import { PageHeader } from '../../../components/page';
-import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
+import { ScreenSize, useScreenSizeContext } from '../../../hooks/browser/useScreenSize';
 
 type SettingsPageHeaderProps = {
   title: string;

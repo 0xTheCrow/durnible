@@ -4,10 +4,10 @@ import { useAtomValue } from 'jotai';
 import { RoomCard } from '../../components/room-card';
 import { RoomTopicViewer } from '../../components/room-topic-viewer';
 import { Page, PageHeader } from '../../components/page';
-import { useRoomNavigate } from '../../hooks/useRoomNavigate';
+import { useRoomNavigate } from '../../hooks/router/useRoomNavigate';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { allRoomsAtom } from '../../state/room-list/roomList';
-import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
+import { ScreenSize, useScreenSizeContext } from '../../hooks/browser/useScreenSize';
 import { BackRouteHandler } from '../../components/BackRouteHandler';
 
 type JoinBeforeNavigateProps = { roomIdOrAlias: string; eventId?: string; viaServers?: string[] };

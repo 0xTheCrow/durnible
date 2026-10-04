@@ -23,7 +23,7 @@ import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { SettingTile } from '../../../components/setting-tile';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
-import { useMediaDevices } from '../../../hooks/useMediaDevices';
+import { useMediaDevices } from '../../../hooks/browser/useMediaDevices';
 import { useMicrophoneInputLevel } from '../../../hooks/call/useMicrophoneInputLevel';
 import { requestMediaPermission } from '../../../plugins/call/localMedia';
 import { SettingsPageHeader } from '../components';

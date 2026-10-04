@@ -1,4 +1,4 @@
-import type { Pan } from '../hooks/usePan';
+import type { Pan } from '../hooks/gesture/usePan';
 
 export const ZOOM_MIN = 0.1;
 export const ZOOM_MAX = 20;

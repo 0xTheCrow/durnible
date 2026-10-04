@@ -1,7 +1,7 @@
 import { TooltipProvider as FoldsTooltipProvider } from 'folds';
 import React, { useCallback, useRef } from 'react';
 import type { ComponentProps, RefCallback } from 'react';
-import { useCanHover } from '../hooks/useCanHover';
+import { useCanHover } from '../hooks/browser/useCanHover';
 
 const noOpTriggerRef = () => {};
 

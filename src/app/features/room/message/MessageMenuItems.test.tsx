@@ -37,7 +37,7 @@ vi.mock('../../../utils/dom', async () => {
 const { useRoomPinnedEventsMock } = vi.hoisted(() => ({
   useRoomPinnedEventsMock: vi.fn((_room: Room): string[] => []),
 }));
-vi.mock('../../../hooks/useRoomPinnedEvents', () => ({
+vi.mock('../../../hooks/room/useRoomPinnedEvents', () => ({
   useRoomPinnedEvents: useRoomPinnedEventsMock,
 }));
 

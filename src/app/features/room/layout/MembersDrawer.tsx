@@ -37,20 +37,30 @@ import { settingsAtom } from '../../../state/settings';
 import { millify } from '../../../plugins/millify';
 import { ScrollTopContainer } from '../../../components/scroll-top-container';
 import { UserAvatar } from '../../../components/user-avatar';
-import { useRoomTypingMember } from '../../../hooks/useRoomTypingMembers';
-import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
-import { useMembershipFilter, useMembershipFilterMenu } from '../../../hooks/useMemberFilter';
-import { useMemberPowerSort, useMemberSort, useMemberSortMenu } from '../../../hooks/useMemberSort';
-import { useGetMemberPowerLevel, usePowerLevelsContext } from '../../../hooks/usePowerLevels';
+import { useRoomTypingMember } from '../../../hooks/room/useRoomTypingMembers';
+import { useMediaAuthentication } from '../../../hooks/server/useMediaAuthentication';
+import {
+  useMembershipFilter,
+  useMembershipFilterMenu,
+} from '../../../hooks/members/useMemberFilter';
+import {
+  useMemberPowerSort,
+  useMemberSort,
+  useMemberSortMenu,
+} from '../../../hooks/members/useMemberSort';
+import {
+  useGetMemberPowerLevel,
+  usePowerLevelsContext,
+} from '../../../hooks/members/usePowerLevels';
 import { MembershipFilterMenu } from '../../../components/MembershipFilterMenu';
 import { MemberSortMenu } from '../../../components/MemberSortMenu';
 import {
   useOpenUserRoomProfile,
   useUserRoomProfileState,
 } from '../../../state/hooks/userRoomProfile';
-import { useSpaceOptionally } from '../../../hooks/useSpace';
+import { useSpaceOptionally } from '../../../hooks/space/useSpace';
 import { ContainerColor } from '../../../styles/ContainerColor.css';
-import { useRoomCreators } from '../../../hooks/useRoomCreators';
+import { useRoomCreators } from '../../../hooks/room/useRoomCreators';
 
 type MemberDrawerHeaderProps = {
   room: Room;

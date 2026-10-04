@@ -5,9 +5,9 @@ import type { MatrixClient } from 'matrix-js-sdk';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ClientConfig } from '../app/hooks/useClientConfig';
 import { ClientConfigProvider } from '../app/hooks/useClientConfig';
-import { ScreenSize, ScreenSizeProvider } from '../app/hooks/useScreenSize';
+import { ScreenSize, ScreenSizeProvider } from '../app/hooks/browser/useScreenSize';
 import { MatrixClientProvider } from '../app/hooks/useMatrixClient';
-import { SpecVersionsProvider } from '../app/hooks/useSpecVersions';
+import { SpecVersionsProvider } from '../app/hooks/server/useSpecVersions';
 import { createMockMatrixClient } from './mocks';
 
 const DEFAULT_CLIENT_CONFIG: ClientConfig = {

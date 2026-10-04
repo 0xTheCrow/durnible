@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { useCallback, useEffect } from 'react';
 import { AsyncStatus, useAsyncCallback } from '../hooks/useAsyncCallback';
 import { useMatrixClient } from '../hooks/useMatrixClient';
-import type { MediaConfig } from '../hooks/useMediaConfig';
+import type { MediaConfig } from '../hooks/server/useMediaConfig';
 
 type MediaConfigLoaderProps = {
   children: (mediaConfig: MediaConfig | undefined) => ReactNode;

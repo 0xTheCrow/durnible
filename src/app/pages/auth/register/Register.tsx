@@ -2,15 +2,15 @@ import React, { useMemo } from 'react';
 import { Box, Text, color } from 'folds';
 import { Link, useSearchParams } from 'react-router-dom';
 import { SSOAction } from 'matrix-js-sdk';
-import { useAuthServer } from '../../../hooks/useAuthServer';
-import { RegisterFlowStatus, useAuthFlows } from '../../../hooks/useAuthFlows';
-import { useParsedLoginFlows } from '../../../hooks/useParsedLoginFlows';
+import { useAuthServer } from '../../../hooks/auth/useAuthServer';
+import { RegisterFlowStatus, useAuthFlows } from '../../../hooks/auth/useAuthFlows';
+import { useParsedLoginFlows } from '../../../hooks/auth/useParsedLoginFlows';
 import { PasswordRegisterForm, SUPPORTED_REGISTER_STAGES } from '../register/PasswordRegisterForm';
 import { OrDivider } from '../OrDivider';
 import { SSOLogin } from '../SSOLogin';
 import { SupportedUIAFlowsLoader } from '../../../components/SupportedUIAFlowsLoader';
 import { getLoginPath } from '../../pathUtils';
-import { usePathWithOrigin } from '../../../hooks/usePathWithOrigin';
+import { usePathWithOrigin } from '../../../hooks/auth/usePathWithOrigin';
 import type { RegisterPathSearchParams } from '../../paths';
 
 const useRegisterSearchParams = (searchParams: URLSearchParams): RegisterPathSearchParams =>

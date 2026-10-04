@@ -20,19 +20,19 @@ import { SettingTile } from '../../../components/setting-tile';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
-import { useRoom } from '../../../hooks/useRoom';
+import { useRoom } from '../../../hooks/room/useRoom';
 import {
   useLocalAliases,
   usePublishedAliases,
   usePublishUnpublishAliases,
   useSetMainAlias,
-} from '../../../hooks/useRoomAliases';
+} from '../../../hooks/room/useRoomAliases';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { CutoutCard } from '../../../components/cutout-card';
 import { replaceSpaceWithDash } from '../../../utils/common';
 import { useAlive } from '../../../hooks/useAlive';
 import { StateEvent } from '../../../../types/matrix/room';
-import type { RoomPermissionsAPI } from '../../../hooks/useRoomPermissions';
+import type { RoomPermissionsAPI } from '../../../hooks/members/useRoomPermissions';
 import { getMxIdServer } from '../../../utils/matrix';
 
 type RoomPublishedAddressesProps = {

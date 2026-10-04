@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Box, Icon, IconButton, Icons, Scroll, Text } from 'folds';
 import { Page, PageContent, PageHeader } from '../../../components/page';
-import { useRoom } from '../../../hooks/useRoom';
-import { usePowerLevels } from '../../../hooks/usePowerLevels';
+import { useRoom } from '../../../hooks/room/useRoom';
+import { usePowerLevels } from '../../../hooks/members/usePowerLevels';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { StateEvent } from '../../../../types/matrix/room';
 import { usePermissionGroups } from './usePermissionItems';

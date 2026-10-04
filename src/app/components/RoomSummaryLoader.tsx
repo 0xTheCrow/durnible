@@ -4,8 +4,8 @@ import type { MatrixClient, Room } from 'matrix-js-sdk';
 import { useQuery } from '@tanstack/react-query';
 import type { IHierarchyRoom } from 'matrix-js-sdk/lib/@types/spaces';
 import { useMatrixClient } from '../hooks/useMatrixClient';
-import type { LocalRoomSummary } from '../hooks/useLocalRoomSummary';
-import { useLocalRoomSummary } from '../hooks/useLocalRoomSummary';
+import type { LocalRoomSummary } from '../hooks/room/useLocalRoomSummary';
+import { useLocalRoomSummary } from '../hooks/room/useLocalRoomSummary';
 import type { AsyncState } from '../hooks/useAsyncCallback';
 import { AsyncStatus } from '../hooks/useAsyncCallback';
 

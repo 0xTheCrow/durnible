@@ -37,8 +37,8 @@ import { VirtualTile } from '../../../components/virtualizer';
 import { RoomNavCategoryButton, RoomNavItem } from '../../../features/room-nav';
 import { makeNavCategoryId } from '../../../state/closedNavCategories';
 import { roomToUnreadAtom } from '../../../state/room/roomToUnread';
-import { useCategoryHandler } from '../../../hooks/useCategoryHandler';
-import { useNavToActivePathMapper } from '../../../hooks/useNavToActivePathMapper';
+import { useCategoryHandler } from '../../../hooks/space/useCategoryHandler';
+import { useNavToActivePathMapper } from '../../../hooks/router/useNavToActivePathMapper';
 import { useDirectRooms } from './useDirectRooms';
 import {
   AdjustablePageNav,
@@ -46,7 +46,7 @@ import {
   PageNavHeader,
   PageNavLayoutMenuItems,
 } from '../../../components/page';
-import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
+import { ScreenSize, useScreenSizeContext } from '../../../hooks/browser/useScreenSize';
 import { useClosedNavCategoriesAtom } from '../../../state/hooks/closedNavCategories';
 import { useRoomsUnread } from '../../../state/hooks/unread';
 import { markAsRead } from '../../../utils/notifications';
@@ -56,7 +56,7 @@ import { settingsAtom } from '../../../state/settings';
 import {
   getRoomNotificationMode,
   useRoomsNotificationPreferencesContext,
-} from '../../../hooks/useRoomsNotificationPreferences';
+} from '../../../hooks/notifications/useRoomsNotificationPreferences';
 import { useDirectCreateSelected } from '../../../hooks/router/useDirectSelected';
 import { TruncatedText } from '../../../components/TruncatedText';
 

@@ -17,7 +17,7 @@ import {
 } from '../../pathUtils';
 import { useInboxSelected } from '../../../hooks/router/useInbox';
 import { UnreadBadge } from '../../../components/unread-badge';
-import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
+import { ScreenSize, useScreenSizeContext } from '../../../hooks/browser/useScreenSize';
 import { useNavToActivePathAtom } from '../../../state/hooks/navToActivePath';
 
 export function InboxTab() {

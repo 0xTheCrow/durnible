@@ -15,8 +15,8 @@ import {
 } from '@atlaskit/pragmatic-drag-and-drop-hitbox/tree-item';
 import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
 import { LongPressWrapper } from '../../components/long-press';
-import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
-import { useFavoriteRooms } from '../../hooks/useFavoriteRooms';
+import { ScreenSize, useScreenSizeContext } from '../../hooks/browser/useScreenSize';
+import { useFavoriteRooms } from '../../hooks/room/useFavoriteRooms';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { mDirectAtom } from '../../state/mDirectList';
 import { roomToParentsAtom } from '../../state/room/roomToParents';
@@ -29,7 +29,7 @@ import { useSelectedRoom } from '../../hooks/router/useSelectedRoom';
 import {
   getRoomNotificationMode,
   useRoomsNotificationPreferencesContext,
-} from '../../hooks/useRoomsNotificationPreferences';
+} from '../../hooks/notifications/useRoomsNotificationPreferences';
 import { RoomNavItem } from '../../features/room-nav';
 import * as css from './FavoriteRooms.css';
 import { TruncatedText } from '../../components/TruncatedText';
