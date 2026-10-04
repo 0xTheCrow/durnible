@@ -8,7 +8,7 @@ import type {
 } from 'matrix-js-sdk';
 import { useCallback } from 'react';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
-import type { LocalSearchResult, AttachedImage } from '../../services/localSearch';
+import type { LocalSearchResult, AttachedImage } from './localSearch';
 
 export type ResultItem = {
   rank: number;

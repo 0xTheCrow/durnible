@@ -37,7 +37,7 @@ import { getMxIdLocalPart, mxcUrlToHttp } from '../../utils/matrix';
 import { useSelectedRoom } from '../../hooks/router/useSelectedRoom';
 import { useInboxNotificationsSelected } from '../../hooks/router/useInbox';
 import { useMediaAuthentication } from '../../hooks/server/useMediaAuthentication';
-import { addLiveMessageToCache } from '../../services/localSearch';
+import { addLiveMessageToCache } from '../../features/message-search/localSearch';
 import { useKeyDown } from '../../hooks/browser/useKeyDown';
 import { useKeybind } from '../../state/hooks/keybinds';
 import { KeybindAction } from '../../state/keybinds';

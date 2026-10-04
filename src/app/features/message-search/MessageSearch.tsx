@@ -27,7 +27,7 @@ import { SearchResultGroup } from './SearchResultGroup';
 import { SearchInput } from './SearchInput';
 import { SearchFilters } from './SearchFilters';
 import { VirtualTile } from '../../components/virtualizer';
-import { streamSearchEncryptedRoom, wasMessageCapExceeded } from '../../services/localSearch';
+import { streamSearchEncryptedRoom, wasMessageCapExceeded } from './localSearch';
 
 const hasItems = (arr?: unknown[]): boolean => arr != null && arr.length > 0;
 
