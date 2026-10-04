@@ -93,7 +93,7 @@ Durnible is a Matrix chat client built with React, TypeScript, and Vite. Forked 
 
 ## Platform Builds
 
-- Desktop is Electron (`platform/desktop/`); targets and GitHub publish config are in `electron-builder.yml`. A `v*` tag runs `.github/workflows/desktop-release.yml`, which fails unless the tag matches `package.json` version.
+- Desktop is Electron (`platform/desktop/`); targets and GitHub publish config are in `electron-builder.yml`. A `v*` tag runs `.github/workflows/release.yml`, which builds the desktop installers and the signed Android APK and publishes them, and fails unless the tag matches `package.json` version.
 - Android is a [Capacitor](https://capacitorjs.com/) shell in `platform/mobile/android`. Needs JDK 21 and an SDK with `platform-tools`, `platforms;android-36`, `build-tools;36.0.0`. Android Studio isn't required.
 - Gradle finds the SDK through `platform/mobile/android/local.properties`, which is **not** in version control because the path differs per machine. Create it before the first build: `echo "sdk.dir=$HOME/Android/Sdk" > platform/mobile/android/local.properties`
 - `mobile:run` targets the `durnible-api371` emulator specifically so it stays predictable with several devices attached. Start it first; the script prints the command if it isn't running.
