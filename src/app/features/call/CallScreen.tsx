@@ -1,8 +1,8 @@
 import type { TouchEvent as ReactTouchEvent } from 'react';
 import React from 'react';
-import { useAtomValue, useSetAtom } from 'jotai';
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { Box, Header, Icon, Icons, Modal, Text } from 'folds';
-import { callStateAtom, isCallPaneCollapsedAtom } from '../../state/call';
+import { callPreJoinRoomIdAtom, callStateAtom, isCallPaneCollapsedAtom } from '../../state/call';
 import { settingsAtom } from '../../state/settings';
 import { useSetting } from '../../state/hooks/settings';
 import type { CallConnection } from '../../plugins/call/CallConnection';
@@ -13,18 +13,19 @@ import {
 } from '../../hooks/call/useCallParticipantEntries';
 import { useLocalMediaControls } from '../../hooks/call/useLocalMediaControls';
 import { useCallDeafen } from '../../hooks/call/useCallDeafen';
-import { useCallMemberships } from '../../hooks/useCallMemberships';
-import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
-import { useRoomName } from '../../hooks/useRoomMeta';
+import { useCallMemberships } from '../../hooks/call/useCallMemberships';
+import { ScreenSize, useScreenSizeContext } from '../../hooks/browser/useScreenSize';
+import { useRoomName } from '../../hooks/room/useRoomMeta';
 import { CALL_TILE_PORTRAIT_ASPECT_RATIO } from '../../utils/call';
-import { useSwipeDownDismiss } from '../../hooks/useSwipeDownDismiss';
-import { useScreenWakeLock } from '../../hooks/useScreenWakeLock';
+import { useSwipeDownDismiss } from '../../hooks/gesture/useSwipeDownDismiss';
+import { useScreenWakeLock } from '../../hooks/browser/useScreenWakeLock';
 import { OverlayModal } from '../../components/OverlayModal';
 import { useCallActions } from './CallProvider';
 import { CallStage } from './CallStage';
 import { CallControlButton } from './CallControlButton';
 import { CallMasterVolumeMenu } from './CallMasterVolumeMenu';
 import { CallEncryptionDebugPanel } from './CallEncryptionDebugPanel';
+import { CallPreJoinScreen } from './CallPreJoin';
 import * as paneCss from './CallPane.css';
 import * as css from './CallScreen.css';
 
@@ -64,6 +65,7 @@ function ConnectedCallScreen({ connection, isReconnecting, onMinimize }: Connect
 
   return (
     <Modal
+      data-testid="call-screen"
       className={css.CallScreen}
       style={{
         transform: isDragging ? `translateY(${dragOffset}px)` : undefined,
@@ -93,6 +95,7 @@ function ConnectedCallScreen({ connection, isReconnecting, onMinimize }: Connect
           onClick={onMinimize}
           label="Minimize Call"
           icon={Icons.ChevronBottom}
+          data-testid="call-minimize"
         />
       </Header>
 
@@ -182,12 +185,27 @@ export function CallScreen() {
   const callState = useAtomValue(callStateAtom);
   const isCollapsed = useAtomValue(isCallPaneCollapsedAtom);
   const setIsCollapsed = useSetAtom(isCallPaneCollapsedAtom);
+  const [preJoinRoomId, setPreJoinRoomId] = useAtom(callPreJoinRoomIdAtom);
+
+  const isMobile = screenSize === ScreenSize.Mobile;
+  if (isMobile && preJoinRoomId) {
+    return (
+      <OverlayModal
+        open
+        onClose={() => setPreJoinRoomId(undefined)}
+        backdrop={false}
+        focusTrapOptions={{ clickOutsideDeactivates: false }}
+      >
+        <CallPreJoinScreen roomId={preJoinRoomId} />
+      </OverlayModal>
+    );
+  }
 
   const connection =
     callState.status === 'connected' || callState.status === 'reconnecting'
       ? callState.connection
       : undefined;
-  const isOpen = screenSize === ScreenSize.Mobile && connection !== undefined && !isCollapsed;
+  const isOpen = isMobile && connection !== undefined && !isCollapsed;
 
   return (
     <OverlayModal

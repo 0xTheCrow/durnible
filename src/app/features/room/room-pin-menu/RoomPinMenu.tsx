@@ -22,11 +22,11 @@ import {
 import type { Opts as LinkifyOpts } from 'linkifyjs';
 import type { HTMLReactParserOptions } from 'html-react-parser';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { useRoomPinnedEvents } from '../../../hooks/useRoomPinnedEvents';
+import { useRoomPinnedEvents } from '../../../hooks/room/useRoomPinnedEvents';
 import * as css from './RoomPinMenu.css';
 import { SequenceCard } from '../../../components/sequence-card';
-import { useRoomEvent } from '../../../hooks/useRoomEvent';
-import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
+import { useRoomEvent } from '../../../hooks/events/useRoomEvent';
+import { useMediaAuthentication } from '../../../hooks/server/useMediaAuthentication';
 import {
   AvatarBase,
   DefaultPlaceholder,
@@ -52,8 +52,8 @@ import {
 } from '../../../utils/room';
 import type { GetContentCallback } from '../../../../types/matrix/room';
 import { MessageEvent, StateEvent } from '../../../../types/matrix/room';
-import { useMentionClickHandler } from '../../../hooks/useMentionClickHandler';
-import { useSpoilerClickHandler } from '../../../hooks/useSpoilerClickHandler';
+import { useMentionClickHandler } from '../../../hooks/message/useMentionClickHandler';
+import { useSpoilerClickHandler } from '../../../hooks/message/useSpoilerClickHandler';
 import {
   factoryRenderLinkifyWithMention,
   getReactCustomHtmlParser,
@@ -61,33 +61,33 @@ import {
   makeMentionCustomProps,
   renderMatrixMention,
 } from '../../../plugins/react-custom-html-parser';
-import type { RenderMatrixEvent } from '../../../hooks/useMatrixEventRenderer';
-import { useMatrixEventRenderer } from '../../../hooks/useMatrixEventRenderer';
+import type { RenderMatrixEvent } from '../../../hooks/message/useMatrixEventRenderer';
+import { useMatrixEventRenderer } from '../../../hooks/message/useMatrixEventRenderer';
 import { RenderMessageContent } from '../../../components/RenderMessageContent';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
 import * as customHtmlCss from '../../../styles/CustomHtml.css';
 import { EncryptedContent } from '../message';
 import { Image } from '../../../components/media';
-import { useRoomNavigate } from '../../../hooks/useRoomNavigate';
+import { useRoomNavigate } from '../../../hooks/router/useRoomNavigate';
 import { VirtualTile } from '../../../components/virtualizer';
-import { usePowerLevelsContext } from '../../../hooks/usePowerLevels';
+import { usePowerLevelsContext } from '../../../hooks/members/usePowerLevels';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { ContainerColor } from '../../../styles/ContainerColor.css';
-import { usePowerLevelTags } from '../../../hooks/usePowerLevelTags';
+import { usePowerLevelTags } from '../../../hooks/members/usePowerLevelTags';
 import { useTheme } from '../../../hooks/useTheme';
 import { PowerIcon } from '../../../components/power';
 import colorMXID from '../../../../util/colorMXID';
-import { useIsDirectRoom } from '../../../hooks/useRoom';
-import { useRoomCreators } from '../../../hooks/useRoomCreators';
-import { useRoomPermissions } from '../../../hooks/useRoomPermissions';
-import type { GetMemberPowerTag } from '../../../hooks/useMemberPowerTag';
+import { useIsDirectRoom } from '../../../hooks/room/useRoom';
+import { useRoomCreators } from '../../../hooks/room/useRoomCreators';
+import { useRoomPermissions } from '../../../hooks/members/useRoomPermissions';
+import type { GetMemberPowerTag } from '../../../hooks/members/useMemberPowerTag';
 import {
   getPowerTagIconSrc,
   useAccessiblePowerTagColors,
   useGetMemberPowerTag,
-} from '../../../hooks/useMemberPowerTag';
-import { useRoomCreatorsTag } from '../../../hooks/useRoomCreatorsTag';
+} from '../../../hooks/members/useMemberPowerTag';
+import { useRoomCreatorsTag } from '../../../hooks/members/useRoomCreatorsTag';
 
 type PinnedMessageProps = {
   room: Room;

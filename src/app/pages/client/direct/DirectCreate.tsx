@@ -6,7 +6,7 @@ import { getDirectCreateSearchParams } from '../../pathSearchParam';
 import { getDirectRoomPath } from '../../pathUtils';
 import { getDMRoomFor } from '../../../utils/matrix';
 import { useDirectRooms } from './useDirectRooms';
-import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
+import { ScreenSize, useScreenSizeContext } from '../../../hooks/browser/useScreenSize';
 import {
   Page,
   PageContent,

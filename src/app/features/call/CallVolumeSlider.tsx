@@ -1,23 +1,15 @@
 import React from 'react';
+import { Box, Icon, IconButton, Icons, Text, color, config, toRem } from 'folds';
+import { Slider } from '../../components/Slider';
 import {
-  Badge,
-  Box,
-  Icon,
-  IconButton,
-  Icons,
-  ProgressBar,
-  Text,
-  color,
-  config,
-  toRem,
-} from 'folds';
-import { Range } from 'react-range';
-import { CALL_VOLUME_LEVEL_MAX, CALL_VOLUME_LEVEL_MIN } from '../../state/callVolumePreferences';
-
-const VOLUME_LEVEL_STEP = 0.01;
+  CALL_VOLUME_LEVEL_MAX,
+  CALL_VOLUME_LEVEL_MIN,
+  CALL_VOLUME_LEVEL_STEP,
+} from '../../state/callVolumePreferences';
 
 type CallVolumeSliderProps = {
   label: string;
+  thumbTestId?: string;
   volumeLevel: number;
   isDisabled?: boolean;
   isMuted?: boolean;
@@ -28,6 +20,7 @@ type CallVolumeSliderProps = {
 };
 export function CallVolumeSlider({
   label,
+  thumbTestId,
   volumeLevel,
   isDisabled,
   isMuted,
@@ -61,48 +54,17 @@ export function CallVolumeSlider({
           {Math.round(volumeLevel * 100)}%
         </Text>
       </Box>
-      <Range
-        disabled={isDisabled}
-        step={VOLUME_LEVEL_STEP}
+      <Slider
+        size="400"
+        isDisabled={isDisabled}
+        step={CALL_VOLUME_LEVEL_STEP}
         min={CALL_VOLUME_LEVEL_MIN}
         max={CALL_VOLUME_LEVEL_MAX}
-        values={[volumeLevel]}
-        onChange={(values) => onChange(values[0])}
-        onFinalChange={(values) => onCommit(values[0])}
-        renderTrack={(params) => (
-          <div
-            {...params.props}
-            style={{
-              ...params.props.style,
-              width: '100%',
-              height: toRem(16),
-              display: 'flex',
-              alignItems: 'center',
-            }}
-          >
-            {params.children}
-            <ProgressBar
-              style={{ width: '100%', backgroundColor: color.SurfaceVariant.ContainerActive }}
-              variant="Secondary"
-              size="400"
-              min={CALL_VOLUME_LEVEL_MIN}
-              max={CALL_VOLUME_LEVEL_MAX}
-              value={volumeLevel}
-              radii="300"
-            />
-          </div>
-        )}
-        renderThumb={(params) => (
-          <Badge
-            size="400"
-            variant="Secondary"
-            fill="Solid"
-            radii="Pill"
-            outlined
-            {...params.props}
-            style={{ ...params.props.style, zIndex: 1 }}
-          />
-        )}
+        value={volumeLevel}
+        trackBackgroundColor={color.SurfaceVariant.ContainerActive}
+        thumbTestId={thumbTestId}
+        onChange={onChange}
+        onFinalChange={onCommit}
       />
     </Box>
   );

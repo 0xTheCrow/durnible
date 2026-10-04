@@ -2,7 +2,7 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Spinner, Text, color } from 'folds';
 import { atom, useAtom, useAtomValue } from 'jotai';
 import type { Room } from 'matrix-js-sdk';
-import { useStateEvent } from '../../../hooks/useStateEvent';
+import { useStateEvent } from '../../../hooks/events/useStateEvent';
 import { StateEvent } from '../../../../types/matrix/room';
 import { timeDayMonthYear, timeHourMinute } from '../../../utils/time';
 import { useSetting } from '../../../state/hooks/settings';

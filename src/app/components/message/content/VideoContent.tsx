@@ -18,8 +18,8 @@ import {
   downloadMedia,
   mxcUrlToHttp,
 } from '../../../utils/matrix';
-import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
-import { useRevokeObjectURL } from '../../../hooks/useObjectURL';
+import { useMediaAuthentication } from '../../../hooks/server/useMediaAuthentication';
+import { useRevokeObjectURL } from '../../../hooks/browser/useObjectURL';
 import { validBlurHash } from '../../../utils/blurHash';
 import { hiddenImagesAtom, MessageEventIdContext } from '../../../state/hiddenImages';
 

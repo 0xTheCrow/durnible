@@ -31,7 +31,7 @@ import {
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { getMxIdServer } from '../../../utils/matrix';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
-import { useNavToActivePathMapper } from '../../../hooks/useNavToActivePathMapper';
+import { useNavToActivePathMapper } from '../../../hooks/router/useNavToActivePathMapper';
 import { AdjustablePageNav, PageNavContent, PageNavHeader } from '../../../components/page';
 import { OverlayModal } from '../../../components/OverlayModal';
 import { TruncatedText } from '../../../components/TruncatedText';

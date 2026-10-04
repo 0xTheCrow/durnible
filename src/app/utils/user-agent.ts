@@ -10,12 +10,16 @@ const MOBILE_OR_TABLET =
 
 const IS_MAC_OS = parsed.os.name === 'Mac OS';
 
-const IS_IOS = parsed.os.name === 'iOS';
+const IS_IOS = parsed.os.name === 'iOS' || (IS_MAC_OS && window.navigator.maxTouchPoints > 1);
+
+const IS_FIREFOX = parsed.engine.name === 'Gecko';
 
 export const ua = () => parsed;
 
 export const isMacOS = (): boolean => IS_MAC_OS;
 
 export const isIOS = (): boolean => IS_IOS;
+
+export const checkIsFirefox = (): boolean => IS_FIREFOX;
 
 export const mobileOrTablet = (): boolean => MOBILE_OR_TABLET;

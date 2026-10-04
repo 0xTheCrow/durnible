@@ -5,16 +5,16 @@ import type { MatrixClient, Room, RoomMember } from 'matrix-js-sdk';
 
 import type { AutocompleteQuery } from './autocompleteQuery';
 import { AutocompleteMenu } from './AutocompleteMenu';
-import { useRoomMembers } from '../../../hooks/useRoomMembers';
+import { useRoomMembers } from '../../../hooks/members/useRoomMembers';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import type { SearchItemStrGetter, UseAsyncSearchOptions } from '../../../hooks/useAsyncSearch';
 import { useAsyncSearch } from '../../../hooks/useAsyncSearch';
 import { onTabPress } from '../../../utils/keyboard';
-import { useKeyDown } from '../../../hooks/useKeyDown';
+import { useKeyDown } from '../../../hooks/browser/useKeyDown';
 import { getMxIdLocalPart, getMxIdServer, isUserId } from '../../../utils/matrix';
 import { getMemberDisplayName, getMemberSearchStr } from '../../../utils/room';
 import { UserAvatar } from '../../user-avatar';
-import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
+import { useMediaAuthentication } from '../../../hooks/server/useMediaAuthentication';
 import { Membership } from '../../../../types/matrix/room';
 
 type MentionAutoCompleteHandler = (userId: string, name: string) => void;

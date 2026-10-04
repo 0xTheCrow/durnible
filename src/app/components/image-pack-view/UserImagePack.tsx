@@ -4,7 +4,7 @@ import type { PackContent } from '../../plugins/custom-emoji';
 import { ImagePack } from '../../plugins/custom-emoji';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { AccountDataEvent } from '../../../types/matrix/accountData';
-import { useUserImagePack } from '../../hooks/useImagePacks';
+import { useUserImagePack } from '../../hooks/emoji/useImagePacks';
 
 export function UserImagePack() {
   const mx = useMatrixClient();

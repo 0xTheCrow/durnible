@@ -19,12 +19,12 @@ import {
   PAGINATION_LIMIT,
 } from './timelineState';
 import { getTimelinesEventsCount } from './timelineUtils';
-import { useVirtualPaginator } from '../../../hooks/useVirtualPaginator';
+import { useVirtualPaginator } from '../../../hooks/message/useVirtualPaginator';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
-import { useRoomNavigate } from '../../../hooks/useRoomNavigate';
+import { useRoomNavigate } from '../../../hooks/router/useRoomNavigate';
 import { useAlive } from '../../../hooks/useAlive';
-import { useCanHover } from '../../../hooks/useCanHover';
-import { useIgnoredUsers } from '../../../hooks/useIgnoredUsers';
+import { useCanHover } from '../../../hooks/browser/useCanHover';
+import { useIgnoredUsers } from '../../../hooks/members/useIgnoredUsers';
 import { RoomIntro } from '../../../components/room-intro';
 import { getEditedEvent } from '../../../utils/room';
 import { getReadReceiptEventId } from '../../../utils/room/receipts';

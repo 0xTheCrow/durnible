@@ -18,7 +18,7 @@ import {
 } from 'folds';
 import FocusTrap from 'focus-trap-react';
 import type { CryptoApi, VerificationRequest } from 'matrix-js-sdk/lib/crypto-api';
-import { VerificationStatus } from '../../../hooks/useDeviceVerificationStatus';
+import { VerificationStatus } from '../../../hooks/encryption/useDeviceVerificationStatus';
 import { InfoCard } from '../../../components/info-card';
 import { ManualVerificationTile } from '../../../components/ManualVerification';
 import type { SecretStorageKeyContent } from '../../../../types/matrix/accountData';
@@ -31,9 +31,9 @@ import {
   DeviceVerificationSetup,
 } from '../../../components/DeviceVerificationSetup';
 import { stopPropagation } from '../../../utils/keyboard';
-import { useAuthMetadata } from '../../../hooks/useAuthMetadata';
+import { useAuthMetadata } from '../../../hooks/auth/useAuthMetadata';
 import { withSearchParam } from '../../../pages/pathUtils';
-import { useAccountManagementActions } from '../../../hooks/useAccountManagement';
+import { useAccountManagementActions } from '../../../hooks/auth/useAccountManagement';
 import { OverlayModal } from '../../../components/OverlayModal';
 
 type VerificationStatusBadgeProps = {

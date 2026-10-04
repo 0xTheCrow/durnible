@@ -25,12 +25,12 @@ import {
 import FocusTrap from 'focus-trap-react';
 import { useAtomValue } from 'jotai';
 import type { Room } from 'matrix-js-sdk';
-import { useGlobalImagePacks, useRoomsImagePacks } from '../../../hooks/useImagePacks';
+import { useGlobalImagePacks, useRoomsImagePacks } from '../../../hooks/emoji/useImagePacks';
 import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SettingTile } from '../../../components/setting-tile';
 import { mxcUrlToHttp } from '../../../utils/matrix';
-import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
+import { useMediaAuthentication } from '../../../hooks/server/useMediaAuthentication';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import type { EmoteRoomsContent, ImagePack, PackAddress } from '../../../plugins/custom-emoji';
 import { ImageUsage, packAddressEqual } from '../../../plugins/custom-emoji';

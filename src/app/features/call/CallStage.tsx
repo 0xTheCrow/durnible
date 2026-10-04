@@ -37,7 +37,7 @@ export function CallStage({ room, entries, memberships, tileAspectRatio }: CallS
 
   return (
     <div className={css.CallSpotlightLayout}>
-      <div className={css.CallSpotlight}>
+      <div className={css.CallSpotlight} data-testid="call-spotlight">
         <CallParticipantTile
           room={room}
           participant={focusedEntry.participant}
@@ -53,7 +53,7 @@ export function CallStage({ room, entries, memberships, tileAspectRatio }: CallS
         onStopWatching={stopWatchingFocusedEntry}
       />
       <Scroll direction="Horizontal" size="300" hideTrack visibility="Hover">
-        <div className={css.CallTileStrip}>
+        <div className={css.CallTileStrip} data-testid="call-tile-strip">
           {stripEntries.map((entry) => (
             <CallParticipantTile
               key={entry.key}

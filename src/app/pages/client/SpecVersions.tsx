@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import React from 'react';
 import { Box, Dialog, config, Text, Button, Spinner } from 'folds';
 import { SpecVersionsLoader } from '../../components/SpecVersionsLoader';
-import { SpecVersionsProvider } from '../../hooks/useSpecVersions';
+import { SpecVersionsProvider } from '../../hooks/server/useSpecVersions';
 import { SplashScreen } from '../../components/splash-screen';
 
 export function SpecVersions({ baseUrl, children }: { baseUrl: string; children: ReactNode }) {

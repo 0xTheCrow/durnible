@@ -47,12 +47,12 @@ import { MessageEditor } from './MessageEditor';
 import { useOpenReactionViewer } from '../../../state/hooks/reactionViewer';
 import { UserAvatar } from '../../../components/user-avatar';
 import { stopPropagation } from '../../../utils/keyboard';
-import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
+import { useMediaAuthentication } from '../../../hooks/server/useMediaAuthentication';
 import type { MemberPowerTag } from '../../../../types/matrix/room';
 import { MessageEvent } from '../../../../types/matrix/room';
 import { PowerIcon } from '../../../components/power';
 import colorMXID from '../../../../util/colorMXID';
-import { getPowerTagIconSrc } from '../../../hooks/useMemberPowerTag';
+import { getPowerTagIconSrc } from '../../../hooks/members/useMemberPowerTag';
 import {
   MessageAllReactionButton,
   MessageAllReactionItem,
@@ -67,7 +67,7 @@ import {
   MessageReportItem,
   MessageSourceCodeItem,
 } from './menu';
-import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
+import { ScreenSize, useScreenSizeContext } from '../../../hooks/browser/useScreenSize';
 
 export type { ReactionHandler } from './reaction-controls';
 export {

@@ -13,7 +13,7 @@ import { getMxIdServer, isRoomAlias } from '../../../utils/matrix';
 import type { UseAsyncSearchOptions } from '../../../hooks/useAsyncSearch';
 import { useAsyncSearch } from '../../../hooks/useAsyncSearch';
 import { onTabPress } from '../../../utils/keyboard';
-import { useKeyDown } from '../../../hooks/useKeyDown';
+import { useKeyDown } from '../../../hooks/browser/useKeyDown';
 import { mDirectAtom } from '../../../state/mDirectList';
 import { allRoomsAtom } from '../../../state/room-list/roomList';
 import { factoryRoomIdByActivity } from '../../../utils/sort';

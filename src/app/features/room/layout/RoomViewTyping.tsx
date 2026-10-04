@@ -9,7 +9,7 @@ import { getMemberDisplayName } from '../../../utils/room';
 import { getMxIdLocalPart } from '../../../utils/matrix';
 import * as css from './RoomViewTyping.css';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
-import { useRoomTypingMember } from '../../../hooks/useRoomTypingMembers';
+import { useRoomTypingMember } from '../../../hooks/room/useRoomTypingMembers';
 
 export type RoomViewTypingProps = {
   room: Room;

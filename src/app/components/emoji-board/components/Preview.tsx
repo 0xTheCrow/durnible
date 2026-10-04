@@ -4,7 +4,7 @@ import type { Atom } from 'jotai';
 import { atom, useAtomValue } from 'jotai';
 import * as css from './styles.css';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
-import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
+import { useMediaAuthentication } from '../../../hooks/server/useMediaAuthentication';
 import { mxcUrlToHttp } from '../../../utils/matrix';
 
 export type PreviewData = {

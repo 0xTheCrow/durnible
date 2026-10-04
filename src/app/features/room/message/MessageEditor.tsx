@@ -28,17 +28,17 @@ import {
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
 import { useKeybinds } from '../../../state/hooks/keybinds';
-import { useRelevantImagePacks } from '../../../hooks/useImagePacks';
+import { useRelevantImagePacks } from '../../../hooks/emoji/useImagePacks';
 import { ImageUsage } from '../../../plugins/custom-emoji/types';
 import { buildShortcodeMap, getEmojiData } from '../../../plugins/emoji';
 import { EmojiBoardWrapper } from '../../../components/emoji-board';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
-import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
+import { useMediaAuthentication } from '../../../hooks/server/useMediaAuthentication';
 import { getEditedEvent, getMentionContent, trimReplyFromFormattedBody } from '../../../utils/room';
 import { sanitizeText } from '../../../utils/sanitize';
 import { mobileOrTablet } from '../../../utils/user-agent';
-import { useComposingCheck } from '../../../hooks/useComposingCheck';
+import { useComposingCheck } from '../../../hooks/composer/useComposingCheck';
 
 type MessageEditorProps = {
   roomId: string;

@@ -11,10 +11,10 @@ import { ClientConfigProvider } from '../hooks/useClientConfig';
 import { ConfigConfigError, ConfigConfigLoading } from './ConfigConfig';
 import { FeatureCheck } from './FeatureCheck';
 import { createRouter } from './Router';
-import { ScreenSizeProvider, useScreenSize } from '../hooks/useScreenSize';
+import { ScreenSizeProvider, useScreenSize } from '../hooks/browser/useScreenSize';
 import { DesktopMenuBarSync } from '../platform/desktop/DesktopMenuBarSync';
 import { DesktopAppUpdatePrompt } from '../platform/desktop/DesktopAppUpdatePrompt';
-import { useCompositionEndTracking } from '../hooks/useComposingCheck';
+import { useCompositionEndTracking } from '../hooks/composer/useComposingCheck';
 import i18n, { setupI18n } from '../i18n';
 
 const queryClient = new QueryClient();

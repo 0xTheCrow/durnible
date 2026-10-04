@@ -6,7 +6,7 @@ import * as css from './style.css';
 import {
   getIntersectionObserverEntry,
   useIntersectionObserver,
-} from '../../hooks/useIntersectionObserver';
+} from '../../hooks/browser/useIntersectionObserver';
 
 export const ScrollTopContainer = as<
   'div',

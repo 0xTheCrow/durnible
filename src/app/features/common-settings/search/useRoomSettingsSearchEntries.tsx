@@ -3,7 +3,7 @@ import type {
   SettingsSearchEntry,
   SettingsSearchRenderProps,
 } from '../../../components/settings-search';
-import { useRoom } from '../../../hooks/useRoom';
+import { useRoom } from '../../../hooks/room/useRoom';
 import { useRoomSettingsPermissions } from '../useRoomSettingsPermissions';
 import type { PermissionGroup } from '../permissions';
 import {

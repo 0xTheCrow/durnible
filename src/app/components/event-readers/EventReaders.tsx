@@ -14,15 +14,15 @@ import {
   config,
 } from 'folds';
 import type { Room } from 'matrix-js-sdk';
-import { useRoomEventReaders } from '../../hooks/useRoomEventReaders';
+import { useRoomEventReaders } from '../../hooks/room/useRoomEventReaders';
 import { getMemberDisplayName } from '../../utils/room';
 import { getMxIdLocalPart } from '../../utils/matrix';
 import * as css from './EventReaders.css';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { UserAvatar } from '../user-avatar';
-import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
+import { useMediaAuthentication } from '../../hooks/server/useMediaAuthentication';
 import { useOpenUserRoomProfile } from '../../state/hooks/userRoomProfile';
-import { useSpaceOptionally } from '../../hooks/useSpace';
+import { useSpaceOptionally } from '../../hooks/space/useSpace';
 import { getMouseEventCords } from '../../utils/dom';
 
 export type EventReadersProps = {

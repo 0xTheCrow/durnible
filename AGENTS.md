@@ -13,7 +13,7 @@ Durnible is a Matrix chat client built with React, TypeScript, and Vite. Forked 
 | `npm run typecheck`           | TypeScript type checking (`tsc --noEmit`)                                                |
 | `npm test`                    | Run tests (Vitest)                                                                       |
 | `npm run test:watch`          | Watch mode tests                                                                         |
-| `npm run e2e`                 | Run Playwright e2e (auto-starts dev server; chromium + firefox)                          |
+| `npm run e2e`                 | Run Playwright e2e (starts dev server + LiveKit in Docker; chromium + firefox)           |
 | `npm run fix:prettier`        | Auto-format with Prettier                                                                |
 | `npm run performance`         | Composer typing benchmark (chromium only; excluded from `npm run e2e`)                   |
 | `npm run performance:desktop` | Electron CPU/RAM measurement (builds the desktop app first; excluded from `npm run e2e`) |
@@ -280,7 +280,7 @@ The metric is the **eager set**: the entry `<script>` plus every `<link rel="mod
 
 ### Conditional
 
-- **Route splitting** in `Router.tsx` — real yield unknown and probably low; measure before committing to it. `components/create-room` is pinned eager by `hooks/useCommands.ts`.
+- **Route splitting** in `Router.tsx` — real yield unknown and probably low; measure before committing to it. `components/create-room` is pinned eager by `hooks/composer/useCommands.ts`.
 - **Auth vs client split** — removing auth from the logged-in bundle (`pages/auth` + `oidc-client-ts`) is ~18 kB gzip; removing the client from the logged-out bundle is ~700 kB, but only for visitors on the login page.
 - **`sanitize-html` + `postcss`** — ~17 kB. Removal, not deferral: it sits on the timeline render path via `utils/sanitize.ts`.
 

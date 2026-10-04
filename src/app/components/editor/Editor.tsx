@@ -24,7 +24,7 @@ import {
 import { handleEditorShortcut } from './editorKeyboard';
 import { clearPendingInlineStyles, hasInlineStyleElement } from './editorFormatting';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
-import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
+import { useMediaAuthentication } from '../../hooks/server/useMediaAuthentication';
 import { useKeybinds } from '../../state/hooks/keybinds';
 import * as css from './Editor.css';
 import { getImageUrlBlob } from '../../utils/dom';

@@ -5,7 +5,11 @@ import { SettingsPageHeader } from '../components';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { SettingTile } from '../../../components/setting-tile';
-import { useDeviceIds, useDeviceList, useSplitCurrentDevice } from '../../../hooks/useDeviceList';
+import {
+  useDeviceIds,
+  useDeviceList,
+  useSplitCurrentDevice,
+} from '../../../hooks/encryption/useDeviceList';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { LocalBackup } from './LocalBackup';
 import { DeviceLogoutBtn, DeviceKeyDetails, DeviceTile, DeviceTilePlaceholder } from './DeviceTile';
@@ -20,12 +24,12 @@ import {
   useDeviceVerificationStatus,
   useUnverifiedDeviceCount,
   VerificationStatus,
-} from '../../../hooks/useDeviceVerificationStatus';
+} from '../../../hooks/encryption/useDeviceVerificationStatus';
 import {
   useSecretStorageDefaultKeyId,
   useSecretStorageKeyContent,
-} from '../../../hooks/useSecretStorage';
-import { useCrossSigningActive } from '../../../hooks/useCrossSigning';
+} from '../../../hooks/encryption/useSecretStorage';
+import { useCrossSigningActive } from '../../../hooks/encryption/useCrossSigning';
 import { BackupRestoreTile } from '../../../components/BackupRestore';
 
 function DevicesPlaceholder() {

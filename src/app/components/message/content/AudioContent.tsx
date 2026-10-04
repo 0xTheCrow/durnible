@@ -12,7 +12,7 @@ import {
   downloadMedia,
   mxcUrlToHttp,
 } from '../../../utils/matrix';
-import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
+import { useMediaAuthentication } from '../../../hooks/server/useMediaAuthentication';
 import { toSeekableAudio } from '../../../utils/seekableAudio';
 
 export type AudioContentProps = {

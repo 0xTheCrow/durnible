@@ -3,18 +3,18 @@ import React, { useCallback, useMemo, useState } from 'react';
 import type { IPushRule, IPushRules } from 'matrix-js-sdk';
 import { PushRuleKind } from 'matrix-js-sdk';
 import { Box, Text, Badge, Button, Input, config, IconButton, Icons, Icon, Spinner } from 'folds';
-import { useAccountData } from '../../../hooks/useAccountData';
+import { useAccountData } from '../../../hooks/events/useAccountData';
 import { AccountDataEvent } from '../../../../types/matrix/accountData';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { SettingTile } from '../../../components/setting-tile';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
-import type { NotificationModeOptions } from '../../../hooks/useNotificationMode';
+import type { NotificationModeOptions } from '../../../hooks/notifications/useNotificationMode';
 import {
   getNotificationModeActions,
   NotificationMode,
   useNotificationModeActions,
-} from '../../../hooks/useNotificationMode';
+} from '../../../hooks/notifications/useNotificationMode';
 import { NotificationModeSwitcher } from './NotificationModeSwitcher';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 

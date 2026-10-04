@@ -24,7 +24,7 @@ import { isKeyHotkey } from 'is-hotkey';
 import FocusTrap from 'focus-trap-react';
 import { stopPropagation } from '../../utils/keyboard';
 import { OverlayModal } from '../OverlayModal';
-import { useDirectUsers } from '../../hooks/useDirectUsers';
+import { useDirectUsers } from '../../hooks/room/useDirectUsers';
 import { getMxIdLocalPart, getMxIdServer, isUserId } from '../../utils/matrix';
 import { Membership } from '../../../types/matrix/room';
 import type { UseAsyncSearchOptions } from '../../hooks/useAsyncSearch';

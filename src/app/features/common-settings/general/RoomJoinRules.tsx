@@ -15,10 +15,10 @@ import { SequenceCard } from '../../../components/sequence-card';
 import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { SettingTile } from '../../../components/setting-tile';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
-import { useRoom } from '../../../hooks/useRoom';
+import { useRoom } from '../../../hooks/room/useRoom';
 import { StateEvent } from '../../../../types/matrix/room';
-import { useStateEvent } from '../../../hooks/useStateEvent';
-import { useSpaceOptionally } from '../../../hooks/useSpace';
+import { useStateEvent } from '../../../hooks/events/useStateEvent';
+import { useSpaceOptionally } from '../../../hooks/space/useSpace';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { getStateEvents } from '../../../utils/room';
 import {
@@ -32,7 +32,7 @@ import {
   knockSupported,
   restrictedSupported,
 } from '../../../utils/matrix';
-import type { RoomPermissionsAPI } from '../../../hooks/useRoomPermissions';
+import type { RoomPermissionsAPI } from '../../../hooks/members/useRoomPermissions';
 
 type RestrictedRoomAllowContent = {
   room_id: string;

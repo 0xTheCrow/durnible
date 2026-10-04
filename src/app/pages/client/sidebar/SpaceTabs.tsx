@@ -59,18 +59,18 @@ import type {
   SidebarFolder as SidebarFolderData,
   SidebarItems,
   SidebarItem as SidebarItemData,
-} from '../../../hooks/useSidebarItems';
+} from '../../../hooks/space/useSidebarItems';
 import {
   makeCinnySpacesContent,
   parseSidebar,
   sidebarItemWithout,
   useSidebarItems,
-} from '../../../hooks/useSidebarItems';
+} from '../../../hooks/space/useSidebarItems';
 import { AccountDataEvent } from '../../../../types/matrix/accountData';
-import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
+import { ScreenSize, useScreenSizeContext } from '../../../hooks/browser/useScreenSize';
 import { useNavToActivePathAtom } from '../../../state/hooks/navToActivePath';
 import { useOpenedSidebarFolderAtom } from '../../../state/hooks/openedSidebarFolder';
-import { usePowerLevels } from '../../../hooks/usePowerLevels';
+import { usePowerLevels } from '../../../hooks/members/usePowerLevels';
 import { useRoomsUnread } from '../../../state/hooks/unread';
 import { roomToUnreadAtom } from '../../../state/room/roomToUnread';
 import { markAsRead } from '../../../utils/notifications';
@@ -79,12 +79,12 @@ import { stopPropagation } from '../../../utils/keyboard';
 import { getMatrixToRoom } from '../../../plugins/matrix-to';
 import { getViaServers } from '../../../plugins/via-servers';
 import { getRoomAvatarUrl } from '../../../utils/room';
-import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
+import { useMediaAuthentication } from '../../../hooks/server/useMediaAuthentication';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
 import { useOpenSpaceSettings } from '../../../state/hooks/spaceSettings';
-import { useRoomCreators } from '../../../hooks/useRoomCreators';
-import { useRoomPermissions } from '../../../hooks/useRoomPermissions';
+import { useRoomCreators } from '../../../hooks/room/useRoomCreators';
+import { useRoomPermissions } from '../../../hooks/members/useRoomPermissions';
 import { InviteUserPrompt } from '../../../components/invite-user-prompt';
 
 type SpaceMenuProps = {

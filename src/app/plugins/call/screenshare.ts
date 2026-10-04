@@ -1,5 +1,15 @@
-import type { LocalVideoTrack, ScreenShareCaptureOptions, VideoEncoding } from 'livekit-client';
-import type { ScreenshareMaxFrameRate, ScreenshareResolution } from '../../state/settings';
+import type {
+  AudioPreset,
+  LocalAudioTrack,
+  LocalVideoTrack,
+  ScreenShareCaptureOptions,
+  VideoEncoding,
+} from 'livekit-client';
+import type {
+  ScreenshareAudioBitrateKbps,
+  ScreenshareMaxFrameRate,
+  ScreenshareResolution,
+} from '../../state/settings';
 
 const BASE_FRAME_RATE = 30;
 
@@ -18,15 +28,39 @@ export const SCREENSHARE_RESOLUTIONS: Record<ScreenshareResolution, ScreenshareR
 
 export const SCREENSHARE_RESOLUTION_OPTIONS: ScreenshareResolution[] = ['720p', '1080p', '1440p'];
 
+export const DEFAULT_SCREENSHARE_RESOLUTION: ScreenshareResolution = '1080p';
+export const DEFAULT_SCREENSHARE_MAX_FRAME_RATE: ScreenshareMaxFrameRate = 30;
+export const DEFAULT_SCREENSHARE_AUDIO_BITRATE_KBPS: ScreenshareAudioBitrateKbps = 96;
+
 export const SCREENSHARE_MAX_FRAME_RATE_OPTIONS: ScreenshareMaxFrameRate[] = [15, 30, 60];
+
+export const SCREENSHARE_AUDIO_BITRATE_KBPS_OPTIONS: ScreenshareAudioBitrateKbps[] = [
+  48, 64, 96, 128,
+];
+
+export const formatScreenshareStreamLine = (
+  width: number | undefined,
+  height: number | undefined,
+  frameRate: number | undefined
+): string => {
+  const size = width && height ? `${width}×${height}` : 'unknown';
+  const rate = frameRate !== undefined ? `${Math.round(frameRate)} fps` : 'unknown';
+  return `${size} · ${rate}`;
+};
 
 export const getScreenshareCaptureOptions = (
   resolution: ScreenshareResolution,
-  maxFrameRate: ScreenshareMaxFrameRate
+  maxFrameRate: ScreenshareMaxFrameRate,
+  isAudioProcessingEnabled = false
 ): ScreenShareCaptureOptions => {
   const { width, height } = SCREENSHARE_RESOLUTIONS[resolution];
   return {
-    audio: true,
+    audio: {
+      echoCancellation: isAudioProcessingEnabled,
+      noiseSuppression: isAudioProcessingEnabled,
+      autoGainControl: isAudioProcessingEnabled,
+      restrictOwnAudio: true,
+    },
     resolution: { width, height, frameRate: maxFrameRate },
     contentHint: 'motion',
   };
@@ -66,5 +100,23 @@ export const applyScreenshareQuality = async (
     maxFramerate,
     maxBitrate: Math.round(maxBitrate / (layerEncoding.scaleResolutionDownBy ?? 1) ** 2),
   }));
+  await sender.setParameters(parameters);
+};
+
+export const getScreenshareAudioPreset = (
+  bitrateKbps: ScreenshareAudioBitrateKbps
+): AudioPreset => ({
+  maxBitrate: bitrateKbps * 1000,
+});
+
+export const applyScreenshareAudioBitrate = async (
+  track: LocalAudioTrack,
+  bitrateKbps: ScreenshareAudioBitrateKbps
+): Promise<void> => {
+  const { sender } = track;
+  if (!sender) return;
+  const { maxBitrate } = getScreenshareAudioPreset(bitrateKbps);
+  const parameters = sender.getParameters();
+  parameters.encodings = parameters.encodings.map((encoding) => ({ ...encoding, maxBitrate }));
   await sender.setParameters(parameters);
 };

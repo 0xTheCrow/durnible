@@ -48,9 +48,9 @@ import { fetchGifBlob } from '../../../utils/gifServer';
 import type { UploadContent } from '../../../utils/matrix';
 import { getImageInfo, getMxIdLocalPart, mxcUrlToHttp } from '../../../utils/matrix';
 import { encryptFileInWorker } from '../../../utils/encryptWorker';
-import { useTypingStatusUpdater } from '../../../hooks/useTypingStatusUpdater';
-import { useFilePicker } from '../../../hooks/useFilePicker';
-import { useFileDropZone } from '../../../hooks/useFileDrop';
+import { useTypingStatusUpdater } from '../../../hooks/composer/useTypingStatusUpdater';
+import { useFilePicker } from '../../../hooks/browser/useFilePicker';
+import { useFileDropZone } from '../../../hooks/composer/useFileDrop';
 import type { UploadItem, UploadMetadata } from '../../../state/room/roomInputDrafts';
 import {
   roomIdToEditorDraftAtomFamily,
@@ -84,29 +84,35 @@ import {
 import { getMemberDisplayName, getMentionContent, trimReplyFromBody } from '../../../utils/room';
 import { ComposerAutocomplete } from './ComposerAutocomplete';
 import { VoiceMessageRecorder } from './VoiceMessageRecorder';
-import { Command, SHRUG, TABLEFLIP, UNFLIP, useCommands } from '../../../hooks/useCommands';
+import {
+  Command,
+  SHRUG,
+  TABLEFLIP,
+  UNFLIP,
+  useCommands,
+} from '../../../hooks/composer/useCommands';
 import { mobileOrTablet } from '../../../utils/user-agent';
-import { useElementSizeObserver } from '../../../hooks/useElementSizeObserver';
+import { useElementSizeObserver } from '../../../hooks/browser/useElementSizeObserver';
 import { ReplyLayout, ThreadIndicator } from '../../../components/message';
 import { roomToParentsAtom } from '../../../state/room/roomToParents';
 import { fileDropOverrideAtom } from '../../../state/fileDropOverride';
-import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
-import { useImagePackRooms } from '../../../hooks/useImagePackRooms';
-import { useRelevantImagePacks } from '../../../hooks/useImagePacks';
+import { useMediaAuthentication } from '../../../hooks/server/useMediaAuthentication';
+import { useImagePackRooms } from '../../../hooks/emoji/useImagePackRooms';
+import { useRelevantImagePacks } from '../../../hooks/emoji/useImagePacks';
 import { ImageUsage } from '../../../plugins/custom-emoji/types';
 import { buildShortcodeMap, getEmojiData } from '../../../plugins/emoji';
-import { usePowerLevelsContext } from '../../../hooks/usePowerLevels';
+import { usePowerLevelsContext } from '../../../hooks/members/usePowerLevels';
 import colorMXID from '../../../../util/colorMXID';
-import { useIsDirectRoom } from '../../../hooks/useRoom';
+import { useIsDirectRoom } from '../../../hooks/room/useRoom';
 import {
   useAccessiblePowerTagColors,
   useGetMemberPowerTag,
-} from '../../../hooks/useMemberPowerTag';
-import { useRoomCreators } from '../../../hooks/useRoomCreators';
+} from '../../../hooks/members/useMemberPowerTag';
+import { useRoomCreators } from '../../../hooks/room/useRoomCreators';
 import { useTheme } from '../../../hooks/useTheme';
-import { useRoomCreatorsTag } from '../../../hooks/useRoomCreatorsTag';
-import { usePowerLevelTags } from '../../../hooks/usePowerLevelTags';
-import { useComposingCheck } from '../../../hooks/useComposingCheck';
+import { useRoomCreatorsTag } from '../../../hooks/members/useRoomCreatorsTag';
+import { usePowerLevelTags } from '../../../hooks/members/usePowerLevelTags';
+import { useComposingCheck } from '../../../hooks/composer/useComposingCheck';
 
 export const ROOM_INPUT_EDITABLE_NAME = 'RoomInput';
 

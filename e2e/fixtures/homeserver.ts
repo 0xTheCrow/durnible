@@ -18,14 +18,15 @@ export type SentEvent = {
   content: Record<string, unknown>;
 };
 
-const stateEvent = (
+export const stateEvent = (
   type: string,
   stateKey: string,
-  content: Record<string, unknown>
+  content: Record<string, unknown>,
+  sender = TEST_USER_ID
 ): Record<string, unknown> => ({
   type,
   state_key: stateKey,
-  sender: TEST_USER_ID,
+  sender,
   content,
   event_id: `$state_${type}_${stateKey}`,
   origin_server_ts: 1700000000000,
@@ -242,14 +243,29 @@ const liveSync = (
   },
 });
 
-const json = (route: Route, body: unknown, status = 200): Promise<void> =>
+export const json = (route: Route, body: unknown, status = 200): Promise<void> =>
   route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
+
+export type TestSession = {
+  userId: string;
+  deviceId: string;
+  accessToken: string;
+};
+
+const TEST_SESSION: TestSession = {
+  userId: TEST_USER_ID,
+  deviceId: TEST_DEVICE_ID,
+  accessToken: TEST_ACCESS_TOKEN,
+};
 
 /**
  * Seeds the four localStorage keys `getFallbackSession()` reads, so the app
  * boots straight into the client without going through the login screen.
  */
-export const seedSession = (context: BrowserContext): Promise<void> =>
+export const seedSession = (
+  context: BrowserContext,
+  session: TestSession = TEST_SESSION
+): Promise<void> =>
   context.addInitScript(
     ([baseUrl, userId, deviceId, accessToken]) => {
       localStorage.setItem('cinny_hs_base_url', baseUrl);
@@ -257,8 +273,80 @@ export const seedSession = (context: BrowserContext): Promise<void> =>
       localStorage.setItem('cinny_device_id', deviceId);
       localStorage.setItem('cinny_access_token', accessToken);
     },
-    [HOMESERVER_BASE_URL, TEST_USER_ID, TEST_DEVICE_ID, TEST_ACCESS_TOKEN] as const
+    [HOMESERVER_BASE_URL, session.userId, session.deviceId, session.accessToken] as const
   );
+
+type UserIndependentResponder = {
+  matches: (pathname: string) => boolean;
+  respond: (route: Route) => Promise<void>;
+};
+
+const respondToKeysQuery = (route: Route): Promise<void> => {
+  const requestBody = route.request().postDataJSON() as {
+    device_keys?: Record<string, unknown>;
+  } | null;
+  const requestedUserIds = Object.keys(requestBody?.device_keys ?? {});
+  return json(route, {
+    device_keys: Object.fromEntries(requestedUserIds.map((userId) => [userId, {}])),
+    master_keys: {},
+    self_signing_keys: {},
+  });
+};
+
+const USER_INDEPENDENT_RESPONDERS: UserIndependentResponder[] = [
+  {
+    matches: (pathname) => pathname.endsWith('/filter'),
+    respond: (route) => json(route, { filter_id: '1' }),
+  },
+  {
+    matches: (pathname) => pathname.endsWith('/capabilities'),
+    respond: (route) => json(route, { capabilities: {} }),
+  },
+  {
+    matches: (pathname) => pathname.includes('/pushrules'),
+    respond: (route) =>
+      json(route, { global: { content: [], override: [], room: [], sender: [], underride: [] } }),
+  },
+  {
+    matches: (pathname) => pathname.endsWith('/keys/upload'),
+    respond: (route) => json(route, { one_time_key_counts: { signed_curve25519: 50 } }),
+  },
+  { matches: (pathname) => pathname.endsWith('/keys/query'), respond: respondToKeysQuery },
+  {
+    matches: (pathname) => pathname.endsWith('/keys/claim'),
+    respond: (route) => json(route, { one_time_keys: {} }),
+  },
+  {
+    matches: (pathname) => pathname.includes('/keys/changes'),
+    respond: (route) => json(route, { changed: [], left: [] }),
+  },
+  {
+    matches: (pathname) => pathname.endsWith('/devices'),
+    respond: (route) => json(route, { devices: [] }),
+  },
+  {
+    matches: (pathname) => pathname.includes('/room_keys/version'),
+    respond: (route) => json(route, { errcode: 'M_NOT_FOUND' }, 404),
+  },
+  {
+    matches: (pathname) => pathname.includes('/turnServer'),
+    respond: (route) => json(route, {}, 404),
+  },
+];
+
+/**
+ * Answers the client requests whose responses don't depend on the user or the
+ * rooms. Resolves to false when the request is not one of them.
+ */
+export const fulfillUserIndependentRequest = async (
+  route: Route,
+  pathname: string
+): Promise<boolean> => {
+  const responder = USER_INDEPENDENT_RESPONDERS.find((candidate) => candidate.matches(pathname));
+  if (!responder) return false;
+  await responder.respond(route);
+  return true;
+};
 
 export const RICH_TEXT_EDITOR_SETTINGS: Partial<Settings> = {
   editorToolbar: true,
@@ -440,36 +528,9 @@ export const stubHomeserver = async (
       }
       return route.fulfill({ status: 200, contentType: 'image/png', body: TRANSPARENT_PNG });
     }
-    if (pathname.endsWith('/filter')) return json(route, { filter_id: '1' });
-    if (pathname.endsWith('/capabilities')) return json(route, { capabilities: {} });
-    if (pathname.includes('/pushrules')) {
-      return json(route, {
-        global: { content: [], override: [], room: [], sender: [], underride: [] },
-      });
-    }
-    if (pathname.endsWith('/keys/upload')) {
-      return json(route, { one_time_key_counts: { signed_curve25519: 50 } });
-    }
-    if (pathname.endsWith('/keys/query')) {
-      const requestBody = route.request().postDataJSON() as {
-        device_keys?: Record<string, unknown>;
-      } | null;
-      const requestedUserIds = Object.keys(requestBody?.device_keys ?? {});
-      return json(route, {
-        device_keys: Object.fromEntries(requestedUserIds.map((userId) => [userId, {}])),
-        master_keys: {},
-        self_signing_keys: {},
-      });
-    }
-    if (pathname.endsWith('/keys/claim')) return json(route, { one_time_keys: {} });
-    if (pathname.includes('/keys/changes')) return json(route, { changed: [], left: [] });
+    if (await fulfillUserIndependentRequest(route, pathname)) return undefined;
     if (pathname.includes('/profile/')) return json(route, { displayname: 'Tester' });
     if (pathname.endsWith('/joined_rooms')) return json(route, { joined_rooms: [TEST_ROOM_ID] });
-    if (pathname.endsWith('/devices')) return json(route, { devices: [] });
-    if (pathname.includes('/room_keys/version')) {
-      return json(route, { errcode: 'M_NOT_FOUND' }, 404);
-    }
-    if (pathname.includes('/turnServer')) return json(route, {}, 404);
 
     stub.unmatched.push(`${route.request().method()} ${pathname}`);
     return json(route, {});

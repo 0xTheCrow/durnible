@@ -14,8 +14,8 @@ import {
 } from '../../../components/page';
 import { RoomTopicViewer } from '../../../components/room-topic-viewer';
 import * as css from './style.css';
-import { useRoomNavigate } from '../../../hooks/useRoomNavigate';
-import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
+import { useRoomNavigate } from '../../../hooks/router/useRoomNavigate';
+import { ScreenSize, useScreenSizeContext } from '../../../hooks/browser/useScreenSize';
 import { BackRouteHandler } from '../../../components/BackRouteHandler';
 
 export function FeaturedRooms() {

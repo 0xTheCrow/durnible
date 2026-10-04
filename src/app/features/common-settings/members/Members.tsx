@@ -18,20 +18,27 @@ import {
 import { useVirtualizer } from '@tanstack/react-virtual';
 import type { RoomMember } from 'matrix-js-sdk';
 import { Page, PageContent, PageHeader } from '../../../components/page';
-import { useRoom } from '../../../hooks/useRoom';
-import { useRoomMembers } from '../../../hooks/useRoomMembers';
+import { useRoom } from '../../../hooks/room/useRoom';
+import { useRoomMembers } from '../../../hooks/members/useRoomMembers';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
-import { useGetMemberPowerLevel, usePowerLevels } from '../../../hooks/usePowerLevels';
+import { useGetMemberPowerLevel, usePowerLevels } from '../../../hooks/members/usePowerLevels';
 import { VirtualTile } from '../../../components/virtualizer';
 import { MemberTile, MemberVerificationBadge } from '../../../components/member-tile';
-import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
+import { useMediaAuthentication } from '../../../hooks/server/useMediaAuthentication';
 import { getMxIdLocalPart, getMxIdServer } from '../../../utils/matrix';
 import { ServerBadge } from '../../../components/server-badge';
 import type { SearchItemStrGetter, UseAsyncSearchOptions } from '../../../hooks/useAsyncSearch';
 import { useAsyncSearch } from '../../../hooks/useAsyncSearch';
 import { getMemberSearchStr } from '../../../utils/room';
-import { useMembershipFilter, useMembershipFilterMenu } from '../../../hooks/useMemberFilter';
-import { useMemberPowerSort, useMemberSort, useMemberSortMenu } from '../../../hooks/useMemberSort';
+import {
+  useMembershipFilter,
+  useMembershipFilterMenu,
+} from '../../../hooks/members/useMemberFilter';
+import {
+  useMemberPowerSort,
+  useMemberSort,
+  useMemberSortMenu,
+} from '../../../hooks/members/useMemberSort';
 import { settingsAtom } from '../../../state/settings';
 import { useSetting } from '../../../state/hooks/settings';
 import { UseStateProvider } from '../../../components/UseStateProvider';
@@ -42,9 +49,12 @@ import {
   useOpenUserRoomProfile,
   useUserRoomProfileState,
 } from '../../../state/hooks/userRoomProfile';
-import { useSpaceOptionally } from '../../../hooks/useSpace';
-import { useFlattenPowerTagMembers, useGetMemberPowerTag } from '../../../hooks/useMemberPowerTag';
-import { useRoomCreators } from '../../../hooks/useRoomCreators';
+import { useSpaceOptionally } from '../../../hooks/space/useSpace';
+import {
+  useFlattenPowerTagMembers,
+  useGetMemberPowerTag,
+} from '../../../hooks/members/useMemberPowerTag';
+import { useRoomCreators } from '../../../hooks/room/useRoomCreators';
 import { getMouseEventCords } from '../../../utils/dom';
 
 const SEARCH_OPTIONS: UseAsyncSearchOptions = {

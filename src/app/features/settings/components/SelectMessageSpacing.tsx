@@ -7,7 +7,7 @@ import { useSetting } from '../../../state/hooks/settings';
 import type { MessageSpacing } from '../../../state/settings';
 import { settingsAtom } from '../../../state/settings';
 import { stopPropagation } from '../../../utils/keyboard';
-import { useMessageSpacingItems } from '../../../hooks/useMessageSpacing';
+import { useMessageSpacingItems } from '../../../hooks/message/useMessageSpacing';
 
 export function SelectMessageSpacing() {
   const [menuCords, setMenuCords] = useState<RectCords>();

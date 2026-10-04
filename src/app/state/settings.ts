@@ -1,5 +1,10 @@
 import { atom } from 'jotai';
 import { mobileOrTablet } from '../utils/user-agent';
+import {
+  DEFAULT_SCREENSHARE_AUDIO_BITRATE_KBPS,
+  DEFAULT_SCREENSHARE_MAX_FRAME_RATE,
+  DEFAULT_SCREENSHARE_RESOLUTION,
+} from '../plugins/call/screenshare';
 
 export const SETTINGS_STORAGE_KEY = 'settings';
 export type DateFormat = 'D MMM YYYY' | 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY/MM/DD' | '';
@@ -24,6 +29,7 @@ export type NotificationSoundId =
 
 export type ScreenshareResolution = '720p' | '1080p' | '1440p';
 export type ScreenshareMaxFrameRate = 15 | 30 | 60;
+export type ScreenshareAudioBitrateKbps = 48 | 64 | 96 | 128;
 
 export interface Settings {
   themeId?: string;
@@ -92,6 +98,7 @@ export interface Settings {
   microphoneInputFloorLevel: number;
   screenshareResolution: ScreenshareResolution;
   screenshareMaxFrameRate: ScreenshareMaxFrameRate;
+  screenshareAudioBitrateKbps: ScreenshareAudioBitrateKbps;
   showCallPreJoinScreen: boolean;
   callPaneDock: CallPaneDock;
   callPaneWidth: number;
@@ -163,8 +170,9 @@ const defaultSettings: Settings = {
   preferredVideoInputDeviceId: undefined,
   preferredAudioOutputDeviceId: undefined,
   microphoneInputFloorLevel: 0,
-  screenshareResolution: '1080p',
-  screenshareMaxFrameRate: 30,
+  screenshareResolution: DEFAULT_SCREENSHARE_RESOLUTION,
+  screenshareMaxFrameRate: DEFAULT_SCREENSHARE_MAX_FRAME_RATE,
+  screenshareAudioBitrateKbps: DEFAULT_SCREENSHARE_AUDIO_BITRATE_KBPS,
   showCallPreJoinScreen: false,
   callPaneDock: 'Top',
   callPaneWidth: 360,

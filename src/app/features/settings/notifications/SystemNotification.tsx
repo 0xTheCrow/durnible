@@ -5,7 +5,7 @@ import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { SettingTile } from '../../../components/setting-tile';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
-import { useSystemNotificationPermission } from '../../../hooks/useSystemNotificationPermission';
+import { useSystemNotificationPermission } from '../../../hooks/notifications/useSystemNotificationPermission';
 import { checkIsNativeMobileApp } from '../../../platform/mobile';
 import { SelectNotificationSound } from '../components';
 

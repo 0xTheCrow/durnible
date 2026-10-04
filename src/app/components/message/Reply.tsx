@@ -17,9 +17,9 @@ import * as css from './Reply.css';
 import { MessageDeletedContent, MessageFailedContent } from './content';
 import { scaleSystemEmoji } from '../../plugins/react-custom-html-parser';
 import { sanitizeCustomHtml } from '../../utils/sanitize';
-import { useRoomEvent } from '../../hooks/useRoomEvent';
+import { useRoomEvent } from '../../hooks/events/useRoomEvent';
 import colorMXID from '../../../util/colorMXID';
-import type { GetMemberPowerTag } from '../../hooks/useMemberPowerTag';
+import type { GetMemberPowerTag } from '../../hooks/members/useMemberPowerTag';
 
 type ReplyLayoutProps = {
   userColor?: string;

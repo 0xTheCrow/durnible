@@ -61,9 +61,9 @@ import { settingsAtom } from '../../../state/settings';
 import { Image } from '../../../components/media';
 import type { GetContentCallback } from '../../../../types/matrix/room';
 import { MessageEvent, StateEvent } from '../../../../types/matrix/room';
-import { useMatrixEventRenderer } from '../../../hooks/useMatrixEventRenderer';
+import { useMatrixEventRenderer } from '../../../hooks/message/useMatrixEventRenderer';
 import * as customHtmlCss from '../../../styles/CustomHtml.css';
-import { useRoomNavigate } from '../../../hooks/useRoomNavigate';
+import { useRoomNavigate } from '../../../hooks/router/useRoomNavigate';
 import { useRoomUnread } from '../../../state/hooks/unread';
 import { roomToUnreadAtom } from '../../../state/room/roomToUnread';
 import { markAsRead } from '../../../utils/notifications';
@@ -71,14 +71,14 @@ import { ContainerColor } from '../../../styles/ContainerColor.css';
 import { VirtualTile } from '../../../components/virtualizer';
 import { UserAvatar } from '../../../components/user-avatar';
 import { EncryptedContent } from '../../../features/room/message';
-import { useMentionClickHandler } from '../../../hooks/useMentionClickHandler';
-import { useSpoilerClickHandler } from '../../../hooks/useSpoilerClickHandler';
-import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
+import { useMentionClickHandler } from '../../../hooks/message/useMentionClickHandler';
+import { useSpoilerClickHandler } from '../../../hooks/message/useSpoilerClickHandler';
+import { ScreenSize, useScreenSizeContext } from '../../../hooks/browser/useScreenSize';
 import { BackRouteHandler } from '../../../components/BackRouteHandler';
-import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
+import { useMediaAuthentication } from '../../../hooks/server/useMediaAuthentication';
 import { allRoomsAtom } from '../../../state/room-list/roomList';
-import { usePowerLevels } from '../../../hooks/usePowerLevels';
-import { usePowerLevelTags } from '../../../hooks/usePowerLevelTags';
+import { usePowerLevels } from '../../../hooks/members/usePowerLevels';
+import { usePowerLevelTags } from '../../../hooks/members/usePowerLevelTags';
 import { useTheme } from '../../../hooks/useTheme';
 import { PowerIcon } from '../../../components/power';
 import colorMXID from '../../../../util/colorMXID';
@@ -87,9 +87,9 @@ import {
   getPowerTagIconSrc,
   useAccessiblePowerTagColors,
   useGetMemberPowerTag,
-} from '../../../hooks/useMemberPowerTag';
-import { useRoomCreatorsTag } from '../../../hooks/useRoomCreatorsTag';
-import { useRoomCreators } from '../../../hooks/useRoomCreators';
+} from '../../../hooks/members/useMemberPowerTag';
+import { useRoomCreatorsTag } from '../../../hooks/members/useRoomCreatorsTag';
+import { useRoomCreators } from '../../../hooks/room/useRoomCreators';
 
 type RoomNotificationsGroup = {
   roomId: string;

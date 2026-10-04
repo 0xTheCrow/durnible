@@ -21,10 +21,10 @@ import {
   hasStageInFlows,
   requiredStageInFlows,
 } from '../../../utils/matrix-uia';
-import { useUIACompleted, useUIAFlow, useUIAParams } from '../../../hooks/useUIAFlows';
+import { useUIACompleted, useUIAFlow, useUIAParams } from '../../../hooks/auth/useUIAFlows';
 import type { AsyncState } from '../../../hooks/useAsyncCallback';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
-import { useAutoDiscoveryInfo } from '../../../hooks/useAutoDiscoveryInfo';
+import { useAutoDiscoveryInfo } from '../../../hooks/auth/useAutoDiscoveryInfo';
 import type { RegisterResult } from './registerUtil';
 import { RegisterError, register, useRegisterComplete } from './registerUtil';
 import { FieldError } from '../FiledError';
@@ -35,10 +35,13 @@ import {
   ReCaptchaStageDialog,
   RegistrationTokenStageDialog,
 } from '../../../components/uia-stages';
-import { useRegisterEmail } from '../../../hooks/useRegisterEmail';
+import { useRegisterEmail } from '../../../hooks/auth/useRegisterEmail';
 import { ConfirmPasswordMatch } from '../../../components/ConfirmPasswordMatch';
 import { UIAFlowOverlay } from '../../../components/UIAFlowOverlay';
-import type { RequestEmailTokenCallback, RequestEmailTokenResponse } from '../../../hooks/types';
+import type {
+  RequestEmailTokenCallback,
+  RequestEmailTokenResponse,
+} from '../../../hooks/auth/types';
 
 export const SUPPORTED_REGISTER_STAGES = [
   AuthType.RegistrationToken,

@@ -3,12 +3,12 @@ import { Dialog, Header, config, Box, Text, Button, Spinner, color } from 'folds
 import { AsyncStatus, useAsyncCallback } from '../hooks/useAsyncCallback';
 import { logoutClient } from '../../client/initMatrix';
 import { useMatrixClient } from '../hooks/useMatrixClient';
-import { useCrossSigningActive } from '../hooks/useCrossSigning';
+import { useCrossSigningActive } from '../hooks/encryption/useCrossSigning';
 import { InfoCard } from './info-card';
 import {
   useDeviceVerificationStatus,
   VerificationStatus,
-} from '../hooks/useDeviceVerificationStatus';
+} from '../hooks/encryption/useDeviceVerificationStatus';
 
 type LogoutDialogProps = {
   onClose: () => void;

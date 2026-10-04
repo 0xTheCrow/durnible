@@ -1,11 +1,13 @@
-import type { MouseEventHandler, ReactNode } from 'react';
+import type { HTMLAttributes, ReactNode } from 'react';
 import React, { useState } from 'react';
 import type { RectCords } from 'folds';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
+import type { LongPressPosition } from '../../hooks/gesture/useLongPress';
+import { useLongPress } from '../../hooks/gesture/useLongPress';
 import { CallUserVolumeMenu } from './CallUserVolumeMenu';
 
 type CallUserVolumeMenuState = {
-  handleContextMenu: MouseEventHandler<HTMLElement> | undefined;
+  volumeMenuTriggerProps: HTMLAttributes<HTMLElement> | undefined;
   volumeMenu: ReactNode;
 };
 
@@ -16,15 +18,21 @@ export const useCallUserVolumeMenu = (
 ): CallUserVolumeMenuState => {
   const mx = useMatrixClient();
   const [volumeMenuAnchor, setVolumeMenuAnchor] = useState<RectCords>();
+  const openVolumeMenuAt = ({ x, y }: LongPressPosition) =>
+    setVolumeMenuAnchor({ x, y, width: 0, height: 0 });
+  const longPressProps = useLongPress(openVolumeMenuAt);
 
   if (userId === undefined || userId === mx.getUserId()) {
-    return { handleContextMenu: undefined, volumeMenu: null };
+    return { volumeMenuTriggerProps: undefined, volumeMenu: null };
   }
 
   return {
-    handleContextMenu: (evt) => {
-      evt.preventDefault();
-      setVolumeMenuAnchor({ x: evt.clientX, y: evt.clientY, width: 0, height: 0 });
+    volumeMenuTriggerProps: {
+      ...longPressProps,
+      onContextMenu: (evt) => {
+        evt.preventDefault();
+        openVolumeMenuAt({ x: evt.clientX, y: evt.clientY });
+      },
     },
     volumeMenu: volumeMenuAnchor ? (
       <CallUserVolumeMenu

@@ -1,5 +1,5 @@
 import type { Room } from 'matrix-js-sdk';
-import type { PowerLevels } from '../hooks/usePowerLevels';
+import type { PowerLevels } from '../hooks/members/usePowerLevels';
 import { creatorsSupported, getMxIdServer } from '../utils/matrix';
 import type { RoomCreateContent } from '../../types/matrix/room';
 import { StateEvent } from '../../types/matrix/room';

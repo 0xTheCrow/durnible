@@ -49,6 +49,9 @@ type DesktopBridge = {
   checkForAppUpdate: () => void;
   installAppUpdate: () => void;
   cancelAppUpdateDownload: () => void;
+  startCallPopOutWindowDrag: () => void;
+  dragCallPopOutWindow: () => void;
+  endCallPopOutWindowDrag: () => void;
 };
 
 declare global {
@@ -84,6 +87,18 @@ export const respondDesktopScreenshareSource = (
   choice: DesktopScreenshareSourceChoice | null
 ): void => {
   getDesktopBridge()?.respondScreenshareSource(requestId, choice);
+};
+
+export const startDesktopCallPopOutWindowDrag = (): void => {
+  getDesktopBridge()?.startCallPopOutWindowDrag();
+};
+
+export const dragDesktopCallPopOutWindow = (): void => {
+  getDesktopBridge()?.dragCallPopOutWindow();
+};
+
+export const endDesktopCallPopOutWindowDrag = (): void => {
+  getDesktopBridge()?.endCallPopOutWindowDrag();
 };
 
 export const setDesktopDevToolsEnabled = (enabled: boolean): void => {

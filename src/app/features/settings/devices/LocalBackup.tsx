@@ -11,7 +11,7 @@ import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { decryptMegolmKeyFile, encryptMegolmKeyFile } from '../../../../util/cryptE2ERoomKeys';
 import { useAlive } from '../../../hooks/useAlive';
-import { useFilePicker } from '../../../hooks/useFilePicker';
+import { useFilePicker } from '../../../hooks/browser/useFilePicker';
 
 function ExportKeys() {
   const mx = useMatrixClient();

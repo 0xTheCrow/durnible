@@ -27,7 +27,7 @@ import {
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { millisecondsToMinutes, replaceSpaceWithDash } from '../../utils/common';
 import { AsyncStatus, useAsyncCallback } from '../../hooks/useAsyncCallback';
-import { useCapabilities } from '../../hooks/useCapabilities';
+import { useCapabilities } from '../../hooks/server/useCapabilities';
 import { useAlive } from '../../hooks/useAlive';
 import { ErrorCode } from '../../cs-errorcode';
 import type { CreateRoomData } from '../../components/create-room';

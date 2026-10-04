@@ -29,24 +29,24 @@ import { atom, useAtom, useSetAtom } from 'jotai';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { monitorForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import type { Emoji } from '../../plugins/emoji';
-import { useEmojiData } from '../../hooks/useEmojiData';
+import { useEmojiData } from '../../hooks/emoji/useEmojiData';
 import { useEmojiGroupLabels } from './useEmojiGroupLabels';
 import { useEmojiGroupIcons } from './useEmojiGroupIcons';
 import { preventScrollWithArrowKey, stopPropagation } from '../../utils/keyboard';
-import { useRelevantImagePacks } from '../../hooks/useImagePacks';
+import { useRelevantImagePacks } from '../../hooks/emoji/useImagePacks';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
-import { useRecentEmoji } from '../../hooks/useRecentEmoji';
+import { useRecentEmoji } from '../../hooks/emoji/useRecentEmoji';
 import { isUserId, mxcUrlToHttp } from '../../utils/matrix';
 import { editableActiveElement, targetFromEvent } from '../../utils/dom';
 import type { UseAsyncSearchOptions } from '../../hooks/useAsyncSearch';
 import { useAsyncSearch } from '../../hooks/useAsyncSearch';
 import { addRecentEmoji } from '../../plugins/recent-emoji';
-import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
+import { useMediaAuthentication } from '../../hooks/server/useMediaAuthentication';
 import type { ImagePack, PackImageReader } from '../../plugins/custom-emoji';
 import { ImageUsage, packOrderKey } from '../../plugins/custom-emoji';
 import { getEmoticonSearchStr } from '../../plugins/utils';
-import { useStickerPackOrder } from '../../hooks/useStickerPackOrder';
-import { useFavoriteEmoji, useFavoriteEntries } from '../../hooks/useFavoriteEmoji';
+import { useStickerPackOrder } from '../../hooks/emoji/useStickerPackOrder';
+import { useFavoriteEmoji, useFavoriteEntries } from '../../hooks/emoji/useFavoriteEmoji';
 import {
   addFavoriteEmoji,
   removeFavoriteEmoji,
@@ -76,7 +76,7 @@ import {
   EmojiBoardLayout,
 } from './components';
 import * as css from './components/styles.css';
-import { useScreenSize, ScreenSize } from '../../hooks/useScreenSize';
+import { useScreenSize, ScreenSize } from '../../hooks/browser/useScreenSize';
 import { useSetting } from '../../state/hooks/settings';
 import { settingsAtom } from '../../state/settings';
 import type { EmojiItemInfo } from './types';

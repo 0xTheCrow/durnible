@@ -4,9 +4,9 @@ import type { ThumbnailContent as ThumbnailContentInfo } from '../../../../types
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { AsyncStatus, useAutoLoadAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { decryptFile, downloadEncryptedMedia, mxcUrlToHttp } from '../../../utils/matrix';
-import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
+import { useMediaAuthentication } from '../../../hooks/server/useMediaAuthentication';
 import { FALLBACK_MIMETYPE } from '../../../utils/mimeTypes';
-import { useRevokeObjectURL } from '../../../hooks/useObjectURL';
+import { useRevokeObjectURL } from '../../../hooks/browser/useObjectURL';
 
 export type ThumbnailContentProps = {
   info: ThumbnailContentInfo;

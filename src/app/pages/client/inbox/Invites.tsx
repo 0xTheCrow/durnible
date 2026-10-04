@@ -48,20 +48,20 @@ import {
   rateLimitedActions,
 } from '../../../utils/matrix';
 import { Time } from '../../../components/message';
-import { useElementSizeObserver } from '../../../hooks/useElementSizeObserver';
+import { useElementSizeObserver } from '../../../hooks/browser/useElementSizeObserver';
 import { onEnterOrSpace } from '../../../utils/keyboard';
 import { OverlayModal } from '../../../components/OverlayModal';
 import { RoomTopicViewer } from '../../../components/room-topic-viewer';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
-import { useRoomNavigate } from '../../../hooks/useRoomNavigate';
-import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
+import { useRoomNavigate } from '../../../hooks/router/useRoomNavigate';
+import { ScreenSize, useScreenSizeContext } from '../../../hooks/browser/useScreenSize';
 import { BackRouteHandler } from '../../../components/BackRouteHandler';
-import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
+import { useMediaAuthentication } from '../../../hooks/server/useMediaAuthentication';
 import { StateEvent } from '../../../../types/matrix/room';
 import { testBadWords } from '../../../plugins/bad-words';
 import { allRoomsAtom } from '../../../state/room-list/roomList';
-import { useIgnoredUsers } from '../../../hooks/useIgnoredUsers';
-import { useReportRoomSupported } from '../../../hooks/useReportRoomSupported';
+import { useIgnoredUsers } from '../../../hooks/members/useIgnoredUsers';
+import { useReportRoomSupported } from '../../../hooks/server/useReportRoomSupported';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
 

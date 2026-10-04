@@ -1,8 +1,5 @@
 import { useEffect, useState } from 'react';
-import {
-  AUDIO_LEVEL_SAMPLE_INTERVAL_MS,
-  createAudioLevelMeter,
-} from '../../plugins/call/audioLevel';
+import { monitorAudioLevel } from '../../plugins/call/audioLevel';
 
 export type MicrophoneInputLevel = {
   inputLevel: number;
@@ -25,13 +22,11 @@ export const useMicrophoneInputLevel = (
 
     let isCancelled = false;
     let mediaStream: MediaStream | undefined;
-    let audioContext: AudioContext | undefined;
-    let sampleIntervalId: ReturnType<typeof setInterval> | undefined;
+    let stopLevelMonitoring: (() => void) | undefined;
 
     const stopMonitoring = () => {
-      if (sampleIntervalId !== undefined) clearInterval(sampleIntervalId);
+      stopLevelMonitoring?.();
       mediaStream?.getTracks().forEach((track) => track.stop());
-      audioContext?.close();
     };
 
     const startMonitoring = async () => {
@@ -49,13 +44,7 @@ export const useMicrophoneInputLevel = (
       }
 
       setIsMicrophoneAvailable(true);
-      audioContext = new AudioContext();
-      const meter = createAudioLevelMeter(audioContext);
-      audioContext.createMediaStreamSource(mediaStream).connect(meter.analyserNode);
-      sampleIntervalId = setInterval(
-        () => setInputLevel(meter.measureLevel()),
-        AUDIO_LEVEL_SAMPLE_INTERVAL_MS
-      );
+      stopLevelMonitoring = monitorAudioLevel(mediaStream, setInputLevel);
     };
 
     startMonitoring();

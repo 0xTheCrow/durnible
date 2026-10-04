@@ -10,6 +10,9 @@ const APP_UPDATE_CURRENT_STATUS_CHANNEL = 'durnible:app-update:current-status';
 const APP_UPDATE_CHECK_CHANNEL = 'durnible:app-update:check';
 const APP_UPDATE_INSTALL_CHANNEL = 'durnible:app-update:install';
 const APP_UPDATE_CANCEL_DOWNLOAD_CHANNEL = 'durnible:app-update:cancel-download';
+const CALL_POP_OUT_DRAG_START_CHANNEL = 'durnible:call-pop-out:drag-start';
+const CALL_POP_OUT_DRAG_MOVE_CHANNEL = 'durnible:call-pop-out:drag-move';
+const CALL_POP_OUT_DRAG_END_CHANNEL = 'durnible:call-pop-out:drag-end';
 
 type MediaAuthConfig = {
   homeserverBaseUrl: string | null;
@@ -80,5 +83,14 @@ contextBridge.exposeInMainWorld('durnibleDesktop', {
   },
   cancelAppUpdateDownload: (): void => {
     ipcRenderer.send(APP_UPDATE_CANCEL_DOWNLOAD_CHANNEL);
+  },
+  startCallPopOutWindowDrag: (): void => {
+    ipcRenderer.send(CALL_POP_OUT_DRAG_START_CHANNEL);
+  },
+  dragCallPopOutWindow: (): void => {
+    ipcRenderer.send(CALL_POP_OUT_DRAG_MOVE_CHANNEL);
+  },
+  endCallPopOutWindowDrag: (): void => {
+    ipcRenderer.send(CALL_POP_OUT_DRAG_END_CHANNEL);
   },
 });

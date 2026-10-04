@@ -22,22 +22,26 @@ import { HexColorPicker } from 'react-colorful';
 import { useAtomValue } from 'jotai';
 import { TooltipProvider } from '../../../components/TooltipProvider';
 import { Page, PageContent, PageHeader } from '../../../components/page';
-import type { PowerLevels } from '../../../hooks/usePowerLevels';
+import type { PowerLevels } from '../../../hooks/members/usePowerLevels';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { SettingTile } from '../../../components/setting-tile';
-import type { PowerLevelTags } from '../../../hooks/usePowerLevelTags';
-import { getPowers, getUsedPowers, usePowerLevelTags } from '../../../hooks/usePowerLevelTags';
-import { useRoom } from '../../../hooks/useRoom';
+import type { PowerLevelTags } from '../../../hooks/members/usePowerLevelTags';
+import {
+  getPowers,
+  getUsedPowers,
+  usePowerLevelTags,
+} from '../../../hooks/members/usePowerLevelTags';
+import { useRoom } from '../../../hooks/room/useRoom';
 import { HexColorPickerPopOut } from '../../../components/HexColorPickerPopOut';
 import { PowerColorBadge, PowerIcon } from '../../../components/power';
 import { UseStateProvider } from '../../../components/UseStateProvider';
 import { EmojiBoard } from '../../../components/emoji-board/EmojiBoard';
-import { useImagePackRooms } from '../../../hooks/useImagePackRooms';
+import { useImagePackRooms } from '../../../hooks/emoji/useImagePackRooms';
 import { roomToParentsAtom } from '../../../state/room/roomToParents';
-import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
+import { useMediaAuthentication } from '../../../hooks/server/useMediaAuthentication';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
-import { useFilePicker } from '../../../hooks/useFilePicker';
+import { useFilePicker } from '../../../hooks/browser/useFilePicker';
 import { CompactUploadCardRenderer } from '../../../components/upload-card';
 import type { UploadSuccess } from '../../../state/upload';
 import { createUploadAtom } from '../../../state/upload';
@@ -46,7 +50,7 @@ import type { MemberPowerTag, MemberPowerTagIcon } from '../../../../types/matri
 import { StateEvent } from '../../../../types/matrix/room';
 import { useAlive } from '../../../hooks/useAlive';
 import { BetaNoticeBadge } from '../../../components/BetaNoticeBadge';
-import { getPowerTagIconSrc } from '../../../hooks/useMemberPowerTag';
+import { getPowerTagIconSrc } from '../../../hooks/members/useMemberPowerTag';
 import { creatorsSupported } from '../../../utils/matrix';
 
 type EditPowerProps = {

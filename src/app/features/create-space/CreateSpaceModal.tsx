@@ -1,7 +1,7 @@
 import React, { lazy, Suspense } from 'react';
 import { Box, config, Header, Icon, IconButton, Icons, Modal, Scroll, Text } from 'folds';
-import { useAllJoinedRoomsSet, useGetRoom } from '../../hooks/useGetRoom';
-import { SpaceProvider } from '../../hooks/useSpace';
+import { useAllJoinedRoomsSet, useGetRoom } from '../../hooks/room/useGetRoom';
+import { SpaceProvider } from '../../hooks/space/useSpace';
 import {
   useCloseCreateSpaceModal,
   useCreateSpaceModalState,

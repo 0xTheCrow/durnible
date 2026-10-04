@@ -4,7 +4,7 @@ import type { Room, MatrixClient } from 'matrix-js-sdk';
 import type { HTMLReactParserOptions } from 'html-react-parser';
 import type { Opts as LinkifyOpts } from 'linkifyjs';
 import type { MessageLayout, MessageSpacing } from '../../../state/settings';
-import type { GetMemberPowerTag } from '../../../hooks/useMemberPowerTag';
+import type { GetMemberPowerTag } from '../../../hooks/members/useMemberPowerTag';
 
 export type TimelineMessageContextValue = {
   room: Room;

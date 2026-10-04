@@ -6,7 +6,7 @@ import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { Membership } from '../../../../types/matrix/room';
 import { RoomInputPlaceholder } from '../input/RoomInputPlaceholder';
-import { useRoomNavigate } from '../../../hooks/useRoomNavigate';
+import { useRoomNavigate } from '../../../hooks/router/useRoomNavigate';
 import { getViaServers } from '../../../plugins/via-servers';
 
 type RoomTombstoneProps = { roomId: string; body?: string; replacementRoomId: string };

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Avatar, Text } from 'folds';
-import { useRoomAvatar, useRoomName, useRoomTopic } from '../../hooks/useRoomMeta';
-import { useSpace } from '../../hooks/useSpace';
+import { useRoomAvatar, useRoomName, useRoomTopic } from '../../hooks/room/useRoomMeta';
+import { useSpace } from '../../hooks/space/useSpace';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { RoomAvatar } from '../../components/room-avatar';
 import { nameInitials } from '../../utils/common';
@@ -11,7 +11,7 @@ import * as css from './LobbyHero.css';
 import { PageHero } from '../../components/page';
 import { onEnterOrSpace } from '../../utils/keyboard';
 import { mxcUrlToHttp } from '../../utils/matrix';
-import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
+import { useMediaAuthentication } from '../../hooks/server/useMediaAuthentication';
 import { OverlayModal } from '../../components/OverlayModal';
 
 export function LobbyHero() {

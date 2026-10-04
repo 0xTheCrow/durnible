@@ -6,7 +6,7 @@ import { AuthType } from 'matrix-js-sdk';
 import type { StageComponentProps } from './types';
 import type { AsyncState } from '../../hooks/useAsyncCallback';
 import { AsyncStatus } from '../../hooks/useAsyncCallback';
-import type { RequestEmailTokenCallback, RequestEmailTokenResponse } from '../../hooks/types';
+import type { RequestEmailTokenCallback, RequestEmailTokenResponse } from '../../hooks/auth/types';
 
 function EmailErrorDialog({
   title,

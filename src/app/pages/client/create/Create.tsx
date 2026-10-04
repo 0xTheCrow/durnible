@@ -7,7 +7,7 @@ import {
   PageHero,
   PageHeroSection,
 } from '../../../components/page';
-import { useRoomNavigate } from '../../../hooks/useRoomNavigate';
+import { useRoomNavigate } from '../../../hooks/router/useRoomNavigate';
 
 const CreateSpaceForm = lazy(() =>
   import('../../../features/create-space/CreateSpace').then((module) => ({

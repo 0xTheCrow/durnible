@@ -28,29 +28,29 @@ import { nameInitials } from '../../utils/common';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { useRoomUnread } from '../../state/hooks/unread';
 import { roomToUnreadAtom } from '../../state/room/roomToUnread';
-import { usePowerLevels } from '../../hooks/usePowerLevels';
+import { usePowerLevels } from '../../hooks/members/usePowerLevels';
 import { copyToClipboard } from '../../utils/dom';
 import { markAsRead } from '../../utils/notifications';
 import { UseStateProvider } from '../../components/UseStateProvider';
 import { LeaveRoomPrompt } from '../../components/leave-room-prompt';
-import { useRoomTypingMember } from '../../hooks/useRoomTypingMembers';
+import { useRoomTypingMember } from '../../hooks/room/useRoomTypingMembers';
 import { TypingIndicator } from '../../components/typing-indicator';
 import { stopPropagation } from '../../utils/keyboard';
 import { getMatrixToRoom } from '../../plugins/matrix-to';
 import { getCanonicalAliasOrRoomId, isRoomAlias } from '../../utils/matrix';
 import { getViaServers } from '../../plugins/via-servers';
-import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
+import { useMediaAuthentication } from '../../hooks/server/useMediaAuthentication';
 import { useSetting } from '../../state/hooks/settings';
 import { settingsAtom } from '../../state/settings';
 import { useOpenRoomSettings } from '../../state/hooks/roomSettings';
-import { useSpaceOptionally } from '../../hooks/useSpace';
+import { useSpaceOptionally } from '../../hooks/space/useSpace';
 import {
   getRoomNotificationModeIcon,
   RoomNotificationMode,
-} from '../../hooks/useRoomsNotificationPreferences';
+} from '../../hooks/notifications/useRoomsNotificationPreferences';
 import { RoomNotificationModeSwitcher } from '../../components/RoomNotificationSwitcher';
-import { useRoomCreators } from '../../hooks/useRoomCreators';
-import { useRoomPermissions } from '../../hooks/useRoomPermissions';
+import { useRoomCreators } from '../../hooks/room/useRoomCreators';
+import { useRoomPermissions } from '../../hooks/members/useRoomPermissions';
 import { InviteUserPrompt } from '../../components/invite-user-prompt';
 import { TruncatedText } from '../../components/TruncatedText';
 
@@ -290,6 +290,8 @@ export function RoomNavItem({
       radii="400"
       highlight={unread !== undefined}
       aria-selected={selected}
+      data-testid="room-nav-entry"
+      data-room-id={room.roomId}
       data-hover={!!menuAnchor}
       onContextMenu={isDrawerMode ? undefined : handleContextMenu}
       style={isDrawerMode || tall ? { minHeight: toRem(48) } : undefined}

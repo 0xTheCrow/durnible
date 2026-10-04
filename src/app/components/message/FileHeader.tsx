@@ -5,8 +5,8 @@ import type { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
 import { mimeTypeToExt } from '../../utils/mimeTypes';
 import { saveFile } from '../../utils/saveFile';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
-import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
-import { useRevokeObjectURL } from '../../hooks/useObjectURL';
+import { useMediaAuthentication } from '../../hooks/server/useMediaAuthentication';
+import { useRevokeObjectURL } from '../../hooks/browser/useObjectURL';
 import { AsyncStatus, useAsyncCallback } from '../../hooks/useAsyncCallback';
 import {
   decryptFile,

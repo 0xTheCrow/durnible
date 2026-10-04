@@ -18,16 +18,16 @@ import type { RoomTombstoneEventContent } from 'matrix-js-sdk/lib/types';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { SettingTile } from '../../../components/setting-tile';
-import { useRoom } from '../../../hooks/useRoom';
+import { useRoom } from '../../../hooks/room/useRoom';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import type { RoomCreateContent } from '../../../../types/matrix/room';
 import { StateEvent } from '../../../../types/matrix/room';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
-import { useStateEvent } from '../../../hooks/useStateEvent';
-import { useRoomNavigate } from '../../../hooks/useRoomNavigate';
-import { useCapabilities } from '../../../hooks/useCapabilities';
+import { useStateEvent } from '../../../hooks/events/useStateEvent';
+import { useRoomNavigate } from '../../../hooks/router/useRoomNavigate';
+import { useCapabilities } from '../../../hooks/server/useCapabilities';
 import { OverlayModal } from '../../../components/OverlayModal';
-import type { RoomPermissionsAPI } from '../../../hooks/useRoomPermissions';
+import type { RoomPermissionsAPI } from '../../../hooks/members/useRoomPermissions';
 import {
   AdditionalCreatorInput,
   RoomVersionSelector,
@@ -35,7 +35,7 @@ import {
 } from '../../../components/create-room';
 import { useAlive } from '../../../hooks/useAlive';
 import { creatorsSupported } from '../../../utils/matrix';
-import { useRoomCreators } from '../../../hooks/useRoomCreators';
+import { useRoomCreators } from '../../../hooks/room/useRoomCreators';
 import { BreakWord } from '../../../styles/Text.css';
 
 function RoomUpgradeDialog({ onClose }: { onClose: () => void }) {

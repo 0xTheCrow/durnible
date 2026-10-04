@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { usePausedFirstFrameCanvas } from '../hooks/usePausedFirstFrameCanvas';
+import { usePausedFirstFrameCanvas } from '../hooks/media/usePausedFirstFrameCanvas';
 
 interface AnimatedEmojiOverlayProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   pauseGifs: boolean;

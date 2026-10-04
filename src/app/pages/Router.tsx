@@ -55,7 +55,7 @@ import { Room } from '../features/room';
 import { WelcomePage } from './client/WelcomePage';
 import { SidebarNav } from './client/SidebarNav';
 import { PageRoot } from '../components/page';
-import { ScreenSize } from '../hooks/useScreenSize';
+import { ScreenSize } from '../hooks/browser/useScreenSize';
 import { MobileFriendlyPageNav, MobileFriendlyClientNav } from './MobileFriendly';
 import { ClientInitStorageAtom } from './client/ClientInitStorageAtom';
 import { ClientNonUIFeatures } from './client/ClientNonUIFeatures';
@@ -76,11 +76,13 @@ import { ImageViewerRenderer } from '../components/image-viewer/ImageViewerRende
 import { getStoredSession } from '../state/sessions';
 import {
   CallPaneGate,
+  CallPopOutGate,
   CallBarGate,
   CallScreenGate,
   ScreenshareSourcePickerMount,
 } from '../features/call/CallMounts';
 import { CallProvider } from '../features/call/CallProvider';
+import { CallPaneContainerProvider, CallPaneSlot } from '../features/call/CallPaneContainer';
 
 const Lobby = lazy(() => import('../features/lobby').then((module) => ({ default: module.Lobby })));
 
@@ -144,30 +146,34 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
                   <ClientBindAtoms>
                     <ClientNonUIFeatures>
                       <CallProvider>
-                        <Box grow="Yes" direction="Column">
-                          <CallBarGate />
-                          <ClientLayout
-                            nav={
-                              <MobileFriendlyClientNav>
-                                <SidebarNav />
-                              </MobileFriendlyClientNav>
-                            }
-                          >
-                            <Outlet />
-                          </ClientLayout>
-                        </Box>
-                        <CallScreenGate />
-                        <ScreenshareSourcePickerMount />
-                        <SearchModalRenderer />
-                        <ImageViewerRenderer />
-                        <UserRoomProfileRenderer />
-                        <ReactionViewerRenderer />
-                        <CreateRoomModalRenderer />
-                        <CreateSpaceModalRenderer />
-                        <RoomSettingsRenderer />
-                        <SpaceSettingsRenderer />
-                        <ReceiveSelfDeviceVerification />
-                        <AutoRestoreBackupOnVerification />
+                        <CallPaneContainerProvider>
+                          <Box grow="Yes" direction="Column">
+                            <CallBarGate />
+                            <ClientLayout
+                              nav={
+                                <MobileFriendlyClientNav>
+                                  <SidebarNav />
+                                </MobileFriendlyClientNav>
+                              }
+                            >
+                              <Outlet />
+                            </ClientLayout>
+                          </Box>
+                          <CallPaneGate />
+                          <CallPopOutGate />
+                          <CallScreenGate />
+                          <ScreenshareSourcePickerMount />
+                          <SearchModalRenderer />
+                          <ImageViewerRenderer />
+                          <UserRoomProfileRenderer />
+                          <ReactionViewerRenderer />
+                          <CreateRoomModalRenderer />
+                          <CreateSpaceModalRenderer />
+                          <RoomSettingsRenderer />
+                          <SpaceSettingsRenderer />
+                          <ReceiveSelfDeviceVerification />
+                          <AutoRestoreBackupOnVerification />
+                        </CallPaneContainerProvider>
                       </CallProvider>
                     </ClientNonUIFeatures>
                   </ClientBindAtoms>
@@ -181,7 +187,7 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
           path={HOME_PATH}
           element={
             <PageRoot
-              aside={<CallPaneGate />}
+              aside={<CallPaneSlot />}
               nav={
                 <MobileFriendlyPageNav path={HOME_PATH}>
                   <Home extra={<FavoriteRoomsSection />} />
@@ -211,7 +217,7 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
           path={DIRECT_PATH}
           element={
             <PageRoot
-              aside={<CallPaneGate />}
+              aside={<CallPaneSlot />}
               nav={
                 <MobileFriendlyPageNav path={DIRECT_PATH}>
                   <Direct extra={<FavoriteRoomsSection />} />
@@ -240,7 +246,7 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
           element={
             <RouteSpaceProvider>
               <PageRoot
-                aside={<CallPaneGate />}
+                aside={<CallPaneSlot />}
                 nav={
                   <MobileFriendlyPageNav path={SPACE_PATH}>
                     <Space extra={<FavoriteRoomsSection />} />
@@ -289,7 +295,7 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
           path={EXPLORE_PATH}
           element={
             <PageRoot
-              aside={<CallPaneGate />}
+              aside={<CallPaneSlot />}
               nav={
                 <MobileFriendlyPageNav path={EXPLORE_PATH}>
                   <Explore />
@@ -315,7 +321,7 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
           path={INBOX_PATH}
           element={
             <PageRoot
-              aside={<CallPaneGate />}
+              aside={<CallPaneSlot />}
               nav={
                 <MobileFriendlyPageNav path={INBOX_PATH}>
                   <Inbox />

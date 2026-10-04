@@ -20,15 +20,15 @@ import { getMemberDisplayName } from '../../../utils/room';
 import { eventWithShortcode, getMxIdLocalPart } from '../../../utils/matrix';
 import * as css from './ReactionViewer.css';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
-import { useRelations } from '../../../hooks/useRelations';
+import { useRelations } from '../../../hooks/events/useRelations';
 import { Reaction } from '../../../components/message';
 import { getHexcodeForEmoji, getShortcodeFor } from '../../../plugins/emoji';
 import { UserAvatar } from '../../../components/user-avatar';
-import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
+import { useMediaAuthentication } from '../../../hooks/server/useMediaAuthentication';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
 import { useOpenUserRoomProfile } from '../../../state/hooks/userRoomProfile';
-import { useSpaceOptionally } from '../../../hooks/useSpace';
+import { useSpaceOptionally } from '../../../hooks/space/useSpace';
 import { getMouseEventCords } from '../../../utils/dom';
 
 export type ReactionViewerProps = {

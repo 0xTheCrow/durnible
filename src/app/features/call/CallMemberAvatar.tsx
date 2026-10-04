@@ -3,7 +3,7 @@ import React from 'react';
 import type { Room } from 'matrix-js-sdk';
 import { Avatar, AvatarFallback, AvatarImage, Text } from 'folds';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
-import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
+import { useMediaAuthentication } from '../../hooks/server/useMediaAuthentication';
 import { getMemberAvatarMxc, getMemberDisplayName } from '../../utils/room';
 import { mxcUrlToHttp } from '../../utils/matrix';
 import { nameInitials } from '../../utils/common';

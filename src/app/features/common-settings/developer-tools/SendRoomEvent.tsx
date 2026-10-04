@@ -18,9 +18,9 @@ import {
 } from 'folds';
 import { Page, PageHeader } from '../../../components/page';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
-import { useRoom } from '../../../hooks/useRoom';
+import { useRoom } from '../../../hooks/room/useRoom';
 import { useAlive } from '../../../hooks/useAlive';
-import { useTextAreaCodeEditor } from '../../../hooks/useTextAreaCodeEditor';
+import { useTextAreaCodeEditor } from '../../../hooks/composer/useTextAreaCodeEditor';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { syntaxErrorPosition } from '../../../utils/dom';
 import { Cursor } from '../../../plugins/text-area';

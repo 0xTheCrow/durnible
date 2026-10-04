@@ -20,9 +20,9 @@ import {
 } from '../../utils/room';
 import { syncRoomReceiptsFromServer } from '../../utils/room/receipts';
 import { roomToParentsAtom } from './roomToParents';
-import { useStateEventCallback } from '../../hooks/useStateEventCallback';
-import { useSyncState } from '../../hooks/useSyncState';
-import { useRoomsNotificationPreferencesContext } from '../../hooks/useRoomsNotificationPreferences';
+import { useStateEventCallback } from '../../hooks/events/useStateEventCallback';
+import { useSyncState } from '../../hooks/server/useSyncState';
+import { useRoomsNotificationPreferencesContext } from '../../hooks/notifications/useRoomsNotificationPreferences';
 
 export type RoomToUnreadAction =
   | {

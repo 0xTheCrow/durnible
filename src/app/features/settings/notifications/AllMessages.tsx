@@ -2,19 +2,19 @@ import React, { useCallback, useMemo } from 'react';
 import { Badge, Box, Text } from 'folds';
 import type { IPushRules, PushRuleCondition } from 'matrix-js-sdk';
 import { ConditionKind, PushRuleKind, RuleId } from 'matrix-js-sdk';
-import { useAccountData } from '../../../hooks/useAccountData';
+import { useAccountData } from '../../../hooks/events/useAccountData';
 import { AccountDataEvent } from '../../../../types/matrix/accountData';
 import { NotificationModeSwitcher } from './NotificationModeSwitcher';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { SettingTile } from '../../../components/setting-tile';
-import type { PushRuleData } from '../../../hooks/usePushRule';
-import { usePushRule } from '../../../hooks/usePushRule';
+import type { PushRuleData } from '../../../hooks/notifications/usePushRule';
+import { usePushRule } from '../../../hooks/notifications/usePushRule';
 import {
   getNotificationModeActions,
   NotificationMode,
   useNotificationModeActions,
-} from '../../../hooks/useNotificationMode';
+} from '../../../hooks/notifications/useNotificationMode';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 
 const getAllMessageDefaultRule = (

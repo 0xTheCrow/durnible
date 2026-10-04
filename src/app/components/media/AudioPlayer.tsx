@@ -1,19 +1,7 @@
 /* eslint-disable jsx-a11y/media-has-caption */
 import type { ReactNode } from 'react';
 import React, { useCallback, useRef, useState } from 'react';
-import {
-  Badge,
-  Chip,
-  Icon,
-  IconButton,
-  Icons,
-  ProgressBar,
-  Spinner,
-  Text,
-  color,
-  toRem,
-} from 'folds';
-import { Range } from 'react-range';
+import { Chip, Icon, IconButton, Icons, Spinner, Text, color, toRem } from 'folds';
 import type { PlayTimeCallback } from '../../hooks/media';
 import {
   AUDIO_VOLUME_STORAGE_KEY,
@@ -26,6 +14,7 @@ import {
 } from '../../hooks/media';
 import { useThrottle } from '../../hooks/useThrottle';
 import { secondsToMinutesAndSeconds } from '../../utils/common';
+import { Slider } from '../Slider';
 
 const PLAY_TIME_THROTTLE_OPS = {
   wait: 500,
@@ -34,7 +23,6 @@ const PLAY_TIME_THROTTLE_OPS = {
 
 const EMPTY_TRACK_MAX_SECONDS = 1;
 
-const THUMB_HALF_WIDTH = toRem(6);
 const VOLUME_TRACK_WIDTH = toRem(96);
 const PLAY_TOGGLE_MIN_WIDTH = toRem(96);
 const SEEK_TRACK_HIT_HEIGHT = toRem(24);
@@ -99,55 +87,16 @@ export function AudioPlayer({
 
   return renderMediaControl({
     after: (
-      <Range
+      <Slider
+        size="300"
         step={1}
         min={0}
         max={trackMaxSeconds}
-        values={[currentTime]}
-        onChange={(values) => seek(values[0])}
-        renderTrack={(params) => (
-          <div style={{ position: 'relative' }}>
-            <ProgressBar
-              as="div"
-              style={{ backgroundColor: color.SurfaceVariant.ContainerLine }}
-              variant="Secondary"
-              size="300"
-              min={0}
-              max={trackMaxSeconds}
-              value={currentTime}
-              radii="300"
-            />
-            <div
-              {...params.props}
-              data-testid="audio-seek-track"
-              style={{
-                ...params.props.style,
-                position: 'absolute',
-                left: THUMB_HALF_WIDTH,
-                right: THUMB_HALF_WIDTH,
-                top: '50%',
-                height: SEEK_TRACK_HIT_HEIGHT,
-                transform: `translateY(-50%) ${params.props.style?.transform ?? ''}`,
-              }}
-            >
-              {params.children}
-            </div>
-          </div>
-        )}
-        renderThumb={(params) => (
-          <Badge
-            size="300"
-            variant="Secondary"
-            fill="Solid"
-            radii="Pill"
-            outlined
-            {...params.props}
-            style={{
-              ...params.props.style,
-              zIndex: 0,
-            }}
-          />
-        )}
+        value={currentTime}
+        hitHeight={SEEK_TRACK_HIT_HEIGHT}
+        trackBackgroundColor={color.SurfaceVariant.ContainerLine}
+        trackTestId="audio-seek-track"
+        onChange={seek}
       />
     ),
     leftControl: (
@@ -188,57 +137,18 @@ export function AudioPlayer({
         >
           <Icon src={mute ? Icons.VolumeMute : Icons.VolumeHigh} size="50" />
         </IconButton>
-        <Range
-          step={0.1}
-          min={0}
-          max={1}
-          values={[volume]}
-          onChange={(values) => setVolume(values[0])}
-          renderTrack={(params) => (
-            <div style={{ position: 'relative', width: VOLUME_TRACK_WIDTH }}>
-              <ProgressBar
-                style={{
-                  width: '100%',
-                  backgroundColor: color.SurfaceVariant.ContainerLine,
-                }}
-                variant="Secondary"
-                size="300"
-                min={0}
-                max={1}
-                value={volume}
-                radii="300"
-              />
-              <div
-                {...params.props}
-                style={{
-                  ...params.props.style,
-                  position: 'absolute',
-                  left: THUMB_HALF_WIDTH,
-                  right: THUMB_HALF_WIDTH,
-                  top: '50%',
-                  height: VOLUME_TRACK_HIT_HEIGHT,
-                  transform: `translateY(-50%) ${params.props.style?.transform ?? ''}`,
-                }}
-              >
-                {params.children}
-              </div>
-            </div>
-          )}
-          renderThumb={(params) => (
-            <Badge
-              size="300"
-              variant="Secondary"
-              fill="Solid"
-              radii="Pill"
-              outlined
-              {...params.props}
-              style={{
-                ...params.props.style,
-                zIndex: 0,
-              }}
-            />
-          )}
-        />
+        <div style={{ width: VOLUME_TRACK_WIDTH }}>
+          <Slider
+            size="300"
+            step={0.1}
+            min={0}
+            max={1}
+            value={volume}
+            hitHeight={VOLUME_TRACK_HIT_HEIGHT}
+            trackBackgroundColor={color.SurfaceVariant.ContainerLine}
+            onChange={setVolume}
+          />
+        </div>
       </>
     ),
     children: (

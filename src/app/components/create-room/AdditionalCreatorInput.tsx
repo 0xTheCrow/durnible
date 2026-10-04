@@ -20,7 +20,7 @@ import FocusTrap from 'focus-trap-react';
 import type { ChangeEventHandler, KeyboardEventHandler, MouseEventHandler } from 'react';
 import React, { useMemo, useState } from 'react';
 import { getMxIdLocalPart, getMxIdServer, isUserId } from '../../utils/matrix';
-import { useDirectUsers } from '../../hooks/useDirectUsers';
+import { useDirectUsers } from '../../hooks/room/useDirectUsers';
 import { SettingTile } from '../setting-tile';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { stopPropagation } from '../../utils/keyboard';

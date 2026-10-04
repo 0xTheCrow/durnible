@@ -28,9 +28,9 @@ import {
   useKeyBackupStatus,
   useKeyBackupSync,
   useKeyBackupTrust,
-} from '../hooks/useKeyBackup';
+} from '../hooks/encryption/useKeyBackup';
 import { stopPropagation } from '../utils/keyboard';
-import { useRestoreBackupOnVerification } from '../hooks/useRestoreBackupOnVerification';
+import { useRestoreBackupOnVerification } from '../hooks/encryption/useRestoreBackupOnVerification';
 
 type BackupStatusProps = {
   enabled: boolean;

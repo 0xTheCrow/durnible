@@ -23,7 +23,7 @@ import { mDirectAtom } from '../../state/mDirectList';
 import { allRoomsAtom } from '../../state/room-list/roomList';
 import type { SearchItemStrGetter, UseAsyncSearchOptions } from '../../hooks/useAsyncSearch';
 import { useAsyncSearch } from '../../hooks/useAsyncSearch';
-import { useAllJoinedRoomsSet, useGetRoom } from '../../hooks/useGetRoom';
+import { useAllJoinedRoomsSet, useGetRoom } from '../../hooks/room/useGetRoom';
 import { RoomAvatar, RoomIcon } from '../../components/room-avatar';
 import {
   getAllParents,
@@ -35,15 +35,15 @@ import {
 import { highlightText, makeHighlightRegex } from '../../plugins/react-custom-html-parser';
 import { factoryRoomIdByActivity } from '../../utils/sort';
 import { nameInitials } from '../../utils/common';
-import { useRoomNavigate } from '../../hooks/useRoomNavigate';
+import { useRoomNavigate } from '../../hooks/router/useRoomNavigate';
 import { useListFocusIndex } from '../../hooks/useListFocusIndex';
 import { getMxIdLocalPart, getMxIdServer, guessDmRoomUserId } from '../../utils/matrix';
 import { roomToParentsAtom } from '../../state/room/roomToParents';
 import { roomToUnreadAtom } from '../../state/room/roomToUnread';
 import { UnreadBadge, UnreadBadgeCenter } from '../../components/unread-badge';
 import { searchModalAtom } from '../../state/searchModal';
-import { useKeyDown } from '../../hooks/useKeyDown';
-import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
+import { useKeyDown } from '../../hooks/browser/useKeyDown';
+import { useMediaAuthentication } from '../../hooks/server/useMediaAuthentication';
 import { OverlayModal } from '../../components/OverlayModal';
 import { KeybindAction } from '../../state/keybinds';
 import { useFormattedKeybind, useKeybind } from '../../state/hooks/keybinds';

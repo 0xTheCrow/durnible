@@ -2,7 +2,7 @@ import FocusTrap from 'focus-trap-react';
 import React from 'react';
 import { config, Menu, MenuItem, Text } from 'folds';
 import { stopPropagation } from '../utils/keyboard';
-import { useMembershipFilterMenu } from '../hooks/useMemberFilter';
+import { useMembershipFilterMenu } from '../hooks/members/useMemberFilter';
 
 type MembershipFilterMenuProps = {
   onClose: () => void;

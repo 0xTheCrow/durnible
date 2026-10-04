@@ -12,7 +12,7 @@ import {
 } from '../../../components/editor';
 import { CommandAutocomplete } from './CommandAutocomplete';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
-import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
+import { useMediaAuthentication } from '../../../hooks/server/useMediaAuthentication';
 
 type ComposerAutocompleteProps = {
   editorElementRef: RefObject<HTMLDivElement | null>;

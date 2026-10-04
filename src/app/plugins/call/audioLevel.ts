@@ -29,3 +29,20 @@ export const createAudioLevelMeter = (audioContext: AudioContext): AudioLevelMet
 
   return { analyserNode, measureLevel };
 };
+
+export const monitorAudioLevel = (
+  mediaStream: MediaStream,
+  onLevel: (level: number) => void
+): (() => void) => {
+  const audioContext = new AudioContext();
+  const meter = createAudioLevelMeter(audioContext);
+  audioContext.createMediaStreamSource(mediaStream).connect(meter.analyserNode);
+  const sampleIntervalId = setInterval(
+    () => onLevel(meter.measureLevel()),
+    AUDIO_LEVEL_SAMPLE_INTERVAL_MS
+  );
+  return () => {
+    clearInterval(sampleIntervalId);
+    audioContext.close();
+  };
+};

@@ -1,72 +1,130 @@
 import React, { useEffect, useRef } from 'react';
-import { useAtomValue } from 'jotai';
+import { useAtomValue, useSetAtom, useStore } from 'jotai';
 import type { Participant } from 'livekit-client';
 import { RemoteAudioTrack, Track } from 'livekit-client';
-import { callStateAtom, isCallDeafenedAtom } from '../../state/call';
+import {
+  callFocusedParticipantAtom,
+  callStateAtom,
+  getCallFocusedParticipantKey,
+  isCallDeafenedAtom,
+} from '../../state/call';
 import {
   callVolumePreferencesAtom,
   getCallScreensharePlaybackVolumeLevel,
   getCallUserPlaybackVolumeLevel,
+  getCallUserVolumePreference,
+  setCallUserVolumePreferenceAtom,
 } from '../../state/callVolumePreferences';
 import type { CallConnection } from '../../plugins/call/CallConnection';
-import { useCallMemberships } from '../../hooks/useCallMemberships';
+import { useCallMemberships } from '../../hooks/call/useCallMemberships';
 import { findCallParticipantUserId } from '../../utils/call';
 import { useLivekitParticipants } from '../../hooks/call/useLivekitParticipants';
 import { useParticipantTrackPublications } from '../../hooks/call/useParticipantTrackPublications';
 
 type AudioTrackPlayerProps = {
   track: RemoteAudioTrack;
+  userId?: string;
   isDeafened: boolean;
   volumeLevel: number;
+  playbackAudioContext: AudioContext | undefined;
 };
-function AudioTrackPlayer({ track, isDeafened, volumeLevel }: AudioTrackPlayerProps) {
+function AudioTrackPlayer({
+  track,
+  userId,
+  isDeafened,
+  volumeLevel,
+  playbackAudioContext,
+}: AudioTrackPlayerProps) {
   const audioElementRef = useRef<HTMLAudioElement>(null);
+  const playbackVolumeLevel = isDeafened ? 0 : volumeLevel;
 
   useEffect(() => {
     const audioElement = audioElementRef.current;
     if (!audioElement) return undefined;
+    track.setAudioContext(playbackAudioContext);
     track.attach(audioElement);
     return () => {
       track.detach(audioElement);
     };
-  }, [track]);
+  }, [track, playbackAudioContext]);
 
   useEffect(() => {
-    track.setVolume(volumeLevel);
-  }, [track, volumeLevel]);
+    track.setVolume(playbackVolumeLevel);
+  }, [track, playbackVolumeLevel]);
 
-  return <audio ref={audioElementRef} autoPlay muted={isDeafened} />;
+  return (
+    <audio
+      ref={audioElementRef}
+      autoPlay
+      muted={isDeafened || playbackAudioContext !== undefined}
+      data-testid="call-participant-audio"
+      data-user-id={userId}
+      data-track-source={track.source}
+    />
+  );
 }
 
 type ParticipantAudioProps = {
   participant: Participant;
+  userId?: string;
   isDeafened: boolean;
   microphoneVolumeLevel: number;
   screenshareVolumeLevel: number;
+  isWatchingScreenshare: boolean;
+  playbackAudioContext: AudioContext | undefined;
 };
 function ParticipantAudio({
   participant,
+  userId,
   isDeafened,
   microphoneVolumeLevel,
   screenshareVolumeLevel,
+  isWatchingScreenshare,
+  playbackAudioContext,
 }: ParticipantAudioProps) {
   const trackPublications = useParticipantTrackPublications(participant);
+  const store = useStore();
+  const setUserVolumePreference = useSetAtom(setCallUserVolumePreferenceAtom);
+  const screenshareAudioTrackSid = trackPublications.find(
+    (publication) => publication.source === Track.Source.ScreenShareAudio
+  )?.trackSid;
+
+  useEffect(() => {
+    if (!screenshareAudioTrackSid || !userId) return;
+    const { isMuted, isScreenshareMuted } = getCallUserVolumePreference(
+      store.get(callVolumePreferencesAtom),
+      userId
+    );
+    if (isMuted && !isScreenshareMuted) {
+      setUserVolumePreference({
+        userId,
+        preference: { isScreenshareMuted: true },
+        isCommit: true,
+      });
+    }
+  }, [screenshareAudioTrackSid, userId, store, setUserVolumePreference]);
 
   return (
     <>
       {trackPublications
-        .filter((publication) => publication.kind === Track.Kind.Audio)
+        .filter(
+          (publication) =>
+            publication.kind === Track.Kind.Audio &&
+            (publication.source !== Track.Source.ScreenShareAudio || isWatchingScreenshare)
+        )
         .map((publication) =>
           publication.track instanceof RemoteAudioTrack ? (
             <AudioTrackPlayer
               key={publication.trackSid}
               track={publication.track}
+              userId={userId}
               isDeafened={isDeafened}
               volumeLevel={
                 publication.source === Track.Source.ScreenShareAudio
                   ? screenshareVolumeLevel
                   : microphoneVolumeLevel
               }
+              playbackAudioContext={playbackAudioContext}
             />
           ) : null
         )}
@@ -82,6 +140,8 @@ function ConnectedCallAudio({ connection }: ConnectedCallAudioProps) {
   const memberships = useCallMemberships(connection.matrixRoom);
   const isDeafened = useAtomValue(isCallDeafenedAtom);
   const volumePreferences = useAtomValue(callVolumePreferencesAtom);
+  const focusedParticipant = useAtomValue(callFocusedParticipantAtom);
+  const focusedParticipantKey = getCallFocusedParticipantKey(focusedParticipant, connection);
 
   return (
     <>
@@ -93,12 +153,15 @@ function ConnectedCallAudio({ connection }: ConnectedCallAudioProps) {
             <ParticipantAudio
               key={participant.identity}
               participant={participant}
+              userId={userId}
               isDeafened={isDeafened}
               microphoneVolumeLevel={getCallUserPlaybackVolumeLevel(volumePreferences, userId)}
               screenshareVolumeLevel={getCallScreensharePlaybackVolumeLevel(
                 volumePreferences,
                 userId
               )}
+              isWatchingScreenshare={participant.identity === focusedParticipantKey}
+              playbackAudioContext={connection.playbackAudioContext}
             />
           );
         })}

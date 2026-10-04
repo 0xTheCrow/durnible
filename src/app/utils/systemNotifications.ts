@@ -79,12 +79,16 @@ export const prepareSystemNotifications = async (): Promise<void> => {
   });
 };
 
-export const getSystemNotificationPermission = async (): Promise<PermissionState> => {
-  if (checkIsNativeMobileApp()) return getMobileNotificationPermission();
+export const getWebNotificationPermission = (): PermissionState => {
   if (!('Notification' in window)) return 'denied';
 
   const { permission } = window.Notification;
   return permission === 'default' ? 'prompt' : permission;
+};
+
+export const getSystemNotificationPermission = async (): Promise<PermissionState> => {
+  if (checkIsNativeMobileApp()) return getMobileNotificationPermission();
+  return getWebNotificationPermission();
 };
 
 export const requestSystemNotificationPermission = async (): Promise<PermissionState> => {

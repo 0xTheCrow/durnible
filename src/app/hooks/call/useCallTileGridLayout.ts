@@ -2,7 +2,7 @@ import type { RefObject } from 'react';
 import { useCallback, useLayoutEffect, useState } from 'react';
 import type { CallTileGridLayout } from '../../utils/call';
 import { getCallTileGridLayout } from '../../utils/call';
-import { useElementSizeObserver } from '../useElementSizeObserver';
+import { useElementSizeObserver } from '../browser/useElementSizeObserver';
 
 export const useCallTileGridLayout = (
   containerRef: RefObject<HTMLElement>,

@@ -12,7 +12,7 @@ import {
 } from 'folds';
 import React, { useCallback, useEffect } from 'react';
 import type { MatrixError } from 'matrix-js-sdk';
-import { useAutoDiscoveryInfo } from '../../../hooks/useAutoDiscoveryInfo';
+import { useAutoDiscoveryInfo } from '../../../hooks/auth/useAutoDiscoveryInfo';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import type { CustomLoginResponse } from './loginUtil';
 import { LoginError, login, useLoginComplete } from './loginUtil';

@@ -3,10 +3,10 @@ import { Menu, PopOut, toRem } from 'folds';
 import FocusTrap from 'focus-trap-react';
 import { useCloseUserRoomProfile, useUserRoomProfileState } from '../state/hooks/userRoomProfile';
 import type { UserRoomProfileState } from '../state/userRoomProfile';
-import { useAllJoinedRoomsSet, useGetRoom } from '../hooks/useGetRoom';
+import { useAllJoinedRoomsSet, useGetRoom } from '../hooks/room/useGetRoom';
 import { stopPropagation } from '../utils/keyboard';
-import { SpaceProvider } from '../hooks/useSpace';
-import { RoomProvider } from '../hooks/useRoom';
+import { SpaceProvider } from '../hooks/space/useSpace';
+import { RoomProvider } from '../hooks/room/useRoom';
 
 const UserRoomProfile = lazy(() =>
   import('./user-profile').then((module) => ({ default: module.UserRoomProfile }))

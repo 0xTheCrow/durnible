@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import React, { useId } from 'react';
 import { TooltipProvider } from '../TooltipProvider';
 import * as css from './styles.css';
-import { Presence, usePresenceLabel } from '../../hooks/useUserPresence';
+import { Presence, usePresenceLabel } from '../../hooks/members/useUserPresence';
 
 const PresenceToColor: Record<Presence, MainColor> = {
   [Presence.Online]: 'Success',

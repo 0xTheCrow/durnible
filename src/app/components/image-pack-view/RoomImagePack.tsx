@@ -1,15 +1,15 @@
 import React, { useCallback, useMemo } from 'react';
 import type { Room } from 'matrix-js-sdk';
-import { usePowerLevels } from '../../hooks/usePowerLevels';
+import { usePowerLevels } from '../../hooks/members/usePowerLevels';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { ImagePackContent } from './ImagePackContent';
 import type { PackContent } from '../../plugins/custom-emoji';
 import { ImagePack } from '../../plugins/custom-emoji';
 import { StateEvent } from '../../../types/matrix/room';
-import { useRoomImagePack } from '../../hooks/useImagePacks';
+import { useRoomImagePack } from '../../hooks/emoji/useImagePacks';
 import { randomStr } from '../../utils/common';
-import { useRoomPermissions } from '../../hooks/useRoomPermissions';
-import { useRoomCreators } from '../../hooks/useRoomCreators';
+import { useRoomPermissions } from '../../hooks/members/useRoomPermissions';
+import { useRoomCreators } from '../../hooks/room/useRoomCreators';
 
 type RoomImagePackProps = {
   room: Room;

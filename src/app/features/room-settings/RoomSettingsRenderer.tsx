@@ -1,10 +1,10 @@
 import React, { lazy, Suspense } from 'react';
 import { Modal500 } from '../../components/Modal500';
 import { useCloseRoomSettings, useRoomSettingsState } from '../../state/hooks/roomSettings';
-import { useAllJoinedRoomsSet, useGetRoom } from '../../hooks/useGetRoom';
+import { useAllJoinedRoomsSet, useGetRoom } from '../../hooks/room/useGetRoom';
 import type { RoomSettingsState } from '../../state/roomSettings';
-import { RoomProvider } from '../../hooks/useRoom';
-import { SpaceProvider } from '../../hooks/useSpace';
+import { RoomProvider } from '../../hooks/room/useRoom';
+import { SpaceProvider } from '../../hooks/space/useSpace';
 
 const LazyRoomSettings = lazy(() =>
   import('./RoomSettings').then((module) => ({ default: module.RoomSettings }))

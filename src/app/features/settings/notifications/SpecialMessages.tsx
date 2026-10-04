@@ -2,22 +2,22 @@ import React, { useCallback, useMemo } from 'react';
 import type { IPushRules } from 'matrix-js-sdk';
 import { ConditionKind, PushRuleKind, RuleId } from 'matrix-js-sdk';
 import { Box, Text, Badge } from 'folds';
-import { useAccountData } from '../../../hooks/useAccountData';
+import { useAccountData } from '../../../hooks/events/useAccountData';
 import { AccountDataEvent } from '../../../../types/matrix/accountData';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { SettingTile } from '../../../components/setting-tile';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
-import { useUserProfile } from '../../../hooks/useUserProfile';
+import { useUserProfile } from '../../../hooks/members/useUserProfile';
 import { getMxIdLocalPart } from '../../../utils/matrix';
-import type { PushRuleData } from '../../../hooks/usePushRule';
-import { makePushRuleData, usePushRule } from '../../../hooks/usePushRule';
-import type { NotificationModeOptions } from '../../../hooks/useNotificationMode';
+import type { PushRuleData } from '../../../hooks/notifications/usePushRule';
+import { makePushRuleData, usePushRule } from '../../../hooks/notifications/usePushRule';
+import type { NotificationModeOptions } from '../../../hooks/notifications/useNotificationMode';
 import {
   getNotificationModeActions,
   NotificationMode,
   useNotificationModeActions,
-} from '../../../hooks/useNotificationMode';
+} from '../../../hooks/notifications/useNotificationMode';
 import { NotificationModeSwitcher } from './NotificationModeSwitcher';
 
 const NOTIFY_MODE_OPS: NotificationModeOptions = {

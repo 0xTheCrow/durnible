@@ -34,8 +34,8 @@ import {
   DecryptionFailedContent,
 } from '../message';
 import * as customHtmlCss from '../../../styles/CustomHtml.css';
-import { useMemberEventParser } from '../../../hooks/useMemberEventParser';
-import { useRoomEvent } from '../../../hooks/useRoomEvent';
+import { useMemberEventParser } from '../../../hooks/members/useMemberEventParser';
+import { useRoomEvent } from '../../../hooks/events/useRoomEvent';
 import { useTimelineMessageContext } from './TimelineMessageContext';
 
 type MemoizedTimelineEventProps = {

@@ -6,19 +6,19 @@ import type { RectCords } from 'folds';
 import { Box, Button, Chip, Text, PopOut, Menu, Scroll, toRem, config, color } from 'folds';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
-import { getPowers, usePowerLevelTags } from '../../../hooks/usePowerLevelTags';
+import { getPowers, usePowerLevelTags } from '../../../hooks/members/usePowerLevelTags';
 import { SettingTile } from '../../../components/setting-tile';
-import type { PowerLevels } from '../../../hooks/usePowerLevels';
-import { getPermissionPower } from '../../../hooks/usePowerLevels';
-import { useRoom } from '../../../hooks/useRoom';
+import type { PowerLevels } from '../../../hooks/members/usePowerLevels';
+import { getPermissionPower } from '../../../hooks/members/usePowerLevels';
+import { useRoom } from '../../../hooks/room/useRoom';
 import { PowerColorBadge, PowerIcon } from '../../../components/power';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
-import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
+import { useMediaAuthentication } from '../../../hooks/server/useMediaAuthentication';
 import { stopPropagation } from '../../../utils/keyboard';
 import type { PermissionGroup } from './types';
-import { getPowerTagIconSrc } from '../../../hooks/useMemberPowerTag';
-import { useRoomCreatorsTag } from '../../../hooks/useRoomCreatorsTag';
-import { useRoomCreators } from '../../../hooks/useRoomCreators';
+import { getPowerTagIconSrc } from '../../../hooks/members/useMemberPowerTag';
+import { useRoomCreatorsTag } from '../../../hooks/members/useRoomCreatorsTag';
+import { useRoomCreators } from '../../../hooks/room/useRoomCreators';
 
 type PeekPermissionsProps = {
   powerLevels: PowerLevels;

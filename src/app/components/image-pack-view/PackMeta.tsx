@@ -20,12 +20,12 @@ import { nameInitials } from '../../utils/common';
 import { BreakWord } from '../../styles/Text.css';
 import { LINKIFY_OPTS } from '../../plugins/react-custom-html-parser';
 import { ContainerColor } from '../../styles/ContainerColor.css';
-import { useFilePicker } from '../../hooks/useFilePicker';
-import { useObjectURL } from '../../hooks/useObjectURL';
+import { useFilePicker } from '../../hooks/browser/useFilePicker';
+import { useObjectURL } from '../../hooks/browser/useObjectURL';
 import type { UploadSuccess } from '../../state/upload';
 import { createUploadAtom } from '../../state/upload';
 import { CompactUploadCardRenderer } from '../upload-card';
-import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
+import { useMediaAuthentication } from '../../hooks/server/useMediaAuthentication';
 import { PackMetaReader } from '../../plugins/custom-emoji';
 
 type ImagePackAvatarProps = {
