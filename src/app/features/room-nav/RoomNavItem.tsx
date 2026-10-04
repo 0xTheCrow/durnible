@@ -290,6 +290,8 @@ export function RoomNavItem({
       radii="400"
       highlight={unread !== undefined}
       aria-selected={selected}
+      data-testid="room-nav-entry"
+      data-room-id={room.roomId}
       data-hover={!!menuAnchor}
       onContextMenu={isDrawerMode ? undefined : handleContextMenu}
       style={isDrawerMode || tall ? { minHeight: toRem(48) } : undefined}

@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 import { Track } from 'livekit-client';
 import type { Settings } from '../../src/app/state/settings';
 import type { CallHomeserver, CallTestUser } from './callHomeserver';
-import { createCallHomeserver } from './callHomeserver';
+import { CALL_TEST_USERS, createCallHomeserver } from './callHomeserver';
 import { seedSession, seedSettings } from './homeserver';
 
 export const MEDIA_FLOW_TIMEOUT_MS = 20_000;
@@ -216,6 +216,23 @@ export const pressRepeatedly = (locator: Locator, key: string, count: number): P
 export type CallSession = {
   homeserver: CallHomeserver;
   openClient: (user: CallTestUser, options?: OpenCallClientOptions) => Promise<CallClient>;
+};
+
+type ConnectedPair = { alice: CallClient; bob: CallClient; voiceRoomId: string };
+
+export const connectBobThenAlice = async (callSession: CallSession): Promise<ConnectedPair> => {
+  const [voiceRoomId] = callSession.homeserver.voiceRoomIds;
+  const bob = await callSession.openClient(CALL_TEST_USERS.bob);
+  const alice = await callSession.openClient(CALL_TEST_USERS.alice);
+  await joinVoiceRoom(bob.page, voiceRoomId);
+  await joinVoiceRoom(alice.page, voiceRoomId);
+  await expect(getCallTile(bob.page, alice.user.userId)).toBeVisible({
+    timeout: MEDIA_FLOW_TIMEOUT_MS,
+  });
+  await expect(getCallTile(alice.page, bob.user.userId)).toBeVisible({
+    timeout: MEDIA_FLOW_TIMEOUT_MS,
+  });
+  return { alice, bob, voiceRoomId };
 };
 
 export const callTest = test.extend<{ callSession: CallSession }>({

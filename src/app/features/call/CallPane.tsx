@@ -19,6 +19,7 @@ import { CallMasterVolumeMenu } from './CallMasterVolumeMenu';
 import { CallEncryptionDebugPanel } from './CallEncryptionDebugPanel';
 import { CallPaneFrame } from './CallPaneFrame';
 import { CallPreJoinPane } from './CallPreJoin';
+import { FullscreenIcon } from './FullscreenIcon';
 import * as css from './CallPane.css';
 
 type ConnectedCallPaneProps = {
@@ -118,7 +119,7 @@ function ConnectedCallPane({ connection, isReconnecting }: ConnectedCallPaneProp
             variant={isFullscreen ? 'Success' : 'SurfaceVariant'}
             onClick={toggleFullscreen}
             label={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
-            icon={Icons.External}
+            icon={FullscreenIcon}
             aria-pressed={isFullscreen}
           />
         )}

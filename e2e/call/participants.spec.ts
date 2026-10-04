@@ -4,11 +4,10 @@ import {
   CALL_VOLUME_LEVEL_DEFAULT,
   CALL_VOLUME_LEVEL_STEP,
 } from '../../src/app/state/callVolumePreferences';
-import { CALL_TEST_USERS } from '../fixtures/callHomeserver';
-import type { CallClient, CallSession } from '../fixtures/call';
 import {
   MEDIA_FLOW_TIMEOUT_MS,
   callTest as test,
+  connectBobThenAlice,
   expectToKeepGrowing,
   getCallTile,
   getParticipantAudio,
@@ -20,23 +19,6 @@ import {
 } from '../fixtures/call';
 
 const VOLUME_STEPS_DOWN = 25;
-
-type ConnectedPair = { alice: CallClient; bob: CallClient; voiceRoomId: string };
-
-const connectBobThenAlice = async (callSession: CallSession): Promise<ConnectedPair> => {
-  const [voiceRoomId] = callSession.homeserver.voiceRoomIds;
-  const bob = await callSession.openClient(CALL_TEST_USERS.bob);
-  const alice = await callSession.openClient(CALL_TEST_USERS.alice);
-  await joinVoiceRoom(bob.page, voiceRoomId);
-  await joinVoiceRoom(alice.page, voiceRoomId);
-  await expect(getCallTile(bob.page, alice.user.userId)).toBeVisible({
-    timeout: MEDIA_FLOW_TIMEOUT_MS,
-  });
-  await expect(getCallTile(alice.page, bob.user.userId)).toBeVisible({
-    timeout: MEDIA_FLOW_TIMEOUT_MS,
-  });
-  return { alice, bob, voiceRoomId };
-};
 
 test('a participant joining shows up for the other with their audio, and leaving removes them', async ({
   callSession,

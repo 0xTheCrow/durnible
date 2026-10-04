@@ -1,6 +1,9 @@
 import React, { lazy, Suspense, useEffect, useState } from 'react';
-import { useAtomValue } from 'jotai';
-import { callPreJoinRoomIdAtom, callStateAtom } from '../../state/call';
+import { createPortal } from 'react-dom';
+import { useAtom, useAtomValue } from 'jotai';
+import { callPopOutAtom, callPreJoinRoomIdAtom, callStateAtom } from '../../state/call';
+import { ScreenSize, useScreenSizeContext } from '../../hooks/browser/useScreenSize';
+import { useCallPaneContainer } from './CallPaneContainer';
 import {
   respondDesktopScreenshareSource,
   subscribeDesktopScreenshareSourceRequest,
@@ -16,6 +19,9 @@ const LazyCallScreen = lazy(() =>
 );
 const LazyCallPane = lazy(() =>
   import('./CallPane').then((module) => ({ default: module.CallPane }))
+);
+const LazyCallPopOutWindow = lazy(() =>
+  import('./CallPopOut').then((module) => ({ default: module.CallPopOutWindow }))
 );
 const LazyScreenshareSourcePicker = lazy(() =>
   import('./ScreenshareSourcePicker').then((module) => ({
@@ -56,10 +62,33 @@ export function CallScreenGate() {
 
 export function CallPaneGate() {
   const isCallSurfaceVisible = useIsCallSurfaceVisible();
-  if (!isCallSurfaceVisible) return null;
-  return (
+  const screenSize = useScreenSizeContext();
+  const { paneContainer } = useCallPaneContainer();
+  if (!isCallSurfaceVisible || screenSize === ScreenSize.Mobile) return null;
+  return createPortal(
     <Suspense fallback={null}>
       <LazyCallPane />
+    </Suspense>,
+    paneContainer
+  );
+}
+
+export function CallPopOutGate() {
+  const callState = useAtomValue(callStateAtom);
+  const [callPopOut, setCallPopOut] = useAtom(callPopOutAtom);
+  const connection =
+    callState.status === 'connected' || callState.status === 'reconnecting'
+      ? callState.connection
+      : undefined;
+
+  useEffect(() => {
+    if (!connection) setCallPopOut(undefined);
+  }, [connection, setCallPopOut]);
+
+  if (!connection || !callPopOut) return null;
+  return (
+    <Suspense fallback={null}>
+      <LazyCallPopOutWindow popOut={callPopOut} room={connection.matrixRoom} />
     </Suspense>
   );
 }

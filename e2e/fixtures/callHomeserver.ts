@@ -51,6 +51,7 @@ type ClientConnection = {
 export type CallHomeserver = {
   spaceId: string;
   voiceRoomIds: [string, string];
+  homeRoomId: string;
   sentStateEvents: SentStateEvent[];
   unmatched: string[];
   setIsSfuServiceAvailable: (isAvailable: boolean) => void;
@@ -81,8 +82,8 @@ const buildSync = (batch: number, joinedRooms: Record<string, unknown>) => ({
 
 /**
  * One in-memory server shared by every page attached to it: a space holding two voice
- * rooms, both test users joined to all three. State and timeline events a page sends are
- * relayed unchanged to every attached page's next sync, so call memberships seen by one
+ * rooms, plus a text room outside the space, both test users joined to all four. State and
+ * timeline events a page sends are relayed unchanged to every attached page's next sync, so call memberships seen by one
  * client are exactly what the other client's SDK produced.
  */
 export const createCallHomeserver = (): CallHomeserver => {
@@ -92,6 +93,7 @@ export const createCallHomeserver = (): CallHomeserver => {
     `!voice-one-${roomSuffix}:${SERVER_NAME}`,
     `!voice-two-${roomSuffix}:${SERVER_NAME}`,
   ];
+  const homeRoomId = `!home-${roomSuffix}:${SERVER_NAME}`;
   const users = Object.values(CALL_TEST_USERS);
   const roomStateById = new Map<string, Map<string, MatrixEventJson>>();
   const connections = new Set<ClientConnection>();
@@ -106,11 +108,16 @@ export const createCallHomeserver = (): CallHomeserver => {
     roomStateById.set(roomId, roomState);
   };
 
-  const createSharedRoomState = (roomId: string, name: string, roomType: RoomType) => {
+  const createSharedRoomState = (roomId: string, name: string, roomType?: RoomType) => {
     const creator = users[0].userId;
     setRoomState(
       roomId,
-      stateEvent(StateEvent.RoomCreate, '', { creator, type: roomType }, creator)
+      stateEvent(
+        StateEvent.RoomCreate,
+        '',
+        roomType ? { creator, type: roomType } : { creator },
+        creator
+      )
     );
     setRoomState(roomId, stateEvent(StateEvent.RoomName, '', { name }, creator));
     setRoomState(
@@ -148,6 +155,7 @@ export const createCallHomeserver = (): CallHomeserver => {
       stateEvent(StateEvent.SpaceChild, voiceRoomId, { via: [SERVER_NAME] }, users[0].userId)
     );
   });
+  createSharedRoomState(homeRoomId, 'Lounge');
 
   const createClientConnection = (user: CallTestUser): ClientConnection => {
     let syncCount = 0;
@@ -398,6 +406,7 @@ export const createCallHomeserver = (): CallHomeserver => {
   return {
     spaceId,
     voiceRoomIds,
+    homeRoomId,
     sentStateEvents,
     unmatched,
     setIsSfuServiceAvailable: (isAvailable) => {

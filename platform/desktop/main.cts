@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, protocol, session, shell } from 'electron';
+import { app, BrowserWindow, ipcMain, protocol, screen, session, shell } from 'electron';
 import type { IpcMainEvent, IpcMainInvokeEvent } from 'electron';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -14,6 +14,12 @@ const APP_HOST = 'durnible';
 const APP_ORIGIN = `${APP_SCHEME}://${APP_HOST}`;
 const MEDIA_AUTH_IPC_CHANNEL = 'durnible:media-auth:set';
 const DEVTOOLS_ENABLED_IPC_CHANNEL = 'durnible:devtools-enabled:set';
+const CALL_POP_OUT_DRAG_START_CHANNEL = 'durnible:call-pop-out:drag-start';
+const CALL_POP_OUT_DRAG_MOVE_CHANNEL = 'durnible:call-pop-out:drag-move';
+const CALL_POP_OUT_DRAG_END_CHANNEL = 'durnible:call-pop-out:drag-end';
+const CALL_POP_OUT_WINDOW_NAME_PREFIX = 'durnible-call-pop-out-';
+const CALL_POP_OUT_MIN_WIDTH_PX = 160;
+const CALL_POP_OUT_MIN_HEIGHT_PX = 90;
 
 const webBuildDirectory = path.join(__dirname, '..', '..', '..', 'dist');
 const indexHtmlPath = path.join(webBuildDirectory, 'index.html');
@@ -128,6 +134,49 @@ const registerDevToolsMenuChannel = (): void => {
   });
 };
 
+let callPopOutWindow: BrowserWindow | undefined;
+type CallPopOutDrag = {
+  cursorOffsetX: number;
+  cursorOffsetY: number;
+  width: number;
+  height: number;
+};
+
+let callPopOutDrag: CallPopOutDrag | undefined;
+
+const getLiveCallPopOutWindow = (): BrowserWindow | undefined =>
+  callPopOutWindow && !callPopOutWindow.isDestroyed() ? callPopOutWindow : undefined;
+
+const registerCallPopOutDragChannels = (): void => {
+  ipcMain.on(CALL_POP_OUT_DRAG_START_CHANNEL, (event) => {
+    const popOutWindow = getLiveCallPopOutWindow();
+    if (!checkIsTrustedSender(event) || !popOutWindow) return;
+    const cursorPoint = screen.getCursorScreenPoint();
+    const windowBounds = popOutWindow.getBounds();
+    callPopOutDrag = {
+      cursorOffsetX: cursorPoint.x - windowBounds.x,
+      cursorOffsetY: cursorPoint.y - windowBounds.y,
+      width: windowBounds.width,
+      height: windowBounds.height,
+    };
+  });
+  ipcMain.on(CALL_POP_OUT_DRAG_MOVE_CHANNEL, (event) => {
+    const popOutWindow = getLiveCallPopOutWindow();
+    if (!checkIsTrustedSender(event) || !popOutWindow || !callPopOutDrag) return;
+    const cursorPoint = screen.getCursorScreenPoint();
+    popOutWindow.setBounds({
+      x: cursorPoint.x - callPopOutDrag.cursorOffsetX,
+      y: cursorPoint.y - callPopOutDrag.cursorOffsetY,
+      width: callPopOutDrag.width,
+      height: callPopOutDrag.height,
+    });
+  });
+  ipcMain.on(CALL_POP_OUT_DRAG_END_CHANNEL, (event) => {
+    if (!checkIsTrustedSender(event)) return;
+    callPopOutDrag = undefined;
+  });
+};
+
 const createMainWindow = (): void => {
   const mainWindow = new BrowserWindow({
     ...getInitialWindowBounds(),
@@ -168,11 +217,31 @@ const createMainWindow = (): void => {
 
   mainWindow.once('ready-to-show', () => mainWindow.show());
 
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+  mainWindow.webContents.setWindowOpenHandler(({ url, frameName }) => {
+    if (frameName.startsWith(CALL_POP_OUT_WINDOW_NAME_PREFIX) && url === 'about:blank') {
+      return {
+        action: 'allow',
+        overrideBrowserWindowOptions: {
+          frame: false,
+          alwaysOnTop: true,
+          skipTaskbar: true,
+          backgroundColor: '#000000',
+          minWidth: CALL_POP_OUT_MIN_WIDTH_PX,
+          minHeight: CALL_POP_OUT_MIN_HEIGHT_PX,
+          icon: appIconPath,
+        },
+      };
+    }
     if (url.startsWith('http:') || url.startsWith('https:') || url.startsWith('mailto:')) {
       shell.openExternal(url);
     }
     return { action: 'deny' };
+  });
+
+  mainWindow.webContents.on('did-create-window', (popOutWindow) => {
+    callPopOutWindow = popOutWindow;
+    popOutWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+    popOutWindow.webContents.on('will-navigate', (event) => event.preventDefault());
   });
 
   mainWindow.webContents.on('will-navigate', (event, url) => {
@@ -209,6 +278,7 @@ if (!app.requestSingleInstanceLock()) {
     installScreenshareAudio(appSession, checkIsRendererFrame);
     registerMediaAuthChannel();
     registerDevToolsMenuChannel();
+    registerCallPopOutDragChannels();
     installAppUpdate(checkIsTrustedSender);
 
     protocol.handle(APP_SCHEME, serveWebBuild);

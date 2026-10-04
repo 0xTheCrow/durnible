@@ -160,12 +160,21 @@ export const CallTile = style({
   border: `${config.borderWidth.B500} solid transparent`,
 });
 
+export const CallTileFrame = style({});
+
+export const CallTileFillsFrame = style({
+  width: '100%',
+  height: '100%',
+});
+
 export const CallGridTile = style({
+  position: 'relative',
   minWidth: 0,
   minHeight: 0,
 });
 
 export const CallStripTile = style({
+  position: 'relative',
   flex: '0 0 auto',
   width: toRem(128),
   height: toRem(72),
@@ -236,6 +245,52 @@ export const CallTileName = style({
   borderRadius: config.radii.Pill,
   backgroundColor: 'rgba(0, 0, 0, 0.55)',
   color: 'white',
+});
+
+export const CallTilePopOutPlaceholder = style({
+  position: 'absolute',
+  inset: 0,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: config.space.S200,
+  backgroundColor: 'black',
+  color: 'white',
+});
+
+export const CallTilePopOutToggle = style({
+  position: 'absolute',
+  top: '50%',
+  right: config.space.S200,
+  transform: 'translateY(-50%)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: config.space.S200,
+  border: 'none',
+  borderRadius: config.radii.Pill,
+  backgroundColor: 'rgba(0, 0, 0, 0.55)',
+  color: 'white',
+  cursor: 'pointer',
+  transition: 'opacity 100ms ease, background-color 100ms ease',
+  selectors: {
+    '&:hover': {
+      backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    },
+    [`${CallStripTile} &`]: {
+      display: 'none',
+    },
+  },
+  '@media': {
+    '(hover: hover)': {
+      opacity: 0,
+      selectors: {
+        [`${CallTileFrame}:hover &, ${CallTileFrame}:focus-within &`]: {
+          opacity: 1,
+        },
+      },
+    },
+  },
 });
 
 export const CallPreJoinStage = style({

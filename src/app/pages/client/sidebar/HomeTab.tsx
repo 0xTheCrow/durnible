@@ -105,6 +105,7 @@ export function HomeTab() {
             outlined
             onClick={handleHomeClick}
             onContextMenu={handleContextMenu}
+            data-testid="sidebar-home-tab"
           >
             <Icon src={Icons.Home} filled={homeSelected} />
           </SidebarAvatar>

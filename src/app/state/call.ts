@@ -1,4 +1,5 @@
 import { atom } from 'jotai';
+import type { Participant, Track } from 'livekit-client';
 import type { CallConnection } from '../plugins/call/CallConnection';
 
 export type CallState =
@@ -17,6 +18,15 @@ export const activeCallRoomIdAtom = atom<string | undefined>((get) => {
 });
 
 export const isCallPaneCollapsedAtom = atom(false);
+
+export type CallPopOut = {
+  participant: Participant;
+  source: Track.Source.Camera | Track.Source.ScreenShare;
+  displayName: string;
+  popOutWindow: Window;
+};
+
+export const callPopOutAtom = atom<CallPopOut | undefined>(undefined);
 
 export const callPreJoinRoomIdAtom = atom<string | undefined>(undefined);
 
