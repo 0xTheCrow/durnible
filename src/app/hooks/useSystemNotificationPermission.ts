@@ -2,32 +2,39 @@ import { useCallback, useEffect, useState } from 'react';
 import { checkIsNativeMobileApp } from '../platform/mobile';
 import {
   getSystemNotificationPermission,
+  getWebNotificationPermission,
   requestSystemNotificationPermission,
 } from '../utils/systemNotifications';
-import { getNotificationState, usePermissionState } from './usePermission';
 
 export function useSystemNotificationPermission(): [PermissionState, () => void] {
   const [permission, setPermission] = useState<PermissionState>(() =>
-    checkIsNativeMobileApp() ? 'prompt' : getNotificationState()
+    checkIsNativeMobileApp() ? 'prompt' : getWebNotificationPermission()
   );
-  const webPermission = usePermissionState('notifications', getNotificationState());
 
   useEffect(() => {
-    if (!checkIsNativeMobileApp()) setPermission(webPermission);
-  }, [webPermission]);
-
-  useEffect(() => {
-    let isActive = true;
-
     if (checkIsNativeMobileApp()) {
+      let isActive = true;
       getSystemNotificationPermission().then((state) => {
         if (isActive) setPermission(state);
       });
+      return () => {
+        isActive = false;
+      };
     }
 
-    return () => {
-      isActive = false;
+    let permissionStatus: PermissionStatus | undefined;
+    const handlePermissionChange = () => {
+      if (permissionStatus) setPermission(permissionStatus.state);
     };
+    navigator.permissions
+      .query({ name: 'notifications' })
+      .then((status) => {
+        permissionStatus = status;
+        handlePermissionChange();
+        status.addEventListener('change', handlePermissionChange);
+      })
+      .catch(() => undefined);
+    return () => permissionStatus?.removeEventListener('change', handlePermissionChange);
   }, []);
 
   const requestPermission = useCallback(() => {
