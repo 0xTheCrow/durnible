@@ -2,7 +2,6 @@ import type { MouseEventHandler } from 'react';
 import React, { useState } from 'react';
 import type { RectCords } from 'folds';
 import {
-  Badge,
   Box,
   Button,
   color,
@@ -12,15 +11,13 @@ import {
   Menu,
   MenuItem,
   PopOut,
-  ProgressBar,
   Scroll,
   Switch,
   Text,
-  toRem,
 } from 'folds';
 import FocusTrap from 'focus-trap-react';
-import { Range } from 'react-range';
 import { Page, PageContent } from '../../../components/page';
+import { Slider } from '../../../components/Slider';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SettingsCardStyle } from '../../../styles/SettingsCard.css';
 import { SettingTile } from '../../../components/setting-tile';
@@ -171,46 +168,16 @@ export function MicrophoneInputFloorSetting() {
       }
     >
       <Box direction="Column" gap="200" style={{ paddingTop: config.space.S200 }}>
-        <Range
+        <Slider
+          size="400"
           step={0.01}
           min={0}
           max={1}
-          values={[microphoneInputFloorLevel]}
-          onChange={(values) => setMicrophoneInputFloorLevel(values[0])}
-          renderTrack={(params) => (
-            <div
-              {...params.props}
-              style={{
-                ...params.props.style,
-                width: '100%',
-                height: toRem(16),
-                display: 'flex',
-                alignItems: 'center',
-              }}
-            >
-              {params.children}
-              <ProgressBar
-                style={{ width: '100%', backgroundColor: color.SurfaceVariant.ContainerActive }}
-                variant={isInputAboveFloor ? 'Success' : 'Secondary'}
-                size="400"
-                min={0}
-                max={1}
-                value={inputLevel}
-                radii="300"
-              />
-            </div>
-          )}
-          renderThumb={(params) => (
-            <Badge
-              size="400"
-              variant="Secondary"
-              fill="Solid"
-              radii="Pill"
-              outlined
-              {...params.props}
-              style={{ ...params.props.style, zIndex: 0 }}
-            />
-          )}
+          value={microphoneInputFloorLevel}
+          fillValue={inputLevel}
+          fillVariant={isInputAboveFloor ? 'Success' : 'Secondary'}
+          trackBackgroundColor={color.SurfaceVariant.ContainerActive}
+          onChange={setMicrophoneInputFloorLevel}
         />
         <Box gap="300" alignItems="Center" justifyContent="SpaceBetween">
           <Text size="T200" priority="300">

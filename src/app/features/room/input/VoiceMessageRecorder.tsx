@@ -1,18 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  Badge,
-  Box,
-  Chip,
-  Icon,
-  IconButton,
-  Icons,
-  ProgressBar,
-  Text,
-  color,
-  config,
-  toRem,
-} from 'folds';
-import { Range } from 'react-range';
+import { Box, Chip, Icon, IconButton, Icons, Text, color, config, toRem } from 'folds';
+import { Slider } from '../../../components/Slider';
 import { useVoiceRecording, VoiceRecordingStatus } from '../../../hooks/useVoiceRecording';
 import { useMediaPlay, useMediaPlayTimeCallback, useMediaSeek } from '../../../hooks/media';
 import { useThrottle } from '../../../hooks/useThrottle';
@@ -86,47 +74,16 @@ function VoicePreview({
             {`${secondsToMinutesAndSeconds(currentTime)} / ${secondsToMinutesAndSeconds(duration)}`}
           </Text>
 
-          <Range
-            step={0.1}
-            min={0}
-            max={duration || 1}
-            values={[currentTime]}
-            onChange={(values) => seek(values[0])}
-            renderTrack={(params) => (
-              <div
-                {...params.props}
-                style={{
-                  ...params.props.style,
-                  flexGrow: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                }}
-              >
-                {params.children}
-                <ProgressBar
-                  as="div"
-                  variant="Secondary"
-                  size="300"
-                  min={0}
-                  max={duration || 1}
-                  value={currentTime}
-                  radii="300"
-                  style={{ width: '100%' }}
-                />
-              </div>
-            )}
-            renderThumb={(params) => (
-              <Badge
-                size="300"
-                variant="Secondary"
-                fill="Solid"
-                radii="Pill"
-                outlined
-                {...params.props}
-                style={{ ...params.props.style, zIndex: 0 }}
-              />
-            )}
-          />
+          <Box grow="Yes">
+            <Slider
+              size="300"
+              step={0.1}
+              min={0}
+              max={duration || 1}
+              value={currentTime}
+              onChange={seek}
+            />
+          </Box>
         </Box>
 
         <Box className={editorCss.EditorOptions} alignItems="Center" gap="100" shrink="No">

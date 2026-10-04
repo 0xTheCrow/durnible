@@ -16,6 +16,8 @@ const AUDIO_PLAYER_SELECTOR = '[data-testid="audio-player"]';
 const REPLAY_START_TOLERANCE_SECONDS = 0.1;
 const SEEKABLE_CLIP_SECONDS = 3;
 const SEEK_TARGET_FRACTION = 0.75;
+const SEEK_DRAG_START_FRACTION = 0.25;
+const SEEK_DRAG_POINTER_STEPS = 5;
 
 declare global {
   interface Window {
@@ -184,6 +186,36 @@ test('clicking the seek track moves the playback position', async ({ context, pa
   await track.click({
     position: { x: trackBox.width * SEEK_TARGET_FRACTION, y: trackBox.height / 2 },
   });
+
+  await expect
+    .poll(() => currentPlaybackTime(page))
+    .toBeGreaterThan(SEEKABLE_CLIP_SECONDS * SEEK_TARGET_FRACTION * 0.8);
+});
+
+test('pressing the seek track and dragging keeps moving the playback position', async ({
+  context,
+  page,
+}) => {
+  const recording = await recordVoiceClip(context, SEEKABLE_CLIP_SECONDS);
+  await openRoom(context, page, {
+    timelineEvents: [audioEvent(recording.mimeType, SEEKABLE_CLIP_SECONDS)],
+    audioResponse: { body: recording.body, contentType: recording.mimeType },
+  });
+
+  const toggle = playToggle(page);
+  await play(page);
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+
+  const trackBox = await page.getByTestId('audio-seek-track').boundingBox();
+  if (!trackBox) throw new Error('seek track has no layout box');
+  const pointerY = trackBox.y + trackBox.height / 2;
+  await page.mouse.move(trackBox.x + trackBox.width * SEEK_DRAG_START_FRACTION, pointerY);
+  await page.mouse.down();
+  await page.mouse.move(trackBox.x + trackBox.width * SEEK_TARGET_FRACTION, pointerY, {
+    steps: SEEK_DRAG_POINTER_STEPS,
+  });
+  await page.mouse.up();
 
   await expect
     .poll(() => currentPlaybackTime(page))
