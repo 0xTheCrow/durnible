@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import React, { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { MatrixEvent, RoomEventHandlerMap } from 'matrix-js-sdk';
-import { MatrixEventEvent, RoomEvent } from 'matrix-js-sdk';
+import { MatrixEventEvent, RoomEvent, SyncState } from 'matrix-js-sdk';
 import { roomToUnreadAtom, unreadEqual, unreadInfoToUnread } from '../../state/room/roomToUnread';
 import LogoSVG from '../../../../public/res/svg/durnible.svg';
 import LogoUnreadSVG from '../../../../public/res/svg/durnible-unread.svg';
@@ -20,19 +20,19 @@ import { getNotificationSoundUrl } from '../../plugins/notificationSounds';
 import { useSetting } from '../../state/hooks/settings';
 import { settingsAtom } from '../../state/settings';
 import { allInvitesAtom } from '../../state/room-list/inviteList';
+import { hasCompletedFirstLiveSyncAtom } from '../../state/hasCompletedFirstLiveSync';
 import { usePreviousValue } from '../../hooks/usePreviousValue';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
+import { useSyncState } from '../../hooks/server/useSyncState';
 import { getInboxInvitesPath } from '../pathUtils';
 import { useRoomNavigate } from '../../hooks/router/useRoomNavigate';
 import { getRoomPathWithoutEventId, setLastVisitedRoomPath } from '../lastVisitedRoomPath';
 import {
+  checkIsEventEligibleForNotification,
   getMemberDisplayName,
-  getNotificationType,
   getUnreadInfo,
-  isNotificationEvent,
 } from '../../utils/room';
 import type { UnreadInfo } from '../../../types/matrix/room';
-import { NotificationType } from '../../../types/matrix/room';
 import { getMxIdLocalPart, mxcUrlToHttp } from '../../utils/matrix';
 import { useSelectedRoom } from '../../hooks/router/useSelectedRoom';
 import { useInboxNotificationsSelected } from '../../hooks/router/useInbox';
@@ -150,6 +150,18 @@ function SyncRecovery() {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [mx]);
 
+  useSyncState(
+    mx,
+    useCallback(
+      (state) => {
+        if (state === SyncState.Reconnecting && !document.hidden) {
+          mx.retryImmediately();
+        }
+      },
+      [mx]
+    )
+  );
+
   return null;
 }
 
@@ -220,7 +232,7 @@ function InviteNotifications() {
   const audioRef = useRef<HTMLAudioElement>(null);
   const invites = useAtomValue(allInvitesAtom);
   const perviousInviteLen = usePreviousValue(invites.length, 0);
-  const mx = useMatrixClient();
+  const hasCompletedFirstLiveSync = useAtomValue(hasCompletedFirstLiveSyncAtom);
 
   const [showNotifications] = useSetting(settingsAtom, 'showNotifications');
   const [isNotificationSoundEnabled] = useSetting(settingsAtom, 'isNotificationSoundEnabled');
@@ -241,7 +253,7 @@ function InviteNotifications() {
   }, []);
 
   useEffect(() => {
-    if (invites.length > perviousInviteLen && mx.getSyncState() === 'SYNCING') {
+    if (invites.length > perviousInviteLen && hasCompletedFirstLiveSync) {
       if (showNotifications) {
         notify(invites.length - perviousInviteLen);
       }
@@ -251,7 +263,7 @@ function InviteNotifications() {
       }
     }
   }, [
-    mx,
+    hasCompletedFirstLiveSync,
     invites,
     perviousInviteLen,
     showNotifications,
@@ -282,6 +294,7 @@ function MessageNotifications() {
 
   const notificationSelected = useInboxNotificationsSelected();
   const selectedRoomId = useSelectedRoom();
+  const hasCompletedFirstLiveSync = useAtomValue(hasCompletedFirstLiveSyncAtom);
   const { getRoomPath } = useRoomNavigate();
 
   const notify = useCallback(
@@ -321,21 +334,25 @@ function MessageNotifications() {
       removed,
       data
     ) => {
-      if (mx.getSyncState() !== 'SYNCING') return;
-      if (document.hasFocus() && (selectedRoomId === room?.roomId || notificationSelected)) return;
+      if (!room) return;
+      const isTargetRoomVisible =
+        document.hasFocus() && (selectedRoomId === room.roomId || notificationSelected);
       if (
-        !room ||
-        !data.liveEvent ||
-        room.isSpaceRoom() ||
-        !isNotificationEvent(mEvent) ||
-        getNotificationType(mx, room.roomId) === NotificationType.Mute
+        !checkIsEventEligibleForNotification({
+          mx,
+          room,
+          event: mEvent,
+          isLiveEvent: Boolean(data.liveEvent),
+          hasCompletedFirstLiveSync,
+          isTargetRoomVisible,
+        })
       ) {
         return;
       }
 
       const sender = mEvent.getSender();
       const eventId = mEvent.getId();
-      if (!sender || !eventId || mEvent.getSender() === mx.getUserId()) return;
+      if (!sender || !eventId) return;
       const unreadInfo = getUnreadInfo(room);
       const cachedUnreadInfo = unreadCacheRef.current.get(room.roomId);
       unreadCacheRef.current.set(room.roomId, unreadInfo);
@@ -379,6 +396,7 @@ function MessageNotifications() {
     notify,
     selectedRoomId,
     useAuthentication,
+    hasCompletedFirstLiveSync,
   ]);
 
   return (

@@ -42,7 +42,7 @@ export const getNotificationType = (mx: MatrixClient, roomId: string): Notificat
   return NotificationType.MentionsAndKeywords;
 };
 
-const NOTIFICATION_EVENT_TYPES = [
+export const NOTIFICATION_EVENT_TYPES = [
   'm.room.create',
   'm.room.message',
   'm.room.encrypted',
@@ -163,4 +163,30 @@ export const getUnreadInfos = (mx: MatrixClient): UnreadInfo[] => {
     return unread;
   }, []);
   return unreadInfos;
+};
+
+export const checkIsEventEligibleForNotification = ({
+  mx,
+  room,
+  event,
+  isLiveEvent,
+  hasCompletedFirstLiveSync,
+  isTargetRoomVisible,
+}: {
+  mx: MatrixClient;
+  room: Room;
+  event: MatrixEvent;
+  isLiveEvent: boolean;
+  hasCompletedFirstLiveSync: boolean;
+  isTargetRoomVisible: boolean;
+}): boolean => {
+  if (!hasCompletedFirstLiveSync) return false;
+  if (isTargetRoomVisible) return false;
+  if (!isLiveEvent || room.isSpaceRoom() || !isNotificationEvent(event)) return false;
+  if (getNotificationType(mx, room.roomId) === NotificationType.Mute) return false;
+
+  const sender = event.getSender();
+  if (!sender || !event.getId() || sender === mx.getUserId()) return false;
+
+  return !isRoomReadByReceiptTimestamp(mx, room);
 };
