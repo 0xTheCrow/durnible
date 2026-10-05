@@ -1,4 +1,4 @@
-name: Desktop release
+name: Release
 
 on:
   push:
@@ -162,7 +162,7 @@ jobs:
             echo "Android refuses to install an unsigned APK, and an APK signed with a different"
             echo "key cannot update an existing install."
             echo ""
-            echo "Set it at Settings > Environments > desktop > Environment secrets, to the output of:"
+            echo "Set it at Settings > Environments > android > Environment secrets, to the output of:"
             echo "  base64 -w0 <path to durnible-release.jks>"
             exit 1
           fi
