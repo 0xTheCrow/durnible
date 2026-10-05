@@ -6,8 +6,13 @@ import { roomToUnreadAtom, useBindRoomToUnreadAtom } from '../room/roomToUnread'
 import { roomToParentsAtom, useBindRoomToParentsAtom } from '../room/roomToParents';
 import { roomIdToTypingMembersAtom, useBindRoomIdToTypingMembersAtom } from '../typingMembers';
 import { portableImagePacksAtom, useBindPortableImagePacksAtom } from '../portableImagePacks';
+import {
+  hasCompletedFirstLiveSyncAtom,
+  useBindHasCompletedFirstLiveSyncAtom,
+} from '../hasCompletedFirstLiveSync';
 
 export const useBindAtoms = (mx: MatrixClient) => {
+  useBindHasCompletedFirstLiveSyncAtom(mx, hasCompletedFirstLiveSyncAtom);
   useBindMDirectAtom(mx, mDirectAtom);
   useBindAllInvitesAtom(mx, allInvitesAtom);
   useBindAllRoomsAtom(mx, allRoomsAtom);

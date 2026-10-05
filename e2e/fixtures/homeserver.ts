@@ -199,9 +199,13 @@ const emptySync = (): Record<string, unknown> => ({
   rooms: { join: {}, invite: {}, leave: {} },
 });
 
-export const liveMessageEvent = (id: string, body: string): Record<string, unknown> => ({
+export const liveMessageEvent = (
+  id: string,
+  body: string,
+  sender = TEST_USER_ID
+): Record<string, unknown> => ({
   type: 'm.room.message',
-  sender: TEST_USER_ID,
+  sender,
   content: { msgtype: 'm.text', body },
   event_id: id,
   origin_server_ts: 1700000100000,
@@ -222,7 +226,8 @@ export const reactionEvent = (
 const liveSync = (
   batch: number,
   events: Record<string, unknown>[],
-  isLimited: boolean
+  isLimited: boolean,
+  notificationCount: number
 ): Record<string, unknown> => ({
   next_batch: `s_${batch}`,
   account_data: { events: [] },
@@ -235,7 +240,7 @@ const liveSync = (
         timeline: { events, prev_batch: `p_${batch}`, limited: isLimited },
         ephemeral: { events: [] },
         account_data: { events: [] },
-        unread_notifications: { notification_count: 0, highlight_count: 0 },
+        unread_notifications: { notification_count: notificationCount, highlight_count: 0 },
       },
     },
     invite: {},
@@ -359,16 +364,20 @@ export const seedSettings = (page: Page, settings: Partial<Settings>): Promise<v
 
 export type PushTimelineOptions = {
   isLimited?: boolean;
+  notificationCount?: number;
 };
 
 export type HomeserverStub = {
   sentEvents: SentEvent[];
   unmatched: string[];
   pushTimeline: (events: Record<string, unknown>[], options?: PushTimelineOptions) => void;
+  failPendingSync: () => void;
   historyRequested: Promise<void>;
 };
 
 const SYNC_LONG_POLL_MS = 30_000;
+
+const SYNC_FAILURE = Symbol('syncFailure');
 
 export type StubHomeserverOptions = {
   timelineEvents?: Record<string, unknown>[];
@@ -415,14 +424,23 @@ export const stubHomeserver = async (
   const queuedSyncs: Record<string, unknown>[] = [];
   const liveEventLog: Record<string, unknown>[] = [];
   let releaseLongPoll: (() => void) | undefined;
+  let failLongPoll: (() => void) | undefined;
+  let isSyncFailureQueued = false;
   let resolveHistoryRequested: (() => void) | undefined;
   const stub: HomeserverStub = {
     sentEvents: [],
     unmatched: [],
-    pushTimeline: (events, { isLimited = false } = {}) => {
-      queuedSyncs.push(liveSync(queuedSyncs.length + 2, events, isLimited));
+    pushTimeline: (events, { isLimited = false, notificationCount = 0 } = {}) => {
+      queuedSyncs.push(liveSync(queuedSyncs.length + 2, events, isLimited, notificationCount));
       liveEventLog.push(...events);
       releaseLongPoll?.();
+    },
+    failPendingSync: () => {
+      if (failLongPoll) {
+        failLongPoll();
+        return;
+      }
+      isSyncFailureQueued = true;
     },
     historyRequested: new Promise((resolve) => {
       resolveHistoryRequested = resolve;
@@ -431,12 +449,19 @@ export const stubHomeserver = async (
   let syncCount = 0;
   let historyServed = false;
 
-  const takeQueuedSync = (): Promise<Record<string, unknown> | undefined> =>
+  const takeQueuedSync = (): Promise<Record<string, unknown> | undefined | typeof SYNC_FAILURE> =>
     new Promise((resolve) => {
       const settle = () => {
         clearTimeout(timeoutId);
         releaseLongPoll = undefined;
+        failLongPoll = undefined;
         resolve(queuedSyncs.shift());
+      };
+      const fail = () => {
+        clearTimeout(timeoutId);
+        releaseLongPoll = undefined;
+        failLongPoll = undefined;
+        resolve(SYNC_FAILURE);
       };
       const timeoutId = setTimeout(settle, SYNC_LONG_POLL_MS);
       if (queuedSyncs.length > 0) {
@@ -444,6 +469,7 @@ export const stubHomeserver = async (
         return;
       }
       releaseLongPoll = settle;
+      failLongPoll = fail;
     });
 
   await page.route(`${HOMESERVER_BASE_URL}/**`, async (route) => {
@@ -464,7 +490,12 @@ export const stubHomeserver = async (
     if (pathname.endsWith('/sync')) {
       syncCount += 1;
       if (syncCount === 1) return json(route, initialSync(options));
+      if (isSyncFailureQueued) {
+        isSyncFailureQueued = false;
+        return route.abort('connectionfailed');
+      }
       const queued = await takeQueuedSync();
+      if (queued === SYNC_FAILURE) return route.abort('connectionfailed');
       return json(route, queued ?? emptySync());
     }
 
