@@ -99,6 +99,10 @@ body {
           var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))
       );
     }
+    html,
+    body {
+      height: 100lvh;
+    }
     #root {
       height: var(--app-height, 100lvh);
     }
