@@ -9,7 +9,6 @@ import {
 } from '../../../styles/safeArea';
 
 const IOS_STANDALONE_MOBILE_MEDIA_QUERY = `${MOBILE_MEDIA_QUERY} and ${STANDALONE_DISPLAY_MEDIA_QUERY}`;
-const HOME_INDICATOR_CLEARANCE = '21px';
 
 export const RoomViewFollowingPlaceholder = style([
   DefaultReset,
@@ -22,7 +21,7 @@ export const RoomViewFollowingPlaceholder = style([
       [IOS_STANDALONE_MOBILE_MEDIA_QUERY]: {
         '@supports': {
           [IOS_WEBKIT_SUPPORTS_QUERY]: {
-            height: `max(${toRem(8)}, min(${SAFE_AREA_INSET_BOTTOM}, ${HOME_INDICATOR_CLEARANCE}))`,
+            height: `calc(${toRem(8)} + ${SAFE_AREA_INSET_BOTTOM})`,
           },
         },
       },
