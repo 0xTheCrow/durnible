@@ -91,24 +91,6 @@ body {
   padding-left: var(--safe-area-inset-left, env(safe-area-inset-left, 0px));
 }
 
-@media (display-mode: standalone) {
-  @supports (-webkit-touch-callout: none) {
-    :root {
-      --safe-viewport-height: calc(
-        100lvh - var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) -
-          var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))
-      );
-    }
-    html,
-    body {
-      height: 100lvh;
-    }
-    #root {
-      height: var(--app-height, 100lvh);
-    }
-  }
-}
-
 *,
 *::before,
 *::after {

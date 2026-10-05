@@ -4,7 +4,6 @@ import { DefaultReset, color, config, toRem } from 'folds';
 import { MOBILE_MEDIA_QUERY } from '../../../styles/breakpoints';
 import {
   IOS_WEBKIT_SUPPORTS_QUERY,
-  SAFE_AREA_INSET_BOTTOM,
   STANDALONE_DISPLAY_MEDIA_QUERY,
 } from '../../../styles/safeArea';
 
@@ -21,13 +20,31 @@ export const RoomViewFollowingPlaceholder = style([
       [IOS_STANDALONE_MOBILE_MEDIA_QUERY]: {
         '@supports': {
           [IOS_WEBKIT_SUPPORTS_QUERY]: {
-            height: `calc(${toRem(8)} + ${SAFE_AREA_INSET_BOTTOM})`,
+            position: 'relative',
           },
         },
       },
     },
   },
 ]);
+
+globalStyle(`.${RoomViewFollowingPlaceholder}::after`, {
+  '@media': {
+    [IOS_STANDALONE_MOBILE_MEDIA_QUERY]: {
+      '@supports': {
+        [IOS_WEBKIT_SUPPORTS_QUERY]: {
+          content: '""',
+          position: 'absolute',
+          top: '100%',
+          left: 0,
+          right: 0,
+          height: '100lvh',
+          backgroundColor: color.Surface.Container,
+        },
+      },
+    },
+  },
+});
 
 globalStyle(`#root:has(.${RoomViewFollowingPlaceholder})`, {
   '@media': {
