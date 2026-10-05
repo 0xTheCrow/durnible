@@ -1,11 +1,17 @@
 import { style } from '@vanilla-extract/css';
 import { MOBILE_MEDIA_QUERY } from './breakpoints';
+import {
+  SAFE_AREA_INSET_BOTTOM,
+  SAFE_AREA_INSET_LEFT,
+  SAFE_AREA_INSET_RIGHT,
+  SAFE_AREA_INSET_TOP,
+} from './safeArea';
 
 export const OverlayCenterSafeArea = style({
-  paddingTop: 'var(--safe-area-inset-top, env(safe-area-inset-top, 0px))',
-  paddingRight: 'var(--safe-area-inset-right, env(safe-area-inset-right, 0px))',
-  paddingBottom: 'var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))',
-  paddingLeft: 'var(--safe-area-inset-left, env(safe-area-inset-left, 0px))',
+  paddingTop: SAFE_AREA_INSET_TOP,
+  paddingRight: SAFE_AREA_INSET_RIGHT,
+  paddingBottom: SAFE_AREA_INSET_BOTTOM,
+  paddingLeft: SAFE_AREA_INSET_LEFT,
 });
 
 export const ModalWide = style({
