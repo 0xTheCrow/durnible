@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactNode, RefObject } from 'react';
 import React, {
   createContext,
   useContext,
@@ -7,12 +7,14 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import { usePageRootContainers } from '../../components/page';
 import * as css from './CallPaneContainer.css';
 
 type CallPaneContainerContextValue = {
   paneContainer: HTMLDivElement;
-  adoptPaneContainer: (slotElement: HTMLElement) => void;
+  adoptPaneContainer: (slotElement: HTMLElement, boundsRef: RefObject<HTMLElement>) => void;
   releasePaneContainer: (slotElement: HTMLElement) => void;
+  getPaneBoundsElement: () => HTMLElement | null;
 };
 
 const CallPaneContainerContext = createContext<CallPaneContainerContextValue | null>(null);
@@ -28,6 +30,7 @@ type CallPaneContainerProviderProps = {
 };
 export function CallPaneContainerProvider({ children }: CallPaneContainerProviderProps) {
   const holdingRef = useRef<HTMLDivElement>(null);
+  const adoptedBoundsRef = useRef<RefObject<HTMLElement> | null>(null);
   const [paneContainer] = useState(() => {
     const containerElement = document.createElement('div');
     containerElement.className = css.CallPaneContents;
@@ -37,11 +40,16 @@ export function CallPaneContainerProvider({ children }: CallPaneContainerProvide
   const contextValue = useMemo<CallPaneContainerContextValue>(
     () => ({
       paneContainer,
-      adoptPaneContainer: (slotElement) => slotElement.appendChild(paneContainer),
+      adoptPaneContainer: (slotElement, boundsRef) => {
+        slotElement.appendChild(paneContainer);
+        adoptedBoundsRef.current = boundsRef;
+      },
       releasePaneContainer: (slotElement) => {
         if (paneContainer.parentElement !== slotElement) return;
         holdingRef.current?.appendChild(paneContainer);
+        adoptedBoundsRef.current = null;
       },
+      getPaneBoundsElement: () => adoptedBoundsRef.current?.current ?? null,
     }),
     [paneContainer]
   );
@@ -60,14 +68,15 @@ export function CallPaneContainerProvider({ children }: CallPaneContainerProvide
 
 export function CallPaneSlot() {
   const { adoptPaneContainer, releasePaneContainer } = useCallPaneContainer();
+  const { asideContainerRef } = usePageRootContainers();
   const slotRef = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
     const slotElement = slotRef.current;
     if (!slotElement) return undefined;
-    adoptPaneContainer(slotElement);
+    adoptPaneContainer(slotElement, asideContainerRef);
     return () => releasePaneContainer(slotElement);
-  }, [adoptPaneContainer, releasePaneContainer]);
+  }, [adoptPaneContainer, releasePaneContainer, asideContainerRef]);
 
   return <div ref={slotRef} className={css.CallPaneContents} />;
 }

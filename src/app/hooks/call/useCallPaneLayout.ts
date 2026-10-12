@@ -5,11 +5,12 @@ import { useSetting } from '../../state/hooks/settings';
 import type { PaneResize } from '../gesture/usePaneResize';
 import { checkIsSideAnchor, usePaneResize } from '../gesture/usePaneResize';
 import { ScreenSize, useScreenSizeContext } from '../browser/useScreenSize';
-
-export const CALL_PANE_MIN_WIDTH = 240;
-export const CALL_PANE_MIN_HEIGHT = 280;
-export const CALL_PANE_MAX_CONTAINER_FRACTION = 0.7;
-export const CALL_PANE_KEYBOARD_RESIZE_STEP = 16;
+import {
+  CALL_PANE_KEYBOARD_RESIZE_STEP,
+  CALL_PANE_MAX_CONTAINER_FRACTION,
+  CALL_PANE_MIN_HEIGHT,
+  CALL_PANE_MIN_WIDTH,
+} from './callPaneLayout';
 
 const HORIZONTAL_DOCKS: CallPaneDock[] = ['Top', 'Bottom'];
 const ALL_DOCKS: CallPaneDock[] = ['Left', 'Right', 'Top', 'Bottom'];
@@ -36,6 +37,7 @@ export const useCallPaneDock = (): {
 
 export const useCallPaneResize = (
   paneRef: RefObject<HTMLElement>,
+  getContainerElement: () => HTMLElement | null,
   dock: CallPaneDock
 ): PaneResize => {
   const isSideDock = checkIsSideDock(dock);
@@ -44,6 +46,7 @@ export const useCallPaneResize = (
 
   return usePaneResize({
     paneRef,
+    getContainerElement,
     anchor: dock,
     size: isSideDock ? storedWidth : storedHeight,
     onSizeChange: isSideDock ? setStoredWidth : setStoredHeight,

@@ -1,0 +1,4 @@
+export const CALL_PANE_MIN_WIDTH = 240;
+export const CALL_PANE_MIN_HEIGHT = 280;
+export const CALL_PANE_MAX_CONTAINER_FRACTION = 0.7;
+export const CALL_PANE_KEYBOARD_RESIZE_STEP = 16;
