@@ -5,6 +5,7 @@ import {
   TEST_ROOM_ID,
   type StubHomeserverOptions,
 } from './fixtures/homeserver';
+import { readBoundingBox } from './fixtures/layout';
 
 const roomPath = `/home/${encodeURIComponent(TEST_ROOM_ID)}/`;
 
@@ -48,8 +49,7 @@ test('tapping a mention keeps the composer focused so typing continues', async (
 
   await countComposerBlurs(page);
 
-  const box = await mentionItem.boundingBox();
-  if (!box) throw new Error('mention item is not laid out');
+  const box = await readBoundingBox(mentionItem);
   await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
 
   await expect(editor.locator('[data-node-type="mention"]')).toHaveAttribute(

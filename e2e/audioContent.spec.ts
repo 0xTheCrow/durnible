@@ -7,6 +7,7 @@ import {
   TEST_ROOM_ID,
   type StubHomeserverOptions,
 } from './fixtures/homeserver';
+import { readBoundingBox } from './fixtures/layout';
 import { BASE_URL } from '../playwright.config';
 import { VOICE_RECORDING_MIME_TYPE_CANDIDATES } from '../src/app/hooks/media/useVoiceRecording';
 
@@ -181,8 +182,7 @@ test('clicking the seek track moves the playback position', async ({ context, pa
   await expect(toggle).toHaveAttribute('aria-pressed', 'false');
 
   const track = page.getByTestId('audio-seek-track');
-  const trackBox = await track.boundingBox();
-  if (!trackBox) throw new Error('seek track has no layout box');
+  const trackBox = await readBoundingBox(track);
   await track.click({
     position: { x: trackBox.width * SEEK_TARGET_FRACTION, y: trackBox.height / 2 },
   });
@@ -207,8 +207,7 @@ test('pressing the seek track and dragging keeps moving the playback position', 
   await toggle.click();
   await expect(toggle).toHaveAttribute('aria-pressed', 'false');
 
-  const trackBox = await page.getByTestId('audio-seek-track').boundingBox();
-  if (!trackBox) throw new Error('seek track has no layout box');
+  const trackBox = await readBoundingBox(page.getByTestId('audio-seek-track'));
   const pointerY = trackBox.y + trackBox.height / 2;
   await page.mouse.move(trackBox.x + trackBox.width * SEEK_DRAG_START_FRACTION, pointerY);
   await page.mouse.down();

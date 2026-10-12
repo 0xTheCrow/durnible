@@ -1,5 +1,5 @@
-import type { ComponentProps, ReactNode, Ref } from 'react';
-import React, { useRef } from 'react';
+import type { ComponentProps, ReactNode, Ref, RefObject } from 'react';
+import React, { createContext, useContext, useMemo, useRef } from 'react';
 import { Box, Header, Icon, Icons, Line, Scroll, Text, as } from 'folds';
 import classNames from 'classnames';
 import { ContainerColor } from '../../styles/ContainerColor.css';
@@ -16,6 +16,19 @@ import {
   PAGE_NAV_MIN_WIDTH,
 } from './pageNavLayout';
 
+type PageRootContainers = {
+  navContainerRef: RefObject<HTMLDivElement>;
+  asideContainerRef: RefObject<HTMLDivElement>;
+};
+
+const PageRootContainersContext = createContext<PageRootContainers | null>(null);
+
+export const usePageRootContainers = (): PageRootContainers => {
+  const containers = useContext(PageRootContainersContext);
+  if (!containers) throw new Error('PageRoot is missing');
+  return containers;
+};
+
 type PageRootProps = {
   nav: ReactNode;
   aside?: ReactNode;
@@ -26,31 +39,47 @@ export function PageRoot({ nav, aside, children }: PageRootProps) {
   const screenSize = useScreenSizeContext();
   const { dock } = useCallPaneDock();
   const isAsideBeforeContent = dock === 'Left' || dock === 'Top';
+  const navContainerRef = useRef<HTMLDivElement>(null);
+  const asideContainerRef = useRef<HTMLDivElement>(null);
+  const containers = useMemo<PageRootContainers>(
+    () => ({ navContainerRef, asideContainerRef }),
+    []
+  );
 
   if (screenSize === ScreenSize.Mobile) {
     return (
-      <Box grow="Yes" className={ContainerColor({ variant: 'Background' })}>
-        {nav}
-        {children}
-      </Box>
+      <PageRootContainersContext.Provider value={containers}>
+        <Box ref={navContainerRef} grow="Yes" className={ContainerColor({ variant: 'Background' })}>
+          {nav}
+          {children}
+        </Box>
+      </PageRootContainersContext.Provider>
     );
   }
 
   return (
-    <Box grow="Yes" className={ContainerColor({ variant: 'Background' })}>
-      {nav}
-      <Line variant="Background" size="300" direction="Vertical" />
+    <PageRootContainersContext.Provider value={containers}>
       <Box
+        ref={navContainerRef}
         grow="Yes"
-        direction={checkIsSideDock(dock) ? 'Row' : 'Column'}
-        className={css.PageRootContent}
-        data-testid="page-root-content"
+        className={ContainerColor({ variant: 'Background' })}
+        data-testid="page-root"
       >
-        {isAsideBeforeContent && aside}
-        {children}
-        {!isAsideBeforeContent && aside}
+        {nav}
+        <Line variant="Background" size="300" direction="Vertical" />
+        <Box
+          ref={asideContainerRef}
+          grow="Yes"
+          direction={checkIsSideDock(dock) ? 'Row' : 'Column'}
+          className={css.PageRootContent}
+          data-testid="page-root-content"
+        >
+          {isAsideBeforeContent && aside}
+          {children}
+          {!isAsideBeforeContent && aside}
+        </Box>
       </Box>
-    </Box>
+    </PageRootContainersContext.Provider>
   );
 }
 
@@ -82,12 +111,14 @@ type AdjustablePageNavProps = {
 };
 export function AdjustablePageNav({ isDrawerMode, children }: AdjustablePageNavProps) {
   const navRef = useRef<HTMLDivElement>(null);
+  const { navContainerRef } = usePageRootContainers();
   const screenSize = useScreenSizeContext();
   const [isCollapsed, setIsCollapsed] = useSetting(settingsAtom, 'isPageNavCollapsed');
   const [isResizeEnabled] = useSetting(settingsAtom, 'isPageNavResizeEnabled');
   const [storedWidth, setStoredWidth] = useSetting(settingsAtom, 'pageNavWidth');
   const { paneSize, isResizing, handleResizePointerDown, handleResizeKeyDown } = usePaneResize({
     paneRef: navRef,
+    getContainerElement: () => navContainerRef.current,
     anchor: 'Left',
     size: storedWidth,
     onSizeChange: setStoredWidth,

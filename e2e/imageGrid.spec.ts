@@ -7,6 +7,7 @@ import {
   imageEvent,
   TEST_ROOM_ID,
 } from './fixtures/homeserver';
+import { readBoundingBox } from './fixtures/layout';
 import type { Settings } from '../src/app/state/settings';
 import type { Count } from '../src/app/components/message/imageGridLayout';
 import {
@@ -63,12 +64,6 @@ const openRoomWithGallery = async (
 
 type CellBox = { x: number; y: number; width: number; height: number };
 
-const boxOf = async (page: Page, testId: string) => {
-  const box = await page.getByTestId(testId).boundingBox();
-  if (!box) throw new Error(`${testId} has no bounding box`);
-  return box;
-};
-
 const readCellBoxes = (page: Page): Promise<CellBox[]> =>
   page.evaluate(
     (testId) =>
@@ -96,7 +91,7 @@ const cellsInFirstRow = async (page: Page): Promise<number> => {
 };
 
 const expectCellsWithinContainer = async (page: Page) => {
-  const container = await boxOf(page, 'image-grid-container');
+  const container = await readBoundingBox(page.getByTestId('image-grid-container'));
   const boxes = await cellBoxes(page);
   const leftMost = Math.min(...boxes.map((box) => box.x));
   const rightMost = Math.max(...boxes.map((box) => box.x + box.width));
@@ -136,7 +131,7 @@ test('every cell keeps its image aspect ratio instead of cropping to a square', 
 test('grid clamps to the content column instead of overflowing it', async ({ context, page }) => {
   await openRoomWithGallery(context, page, 2, WIDE_LAYOUT_VIEWPORT);
 
-  const container = await boxOf(page, 'image-grid-container');
+  const container = await readBoundingBox(page.getByTestId('image-grid-container'));
   expect(
     container.width,
     'container must be at least WIDE_LAYOUT_MIN_WIDTH, or the grid takes the narrow fallback'
@@ -163,7 +158,7 @@ test('narrow content column falls back to the stacked layout instead of clipping
     'viewport must stay above the mobile breakpoint, or this exercises the mobile path'
   ).toBeGreaterThan(MOBILE_BREAKPOINT);
 
-  const container = await boxOf(page, 'image-grid-container');
+  const container = await readBoundingBox(page.getByTestId('image-grid-container'));
   expect(
     container.width,
     'container must be under WIDE_LAYOUT_MIN_WIDTH, or the narrow fallback never triggers'
@@ -172,7 +167,7 @@ test('narrow content column falls back to the stacked layout instead of clipping
   expect(await cellsInFirstRow(page)).toBe(narrowRowSizesForCount[GRID_MAX_CELLS][0]);
   await expectCellsWithinContainer(page);
 
-  const grid = await boxOf(page, 'image-grid');
+  const grid = await readBoundingBox(page.getByTestId('image-grid'));
   expect(grid.width).toBeCloseTo(container.width, 0);
 });
 
@@ -187,7 +182,7 @@ test('a two image gallery stacks one per row on mobile', async ({ context, page 
 
   expect(await cellsInFirstRow(page)).toBe(narrowRowSizesForCount[2][0]);
 
-  const container = await boxOf(page, 'image-grid-container');
+  const container = await readBoundingBox(page.getByTestId('image-grid-container'));
   expect(
     container.width,
     'column must be wider than the mobile cap, or the cap is not what bounds the cell'
@@ -215,11 +210,11 @@ test('grid tracks stay inside the column when the root font size is enlarged', a
   }, ENLARGED_ROOT_FONT_SIZE);
 
   await expect
-    .poll(async () => (await boxOf(page, 'image-grid-container')).width)
+    .poll(async () => (await readBoundingBox(page.getByTestId('image-grid-container'))).width)
     .toBeGreaterThanOrEqual(WIDE_LAYOUT_MIN_WIDTH);
 
-  const container = await boxOf(page, 'image-grid-container');
-  const grid = await boxOf(page, 'image-grid');
+  const container = await readBoundingBox(page.getByTestId('image-grid-container'));
+  const grid = await readBoundingBox(page.getByTestId('image-grid'));
   expect(
     grid.width * (ENLARGED_ROOT_FONT_SIZE / 16),
     'column must be narrower than the grid would be if its tracks scaled with the root font size, or nothing is being tested'

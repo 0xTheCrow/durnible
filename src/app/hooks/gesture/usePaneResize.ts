@@ -26,6 +26,7 @@ export const checkIsSideAnchor = (anchor: PaneAnchor): boolean => SIDE_ANCHORS.i
 
 export type PaneResizeOptions = {
   paneRef: RefObject<HTMLElement>;
+  getContainerElement: () => HTMLElement | null;
   anchor: PaneAnchor;
   size: number;
   onSizeChange: (size: number) => void;
@@ -43,6 +44,7 @@ export type PaneResize = {
 
 export const usePaneResize = ({
   paneRef,
+  getContainerElement,
   anchor,
   size,
   onSizeChange,
@@ -56,7 +58,7 @@ export const usePaneResize = ({
   const paneSize = resizingSize ?? size;
 
   const getClampedPaneSize = (unclampedSize: number): number => {
-    const containerElement = paneRef.current?.parentElement;
+    const containerElement = getContainerElement();
     if (!containerElement) return Math.round(Math.max(unclampedSize, minSize));
     const containerRect = containerElement.getBoundingClientRect();
     const containerSize = isSideAnchor ? containerRect.width : containerRect.height;

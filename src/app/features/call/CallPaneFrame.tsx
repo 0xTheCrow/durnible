@@ -18,6 +18,7 @@ import {
 } from '../../hooks/call/useCallPaneLayout';
 import { CallPaneDockMenu } from './CallPaneDockMenu';
 import { CALL_PANE_DRAG_TYPE, CallPaneDockZones } from './CallPaneDockZones';
+import { useCallPaneContainer } from './CallPaneContainer';
 import * as paneResizeCss from '../../styles/PaneResizeHandle.css';
 import * as css from './CallPane.css';
 
@@ -39,8 +40,10 @@ export function CallPaneFrame({
 }: CallPaneFrameProps) {
   const headerRef = useRef<HTMLDivElement>(null);
   const { dock, setDock, availableDocks, isDockDragEnabled } = useCallPaneDock();
+  const { getPaneBoundsElement } = useCallPaneContainer();
   const { paneSize, isResizing, handleResizePointerDown, handleResizeKeyDown } = useCallPaneResize(
     paneRef,
+    getPaneBoundsElement,
     dock
   );
   const isDockDraggable = isDockDragEnabled && !isFullscreen;
@@ -80,6 +83,7 @@ export function CallPaneFrame({
                 paneResizeCss.PaneResizeHandleAnchor[dock]
               )}
               data-resizing={isResizing}
+              data-testid="call-pane-resize-handle"
               onPointerDown={handleResizePointerDown}
               onKeyDown={handleResizeKeyDown}
               aria-label="Resize Call Panel"
