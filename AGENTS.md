@@ -265,6 +265,16 @@ Vite env vars use `VITE_` prefix, accessed via `import.meta.env.VITE_*`:
 - **Virtualization**: long lists use `@tanstack/react-virtual`
 - **Drag & drop**: uses `@atlaskit/pragmatic-drag-and-drop`
 
+## Experimental: IndexedDB liveness reload (untested)
+
+`utils/indexedDBLiveness.ts`, wired into `SyncRecovery` in `ClientNonUIFeatures.tsx`. **It has never been observed to fire or to work.** It targets a suspected iOS PWA failure that could not be reproduced: no iOS device was available.
+
+The suspected failure: a user on the iOS PWA got `MEGOLM_UNKNOWN_INBOUND_SESSION_ID` on messages from several senders that everyone else, including the same user's desktop app, could decrypt. The theory is that WebKit kills its storage process while the PWA is backgrounded, leaving the page's IndexedDB connections dead after resume. matrix-js-sdk's sync loop (`sync.js` `doSync`) sets the sync token before processing a response and catches any processing error, emitting `ClientEvent.SyncUnexpectedError`. A room key whose crypto-store write throws is therefore dropped, and the next `/sync` acknowledges the to-device batch, so the server deletes it.
+
+The mechanism: a connection to `durnible_indexeddb_liveness` is opened at mount and held open. On return to the foreground, before `retryImmediately()`, and on `SyncUnexpectedError`, a read transaction runs on that held connection. Only a failed transaction reloads the page; no connection, a version-change close, or a probe exceeding `LIVENESS_PROBE_TIMEOUT_MS` all count as healthy. A `sessionStorage` timestamp limits reloads to one per `LIVENESS_RELOAD_COOLDOWN_MS`, and unreadable `sessionStorage` suppresses the reload. On a device whose IndexedDB is healthy, the only effect is one extra database and one read per foreground.
+
+What is unverified: that WebKit actually kills held connections this way, that a failure on this probe connection coincides with the SDK's crypto store failing, and that the foreground check runs before the in-flight `/sync` delivers its batch. After a reload the client resumes from the on-disk sync token (saved at most every 5 minutes), so only to-device batches no `/sync` has acknowledged yet are redelivered. If evidence shows it never fires, delete it.
+
 ## Lazy Loading
 
 ### How to verify a split landed
