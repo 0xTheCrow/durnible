@@ -3,6 +3,12 @@ import type { IpcMainEvent, Session, Streams, WebContents } from 'electron';
 import { randomUUID } from 'node:crypto';
 import { restoreLoopbackMonitorVolumeOnce } from './loopbackMonitorVolume.cjs';
 import { startPipewireShareAudio, stopPipewireShareAudio } from './pipewireShareAudio.cjs';
+import {
+  checkIsPulseaudioShareAudioActive,
+  startPulseaudioShareAudio,
+  stopPulseaudioShareAudio,
+  unloadLeftoverPulseaudioShareModules,
+} from './pulseaudioShareAudio.cjs';
 import { findWindowAudioDeviceId } from './windowAudioDevice.cjs';
 
 const CHROMIUM_ENABLE_FEATURES_SWITCH = 'enable-features';
@@ -46,6 +52,8 @@ export const enableScreenshareLoopbackFeatures = (): void => {
 const findShareAudioDeviceId = async (sourceId: string): Promise<string> => {
   const pipewireDeviceName = await startPipewireShareAudio(sourceId);
   if (pipewireDeviceName) return pipewireDeviceName;
+  const pulseaudioDeviceName = await startPulseaudioShareAudio(sourceId);
+  if (pulseaudioDeviceName) return pulseaudioDeviceName;
   const windowAudioDeviceId = await findWindowAudioDeviceId(sourceId);
   if (windowAudioDeviceId) return windowAudioDeviceId;
   await restoreLoopbackMonitorVolumeOnce();
@@ -98,7 +106,13 @@ export const installScreenshareAudio = (
   targetSession: Session,
   checkIsTrustedTopFrameUrl: (frameUrl: string | undefined) => boolean
 ): void => {
-  app.on('will-quit', stopPipewireShareAudio);
+  unloadLeftoverPulseaudioShareModules().catch(() => undefined);
+  app.on('will-quit', (event) => {
+    stopPipewireShareAudio();
+    if (!checkIsPulseaudioShareAudioActive()) return;
+    event.preventDefault();
+    stopPulseaudioShareAudio().finally(() => app.quit());
+  });
   targetSession.setDisplayMediaRequestHandler(
     async (request, callback) => {
       const requestingFrame = request.frame;

@@ -1,17 +1,24 @@
-import { app } from 'electron';
-import { execFile, spawn } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import type { ChildProcess } from 'node:child_process';
-import { promisify } from 'node:util';
+import type { ShareAudioSelection } from './shareAudioSelection.cjs';
+import {
+  createSelectedProcessChecker,
+  findShareAudioSelection,
+  readOwnProcessIds,
+  runCommand,
+} from './shareAudioSelection.cjs';
 
-const execFileAsync = promisify(execFile);
-
-const COMMAND_TIMEOUT_MS = 2000;
-const PIPEWIRE_DUMP_MAX_BUFFER_BYTES = 64 * 1024 * 1024;
 const RECONCILE_DEBOUNCE_MS = 200;
+const MONITOR_OUTPUT_OVERLAP_CHARACTERS = 200;
+const AUDIO_GRAPH_OBJECT_TYPES = new Set([
+  'PipeWire:Interface:Node',
+  'PipeWire:Interface:Port',
+  'PipeWire:Interface:Link',
+]);
+const AUDIO_GRAPH_OBJECT_TYPE_PATTERN = /"type": "PipeWire:Interface:(Node|Port|Link)"/;
+const REMOVED_OBJECT_PATTERN = /"id": (\d+),\s*"info": null/g;
 const VIRTUAL_NODE_READY_TIMEOUT_MS = 3000;
 const CAPTURE_START_TIMEOUT_MS = 30 * 1000;
-const MAX_PROCESS_ANCESTRY_DEPTH = 64;
-const WINDOW_SOURCE_ID_PATTERN = /^window:(\d+):/;
 const AUDIO_OUTPUT_STREAM_MEDIA_CLASS = 'Stream/Output/Audio';
 const LEFT_CHANNEL = 'FL';
 const RIGHT_CHANNEL = 'FR';
@@ -41,34 +48,13 @@ type AudioPort = {
   channel: string | undefined;
 };
 
-type ShareAudioSelection =
-  | { kind: 'all-except-durnible' }
-  | { kind: 'process-tree'; rootProcessId: number };
-
 let stopActiveShareAudio: (() => void) | undefined;
 let shareAudioSessionCount = 0;
 
-const runCommand = async (command: string, commandArguments: string[]): Promise<string> => {
-  const { stdout } = await execFileAsync(command, commandArguments, {
-    timeout: COMMAND_TIMEOUT_MS,
-    maxBuffer: PIPEWIRE_DUMP_MAX_BUFFER_BYTES,
-    env: { ...process.env, LC_ALL: 'C' },
-  });
-  return stdout;
-};
-
-const readPipewireObjects = async (): Promise<PipewireObject[]> =>
-  JSON.parse(await runCommand('pw-dump', ['--no-colors']));
-
-const readParentProcessIds = async (): Promise<Map<number, number>> => {
-  const processTable = await runCommand('ps', ['-eo', 'pid=,ppid=']);
-  return new Map(
-    processTable
-      .split('\n')
-      .map((line) => line.trim().split(/\s+/).map(Number))
-      .filter(([processId, parentProcessId]) => processId > 0 && parentProcessId >= 0)
-      .map(([processId, parentProcessId]) => [processId, parentProcessId])
-  );
+const readPipewireObjects = async (): Promise<PipewireObject[]> => {
+  const dump = await runCommand('pw-dump', ['--no-colors']);
+  const snapshotEndIndex = dump.indexOf('\n]');
+  return JSON.parse(snapshotEndIndex === -1 ? dump : dump.slice(0, snapshotEndIndex + 2));
 };
 
 const readProperty = (object: PipewireObject, key: string): string | undefined => {
@@ -95,9 +81,6 @@ const checkIsPipewireAudioAvailable = async (): Promise<boolean> => {
     return false;
   }
 };
-
-const readOwnProcessIds = (): Set<number> =>
-  new Set(app.getAppMetrics().map((metric) => metric.pid));
 
 const findVirtualNode = (
   objects: PipewireObject[],
@@ -157,53 +140,6 @@ const findMatchingInputPorts = (
   return inputPorts;
 };
 
-const checkIsInProcessTree = (
-  processId: number,
-  rootProcessId: number,
-  parentProcessIds: Map<number, number>
-): boolean => {
-  let currentProcessId: number | undefined = processId;
-  let depth = 0;
-  while (currentProcessId !== undefined && currentProcessId > 1) {
-    if (currentProcessId === rootProcessId) return true;
-    if (depth >= MAX_PROCESS_ANCESTRY_DEPTH) return false;
-    currentProcessId = parentProcessIds.get(currentProcessId);
-    depth += 1;
-  }
-  return false;
-};
-
-const findSelectedStreams = async (
-  streams: AudioOutputStream[],
-  selection: ShareAudioSelection
-): Promise<AudioOutputStream[]> => {
-  const ownProcessIds = readOwnProcessIds();
-  if (selection.kind === 'all-except-durnible') {
-    return streams.filter(
-      (stream) => stream.processId === undefined || !ownProcessIds.has(stream.processId)
-    );
-  }
-  const parentProcessIds = await readParentProcessIds();
-  return streams.filter(
-    (stream) =>
-      stream.processId !== undefined &&
-      !ownProcessIds.has(stream.processId) &&
-      checkIsInProcessTree(stream.processId, selection.rootProcessId, parentProcessIds)
-  );
-};
-
-const findWindowProcessId = async (sourceId: string): Promise<number | undefined> => {
-  const windowIdMatch = sourceId.match(WINDOW_SOURCE_ID_PATTERN);
-  if (!windowIdMatch) return undefined;
-  try {
-    const windowProperty = await runCommand('xprop', ['-id', windowIdMatch[1], '_NET_WM_PID']);
-    const processIdMatch = windowProperty.match(/=\s*(\d+)/);
-    return processIdMatch ? Number(processIdMatch[1]) : undefined;
-  } catch {
-    return undefined;
-  }
-};
-
 const linkSelectedStreams = async (
   objects: PipewireObject[],
   virtualNodeId: number,
@@ -215,7 +151,10 @@ const linkSelectedStreams = async (
       .filter((object) => object.type === 'PipeWire:Interface:Link')
       .map((link) => `${link.info?.['output-port-id']}:${link.info?.['input-port-id']}`)
   );
-  const selectedStreams = await findSelectedStreams(findAudioOutputStreams(objects), selection);
+  const checkIsSelectedProcess = await createSelectedProcessChecker(selection);
+  const selectedStreams = findAudioOutputStreams(objects).filter((stream) =>
+    checkIsSelectedProcess(stream.processId)
+  );
 
   const missingLinks = selectedStreams.flatMap((stream) =>
     findPorts(objects, stream.nodeId, 'output').flatMap((outputPort) =>
@@ -275,6 +214,8 @@ const startShareAudioSession = (
     let isReconciling = false;
     let isReconcileQueued = false;
     let reconcileTimeout: NodeJS.Timeout | undefined;
+    let audioGraphObjectIds = new Set<number>();
+    let previousMonitorOutputTail = '';
 
     const stop = () => {
       if (isStopped) return;
@@ -305,6 +246,11 @@ const startShareAudioSession = (
       try {
         const objects = await readPipewireObjects().catch(() => undefined);
         if (!objects || isStopped) return;
+        audioGraphObjectIds = new Set(
+          objects
+            .filter((object) => AUDIO_GRAPH_OBJECT_TYPES.has(object.type))
+            .map((object) => object.id)
+        );
         const virtualNode = findVirtualNode(objects, virtualNodeName);
         if (!virtualNode) {
           if (isReady) stop();
@@ -329,10 +275,23 @@ const startShareAudioSession = (
     };
 
     const scheduleReconcile = () => {
-      clearTimeout(reconcileTimeout);
+      if (reconcileTimeout) return;
       reconcileTimeout = setTimeout(() => {
+        reconcileTimeout = undefined;
         reconcile().catch(() => undefined);
       }, RECONCILE_DEBOUNCE_MS);
+    };
+
+    const checkIsAudioGraphChange = (monitorOutput: string): boolean =>
+      AUDIO_GRAPH_OBJECT_TYPE_PATTERN.test(monitorOutput) ||
+      Array.from(monitorOutput.matchAll(REMOVED_OBJECT_PATTERN)).some((match) =>
+        audioGraphObjectIds.has(Number(match[1]))
+      );
+
+    const scheduleReconcileOnAudioGraphChange = (monitorOutputChunk: Buffer) => {
+      const monitorOutput = previousMonitorOutputTail + monitorOutputChunk.toString();
+      previousMonitorOutputTail = monitorOutput.slice(-MONITOR_OUTPUT_OVERLAP_CHARACTERS);
+      if (checkIsAudioGraphChange(monitorOutput)) scheduleReconcile();
     };
 
     stopActiveShareAudio = stop;
@@ -340,19 +299,14 @@ const startShareAudioSession = (
     nodeProcess.once('exit', stop);
     nodeProcess.stdin?.once('error', stop);
     monitorProcess.once('error', stop);
-    monitorProcess.stdout?.on('data', scheduleReconcile);
+    monitorProcess.stdout?.on('data', scheduleReconcileOnAudioGraphChange);
   });
 
 export const startPipewireShareAudio = async (sourceId: string): Promise<string | undefined> => {
   stopPipewireShareAudio();
   if (process.platform !== 'linux' || !(await checkIsPipewireAudioAvailable())) return undefined;
 
-  const windowProcessId = await findWindowProcessId(sourceId);
-  const selection: ShareAudioSelection =
-    windowProcessId === undefined
-      ? { kind: 'all-except-durnible' }
-      : { kind: 'process-tree', rootProcessId: windowProcessId };
-
+  const selection = await findShareAudioSelection(sourceId);
   shareAudioSessionCount += 1;
   const virtualNodeName = `durnible-share-${process.pid}-${shareAudioSessionCount}`;
   return (await startShareAudioSession(selection, virtualNodeName)) ? virtualNodeName : undefined;
