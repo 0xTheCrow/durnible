@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import React, { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { MatrixEvent, RoomEventHandlerMap } from 'matrix-js-sdk';
-import { MatrixEventEvent, RoomEvent, SyncState } from 'matrix-js-sdk';
+import { ClientEvent, MatrixEventEvent, RoomEvent, SyncState } from 'matrix-js-sdk';
 import { roomToUnreadAtom, unreadEqual, unreadInfoToUnread } from '../../state/room/roomToUnread';
 import LogoSVG from '../../../../public/res/svg/durnible.svg';
 import LogoUnreadSVG from '../../../../public/res/svg/durnible-unread.svg';
@@ -41,6 +41,11 @@ import { addLiveMessageToCache } from '../../features/message-search/localSearch
 import { useKeyDown } from '../../hooks/browser/useKeyDown';
 import { useKeybind } from '../../state/hooks/keybinds';
 import { KeybindAction } from '../../state/keybinds';
+import {
+  checkIsIndexedDBConnectionLost,
+  openIndexedDBLivenessConnection,
+  tryReloadForLostIndexedDBConnection,
+} from '../../utils/indexedDBLiveness';
 
 function SearchCacheUpdater() {
   const mx = useMatrixClient();
@@ -141,13 +146,31 @@ function SyncRecovery() {
   const mx = useMatrixClient();
 
   useEffect(() => {
+    openIndexedDBLivenessConnection();
+  }, []);
+
+  useEffect(() => {
     const handleVisibilityChange = () => {
-      if (!document.hidden) {
+      if (document.hidden) return;
+      checkIsIndexedDBConnectionLost().then((isConnectionLost) => {
+        if (isConnectionLost && tryReloadForLostIndexedDBConnection()) return;
         mx.retryImmediately();
-      }
+      });
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [mx]);
+
+  useEffect(() => {
+    const handleSyncUnexpectedError = () => {
+      checkIsIndexedDBConnectionLost().then((isConnectionLost) => {
+        if (isConnectionLost) tryReloadForLostIndexedDBConnection();
+      });
+    };
+    mx.on(ClientEvent.SyncUnexpectedError, handleSyncUnexpectedError);
+    return () => {
+      mx.removeListener(ClientEvent.SyncUnexpectedError, handleSyncUnexpectedError);
+    };
   }, [mx]);
 
   useSyncState(
