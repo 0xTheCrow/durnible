@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
 import React from 'react';
 import classNames from 'classnames';
-import { Box, Header, Icon, Icons, Text, as } from 'folds';
+import { Box, Header, Icon, Icons, as } from 'folds';
 import * as css from '../../styles/mediaFrame.css';
+import { TruncatedText } from '../TruncatedText';
 
 export type MediaFrameProps = {
   name: string;
@@ -45,9 +46,9 @@ export const MediaFrame = as<'div', MediaFrameProps>(
           <Icon size="200" src={Icons.ArrowLeft} />
         </button>
         <Box grow="Yes" alignItems="Center" gap="300">
-          <Text size="T400" truncate data-testid={nameTestId}>
+          <TruncatedText size="T400" position="Bottom" isTapToReveal data-testid={nameTestId}>
             {name}
-          </Text>
+          </TruncatedText>
         </Box>
         {headerAfter}
       </Header>
