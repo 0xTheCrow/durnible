@@ -2,6 +2,8 @@ import { app, desktopCapturer, ipcMain, webContents } from 'electron';
 import type { IpcMainEvent, Session, Streams, WebContents } from 'electron';
 import { randomUUID } from 'node:crypto';
 import { restoreLoopbackMonitorVolumeOnce } from './loopbackMonitorVolume.cjs';
+import { startPipewireShareAudio, stopPipewireShareAudio } from './pipewireShareAudio.cjs';
+import { findWindowAudioDeviceId } from './windowAudioDevice.cjs';
 
 const CHROMIUM_ENABLE_FEATURES_SWITCH = 'enable-features';
 
@@ -39,6 +41,15 @@ export const enableScreenshareLoopbackFeatures = (): void => {
     app.commandLine.removeSwitch(CHROMIUM_ENABLE_FEATURES_SWITCH);
   }
   app.commandLine.appendSwitch(CHROMIUM_ENABLE_FEATURES_SWITCH, mergedFeatures.join(','));
+};
+
+const findShareAudioDeviceId = async (sourceId: string): Promise<string> => {
+  const pipewireDeviceName = await startPipewireShareAudio(sourceId);
+  if (pipewireDeviceName) return pipewireDeviceName;
+  const windowAudioDeviceId = await findWindowAudioDeviceId(sourceId);
+  if (windowAudioDeviceId) return windowAudioDeviceId;
+  await restoreLoopbackMonitorVolumeOnce();
+  return 'loopback';
 };
 
 const requestSourceChoiceFromRenderer = (
@@ -87,6 +98,7 @@ export const installScreenshareAudio = (
   targetSession: Session,
   checkIsTrustedTopFrameUrl: (frameUrl: string | undefined) => boolean
 ): void => {
+  app.on('will-quit', stopPipewireShareAudio);
   targetSession.setDisplayMediaRequestHandler(
     async (request, callback) => {
       const requestingFrame = request.frame;
@@ -133,8 +145,7 @@ export const installScreenshareAudio = (
 
       const streams: Streams = { video: chosenSource };
       if (choice.shareSystemAudio) {
-        await restoreLoopbackMonitorVolumeOnce();
-        streams.audio = 'loopback';
+        streams.audio = (await findShareAudioDeviceId(chosenSource.id)) as Streams['audio'];
       }
       callback(streams);
     },

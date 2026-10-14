@@ -84,10 +84,7 @@ export function ScreenshareSourcePicker({ request, onComplete }: ScreenshareSour
           </div>
           <Box alignItems="Center" gap="200">
             <Box grow="Yes" direction="Column">
-              <Text size="T300">Share system audio</Text>
-              <Text size="T200" priority="300">
-                Shares everything playing on this computer.
-              </Text>
+              <Text size="T300">Share audio</Text>
             </Box>
             <Switch variant="Primary" value={shareSystemAudio} onChange={setShareSystemAudio} />
           </Box>

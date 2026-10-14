@@ -27,6 +27,11 @@ files:
   - node_modules/semver/**
   - node_modules/tiny-typed-emitter/**
   - node_modules/universalify/**
+  - node_modules/koffi/**
+  - node_modules/@koromix/koffi-win32-*/**
+
+asarUnpack:
+  - node_modules/@koromix/koffi-win32-*/**
 
 publish:
   provider: github

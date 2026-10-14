@@ -77,6 +77,7 @@
     "immer": "9.0.16",
     "is-hotkey": "0.2.0",
     "jotai": "2.6.0",
+    "koffi": "3.3.2",
     "linkify-react": "4.3.2",
     "linkifyjs": "4.3.2",
     "livekit-client": "2.20.1",
