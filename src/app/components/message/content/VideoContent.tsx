@@ -10,7 +10,11 @@ import type { ThumbnailContent, VideoInfo } from '../../../../types/matrix/commo
 import { MATRIX_BLUR_HASH_PROPERTY_NAME } from '../../../../types/matrix/common';
 import * as css from './style.css';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
-import { AsyncStatus, useAutoLoadAsyncCallback } from '../../../hooks/useAsyncCallback';
+import {
+  AsyncStatus,
+  useAsyncCallback,
+  useAutoLoadAsyncCallback,
+} from '../../../hooks/useAsyncCallback';
 import { bytesToSize, millisecondsToMinutesAndSeconds } from '../../../utils/common';
 import {
   decryptFile,
@@ -22,12 +26,13 @@ import { useMediaAuthentication } from '../../../hooks/server/useMediaAuthentica
 import { useRevokeObjectURL } from '../../../hooks/browser/useObjectURL';
 import { validBlurHash } from '../../../utils/blurHash';
 import { hiddenImagesAtom, MessageEventIdContext } from '../../../state/hiddenImages';
+import { checkIsDesktopLinuxApp, transcodeDesktopVideo } from '../../../platform/desktop';
 
 type RenderVideoProps = {
   title: string;
   src: string;
   onLoadedMetadata: (event: React.SyntheticEvent<HTMLVideoElement>) => void;
-  onLoadedData: () => void;
+  onLoadedData: (event: React.SyntheticEvent<HTMLVideoElement>) => void;
   onError: () => void;
   autoPlay: boolean;
   controls: boolean;
@@ -92,15 +97,59 @@ export const VideoContent = as<'div', VideoContentProps>(
     );
     useRevokeObjectURL(srcState.status === AsyncStatus.Success ? srcState.data : undefined);
 
-    const handleLoadedMetadata = (event: React.SyntheticEvent<HTMLVideoElement>) => {
+    const transcodeAbortControllerRef = useRef<AbortController>();
+    const [transcodeState, transcode] = useAsyncCallback(
+      useCallback(async (originalSrc: string): Promise<string | undefined> => {
+        const abortController = new AbortController();
+        transcodeAbortControllerRef.current = abortController;
+        const originalVideo = await (await fetch(originalSrc)).blob();
+        const result = await transcodeDesktopVideo(originalVideo, abortController.signal);
+        if (result.status !== 'success' || abortController.signal.aborted) return undefined;
+        return URL.createObjectURL(new Blob([result.bytes], { type: 'video/mp4' }));
+      }, [])
+    );
+    const transcodedSrc =
+      transcodeState.status === AsyncStatus.Success ? transcodeState.data : undefined;
+    const isTranscoding = transcodeState.status === AsyncStatus.Loading;
+    const canTranscodeVideo =
+      checkIsDesktopLinuxApp() && transcodeState.status === AsyncStatus.Idle;
+    useRevokeObjectURL(transcodedSrc);
+
+    useEffect(() => () => transcodeAbortControllerRef.current?.abort(), []);
+
+    const playableSrc =
+      transcodedSrc ??
+      (isFormatSupported && srcState.status === AsyncStatus.Success ? srcState.data : undefined);
+    const isVideoLoading =
+      (isFormatSupported &&
+        (srcState.status === AsyncStatus.Loading || srcState.status === AsyncStatus.Success)) ||
+      isTranscoding ||
+      transcodedSrc !== undefined;
+    const isUnsupportedFormatShown =
+      !isFormatSupported && !isTranscoding && transcodedSrc === undefined && !canTranscodeVideo;
+    const isWatchButtonShown =
+      !effectiveBlurred &&
+      ((!autoPlay && srcState.status === AsyncStatus.Idle) ||
+        (!isFormatSupported && canTranscodeVideo));
+
+    const checkIsVideoTrackUndecodable = (video: HTMLVideoElement): boolean => {
       const hasDeclaredDimensions =
         typeof info.w === 'number' && info.w > 0 && typeof info.h === 'number' && info.h > 0;
-      if (hasDeclaredDimensions && event.currentTarget.videoWidth === 0) {
-        setIsFormatSupported(false);
-      }
+      return hasDeclaredDimensions && video.videoWidth === 0;
     };
 
-    const handleLoad = () => {
+    const startTranscode = (originalSrc: string) => {
+      transcode(originalSrc).catch(() => {});
+    };
+
+    const handleLoadedMetadata = (event: React.SyntheticEvent<HTMLVideoElement>) => {
+      if (!checkIsVideoTrackUndecodable(event.currentTarget)) return;
+      setIsFormatSupported(false);
+      if (!autoPlay && canTranscodeVideo) startTranscode(event.currentTarget.src);
+    };
+
+    const handleLoad = (event: React.SyntheticEvent<HTMLVideoElement>) => {
+      if (checkIsVideoTrackUndecodable(event.currentTarget)) return;
       setLoad(true);
     };
     const handleError = () => {
@@ -109,6 +158,10 @@ export const VideoContent = as<'div', VideoContentProps>(
     };
 
     const handleWatch = () => {
+      if (!isFormatSupported && srcState.status === AsyncStatus.Success) {
+        startTranscode(srcState.data);
+        return;
+      }
       loadSrc().catch(() => {});
     };
 
@@ -166,7 +219,7 @@ export const VideoContent = as<'div', VideoContentProps>(
             {renderThumbnail()}
           </Box>
         )}
-        {!autoPlay && !effectiveBlurred && srcState.status === AsyncStatus.Idle && (
+        {isWatchButtonShown && (
           <Box className={css.AbsoluteContainer} alignItems="Center" justifyContent="Center">
             <Button
               variant="Secondary"
@@ -181,7 +234,7 @@ export const VideoContent = as<'div', VideoContentProps>(
             </Button>
           </Box>
         )}
-        {srcState.status === AsyncStatus.Success && isFormatSupported && (
+        {playableSrc && (
           <Box
             className={classNames(css.AbsoluteContainer, effectiveBlurred && css.Blur)}
             style={{
@@ -191,7 +244,7 @@ export const VideoContent = as<'div', VideoContentProps>(
           >
             {renderVideo({
               title: body,
-              src: srcState.data,
+              src: playableSrc,
               onLoadedMetadata: handleLoadedMetadata,
               onLoadedData: handleLoad,
               onError: handleError,
@@ -237,15 +290,12 @@ export const VideoContent = as<'div', VideoContentProps>(
             </TooltipProvider>
           </Box>
         )}
-        {(srcState.status === AsyncStatus.Loading || srcState.status === AsyncStatus.Success) &&
-          !load &&
-          isFormatSupported &&
-          !effectiveBlurred && (
-            <Box className={css.AbsoluteContainer} alignItems="Center" justifyContent="Center">
-              <Spinner variant="Secondary" />
-            </Box>
-          )}
-        {!isFormatSupported && (
+        {isVideoLoading && !load && !effectiveBlurred && (
+          <Box className={css.AbsoluteContainer} alignItems="Center" justifyContent="Center">
+            <Spinner variant="Secondary" />
+          </Box>
+        )}
+        {isUnsupportedFormatShown && (
           <Box
             className={classNames(css.AbsoluteContainer, css.UnsupportedFormatContainer)}
             alignItems="Center"

@@ -13,6 +13,8 @@ const APP_UPDATE_CANCEL_DOWNLOAD_CHANNEL = 'durnible:app-update:cancel-download'
 const CALL_POP_OUT_DRAG_START_CHANNEL = 'durnible:call-pop-out:drag-start';
 const CALL_POP_OUT_DRAG_MOVE_CHANNEL = 'durnible:call-pop-out:drag-move';
 const CALL_POP_OUT_DRAG_END_CHANNEL = 'durnible:call-pop-out:drag-end';
+const VIDEO_TRANSCODE_START_CHANNEL = 'durnible:video-transcode:start';
+const VIDEO_TRANSCODE_CANCEL_CHANNEL = 'durnible:video-transcode:cancel';
 
 type MediaAuthConfig = {
   homeserverBaseUrl: string | null;
@@ -47,6 +49,12 @@ type AppUpdateStatus =
   | { availability: 'install-failed'; version: string; message: string }
   | { availability: 'manual-download'; version: string; releaseUrl: string; message?: string }
   | { availability: 'check-failed'; message: string };
+
+type VideoTranscodeResult =
+  | { status: 'success'; bytes: Uint8Array }
+  | { status: 'ffmpeg-missing' }
+  | { status: 'failed' }
+  | { status: 'cancelled' };
 
 contextBridge.exposeInMainWorld('durnibleDesktop', {
   isDesktop: true,
@@ -92,5 +100,10 @@ contextBridge.exposeInMainWorld('durnibleDesktop', {
   },
   endCallPopOutWindowDrag: (): void => {
     ipcRenderer.send(CALL_POP_OUT_DRAG_END_CHANNEL);
+  },
+  transcodeVideo: (requestId: string, inputBytes: Uint8Array): Promise<VideoTranscodeResult> =>
+    ipcRenderer.invoke(VIDEO_TRANSCODE_START_CHANNEL, requestId, inputBytes),
+  cancelVideoTranscode: (requestId: string): void => {
+    ipcRenderer.send(VIDEO_TRANSCODE_CANCEL_CHANNEL, requestId);
   },
 });

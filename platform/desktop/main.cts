@@ -7,6 +7,7 @@ import { installTextContextMenu } from './contextMenu.cjs';
 import { installMediaAuthResponseHeaders, setMediaAuth } from './mediaAuth.cjs';
 import { installRequestHeaders } from './requestHeaders.cjs';
 import { enableScreenshareLoopbackFeatures, installScreenshareAudio } from './screenshareAudio.cjs';
+import { installVideoTranscode } from './videoTranscode.cjs';
 import { getInitialWindowBounds, persistWindowState } from './windowState.cjs';
 
 const APP_SCHEME = 'app';
@@ -280,6 +281,7 @@ if (!app.requestSingleInstanceLock()) {
     registerDevToolsMenuChannel();
     registerCallPopOutDragChannels();
     installAppUpdate(checkIsTrustedSender);
+    installVideoTranscode(checkIsTrustedSender);
 
     protocol.handle(APP_SCHEME, serveWebBuild);
     createMainWindow();
