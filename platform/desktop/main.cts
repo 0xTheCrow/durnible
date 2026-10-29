@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { installAppUpdate } from './appUpdate.cjs';
 import { installTextContextMenu } from './contextMenu.cjs';
+import { installDownloads } from './downloads.cjs';
 import { installMediaAuthResponseHeaders, setMediaAuth } from './mediaAuth.cjs';
 import { installRequestHeaders } from './requestHeaders.cjs';
 import { enableScreenshareLoopbackFeatures, installScreenshareAudio } from './screenshareAudio.cjs';
@@ -282,6 +283,7 @@ if (!app.requestSingleInstanceLock()) {
     registerCallPopOutDragChannels();
     installAppUpdate(checkIsTrustedSender);
     installVideoTranscode(checkIsTrustedSender);
+    installDownloads(appSession, checkIsTrustedSender);
 
     protocol.handle(APP_SCHEME, serveWebBuild);
     createMainWindow();

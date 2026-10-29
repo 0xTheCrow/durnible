@@ -15,6 +15,8 @@ const CALL_POP_OUT_DRAG_MOVE_CHANNEL = 'durnible:call-pop-out:drag-move';
 const CALL_POP_OUT_DRAG_END_CHANNEL = 'durnible:call-pop-out:drag-end';
 const VIDEO_TRANSCODE_START_CHANNEL = 'durnible:video-transcode:start';
 const VIDEO_TRANSCODE_CANCEL_CHANNEL = 'durnible:video-transcode:cancel';
+const DOWNLOAD_STATUS_CHANNEL = 'durnible:download:status';
+const DOWNLOAD_SHOW_IN_FOLDER_CHANNEL = 'durnible:download:show-in-folder';
 
 type MediaAuthConfig = {
   homeserverBaseUrl: string | null;
@@ -55,6 +57,11 @@ type VideoTranscodeResult =
   | { status: 'ffmpeg-missing' }
   | { status: 'failed' }
   | { status: 'cancelled' };
+
+type DownloadStatus =
+  | { downloadId: string; filename: string; state: 'saving'; percent?: number }
+  | { downloadId: string; filename: string; state: 'completed' }
+  | { downloadId: string; filename: string; state: 'failed' };
 
 contextBridge.exposeInMainWorld('durnibleDesktop', {
   isDesktop: true,
@@ -105,5 +112,13 @@ contextBridge.exposeInMainWorld('durnibleDesktop', {
     ipcRenderer.invoke(VIDEO_TRANSCODE_START_CHANNEL, requestId, inputBytes),
   cancelVideoTranscode: (requestId: string): void => {
     ipcRenderer.send(VIDEO_TRANSCODE_CANCEL_CHANNEL, requestId);
+  },
+  onDownloadStatus: (handler: (status: DownloadStatus) => void): (() => void) => {
+    const listener = (_event: IpcRendererEvent, status: DownloadStatus): void => handler(status);
+    ipcRenderer.on(DOWNLOAD_STATUS_CHANNEL, listener);
+    return () => ipcRenderer.removeListener(DOWNLOAD_STATUS_CHANNEL, listener);
+  },
+  showDownloadInFolder: (downloadId: string): void => {
+    ipcRenderer.send(DOWNLOAD_SHOW_IN_FOLDER_CHANNEL, downloadId);
   },
 });

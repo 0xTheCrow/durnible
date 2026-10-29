@@ -38,6 +38,11 @@ export type DesktopVideoTranscodeResult =
   | { status: 'failed' }
   | { status: 'cancelled' };
 
+export type DesktopDownloadStatus =
+  | { downloadId: string; filename: string; state: 'saving'; percent?: number }
+  | { downloadId: string; filename: string; state: 'completed' }
+  | { downloadId: string; filename: string; state: 'failed' };
+
 type DesktopBridge = {
   isDesktop: true;
   platform: string;
@@ -63,6 +68,8 @@ type DesktopBridge = {
     inputBytes: Uint8Array
   ) => Promise<DesktopVideoTranscodeResult>;
   cancelVideoTranscode: (requestId: string) => void;
+  onDownloadStatus: (handler: (status: DesktopDownloadStatus) => void) => () => void;
+  showDownloadInFolder: (downloadId: string) => void;
 };
 
 declare global {
@@ -142,6 +149,18 @@ export const installDesktopAppUpdate = (): void => {
 
 export const cancelDesktopAppUpdateDownload = (): void => {
   getDesktopBridge()?.cancelAppUpdateDownload();
+};
+
+export const subscribeDesktopDownloadStatus = (
+  handler: (status: DesktopDownloadStatus) => void
+): (() => void) => {
+  const bridge = getDesktopBridge();
+  if (!bridge) return () => undefined;
+  return bridge.onDownloadStatus(handler);
+};
+
+export const showDesktopDownloadInFolder = (downloadId: string): void => {
+  getDesktopBridge()?.showDownloadInFolder(downloadId);
 };
 
 export const transcodeDesktopVideo = async (
