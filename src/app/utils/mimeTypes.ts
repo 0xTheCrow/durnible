@@ -10,6 +10,9 @@ export const IMAGE_MIME_TYPES = [
 export const isAnimatedImageMimetype = (mimetype?: string): boolean =>
   mimetype === 'image/gif' || mimetype === 'image/apng';
 
+export const checkIsAnimationDetectedByHeader = (mimetype?: string): boolean =>
+  mimetype === 'image/webp' || mimetype === 'image/png';
+
 export const VIDEO_MIME_TYPES = [
   'video/mp4',
   'video/webm',

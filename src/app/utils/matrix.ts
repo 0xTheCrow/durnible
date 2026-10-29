@@ -377,6 +377,31 @@ export const downloadMedia = async (src: string): Promise<Blob> => {
   return blob;
 };
 
+export const downloadMediaHeader = async (src: string, byteCount: number): Promise<Uint8Array> => {
+  const accessToken = getStoredAccessToken();
+  const res = await fetch(src, {
+    method: 'GET',
+    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to download media: ${res.status} ${res.statusText}`);
+  }
+  if (!res.body) return new Uint8Array(await res.arrayBuffer()).subarray(0, byteCount);
+
+  const reader = res.body.getReader();
+  const header = new Uint8Array(byteCount);
+  let receivedByteCount = 0;
+  while (receivedByteCount < byteCount) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    const takenByteCount = Math.min(value.length, byteCount - receivedByteCount);
+    header.set(value.subarray(0, takenByteCount), receivedByteCount);
+    receivedByteCount += takenByteCount;
+  }
+  reader.cancel().catch(() => {});
+  return header.subarray(0, receivedByteCount);
+};
+
 export const downloadEncryptedMedia = async (
   src: string,
   decryptContent: (buf: ArrayBuffer) => Promise<Blob>
