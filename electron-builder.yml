@@ -75,3 +75,8 @@ linux:
   maintainer: 0xTheCrow <0xTheCrow@users.noreply.github.com>
   syncDesktopName: true
   artifactName: ${productName}-${version}-linux-${arch}.${ext}
+
+deb:
+  recommends:
+    - libappindicator3-1
+    - ffmpeg

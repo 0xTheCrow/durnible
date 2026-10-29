@@ -14,14 +14,10 @@ import {
   mimeTypeToExt,
 } from '../../../utils/mimeTypes';
 import { OverlayModal } from '../../OverlayModal';
-import {
-  decryptFile,
-  downloadEncryptedMedia,
-  downloadMedia,
-  mxcUrlToHttp,
-} from '../../../utils/matrix';
+import { downloadAttachment } from '../../../utils/matrix';
 import { useMediaAuthentication } from '../../../hooks/server/useMediaAuthentication';
 import { useRevokeObjectURL } from '../../../hooks/browser/useObjectURL';
+import { useSaveAttachment } from '../../../hooks/media/useSaveAttachment';
 import { saveFile } from '../../../utils/saveFile';
 import { ModalWide, PdfViewerModal } from '../../../styles/Modal.css';
 
@@ -80,12 +76,11 @@ export function ReadTextFile({
 
   const [textState, loadText] = useAsyncCallback(
     useCallback(async () => {
-      const mediaUrl = mxcUrlToHttp(mx, url, useAuthentication) ?? url;
-      const fileContent = encryptionInfo
-        ? await downloadEncryptedMedia(mediaUrl, (encBuf) =>
-            decryptFile(encBuf, mimeType, encryptionInfo)
-          )
-        : await downloadMedia(mediaUrl);
+      const fileContent = await downloadAttachment(
+        mx,
+        { url, mimeType, encryptionInfo },
+        useAuthentication
+      );
 
       const text = fileContent.text();
       setTextViewer(true);
@@ -164,12 +159,11 @@ export function ReadPdfFile({
 
   const [pdfState, loadPdf] = useAsyncCallback(
     useCallback(async () => {
-      const mediaUrl = mxcUrlToHttp(mx, url, useAuthentication) ?? url;
-      const fileContent = encryptionInfo
-        ? await downloadEncryptedMedia(mediaUrl, (encBuf) =>
-            decryptFile(encBuf, mimeType, encryptionInfo)
-          )
-        : await downloadMedia(mediaUrl);
+      const fileContent = await downloadAttachment(
+        mx,
+        { url, mimeType, encryptionInfo },
+        useAuthentication
+      );
       setPdfViewer(true);
       return URL.createObjectURL(fileContent);
     }, [mx, url, useAuthentication, mimeType, encryptionInfo])
@@ -239,27 +233,16 @@ export type DownloadFileProps = {
   encryptionInfo?: EncryptedAttachmentInfo;
 };
 export function DownloadFile({ body, mimeType, url, info, encryptionInfo }: DownloadFileProps) {
-  const mx = useMatrixClient();
-  const useAuthentication = useMediaAuthentication();
+  const [saveState, saveAttachment] = useSaveAttachment({
+    url,
+    mimeType,
+    encryptionInfo,
+    filename: body,
+    byteCount: info.size,
+  });
 
-  const [downloadState, download] = useAsyncCallback(
-    useCallback(async () => {
-      const mediaUrl = mxcUrlToHttp(mx, url, useAuthentication) ?? url;
-      const fileContent = encryptionInfo
-        ? await downloadEncryptedMedia(mediaUrl, (encBuf) =>
-            decryptFile(encBuf, mimeType, encryptionInfo)
-          )
-        : await downloadMedia(mediaUrl);
-
-      const fileURL = URL.createObjectURL(fileContent);
-      await saveFile(fileURL, body);
-      return fileURL;
-    }, [mx, url, useAuthentication, mimeType, encryptionInfo, body])
-  );
-  useRevokeObjectURL(downloadState.status === AsyncStatus.Success ? downloadState.data : undefined);
-
-  return downloadState.status === AsyncStatus.Error ? (
-    renderErrorButton(download, `Retry Download (${bytesToSize(info.size ?? 0)})`)
+  return saveState.status === AsyncStatus.Error ? (
+    renderErrorButton(saveAttachment, `Retry Download (${bytesToSize(info.size ?? 0)})`)
   ) : (
     <Button
       variant="Secondary"
@@ -267,17 +250,11 @@ export function DownloadFile({ body, mimeType, url, info, encryptionInfo }: Down
       radii="300"
       size="400"
       onClick={() => {
-        if (downloadState.status !== AsyncStatus.Success) {
-          download().catch(() => {});
-          return;
-        }
-        saveFile(downloadState.data, body).catch((error) =>
-          console.error('Saving the file failed', error)
-        );
+        saveAttachment().catch(() => {});
       }}
-      disabled={downloadState.status === AsyncStatus.Loading}
+      disabled={saveState.status === AsyncStatus.Loading}
       before={
-        downloadState.status === AsyncStatus.Loading ? (
+        saveState.status === AsyncStatus.Loading ? (
           <Spinner fill="Soft" size="100" variant="Secondary" />
         ) : (
           <Icon size="100" src={Icons.Download} filled />

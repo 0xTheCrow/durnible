@@ -14,8 +14,16 @@ import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
 import * as css from './style.css';
 import { bytesToSize } from '../../../utils/common';
-import { getBlobSafeImageMimeType, isAnimatedImageMimetype } from '../../../utils/mimeTypes';
-import { decryptFile, downloadEncryptedMedia, mxcUrlToHttp } from '../../../utils/matrix';
+import {
+  checkIsAnimationDetectedByHeader,
+  getBlobSafeImageMimeType,
+  isAnimatedImageMimetype,
+} from '../../../utils/mimeTypes';
+import { downloadEncryptedMedia, downloadMediaHeader, mxcUrlToHttp } from '../../../utils/matrix';
+import {
+  ANIMATED_IMAGE_HEADER_BYTE_COUNT,
+  checkIsAnimatedImageHeader,
+} from '../../../utils/animatedImageHeader';
 import { useMediaAuthentication } from '../../../hooks/server/useMediaAuthentication';
 import { validBlurHash } from '../../../utils/blurHash';
 import { imageViewerAtom } from '../../../state/imageViewer';
@@ -78,9 +86,7 @@ export const ImageContent = as<'div', ImageContentProps>(
     const [pauseGifs] = useSetting(settingsAtom, 'pauseGifs');
     const [pauseGifImages] = useSetting(settingsAtom, 'pauseGifImages');
     const [pauseGifStickers] = useSetting(settingsAtom, 'pauseGifStickers');
-    const isAnimatedImage = isAnimatedImageMimetype(mimeType) || !!treatAsAnimated;
     const pauseGifCategory = treatAsAnimated ? pauseGifStickers : pauseGifImages;
-    const shouldPauseAnimatedImage = pauseGifs && pauseGifCategory && isAnimatedImage;
 
     const setViewerState = useSetAtom(imageViewerAtom);
 
@@ -97,16 +103,38 @@ export const ImageContent = as<'div', ImageContentProps>(
     const [srcState, loadSrc] = useAutoLoadAsyncCallback(
       useCallback(async () => {
         const mediaUrl = mxcUrlToHttp(mx, url, useAuthentication) ?? url;
+        const isHeaderCheckNeeded = !treatAsAnimated && checkIsAnimationDetectedByHeader(mimeType);
         if (encryptionInfo) {
-          const fileContent = await downloadEncryptedMedia(mediaUrl, (encBuf) =>
-            decryptFile(encBuf, getBlobSafeImageMimeType(mimeType ?? ''), encryptionInfo)
+          const fileContent = await downloadEncryptedMedia(
+            mediaUrl,
+            getBlobSafeImageMimeType(mimeType ?? ''),
+            encryptionInfo
           );
-          return URL.createObjectURL(fileContent);
+          const isAnimatedByHeader =
+            isHeaderCheckNeeded &&
+            checkIsAnimatedImageHeader(
+              new Uint8Array(
+                await fileContent.slice(0, ANIMATED_IMAGE_HEADER_BYTE_COUNT).arrayBuffer()
+              )
+            );
+          return { src: URL.createObjectURL(fileContent), isAnimatedByHeader };
         }
-        return mediaUrl;
-      }, [mx, url, useAuthentication, mimeType, encryptionInfo]),
+        const isAnimatedByHeader =
+          isHeaderCheckNeeded &&
+          (await downloadMediaHeader(mediaUrl, ANIMATED_IMAGE_HEADER_BYTE_COUNT).then(
+            checkIsAnimatedImageHeader,
+            () => false
+          ));
+        return { src: mediaUrl, isAnimatedByHeader };
+      }, [mx, url, useAuthentication, mimeType, encryptionInfo, treatAsAnimated]),
       !!(autoPlay || isForceHidden)
     );
+
+    const isAnimatedImage =
+      isAnimatedImageMimetype(mimeType) ||
+      !!treatAsAnimated ||
+      (srcState.status === AsyncStatus.Success && srcState.data.isAnimatedByHeader);
+    const shouldPauseAnimatedImage = pauseGifs && pauseGifCategory && isAnimatedImage;
 
     const handleLoad = () => {
       setLoad(true);
@@ -183,7 +211,7 @@ export const ImageContent = as<'div', ImageContentProps>(
           >
             {shouldPauseAnimatedImage || (effectiveBlurred && isAnimatedImage) ? (
               <AnimatedImageOverlay
-                src={srcState.data}
+                src={srcState.data.src}
                 alt={body}
                 title={body}
                 frozen={effectiveBlurred}
@@ -195,14 +223,14 @@ export const ImageContent = as<'div', ImageContentProps>(
                 }}
                 onLoad={handleLoad}
                 onError={handleError}
-                onView={() => handleView(srcState.data)}
+                onView={() => handleView(srcState.data.src)}
                 renderImage={renderImage}
               />
             ) : (
               renderImage({
                 alt: body,
                 title: body,
-                src: srcState.data,
+                src: srcState.data.src,
                 style: {
                   width: '100%',
                   height: '100%',
@@ -211,7 +239,7 @@ export const ImageContent = as<'div', ImageContentProps>(
                 },
                 onLoad: handleLoad,
                 onError: handleError,
-                onClick: () => handleView(srcState.data),
+                onClick: () => handleView(srcState.data.src),
                 tabIndex: 0,
               })
             )}

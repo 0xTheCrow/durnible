@@ -4,21 +4,25 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ImageContent } from './ImageContent';
 import { MatrixTestWrapper } from '../../../../test/wrapper';
 import { useSetting } from '../../../state/hooks/settings';
-import { decryptFile } from '../../../utils/matrix';
+import { decryptFile, downloadMediaHeader } from '../../../utils/matrix';
 import type * as MatrixUtils from '../../../utils/matrix';
 import { FALLBACK_MIMETYPE } from '../../../utils/mimeTypes';
+import { buildWebpVp8xHeader } from '../../../../test/imageHeaderFixtures';
 
 vi.mock('../../../state/hooks/settings', () => ({
   useSetting: vi.fn(),
   useSetSetting: vi.fn(() => vi.fn()),
 }));
 
+const { mockDecryptFile } = vi.hoisted(() => ({ mockDecryptFile: vi.fn() }));
+
 vi.mock('../../../utils/matrix', async (importOriginal) => ({
   ...(await importOriginal<typeof MatrixUtils>()),
-  downloadEncryptedMedia: vi.fn((_url: string, processData: (buf: ArrayBuffer) => unknown) =>
-    Promise.resolve(processData(new ArrayBuffer(8)))
+  downloadEncryptedMedia: vi.fn((_url: string, mimeType: string, encryptionInfo: unknown) =>
+    mockDecryptFile(new ArrayBuffer(8), mimeType, encryptionInfo)
   ),
-  decryptFile: vi.fn().mockResolvedValue(new Blob(['decrypted'])),
+  decryptFile: mockDecryptFile.mockResolvedValue(new Blob(['decrypted'])),
+  downloadMediaHeader: vi.fn().mockResolvedValue(new Uint8Array()),
 }));
 
 const renderImageWithTestId = ({ alt, title, src, onLoad, onError, onClick, tabIndex }: any) => (
@@ -152,7 +156,7 @@ describe('ImageContent', () => {
     it('does not show canvas overlay for non-GIF images', async () => {
       render(
         <MatrixTestWrapper>
-          <ImageContent {...gifProps} mimeType="image/png" />
+          <ImageContent {...gifProps} mimeType="image/jpeg" />
         </MatrixTestWrapper>
       );
       await act(async () => {});
@@ -245,6 +249,47 @@ describe('ImageContent', () => {
       await act(async () => {});
       fireEvent.load(screen.getByTestId('test-image'));
       expect(screen.getByTestId('animated-image-overlay-canvas')).toBeInTheDocument();
+    });
+
+    describe('animation detected from the file header', () => {
+      const encryptionInfo = { key: 'k', iv: 'iv', hashes: {}, v: 'v2' } as any;
+
+      beforeEach(() => {
+        globalThis.URL.createObjectURL = vi.fn().mockReturnValue('blob:test');
+      });
+
+      it('pauses an encrypted WebP whose header is animated', async () => {
+        vi.mocked(decryptFile).mockResolvedValueOnce(new Blob([buildWebpVp8xHeader(true)]));
+        render(
+          <MatrixTestWrapper>
+            <ImageContent {...gifProps} mimeType="image/webp" encryptionInfo={encryptionInfo} />
+          </MatrixTestWrapper>
+        );
+        fireEvent.load(await screen.findByTestId('test-image'));
+        expect(screen.getByTestId('animated-image-overlay-canvas')).toBeInTheDocument();
+      });
+
+      it('leaves an encrypted WebP whose header is static as a plain image', async () => {
+        vi.mocked(decryptFile).mockResolvedValueOnce(new Blob([buildWebpVp8xHeader(false)]));
+        render(
+          <MatrixTestWrapper>
+            <ImageContent {...gifProps} mimeType="image/webp" encryptionInfo={encryptionInfo} />
+          </MatrixTestWrapper>
+        );
+        fireEvent.load(await screen.findByTestId('test-image'));
+        expect(screen.queryByTestId('animated-image-overlay-canvas')).not.toBeInTheDocument();
+      });
+
+      it('still renders an unencrypted PNG when the header fetch fails', async () => {
+        vi.mocked(downloadMediaHeader).mockRejectedValueOnce(new Error('network'));
+        render(
+          <MatrixTestWrapper>
+            <ImageContent {...gifProps} mimeType="image/png" />
+          </MatrixTestWrapper>
+        );
+        fireEvent.load(await screen.findByTestId('test-image'));
+        expect(screen.queryByTestId('animated-image-overlay-canvas')).not.toBeInTheDocument();
+      });
     });
   });
 

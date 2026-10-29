@@ -32,6 +32,17 @@ export type DesktopAppUpdateStatus =
   | { availability: 'manual-download'; version: string; releaseUrl: string; message?: string }
   | { availability: 'check-failed'; message: string };
 
+export type DesktopVideoTranscodeResult =
+  | { status: 'success'; bytes: Uint8Array }
+  | { status: 'ffmpeg-missing' }
+  | { status: 'failed' }
+  | { status: 'cancelled' };
+
+export type DesktopDownloadStatus =
+  | { downloadId: string; filename: string; state: 'saving'; percent?: number }
+  | { downloadId: string; filename: string; state: 'completed' }
+  | { downloadId: string; filename: string; state: 'failed' };
+
 type DesktopBridge = {
   isDesktop: true;
   platform: string;
@@ -52,6 +63,13 @@ type DesktopBridge = {
   startCallPopOutWindowDrag: () => void;
   dragCallPopOutWindow: () => void;
   endCallPopOutWindowDrag: () => void;
+  transcodeVideo: (
+    requestId: string,
+    inputBytes: Uint8Array
+  ) => Promise<DesktopVideoTranscodeResult>;
+  cancelVideoTranscode: (requestId: string) => void;
+  onDownloadStatus: (handler: (status: DesktopDownloadStatus) => void) => () => void;
+  showDownloadInFolder: (downloadId: string) => void;
 };
 
 declare global {
@@ -64,6 +82,8 @@ const getDesktopBridge = (): DesktopBridge | undefined =>
   typeof window !== 'undefined' ? window.durnibleDesktop : undefined;
 
 export const checkIsDesktopApp = (): boolean => getDesktopBridge()?.isDesktop === true;
+
+export const checkIsDesktopLinuxApp = (): boolean => getDesktopBridge()?.platform === 'linux';
 
 export const syncDesktopMediaAuth = (): void => {
   const bridge = getDesktopBridge();
@@ -129,4 +149,34 @@ export const installDesktopAppUpdate = (): void => {
 
 export const cancelDesktopAppUpdateDownload = (): void => {
   getDesktopBridge()?.cancelAppUpdateDownload();
+};
+
+export const subscribeDesktopDownloadStatus = (
+  handler: (status: DesktopDownloadStatus) => void
+): (() => void) => {
+  const bridge = getDesktopBridge();
+  if (!bridge) return () => undefined;
+  return bridge.onDownloadStatus(handler);
+};
+
+export const showDesktopDownloadInFolder = (downloadId: string): void => {
+  getDesktopBridge()?.showDownloadInFolder(downloadId);
+};
+
+export const transcodeDesktopVideo = async (
+  video: Blob,
+  signal: AbortSignal
+): Promise<DesktopVideoTranscodeResult> => {
+  const bridge = getDesktopBridge();
+  if (!bridge) return { status: 'failed' };
+  const inputBytes = new Uint8Array(await video.arrayBuffer());
+  if (signal.aborted) return { status: 'cancelled' };
+  const requestId = crypto.randomUUID();
+  const cancelTranscode = () => bridge.cancelVideoTranscode(requestId);
+  signal.addEventListener('abort', cancelTranscode, { once: true });
+  try {
+    return await bridge.transcodeVideo(requestId, inputBytes);
+  } finally {
+    signal.removeEventListener('abort', cancelTranscode);
+  }
 };

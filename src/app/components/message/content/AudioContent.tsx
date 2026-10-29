@@ -6,12 +6,7 @@ import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import type { AudioInfo } from '../../../../types/matrix/common';
 import type { RenderMediaControlProps } from '../../media';
 import { AudioPlayer } from '../../media';
-import {
-  decryptFile,
-  downloadEncryptedMedia,
-  downloadMedia,
-  mxcUrlToHttp,
-} from '../../../utils/matrix';
+import { downloadAttachment } from '../../../utils/matrix';
 import { useMediaAuthentication } from '../../../hooks/server/useMediaAuthentication';
 import { toSeekableAudio } from '../../../utils/seekableAudio';
 
@@ -34,12 +29,11 @@ export function AudioContent({
 
   const [srcState, loadSrc] = useAsyncCallback(
     useCallback(async () => {
-      const mediaUrl = mxcUrlToHttp(mx, url, useAuthentication) ?? url;
-      const fileContent = encryptionInfo
-        ? await downloadEncryptedMedia(mediaUrl, (encBuf) =>
-            decryptFile(encBuf, mimeType, encryptionInfo)
-          )
-        : await downloadMedia(mediaUrl);
+      const fileContent = await downloadAttachment(
+        mx,
+        { url, mimeType, encryptionInfo },
+        useAuthentication
+      );
       const playableContent = await toSeekableAudio(fileContent, mimeType, info.duration);
       return {
         objectUrl: URL.createObjectURL(playableContent),

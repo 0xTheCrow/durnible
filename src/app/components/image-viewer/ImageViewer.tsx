@@ -192,9 +192,9 @@ export const ImageViewer = as<'div', ImageViewerProps>(
     );
 
     const handleDownload = () => {
-      downloadMedia(src)
-        .then((fileContent) => saveFile(fileContent, alt))
-        .catch((error) => console.error('Saving the image failed', error));
+      saveFile((reportPercent) => downloadMedia(src, { onProgress: reportPercent }), alt).catch(
+        (error) => console.error('Saving the image failed', error)
+      );
     };
 
     const inGallery = !!gallery && gallery.items.length > 1;

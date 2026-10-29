@@ -1155,9 +1155,9 @@ export function GifBoard({
     setContextMenuAnchor(undefined);
     setContextMenuGif(undefined);
     if (!gif) return;
-    fetchGifBlob(gif.renditions.original.url)
-      .then((blob) => saveFile(blob, gif.filename))
-      .catch((e) => console.error('GIF download failed', e));
+    saveFile(() => fetchGifBlob(gif.renditions.original.url), gif.filename).catch((e) =>
+      console.error('GIF download failed', e)
+    );
   }, [contextMenuGif]);
 
   const handleEditFromMenu: MouseEventHandler = useCallback(() => {

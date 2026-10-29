@@ -15,6 +15,7 @@ import { getStateEvent } from './room';
 import { Membership, StateEvent } from '../../types/matrix/room';
 import { markCachedMediaUrl } from './mediaCache';
 import { getStoredAccessToken } from '../state/sessions';
+import type { VideoDimensions } from './mp4VideoTrack';
 
 const DOMAIN_REGEX = /\b(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}\b/;
 
@@ -63,11 +64,17 @@ export const getImageInfo = (img: HTMLImageElement, fileOrBlob: File | Blob): Im
   return info;
 };
 
-export const getVideoInfo = (video: HTMLVideoElement, fileOrBlob: File | Blob): VideoInfo => {
+export const getVideoInfo = (
+  video: HTMLVideoElement,
+  fileOrBlob: File | Blob,
+  dimensions: VideoDimensions | undefined
+): VideoInfo => {
   const info: VideoInfo = {};
   info.duration = Number.isNaN(video.duration) ? undefined : Math.floor(video.duration * 1000);
-  info.w = video.videoWidth;
-  info.h = video.videoHeight;
+  if (dimensions) {
+    info.w = dimensions.width;
+    info.h = dimensions.height;
+  }
   info.mimetype = fileOrBlob.type;
   info.size = fileOrBlob.size;
   return info;
@@ -361,7 +368,43 @@ export const mxcUrlToEmojiHttp = (
   return httpUrl ? markCachedMediaUrl(httpUrl, 'emoji') : null;
 };
 
-export const downloadMedia = async (src: string): Promise<Blob> => {
+export type DownloadProgressOptions = {
+  onProgress: (percent: number | undefined) => void;
+  expectedByteCount?: number;
+};
+
+const readBlobWithProgress = async (
+  response: Response,
+  body: ReadableStream<Uint8Array>,
+  { onProgress, expectedByteCount }: DownloadProgressOptions
+): Promise<Blob> => {
+  const contentLength = Number(response.headers.get('content-length'));
+  const totalByteCount = contentLength > 0 ? contentLength : expectedByteCount;
+  const reader = body.getReader();
+  const chunks: Uint8Array[] = [];
+  let receivedByteCount = 0;
+  let lastReportedPercent: number | undefined;
+
+  let result = await reader.read();
+  while (!result.done) {
+    chunks.push(result.value);
+    receivedByteCount += result.value.length;
+    const percent = totalByteCount
+      ? Math.min(100, Math.floor((receivedByteCount / totalByteCount) * 100))
+      : undefined;
+    if (percent !== lastReportedPercent) {
+      lastReportedPercent = percent;
+      onProgress(percent);
+    }
+    result = await reader.read();
+  }
+  return new Blob(chunks, { type: response.headers.get('content-type') ?? '' });
+};
+
+export const downloadMedia = async (
+  src: string,
+  progressOptions?: DownloadProgressOptions
+): Promise<Blob> => {
   // On iOS this header is the only thing authenticating the request: WKWebView
   // supports no service worker on any scheme. Redundant but benign everywhere
   // else, where the SW or the desktop webRequest handler already sets it.
@@ -373,18 +416,61 @@ export const downloadMedia = async (src: string): Promise<Blob> => {
   if (!res.ok) {
     throw new Error(`Failed to download media: ${res.status} ${res.statusText}`);
   }
+  if (progressOptions && res.body) return readBlobWithProgress(res, res.body, progressOptions);
   const blob = await res.blob();
   return blob;
 };
 
+export const downloadMediaHeader = async (src: string, byteCount: number): Promise<Uint8Array> => {
+  const accessToken = getStoredAccessToken();
+  const res = await fetch(src, {
+    method: 'GET',
+    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to download media: ${res.status} ${res.statusText}`);
+  }
+  if (!res.body) return new Uint8Array(await res.arrayBuffer()).subarray(0, byteCount);
+
+  const reader = res.body.getReader();
+  const header = new Uint8Array(byteCount);
+  let receivedByteCount = 0;
+  while (receivedByteCount < byteCount) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    const takenByteCount = Math.min(value.length, byteCount - receivedByteCount);
+    header.set(value.subarray(0, takenByteCount), receivedByteCount);
+    receivedByteCount += takenByteCount;
+  }
+  reader.cancel().catch(() => {});
+  return header.subarray(0, receivedByteCount);
+};
+
 export const downloadEncryptedMedia = async (
   src: string,
-  decryptContent: (buf: ArrayBuffer) => Promise<Blob>
+  mimeType: string,
+  encryptionInfo: EncryptedAttachmentInfo,
+  progressOptions?: DownloadProgressOptions
 ): Promise<Blob> => {
-  const encryptedContent = await downloadMedia(src);
-  const decryptedContent = await decryptContent(await encryptedContent.arrayBuffer());
+  const encryptedContent = await downloadMedia(src, progressOptions);
+  return decryptFile(await encryptedContent.arrayBuffer(), mimeType, encryptionInfo);
+};
 
-  return decryptedContent;
+export type MatrixAttachment = {
+  url: string;
+  mimeType: string;
+  encryptionInfo?: EncryptedAttachmentInfo;
+};
+
+export const downloadAttachment = (
+  mx: MatrixClient,
+  { url, mimeType, encryptionInfo }: MatrixAttachment,
+  useAuthentication: boolean,
+  progressOptions?: DownloadProgressOptions
+): Promise<Blob> => {
+  const mediaUrl = mxcUrlToHttp(mx, url, useAuthentication) ?? url;
+  if (!encryptionInfo) return downloadMedia(mediaUrl, progressOptions);
+  return downloadEncryptedMedia(mediaUrl, mimeType, encryptionInfo, progressOptions);
 };
 
 export const rateLimitedActions = async <T, R = void>(

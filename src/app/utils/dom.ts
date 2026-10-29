@@ -1,5 +1,5 @@
-import type { VideoRotationDegrees } from './videoRotation';
-import { getVideoRotationDegrees } from './videoRotation';
+import type { VideoRotationDegrees } from './mp4VideoTrack';
+import { checkIsQuarterTurn, getVideoRotationDegrees } from './mp4VideoTrack';
 
 export const targetFromEvent = (evt: Event, selector: string): Element | undefined => {
   const targets = evt.composedPath() as Element[];
@@ -216,9 +216,6 @@ const checkIsAnyPixelTransparent = (pixels: Uint8Array): boolean => {
   }
   return false;
 };
-
-const checkIsQuarterTurn = (rotationDegrees: VideoRotationDegrees): boolean =>
-  rotationDegrees === 90 || rotationDegrees === 270;
 
 const readVideoTexturePixels = (
   webglContext: WebGLRenderingContext,

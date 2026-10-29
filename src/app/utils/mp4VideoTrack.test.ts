@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getVideoRotationDegrees } from './videoRotation';
+import { getVideoDisplayDimensions, getVideoRotationDegrees } from './mp4VideoTrack';
 
 const FIXED_POINT_ONE = 0x10000;
 const IDENTITY_MATRIX = [FIXED_POINT_ONE, 0, 0, FIXED_POINT_ONE];
@@ -38,18 +38,41 @@ const largeBox = (type: string, ...bodyParts: number[][]): number[] => {
   ];
 };
 
-const trackHeader = (rotationPart: number[], version: 0 | 1 = 0): number[] => {
+type TrackDimensions = { width: number; height: number };
+
+const NO_DIMENSIONS: TrackDimensions = { width: 0, height: 0 };
+
+const matrixBytes = (rotationPart: number[]): number[] => {
   const [a, b, c, d] = rotationPart;
-  const matrix = concatenate([a, b, 0, c, d, 0, 0, 0, 0x40000000].map(uint32));
+  return concatenate([a, b, 0, c, d, 0, 0, 0, 0x40000000].map(uint32));
+};
+
+const trackHeader = (
+  rotationPart: number[],
+  version: 0 | 1 = 0,
+  dimensions: TrackDimensions = NO_DIMENSIONS
+): number[] => {
   const bytesBeforeMatrix = version === 1 ? 48 : 36;
-  return box('tkhd', [version, 0, 0, 0], zeros(bytesBeforeMatrix), matrix, zeros(8));
+  return box(
+    'tkhd',
+    [version, 0, 0, 0],
+    zeros(bytesBeforeMatrix),
+    matrixBytes(rotationPart),
+    uint32(dimensions.width * FIXED_POINT_ONE),
+    uint32(dimensions.height * FIXED_POINT_ONE)
+  );
 };
 
 const handler = (handlerType: string): number[] =>
   box('hdlr', zeros(4), zeros(4), fourCharacterCode(handlerType), zeros(12), [0]);
 
-const track = (handlerType: string, rotationPart: number[], version: 0 | 1 = 0): number[] =>
-  box('trak', trackHeader(rotationPart, version), box('mdia', handler(handlerType)));
+const track = (
+  handlerType: string,
+  rotationPart: number[],
+  version: 0 | 1 = 0,
+  dimensions: TrackDimensions = NO_DIMENSIONS
+): number[] =>
+  box('trak', trackHeader(rotationPart, version, dimensions), box('mdia', handler(handlerType)));
 
 const toFile = (...topLevelBoxes: number[][]): Blob =>
   new Blob([new Uint8Array(concatenate(topLevelBoxes))]);
@@ -120,5 +143,57 @@ describe('getVideoRotationDegrees', () => {
     );
 
     expect(await getVideoRotationDegrees(videoFile)).toBe(0);
+  });
+});
+
+describe('getVideoDisplayDimensions', () => {
+  const STORED_DIMENSIONS: TrackDimensions = { width: 1920, height: 1080 };
+  const SWAPPED_DIMENSIONS: TrackDimensions = { width: 1080, height: 1920 };
+
+  it.each([
+    [0, IDENTITY_MATRIX, STORED_DIMENSIONS],
+    [90, ROTATE_90_MATRIX, SWAPPED_DIMENSIONS],
+    [180, ROTATE_180_MATRIX, STORED_DIMENSIONS],
+    [270, ROTATE_270_MATRIX, SWAPPED_DIMENSIONS],
+  ])(
+    'reports the displayed size of a track rotated %i degrees',
+    async (_rotationDegrees, rotationPart, displayedDimensions) => {
+      const videoFile = toFile(
+        FILE_TYPE_BOX,
+        box('moov', track('vide', rotationPart, 0, STORED_DIMENSIONS))
+      );
+
+      expect(await getVideoDisplayDimensions(videoFile)).toEqual(displayedDimensions);
+    }
+  );
+
+  it('reads the size from a version 1 track header', async () => {
+    const videoFile = toFile(
+      FILE_TYPE_BOX,
+      box('moov', track('vide', IDENTITY_MATRIX, 1, STORED_DIMENSIONS))
+    );
+
+    expect(await getVideoDisplayDimensions(videoFile)).toEqual(STORED_DIMENSIONS);
+  });
+
+  it('returns undefined when the track header declares a zero size', async () => {
+    const videoFile = toFile(FILE_TYPE_BOX, box('moov', track('vide', IDENTITY_MATRIX)));
+
+    expect(await getVideoDisplayDimensions(videoFile)).toBeUndefined();
+  });
+
+  it('returns undefined when the track header ends before the size', async () => {
+    const trackHeaderWithoutSize = box(
+      'tkhd',
+      [0, 0, 0, 0],
+      zeros(36),
+      matrixBytes(IDENTITY_MATRIX)
+    );
+    const videoFile = toFile(
+      FILE_TYPE_BOX,
+      box('moov', box('trak', trackHeaderWithoutSize, box('mdia', handler('vide'))))
+    );
+
+    expect(await getVideoDisplayDimensions(videoFile)).toBeUndefined();
   });
 });
