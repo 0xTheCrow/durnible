@@ -15,6 +15,7 @@ import { getStateEvent } from './room';
 import { Membership, StateEvent } from '../../types/matrix/room';
 import { markCachedMediaUrl } from './mediaCache';
 import { getStoredAccessToken } from '../state/sessions';
+import type { VideoDimensions } from './mp4VideoTrack';
 
 const DOMAIN_REGEX = /\b(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}\b/;
 
@@ -63,11 +64,17 @@ export const getImageInfo = (img: HTMLImageElement, fileOrBlob: File | Blob): Im
   return info;
 };
 
-export const getVideoInfo = (video: HTMLVideoElement, fileOrBlob: File | Blob): VideoInfo => {
+export const getVideoInfo = (
+  video: HTMLVideoElement,
+  fileOrBlob: File | Blob,
+  dimensions: VideoDimensions | undefined
+): VideoInfo => {
   const info: VideoInfo = {};
   info.duration = Number.isNaN(video.duration) ? undefined : Math.floor(video.duration * 1000);
-  info.w = video.videoWidth;
-  info.h = video.videoHeight;
+  if (dimensions) {
+    info.w = dimensions.width;
+    info.h = dimensions.height;
+  }
   info.mimetype = fileOrBlob.type;
   info.size = fileOrBlob.size;
   return info;

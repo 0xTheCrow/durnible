@@ -24,6 +24,7 @@ import {
 import type { UploadItem } from '../../../state/room/roomInputDrafts';
 import { BLUR_HASH_ENCODE_WIDTH, encodeBlurHash } from '../../../utils/blurHash';
 import { scaleYDimension } from '../../../utils/common';
+import { getVideoDisplayDimensions } from '../../../utils/mp4VideoTrack';
 
 const generateThumbnailContent = async (
   mx: MatrixClient,
@@ -114,9 +115,12 @@ export const getVideoMsgContent = async (
       [MATRIX_SPOILER_PROPERTY_NAME]: metadata.markedAsSpoiler,
     };
     if (videoElement) {
-      content.info = getVideoInfo(videoElement, file);
-
       const hasVideoDimensions = videoElement.videoWidth > 0 && videoElement.videoHeight > 0;
+      const videoDimensions = hasVideoDimensions
+        ? { width: videoElement.videoWidth, height: videoElement.videoHeight }
+        : await getVideoDisplayDimensions(originalFile);
+      content.info = getVideoInfo(videoElement, file, videoDimensions);
+
       const [captureError, videoFrame] = await to(
         captureVideoFrame(
           videoElement,

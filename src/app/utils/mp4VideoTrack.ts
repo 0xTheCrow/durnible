@@ -1,5 +1,14 @@
 export type VideoRotationDegrees = 0 | 90 | 180 | 270;
 
+export type VideoDimensions = {
+  width: number;
+  height: number;
+};
+
+type VideoTrackHeader = VideoDimensions & {
+  rotationDegrees: VideoRotationDegrees;
+};
+
 type Mp4Box = {
   type: string;
   bodyStart: number;
@@ -12,6 +21,7 @@ const HANDLER_TYPE_OFFSET = 8;
 const TRACK_HEADER_MATRIX_OFFSET_VERSION_0 = 40;
 const TRACK_HEADER_MATRIX_OFFSET_VERSION_1 = 52;
 const MATRIX_BYTES = 36;
+const DIMENSIONS_BYTES = 8;
 const FIXED_POINT_ONE = 0x10000;
 
 const ROTATION_MATRICES: { rotationDegrees: VideoRotationDegrees; matrix: number[] }[] = [
@@ -88,14 +98,10 @@ const checkIsVideoTrack = (view: DataView, trackBox: Mp4Box): boolean => {
   return readFourCharacterCode(view, handlerBox.bodyStart + HANDLER_TYPE_OFFSET) === 'vide';
 };
 
-const getTrackRotationDegrees = (view: DataView, trackHeaderBox: Mp4Box): VideoRotationDegrees => {
-  if (trackHeaderBox.bodyStart >= trackHeaderBox.end) return 0;
-  const version = view.getUint8(trackHeaderBox.bodyStart);
-  const matrixStart =
-    trackHeaderBox.bodyStart +
-    (version === 1 ? TRACK_HEADER_MATRIX_OFFSET_VERSION_1 : TRACK_HEADER_MATRIX_OFFSET_VERSION_0);
-  if (matrixStart + MATRIX_BYTES > trackHeaderBox.end) return 0;
+export const checkIsQuarterTurn = (rotationDegrees: VideoRotationDegrees): boolean =>
+  rotationDegrees === 90 || rotationDegrees === 270;
 
+const readRotationDegrees = (view: DataView, matrixStart: number): VideoRotationDegrees => {
   const rotationPart = [
     view.getInt32(matrixStart),
     view.getInt32(matrixStart + 4),
@@ -108,13 +114,49 @@ const getTrackRotationDegrees = (view: DataView, trackHeaderBox: Mp4Box): VideoR
   return matchingRotation?.rotationDegrees ?? 0;
 };
 
-export const getVideoRotationDegrees = async (videoFile: Blob): Promise<VideoRotationDegrees> => {
+const readFixedPointInteger = (view: DataView, offset: number): number =>
+  Math.round(view.getUint32(offset) / FIXED_POINT_ONE);
+
+const parseTrackHeader = (view: DataView, trackHeaderBox: Mp4Box): VideoTrackHeader => {
+  const emptyTrackHeader: VideoTrackHeader = { rotationDegrees: 0, width: 0, height: 0 };
+  if (trackHeaderBox.bodyStart >= trackHeaderBox.end) return emptyTrackHeader;
+  const version = view.getUint8(trackHeaderBox.bodyStart);
+  const matrixStart =
+    trackHeaderBox.bodyStart +
+    (version === 1 ? TRACK_HEADER_MATRIX_OFFSET_VERSION_1 : TRACK_HEADER_MATRIX_OFFSET_VERSION_0);
+  if (matrixStart + MATRIX_BYTES > trackHeaderBox.end) return emptyTrackHeader;
+
+  const rotationDegrees = readRotationDegrees(view, matrixStart);
+  const dimensionsStart = matrixStart + MATRIX_BYTES;
+  if (dimensionsStart + DIMENSIONS_BYTES > trackHeaderBox.end) {
+    return { ...emptyTrackHeader, rotationDegrees };
+  }
+  return {
+    rotationDegrees,
+    width: readFixedPointInteger(view, dimensionsStart),
+    height: readFixedPointInteger(view, dimensionsStart + 4),
+  };
+};
+
+const readVideoTrackHeader = async (videoFile: Blob): Promise<VideoTrackHeader | undefined> => {
   const movieView = await readMovieBox(videoFile);
-  if (!movieView) return 0;
+  if (!movieView) return undefined;
 
   const videoTrackBox = readChildBoxes(movieView, 0, movieView.byteLength)
     .filter((box) => box.type === 'trak')
     .find((trackBox) => checkIsVideoTrack(movieView, trackBox));
   const trackHeaderBox = videoTrackBox && findChildBox(movieView, videoTrackBox, 'tkhd');
-  return trackHeaderBox ? getTrackRotationDegrees(movieView, trackHeaderBox) : 0;
+  return trackHeaderBox && parseTrackHeader(movieView, trackHeaderBox);
+};
+
+export const getVideoRotationDegrees = async (videoFile: Blob): Promise<VideoRotationDegrees> =>
+  (await readVideoTrackHeader(videoFile))?.rotationDegrees ?? 0;
+
+export const getVideoDisplayDimensions = async (
+  videoFile: Blob
+): Promise<VideoDimensions | undefined> => {
+  const trackHeader = await readVideoTrackHeader(videoFile);
+  if (!trackHeader || trackHeader.width === 0 || trackHeader.height === 0) return undefined;
+  const { width, height, rotationDegrees } = trackHeader;
+  return checkIsQuarterTurn(rotationDegrees) ? { width: height, height: width } : { width, height };
 };
