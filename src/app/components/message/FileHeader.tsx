@@ -1,19 +1,10 @@
 import { Badge, Box, Icon, IconButton, Icons, Spinner, Text, as, toRem } from 'folds';
 import type { ReactNode } from 'react';
-import React, { useCallback } from 'react';
+import React from 'react';
 import type { EncryptedAttachmentInfo } from 'browser-encrypt-attachment';
 import { mimeTypeToExt } from '../../utils/mimeTypes';
-import { saveFile } from '../../utils/saveFile';
-import { useMatrixClient } from '../../hooks/useMatrixClient';
-import { useMediaAuthentication } from '../../hooks/server/useMediaAuthentication';
-import { useRevokeObjectURL } from '../../hooks/browser/useObjectURL';
-import { AsyncStatus, useAsyncCallback } from '../../hooks/useAsyncCallback';
-import {
-  decryptFile,
-  downloadEncryptedMedia,
-  downloadMedia,
-  mxcUrlToHttp,
-} from '../../utils/matrix';
+import { AsyncStatus } from '../../hooks/useAsyncCallback';
+import { useSaveAttachment } from '../../hooks/media/useSaveAttachment';
 
 const badgeStyles = { maxWidth: toRem(100) };
 
@@ -29,41 +20,29 @@ export function FileDownloadButton({
   mimeType,
   encryptionInfo,
 }: FileDownloadButtonProps) {
-  const mx = useMatrixClient();
-  const useAuthentication = useMediaAuthentication();
-
-  const [downloadState, download] = useAsyncCallback(
-    useCallback(async () => {
-      const mediaUrl = mxcUrlToHttp(mx, url, useAuthentication) ?? url;
-      const fileContent = encryptionInfo
-        ? await downloadEncryptedMedia(mediaUrl, (encBuf) =>
-            decryptFile(encBuf, mimeType, encryptionInfo)
-          )
-        : await downloadMedia(mediaUrl);
-
-      const fileURL = URL.createObjectURL(fileContent);
-      await saveFile(fileURL, filename);
-      return fileURL;
-    }, [mx, url, useAuthentication, mimeType, encryptionInfo, filename])
-  );
-  useRevokeObjectURL(downloadState.status === AsyncStatus.Success ? downloadState.data : undefined);
+  const [saveState, saveAttachment] = useSaveAttachment({
+    url,
+    mimeType,
+    encryptionInfo,
+    filename,
+  });
 
   const handleDownload = () => {
-    download().catch(() => {});
+    saveAttachment().catch(() => {});
   };
 
-  const downloading = downloadState.status === AsyncStatus.Loading;
-  const hasError = downloadState.status === AsyncStatus.Error;
+  const isDownloading = saveState.status === AsyncStatus.Loading;
+  const hasError = saveState.status === AsyncStatus.Error;
   return (
     <IconButton
-      disabled={downloading}
+      disabled={isDownloading}
       onClick={handleDownload}
       variant={hasError ? 'Critical' : 'SurfaceVariant'}
       size="400"
       radii="300"
       data-testid="file-download-btn"
     >
-      {downloading ? (
+      {isDownloading ? (
         <Spinner size="100" variant={hasError ? 'Critical' : 'Secondary'} />
       ) : (
         <Icon size="100" src={Icons.Download} />

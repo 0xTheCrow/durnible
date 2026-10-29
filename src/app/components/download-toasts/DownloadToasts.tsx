@@ -1,54 +1,56 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Box, Icon, IconButton, Icons, Spinner, Text } from 'folds';
-import type { DesktopDownloadStatus } from './bridge';
-import { showDesktopDownloadInFolder, subscribeDesktopDownloadStatus } from './bridge';
-import * as css from './DesktopDownloadToasts.css';
+import type { DownloadStatus } from '../../utils/downloadStatus';
+import { subscribeDownloadStatus } from '../../utils/downloadStatus';
+import * as css from './DownloadToasts.css';
 
 export const DOWNLOAD_TOAST_DURATION_MS = 6000;
 
+type ShownDownloadStatus = Exclude<DownloadStatus, { state: 'cleared' }>;
+
 type DownloadToastEntry = {
-  status: DesktopDownloadStatus;
+  status: ShownDownloadStatus;
   isHidden: boolean;
 };
 
-const getStatusText = (download: DesktopDownloadStatus): string => {
+const checkIsInProgress = (download: ShownDownloadStatus): boolean =>
+  download.state === 'downloading' || download.state === 'saving';
+
+const getStatusText = (download: ShownDownloadStatus): string => {
   switch (download.state) {
+    case 'downloading':
+      return 'Downloading…';
     case 'saving':
       return 'Saving…';
     case 'completed':
-      return 'Downloaded. Click to show in folder.';
+      return download.showInFolder ? 'Downloaded. Click to show in folder.' : 'Saved.';
     default:
       return 'Download failed.';
   }
 };
 
 type DownloadToastProps = {
-  download: DesktopDownloadStatus;
+  download: ShownDownloadStatus;
   onDismiss: (downloadId: string) => void;
 };
 
 function DownloadToast({ download, onDismiss }: DownloadToastProps) {
-  const { downloadId, filename, state } = download;
-  const isSaving = state === 'saving';
+  const { downloadId, filename } = download;
+  const isInProgress = checkIsInProgress(download);
 
   useEffect(() => {
-    if (isSaving) return undefined;
+    if (isInProgress) return undefined;
     const dismissTimeout = setTimeout(() => onDismiss(downloadId), DOWNLOAD_TOAST_DURATION_MS);
     return () => clearTimeout(dismissTimeout);
-  }, [downloadId, isSaving, onDismiss]);
-
-  const revealDownload = () => {
-    showDesktopDownloadInFolder(downloadId);
-    onDismiss(downloadId);
-  };
+  }, [downloadId, isInProgress, onDismiss]);
 
   const summary = (
     <>
-      {isSaving ? (
+      {isInProgress ? (
         <Spinner size="200" variant="Secondary" />
       ) : (
-        <Icon size="200" src={state === 'completed' ? Icons.Download : Icons.Warning} />
+        <Icon size="200" src={download.state === 'completed' ? Icons.Download : Icons.Warning} />
       )}
       <Box direction="Column" style={{ minWidth: 0 }}>
         <Text size="T300" truncate>
@@ -56,22 +58,18 @@ function DownloadToast({ download, onDismiss }: DownloadToastProps) {
         </Text>
         <Text size="T200" priority="300">
           {getStatusText(download)}
-          {download.state === 'saving' && download.percent !== undefined && (
-            <span aria-hidden>{` ${download.percent}%`}</span>
-          )}
+          {(download.state === 'downloading' || download.state === 'saving') &&
+            download.percent !== undefined && <span aria-hidden>{` ${download.percent}%`}</span>}
         </Text>
       </Box>
     </>
   );
 
+  const showInFolder = download.state === 'completed' ? download.showInFolder : undefined;
+
   return (
-    <Box
-      className={css.DownloadToast}
-      gap="100"
-      alignItems="Center"
-      data-testid="desktop-download-toast"
-    >
-      {state === 'completed' ? (
+    <Box className={css.DownloadToast} gap="100" alignItems="Center" data-testid="download-toast">
+      {showInFolder ? (
         <Box
           as="button"
           type="button"
@@ -79,7 +77,10 @@ function DownloadToast({ download, onDismiss }: DownloadToastProps) {
           grow="Yes"
           gap="300"
           alignItems="Center"
-          onClick={revealDownload}
+          onClick={() => {
+            showInFolder();
+            onDismiss(downloadId);
+          }}
           title="Show in folder"
         >
           {summary}
@@ -105,19 +106,22 @@ function DownloadToast({ download, onDismiss }: DownloadToastProps) {
   );
 }
 
-export function DesktopDownloadToasts() {
+export function DownloadToasts() {
   const [downloadToasts, setDownloadToasts] = useState<DownloadToastEntry[]>([]);
 
   useEffect(
     () =>
-      subscribeDesktopDownloadStatus((status) =>
+      subscribeDownloadStatus((status) =>
         setDownloadToasts((currentToasts) => {
+          if (status.state === 'cleared') {
+            return currentToasts.filter((toast) => toast.status.downloadId !== status.downloadId);
+          }
           const existingToast = currentToasts.find(
             (toast) => toast.status.downloadId === status.downloadId
           );
           const updatedToast: DownloadToastEntry = {
             status,
-            isHidden: status.state === 'saving' && existingToast?.isHidden === true,
+            isHidden: checkIsInProgress(status) && existingToast?.isHidden === true,
           };
           if (!existingToast) return [...currentToasts, updatedToast];
           return currentToasts.map((toast) => (toast === existingToast ? updatedToast : toast));
@@ -131,7 +135,7 @@ export function DesktopDownloadToasts() {
       setDownloadToasts((currentToasts) =>
         currentToasts.flatMap((toast) => {
           if (toast.status.downloadId !== downloadId) return [toast];
-          if (toast.status.state === 'saving') return [{ ...toast, isHidden: true }];
+          if (checkIsInProgress(toast.status)) return [{ ...toast, isHidden: true }];
           return [];
         })
       ),

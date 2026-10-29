@@ -74,17 +74,14 @@ class MobileFileSaveSession {
   }
 }
 
-const toBlob = async (data: Blob | string): Promise<Blob> => {
-  if (typeof data !== 'string') return data;
-  const response = await fetch(data);
-  return response.blob();
-};
-
-const runSaveFile = async (data: Blob | string, filename: string): Promise<string | undefined> => {
+const runSaveFile = async (
+  blob: Blob,
+  filename: string,
+  reportSavePercent?: (percent: number) => void
+): Promise<string | undefined> => {
   const bridge = getBridge();
   if (!bridge) throw new Error('The file save bridge is unavailable');
 
-  const blob = await toBlob(data);
   const session = new MobileFileSaveSession(bridge);
   let isBegun = false;
 
@@ -99,9 +96,11 @@ const runSaveFile = async (data: Blob | string, filename: string): Promise<strin
     if (beginReply.type === 'cancelled') return undefined;
     isBegun = true;
 
+    reportSavePercent?.(0);
     for (let offset = 0; offset < blob.size; offset += SAVE_CHUNK_SIZE_BYTES) {
-      const chunk = blob.slice(offset, offset + SAVE_CHUNK_SIZE_BYTES);
-      await session.send(await chunk.arrayBuffer());
+      const chunkEnd = Math.min(offset + SAVE_CHUNK_SIZE_BYTES, blob.size);
+      await session.send(await blob.slice(offset, chunkEnd).arrayBuffer());
+      reportSavePercent?.(Math.floor((chunkEnd / blob.size) * 100));
     }
 
     const reply = await session.send(JSON.stringify({ type: 'finish' }));
@@ -119,12 +118,13 @@ const runSaveFile = async (data: Blob | string, filename: string): Promise<strin
 let saveQueue: Promise<unknown> = Promise.resolve();
 
 export const saveFileOnMobile = (
-  data: Blob | string,
-  filename: string
+  blob: Blob,
+  filename: string,
+  reportSavePercent?: (percent: number) => void
 ): Promise<string | undefined> => {
   const queuedSave = saveQueue.then(
-    () => runSaveFile(data, filename),
-    () => runSaveFile(data, filename)
+    () => runSaveFile(blob, filename, reportSavePercent),
+    () => runSaveFile(blob, filename, reportSavePercent)
   );
   saveQueue = queuedSave.catch(() => undefined);
   return queuedSave;

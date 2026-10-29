@@ -361,7 +361,43 @@ export const mxcUrlToEmojiHttp = (
   return httpUrl ? markCachedMediaUrl(httpUrl, 'emoji') : null;
 };
 
-export const downloadMedia = async (src: string): Promise<Blob> => {
+export type DownloadProgressOptions = {
+  onProgress: (percent: number | undefined) => void;
+  expectedByteCount?: number;
+};
+
+const readBlobWithProgress = async (
+  response: Response,
+  body: ReadableStream<Uint8Array>,
+  { onProgress, expectedByteCount }: DownloadProgressOptions
+): Promise<Blob> => {
+  const contentLength = Number(response.headers.get('content-length'));
+  const totalByteCount = contentLength > 0 ? contentLength : expectedByteCount;
+  const reader = body.getReader();
+  const chunks: Uint8Array[] = [];
+  let receivedByteCount = 0;
+  let lastReportedPercent: number | undefined;
+
+  let result = await reader.read();
+  while (!result.done) {
+    chunks.push(result.value);
+    receivedByteCount += result.value.length;
+    const percent = totalByteCount
+      ? Math.min(100, Math.floor((receivedByteCount / totalByteCount) * 100))
+      : undefined;
+    if (percent !== lastReportedPercent) {
+      lastReportedPercent = percent;
+      onProgress(percent);
+    }
+    result = await reader.read();
+  }
+  return new Blob(chunks, { type: response.headers.get('content-type') ?? '' });
+};
+
+export const downloadMedia = async (
+  src: string,
+  progressOptions?: DownloadProgressOptions
+): Promise<Blob> => {
   // On iOS this header is the only thing authenticating the request: WKWebView
   // supports no service worker on any scheme. Redundant but benign everywhere
   // else, where the SW or the desktop webRequest handler already sets it.
@@ -373,6 +409,7 @@ export const downloadMedia = async (src: string): Promise<Blob> => {
   if (!res.ok) {
     throw new Error(`Failed to download media: ${res.status} ${res.statusText}`);
   }
+  if (progressOptions && res.body) return readBlobWithProgress(res, res.body, progressOptions);
   const blob = await res.blob();
   return blob;
 };
@@ -404,12 +441,29 @@ export const downloadMediaHeader = async (src: string, byteCount: number): Promi
 
 export const downloadEncryptedMedia = async (
   src: string,
-  decryptContent: (buf: ArrayBuffer) => Promise<Blob>
+  mimeType: string,
+  encryptionInfo: EncryptedAttachmentInfo,
+  progressOptions?: DownloadProgressOptions
 ): Promise<Blob> => {
-  const encryptedContent = await downloadMedia(src);
-  const decryptedContent = await decryptContent(await encryptedContent.arrayBuffer());
+  const encryptedContent = await downloadMedia(src, progressOptions);
+  return decryptFile(await encryptedContent.arrayBuffer(), mimeType, encryptionInfo);
+};
 
-  return decryptedContent;
+export type MatrixAttachment = {
+  url: string;
+  mimeType: string;
+  encryptionInfo?: EncryptedAttachmentInfo;
+};
+
+export const downloadAttachment = (
+  mx: MatrixClient,
+  { url, mimeType, encryptionInfo }: MatrixAttachment,
+  useAuthentication: boolean,
+  progressOptions?: DownloadProgressOptions
+): Promise<Blob> => {
+  const mediaUrl = mxcUrlToHttp(mx, url, useAuthentication) ?? url;
+  if (!encryptionInfo) return downloadMedia(mediaUrl, progressOptions);
+  return downloadEncryptedMedia(mediaUrl, mimeType, encryptionInfo, progressOptions);
 };
 
 export const rateLimitedActions = async <T, R = void>(

@@ -14,7 +14,7 @@ import { createRouter } from './Router';
 import { ScreenSizeProvider, useScreenSize } from '../hooks/browser/useScreenSize';
 import { DesktopMenuBarSync } from '../platform/desktop/DesktopMenuBarSync';
 import { DesktopAppUpdatePrompt } from '../platform/desktop/DesktopAppUpdatePrompt';
-import { DesktopDownloadToasts } from '../platform/desktop/DesktopDownloadToasts';
+import { DownloadToasts } from '../components/download-toasts/DownloadToasts';
 import { useCompositionEndTracking } from '../hooks/composer/useComposingCheck';
 import i18n, { setupI18n } from '../i18n';
 
@@ -51,7 +51,7 @@ function App() {
                           <JotaiProvider>
                             <DesktopMenuBarSync />
                             <DesktopAppUpdatePrompt />
-                            <DesktopDownloadToasts />
+                            <DownloadToasts />
                             <Suspense>
                               <RouterProvider router={createRouter(clientConfig, screenSize)} />
                             </Suspense>

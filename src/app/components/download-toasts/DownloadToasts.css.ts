@@ -1,11 +1,12 @@
 import { style } from '@vanilla-extract/css';
 import { DefaultReset, color, config, toRem } from 'folds';
+import { SAFE_AREA_INSET_TOP } from '../../styles/safeArea';
 
 export const DownloadToastStack = style([
   DefaultReset,
   {
     position: 'fixed',
-    top: config.space.S400,
+    top: `calc(${SAFE_AREA_INSET_TOP} + ${config.space.S400})`,
     left: config.space.S400,
     right: config.space.S400,
     zIndex: config.zIndex.Max,

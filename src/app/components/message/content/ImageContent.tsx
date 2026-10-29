@@ -19,12 +19,7 @@ import {
   getBlobSafeImageMimeType,
   isAnimatedImageMimetype,
 } from '../../../utils/mimeTypes';
-import {
-  decryptFile,
-  downloadEncryptedMedia,
-  downloadMediaHeader,
-  mxcUrlToHttp,
-} from '../../../utils/matrix';
+import { downloadEncryptedMedia, downloadMediaHeader, mxcUrlToHttp } from '../../../utils/matrix';
 import {
   ANIMATED_IMAGE_HEADER_BYTE_COUNT,
   checkIsAnimatedImageHeader,
@@ -110,8 +105,10 @@ export const ImageContent = as<'div', ImageContentProps>(
         const mediaUrl = mxcUrlToHttp(mx, url, useAuthentication) ?? url;
         const isHeaderCheckNeeded = !treatAsAnimated && checkIsAnimationDetectedByHeader(mimeType);
         if (encryptionInfo) {
-          const fileContent = await downloadEncryptedMedia(mediaUrl, (encBuf) =>
-            decryptFile(encBuf, getBlobSafeImageMimeType(mimeType ?? ''), encryptionInfo)
+          const fileContent = await downloadEncryptedMedia(
+            mediaUrl,
+            getBlobSafeImageMimeType(mimeType ?? ''),
+            encryptionInfo
           );
           const isAnimatedByHeader =
             isHeaderCheckNeeded &&

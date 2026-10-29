@@ -16,12 +16,7 @@ import {
   useAutoLoadAsyncCallback,
 } from '../../../hooks/useAsyncCallback';
 import { bytesToSize, millisecondsToMinutesAndSeconds } from '../../../utils/common';
-import {
-  decryptFile,
-  downloadEncryptedMedia,
-  downloadMedia,
-  mxcUrlToHttp,
-} from '../../../utils/matrix';
+import { downloadAttachment } from '../../../utils/matrix';
 import { useMediaAuthentication } from '../../../hooks/server/useMediaAuthentication';
 import { useRevokeObjectURL } from '../../../hooks/browser/useObjectURL';
 import { validBlurHash } from '../../../utils/blurHash';
@@ -85,12 +80,11 @@ export const VideoContent = as<'div', VideoContentProps>(
 
     const [srcState, loadSrc] = useAutoLoadAsyncCallback(
       useCallback(async () => {
-        const mediaUrl = mxcUrlToHttp(mx, url, useAuthentication) ?? url;
-        const fileContent = encryptionInfo
-          ? await downloadEncryptedMedia(mediaUrl, (encBuf) =>
-              decryptFile(encBuf, mimeType, encryptionInfo)
-            )
-          : await downloadMedia(mediaUrl);
+        const fileContent = await downloadAttachment(
+          mx,
+          { url, mimeType, encryptionInfo },
+          useAuthentication
+        );
         return URL.createObjectURL(fileContent);
       }, [mx, url, useAuthentication, mimeType, encryptionInfo]),
       !!autoPlay

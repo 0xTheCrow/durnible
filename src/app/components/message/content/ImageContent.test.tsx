@@ -14,12 +14,14 @@ vi.mock('../../../state/hooks/settings', () => ({
   useSetSetting: vi.fn(() => vi.fn()),
 }));
 
+const { mockDecryptFile } = vi.hoisted(() => ({ mockDecryptFile: vi.fn() }));
+
 vi.mock('../../../utils/matrix', async (importOriginal) => ({
   ...(await importOriginal<typeof MatrixUtils>()),
-  downloadEncryptedMedia: vi.fn((_url: string, processData: (buf: ArrayBuffer) => unknown) =>
-    Promise.resolve(processData(new ArrayBuffer(8)))
+  downloadEncryptedMedia: vi.fn((_url: string, mimeType: string, encryptionInfo: unknown) =>
+    mockDecryptFile(new ArrayBuffer(8), mimeType, encryptionInfo)
   ),
-  decryptFile: vi.fn().mockResolvedValue(new Blob(['decrypted'])),
+  decryptFile: mockDecryptFile.mockResolvedValue(new Blob(['decrypted'])),
   downloadMediaHeader: vi.fn().mockResolvedValue(new Uint8Array()),
 }));
 

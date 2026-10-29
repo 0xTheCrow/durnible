@@ -8,7 +8,7 @@ import { ImageViewerModal } from '../../styles/Modal.css';
 import { OverlayModal } from '../OverlayModal';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { useMediaAuthentication } from '../../hooks/server/useMediaAuthentication';
-import { decryptFile, downloadEncryptedMedia, mxcUrlToHttp } from '../../utils/matrix';
+import { downloadEncryptedMedia, mxcUrlToHttp } from '../../utils/matrix';
 import { getBlobSafeImageMimeType } from '../../utils/mimeTypes';
 
 export function ImageViewerRenderer() {
@@ -33,8 +33,10 @@ export function ImageViewerRenderer() {
       const httpUrl = mxcUrlToHttp(mx, item.mxcUrl, useAuthentication) ?? item.mxcUrl;
       const enc = item.encryptionInfo;
       if (enc) {
-        const blob = await downloadEncryptedMedia(httpUrl, (encBuf) =>
-          decryptFile(encBuf, getBlobSafeImageMimeType(item.mimeType ?? ''), enc)
+        const blob = await downloadEncryptedMedia(
+          httpUrl,
+          getBlobSafeImageMimeType(item.mimeType ?? ''),
+          enc
         );
         const objectUrl = URL.createObjectURL(blob);
         resolvedObjectUrlsRef.current.push(objectUrl);

@@ -3,7 +3,7 @@ import { useCallback } from 'react';
 import type { ThumbnailContent as ThumbnailContentInfo } from '../../../../types/matrix/common';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { AsyncStatus, useAutoLoadAsyncCallback } from '../../../hooks/useAsyncCallback';
-import { decryptFile, downloadEncryptedMedia, mxcUrlToHttp } from '../../../utils/matrix';
+import { downloadEncryptedMedia, mxcUrlToHttp } from '../../../utils/matrix';
 import { useMediaAuthentication } from '../../../hooks/server/useMediaAuthentication';
 import { FALLBACK_MIMETYPE } from '../../../utils/mimeTypes';
 import { useRevokeObjectURL } from '../../../hooks/browser/useObjectURL';
@@ -27,8 +27,10 @@ export function ThumbnailContent({ info, renderImage }: ThumbnailContentProps) {
 
       const mediaUrl = mxcUrlToHttp(mx, thumbMxcUrl, useAuthentication) ?? thumbMxcUrl;
       if (encryptionInfo) {
-        const fileContent = await downloadEncryptedMedia(mediaUrl, (encBuf) =>
-          decryptFile(encBuf, thumbInfo.mimetype ?? FALLBACK_MIMETYPE, encryptionInfo)
+        const fileContent = await downloadEncryptedMedia(
+          mediaUrl,
+          thumbInfo.mimetype ?? FALLBACK_MIMETYPE,
+          encryptionInfo
         );
         return URL.createObjectURL(fileContent);
       }

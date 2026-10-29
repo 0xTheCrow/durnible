@@ -96,10 +96,11 @@ class FileSaveBridge(
 
     private fun beginSave(filename: String, mimeType: String, replyProxy: JavaScriptReplyProxy) {
         ioExecutor.execute {
-            if (outputStream != null || awaitingDocumentReply != null) {
+            if (awaitingDocumentReply != null) {
                 replyOnMain(replyProxy, errorMessage(SaveInProgressException().message))
                 return@execute
             }
+            if (outputStream != null) discardPendingSave()
             awaitingDocumentReply = replyProxy
             val request = CreateDocumentRequest(sanitizeFilename(filename), mimeType)
             mainHandler.post { launchCreateDocument(request) }
