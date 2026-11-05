@@ -211,6 +211,7 @@ function CallParticipantTileComponent({
       {...volumeMenuTriggerProps}
       aria-label={`Focus ${displayName}`}
       aria-pressed={isFocused}
+      data-testid="call-tile-select"
       className={classNames(tileClassName, css.CallTileInteractive)}
       alignItems="Center"
       justifyContent="Center"

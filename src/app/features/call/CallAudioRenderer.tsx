@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { useAtomValue, useSetAtom, useStore } from 'jotai';
 import type { Participant } from 'livekit-client';
-import { RemoteAudioTrack, Track } from 'livekit-client';
+import { RemoteAudioTrack, RemoteTrackPublication, Track } from 'livekit-client';
 import {
   callFocusedParticipantAtom,
   callStateAtom,
@@ -71,6 +71,7 @@ type ParticipantAudioProps = {
   microphoneVolumeLevel: number;
   screenshareVolumeLevel: number;
   isWatchingScreenshare: boolean;
+  isScreenshareMutedLocally: boolean;
   playbackAudioContext: AudioContext | undefined;
 };
 function ParticipantAudio({
@@ -80,14 +81,24 @@ function ParticipantAudio({
   microphoneVolumeLevel,
   screenshareVolumeLevel,
   isWatchingScreenshare,
+  isScreenshareMutedLocally,
   playbackAudioContext,
 }: ParticipantAudioProps) {
   const trackPublications = useParticipantTrackPublications(participant);
   const store = useStore();
   const setUserVolumePreference = useSetAtom(setCallUserVolumePreferenceAtom);
-  const screenshareAudioTrackSid = trackPublications.find(
+  const screenshareAudioPublication = trackPublications.find(
     (publication) => publication.source === Track.Source.ScreenShareAudio
-  )?.trackSid;
+  );
+  const screenshareAudioTrackSid = screenshareAudioPublication?.trackSid;
+  const subscribedScreenshareAudioTrack = screenshareAudioPublication?.track;
+  const isScreenshareAudioNeeded = isWatchingScreenshare && !isScreenshareMutedLocally;
+
+  useEffect(() => {
+    if (!(screenshareAudioPublication instanceof RemoteTrackPublication)) return;
+    if (!subscribedScreenshareAudioTrack) return;
+    screenshareAudioPublication.setEnabled(isScreenshareAudioNeeded);
+  }, [screenshareAudioPublication, subscribedScreenshareAudioTrack, isScreenshareAudioNeeded]);
 
   useEffect(() => {
     if (!screenshareAudioTrackSid || !userId) return;
@@ -161,6 +172,9 @@ function ConnectedCallAudio({ connection }: ConnectedCallAudioProps) {
                 userId
               )}
               isWatchingScreenshare={participant.identity === focusedParticipantKey}
+              isScreenshareMutedLocally={
+                getCallUserVolumePreference(volumePreferences, userId).isScreenshareMuted
+              }
               playbackAudioContext={connection.playbackAudioContext}
             />
           );

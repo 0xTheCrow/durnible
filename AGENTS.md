@@ -14,6 +14,7 @@ Durnible is a Matrix chat client built with React, TypeScript, and Vite. Forked 
 | `npm test`                    | Run tests (Vitest)                                                                       |
 | `npm run test:watch`          | Watch mode tests                                                                         |
 | `npm run e2e`                 | Run Playwright e2e (starts dev server + LiveKit in Docker; chromium + firefox)           |
+| `npm run e2e:diagnostic`      | Slow diagnostic e2e specs in `e2e/diagnostic/` (excluded from `npm run e2e`)             |
 | `npm run fix:prettier`        | Auto-format with Prettier                                                                |
 | `npm run performance`         | Composer typing benchmark (chromium only; excluded from `npm run e2e`)                   |
 | `npm run performance:desktop` | Electron CPU/RAM measurement (builds the desktop app first; excluded from `npm run e2e`) |
@@ -90,6 +91,7 @@ Durnible is a Matrix chat client built with React, TypeScript, and Vite. Forked 
 - Don't hardcode values in tests that are defined as constants in source. If the test needs a value that depends on a source constant — a timeout, a cap, a threshold, a mime type, an event type, a URL path — import that constant and reference it (or derive from it, e.g. `WINDOW_MS / 2`). If the value isn't currently exported but is useful in a test, make it exportable first rather than copying the literal over. Copy-pasted literals desync silently when the source constant is retuned: the test either passes with stale semantics or fails in a way that looks like a regression when it isn't.
 - Don't write tests that only verify behavior the type system already guarantees (e.g., that a function compares the correct fields on a typed object). Focus test effort on behavior types can't catch: state transitions, async sequencing, side effects, edge cases in runtime logic.
 - Never write a test that passes while the behavior it covers is broken. If a behavior is misbehaving, its test must fail — that is the entire point of the test. Don't reach for expected-failure markers (Playwright's `test.fail()`), skips, or inverted assertions to keep a suite green around a known defect, and don't weaken an assertion until it stops failing. A green run has to mean the behavior works; the moment it can mean "works, or is broken in a way we wrote down," the suite stops being a signal and starts being noise. A real defect gets a genuinely failing test that stays red until it's fixed.
+- `e2e/diagnostic/` holds specs too slow or too narrow for every run, kept to narrow down a suspected regression. `playwright.config.ts` ignores the folder; `npm run e2e:diagnostic` runs it through `playwright.diagnostic.config.ts`, which reuses the main config's projects, web server and LiveKit setup. Mirror the main layout inside it (`e2e/diagnostic/call/` for call specs) so the matching project picks them up.
 
 ## Platform Builds
 
