@@ -114,6 +114,7 @@ export const useLocalMediaControls = (
           ),
           degradationPreference: 'maintain-framerate',
           audioPreset: getScreenshareAudioPreset(screenshareAudioBitrateKbps),
+          dtx: false,
         }
       );
     } catch (error) {
