@@ -16,6 +16,7 @@ import {
   setCallUserVolumePreferenceAtom,
 } from '../../state/callVolumePreferences';
 import type { CallConnection } from '../../plugins/call/CallConnection';
+import type { CallPlaybackAudioContexts } from '../../plugins/call/playbackAudioContexts';
 import { useCallMemberships } from '../../hooks/call/useCallMemberships';
 import { findCallParticipantUserId } from '../../utils/call';
 import { useLivekitParticipants } from '../../hooks/call/useLivekitParticipants';
@@ -28,6 +29,15 @@ type AudioTrackPlayerProps = {
   volumeLevel: number;
   playbackAudioContext: AudioContext | undefined;
 };
+
+const getTrackPlaybackAudioContext = (
+  { allTracksAudioContext, screenshareAudioContext }: CallPlaybackAudioContexts,
+  trackSource: Track.Source
+): AudioContext | undefined =>
+  trackSource === Track.Source.ScreenShareAudio
+    ? screenshareAudioContext ?? allTracksAudioContext
+    : allTracksAudioContext;
+
 function AudioTrackPlayer({
   track,
   userId,
@@ -60,6 +70,7 @@ function AudioTrackPlayer({
       data-testid="call-participant-audio"
       data-user-id={userId}
       data-track-source={track.source}
+      data-volume-level={playbackVolumeLevel}
     />
   );
 }
@@ -72,7 +83,7 @@ type ParticipantAudioProps = {
   screenshareVolumeLevel: number;
   isWatchingScreenshare: boolean;
   isScreenshareMutedLocally: boolean;
-  playbackAudioContext: AudioContext | undefined;
+  playbackAudioContexts: CallPlaybackAudioContexts;
 };
 function ParticipantAudio({
   participant,
@@ -82,7 +93,7 @@ function ParticipantAudio({
   screenshareVolumeLevel,
   isWatchingScreenshare,
   isScreenshareMutedLocally,
-  playbackAudioContext,
+  playbackAudioContexts,
 }: ParticipantAudioProps) {
   const trackPublications = useParticipantTrackPublications(participant);
   const store = useStore();
@@ -135,7 +146,10 @@ function ParticipantAudio({
                   ? screenshareVolumeLevel
                   : microphoneVolumeLevel
               }
-              playbackAudioContext={playbackAudioContext}
+              playbackAudioContext={getTrackPlaybackAudioContext(
+                playbackAudioContexts,
+                publication.source
+              )}
             />
           ) : null
         )}
@@ -175,7 +189,7 @@ function ConnectedCallAudio({ connection }: ConnectedCallAudioProps) {
               isScreenshareMutedLocally={
                 getCallUserVolumePreference(volumePreferences, userId).isScreenshareMuted
               }
-              playbackAudioContext={connection.playbackAudioContext}
+              playbackAudioContexts={connection.playbackAudioContexts}
             />
           );
         })}

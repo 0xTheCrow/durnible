@@ -176,7 +176,7 @@ test("a voice-muted participant's screenshare audio starts muted and can be unmu
   await joinVoiceRoom(alice.page, voiceRoomId);
   const readAliceScreenshareVolumeOnBob = () =>
     getParticipantAudio(bob.page, alice.user.userId, Track.Source.ScreenShareAudio).evaluate(
-      (element) => (element as HTMLAudioElement).volume
+      (element) => Number((element as HTMLAudioElement).dataset.volumeLevel)
     );
 
   await getCallTile(bob.page, alice.user.userId).click({ button: 'right' });
