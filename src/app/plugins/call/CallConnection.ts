@@ -6,6 +6,8 @@ import LivekitE2EEWorker from 'livekit-client/e2ee-worker?worker';
 import { MatrixKeyProvider } from './MatrixKeyProvider';
 import { getSfuConnectionDetails } from './sfu';
 import type { MediaDevicePreferences } from './localMedia';
+import type { CallPlaybackAudioContexts } from './playbackAudioContexts';
+import { applyCallAudioOutputDevice } from './playbackAudioContexts';
 
 export const LEAVE_MEMBERSHIP_TIMEOUT_MS = 10_000;
 
@@ -20,7 +22,7 @@ export type CallConnection = {
   rtcSession: MatrixRTCSession;
   livekitRoom: LivekitRoom;
   keyProvider?: MatrixKeyProvider;
-  playbackAudioContext: AudioContext | undefined;
+  playbackAudioContexts: CallPlaybackAudioContexts;
 };
 
 export const getActiveLivekitServiceUrl = (
@@ -40,7 +42,7 @@ export const connectToCall = async (
   matrixRoom: Room,
   preferredFoci: LivekitTransportConfig[],
   devicePreferences: MediaDevicePreferences,
-  playbackAudioContext: AudioContext | undefined
+  playbackAudioContexts: CallPlaybackAudioContexts
 ): Promise<CallConnection> => {
   const userId = matrixClient.getUserId();
   const deviceId = matrixClient.getDeviceId();
@@ -78,7 +80,11 @@ export const connectToCall = async (
     await livekitRoom.connect(url, jwt);
     await livekitRoom.localParticipant.setMicrophoneEnabled(true).catch(() => undefined);
     if (devicePreferences.audioOutputDeviceId) {
-      await livekitRoom.switchActiveDevice('audiooutput', devicePreferences.audioOutputDeviceId);
+      await applyCallAudioOutputDevice(
+        livekitRoom,
+        playbackAudioContexts,
+        devicePreferences.audioOutputDeviceId
+      ).catch((error) => console.error('connectToCall: failed to apply audio output', error));
     }
   } catch (error) {
     keyProvider?.clearRtcSession();
@@ -87,7 +93,7 @@ export const connectToCall = async (
     throw error;
   }
 
-  return { matrixClient, matrixRoom, rtcSession, livekitRoom, keyProvider, playbackAudioContext };
+  return { matrixClient, matrixRoom, rtcSession, livekitRoom, keyProvider, playbackAudioContexts };
 };
 
 export const disconnectFromCall = async (connection: CallConnection): Promise<void> => {

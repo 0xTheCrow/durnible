@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { useAtomValue, useSetAtom, useStore } from 'jotai';
 import type { Participant } from 'livekit-client';
-import { RemoteAudioTrack, Track } from 'livekit-client';
+import { RemoteAudioTrack, RemoteTrackPublication, Track } from 'livekit-client';
 import {
   callFocusedParticipantAtom,
   callStateAtom,
@@ -16,6 +16,7 @@ import {
   setCallUserVolumePreferenceAtom,
 } from '../../state/callVolumePreferences';
 import type { CallConnection } from '../../plugins/call/CallConnection';
+import type { CallPlaybackAudioContexts } from '../../plugins/call/playbackAudioContexts';
 import { useCallMemberships } from '../../hooks/call/useCallMemberships';
 import { findCallParticipantUserId } from '../../utils/call';
 import { useLivekitParticipants } from '../../hooks/call/useLivekitParticipants';
@@ -28,6 +29,15 @@ type AudioTrackPlayerProps = {
   volumeLevel: number;
   playbackAudioContext: AudioContext | undefined;
 };
+
+const getTrackPlaybackAudioContext = (
+  { allTracksAudioContext, screenshareAudioContext }: CallPlaybackAudioContexts,
+  trackSource: Track.Source
+): AudioContext | undefined =>
+  trackSource === Track.Source.ScreenShareAudio
+    ? screenshareAudioContext ?? allTracksAudioContext
+    : allTracksAudioContext;
+
 function AudioTrackPlayer({
   track,
   userId,
@@ -60,6 +70,7 @@ function AudioTrackPlayer({
       data-testid="call-participant-audio"
       data-user-id={userId}
       data-track-source={track.source}
+      data-volume-level={playbackVolumeLevel}
     />
   );
 }
@@ -71,7 +82,8 @@ type ParticipantAudioProps = {
   microphoneVolumeLevel: number;
   screenshareVolumeLevel: number;
   isWatchingScreenshare: boolean;
-  playbackAudioContext: AudioContext | undefined;
+  isScreenshareMutedLocally: boolean;
+  playbackAudioContexts: CallPlaybackAudioContexts;
 };
 function ParticipantAudio({
   participant,
@@ -80,14 +92,24 @@ function ParticipantAudio({
   microphoneVolumeLevel,
   screenshareVolumeLevel,
   isWatchingScreenshare,
-  playbackAudioContext,
+  isScreenshareMutedLocally,
+  playbackAudioContexts,
 }: ParticipantAudioProps) {
   const trackPublications = useParticipantTrackPublications(participant);
   const store = useStore();
   const setUserVolumePreference = useSetAtom(setCallUserVolumePreferenceAtom);
-  const screenshareAudioTrackSid = trackPublications.find(
+  const screenshareAudioPublication = trackPublications.find(
     (publication) => publication.source === Track.Source.ScreenShareAudio
-  )?.trackSid;
+  );
+  const screenshareAudioTrackSid = screenshareAudioPublication?.trackSid;
+  const subscribedScreenshareAudioTrack = screenshareAudioPublication?.track;
+  const isScreenshareAudioNeeded = isWatchingScreenshare && !isScreenshareMutedLocally;
+
+  useEffect(() => {
+    if (!(screenshareAudioPublication instanceof RemoteTrackPublication)) return;
+    if (!subscribedScreenshareAudioTrack) return;
+    screenshareAudioPublication.setEnabled(isScreenshareAudioNeeded);
+  }, [screenshareAudioPublication, subscribedScreenshareAudioTrack, isScreenshareAudioNeeded]);
 
   useEffect(() => {
     if (!screenshareAudioTrackSid || !userId) return;
@@ -124,7 +146,10 @@ function ParticipantAudio({
                   ? screenshareVolumeLevel
                   : microphoneVolumeLevel
               }
-              playbackAudioContext={playbackAudioContext}
+              playbackAudioContext={getTrackPlaybackAudioContext(
+                playbackAudioContexts,
+                publication.source
+              )}
             />
           ) : null
         )}
@@ -161,7 +186,10 @@ function ConnectedCallAudio({ connection }: ConnectedCallAudioProps) {
                 userId
               )}
               isWatchingScreenshare={participant.identity === focusedParticipantKey}
-              playbackAudioContext={connection.playbackAudioContext}
+              isScreenshareMutedLocally={
+                getCallUserVolumePreference(volumePreferences, userId).isScreenshareMuted
+              }
+              playbackAudioContexts={connection.playbackAudioContexts}
             />
           );
         })}

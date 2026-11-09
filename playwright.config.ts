@@ -6,7 +6,7 @@ const PORT = IS_PRODUCTION_TARGET ? 4173 : 8080;
 
 export const BASE_URL = `http://localhost:${PORT}`;
 
-const SEPARATELY_RUN_SPECS = ['**/performance/**', '**/desktop/**'];
+const SEPARATELY_RUN_SPECS = ['**/performance/**', '**/desktop/**', '**/diagnostic/**'];
 const CALL_SPECS = '**/call/**';
 const CALL_PROJECT_WORKERS = 2;
 

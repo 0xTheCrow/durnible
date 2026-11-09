@@ -6,6 +6,12 @@ import { callStateAtom } from '../../state/call';
 import type { CallState } from '../../state/call';
 import { LEAVE_MEMBERSHIP_TIMEOUT_MS } from '../../plugins/call/CallConnection';
 import { setAudioSessionType } from '../../plugins/call/audioSession';
+import {
+  applyCallAudioOutputDevice,
+  closeCallPlaybackAudioContexts,
+} from '../../plugins/call/playbackAudioContexts';
+import { useSetting } from '../../state/hooks/settings';
+import { settingsAtom } from '../../state/settings';
 import { useActiveCallParticipantEntriesStore } from '../../hooks/call/useActiveCallParticipantEntriesStore';
 import { CallAudioRenderer } from './CallAudioRenderer';
 import { CallMicrophoneGate } from './CallMicrophoneGate';
@@ -16,6 +22,7 @@ export function CallEngineMount() {
     callState.status === 'connected' || callState.status === 'reconnecting'
       ? callState.connection
       : undefined;
+  const [preferredAudioOutputDeviceId] = useSetting(settingsAtom, 'preferredAudioOutputDeviceId');
 
   useActiveCallParticipantEntriesStore(connection?.livekitRoom);
 
@@ -24,9 +31,18 @@ export function CallEngineMount() {
     setAudioSessionType('play-and-record');
     return () => {
       setAudioSessionType('auto');
-      connection.playbackAudioContext?.close();
+      closeCallPlaybackAudioContexts(connection.playbackAudioContexts);
     };
   }, [connection]);
+
+  useEffect(() => {
+    if (!connection || !preferredAudioOutputDeviceId) return;
+    applyCallAudioOutputDevice(
+      connection.livekitRoom,
+      connection.playbackAudioContexts,
+      preferredAudioOutputDeviceId
+    ).catch((error) => console.error('CallEngineMount: failed to apply audio output', error));
+  }, [connection, preferredAudioOutputDeviceId]);
 
   useEffect(() => {
     if (!connection) return undefined;

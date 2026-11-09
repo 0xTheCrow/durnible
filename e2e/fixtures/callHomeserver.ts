@@ -16,7 +16,7 @@ const DELAYED_EVENT_QUERY_PARAMETER = 'org.matrix.msc4140.delay';
 
 export type CallTestUser = TestSession & { displayName: string };
 
-export const CALL_TEST_USERS: { alice: CallTestUser; bob: CallTestUser } = {
+export const CALL_TEST_USERS: { alice: CallTestUser; bob: CallTestUser; carol: CallTestUser } = {
   alice: {
     userId: `@alice:${SERVER_NAME}`,
     deviceId: 'ALICEDEVICE',
@@ -28,6 +28,12 @@ export const CALL_TEST_USERS: { alice: CallTestUser; bob: CallTestUser } = {
     deviceId: 'BOBDEVICE',
     accessToken: 'syt_bob_token',
     displayName: 'Bob',
+  },
+  carol: {
+    userId: `@carol:${SERVER_NAME}`,
+    deviceId: 'CAROLDEVICE',
+    accessToken: 'syt_carol_token',
+    displayName: 'Carol',
   },
 };
 
@@ -82,9 +88,9 @@ const buildSync = (batch: number, joinedRooms: Record<string, unknown>) => ({
 
 /**
  * One in-memory server shared by every page attached to it: a space holding two voice
- * rooms, plus a text room outside the space, both test users joined to all four. State and
+ * rooms, plus a text room outside the space, every test user joined to all four. State and
  * timeline events a page sends are relayed unchanged to every attached page's next sync, so call memberships seen by one
- * client are exactly what the other client's SDK produced.
+ * client are exactly what the other clients' SDKs produced.
  */
 export const createCallHomeserver = (): CallHomeserver => {
   const roomSuffix = randomUUID().slice(0, 8);

@@ -207,6 +207,23 @@ export const expectToKeepGrowing = async (readValue: () => Promise<number>): Pro
   await expect.poll(readValue, { timeout: MEDIA_FLOW_TIMEOUT_MS }).toBeGreaterThan(initialValue);
 };
 
+export const toggleScreenshare = async (sharer: CallClient): Promise<void> => {
+  const toggle = sharer.page.getByTestId('call-screenshare-toggle');
+  const wasSharing = (await toggle.getAttribute('aria-pressed')) === 'true';
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-pressed', String(!wasSharing), {
+    timeout: MEDIA_FLOW_TIMEOUT_MS,
+  });
+};
+
+export const watchScreenshare = async (viewer: CallClient, sharer: CallClient): Promise<void> => {
+  const sharerTile = getCallTile(viewer.page, sharer.user.userId);
+  await expect(sharerTile.getByTestId('call-tile-sharing-badge')).toBeVisible({
+    timeout: MEDIA_FLOW_TIMEOUT_MS,
+  });
+  await sharerTile.click();
+};
+
 export const pressRepeatedly = (locator: Locator, key: string, count: number): Promise<void> =>
   Array.from({ length: count }).reduce<Promise<void>>(
     (previousPress) => previousPress.then(() => locator.press(key)),

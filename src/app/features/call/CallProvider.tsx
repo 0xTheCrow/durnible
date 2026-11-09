@@ -7,7 +7,7 @@ import { useLivekitFoci } from '../../hooks/call/useLivekitFoci';
 import { useSetting } from '../../state/hooks/settings';
 import { settingsAtom } from '../../state/settings';
 import { callStateAtom } from '../../state/call';
-import { isIOS } from '../../utils/user-agent';
+import { createCallPlaybackAudioContexts } from '../../plugins/call/playbackAudioContexts';
 
 const LazyCallEngineMount = lazy(() =>
   import('./CallEngineMount').then((module) => ({ default: module.CallEngineMount }))
@@ -38,7 +38,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
   const startCall = useCallback(
     async (room: Room) => {
-      const playbackAudioContext = isIOS() ? new AudioContext() : undefined;
+      const playbackAudioContexts = createCallPlaybackAudioContexts();
       const { startCall: startLazyCall } = await import('../../plugins/call/callActions');
       await startLazyCall(
         matrixClient,
@@ -49,7 +49,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
           videoInputDeviceId: preferredVideoInputDeviceId,
           audioOutputDeviceId: preferredAudioOutputDeviceId,
         },
-        playbackAudioContext,
+        playbackAudioContexts,
         () => store.get(callStateAtom),
         setCallState
       );

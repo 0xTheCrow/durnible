@@ -29,6 +29,8 @@ import {
   readDecodedFrameCount,
   readLocalSender,
   readReceivedBytes,
+  toggleScreenshare,
+  watchScreenshare,
 } from '../fixtures/call';
 
 const findNonDefaultOption = <Option>(options: Option[], defaultOption: Option): Option => {
@@ -56,7 +58,7 @@ const NON_DEFAULT_QUALITY: ScreenshareQuality = {
 };
 
 const startScreenshare = async (client: CallClient): Promise<void> => {
-  await client.page.getByTestId('call-screenshare-toggle').click();
+  await toggleScreenshare(client);
   await expect
     .poll(
       async () =>
@@ -97,14 +99,6 @@ const expectSendersToMatchQuality = async (page: Page, quality: ScreenshareQuali
 const chooseQualityOption = async (page: Page, optionTestId: string, value: string | number) => {
   await page.getByTestId('screenshare-quality-menu').click();
   await page.locator(`[data-testid="${optionTestId}"][data-value="${value}"]`).click();
-};
-
-const watchScreenshare = async (viewer: CallClient, sharer: CallClient): Promise<void> => {
-  const sharerTile = getCallTile(viewer.page, sharer.user.userId);
-  await expect(sharerTile.getByTestId('call-tile-sharing-badge')).toBeVisible({
-    timeout: MEDIA_FLOW_TIMEOUT_MS,
-  });
-  await sharerTile.click();
 };
 
 test("a screenshare plays in the other participant's spotlight once picked, until it stops", async ({
@@ -182,7 +176,7 @@ test("a voice-muted participant's screenshare audio starts muted and can be unmu
   await joinVoiceRoom(alice.page, voiceRoomId);
   const readAliceScreenshareVolumeOnBob = () =>
     getParticipantAudio(bob.page, alice.user.userId, Track.Source.ScreenShareAudio).evaluate(
-      (element) => (element as HTMLAudioElement).volume
+      (element) => Number((element as HTMLAudioElement).dataset.volumeLevel)
     );
 
   await getCallTile(bob.page, alice.user.userId).click({ button: 'right' });

@@ -3,6 +3,8 @@ import type { LivekitTransportConfig } from 'matrix-js-sdk/lib/matrixrtc';
 import type { MediaDevicePreferences } from './localMedia';
 import { connectToCall, disconnectFromCall } from './CallConnection';
 import { resolveLivekitFoci } from './foci';
+import type { CallPlaybackAudioContexts } from './playbackAudioContexts';
+import { closeCallPlaybackAudioContexts } from './playbackAudioContexts';
 import type { CallState } from '../../state/call';
 
 type CallStateSetter = (state: CallState) => void;
@@ -14,14 +16,14 @@ const switchToCall = async (
   room: Room,
   livekitFoci: LivekitTransportConfig[],
   devicePreferences: MediaDevicePreferences,
-  playbackAudioContext: AudioContext | undefined,
+  playbackAudioContexts: CallPlaybackAudioContexts,
   getCallState: () => CallState,
   setCallState: CallStateSetter
 ): Promise<void> => {
   const callState = getCallState();
   if (callState.status === 'connected' || callState.status === 'reconnecting') {
     if (callState.roomId === room.roomId) {
-      playbackAudioContext?.close();
+      closeCallPlaybackAudioContexts(playbackAudioContexts);
       return;
     }
     try {
@@ -39,11 +41,11 @@ const switchToCall = async (
       room,
       foci,
       devicePreferences,
-      playbackAudioContext
+      playbackAudioContexts
     );
     setCallState({ status: 'connected', roomId: room.roomId, connection });
   } catch (error) {
-    playbackAudioContext?.close();
+    closeCallPlaybackAudioContexts(playbackAudioContexts);
     setCallState({
       status: 'failed',
       roomId: room.roomId,
@@ -57,12 +59,12 @@ export const startCall = async (
   room: Room,
   livekitFoci: LivekitTransportConfig[],
   devicePreferences: MediaDevicePreferences,
-  playbackAudioContext: AudioContext | undefined,
+  playbackAudioContexts: CallPlaybackAudioContexts,
   getCallState: () => CallState,
   setCallState: CallStateSetter
 ): Promise<void> => {
   if (isStartingCall) {
-    playbackAudioContext?.close();
+    closeCallPlaybackAudioContexts(playbackAudioContexts);
     return;
   }
   isStartingCall = true;
@@ -72,7 +74,7 @@ export const startCall = async (
       room,
       livekitFoci,
       devicePreferences,
-      playbackAudioContext,
+      playbackAudioContexts,
       getCallState,
       setCallState
     );
