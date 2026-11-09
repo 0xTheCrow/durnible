@@ -7,6 +7,7 @@ import { MatrixKeyProvider } from './MatrixKeyProvider';
 import { getSfuConnectionDetails } from './sfu';
 import type { MediaDevicePreferences } from './localMedia';
 import type { CallPlaybackAudioContexts } from './playbackAudioContexts';
+import { applyCallAudioOutputDevice } from './playbackAudioContexts';
 
 export const LEAVE_MEMBERSHIP_TIMEOUT_MS = 10_000;
 
@@ -78,6 +79,13 @@ export const connectToCall = async (
     if (keyProvider) await livekitRoom.setE2EEEnabled(true);
     await livekitRoom.connect(url, jwt);
     await livekitRoom.localParticipant.setMicrophoneEnabled(true).catch(() => undefined);
+    if (devicePreferences.audioOutputDeviceId) {
+      await applyCallAudioOutputDevice(
+        livekitRoom,
+        playbackAudioContexts,
+        devicePreferences.audioOutputDeviceId
+      ).catch((error) => console.error('connectToCall: failed to apply audio output', error));
+    }
   } catch (error) {
     keyProvider?.clearRtcSession();
     await livekitRoom.disconnect().catch(() => undefined);

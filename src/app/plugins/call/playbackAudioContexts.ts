@@ -9,14 +9,12 @@ export type CallPlaybackAudioContexts = {
 const DEFAULT_AUDIO_OUTPUT_DEVICE_ID = 'default';
 const AUDIO_CONTEXT_DEFAULT_SINK_ID = '';
 
-const checkCanAudioContextSelectOutputDevice = (): boolean =>
+const canAudioContextSelectOutputDevice = (): boolean =>
   typeof AudioContext !== 'undefined' && 'setSinkId' in AudioContext.prototype;
 
 export const createCallPlaybackAudioContexts = (): CallPlaybackAudioContexts => ({
   allTracksAudioContext: isIOS() ? new AudioContext() : undefined,
-  screenshareAudioContext: checkCanAudioContextSelectOutputDevice()
-    ? new AudioContext()
-    : undefined,
+  screenshareAudioContext: canAudioContextSelectOutputDevice() ? new AudioContext() : undefined,
 });
 
 export const closeCallPlaybackAudioContexts = ({

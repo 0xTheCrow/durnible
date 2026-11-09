@@ -34,6 +34,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const livekitFoci = useLivekitFoci();
   const [preferredAudioInputDeviceId] = useSetting(settingsAtom, 'preferredAudioInputDeviceId');
   const [preferredVideoInputDeviceId] = useSetting(settingsAtom, 'preferredVideoInputDeviceId');
+  const [preferredAudioOutputDeviceId] = useSetting(settingsAtom, 'preferredAudioOutputDeviceId');
 
   const startCall = useCallback(
     async (room: Room) => {
@@ -46,6 +47,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
         {
           audioInputDeviceId: preferredAudioInputDeviceId,
           videoInputDeviceId: preferredVideoInputDeviceId,
+          audioOutputDeviceId: preferredAudioOutputDeviceId,
         },
         playbackAudioContexts,
         () => store.get(callStateAtom),
@@ -58,6 +60,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       livekitFoci,
       preferredAudioInputDeviceId,
       preferredVideoInputDeviceId,
+      preferredAudioOutputDeviceId,
       setCallState,
     ]
   );
