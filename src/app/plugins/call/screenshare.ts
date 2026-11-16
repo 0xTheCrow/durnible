@@ -48,6 +48,11 @@ export const formatScreenshareStreamLine = (
   return `${size} · ${rate}`;
 };
 
+export const formatKilobitsPerSecond = (bitsPerSecond: number): string =>
+  `${Math.round(bitsPerSecond / 1000)} kbps`;
+
+export const formatPercent = (fraction: number): string => `${(fraction * 100).toFixed(1)}%`;
+
 export const getScreenshareCaptureOptions = (
   resolution: ScreenshareResolution,
   maxFrameRate: ScreenshareMaxFrameRate,

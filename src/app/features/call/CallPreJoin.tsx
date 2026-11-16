@@ -15,7 +15,7 @@ import { useMicrophoneInputLevel } from '../../hooks/call/useMicrophoneInputLeve
 import { useAudioTrackLevel } from '../../hooks/call/useAudioTrackLevel';
 import type { ScreenshareTestTracks } from '../../hooks/call/useScreenshareTest';
 import { useScreenshareTest } from '../../hooks/call/useScreenshareTest';
-import { SCREENSHARE_SENDER_STATS_POLL_INTERVAL_MS } from '../../hooks/call/useScreenshareSenderStats';
+import { CALL_VIDEO_SENDER_STATS_POLL_INTERVAL_MS } from '../../hooks/call/useCallVideoSenderStats';
 import { isScreenshareSupported } from '../../plugins/call/localMedia';
 import { formatScreenshareStreamLine } from '../../plugins/call/screenshare';
 import { useCallActions } from './CallProvider';
@@ -83,7 +83,7 @@ function ScreenshareTestDetails({ testTracks }: ScreenshareTestDetailsProps) {
     () => setCaptureSettings(videoTrack.mediaStreamTrack.getSettings()),
     [videoTrack]
   );
-  useInterval(pollCaptureSettings, SCREENSHARE_SENDER_STATS_POLL_INTERVAL_MS);
+  useInterval(pollCaptureSettings, CALL_VIDEO_SENDER_STATS_POLL_INTERVAL_MS);
 
   return (
     <Box direction="Column" gap="200">

@@ -2,23 +2,47 @@ import React from 'react';
 import type { Room } from 'matrix-js-sdk';
 import type { CallMembership } from 'matrix-js-sdk/lib/matrixrtc';
 import { Box, Chip, Icon, Icons, Text } from 'folds';
-import { LocalAudioTrack, LocalVideoTrack, RemoteVideoTrack, Track } from 'livekit-client';
+import type { Track as LivekitTrack } from 'livekit-client';
+import {
+  LocalAudioTrack,
+  LocalVideoTrack,
+  RemoteAudioTrack,
+  RemoteVideoTrack,
+  Track,
+} from 'livekit-client';
 import type { CallParticipantEntry } from '../../hooks/call/useCallParticipantEntries';
 import { useParticipantTrackPublications } from '../../hooks/call/useParticipantTrackPublications';
-import { useCallVideoStreamStats } from '../../hooks/call/useCallVideoStreamStats';
-import { useScreenshareSenderStats } from '../../hooks/call/useScreenshareSenderStats';
-import { useScreenshareAudioSenderStats } from '../../hooks/call/useScreenshareAudioSenderStats';
+import { useCallVideoReceiverStats } from '../../hooks/call/useCallVideoReceiverStats';
+import { useCallVideoSenderStats } from '../../hooks/call/useCallVideoSenderStats';
 import { resolveCallParticipant } from '../../utils/call';
+import { formatScreenshareStreamLine } from '../../plugins/call/screenshare';
 import { CallScreenQualityMenu, ScreenshareSenderStatsSummary } from './CallScreenQualityMenu';
+import { CallVideoReceiverStatsMenu } from './CallVideoReceiverStatsMenu';
 import * as css from './CallPane.css';
 
-const getResolutionLabel = (stats: {
-  frameWidth?: number;
-  frameHeight?: number;
-}): string | undefined => {
-  if (!stats.frameWidth || !stats.frameHeight) return undefined;
-  return `${stats.frameWidth}×${stats.frameHeight}`;
+type CallSpotlightStreamLabelProps = {
+  videoTrack?: LivekitTrack;
 };
+function CallSpotlightStreamLabel({ videoTrack }: CallSpotlightStreamLabelProps) {
+  const receiverStats = useCallVideoReceiverStats(
+    videoTrack instanceof RemoteVideoTrack ? videoTrack : undefined
+  );
+  const senderStats = useCallVideoSenderStats(
+    videoTrack instanceof LocalVideoTrack ? videoTrack : undefined
+  );
+  const frameWidth = receiverStats?.frameWidth ?? senderStats?.frameWidth;
+  const frameHeight = receiverStats?.frameHeight ?? senderStats?.frameHeight;
+  const framesPerSecond = receiverStats
+    ? receiverStats.framesDecodedPerSecond
+    : senderStats?.framesPerSecond;
+  if (!frameWidth || !frameHeight) return null;
+
+  return (
+    <Text size="T200" priority="400" truncate>
+      {formatScreenshareStreamLine(frameWidth, frameHeight, framesPerSecond)}
+    </Text>
+  );
+}
 
 type CallSpotlightBarProps = {
   room: Room;
@@ -37,20 +61,9 @@ export function CallSpotlightBar({
 
   const source = entry.isScreensharing ? Track.Source.ScreenShare : Track.Source.Camera;
   const videoTrack = trackPublications.find((publication) => publication.source === source)?.track;
-  const receiverStats = useCallVideoStreamStats(
-    videoTrack instanceof RemoteVideoTrack ? videoTrack : undefined
-  );
-  const senderStats = useScreenshareSenderStats(
-    videoTrack instanceof LocalVideoTrack ? videoTrack : undefined
-  );
   const screenshareAudioTrack = trackPublications.find(
     (publication) => publication.source === Track.Source.ScreenShareAudio
   )?.track;
-  const audioSenderStats = useScreenshareAudioSenderStats(
-    screenshareAudioTrack instanceof LocalAudioTrack ? screenshareAudioTrack : undefined
-  );
-  const stats = receiverStats ?? senderStats;
-  const resolutionLabel = stats && getResolutionLabel(stats);
   const isOwnScreenshare = entry.participant.isLocal && entry.isScreensharing;
 
   const getWatchingLabel = (): string => {
@@ -65,21 +78,31 @@ export function CallSpotlightBar({
         <Text size="T200" priority="300" truncate>
           {getWatchingLabel()}
         </Text>
-        {resolutionLabel && (
-          <Text size="T200" priority="400" truncate>
-            {resolutionLabel}
-          </Text>
-        )}
+        <CallSpotlightStreamLabel videoTrack={videoTrack} />
       </Box>
       {isOwnScreenshare && (
         <CallScreenQualityMenu
           stats={
             <ScreenshareSenderStatsSummary
-              senderStats={senderStats}
-              audioSenderStats={audioSenderStats}
+              videoTrack={videoTrack instanceof LocalVideoTrack ? videoTrack : undefined}
+              audioTrack={
+                screenshareAudioTrack instanceof LocalAudioTrack ? screenshareAudioTrack : undefined
+              }
               isScreenshareAudioEnabled={entry.isScreenshareAudioEnabled}
             />
           }
+        />
+      )}
+      {videoTrack instanceof RemoteVideoTrack && (
+        <CallVideoReceiverStatsMenu
+          videoTrack={videoTrack}
+          audioTrack={
+            entry.isScreensharing && screenshareAudioTrack instanceof RemoteAudioTrack
+              ? screenshareAudioTrack
+              : undefined
+          }
+          isScreenshare={entry.isScreensharing}
+          isScreenshareAudioEnabled={entry.isScreenshareAudioEnabled}
         />
       )}
       <Chip

@@ -1,8 +1,8 @@
 import type { MouseEventHandler, ReactNode } from 'react';
 import React, { useState } from 'react';
 import type { RectCords } from 'folds';
-import { Box, Chip, Icon, Icons, Menu, MenuItem, PopOut, Text, config, toRem } from 'folds';
-import FocusTrap from 'focus-trap-react';
+import { Box, Chip, Icon, Icons, MenuItem, Text, config, toRem } from 'folds';
+import type { LocalAudioTrack, LocalVideoTrack } from 'livekit-client';
 import { settingsAtom } from '../../state/settings';
 import type {
   ScreenshareAudioBitrateKbps,
@@ -10,31 +10,33 @@ import type {
   ScreenshareResolution,
 } from '../../state/settings';
 import { useSetting } from '../../state/hooks/settings';
-import type { ScreenshareSenderStats } from '../../hooks/call/useScreenshareSenderStats';
-import type { ScreenshareAudioSenderStats } from '../../hooks/call/useScreenshareAudioSenderStats';
+import { useCallVideoSenderStats } from '../../hooks/call/useCallVideoSenderStats';
 import {
   SCREENSHARE_AUDIO_BITRATE_KBPS_OPTIONS,
   SCREENSHARE_MAX_FRAME_RATE_OPTIONS,
   SCREENSHARE_RESOLUTIONS,
   SCREENSHARE_RESOLUTION_OPTIONS,
+  formatKilobitsPerSecond,
   formatScreenshareStreamLine,
 } from '../../plugins/call/screenshare';
-import { stopPropagation } from '../../utils/keyboard';
+import { CallSpotlightPopOut } from './CallSpotlightPopOut';
 
 type ScreenshareSenderStatsSummaryProps = {
-  senderStats?: ScreenshareSenderStats;
-  audioSenderStats?: ScreenshareAudioSenderStats;
+  videoTrack?: LocalVideoTrack;
+  audioTrack?: LocalAudioTrack;
   isScreenshareAudioEnabled: boolean;
 };
 export function ScreenshareSenderStatsSummary({
-  senderStats,
-  audioSenderStats,
+  videoTrack,
+  audioTrack,
   isScreenshareAudioEnabled,
 }: ScreenshareSenderStatsSummaryProps) {
+  const senderStats = useCallVideoSenderStats(videoTrack, audioTrack);
+
   const formatAudioLine = (): string => {
     if (!isScreenshareAudioEnabled) return 'not shared';
-    if (!audioSenderStats) return 'unknown';
-    return `${Math.round(audioSenderStats.bitsPerSecond / 1000)} kbps`;
+    if (senderStats?.audioBitsPerSecond === undefined) return 'unknown';
+    return formatKilobitsPerSecond(senderStats.audioBitsPerSecond);
   };
 
   return (
@@ -99,80 +101,61 @@ export function CallScreenQualityMenu({ stats }: CallScreenQualityMenuProps) {
   };
 
   return (
-    <PopOut
+    <CallSpotlightPopOut
       anchor={menuAnchor}
-      offset={5}
-      position="Top"
-      align="End"
+      onClose={() => setMenuAnchor(undefined)}
       content={
-        <FocusTrap
-          focusTrapOptions={{
-            initialFocus: false,
-            onDeactivate: () => setMenuAnchor(undefined),
-            clickOutsideDeactivates: true,
-            isKeyForward: (evt: KeyboardEvent) => evt.key === 'ArrowDown',
-            isKeyBackward: (evt: KeyboardEvent) => evt.key === 'ArrowUp',
-            escapeDeactivates: stopPropagation,
-          }}
-        >
-          <Menu>
-            <Box
-              direction="Column"
-              gap="100"
-              style={{ padding: config.space.S200, width: toRem(232) }}
+        <Box direction="Column" gap="100" style={{ padding: config.space.S200, width: toRem(232) }}>
+          {stats && <Box direction="Column">{stats}</Box>}
+
+          <Text size="L400">Resolution</Text>
+          {SCREENSHARE_RESOLUTION_OPTIONS.map((resolutionOption) => (
+            <MenuItem
+              key={resolutionOption}
+              size="300"
+              variant={resolutionOption === resolution ? 'Primary' : 'Surface'}
+              radii="300"
+              aria-pressed={resolutionOption === resolution}
+              onClick={() => handleSelectResolution(resolutionOption)}
+              data-testid="screenshare-resolution-option"
+              data-value={resolutionOption}
             >
-              {stats && <Box direction="Column">{stats}</Box>}
+              <Text size="T300">{SCREENSHARE_RESOLUTIONS[resolutionOption].label}</Text>
+            </MenuItem>
+          ))}
 
-              <Text size="L400">Resolution</Text>
-              {SCREENSHARE_RESOLUTION_OPTIONS.map((resolutionOption) => (
-                <MenuItem
-                  key={resolutionOption}
-                  size="300"
-                  variant={resolutionOption === resolution ? 'Primary' : 'Surface'}
-                  radii="300"
-                  aria-pressed={resolutionOption === resolution}
-                  onClick={() => handleSelectResolution(resolutionOption)}
-                  data-testid="screenshare-resolution-option"
-                  data-value={resolutionOption}
-                >
-                  <Text size="T300">{SCREENSHARE_RESOLUTIONS[resolutionOption].label}</Text>
-                </MenuItem>
-              ))}
+          <Text size="L400">Max frame rate</Text>
+          {SCREENSHARE_MAX_FRAME_RATE_OPTIONS.map((frameRateOption) => (
+            <MenuItem
+              key={frameRateOption}
+              size="300"
+              variant={frameRateOption === maxFrameRate ? 'Primary' : 'Surface'}
+              radii="300"
+              aria-pressed={frameRateOption === maxFrameRate}
+              onClick={() => handleSelectMaxFrameRate(frameRateOption)}
+              data-testid="screenshare-frame-rate-option"
+              data-value={frameRateOption}
+            >
+              <Text size="T300">{frameRateOption} fps</Text>
+            </MenuItem>
+          ))}
 
-              <Text size="L400">Max frame rate</Text>
-              {SCREENSHARE_MAX_FRAME_RATE_OPTIONS.map((frameRateOption) => (
-                <MenuItem
-                  key={frameRateOption}
-                  size="300"
-                  variant={frameRateOption === maxFrameRate ? 'Primary' : 'Surface'}
-                  radii="300"
-                  aria-pressed={frameRateOption === maxFrameRate}
-                  onClick={() => handleSelectMaxFrameRate(frameRateOption)}
-                  data-testid="screenshare-frame-rate-option"
-                  data-value={frameRateOption}
-                >
-                  <Text size="T300">{frameRateOption} fps</Text>
-                </MenuItem>
-              ))}
-
-              <Text size="L400">Audio bitrate</Text>
-              {SCREENSHARE_AUDIO_BITRATE_KBPS_OPTIONS.map((audioBitrateOption) => (
-                <MenuItem
-                  key={audioBitrateOption}
-                  size="300"
-                  variant={audioBitrateOption === audioBitrateKbps ? 'Primary' : 'Surface'}
-                  radii="300"
-                  aria-pressed={audioBitrateOption === audioBitrateKbps}
-                  onClick={() => handleSelectAudioBitrate(audioBitrateOption)}
-                  data-testid="screenshare-audio-bitrate-option"
-                  data-value={audioBitrateOption}
-                >
-                  <Text size="T300">{audioBitrateOption} kbps</Text>
-                </MenuItem>
-              ))}
-            </Box>
-          </Menu>
-        </FocusTrap>
+          <Text size="L400">Audio bitrate</Text>
+          {SCREENSHARE_AUDIO_BITRATE_KBPS_OPTIONS.map((audioBitrateOption) => (
+            <MenuItem
+              key={audioBitrateOption}
+              size="300"
+              variant={audioBitrateOption === audioBitrateKbps ? 'Primary' : 'Surface'}
+              radii="300"
+              aria-pressed={audioBitrateOption === audioBitrateKbps}
+              onClick={() => handleSelectAudioBitrate(audioBitrateOption)}
+              data-testid="screenshare-audio-bitrate-option"
+              data-value={audioBitrateOption}
+            >
+              <Text size="T300">{audioBitrateOption} kbps</Text>
+            </MenuItem>
+          ))}
+        </Box>
       }
     >
       <Chip
@@ -191,6 +174,6 @@ export function CallScreenQualityMenu({ stats }: CallScreenQualityMenuProps) {
           {SCREENSHARE_RESOLUTIONS[resolution].label} · {maxFrameRate}fps
         </Text>
       </Chip>
-    </PopOut>
+    </CallSpotlightPopOut>
   );
 }
