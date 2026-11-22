@@ -171,22 +171,50 @@ export const handleEditorBackspace = (inputElement: HTMLElement, range: Range): 
   return false;
 };
 
+const VOID_SELECTOR = `[${NODE_TYPE_ATTR}="${EMOTICON_NODE}"]`;
+
+const findEnclosingVoidElement = (node: Node): HTMLElement | null => {
+  const element = node.nodeType === Node.ELEMENT_NODE ? (node as HTMLElement) : node.parentElement;
+  return element?.closest<HTMLElement>(VOID_SELECTOR) ?? null;
+};
+
+const checkIsRangeCoveringVoidContents = (range: Range, voidElement: HTMLElement): boolean => {
+  const voidContentsRange = document.createRange();
+  voidContentsRange.selectNodeContents(voidElement);
+  return (
+    range.compareBoundaryPoints(Range.START_TO_START, voidContentsRange) <= 0 &&
+    range.compareBoundaryPoints(Range.END_TO_END, voidContentsRange) >= 0
+  );
+};
+
+const checkIsRangeHoldingOnlyVoid = (range: Range): boolean => {
+  const selectedContents = range.cloneContents();
+  selectedContents.querySelectorAll(VOID_SELECTOR).forEach((voidClone) => voidClone.remove());
+  if (selectedContents.querySelector(`br, img, [${NODE_TYPE_ATTR}]`)) return false;
+  return stripCaretAnchors(selectedContents.textContent ?? '').length === 0;
+};
+
 export const getSelectedVoidElement = (range: Range): HTMLElement | null => {
   if (range.collapsed) return null;
-  const { startContainer, endContainer, startOffset, endOffset } = range;
+  const { commonAncestorContainer } = range;
 
-  if (
-    startContainer.nodeType === Node.TEXT_NODE &&
-    startOffset === (startContainer as Text).data.length &&
-    startContainer.nextSibling === endContainer &&
-    endContainer.nodeType === Node.ELEMENT_NODE &&
-    endOffset === endContainer.childNodes.length &&
-    isVoidElement(endContainer)
-  ) {
-    return endContainer as HTMLElement;
+  const enclosingVoidElement = findEnclosingVoidElement(commonAncestorContainer);
+  if (enclosingVoidElement) {
+    return checkIsRangeCoveringVoidContents(range, enclosingVoidElement)
+      ? enclosingVoidElement
+      : null;
   }
+  if (commonAncestorContainer.nodeType !== Node.ELEMENT_NODE) return null;
 
-  return null;
+  const intersectedVoidElements = Array.from(
+    (commonAncestorContainer as HTMLElement).querySelectorAll<HTMLElement>(VOID_SELECTOR)
+  ).filter((voidElement) => range.intersectsNode(voidElement));
+  if (intersectedVoidElements.length !== 1) return null;
+
+  const [selectedVoidElement] = intersectedVoidElements;
+  if (!checkIsRangeCoveringVoidContents(range, selectedVoidElement)) return null;
+  if (!checkIsRangeHoldingOnlyVoid(range)) return null;
+  return selectedVoidElement;
 };
 
 export const deleteVoidElement = (voidElement: HTMLElement): void => {

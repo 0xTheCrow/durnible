@@ -11,6 +11,8 @@ import {
   TEST_ROOM_ID,
 } from './fixtures/homeserver';
 import { PAGINATION_LIMIT } from '../src/app/features/room/timeline/timelineState';
+import { LATEST_MESSAGE_BOTTOM_RELEASE_THRESHOLD_PX } from '../src/app/features/room/timeline/hooks/useScrollController';
+import { LATEST_MESSAGE_BOTTOM_TOLERANCE_PX } from '../src/app/features/room/timeline/hooks/useIsLatestMessageBottomVisible';
 
 const roomPath = `/home/${encodeURIComponent(TEST_ROOM_ID)}/`;
 
@@ -310,6 +312,66 @@ test('stays at the newest message when a first reaction lands on an older messag
   await expect(
     page.locator(`[data-message-id="${OLDER_VISIBLE_EVENT_ID}"]`).getByText('👍')
   ).toBeVisible();
+
+  await expect.poll(() => getDistanceFromBottom(page)).toBeLessThan(STUCK_TO_BOTTOM_PX);
+});
+
+const LATEST_MESSAGE_BOTTOM_HIDDEN_DISTANCE_PX =
+  TRAILING_SPACE_PX + LATEST_MESSAGE_BOTTOM_TOLERANCE_PX;
+const SMALL_SCROLL_UP_PX = Math.round(
+  (LATEST_MESSAGE_BOTTOM_RELEASE_THRESHOLD_PX + LATEST_MESSAGE_BOTTOM_HIDDEN_DISTANCE_PX) / 2
+);
+
+test('stays at the newest message when a first reaction lands after a small scroll up and back', async ({
+  context,
+  page,
+}) => {
+  await seedSession(context);
+  const stub = await stubHomeserver(page, {
+    timelineEvents: Array.from({ length: FILLER_COUNT }, (_unused, index) => textEvent(index)),
+  });
+
+  await openRoomAtLatestMessage(page);
+  await page.locator(timelineScrollSelector).hover();
+  await page.mouse.wheel(0, -SMALL_SCROLL_UP_PX);
+  await expect
+    .poll(() => getDistanceFromBottom(page))
+    .toBeGreaterThan(LATEST_MESSAGE_BOTTOM_RELEASE_THRESHOLD_PX);
+  expect(
+    await getDistanceFromBottom(page),
+    'the scroll up must stop while the latest message bottom is still in view'
+  ).toBeLessThan(LATEST_MESSAGE_BOTTOM_HIDDEN_DISTANCE_PX);
+
+  await page.mouse.wheel(0, SCROLL_UP_PX);
+  await expect.poll(() => getDistanceFromBottom(page)).toBeLessThan(STUCK_TO_BOTTOM_PX);
+
+  stub.pushTimeline([reactionEvent('$reaction', NEWEST_EVENT_ID, '👍')]);
+  await expect(
+    page.locator(`[data-message-id="${NEWEST_EVENT_ID}"]`).getByText('👍')
+  ).toBeVisible();
+
+  await expect.poll(() => getDistanceFromBottom(page)).toBeLessThan(STUCK_TO_BOTTOM_PX);
+});
+
+test('stays at the newest message when a first reaction lands after cancelling an edit', async ({
+  context,
+  page,
+}) => {
+  await seedSession(context);
+  const stub = await stubHomeserver(page, {
+    timelineEvents: Array.from({ length: FILLER_COUNT }, (_unused, index) => textEvent(index)),
+  });
+
+  await openRoomAtLatestMessage(page);
+  const newestMessage = page.locator(`[data-message-id="${NEWEST_EVENT_ID}"]`);
+  await newestMessage.hover();
+  await newestMessage.getByTestId('message-edit-btn').click();
+  await page.getByTestId('message-editor-cancel').click();
+  await expect(page.getByTestId('message-editor-cancel')).toHaveCount(0);
+  await expect.poll(() => getDistanceFromBottom(page)).toBeLessThan(STUCK_TO_BOTTOM_PX);
+
+  stub.pushTimeline([reactionEvent('$reaction', NEWEST_EVENT_ID, '👍')]);
+  await expect(newestMessage.getByText('👍')).toBeVisible();
 
   await expect.poll(() => getDistanceFromBottom(page)).toBeLessThan(STUCK_TO_BOTTOM_PX);
 });
