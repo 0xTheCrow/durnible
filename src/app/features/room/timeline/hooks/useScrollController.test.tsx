@@ -223,6 +223,9 @@ describe('useScrollController', () => {
       expect(controller().intentRef.current?.kind).toBe('latestMessageBottom');
 
       geometry.setScrollTop(bottomScrollTop - (LATEST_MESSAGE_BOTTOM_RELEASE_THRESHOLD_PX + 100));
+      act(() => controller().syncLatestMessageBottomFollow(false));
+      expect(controller().intentRef.current?.kind).toBe('latestMessageBottom');
+
       act(() => {
         scrollElement.dispatchEvent(new Event('scroll'));
       });

@@ -15,7 +15,7 @@ type UseLiveTimelineUpdatesParams = {
   room: Room;
   setTimeline: Dispatch<SetStateAction<Timeline>>;
   scrollRef: RefObject<HTMLDivElement>;
-  wasLatestMessageBottomInViewRef: RefObject<boolean>;
+  isLatestMessageBottomIntersectingRef: RefObject<boolean>;
   isInLivePaginationWindowRef: RefObject<boolean>;
   intentRef: RefObject<ScrollIntent>;
   pinToLatestMessageBottom: () => void;
@@ -26,7 +26,7 @@ export const useLiveTimelineUpdates = ({
   room,
   setTimeline,
   scrollRef,
-  wasLatestMessageBottomInViewRef,
+  isLatestMessageBottomIntersectingRef,
   isInLivePaginationWindowRef,
   intentRef,
   pinToLatestMessageBottom,
@@ -46,16 +46,17 @@ export const useLiveTimelineUpdates = ({
         typeof document === 'undefined' || document.visibilityState === 'visible';
       const autoPinEnabled = isDocumentVisible && (focused || unfocusedAutoScroll);
       const followingLatestMessageBottom = intentRef.current?.kind === 'latestMessageBottom';
-      const wasLatestMessageBottomInView = !!wasLatestMessageBottomInViewRef.current;
+      const isLatestMessageBottomIntersecting = !!isLatestMessageBottomIntersectingRef.current;
       const isInLivePaginationWindow = !!isInLivePaginationWindowRef.current;
       const shouldFollowLatestMessageBottom =
-        followingLatestMessageBottom || (wasLatestMessageBottomInView && isInLivePaginationWindow);
+        followingLatestMessageBottom ||
+        (isLatestMessageBottomIntersecting && isInLivePaginationWindow);
       const scrollElement = scrollRef.current;
 
       traceTimelineScroll('liveEventArrive', {
         eventId: mEvent.getId(),
         followingLatestMessageBottom,
-        wasLatestMessageBottomInView,
+        isLatestMessageBottomIntersecting,
         isInLivePaginationWindow,
         focused,
         isDocumentVisible,
@@ -87,7 +88,7 @@ export const useLiveTimelineUpdates = ({
     [
       setTimeline,
       scrollRef,
-      wasLatestMessageBottomInViewRef,
+      isLatestMessageBottomIntersectingRef,
       isInLivePaginationWindowRef,
       intentRef,
       pinToLatestMessageBottom,

@@ -8,11 +8,6 @@ type UseIsLatestMessageBottomVisibleParams = {
   onChange?: (isVisible: boolean) => void;
 };
 
-type UseIsLatestMessageBottomVisibleResult = {
-  isLatestMessageBottomVisible: boolean;
-  wasLatestMessageBottomInViewRef: RefObject<boolean>;
-};
-
 export const LATEST_MESSAGE_BOTTOM_TOLERANCE_PX = 8;
 
 export const useIsLatestMessageBottomVisible = ({
@@ -20,9 +15,8 @@ export const useIsLatestMessageBottomVisible = ({
   latestMessageBottomRef,
   isInLivePaginationWindow,
   onChange,
-}: UseIsLatestMessageBottomVisibleParams): UseIsLatestMessageBottomVisibleResult => {
-  const [isRenderedBottomVisible, setIsRenderedBottomVisible] = useState(false);
-  const wasLatestMessageBottomInViewRef = useRef(false);
+}: UseIsLatestMessageBottomVisibleParams): boolean => {
+  const [isLatestMessageBottomIntersecting, setIsLatestMessageBottomIntersecting] = useState(false);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
 
@@ -33,8 +27,7 @@ export const useIsLatestMessageBottomVisible = ({
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        wasLatestMessageBottomInViewRef.current = entry.isIntersecting;
-        setIsRenderedBottomVisible(entry.isIntersecting);
+        setIsLatestMessageBottomIntersecting(entry.isIntersecting);
         onChangeRef.current?.(entry.isIntersecting);
       },
       { root, rootMargin: `0px 0px ${LATEST_MESSAGE_BOTTOM_TOLERANCE_PX}px 0px`, threshold: 0 }
@@ -46,8 +39,5 @@ export const useIsLatestMessageBottomVisible = ({
     };
   }, [scrollRef, latestMessageBottomRef]);
 
-  return {
-    isLatestMessageBottomVisible: isRenderedBottomVisible && isInLivePaginationWindow,
-    wasLatestMessageBottomInViewRef,
-  };
+  return isLatestMessageBottomIntersecting && isInLivePaginationWindow;
 };
