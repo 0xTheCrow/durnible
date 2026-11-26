@@ -390,7 +390,11 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
 
       let plainText = domToPlainText(inputElement).trim();
       let customHtml = trimCustomHtml(domToMatrixCustomHTML(inputElement));
-      const commandName = getCommandFromDom(inputElement);
+      const typedCommandName = getCommandFromDom(inputElement);
+      const commandName =
+        typedCommandName && Object.keys(commands).includes(typedCommandName)
+          ? typedCommandName
+          : undefined;
       let msgType = MsgType.Text;
 
       if (commandName) {
