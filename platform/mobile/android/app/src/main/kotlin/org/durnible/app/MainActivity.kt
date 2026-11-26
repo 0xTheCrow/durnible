@@ -58,4 +58,10 @@ class MainActivity : BridgeActivity() {
             }
         )
     }
+
+    override fun onResume() {
+        super.onResume()
+        val webView = bridge?.webView ?: return
+        webView.post { webView.invalidate() }
+    }
 }
