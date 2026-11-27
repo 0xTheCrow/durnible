@@ -1,4 +1,4 @@
-import type { Room } from 'matrix-js-sdk';
+import type { MatrixClient, Room } from 'matrix-js-sdk';
 import type { CallMembership } from 'matrix-js-sdk/lib/matrixrtc';
 import { getMemberDisplayName } from './room';
 
@@ -112,6 +112,21 @@ export const getCallTileGridLayout = (
 
   const singleTileFit = getWidestTileFit(1, containerWidth, truncatedHeight, aspectRatio);
   return withTileHeight(singleTileFit, 1, aspectRatio);
+};
+
+export const refreshOccupiedCallMemberships = (matrixClient: MatrixClient): void => {
+  matrixClient.getRooms().forEach((room) => {
+    const rtcSession = matrixClient.matrixRTC.getActiveRoomSession(room);
+    if (!rtcSession || rtcSession.memberships.length === 0) return;
+    rtcSession
+      ._onRTCSessionMemberUpdate()
+      .catch((error) =>
+        console.error(
+          `refreshOccupiedCallMemberships: failed to refresh memberships for ${room.roomId}`,
+          error
+        )
+      );
+  });
 };
 
 export const getActiveCallParticipantIds = (memberships: CallParticipantMembership[]): string[] => {

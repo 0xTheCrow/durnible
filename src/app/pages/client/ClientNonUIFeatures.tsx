@@ -24,6 +24,7 @@ import { hasCompletedFirstLiveSyncAtom } from '../../state/hasCompletedFirstLive
 import { usePreviousValue } from '../../hooks/usePreviousValue';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { useSyncState } from '../../hooks/server/useSyncState';
+import { refreshOccupiedCallMemberships } from '../../utils/call';
 import { getInboxInvitesPath } from '../pathUtils';
 import { useRoomNavigate } from '../../hooks/router/useRoomNavigate';
 import { getRoomPathWithoutEventId, setLastVisitedRoomPath } from '../lastVisitedRoomPath';
@@ -152,6 +153,7 @@ function SyncRecovery() {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden) return;
+      refreshOccupiedCallMemberships(mx);
       checkIsIndexedDBConnectionLost().then((isConnectionLost) => {
         if (isConnectionLost && tryReloadForLostIndexedDBConnection()) return;
         mx.retryImmediately();
