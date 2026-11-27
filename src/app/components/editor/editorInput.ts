@@ -22,10 +22,6 @@ export const EMOTICON_NODE = 'emoticon';
 export const MENTION_NODE = 'mention';
 export const COMMAND_NODE = 'command';
 
-// Browsers won't render a caret in an empty text node adjacent to a
-// contenteditable=false sibling. A zero-width space (U+200B) gives the text
-// node a renderable position; stripCaretAnchors removes it before serialization
-// so it never reaches the message body.
 const INLINE_VOID_CARET_ANCHOR = '\u200B';
 const stripCaretAnchors = (text: string): string =>
   text.replace(new RegExp(INLINE_VOID_CARET_ANCHOR, 'g'), '');
@@ -37,30 +33,33 @@ type CreateEmoticonNodeArgs = {
   shortcode: string;
 };
 
+const setEmoticonData = (element: HTMLElement, key: string, shortcode: string) => {
+  element.setAttribute(NODE_TYPE_ATTR, EMOTICON_NODE);
+  element.setAttribute('data-key', key);
+  element.setAttribute('data-shortcode', shortcode);
+};
+
 export const createEmoticonNode = ({
   mx,
   useAuthentication,
   key,
   shortcode,
-}: CreateEmoticonNodeArgs): HTMLSpanElement => {
-  const wrapper = document.createElement('span');
-  wrapper.setAttribute(NODE_TYPE_ATTR, EMOTICON_NODE);
-  wrapper.setAttribute('contenteditable', 'false');
-  wrapper.dataset.key = key;
-  wrapper.dataset.shortcode = shortcode;
-  wrapper.className = css.Emoticon({ focus: false });
-
-  if (key.startsWith('mxc://')) {
-    const img = document.createElement('img');
-    img.className = css.EmoticonImg;
-    img.src = mxcUrlToEmojiHttp(mx, key, useAuthentication) ?? key;
-    img.alt = shortcode;
-    wrapper.appendChild(img);
-  } else {
-    wrapper.textContent = key;
+}: CreateEmoticonNodeArgs): HTMLElement => {
+  if (!key.startsWith('mxc://')) {
+    const span = document.createElement('span');
+    setEmoticonData(span, key, shortcode);
+    span.className = css.Emoticon({ focus: false });
+    span.textContent = key;
+    return span;
   }
 
-  return wrapper;
+  const image = document.createElement('img');
+  setEmoticonData(image, key, shortcode);
+  image.className = css.EditorEmoticonImg;
+  image.src = mxcUrlToEmojiHttp(mx, key, useAuthentication) ?? key;
+  image.alt = shortcode;
+  image.draggable = false;
+  return image;
 };
 
 type CreateMentionNodeArgs = {
@@ -112,6 +111,16 @@ const placeCaretAt = (node: Node, offset: number) => {
   sel?.addRange(range);
 };
 
+const placeCaretAfter = (node: Node): Range => {
+  const range = document.createRange();
+  range.setStartAfter(node);
+  range.collapse(true);
+  const sel = window.getSelection();
+  sel?.removeAllRanges();
+  sel?.addRange(range);
+  return range;
+};
+
 const ensureLeadingAnchor = (node: Node) => {
   const before = node.previousSibling;
   if (before && before.nodeType === Node.TEXT_NODE) return;
@@ -119,111 +128,7 @@ const ensureLeadingAnchor = (node: Node) => {
   node.parentNode?.insertBefore(document.createTextNode(INLINE_VOID_CARET_ANCHOR), node);
 };
 
-const isVoidElement = (node: Node): boolean => {
-  if (node.nodeType !== Node.ELEMENT_NODE) return false;
-  return (node as HTMLElement).getAttribute(NODE_TYPE_ATTR) === EMOTICON_NODE;
-};
-
-export const handleEditorBackspace = (inputElement: HTMLElement, range: Range): boolean => {
-  if (!range.collapsed) return false;
-  const { startContainer, startOffset } = range;
-
-  if (startContainer.nodeType === Node.TEXT_NODE) {
-    const container = startContainer as Text;
-    const previousOfContainer = container.previousSibling;
-    if (
-      startOffset === 1 &&
-      container.data.length === 1 &&
-      container.data !== INLINE_VOID_CARET_ANCHOR &&
-      previousOfContainer &&
-      isVoidElement(previousOfContainer)
-    ) {
-      container.data = INLINE_VOID_CARET_ANCHOR;
-      placeCaretAt(container, 0);
-      return true;
-    }
-  }
-
-  let textNode: Text | null = null;
-  if (
-    startContainer.nodeType === Node.TEXT_NODE &&
-    startOffset <= INLINE_VOID_CARET_ANCHOR.length
-  ) {
-    textNode = startContainer as Text;
-  } else if (startOffset === 0) {
-    const child = startContainer.childNodes[0];
-    if (child && child.nodeType === Node.TEXT_NODE) textNode = child as Text;
-  }
-  if (!textNode || textNode.data !== INLINE_VOID_CARET_ANCHOR) return false;
-
-  const previous = textNode.previousSibling;
-  if (previous && isVoidElement(previous)) {
-    previous.parentNode?.removeChild(previous);
-    return true;
-  }
-
-  const next = textNode.nextSibling;
-  if (textNode === inputElement.firstChild && next && isVoidElement(next)) {
-    inputElement.removeChild(next);
-    return true;
-  }
-
-  return false;
-};
-
-const VOID_SELECTOR = `[${NODE_TYPE_ATTR}="${EMOTICON_NODE}"]`;
-
-const findEnclosingVoidElement = (node: Node): HTMLElement | null => {
-  const element = node.nodeType === Node.ELEMENT_NODE ? (node as HTMLElement) : node.parentElement;
-  return element?.closest<HTMLElement>(VOID_SELECTOR) ?? null;
-};
-
-const checkIsRangeCoveringVoidContents = (range: Range, voidElement: HTMLElement): boolean => {
-  const voidContentsRange = document.createRange();
-  voidContentsRange.selectNodeContents(voidElement);
-  return (
-    range.compareBoundaryPoints(Range.START_TO_START, voidContentsRange) <= 0 &&
-    range.compareBoundaryPoints(Range.END_TO_END, voidContentsRange) >= 0
-  );
-};
-
-const checkIsRangeHoldingOnlyVoid = (range: Range): boolean => {
-  const selectedContents = range.cloneContents();
-  selectedContents.querySelectorAll(VOID_SELECTOR).forEach((voidClone) => voidClone.remove());
-  if (selectedContents.querySelector(`br, img, [${NODE_TYPE_ATTR}]`)) return false;
-  return stripCaretAnchors(selectedContents.textContent ?? '').length === 0;
-};
-
-export const getSelectedVoidElement = (range: Range): HTMLElement | null => {
-  if (range.collapsed) return null;
-  const { commonAncestorContainer } = range;
-
-  const enclosingVoidElement = findEnclosingVoidElement(commonAncestorContainer);
-  if (enclosingVoidElement) {
-    return checkIsRangeCoveringVoidContents(range, enclosingVoidElement)
-      ? enclosingVoidElement
-      : null;
-  }
-  if (commonAncestorContainer.nodeType !== Node.ELEMENT_NODE) return null;
-
-  const intersectedVoidElements = Array.from(
-    (commonAncestorContainer as HTMLElement).querySelectorAll<HTMLElement>(VOID_SELECTOR)
-  ).filter((voidElement) => range.intersectsNode(voidElement));
-  if (intersectedVoidElements.length !== 1) return null;
-
-  const [selectedVoidElement] = intersectedVoidElements;
-  if (!checkIsRangeCoveringVoidContents(range, selectedVoidElement)) return null;
-  if (!checkIsRangeHoldingOnlyVoid(range)) return null;
-  return selectedVoidElement;
-};
-
-export const deleteVoidElement = (voidElement: HTMLElement): void => {
-  const next = voidElement.nextSibling;
-  voidElement.parentNode?.removeChild(voidElement);
-  if (next && next.nodeType === Node.TEXT_NODE) {
-    placeCaretAt(next as Text, 0);
-  }
-};
+const checkIsImageElement = (node: Node): boolean => node.nodeName === 'IMG';
 
 export const insertNodeAtRange = (
   inputElement: HTMLElement,
@@ -237,6 +142,8 @@ export const insertNodeAtRange = (
   }
   range.deleteContents();
   range.insertNode(node);
+
+  if (checkIsImageElement(node)) return placeCaretAfter(node);
 
   ensureLeadingAnchor(node);
 
@@ -285,15 +192,6 @@ const BLOCK_TAGS = new Set([
   'ol',
   'li',
 ]);
-
-const appendVoidToParent = (parent: Node, voidNode: HTMLElement) => {
-  const last = parent.lastChild;
-  if (!last || last.nodeType !== Node.TEXT_NODE) {
-    parent.appendChild(document.createTextNode(INLINE_VOID_CARET_ANCHOR));
-  }
-  parent.appendChild(voidNode);
-  parent.appendChild(document.createTextNode(INLINE_VOID_CARET_ANCHOR));
-};
 
 const WHITESPACE_ONLY = /^\s*$/;
 
@@ -433,13 +331,14 @@ const walkHtmlNodes = (
       const key = element.attribs.src;
       const shortcode = element.attribs.alt || element.attribs.title || '';
       if (key) {
-        const voidNode = createEmoticonNode({
-          mx: ctx.mx,
-          useAuthentication: ctx.useAuthentication,
-          key,
-          shortcode,
-        });
-        appendVoidToParent(parent, voidNode);
+        parent.appendChild(
+          createEmoticonNode({
+            mx: ctx.mx,
+            useAuthentication: ctx.useAuthentication,
+            key,
+            shortcode,
+          })
+        );
         isFirstBlockChild = false;
       }
       return;
@@ -708,11 +607,38 @@ export const removeEditedInlineReferences = (element: HTMLElement): boolean => {
   return changed;
 };
 
+const LEGACY_EMOTICON_WRAPPER_SELECTOR = `span[${NODE_TYPE_ATTR}="${EMOTICON_NODE}"][contenteditable="false"]`;
+
+const checkIsLoneCaretAnchor = (node: Node | null): node is Text =>
+  node !== null &&
+  node.nodeType === Node.TEXT_NODE &&
+  (node as Text).data === INLINE_VOID_CARET_ANCHOR;
+
+const unwrapLegacyEmoticons = (root: ParentNode) => {
+  root.querySelectorAll<HTMLElement>(LEGACY_EMOTICON_WRAPPER_SELECTOR).forEach((wrapper) => {
+    const key = wrapper.dataset.key ?? '';
+    const shortcode = wrapper.dataset.shortcode ?? '';
+    const legacyImage = wrapper.querySelector('img');
+    let replacement: Node = document.createTextNode(key);
+    if (legacyImage) {
+      setEmoticonData(legacyImage, key, shortcode);
+      legacyImage.className = css.EditorEmoticonImg;
+      legacyImage.draggable = false;
+      replacement = legacyImage;
+    }
+    const { previousSibling, nextSibling } = wrapper;
+    if (checkIsLoneCaretAnchor(previousSibling)) previousSibling.remove();
+    if (checkIsLoneCaretAnchor(nextSibling)) nextSibling.remove();
+    wrapper.replaceWith(replacement);
+  });
+};
+
 // Parse the draft as-is; routing it through htmlToEditorDom/sanitize strips the
 // internal void-node attributes and flattens mentions/emojis to text.
 export const restoreEditorDraft = (element: HTMLElement, html: string): void => {
   const template = document.createElement('template');
   template.innerHTML = html;
+  unwrapLegacyEmoticons(template.content);
   element.replaceChildren(template.content);
   normalizeEditorRoot(element);
 };
@@ -730,17 +656,27 @@ export const replaceRangeWithNode = (
   start: number,
   end: number,
   replacement: Node
-): { node: Text; offset: number } => {
+): { node: Text | null } => {
   const parent = textNode.parentNode;
   if (!parent) throw new Error('alt input text node has no parent');
   const after = textNode.substringData(end, textNode.data.length - end);
   textNode.deleteData(start, textNode.data.length - start);
   parent.insertBefore(replacement, textNode.nextSibling);
+  if (checkIsImageElement(replacement)) {
+    if (after.length === 0) {
+      placeCaretAfter(replacement);
+      return { node: null };
+    }
+    const afterText = document.createTextNode(after);
+    parent.insertBefore(afterText, replacement.nextSibling);
+    placeCaretAt(afterText, 0);
+    return { node: afterText };
+  }
   const afterNode = document.createTextNode(after.length > 0 ? after : INLINE_VOID_CARET_ANCHOR);
   parent.insertBefore(afterNode, replacement.nextSibling);
   if (textNode.data.length === 0 && !textNode.previousSibling) {
     textNode.appendData(INLINE_VOID_CARET_ANCHOR);
   }
   placeCaretAt(afterNode, 0);
-  return { node: afterNode, offset: 0 };
+  return { node: afterNode };
 };
