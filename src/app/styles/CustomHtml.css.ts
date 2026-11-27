@@ -235,6 +235,16 @@ export const EmoticonImg = style([
   },
 ]);
 
+export const EditorEmoticonImg = style([
+  DefaultReset,
+  {
+    display: 'inline-block',
+    height: '1.33em',
+    verticalAlign: 'middle',
+    cursor: 'default',
+  },
+]);
+
 export const highlightText = style([
   DefaultReset,
   {

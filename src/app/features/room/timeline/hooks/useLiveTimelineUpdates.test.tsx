@@ -44,7 +44,7 @@ const reaction = (): MatrixEvent =>
 type HarnessProps = {
   room: Room;
   followingLatestMessageBottom: boolean;
-  wasLatestMessageBottomInView: boolean;
+  isLatestMessageBottomIntersecting: boolean;
   isInLivePaginationWindow: boolean;
   unfocusedAutoScroll: boolean;
   totalEvents: number;
@@ -55,7 +55,7 @@ type HarnessProps = {
 function Harness({
   room,
   followingLatestMessageBottom,
-  wasLatestMessageBottomInView,
+  isLatestMessageBottomIntersecting,
   isInLivePaginationWindow,
   unfocusedAutoScroll,
   totalEvents,
@@ -70,8 +70,8 @@ function Harness({
     };
   });
   const scrollRef = useRef<HTMLDivElement>(null);
-  const wasLatestMessageBottomInViewRef = useRef(wasLatestMessageBottomInView);
-  wasLatestMessageBottomInViewRef.current = wasLatestMessageBottomInView;
+  const isLatestMessageBottomIntersectingRef = useRef(isLatestMessageBottomIntersecting);
+  isLatestMessageBottomIntersectingRef.current = isLatestMessageBottomIntersecting;
   const isInLivePaginationWindowRef = useRef(isInLivePaginationWindow);
   isInLivePaginationWindowRef.current = isInLivePaginationWindow;
   const intentRef = useRef<ScrollIntent>({ kind: 'free' });
@@ -82,7 +82,7 @@ function Harness({
     room,
     setTimeline,
     scrollRef,
-    wasLatestMessageBottomInViewRef,
+    isLatestMessageBottomIntersectingRef,
     isInLivePaginationWindowRef,
     intentRef,
     pinToLatestMessageBottom,
@@ -96,7 +96,7 @@ type Setup = Partial<
   Pick<
     HarnessProps,
     | 'followingLatestMessageBottom'
-    | 'wasLatestMessageBottomInView'
+    | 'isLatestMessageBottomIntersecting'
     | 'isInLivePaginationWindow'
     | 'unfocusedAutoScroll'
     | 'totalEvents'
@@ -118,7 +118,7 @@ const setup = (overrides: Setup = {}) => {
     <Harness
       room={room}
       followingLatestMessageBottom={overrides.followingLatestMessageBottom ?? false}
-      wasLatestMessageBottomInView={overrides.wasLatestMessageBottomInView ?? false}
+      isLatestMessageBottomIntersecting={overrides.isLatestMessageBottomIntersecting ?? false}
       isInLivePaginationWindow={overrides.isInLivePaginationWindow ?? false}
       unfocusedAutoScroll={overrides.unfocusedAutoScroll ?? false}
       totalEvents={overrides.totalEvents ?? INITIAL_RANGE.newest}
@@ -173,7 +173,7 @@ describe('useLiveTimelineUpdates', () => {
     const totalEvents = INITIAL_RANGE.newest + 1;
     const { room, pinToLatestMessageBottom, state } = setup({
       followingLatestMessageBottom: false,
-      wasLatestMessageBottomInView: true,
+      isLatestMessageBottomIntersecting: true,
       isInLivePaginationWindow: true,
       focused: true,
       totalEvents,
@@ -189,7 +189,7 @@ describe('useLiveTimelineUpdates', () => {
   it('does not shift the range when the latest message bottom was observed visible in a window behind the newest event', () => {
     const { room, pinToLatestMessageBottom, state } = setup({
       followingLatestMessageBottom: false,
-      wasLatestMessageBottomInView: true,
+      isLatestMessageBottomIntersecting: true,
       isInLivePaginationWindow: false,
       focused: true,
       totalEvents: INITIAL_RANGE.newest + 1,
@@ -202,7 +202,7 @@ describe('useLiveTimelineUpdates', () => {
   it('does not shift the range when neither following nor last observed at the latest message bottom', () => {
     const { room, pinToLatestMessageBottom, state } = setup({
       followingLatestMessageBottom: false,
-      wasLatestMessageBottomInView: false,
+      isLatestMessageBottomIntersecting: false,
       isInLivePaginationWindow: true,
       focused: true,
       totalEvents: INITIAL_RANGE.newest + 1,

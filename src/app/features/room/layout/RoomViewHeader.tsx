@@ -77,6 +77,7 @@ import { useActiveCallParticipantIds } from '../../../hooks/call/useActiveCallPa
 import { useIsRoomCallAllowed } from '../../../hooks/call/useIsRoomCallAllowed';
 import { callStateAtom } from '../../../state/call';
 import { useCallActions } from '../../call/CallProvider';
+import { checkIsInstalledApp } from '../../../platform/mobile';
 
 type RoomMenuProps = {
   room: Room;
@@ -237,6 +238,18 @@ const RoomMenu = forwardRef<HTMLDivElement, RoomMenuProps>(({ room, onClose }, r
             Copy Link
           </Text>
         </MenuItem>
+        {checkIsInstalledApp() && (
+          <MenuItem
+            onClick={() => window.location.reload()}
+            size="300"
+            after={<Icon size="100" src={Icons.Reload} />}
+            radii="300"
+          >
+            <Text style={{ flexGrow: 1 }} as="span" size="T300" truncate>
+              Refresh App
+            </Text>
+          </MenuItem>
+        )}
         <MenuItem
           onClick={handleOpenSettings}
           size="300"

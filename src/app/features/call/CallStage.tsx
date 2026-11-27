@@ -3,9 +3,9 @@ import type { Room } from 'matrix-js-sdk';
 import type { CallMembership } from 'matrix-js-sdk/lib/matrixrtc';
 import { Track } from 'livekit-client';
 import { Scroll } from 'folds';
-import type { CallParticipantEntry } from '../../hooks/call/useCallParticipantEntries';
-import { checkIsEntryStreamingVideo } from '../../hooks/call/useCallParticipantEntries';
-import { useCallFocusedEntry } from '../../hooks/call/useCallFocusedEntry';
+import type { CallParticipantSnapshot } from '../../hooks/call/useCallParticipantSnapshots';
+import { checkIsParticipantSnapshotStreamingVideo } from '../../hooks/call/useCallParticipantSnapshots';
+import { useCallFocusedParticipantSnapshot } from '../../hooks/call/useCallFocusedParticipantSnapshot';
 import { CallParticipantTile } from './CallParticipantTile';
 import { CallSpotlightBar } from './CallSpotlightBar';
 import { CallTileGrid } from './CallTileGrid';
@@ -13,23 +13,32 @@ import * as css from './CallPane.css';
 
 type CallStageProps = {
   room: Room;
-  entries: CallParticipantEntry[];
+  participantSnapshots: CallParticipantSnapshot[];
   memberships: CallMembership[];
   tileAspectRatio?: number;
 };
-export function CallStage({ room, entries, memberships, tileAspectRatio }: CallStageProps) {
-  const { focusedEntry, stripEntries, focusEntry, stopWatchingFocusedEntry } =
-    useCallFocusedEntry(entries);
+export function CallStage({
+  room,
+  participantSnapshots,
+  memberships,
+  tileAspectRatio,
+}: CallStageProps) {
+  const {
+    focusedParticipantSnapshot,
+    stripParticipantSnapshots,
+    focusParticipant,
+    stopWatchingFocusedParticipantSnapshot,
+  } = useCallFocusedParticipantSnapshot(participantSnapshots);
 
-  if (!focusedEntry) {
+  if (!focusedParticipantSnapshot) {
     return (
       <div className={css.CallGridLayout}>
         <CallTileGrid
           room={room}
-          entries={entries}
+          participantSnapshots={participantSnapshots}
           memberships={memberships}
           tileAspectRatio={tileAspectRatio}
-          onFocus={focusEntry}
+          onFocus={focusParticipant}
         />
       </div>
     );
@@ -40,31 +49,39 @@ export function CallStage({ room, entries, memberships, tileAspectRatio }: CallS
       <div className={css.CallSpotlight} data-testid="call-spotlight">
         <CallParticipantTile
           room={room}
-          participant={focusedEntry.participant}
-          source={focusedEntry.isScreensharing ? Track.Source.ScreenShare : Track.Source.Camera}
+          participant={focusedParticipantSnapshot.participant}
+          source={
+            focusedParticipantSnapshot.isScreensharing
+              ? Track.Source.ScreenShare
+              : Track.Source.Camera
+          }
           memberships={memberships}
           className={css.CallSpotlightTile}
         />
       </div>
       <CallSpotlightBar
         room={room}
-        entry={focusedEntry}
+        participantSnapshot={focusedParticipantSnapshot}
         memberships={memberships}
-        onStopWatching={stopWatchingFocusedEntry}
+        onStopWatching={stopWatchingFocusedParticipantSnapshot}
       />
       <Scroll direction="Horizontal" size="300" hideTrack visibility="Hover">
         <div className={css.CallTileStrip} data-testid="call-tile-strip">
-          {stripEntries.map((entry) => (
+          {stripParticipantSnapshots.map((participantSnapshot) => (
             <CallParticipantTile
-              key={entry.key}
+              key={participantSnapshot.key}
               room={room}
-              participant={entry.participant}
+              participant={participantSnapshot.participant}
               source={Track.Source.Camera}
               memberships={memberships}
-              isScreensharing={entry.isScreensharing}
-              isFocused={entry.key === focusedEntry.key}
+              isScreensharing={participantSnapshot.isScreensharing}
+              isFocused={participantSnapshot.key === focusedParticipantSnapshot.key}
               className={css.CallStripTile}
-              onSelect={checkIsEntryStreamingVideo(entry) ? focusEntry : undefined}
+              onSelect={
+                checkIsParticipantSnapshotStreamingVideo(participantSnapshot)
+                  ? focusParticipant
+                  : undefined
+              }
             />
           ))}
         </div>

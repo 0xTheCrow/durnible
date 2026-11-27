@@ -12,8 +12,8 @@ import {
   getPopOutWindowSize,
   openPopOutWindow,
 } from '../../plugins/call/popOutWindow';
-import type { CallVideoSourceKind } from '../../hooks/call/useCallParticipantEntries';
-import { checkIsScreenshareAudioEnabled } from '../../hooks/call/useCallParticipantEntries';
+import type { CallVideoSourceKind } from '../../hooks/call/useCallParticipantSnapshots';
+import { checkIsScreenshareAudioEnabled } from '../../hooks/call/useCallParticipantSnapshots';
 import { useParticipantTrackPublications } from '../../hooks/call/useParticipantTrackPublications';
 import { useIsParticipantSpeaking } from '../../hooks/call/useIsParticipantSpeaking';
 import { useCallUserIsMuted } from '../../state/hooks/callVolumePreferences';

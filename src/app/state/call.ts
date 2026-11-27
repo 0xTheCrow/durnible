@@ -47,11 +47,11 @@ export const getCallFocusedParticipantKey = (
     ? focusedParticipant.participantKey
     : undefined;
 
-export type ActiveCallParticipantEntry = {
+export type ActiveCallParticipantSnapshot = {
   identity: string;
   isLocal: boolean;
   isMicrophoneMuted: boolean;
   isScreenshareAudioEnabled: boolean;
 };
 
-export const activeCallParticipantEntriesAtom = atom<ActiveCallParticipantEntry[]>([]);
+export const activeCallParticipantSnapshotsAtom = atom<ActiveCallParticipantSnapshot[]>([]);

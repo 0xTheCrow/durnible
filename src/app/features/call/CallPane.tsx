@@ -6,7 +6,7 @@ import { settingsAtom } from '../../state/settings';
 import { useSetting } from '../../state/hooks/settings';
 import type { CallConnection } from '../../plugins/call/CallConnection';
 import { isScreenshareSupported } from '../../plugins/call/localMedia';
-import { useCallParticipantEntries } from '../../hooks/call/useCallParticipantEntries';
+import { useCallParticipantSnapshots } from '../../hooks/call/useCallParticipantSnapshots';
 import { useLocalMediaControls } from '../../hooks/call/useLocalMediaControls';
 import { useCallDeafen } from '../../hooks/call/useCallDeafen';
 import { useCallMemberships } from '../../hooks/call/useCallMemberships';
@@ -30,7 +30,7 @@ function ConnectedCallPane({ connection, isReconnecting }: ConnectedCallPaneProp
   const { livekitRoom, matrixRoom } = connection;
   const { endCall } = useCallActions();
   const setIsCollapsed = useSetAtom(isCallPaneCollapsedAtom);
-  const entries = useCallParticipantEntries(livekitRoom);
+  const participantSnapshots = useCallParticipantSnapshots(livekitRoom);
   const memberships = useCallMemberships(matrixRoom);
   const roomName = useRoomName(matrixRoom);
   const paneRef = useRef<HTMLDivElement>(null);
@@ -65,7 +65,11 @@ function ConnectedCallPane({ connection, isReconnecting }: ConnectedCallPaneProp
     >
       {developerTools && <CallEncryptionDebugPanel livekitRoom={livekitRoom} />}
 
-      <CallStage room={matrixRoom} entries={entries} memberships={memberships} />
+      <CallStage
+        room={matrixRoom}
+        participantSnapshots={participantSnapshots}
+        memberships={memberships}
+      />
 
       <Box className={css.CallPaneControls} alignItems="Center" justifyContent="Center" gap="200">
         <CallControlButton
@@ -89,7 +93,11 @@ function ConnectedCallPane({ connection, isReconnecting }: ConnectedCallPaneProp
           aria-pressed={isDeafened}
           data-testid="call-deafen-toggle"
         />
-        <CallMasterVolumeMenu room={matrixRoom} entries={entries} memberships={memberships} />
+        <CallMasterVolumeMenu
+          room={matrixRoom}
+          participantSnapshots={participantSnapshots}
+          memberships={memberships}
+        />
         <CallControlButton
           size="400"
           radii="Pill"

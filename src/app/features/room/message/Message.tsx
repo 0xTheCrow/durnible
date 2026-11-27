@@ -480,6 +480,7 @@ export const Message = as<'div', MessageProps>(
                 {canEditEvent(mx, mEvent) && onEditId && (
                   <IconButton
                     onClick={() => onEditId(mEvent.getId())}
+                    data-testid="message-edit-btn"
                     variant="SurfaceVariant"
                     size="300"
                     radii="300"

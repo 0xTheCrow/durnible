@@ -17,7 +17,7 @@ type HarnessProps = {
 function Harness({ isInLivePaginationWindow, onRender, onChange }: HarnessProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const latestMessageBottomRef = useRef<HTMLSpanElement>(null);
-  const { isLatestMessageBottomVisible } = useIsLatestMessageBottomVisible({
+  const isLatestMessageBottomVisible = useIsLatestMessageBottomVisible({
     scrollRef,
     latestMessageBottomRef,
     isInLivePaginationWindow,

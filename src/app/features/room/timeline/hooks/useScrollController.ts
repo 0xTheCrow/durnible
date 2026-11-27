@@ -43,6 +43,7 @@ export type ScrollController = {
   releaseLatestMessageBottomFollow: () => void;
   syncLatestMessageBottomFollow: (isVisible: boolean) => void;
   intentRef: RefObject<ScrollIntent>;
+  isLatestMessageBottomIntersectingRef: RefObject<boolean>;
 };
 
 const AUTO_SCROLL_FALLBACK_MS = 1000;
@@ -126,7 +127,7 @@ export const useScrollController = ({
   const autoScrollingRef = useRef(false);
   const autoScrollTimerRef = useRef(0);
   const userScrollSinceBottomRef = useRef(false);
-  const wasLatestMessageBottomInViewRef = useRef(false);
+  const isLatestMessageBottomIntersectingRef = useRef(false);
 
   const freeScrollAnchorRef = useRef<{ element: HTMLElement; viewportOffset: number } | null>(null);
 
@@ -278,9 +279,13 @@ export const useScrollController = ({
   }, [scrollRef]);
 
   const release = useCallback(() => {
-    traceTimelineScroll('release', { from: intentRef.current.kind });
-    intentRef.current = { kind: 'free' };
-  }, []);
+    const isLatestMessageBottomVisible =
+      !!isLatestMessageBottomIntersectingRef.current && !!isInLivePaginationWindowRef.current;
+    traceTimelineScroll('release', { from: intentRef.current.kind, isLatestMessageBottomVisible });
+    intentRef.current = isLatestMessageBottomVisible
+      ? { kind: 'latestMessageBottom' }
+      : { kind: 'free' };
+  }, [isInLivePaginationWindowRef]);
 
   const releaseLatestMessageBottomFollow = useCallback(() => {
     if (intentRef.current.kind === 'latestMessageBottom') {
@@ -291,7 +296,7 @@ export const useScrollController = ({
 
   const syncLatestMessageBottomFollow = useCallback(
     (isVisible: boolean) => {
-      wasLatestMessageBottomInViewRef.current = isVisible;
+      isLatestMessageBottomIntersectingRef.current = isVisible;
       if (isVisible) userScrollSinceBottomRef.current = false;
       const scrollElement = scrollRef.current;
       traceTimelineScroll('syncLatestMessageBottomFollow:report', {
@@ -390,7 +395,7 @@ export const useScrollController = ({
     const scrollStateDetail = () => ({
       intent: intentRef.current.kind,
       scrollBottomDistance: Math.round(getScrollBottomDistance(scrollElement)),
-      wasLatestMessageBottomInView: !!wasLatestMessageBottomInViewRef.current,
+      isLatestMessageBottomIntersecting: !!isLatestMessageBottomIntersectingRef.current,
     });
     const handleUserInput = (event: Event) => {
       userScrollSinceBottomRef.current = true;
@@ -398,12 +403,15 @@ export const useScrollController = ({
       const intent = intentRef.current;
       if (intent.kind === 'anchor') {
         const resumeFollow =
-          !!wasLatestMessageBottomInViewRef.current && !!isInLivePaginationWindowRef.current;
+          !!isLatestMessageBottomIntersectingRef.current && !!isInLivePaginationWindowRef.current;
         traceTimelineScroll('anchor:user-release', { resumeFollow });
         intentRef.current = resumeFollow ? { kind: 'latestMessageBottom' } : { kind: 'free' };
       } else if (intent.kind === 'latestMessageBottom') {
         const scrollBottomDistance = getScrollBottomDistance(scrollElement);
-        if (scrollBottomDistance > LATEST_MESSAGE_BOTTOM_RELEASE_THRESHOLD_PX) {
+        if (
+          !isLatestMessageBottomIntersectingRef.current &&
+          scrollBottomDistance > LATEST_MESSAGE_BOTTOM_RELEASE_THRESHOLD_PX
+        ) {
           traceTimelineScroll('latestMessageBottomFollow:release-on-input', {
             type: event.type,
             scrollBottomDistance: Math.round(scrollBottomDistance),
@@ -425,6 +433,7 @@ export const useScrollController = ({
         const scrollBottomDistance = getScrollBottomDistance(scrollElement);
         if (
           userScrollSinceBottomRef.current &&
+          !isLatestMessageBottomIntersectingRef.current &&
           scrollBottomDistance > LATEST_MESSAGE_BOTTOM_RELEASE_THRESHOLD_PX
         ) {
           traceTimelineScroll('latestMessageBottomFollow:release-on-scroll', {
@@ -483,6 +492,7 @@ export const useScrollController = ({
       releaseLatestMessageBottomFollow,
       syncLatestMessageBottomFollow,
       intentRef,
+      isLatestMessageBottomIntersectingRef,
     }),
     [
       pinToLatestMessageBottom,

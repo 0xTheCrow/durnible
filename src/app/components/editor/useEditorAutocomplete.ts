@@ -80,7 +80,7 @@ export const useEditorAutocomplete = ({
       if (!textNode || !textNode.isConnected) return;
       editorInputRef.current?.focus();
       const result = replaceRangeWithNode(textNode, start, end, node);
-      if (trailingText) {
+      if (trailingText && result.node) {
         result.node.insertData(0, trailingText);
         const range = document.createRange();
         range.setStart(result.node, trailingText.length);

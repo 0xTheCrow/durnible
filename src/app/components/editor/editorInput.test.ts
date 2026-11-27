@@ -8,9 +8,6 @@ import {
   insertNodeAtRange,
   replaceTextInNode,
   replaceRangeWithNode,
-  handleEditorBackspace,
-  getSelectedVoidElement,
-  deleteVoidElement,
   htmlToEditorDom,
   isEditorEmpty,
   normalizeEditorRoot,
@@ -42,15 +39,8 @@ vi.mock('../../utils/matrix', async () => {
 
 const mockMx = {} as MatrixClient;
 
-const setCollapsedSelection = (node: Node, offset: number): Range => {
-  const range = document.createRange();
-  range.setStart(node, offset);
-  range.collapse(true);
-  return range;
-};
-
 describe('createEmoticonNode', () => {
-  it('builds a contenteditable span with an img for mxc emojis', () => {
+  it('builds an editable img for mxc emojis', () => {
     const node = createEmoticonNode({
       mx: mockMx,
       useAuthentication: false,
@@ -58,18 +48,15 @@ describe('createEmoticonNode', () => {
       shortcode: 'wave',
     });
 
-    expect(node.tagName).toBe('SPAN');
-    expect(node.getAttribute('contenteditable')).toBe('false');
+    expect(node.tagName).toBe('IMG');
+    expect(node.hasAttribute('contenteditable')).toBe(false);
     expect(node.getAttribute(NODE_TYPE_ATTR)).toBe(EMOTICON_NODE);
     expect(node.dataset.key).toBe('mxc://example.com/abc');
     expect(node.dataset.shortcode).toBe('wave');
-
-    const img = node.querySelector('img');
-    expect(img).not.toBeNull();
-    expect(img?.getAttribute('src')).toBe(
+    expect(node.getAttribute('src')).toBe(
       markCachedMediaUrl('https://example.com/example.com/abc', 'emoji')
     );
-    expect(img?.getAttribute('alt')).toBe('wave');
+    expect(node.getAttribute('alt')).toBe('wave');
   });
 
   it('builds a span containing the unicode key for unicode emojis', () => {
@@ -132,7 +119,6 @@ describe('replaceRangeWithNode', () => {
     expect(afterSplit.nodeType).toBe(Node.TEXT_NODE);
     expect(afterSplit.data).toBe(' tail');
     expect(result.node).toBe(afterSplit);
-    expect(result.offset).toBe(0);
 
     expect(before.data).toBe('alpha');
     expect(after.data).toBe('bravo');
@@ -141,287 +127,61 @@ describe('replaceRangeWithNode', () => {
   });
 });
 
-describe('inline void leading anchor', () => {
-  it('keeps a renderable text node before a void inserted at the start of the input', () => {
-    const rootElement = document.createElement('div');
-    const replacement = createEmoticonNode({
-      mx: mockMx,
-      useAuthentication: false,
-      key: 'mxc://example/x',
-      shortcode: 'x',
-    });
-
-    insertNodeAtRange(rootElement, null, replacement);
-
-    const first = rootElement.firstChild;
-    expect(first).not.toBeNull();
-    expect(first?.nodeType).toBe(Node.TEXT_NODE);
-    expect((first as Text).data.length).toBeGreaterThan(0);
-    expect(first?.nextSibling).toBe(replacement);
+const createCustomEmoticon = () =>
+  createEmoticonNode({
+    mx: mockMx,
+    useAuthentication: false,
+    key: 'mxc://example/x',
+    shortcode: 'wave',
   });
-});
 
-describe('inline void trailing anchor', () => {
-  it('keeps a renderable text node after a void inserted at the end of the input', () => {
+const expectCaretDirectlyAfter = (node: Node) => {
+  const range = window.getSelection()!.getRangeAt(0);
+  expect(range.collapsed).toBe(true);
+  expect(range.startContainer).toBe(node.parentNode);
+  expect(range.startOffset).toBe(
+    Array.from(node.parentNode!.childNodes).indexOf(node as ChildNode) + 1
+  );
+};
+
+describe('custom emoji caret placement', () => {
+  it('inserts a custom emoji at the end of the input with no caret anchors and the caret after it', () => {
     const rootElement = document.createElement('div');
     rootElement.appendChild(document.createTextNode('hello '));
-    const emoticon = createEmoticonNode({
-      mx: mockMx,
-      useAuthentication: false,
-      key: 'mxc://example/x',
-      shortcode: 'wave',
-    });
+    document.body.appendChild(rootElement);
+    const emoticon = createCustomEmoticon();
 
     insertNodeAtRange(rootElement, null, emoticon);
 
-    const last = rootElement.lastChild;
-    expect(last).not.toBeNull();
-    expect(last?.nodeType).toBe(Node.TEXT_NODE);
-    expect((last as Text).data.length).toBeGreaterThan(0);
-    expect(emoticon.nextSibling).toBe(last);
+    expect(rootElement.textContent).toBe('hello ');
+    expect(rootElement.lastChild).toBe(emoticon);
+    expectCaretDirectlyAfter(emoticon);
+    rootElement.remove();
   });
 
-  it('keeps a renderable text node when autocomplete replaces a trailing shortcode with nothing following it', () => {
+  it('places the caret after a custom emoji when autocomplete replaces a trailing shortcode', () => {
     const rootElement = document.createElement('div');
     const textNode = document.createTextNode('hello :wave:');
     rootElement.appendChild(textNode);
-
-    const replacement = createEmoticonNode({
-      mx: mockMx,
-      useAuthentication: false,
-      key: 'mxc://example/x',
-      shortcode: 'wave',
-    });
-    const result = replaceRangeWithNode(textNode, 6, 12, replacement);
-
-    expect(result.node.data.length).toBeGreaterThan(0);
-    expect(replacement.nextSibling).toBe(result.node);
-  });
-
-  it('keeps a renderable text node when a void directly follows a non-text element like <br>', () => {
-    const fragment = htmlToEditorDom(
-      '<br /><img data-mx-emoticon src="mxc://example/x" alt="wave" />',
-      ctx
-    );
-    const rootElement = document.createElement('div');
-    rootElement.appendChild(fragment);
-
-    const br = rootElement.querySelector('br');
-    expect(br).not.toBeNull();
-    const separator = br?.nextSibling;
-    expect(separator?.nodeType).toBe(Node.TEXT_NODE);
-    expect((separator as Text).data.length).toBeGreaterThan(0);
-  });
-});
-
-describe('handleEditorBackspace', () => {
-  it('deletes a trailing custom emoji when backspacing right after it', () => {
-    const rootElement = document.createElement('div');
-    rootElement.appendChild(document.createTextNode('hello '));
-    const emoticon = createEmoticonNode({
-      mx: mockMx,
-      useAuthentication: false,
-      key: 'mxc://example/x',
-      shortcode: 'wave',
-    });
-
-    const range = insertNodeAtRange(rootElement, null, emoticon);
-    const handled = handleEditorBackspace(rootElement, range);
-
-    expect(handled).toBe(true);
-    expect(rootElement.contains(emoticon)).toBe(false);
-    expect(domToPlainText(rootElement)).toBe('hello ');
-  });
-
-  it('deletes a trailing void on a line other than the first without throwing', () => {
-    const rootElement = document.createElement('div');
-    const firstLine = document.createElement('div');
-    firstLine.textContent = 'line one';
-    rootElement.appendChild(firstLine);
-
-    const secondLine = document.createElement('div');
-    secondLine.appendChild(document.createTextNode('hey '));
-    rootElement.appendChild(secondLine);
-
-    const emoticon = createEmoticonNode({
-      mx: mockMx,
-      useAuthentication: false,
-      key: 'mxc://example/x',
-      shortcode: 'wave',
-    });
-    const initialRange = document.createRange();
-    initialRange.selectNodeContents(secondLine);
-    initialRange.collapse(false);
-    const range = insertNodeAtRange(rootElement, initialRange, emoticon);
-
-    let handled = false;
-    expect(() => {
-      handled = handleEditorBackspace(rootElement, range);
-    }).not.toThrow();
-
-    expect(handled).toBe(true);
-    expect(rootElement.contains(emoticon)).toBe(false);
-    expect(firstLine.textContent).toBe('line one');
-  });
-
-  it('leaves a mention to ordinary text backspacing since it is no longer void', () => {
-    const rootElement = document.createElement('div');
-    const mention = createMentionNode({
-      id: '@alice:example.org',
-      name: '@alice',
-      highlight: false,
-    });
-    rootElement.appendChild(mention);
-    const range = setCollapsedSelection(rootElement, 1);
-
-    const handled = handleEditorBackspace(rootElement, range);
-
-    expect(handled).toBe(false);
-    expect(rootElement.contains(mention)).toBe(true);
-  });
-
-  it('does not require a second backspace once the void is already gone', () => {
-    const rootElement = document.createElement('div');
-    rootElement.appendChild(document.createTextNode('hello '));
-    const emoticon = createEmoticonNode({
-      mx: mockMx,
-      useAuthentication: false,
-      key: 'mxc://example/x',
-      shortcode: 'wave',
-    });
-    const range = insertNodeAtRange(rootElement, null, emoticon);
-
-    expect(handleEditorBackspace(rootElement, range)).toBe(true);
-    expect(handleEditorBackspace(rootElement, range)).toBe(false);
-  });
-
-  it('deletes a void that is the first thing in the input via its leading anchor', () => {
-    const rootElement = document.createElement('div');
-    const emoticon = createEmoticonNode({
-      mx: mockMx,
-      useAuthentication: false,
-      key: 'mxc://example/x',
-      shortcode: 'wave',
-    });
-    insertNodeAtRange(rootElement, null, emoticon);
-
-    const leadingAnchor = rootElement.firstChild as Text;
-    const range = setCollapsedSelection(leadingAnchor, 0);
-    const handled = handleEditorBackspace(rootElement, range);
-
-    expect(handled).toBe(true);
-    expect(rootElement.contains(emoticon)).toBe(false);
-  });
-
-  it('leaves ordinary text backspacing to the browser', () => {
-    const rootElement = document.createElement('div');
-    const textNode = document.createTextNode('hello');
-    rootElement.appendChild(textNode);
-    const range = setCollapsedSelection(textNode, 5);
-
-    const handled = handleEditorBackspace(rootElement, range);
-
-    expect(handled).toBe(false);
-    expect(rootElement.textContent).toBe('hello');
-  });
-
-  it('deletes the real trailing space after a void instead of leaving an unrenderable empty node', () => {
-    const rootElement = document.createElement('div');
-    const emoticon = createEmoticonNode({
-      mx: mockMx,
-      useAuthentication: false,
-      key: 'mxc://example/x',
-      shortcode: 'wave',
-    });
-    rootElement.appendChild(emoticon);
-    const trailingSpace = document.createTextNode(' ');
-    rootElement.appendChild(trailingSpace);
-    const range = setCollapsedSelection(trailingSpace, 1);
-
-    const handled = handleEditorBackspace(rootElement, range);
-
-    expect(handled).toBe(true);
-    expect(emoticon.nextSibling).toBe(trailingSpace);
-    expect(trailingSpace.data.length).toBeGreaterThan(0);
-  });
-});
-
-describe('getSelectedVoidElement', () => {
-  it('finds the void element when the selection ends inside its own children, per the observed Android selection shape', () => {
-    const rootElement = document.createElement('div');
-    rootElement.appendChild(document.createTextNode('hello'));
-    const emoticon = createEmoticonNode({
-      mx: mockMx,
-      useAuthentication: false,
-      key: 'mxc://example/x',
-      shortcode: 'wave',
-    });
-    insertNodeAtRange(rootElement, null, emoticon);
-
-    const precedingText = emoticon.previousSibling as Text;
-    const range = document.createRange();
-    range.setStart(precedingText, precedingText.data.length);
-    range.setEnd(emoticon, emoticon.childNodes.length);
-
-    expect(getSelectedVoidElement(range)).toBe(emoticon);
-  });
-
-  it('returns null when the bracketed element is not a void', () => {
-    const rootElement = document.createElement('div');
-    const precedingText = document.createTextNode('hello');
-    const bold = document.createElement('b');
-    bold.textContent = 'world';
-    rootElement.append(precedingText, bold);
-
-    const range = document.createRange();
-    range.setStart(precedingText, precedingText.data.length);
-    range.setEnd(bold, bold.childNodes.length);
-
-    expect(getSelectedVoidElement(range)).toBeNull();
-  });
-
-  it('returns null when the selection does not reach the end of the void', () => {
-    const rootElement = document.createElement('div');
-    rootElement.appendChild(document.createTextNode('hello'));
-    const emoticon = createEmoticonNode({
-      mx: mockMx,
-      useAuthentication: false,
-      key: 'mxc://example/x',
-      shortcode: 'wave',
-    });
-    insertNodeAtRange(rootElement, null, emoticon);
-
-    const precedingText = emoticon.previousSibling as Text;
-    const range = document.createRange();
-    range.setStart(precedingText, precedingText.data.length);
-    range.setEnd(emoticon, 0);
-
-    expect(getSelectedVoidElement(range)).toBeNull();
-  });
-});
-
-describe('deleteVoidElement', () => {
-  it('removes the void element and places the caret at the start of the following anchor', () => {
-    const rootElement = document.createElement('div');
-    rootElement.appendChild(document.createTextNode('hello '));
-    const emoticon = createEmoticonNode({
-      mx: mockMx,
-      useAuthentication: false,
-      key: 'mxc://example/x',
-      shortcode: 'wave',
-    });
-    insertNodeAtRange(rootElement, null, emoticon);
     document.body.appendChild(rootElement);
+    const emoticon = createCustomEmoticon();
 
-    const trailingAnchor = emoticon.nextSibling as Text;
-    deleteVoidElement(emoticon);
+    replaceRangeWithNode(textNode, 6, 12, emoticon);
 
-    expect(rootElement.contains(emoticon)).toBe(false);
-    const range = window.getSelection()!.getRangeAt(0);
-    expect(range.startContainer).toBe(trailingAnchor);
-    expect(range.startOffset).toBe(0);
-
+    expect(rootElement.textContent).toBe('hello ');
+    expect(rootElement.lastChild).toBe(emoticon);
+    expectCaretDirectlyAfter(emoticon);
     rootElement.remove();
+  });
+
+  it('adds no caret anchors around a custom emoji loaded from message html', () => {
+    const rootElement = document.createElement('div');
+    rootElement.appendChild(
+      htmlToEditorDom('<br /><img data-mx-emoticon src="mxc://example/x" alt="wave" />', ctx)
+    );
+
+    expect(rootElement.textContent).toBe('');
+    expect(rootElement.querySelector('br')?.nextSibling?.nodeName).toBe('IMG');
   });
 });
 

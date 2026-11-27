@@ -139,13 +139,12 @@ export function RoomTimeline({
     unfocusedAutoScrollRef,
   });
 
-  const { isLatestMessageBottomVisible, wasLatestMessageBottomInViewRef } =
-    useIsLatestMessageBottomVisible({
-      scrollRef,
-      latestMessageBottomRef,
-      isInLivePaginationWindow,
-      onChange: scrollController.syncLatestMessageBottomFollow,
-    });
+  const isLatestMessageBottomVisible = useIsLatestMessageBottomVisible({
+    scrollRef,
+    latestMessageBottomRef,
+    isInLivePaginationWindow,
+    onChange: scrollController.syncLatestMessageBottomFollow,
+  });
 
   useLayoutEffect(() => {
     if (!liveTimelineLinked) scrollController.releaseLatestMessageBottomFollow();
@@ -258,7 +257,7 @@ export function RoomTimeline({
     room,
     setTimeline,
     scrollRef,
-    wasLatestMessageBottomInViewRef,
+    isLatestMessageBottomIntersectingRef: scrollController.isLatestMessageBottomIntersectingRef,
     isInLivePaginationWindowRef,
     intentRef: scrollController.intentRef,
     pinToLatestMessageBottom: scrollController.pinToLatestMessageBottom,

@@ -4,8 +4,8 @@ import type { CallMembership } from 'matrix-js-sdk/lib/matrixrtc';
 import { Track } from 'livekit-client';
 import { Box, Icon, Icons, Scroll, Text } from 'folds';
 import classNames from 'classnames';
-import type { CallParticipantEntry } from '../../hooks/call/useCallParticipantEntries';
-import { checkIsEntryStreamingVideo } from '../../hooks/call/useCallParticipantEntries';
+import type { CallParticipantSnapshot } from '../../hooks/call/useCallParticipantSnapshots';
+import { checkIsParticipantSnapshotStreamingVideo } from '../../hooks/call/useCallParticipantSnapshots';
 import { useCallTileGridLayout } from '../../hooks/call/useCallTileGridLayout';
 import { CALL_TILE_GAP, resolveCallParticipant } from '../../utils/call';
 import { CallMemberAvatar } from './CallMemberAvatar';
@@ -16,26 +16,26 @@ import * as css from './CallPane.css';
 
 type CallOverflowParticipantProps = {
   room: Room;
-  entry: CallParticipantEntry;
+  participantSnapshot: CallParticipantSnapshot;
   memberships: CallMembership[];
   onSelect?: (participantIdentity: string) => void;
 };
 function CallOverflowParticipantComponent({
   room,
-  entry,
+  participantSnapshot,
   memberships,
   onSelect,
 }: CallOverflowParticipantProps) {
-  const isSpeaking = useIsParticipantSpeaking(entry.participant);
+  const isSpeaking = useIsParticipantSpeaking(participantSnapshot.participant);
   const { userId, displayName } = resolveCallParticipant(
     room,
-    entry.participant.identity,
+    participantSnapshot.participant.identity,
     memberships
   );
   const { volumeMenuTriggerProps, volumeMenu } = useCallUserVolumeMenu(
     userId,
     displayName,
-    entry.isScreenshareAudioEnabled
+    participantSnapshot.isScreenshareAudioEnabled
   );
 
   const participantContent = (
@@ -45,7 +45,7 @@ function CallOverflowParticipantComponent({
       ) : (
         <Icon size="50" src={Icons.User} />
       )}
-      {entry.isScreensharing && <Icon size="50" src={Icons.Monitor} filled />}
+      {participantSnapshot.isScreensharing && <Icon size="50" src={Icons.Monitor} filled />}
       <Text as="span" size="T200" truncate>
         {displayName}
       </Text>
@@ -63,7 +63,7 @@ function CallOverflowParticipantComponent({
         <Box
           as="button"
           type="button"
-          onClick={() => onSelect(entry.participant.identity)}
+          onClick={() => onSelect(participantSnapshot.participant.identity)}
           {...volumeMenuTriggerProps}
           aria-label={`Focus ${displayName}`}
           className={participantClassName}
@@ -93,14 +93,14 @@ const CallOverflowParticipant = React.memo(CallOverflowParticipantComponent);
 
 type CallTileGridProps = {
   room: Room;
-  entries: CallParticipantEntry[];
+  participantSnapshots: CallParticipantSnapshot[];
   memberships: CallMembership[];
   tileAspectRatio?: number;
   onFocus: (key: string) => void;
 };
 export function CallTileGrid({
   room,
-  entries,
+  participantSnapshots,
   memberships,
   tileAspectRatio,
   onFocus,
@@ -108,12 +108,12 @@ export function CallTileGrid({
   const gridAreaRef = useRef<HTMLDivElement>(null);
   const { columnCount, tileWidth, tileHeight, visibleTileCount } = useCallTileGridLayout(
     gridAreaRef,
-    entries.length,
+    participantSnapshots.length,
     tileAspectRatio
   );
 
-  const visibleEntries = entries.slice(0, visibleTileCount);
-  const overflowEntries = entries.slice(visibleTileCount);
+  const visibleParticipantSnapshots = participantSnapshots.slice(0, visibleTileCount);
+  const overflowParticipantSnapshots = participantSnapshots.slice(visibleTileCount);
 
   return (
     <div ref={gridAreaRef} className={css.CallTileGridArea} style={{ gap: CALL_TILE_GAP }}>
@@ -125,29 +125,35 @@ export function CallTileGrid({
           gap: CALL_TILE_GAP,
         }}
       >
-        {visibleEntries.map((entry) => (
+        {visibleParticipantSnapshots.map((participantSnapshot) => (
           <CallParticipantTile
-            key={entry.key}
+            key={participantSnapshot.key}
             room={room}
-            participant={entry.participant}
+            participant={participantSnapshot.participant}
             source={Track.Source.Camera}
             memberships={memberships}
-            isScreensharing={entry.isScreensharing}
+            isScreensharing={participantSnapshot.isScreensharing}
             className={css.CallGridTile}
-            onSelect={checkIsEntryStreamingVideo(entry) ? onFocus : undefined}
+            onSelect={
+              checkIsParticipantSnapshotStreamingVideo(participantSnapshot) ? onFocus : undefined
+            }
           />
         ))}
       </div>
-      {overflowEntries.length > 0 && (
+      {overflowParticipantSnapshots.length > 0 && (
         <Scroll direction="Horizontal" size="300" hideTrack visibility="Hover">
           <Box className={css.CallOverflowRow} alignItems="Center" gap="200">
-            {overflowEntries.map((entry) => (
+            {overflowParticipantSnapshots.map((participantSnapshot) => (
               <CallOverflowParticipant
-                key={entry.key}
+                key={participantSnapshot.key}
                 room={room}
-                entry={entry}
+                participantSnapshot={participantSnapshot}
                 memberships={memberships}
-                onSelect={checkIsEntryStreamingVideo(entry) ? onFocus : undefined}
+                onSelect={
+                  checkIsParticipantSnapshotStreamingVideo(participantSnapshot)
+                    ? onFocus
+                    : undefined
+                }
               />
             ))}
           </Box>
