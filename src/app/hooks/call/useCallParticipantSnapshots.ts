@@ -5,7 +5,7 @@ import { getLivekitParticipants } from './useLivekitParticipants';
 
 export type CallVideoSourceKind = Track.Source.Camera | Track.Source.ScreenShare;
 
-export type CallParticipantEntry = {
+export type CallParticipantSnapshot = {
   key: string;
   participant: Participant;
   isScreensharing: boolean;
@@ -14,15 +14,16 @@ export type CallParticipantEntry = {
   isMicrophoneMuted: boolean;
 };
 
-export const checkIsEntryStreamingVideo = (entry: CallParticipantEntry): boolean =>
-  entry.isScreensharing || entry.isCameraEnabled;
+export const checkIsParticipantSnapshotStreamingVideo = (
+  participantSnapshot: CallParticipantSnapshot
+): boolean => participantSnapshot.isScreensharing || participantSnapshot.isCameraEnabled;
 
 export const checkIsScreenshareAudioEnabled = (participant: Participant): boolean => {
   const publication = participant.getTrackPublication(Track.Source.ScreenShareAudio);
   return publication !== undefined && !publication.isMuted;
 };
 
-const getCallParticipantEntries = (livekitRoom?: LivekitRoom): CallParticipantEntry[] => {
+const getCallParticipantSnapshots = (livekitRoom?: LivekitRoom): CallParticipantSnapshot[] => {
   if (!livekitRoom) return [];
   return getLivekitParticipants(livekitRoom).map((participant) => {
     const screensharePublication = participant.getTrackPublication(Track.Source.ScreenShare);
@@ -39,7 +40,7 @@ const getCallParticipantEntries = (livekitRoom?: LivekitRoom): CallParticipantEn
   });
 };
 
-export const PARTICIPANT_ENTRY_EVENTS = [
+export const PARTICIPANT_SNAPSHOT_EVENTS = [
   RoomEvent.ParticipantConnected,
   RoomEvent.ParticipantDisconnected,
   RoomEvent.TrackPublished,
@@ -50,24 +51,32 @@ export const PARTICIPANT_ENTRY_EVENTS = [
   RoomEvent.LocalTrackUnpublished,
 ] as const;
 
-export const useCallParticipantEntries = (livekitRoom?: LivekitRoom): CallParticipantEntry[] => {
-  const [entries, setEntries] = useState(() => getCallParticipantEntries(livekitRoom));
+export const useCallParticipantSnapshots = (
+  livekitRoom?: LivekitRoom
+): CallParticipantSnapshot[] => {
+  const [participantSnapshots, setParticipantSnapshots] = useState(() =>
+    getCallParticipantSnapshots(livekitRoom)
+  );
   const [prev, setPrev] = useState(livekitRoom);
   if (prev !== livekitRoom) {
     setPrev(livekitRoom);
-    setEntries(getCallParticipantEntries(livekitRoom));
+    setParticipantSnapshots(getCallParticipantSnapshots(livekitRoom));
   }
 
   useEffect(() => {
     if (!livekitRoom) return undefined;
-    const handleEntriesChanged = () => {
-      setEntries(getCallParticipantEntries(livekitRoom));
+    const handleParticipantSnapshotsChanged = () => {
+      setParticipantSnapshots(getCallParticipantSnapshots(livekitRoom));
     };
-    PARTICIPANT_ENTRY_EVENTS.forEach((event) => livekitRoom.on(event, handleEntriesChanged));
+    PARTICIPANT_SNAPSHOT_EVENTS.forEach((event) =>
+      livekitRoom.on(event, handleParticipantSnapshotsChanged)
+    );
     return () => {
-      PARTICIPANT_ENTRY_EVENTS.forEach((event) => livekitRoom.off(event, handleEntriesChanged));
+      PARTICIPANT_SNAPSHOT_EVENTS.forEach((event) =>
+        livekitRoom.off(event, handleParticipantSnapshotsChanged)
+      );
     };
   }, [livekitRoom]);
 
-  return entries;
+  return participantSnapshots;
 };

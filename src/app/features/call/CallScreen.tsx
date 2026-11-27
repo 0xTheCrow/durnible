@@ -8,9 +8,9 @@ import { useSetting } from '../../state/hooks/settings';
 import type { CallConnection } from '../../plugins/call/CallConnection';
 import { isScreenshareSupported } from '../../plugins/call/localMedia';
 import {
-  checkIsEntryStreamingVideo,
-  useCallParticipantEntries,
-} from '../../hooks/call/useCallParticipantEntries';
+  checkIsParticipantSnapshotStreamingVideo,
+  useCallParticipantSnapshots,
+} from '../../hooks/call/useCallParticipantSnapshots';
 import { useLocalMediaControls } from '../../hooks/call/useLocalMediaControls';
 import { useCallDeafen } from '../../hooks/call/useCallDeafen';
 import { useCallMemberships } from '../../hooks/call/useCallMemberships';
@@ -41,7 +41,7 @@ type ConnectedCallScreenProps = {
 function ConnectedCallScreen({ connection, isReconnecting, onMinimize }: ConnectedCallScreenProps) {
   const { livekitRoom, matrixRoom } = connection;
   const { endCall } = useCallActions();
-  const entries = useCallParticipantEntries(livekitRoom);
+  const participantSnapshots = useCallParticipantSnapshots(livekitRoom);
   const memberships = useCallMemberships(matrixRoom);
   const roomName = useRoomName(matrixRoom);
   const {
@@ -61,7 +61,7 @@ function ConnectedCallScreen({ connection, isReconnecting, onMinimize }: Connect
   );
   const isDragging = dragOffset !== undefined;
 
-  useScreenWakeLock(entries.some(checkIsEntryStreamingVideo));
+  useScreenWakeLock(participantSnapshots.some(checkIsParticipantSnapshotStreamingVideo));
 
   return (
     <Modal
@@ -103,7 +103,7 @@ function ConnectedCallScreen({ connection, isReconnecting, onMinimize }: Connect
 
       <CallStage
         room={matrixRoom}
-        entries={entries}
+        participantSnapshots={participantSnapshots}
         memberships={memberships}
         tileAspectRatio={CALL_TILE_PORTRAIT_ASPECT_RATIO}
       />
@@ -148,7 +148,7 @@ function ConnectedCallScreen({ connection, isReconnecting, onMinimize }: Connect
         />
         <CallMasterVolumeMenu
           room={matrixRoom}
-          entries={entries}
+          participantSnapshots={participantSnapshots}
           memberships={memberships}
           size={CONTROL_BUTTON_SIZE}
           iconSize={CONTROL_ICON_SIZE}

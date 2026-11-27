@@ -12,7 +12,7 @@ import {
 } from '../../plugins/call/playbackAudioContexts';
 import { useSetting } from '../../state/hooks/settings';
 import { settingsAtom } from '../../state/settings';
-import { useActiveCallParticipantEntriesStore } from '../../hooks/call/useActiveCallParticipantEntriesStore';
+import { useActiveCallParticipantSnapshotsStore } from '../../hooks/call/useActiveCallParticipantSnapshotsStore';
 import { CallAudioRenderer } from './CallAudioRenderer';
 import { CallMicrophoneGate } from './CallMicrophoneGate';
 
@@ -24,7 +24,7 @@ export function CallEngineMount() {
       : undefined;
   const [preferredAudioOutputDeviceId] = useSetting(settingsAtom, 'preferredAudioOutputDeviceId');
 
-  useActiveCallParticipantEntriesStore(connection?.livekitRoom);
+  useActiveCallParticipantSnapshotsStore(connection?.livekitRoom);
 
   useEffect(() => {
     if (!connection) return undefined;

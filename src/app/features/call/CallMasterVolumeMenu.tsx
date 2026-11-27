@@ -13,7 +13,7 @@ import {
   setCallMasterVolumeLevelAtom,
   setCallUserVolumePreferenceAtom,
 } from '../../state/callVolumePreferences';
-import type { CallParticipantEntry } from '../../hooks/call/useCallParticipantEntries';
+import type { CallParticipantSnapshot } from '../../hooks/call/useCallParticipantSnapshots';
 import { resolveCallParticipant } from '../../utils/call';
 import { stopPropagation } from '../../utils/keyboard';
 import { CallControlButton } from './CallControlButton';
@@ -21,19 +21,19 @@ import { CallVolumeSlider } from './CallVolumeSlider';
 
 type CallScreenshareVolumeSliderProps = {
   room: Room;
-  entry: CallParticipantEntry;
+  participantSnapshot: CallParticipantSnapshot;
   memberships: CallMembership[];
 };
 function CallScreenshareVolumeSlider({
   room,
-  entry,
+  participantSnapshot,
   memberships,
 }: CallScreenshareVolumeSliderProps) {
   const volumePreferences = useAtomValue(callVolumePreferencesAtom);
   const setUserVolumePreference = useSetAtom(setCallUserVolumePreferenceAtom);
   const { userId, displayName } = resolveCallParticipant(
     room,
-    entry.participant.identity,
+    participantSnapshot.participant.identity,
     memberships
   );
 
@@ -77,14 +77,14 @@ function CallScreenshareVolumeSlider({
 
 type CallMasterVolumeMenuProps = {
   room: Room;
-  entries: CallParticipantEntry[];
+  participantSnapshots: CallParticipantSnapshot[];
   memberships: CallMembership[];
   size?: ComponentProps<typeof CallControlButton>['size'];
   iconSize?: ComponentProps<typeof CallControlButton>['iconSize'];
 };
 export function CallMasterVolumeMenu({
   room,
-  entries,
+  participantSnapshots,
   memberships,
   size = '400',
   iconSize,
@@ -93,8 +93,9 @@ export function CallMasterVolumeMenu({
   const { masterVolumeLevel } = useAtomValue(callVolumePreferencesAtom);
   const setMasterVolumeLevel = useSetAtom(setCallMasterVolumeLevelAtom);
 
-  const screenshareEntries = entries.filter(
-    (entry) => !entry.participant.isLocal && entry.isScreenshareAudioEnabled
+  const screenshareParticipantSnapshots = participantSnapshots.filter(
+    (participantSnapshot) =>
+      !participantSnapshot.participant.isLocal && participantSnapshot.isScreenshareAudioEnabled
   );
 
   const handleOpenMenu: MouseEventHandler<HTMLButtonElement> = (evt) => {
@@ -123,11 +124,11 @@ export function CallMasterVolumeMenu({
               onChange={(volumeLevel) => setMasterVolumeLevel({ volumeLevel, isCommit: false })}
               onCommit={(volumeLevel) => setMasterVolumeLevel({ volumeLevel, isCommit: true })}
             />
-            {screenshareEntries.map((entry) => (
+            {screenshareParticipantSnapshots.map((participantSnapshot) => (
               <CallScreenshareVolumeSlider
-                key={entry.key}
+                key={participantSnapshot.key}
                 room={room}
-                entry={entry}
+                participantSnapshot={participantSnapshot}
                 memberships={memberships}
               />
             ))}

@@ -10,7 +10,7 @@ import {
   RemoteVideoTrack,
   Track,
 } from 'livekit-client';
-import type { CallParticipantEntry } from '../../hooks/call/useCallParticipantEntries';
+import type { CallParticipantSnapshot } from '../../hooks/call/useCallParticipantSnapshots';
 import { useParticipantTrackPublications } from '../../hooks/call/useParticipantTrackPublications';
 import { useCallVideoReceiverStats } from '../../hooks/call/useCallVideoReceiverStats';
 import { useCallVideoSenderStats } from '../../hooks/call/useCallVideoSenderStats';
@@ -46,29 +46,36 @@ function CallSpotlightStreamLabel({ videoTrack }: CallSpotlightStreamLabelProps)
 
 type CallSpotlightBarProps = {
   room: Room;
-  entry: CallParticipantEntry;
+  participantSnapshot: CallParticipantSnapshot;
   memberships: CallMembership[];
   onStopWatching: () => void;
 };
 export function CallSpotlightBar({
   room,
-  entry,
+  participantSnapshot,
   memberships,
   onStopWatching,
 }: CallSpotlightBarProps) {
-  const { displayName } = resolveCallParticipant(room, entry.participant.identity, memberships);
-  const trackPublications = useParticipantTrackPublications(entry.participant);
+  const { displayName } = resolveCallParticipant(
+    room,
+    participantSnapshot.participant.identity,
+    memberships
+  );
+  const trackPublications = useParticipantTrackPublications(participantSnapshot.participant);
 
-  const source = entry.isScreensharing ? Track.Source.ScreenShare : Track.Source.Camera;
+  const source = participantSnapshot.isScreensharing
+    ? Track.Source.ScreenShare
+    : Track.Source.Camera;
   const videoTrack = trackPublications.find((publication) => publication.source === source)?.track;
   const screenshareAudioTrack = trackPublications.find(
     (publication) => publication.source === Track.Source.ScreenShareAudio
   )?.track;
-  const isOwnScreenshare = entry.participant.isLocal && entry.isScreensharing;
+  const isOwnScreenshare =
+    participantSnapshot.participant.isLocal && participantSnapshot.isScreensharing;
 
   const getWatchingLabel = (): string => {
-    if (!entry.isScreensharing) return `Watching ${displayName}`;
-    if (entry.participant.isLocal) return 'Watching your screen';
+    if (!participantSnapshot.isScreensharing) return `Watching ${displayName}`;
+    if (participantSnapshot.participant.isLocal) return 'Watching your screen';
     return `Watching ${displayName}'s screen`;
   };
 
@@ -88,7 +95,7 @@ export function CallSpotlightBar({
               audioTrack={
                 screenshareAudioTrack instanceof LocalAudioTrack ? screenshareAudioTrack : undefined
               }
-              isScreenshareAudioEnabled={entry.isScreenshareAudioEnabled}
+              isScreenshareAudioEnabled={participantSnapshot.isScreenshareAudioEnabled}
             />
           }
         />
@@ -97,12 +104,12 @@ export function CallSpotlightBar({
         <CallVideoReceiverStatsMenu
           videoTrack={videoTrack}
           audioTrack={
-            entry.isScreensharing && screenshareAudioTrack instanceof RemoteAudioTrack
+            participantSnapshot.isScreensharing && screenshareAudioTrack instanceof RemoteAudioTrack
               ? screenshareAudioTrack
               : undefined
           }
-          isScreenshare={entry.isScreensharing}
-          isScreenshareAudioEnabled={entry.isScreenshareAudioEnabled}
+          isScreenshare={participantSnapshot.isScreensharing}
+          isScreenshareAudioEnabled={participantSnapshot.isScreenshareAudioEnabled}
         />
       )}
       <Chip
