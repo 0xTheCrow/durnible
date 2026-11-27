@@ -1,9 +1,11 @@
 import { useCallback, useEffect } from 'react';
-import { useAtom, useAtomValue } from 'jotai';
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
+import { Track } from 'livekit-client';
 import type { CallParticipantEntry } from './useCallParticipantEntries';
 import { checkIsEntryStreamingVideo } from './useCallParticipantEntries';
 import {
   callFocusedParticipantAtom,
+  callPopOutAtom,
   callStateAtom,
   getCallFocusedParticipantKey,
 } from '../../state/call';
@@ -22,6 +24,7 @@ export const useCallFocusedEntry = (entries: CallParticipantEntry[]): CallFocus 
       ? callState.connection
       : undefined;
   const [focusedParticipant, setFocusedParticipant] = useAtom(callFocusedParticipantAtom);
+  const setCallPopOut = useSetAtom(callPopOutAtom);
   const pickedFocusKey = getCallFocusedParticipantKey(focusedParticipant, connection);
 
   const focusedEntry = entries.find(
@@ -52,7 +55,19 @@ export const useCallFocusedEntry = (entries: CallParticipantEntry[]): CallFocus 
       ? entries.filter((entry) => entry.key !== focusedEntry.key)
       : entries;
 
-  const stopWatchingFocusedEntry = () => setFocusedParticipant(undefined);
+  const stopWatchingFocusedEntry = () => {
+    setFocusedParticipant(undefined);
+    if (!focusedEntry) return;
+    const focusedSource = focusedEntry.isScreensharing
+      ? Track.Source.ScreenShare
+      : Track.Source.Camera;
+    setCallPopOut((currentPopOut) =>
+      currentPopOut?.participant === focusedEntry.participant &&
+      currentPopOut.source === focusedSource
+        ? undefined
+        : currentPopOut
+    );
+  };
 
   return { focusedEntry, stripEntries, focusEntry, stopWatchingFocusedEntry };
 };
